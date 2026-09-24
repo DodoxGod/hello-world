@@ -201,21 +201,35 @@ public class FiloGameTests implements FabricGameTest {
 	/** Un mob cuerpo a cuerpo avisa y acaba golpeando a un jugador que se queda quieto. */
 	@GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
 	public void telegraphedAttackHitsStillPlayer(TestContext context) {
+		telegraphTest(context, false);
+	}
+
+	/** Igual, pero con el jugador simulado añadido de verdad al mundo. */
+	@GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+	public void telegraphedAttackHitsStillPlayerInWorld(TestContext context) {
+		telegraphTest(context, true);
+	}
+
+	private static void telegraphTest(TestContext context, boolean addToWorld) {
 		FakePlayer player = player(context, new BlockPos(1, 1, 1));
+		if (addToWorld) context.getWorld().spawnEntity(player);
 		HuskEntity husk = context.spawnEntity(EntityType.HUSK, new BlockPos(2, 1, 1));
 		husk.setTarget(player);
+		Vec3d huskStart = husk.getPos();
 		StringBuilder goals = new StringBuilder();
 		context.waitAndRun(20, () -> ((MobEntityAccessor) husk).filo$getGoalSelector().getGoals().stream()
 				.filter(g -> g.isRunning()).forEach(g -> goals.append(g.getGoal().getClass().getSimpleName()).append(' ')));
 		context.waitAndRun(120, () -> {
-			if (player.getHealth() < player.getMaxHealth()) {
+			boolean hit = player.getHealth() < player.getMaxHealth();
+			if (addToWorld) player.discard();
+			if (hit) {
 				context.complete();
 			} else {
 				throw new GameTestException(String.format(
-						"el husk no llegó a golpear al jugador quieto (distancia %.2f, objetivo=%s, vivo=%s, lentitud=%s,"
-								+ " y husk=%.2f, y jugador=%.2f, ve=%s, alcance=%s, objetivos=[%s])",
+						"el husk no llegó a golpear al jugador quieto (distancia %.2f, objetivo=%s, sinIA=%s, edad=%d,"
+								+ " se movió=%.2f, ve=%s, alcance=%s, objetivos=[%s])",
 						husk.distanceTo(player), husk.getTarget() == player ? "jugador" : String.valueOf(husk.getTarget()),
-						husk.isAlive(), husk.hasStatusEffect(StatusEffects.SLOWNESS), husk.getY(), player.getY(),
+						husk.isAiDisabled(), husk.age, husk.getPos().distanceTo(huskStart),
 						husk.canSee(player), husk.isInAttackRange(player), goals));
 			}
 		});
