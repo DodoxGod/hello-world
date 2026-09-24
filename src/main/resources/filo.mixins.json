@@ -4,7 +4,8 @@
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"LivingEntityMixin",
-		"MeleeAttackGoalMixin"
+		"MeleeAttackGoalMixin",
+		"ServerPlayerEntityAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

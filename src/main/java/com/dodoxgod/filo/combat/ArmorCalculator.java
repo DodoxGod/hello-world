@@ -34,12 +34,10 @@ public final class ArmorCalculator {
 
 	static double effectiveArmor(LivingEntity target, AttackProfile profile, FiloConfig cfg) {
 		double armor = 0.0;
-		double itemArmor = 0.0;
 		for (int i = 0; i < SLOTS.length; i++) {
 			ItemStack stack = target.getEquippedStack(SLOTS[i]);
 			if (!(stack.getItem() instanceof ArmorItem armorItem)) continue;
 			double protection = armorItem.getProtection();
-			itemArmor += protection;
 			double weight = profile.zone().weight(i);
 			if (weight <= 0) continue;
 			FiloConfig.MaterialStats stats = cfg.material(materialId(armorItem));
@@ -48,8 +46,8 @@ public final class ArmorCalculator {
 					: 1.0;
 			armor += protection * SLOT_NORMALIZER[i] * weight * stats.resistance(profile.kind()) * durability;
 		}
-		// Armadura natural (zombis, mobs con atributos, efectos): protege todo el cuerpo por igual.
-		armor += Math.max(0.0, target.getArmor() - itemArmor);
+		// Armadura natural (zombis, etc.): el valor base del atributo, que no incluye la de las piezas.
+		armor += target.getAttributeBaseValue(EntityAttributes.GENERIC_ARMOR);
 		return armor;
 	}
 

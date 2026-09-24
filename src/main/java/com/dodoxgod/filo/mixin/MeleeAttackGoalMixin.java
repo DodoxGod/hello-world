@@ -18,9 +18,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Ataques con aviso: antes de golpear, el mob se para, suelta partículas y un sonido, y espera
- * unos ticks. Si en ese tiempo te apartas, esquivas o levantas el escudo, el golpe falla o se bloquea.
- * Además, solo unos pocos mobs pueden atacar a la vez al mismo jugador.
+ * Ataques con aviso contra jugadores: antes de golpear, el mob se para, suelta partículas y un
+ * sonido, y espera unos ticks. Si en ese tiempo te apartas, esquivas o levantas el escudo, el golpe
+ * falla o se bloquea. Además, solo unos pocos mobs pueden atacar a la vez al mismo jugador.
+ * Contra otros mobs (aldeanos, gólems...) atacan como en vanilla.
  */
 @Mixin(MeleeAttackGoal.class)
 public abstract class MeleeAttackGoalMixin {
@@ -43,7 +44,7 @@ public abstract class MeleeAttackGoalMixin {
 	@Inject(method = "attack", at = @At("HEAD"), cancellable = true)
 	private void filo$telegraphedAttack(LivingEntity target, CallbackInfo ci) {
 		FiloConfig cfg = FiloConfig.get();
-		if (!cfg.mobs.telegraph) return;
+		if (!cfg.mobs.telegraph || !(target instanceof PlayerEntity) && filo$windup == 0) return;
 		ci.cancel();
 
 		long now = mob.getWorld().getTime();
@@ -68,10 +69,7 @@ public abstract class MeleeAttackGoalMixin {
 		}
 
 		if (!canAttack(target)) return;
-		if (target instanceof PlayerEntity
-				&& !AttackTokens.tryAcquire(target, mob, cfg.mobs.maxSimultaneousAttackers)) {
-			return;
-		}
+		if (!AttackTokens.tryAcquire(target, mob, cfg.mobs.maxSimultaneousAttackers)) return;
 		filo$windup = Math.max(1, cfg.mobs.windupTicks);
 		filo$target = target;
 		mob.getNavigation().stop();
