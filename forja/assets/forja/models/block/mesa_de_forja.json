@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "minecraft:block/polished_deepslate",
+    "up": "forja:block/mesa_de_forja_top",
+    "north": "forja:block/mesa_de_forja_front",
+    "south": "forja:block/mesa_de_forja_front",
+    "east": "forja:block/mesa_de_forja_side",
+    "west": "forja:block/mesa_de_forja_side",
+    "particle": "forja:block/mesa_de_forja_side"
+  }
+}

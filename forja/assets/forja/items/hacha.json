@@ -1,0 +1,127 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:broken",
+    "on_true": {
+      "type": "minecraft:composite",
+      "models": [
+        {
+          "type": "minecraft:composite",
+          "models": [
+            {
+              "type": "minecraft:range_dispatch",
+              "property": "minecraft:cooldown",
+              "entries": [
+                {
+                  "threshold": 0.0001,
+                  "model": {
+                    "type": "minecraft:empty"
+                  }
+                }
+              ],
+              "fallback": {
+                "type": "minecraft:model",
+                "model": "forja:item/hacha/0",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 0,
+                    "default": 15000804
+                  }
+                ]
+              }
+            },
+            {
+              "type": "minecraft:model",
+              "model": "forja:item/hacha/1",
+              "tints": [
+                {
+                  "type": "minecraft:custom_model_data",
+                  "index": 1,
+                  "default": 12093775
+                }
+              ]
+            },
+            {
+              "type": "minecraft:model",
+              "model": "forja:item/hacha/2",
+              "tints": [
+                {
+                  "type": "minecraft:custom_model_data",
+                  "index": 2,
+                  "default": 12093775
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": "gui",
+              "model": {
+                "type": "minecraft:model",
+                "model": "forja:item/grieta"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:empty"
+          }
+        }
+      ]
+    },
+    "on_false": {
+      "type": "minecraft:composite",
+      "models": [
+        {
+          "type": "minecraft:range_dispatch",
+          "property": "minecraft:cooldown",
+          "entries": [
+            {
+              "threshold": 0.0001,
+              "model": {
+                "type": "minecraft:empty"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "forja:item/hacha/0",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 0,
+                "default": 15000804
+              }
+            ]
+          }
+        },
+        {
+          "type": "minecraft:model",
+          "model": "forja:item/hacha/1",
+          "tints": [
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 1,
+              "default": 12093775
+            }
+          ]
+        },
+        {
+          "type": "minecraft:model",
+          "model": "forja:item/hacha/2",
+          "tints": [
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 2,
+              "default": 12093775
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

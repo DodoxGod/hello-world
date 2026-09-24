@@ -1,0 +1,12 @@
+{
+  "layers": {
+    "wolf_body": [
+      {
+        "texture": "forja:lobo",
+        "dyeable": {
+          "color_when_undyed": 16742972
+        }
+      }
+    ]
+  }
+}

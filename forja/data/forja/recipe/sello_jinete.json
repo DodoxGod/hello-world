@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:gold_ingot",
+    "minecraft:saddle",
+    "minecraft:leather"
+  ],
+  "result": {
+    "id": "forja:sello",
+    "components": {
+      "forja:sello": "jinete",
+      "minecraft:item_name": {
+        "translate": "item.forja.sello.de",
+        "with": [
+          {
+            "translate": "perk.forja.jinete"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          13214330
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

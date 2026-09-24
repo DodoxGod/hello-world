@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "minecraft:block/polished_deepslate",
+    "up": "forja:block/mesa_de_talabarteria_top",
+    "north": "forja:block/mesa_de_talabarteria_front",
+    "south": "forja:block/mesa_de_talabarteria_front",
+    "east": "forja:block/mesa_de_talabarteria_side",
+    "west": "forja:block/mesa_de_talabarteria_side",
+    "particle": "forja:block/mesa_de_talabarteria_side"
+  }
+}

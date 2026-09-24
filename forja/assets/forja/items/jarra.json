@@ -1,0 +1,35 @@
+{
+  "model": {
+    "type": "minecraft:composite",
+    "models": [
+      {
+        "type": "minecraft:select",
+        "property": "minecraft:custom_model_data",
+        "index": 0,
+        "cases": [
+          {
+            "when": "lleno",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/jarra/esencia",
+              "tints": [
+                {
+                  "type": "minecraft:custom_model_data",
+                  "index": 0,
+                  "default": 16777215
+                }
+              ]
+            }
+          }
+        ],
+        "fallback": {
+          "type": "minecraft:empty"
+        }
+      },
+      {
+        "type": "minecraft:model",
+        "model": "forja:item/jarra/vidrio"
+      }
+    ]
+  }
+}

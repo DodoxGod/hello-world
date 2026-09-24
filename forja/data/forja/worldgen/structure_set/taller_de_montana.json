@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 228401755,
+    "separation": 14,
+    "spacing": 44
+  },
+  "structures": [
+    {
+      "structure": "forja:taller_de_montana",
+      "weight": 1
+    }
+  ]
+}

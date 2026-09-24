@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "DDD",
+    "I I",
+    "DDD"
+  ],
+  "key": {
+    "D": "minecraft:polished_deepslate",
+    "I": "forja:acero_refractario"
+  },
+  "result": {
+    "id": "forja:mesa_de_losa",
+    "count": 1
+  }
+}

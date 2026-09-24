@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "forja:item/huevo_automata_de_forja"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "DDD",
+    "CCC",
+    "DDD"
+  ],
+  "key": {
+    "D": "forja:damasco",
+    "C": "forja:conducto_de_acero"
+  },
+  "result": {
+    "id": "forja:conducto_de_damasco",
+    "count": 3
+  }
+}

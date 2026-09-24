@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "forja:hierro_estelar",
+    "minecraft:blaze_powder",
+    "minecraft:blaze_powder",
+    "minecraft:echo_shard"
+  ],
+  "result": {
+    "id": "forja:fundente_maestro",
+    "count": 2
+  }
+}

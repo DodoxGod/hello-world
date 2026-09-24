@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "forja:block/crisol_de_barro"
+    },
+    "lit=true": {
+      "model": "forja:block/crisol_de_barro_lit"
+    }
+  }
+}

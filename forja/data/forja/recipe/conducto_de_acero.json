@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "AAA",
+    "CCC",
+    "AAA"
+  ],
+  "key": {
+    "A": "forja:acero",
+    "C": "forja:conducto_de_colada"
+  },
+  "result": {
+    "id": "forja:conducto_de_acero",
+    "count": 3
+  }
+}

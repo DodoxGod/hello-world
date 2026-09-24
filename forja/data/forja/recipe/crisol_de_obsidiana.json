@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "OAO",
+    "OCO",
+    "OOO"
+  ],
+  "key": {
+    "O": "forja:obsidiacero",
+    "A": "forja:corazon_de_forja",
+    "C": "forja:crisol_de_hierro"
+  },
+  "result": {
+    "id": "forja:crisol_de_obsidiana",
+    "count": 1
+  }
+}

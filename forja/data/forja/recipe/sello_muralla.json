@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:gold_ingot",
+    "minecraft:iron_block",
+    "minecraft:stone_bricks"
+  ],
+  "result": {
+    "id": "forja:sello",
+    "components": {
+      "forja:sello": "muralla",
+      "minecraft:item_name": {
+        "translate": "item.forja.sello.de",
+        "with": [
+          {
+            "translate": "perk.forja.muralla"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          9211030
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "forja:block/mesa_de_almas_bottom",
+    "up": "forja:block/mesa_de_almas_top",
+    "north": "forja:block/mesa_de_almas_front",
+    "south": "forja:block/mesa_de_almas_front",
+    "east": "forja:block/mesa_de_almas_side",
+    "west": "forja:block/mesa_de_almas_side",
+    "particle": "forja:block/mesa_de_almas_side"
+  }
+}

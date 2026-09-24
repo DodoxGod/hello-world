@@ -1,0 +1,273 @@
+{
+  "model": {
+    "type": "minecraft:composite",
+    "models": [
+      {
+        "type": "minecraft:model",
+        "model": "forja:item/plantilla/base"
+      },
+      {
+        "type": "minecraft:select",
+        "property": "minecraft:custom_model_data",
+        "index": 0,
+        "cases": [
+          {
+            "when": "cabeza_pico",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/cabeza_pico"
+            }
+          },
+          {
+            "when": "cabeza_hacha",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/cabeza_hacha"
+            }
+          },
+          {
+            "when": "cabeza_pala",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/cabeza_pala"
+            }
+          },
+          {
+            "when": "cabeza_azada",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/cabeza_azada"
+            }
+          },
+          {
+            "when": "cabeza_martillo",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/cabeza_martillo"
+            }
+          },
+          {
+            "when": "hoja",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/hoja"
+            }
+          },
+          {
+            "when": "punta_lanza",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/punta_lanza"
+            }
+          },
+          {
+            "when": "punta_tridente",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/punta_tridente"
+            }
+          },
+          {
+            "when": "punta_cincel",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/punta_cincel"
+            }
+          },
+          {
+            "when": "cabeza_mazo",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/cabeza_mazo"
+            }
+          },
+          {
+            "when": "membrana",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/membrana"
+            }
+          },
+          {
+            "when": "bola",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/bola"
+            }
+          },
+          {
+            "when": "cadena",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/cadena"
+            }
+          },
+          {
+            "when": "nudillos",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/nudillos"
+            }
+          },
+          {
+            "when": "manopla",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/manopla"
+            }
+          },
+          {
+            "when": "remache",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/remache"
+            }
+          },
+          {
+            "when": "punta_flecha",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/punta_flecha"
+            }
+          },
+          {
+            "when": "emplumado",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/emplumado"
+            }
+          },
+          {
+            "when": "placa_barda",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/placa_barda"
+            }
+          },
+          {
+            "when": "placa_lobo",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/placa_lobo"
+            }
+          },
+          {
+            "when": "garfio",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/garfio"
+            }
+          },
+          {
+            "when": "mango",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/mango"
+            }
+          },
+          {
+            "when": "atadura",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/atadura"
+            }
+          },
+          {
+            "when": "guarda",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/guarda"
+            }
+          },
+          {
+            "when": "placa_casco",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/placa_casco"
+            }
+          },
+          {
+            "when": "placa_pechera",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/placa_pechera"
+            }
+          },
+          {
+            "when": "placa_grebas",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/placa_grebas"
+            }
+          },
+          {
+            "when": "placa_botas",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/placa_botas"
+            }
+          },
+          {
+            "when": "forro",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/forro"
+            }
+          },
+          {
+            "when": "brazos_arco",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/brazos_arco"
+            }
+          },
+          {
+            "when": "cuerda",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/cuerda"
+            }
+          },
+          {
+            "when": "placa_escudo",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/placa_escudo"
+            }
+          },
+          {
+            "when": "borde_escudo",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/borde_escudo"
+            }
+          },
+          {
+            "when": "nucleo",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/nucleo"
+            }
+          },
+          {
+            "when": "engaste",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/engaste"
+            }
+          },
+          {
+            "when": "tapas",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/tapas"
+            }
+          }
+        ],
+        "fallback": {
+          "type": "minecraft:empty"
+        }
+      }
+    ]
+  }
+}

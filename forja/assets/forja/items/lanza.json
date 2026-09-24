@@ -1,0 +1,208 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:broken",
+    "on_true": {
+      "type": "minecraft:composite",
+      "models": [
+        {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": [
+                "gui",
+                "ground",
+                "fixed",
+                "on_shelf"
+              ],
+              "model": {
+                "type": "minecraft:composite",
+                "models": [
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/lanza/0",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 0,
+                        "default": 15000804
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/lanza/1",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 1,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/lanza/2",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 2,
+                        "default": 12093775
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:composite",
+            "models": [
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/lanza/mano_0",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 0,
+                    "default": 15000804
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/lanza/mano_1",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 1,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/lanza/mano_2",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 2,
+                    "default": 12093775
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": "gui",
+              "model": {
+                "type": "minecraft:model",
+                "model": "forja:item/grieta"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:empty"
+          }
+        }
+      ]
+    },
+    "on_false": {
+      "type": "minecraft:select",
+      "property": "minecraft:display_context",
+      "cases": [
+        {
+          "when": [
+            "gui",
+            "ground",
+            "fixed",
+            "on_shelf"
+          ],
+          "model": {
+            "type": "minecraft:composite",
+            "models": [
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/lanza/0",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 0,
+                    "default": 15000804
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/lanza/1",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 1,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/lanza/2",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 2,
+                    "default": 12093775
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "fallback": {
+        "type": "minecraft:composite",
+        "models": [
+          {
+            "type": "minecraft:model",
+            "model": "forja:item/lanza/mano_0",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 0,
+                "default": 15000804
+              }
+            ]
+          },
+          {
+            "type": "minecraft:model",
+            "model": "forja:item/lanza/mano_1",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 1,
+                "default": 12093775
+              }
+            ]
+          },
+          {
+            "type": "minecraft:model",
+            "model": "forja:item/lanza/mano_2",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 2,
+                "default": 12093775
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "swap_animation_scale": 1.95
+}

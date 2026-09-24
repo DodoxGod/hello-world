@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/don",
+  "display": {
+    "icon": {
+      "id": "minecraft:nether_star"
+    },
+    "title": {
+      "translate": "advancements.forja.obra_maestra.title"
+    },
+    "description": {
+      "translate": "advancements.forja.obra_maestra.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}
