@@ -207,7 +207,10 @@ public class FiloGameTests implements FabricGameTest {
 			if (player.getHealth() < player.getMaxHealth()) {
 				context.complete();
 			} else {
-				throw new GameTestException("el husk no llegó a golpear al jugador quieto");
+				throw new GameTestException(String.format(
+						"el husk no llegó a golpear al jugador quieto (distancia %.2f, objetivo=%s, vivo=%s, lentitud=%s)",
+						husk.distanceTo(player), husk.getTarget() == player ? "jugador" : String.valueOf(husk.getTarget()),
+						husk.isAlive(), husk.hasStatusEffect(StatusEffects.SLOWNESS)));
 			}
 		});
 	}

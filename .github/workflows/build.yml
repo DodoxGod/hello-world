@@ -24,7 +24,9 @@ jobs:
           name: filo-mod
           path: build/libs/*.jar
       - name: Game tests (servidor real de Minecraft)
-        run: ./gradlew runGametest --stacktrace
+        run: |
+          ./gradlew runGametest > gametest.log 2>&1 || { grep -E "GameTestException|required tests|filogametests|ERROR" gametest.log; exit 1; }
+          grep -E "tests? (passed|failed)|All .* tests" gametest.log || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
