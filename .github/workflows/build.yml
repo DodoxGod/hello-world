@@ -56,14 +56,21 @@ jobs:
           path: forja/build/libs/*.jar
       - name: API dump (temporal, para portar Filo a 26.2)
         run: |
-          MC=$(find ~/.gradle/caches .gradle -name "*.jar" 2>/dev/null | grep -i minecraft | grep -E "26\.2" | grep -viE "sources|client-only|server-only" | xargs ls -S | head -1)
+          find ~/.gradle/caches/fabric-loom -name "*.jar" | head -20
+          MC=$(for j in $(find ~/.gradle/caches/fabric-loom .gradle -name "*.jar" 2>/dev/null); do unzip -l "$j" 2>/dev/null | grep -q "net/minecraft/world/entity/LivingEntity.class" && echo "$j"; done | head -1)
           echo "MC JAR: $MC"
-          unzip -l "$MC" | grep -oE "net/minecraft/[A-Za-z/]*(Creeper|SwellGoal|RangedBowAttackGoal|CombatRules|ThrownTrident|AbstractSkeleton|Zombie|Husk|MeleeAttackGoal|GameTestHelper|PathNavigation|DamageSource|AbstractArrow|ArmorType|Equippable|EquipmentSlot|MobEffects|ParticleTypes|SoundEvents|ItemAttributeModifiers|KeyMapping|FakePlayer)\.class" | sort -u
-          for c in net.minecraft.world.entity.LivingEntity net.minecraft.world.entity.Mob net.minecraft.world.entity.ai.goal.MeleeAttackGoal net.minecraft.world.entity.ai.goal.RangedBowAttackGoal net.minecraft.world.entity.ai.goal.SwellGoal net.minecraft.world.damagesource.CombatRules net.minecraft.world.entity.ai.navigation.PathNavigation net.minecraft.gametest.framework.GameTestHelper net.minecraft.world.item.component.ItemAttributeModifiers; do
-            echo "=== $c"; javap -p -cp "$MC" $c | grep -vE "^\s*$" | cut -c1-220
+          J="javap -p -cp $MC"
+          unzip -l "$MC" | grep -oE "net/minecraft/[A-Za-z/]*/(Creeper|SwellGoal|RangedBowAttackGoal|CombatRules|ThrownTrident|AbstractSkeleton|Skeleton|Zombie|Husk|MeleeAttackGoal|GameTestHelper|PathNavigation|AbstractArrow|ArmorType|ItemAttributeModifiers|IronGolem|Villager)\.class" | sort -u
+          echo "=== LivingEntity"; $J net.minecraft.world.entity.LivingEntity | grep -iE "hurt|armor|absorb|damage|block|useitem|usingitem|knockback|getarmorvalue|attribute\(|getattributevalue|getattributebasevalue|isusingitem|swing|addeffect|haseffect" | cut -c1-200
+          echo "=== Mob"; $J net.minecraft.world.entity.Mob | grep -iE "goalselector|navigation|gettarget|settarget|doHurtTarget|isWithinMeleeAttackRange|getSensing|lookcontrol|isNoAi" | cut -c1-200
+          echo "=== Entity"; $J net.minecraft.world.entity.Entity | grep -iE "hurtMarked|setDeltaMovement|getDeltaMovement|onGround\(|distanceTo|getBoundingBox|getEyeY|position\(|level\(|getBbHeight|getBbWidth|getViewVector|discard|invulnerableTime|getRandom" | cut -c1-200
+          for c in net.minecraft.world.entity.ai.goal.MeleeAttackGoal net.minecraft.world.entity.ai.goal.RangedBowAttackGoal net.minecraft.world.entity.ai.goal.SwellGoal net.minecraft.world.damagesource.CombatRules net.minecraft.world.item.component.ItemAttributeModifiers; do
+            echo "=== $c"; $J $c | cut -c1-200
           done
-          javap -c -p -cp "$MC" net.minecraft.world.entity.ai.goal.RangedBowAttackGoal | grep -E "invoke|public void tick" | cut -c1-200
-          javap -c -p -cp "$MC" net.minecraft.world.entity.ai.goal.MeleeAttackGoal | grep -E "invoke|public boolean canContinueToUse|protected void checkAndPerformAttack" | cut -c1-200
-          find ~/.gradle/caches .gradle -name "*.jar" 2>/dev/null | grep -iE "fabric-(gametest|entity-events|events-interaction|api-base)" | head
-          GT=$(find ~/.gradle/caches .gradle -name "fabric-gametest-api*.jar" 2>/dev/null | grep -v sources | head -1); [ -n "$GT" ] && unzip -l "$GT" | grep -oE "net/fabricmc/[A-Za-z/]*\.class" | head -20 && javap -cp "$GT" net.fabricmc.fabric.api.gametest.v1.GameTest || true
-          FP=$(find ~/.gradle/caches .gradle -name "*.jar" 2>/dev/null | xargs -I{} sh -c 'unzip -l {} 2>/dev/null | grep -q "api/entity/FakePlayer.class" && echo {}' | head -1); echo "FP: $FP"; [ -n "$FP" ] && javap -p -cp "$FP" net.fabricmc.fabric.api.entity.FakePlayer || true
+          echo "=== PathNavigation"; $J net.minecraft.world.entity.ai.navigation.PathNavigation | grep -iE "isDone|stop|moveTo|setSpeedModifier" | cut -c1-200
+          echo "=== Creeper"; $J $(unzip -l "$MC" | grep -oE "net/minecraft/[A-Za-z/]*/Creeper\.class" | head -1 | sed 's|/|.|g;s|\.class||') | grep -iE "swell|fuse" | cut -c1-200
+          echo "=== Zombie"; $J net.minecraft.world.entity.monster.zombie.Zombie | grep -iE "Goals|registerGoals" | cut -c1-200
+          echo "=== GameTestHelper"; $J net.minecraft.gametest.framework.GameTestHelper | grep -iE "spawn\(|getLevel|succeed|fail|runAfterDelay|runAtTickTime|absolute|makeMockPlayer|assertTrue|GameTestAssertException" | cut -c1-220
+          javap -c -p -cp "$MC" net.minecraft.world.entity.ai.goal.RangedBowAttackGoal | grep -E "invoke" | cut -c1-200
+          javap -c -p -cp "$MC" net.minecraft.world.entity.ai.goal.MeleeAttackGoal | grep -E "invoke|Method|public|protected" | cut -c1-200
+          GT=$(find ~/.gradle/caches -name "fabric-gametest-api*.jar" | grep -v sources | head -1); unzip -l "$GT" | grep -iE "fabric.mod.json|resources|empty" | head
