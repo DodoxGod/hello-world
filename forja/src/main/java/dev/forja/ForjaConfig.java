@@ -45,6 +45,9 @@ public final class ForjaConfig {
 	/** How often a star core is hanging over an open field at night. */
 	public float nucleos = 0.05F;
 
+	/** The combat overhaul: armor formula, stamina, dodge, posture and vanilla mob behaviour. */
+	public dev.forja.combat.CombatConfig combate = new dev.forja.combat.CombatConfig();
+
 	/** Everything in this file is a chance per check, from 0 (never) to 1 (always). */
 	public String _comentario = "Probabilidades por comprobacion, de 0 (nunca) a 1 (siempre).";
 
@@ -64,6 +67,8 @@ public final class ForjaConfig {
 				if (read != null) {
 					current = read;
 				}
+				// Written back so keys added in a newer version show up in an older file.
+				Files.writeString(path, GSON.toJson(current));
 				return;
 			}
 			Files.createDirectories(path.getParent());

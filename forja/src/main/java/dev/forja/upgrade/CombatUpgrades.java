@@ -314,10 +314,13 @@ public final class CombatUpgrades {
 				level.sendParticles(PARRY, at.x + edge.x, at.y + edge.y, at.z + edge.z, 1, 0.01, 0.01, 0.01, 0.0);
 			}
 		}
+		// Combat overhaul: the first moments of the window are a perfect parry, the rest a plain one.
+		boolean perfect = isPerfectParry(defender, shield);
 		if (defender instanceof ServerPlayer player) {
-			player.sendOverlayMessage(Component.translatable("gui.forja.parada"));
+			player.sendOverlayMessage(Component.translatable(perfect ? "gui.forja.parada" : "gui.forja.parada_normal"));
 		}
-		RIPOSTE.put(defender, level.getServer().getTickCount() + RIPOSTE_TICKS);
+		dev.forja.combat.ParryRhythm.landed(defender);
+		RIPOSTE.put(defender, level.getServer().getTickCount() + (perfect ? RIPOSTE_TICKS * 2 : RIPOSTE_TICKS));
 		if (source.getDirectEntity() instanceof Projectile projectile && projectile.isAlive() && source.getEntity() instanceof LivingEntity archer) {
 			PENDING_REFLECT.add(new Reflected(projectile, archer, level.getGameTime()));
 			projectile.setOwner(defender);
@@ -334,7 +337,16 @@ public final class CombatUpgrades {
 		attacker.hurtMarked = true;
 		attacker.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 60, 1), defender);
 		attacker.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 60, 0), defender);
+		// Combat overhaul: a perfect parry takes the attacker's balance at once, a plain one half of it;
+		// either gives the defender breath back.
+		if (perfect) {
+			dev.forja.combat.Posture.breakPosture(attacker, level.getGameTime());
+		} else {
+			dev.forja.combat.Posture.shake(attacker, 0.5, level.getGameTime());
+		}
 		if (defender instanceof Player player) {
+			float refund = dev.forja.combat.CombatConfig.get().parryStaminaRefund;
+			dev.forja.combat.Stamina.restore(player, perfect ? refund * 2.0F : refund);
 			dev.forja.ForjaAdvancements.award(player, "parada");
 		}
 	}
@@ -409,7 +421,20 @@ public final class CombatUpgrades {
 	 * whoever threw it, hurls them away and leaves them shaken.
 	 */
 	public static boolean isParry(LivingEntity defender, ItemStack shield) {
-		return defender.getUseItem() == shield && !shield.isBroken() && defender.getTicksUsingItem() <= parryWindow(shield);
+		return defender.getUseItem() == shield && !shield.isBroken() && defender.getTicksUsingItem() <= parryWindow(shield)
+			&& !dev.forja.combat.ParryRhythm.rushed(defender);
+	}
+
+	/** How many ticks past the window still earn a "too late" hint. */
+	public static final int LATE_PARRY_TICKS = 4;
+
+	/** The first part of the window, where a parry is perfect: at least two ticks. */
+	public static int perfectWindow(ItemStack shield) {
+		return Math.max(2, Math.round(parryWindow(shield) * (float) dev.forja.combat.CombatConfig.get().parryPerfectShare));
+	}
+
+	public static boolean isPerfectParry(LivingEntity defender, ItemStack shield) {
+		return isParry(defender, shield) && defender.getTicksUsingItem() <= perfectWindow(shield);
 	}
 
 	/** What a flail leaves behind: a moment where you can barely move, swing or mine. */
@@ -446,6 +471,11 @@ public final class CombatUpgrades {
 		Mastery.addExperience(defender, shield, 2);
 		if (isParry(defender, shield)) {
 			parry(level, defender, source, shield);
+		} else if (defender instanceof ServerPlayer player && defender.getUseItem() == shield
+			&& defender.getTicksUsingItem() <= parryWindow(shield) + LATE_PARRY_TICKS) {
+			// Just past the window: say so, so the timing can be learned instead of guessed.
+			player.sendOverlayMessage(Component.translatable(
+				dev.forja.combat.ParryRhythm.rushed(defender) ? "gui.forja.parada_apresurada" : "gui.forja.parada_tarde"));
 		}
 		if (source.getEntity() instanceof LivingEntity attacker && source.getDirectEntity() == attacker) {
 			float push = Upgrade.repulsionStrength(Upgrades.fraction(shield, Upgrade.REPULSION));
@@ -487,7 +517,10 @@ public final class CombatUpgrades {
 		// Contraataque: the blow right after a parry lands twice as hard.
 		Integer riposte = RIPOSTE.remove(attacker);
 		if (riposte != null && level.getServer().getTickCount() <= riposte) {
-			extraDamage(level, victim, level.damageSources().mobAttack(attacker), damage);
+			// Combat overhaul: against a staggered foe the riposte is a finishing blow.
+			boolean staggered = dev.forja.combat.Posture.isStaggered(victim, level.getGameTime());
+			float riposteExtra = staggered ? damage * (float) dev.forja.combat.CombatConfig.get().riposteStaggeredExtra : damage;
+			extraDamage(level, victim, level.damageSources().mobAttack(attacker), riposteExtra);
 			level.playSound(null, victim.getX(), victim.getY(), victim.getZ(), SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.PLAYERS, 1.0F, 0.8F);
 			level.sendParticles(ParticleTypes.CRIT, victim.getX(), victim.getY(0.8), victim.getZ(), 20, 0.4, 0.4, 0.4, 0.3);
 		}

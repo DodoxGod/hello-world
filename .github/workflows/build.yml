@@ -54,23 +54,9 @@ jobs:
         with:
           name: forja-mod
           path: forja/build/libs/*.jar
-      - name: API dump (temporal, para portar Filo a 26.2)
+      - name: Game tests de Forja (servidor real de Minecraft 26.2)
         run: |
-          find ~/.gradle/caches/fabric-loom -name "*.jar" | head -20
-          MC=$(for j in $(find ~/.gradle/caches/fabric-loom .gradle -name "*.jar" 2>/dev/null); do unzip -l "$j" 2>/dev/null | grep -q "net/minecraft/world/entity/LivingEntity.class" && echo "$j"; done | head -1)
-          echo "MC JAR: $MC"
-          J="javap -p -cp $MC"
-          unzip -l "$MC" | grep -oE "net/minecraft/[A-Za-z/]*/(Creeper|SwellGoal|RangedBowAttackGoal|CombatRules|ThrownTrident|AbstractSkeleton|Skeleton|Zombie|Husk|MeleeAttackGoal|GameTestHelper|PathNavigation|AbstractArrow|ArmorType|ItemAttributeModifiers|IronGolem|Villager)\.class" | sort -u
-          echo "=== LivingEntity"; $J net.minecraft.world.entity.LivingEntity | grep -iE "hurt|armor|absorb|damage|block|useitem|usingitem|knockback|getarmorvalue|attribute\(|getattributevalue|getattributebasevalue|isusingitem|swing|addeffect|haseffect" | cut -c1-200
-          echo "=== Mob"; $J net.minecraft.world.entity.Mob | grep -iE "goalselector|navigation|gettarget|settarget|doHurtTarget|isWithinMeleeAttackRange|getSensing|lookcontrol|isNoAi" | cut -c1-200
-          echo "=== Entity"; $J net.minecraft.world.entity.Entity | grep -iE "hurtMarked|setDeltaMovement|getDeltaMovement|onGround\(|distanceTo|getBoundingBox|getEyeY|position\(|level\(|getBbHeight|getBbWidth|getViewVector|discard|invulnerableTime|getRandom" | cut -c1-200
-          for c in net.minecraft.world.entity.ai.goal.MeleeAttackGoal net.minecraft.world.entity.ai.goal.RangedBowAttackGoal net.minecraft.world.entity.ai.goal.SwellGoal net.minecraft.world.damagesource.CombatRules net.minecraft.world.item.component.ItemAttributeModifiers; do
-            echo "=== $c"; $J $c | cut -c1-200
-          done
-          echo "=== PathNavigation"; $J net.minecraft.world.entity.ai.navigation.PathNavigation | grep -iE "isDone|stop|moveTo|setSpeedModifier" | cut -c1-200
-          echo "=== Creeper"; $J $(unzip -l "$MC" | grep -oE "net/minecraft/[A-Za-z/]*/Creeper\.class" | head -1 | sed 's|/|.|g;s|\.class||') | grep -iE "swell|fuse" | cut -c1-200
-          echo "=== Zombie"; $J net.minecraft.world.entity.monster.zombie.Zombie | grep -iE "Goals|registerGoals" | cut -c1-200
-          echo "=== GameTestHelper"; $J net.minecraft.gametest.framework.GameTestHelper | grep -iE "spawn\(|getLevel|succeed|fail|runAfterDelay|runAtTickTime|absolute|makeMockPlayer|assertTrue|GameTestAssertException" | cut -c1-220
-          javap -c -p -cp "$MC" net.minecraft.world.entity.ai.goal.RangedBowAttackGoal | grep -E "invoke" | cut -c1-200
-          javap -c -p -cp "$MC" net.minecraft.world.entity.ai.goal.MeleeAttackGoal | grep -E "invoke|Method|public|protected" | cut -c1-200
-          GT=$(find ~/.gradle/caches -name "fabric-gametest-api*.jar" | grep -v sources | head -1); unzip -l "$GT" | grep -iE "fabric.mod.json|resources|empty" | head
+          TASK=$(./gradlew tasks --all -q 2>/dev/null | grep -oiE "^run(Game|Server)?Game?[Tt]est[A-Za-z]*" | grep -iv client | head -1)
+          echo "Tarea: ${TASK:-runGameTest}"
+          ./gradlew ${TASK:-runGameTest} > gametest.log 2>&1 || { grep -E "GameTestAssert|assert|required tests|tests failed|combatgametests|ERROR|Exception|error:" gametest.log | grep -v "^\s*at " | head -60; exit 1; }
+          grep -iE "tests? (passed|failed)|All .* tests|required tests" gametest.log || tail -20 gametest.log
