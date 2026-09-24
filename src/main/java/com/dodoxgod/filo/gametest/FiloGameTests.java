@@ -21,6 +21,7 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.GameTestException;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
+import net.minecraft.world.Difficulty;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
@@ -126,8 +127,10 @@ public class FiloGameTests implements FabricGameTest {
 	/** Jugador simulado de pie, mirando hacia +X, en la posición relativa indicada. */
 	private static FakePlayer player(TestContext context, BlockPos relative) {
 		// Un jugador distinto por prueba: las pruebas se ejecutan a la vez.
+		// Dificultad normal: en pacífico los golpes de mobs a jugadores no hacen daño.
+		context.getWorld().getServer().setDifficulty(Difficulty.NORMAL, true);
 		GameProfile profile = new GameProfile(UUID.randomUUID(), "filo_test");
-		FakePlayer player = FakePlayer.get(context.getWorld(), profile);
+		FakePlayer player = new TestPlayer(context.getWorld(), profile);
 		((ServerPlayerEntityAccessor) player).filo$setJoinInvulnerabilityTicks(0);
 		Vec3d pos = context.getAbsolute(Vec3d.ofBottomCenter(relative));
 		player.refreshPositionAndAngles(pos.x, pos.y, pos.z, -90.0f, 0.0f);
