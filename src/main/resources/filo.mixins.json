@@ -5,7 +5,8 @@
 	"mixins": [
 		"LivingEntityMixin",
 		"MeleeAttackGoalMixin",
-		"ServerPlayerEntityAccessor"
+		"ServerPlayerEntityAccessor",
+		"MobEntityAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1
