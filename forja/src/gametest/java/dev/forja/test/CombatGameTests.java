@@ -13,12 +13,12 @@ import dev.forja.combat.Stamina;
 import dev.forja.forge.Assembler;
 import dev.forja.forge.ForgeType;
 import dev.forja.material.ForgeMaterial;
-import dev.forja.mixin.ServerPlayerAccess;
 import net.fabricmc.fabric.api.entity.FakePlayer;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
@@ -61,7 +61,7 @@ public class CombatGameTests {
 	private static TestPlayer player(GameTestHelper helper, BlockPos relative) {
 		helper.getLevel().getServer().setDifficulty(Difficulty.NORMAL, true);
 		TestPlayer player = new TestPlayer(helper.getLevel());
-		((ServerPlayerAccess) (Object) player).forja$setSpawnInvulnerableTime(0);
+		clearSpawnGrace(player);
 		Vec3 pos = helper.absoluteVec(Vec3.atBottomCenterOf(relative));
 		player.setPos(pos.x, pos.y, pos.z);
 		player.setYRot(-90.0F);
@@ -70,6 +70,26 @@ public class CombatGameTests {
 		player.setHealth(player.getMaxHealth());
 		Stamina.forget(player);
 		return player;
+	}
+
+	/**
+	 * A fresh player gets a few seconds of spawn grace that only its own tick counts down, and a fake
+	 * player never ticks. The field is private and its name is not ours to rely on, so any int field
+	 * of ServerPlayer still at its starting 60 is set to zero.
+	 */
+	private static void clearSpawnGrace(ServerPlayer player) {
+		for (java.lang.reflect.Field field : ServerPlayer.class.getDeclaredFields()) {
+			if (field.getType() == int.class && !java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+				try {
+					field.setAccessible(true);
+					if (field.getInt(player) == 60) {
+						field.setInt(player, 0);
+					}
+				} catch (ReflectiveOperationException | RuntimeException ignored) {
+					// Not the field we are after.
+				}
+			}
+		}
 	}
 
 	private static Zombie bareZombie(GameTestHelper helper, BlockPos pos) {

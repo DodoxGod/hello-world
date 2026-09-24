@@ -12,7 +12,6 @@
 		"CombatArmorMixin",
 		"MeleeAttackGoalMixin",
 		"RangedBowAttackGoalMixin",
-		"ServerPlayerAccess",
 		"SwellGoalMixin",
 		"ZombieLungeMixin",
 		"MobGoalsAccess",
