@@ -2,7 +2,7 @@
 
 Mod de Minecraft (Fabric 1.21.1) que rehace el combate: **más difícil, pero justo**. Todo ataque peligroso se anuncia antes de llegar.
 
-> Nombre provisional. Estado: primera versión, sin probar todavía dentro del juego.
+> Nombre provisional. Estado: primera versión. La lógica de combate está probada automáticamente en un servidor real de Minecraft; falta probarla jugando.
 
 ## Qué cambia
 
@@ -26,7 +26,7 @@ Sin armaduras nuevas: las de siempre protegen de otra forma.
 Cada golpe llena una barra oculta de equilibrio (los golpes contundentes más). Cuando se llena, el mob queda **aturdido** 2 segundos: no ataca, apenas se mueve y recibe +25 % de daño.
 
 ### IA de los mobs cuerpo a cuerpo
-- **Aviso:** antes de golpear, se paran, sueltan partículas y un sonido, y esperan 0,4 s. Si te apartas, el golpe falla.
+- **Aviso:** antes de golpearte, se paran, sueltan partículas y un sonido, y esperan 0,4 s. Si te apartas, el golpe falla. Contra aldeanos y otros mobs atacan como siempre.
 - **Turnos:** solo 2 mobs pueden atacarte a la vez; el resto espera su turno.
 
 ## Configuración
@@ -34,6 +34,11 @@ Todos los números están en `config/filo.json` (se crea al arrancar el juego). 
 
 ## Descargar
 Cada subida a GitHub compila el mod automáticamente. En la pestaña **Actions** → última ejecución → **Artifacts** → `filo-mod` está el `.jar`. Cópialo a la carpeta `mods` junto con [Fabric API](https://modrinth.com/mod/fabric-api).
+
+## Pruebas automáticas
+En cada subida, GitHub arranca un servidor real de Minecraft con el mod y ejecuta 10 pruebas (`FiloGameTests`): el cálculo de armadura sin armadura y con hierro, una flecha a la cabeza, la rotura de postura, el ataque sin estamina, la esquiva, el parry, un mob golpeando a un jugador tras avisar y los mobs atacando aldeanos como siempre. Para lanzarlas a mano: `./gradlew runGametest`.
+
+Lo que no cubren: la parte visual (barra de estamina, partículas, sonidos) y la tecla de esquivar, que es del cliente.
 
 ## Compilar a mano
 ```
