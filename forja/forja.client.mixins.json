@@ -1,0 +1,20 @@
+{
+	"required": true,
+	"package": "dev.forja.mixin.client",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"AvatarRendererMixin",
+		"BossHealthOverlayMixin",
+		"CameraMixin",
+		"FogRendererMixin",
+		"ItemInHandRendererMixin",
+		"LightmapExtractorMixin",
+		"SkyRendererMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

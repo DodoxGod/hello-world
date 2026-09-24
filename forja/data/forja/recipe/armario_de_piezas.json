@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "TTT",
+    "ICI",
+    "TTT"
+  ],
+  "key": {
+    "T": "#minecraft:planks",
+    "I": "minecraft:iron_ingot",
+    "C": "minecraft:chest"
+  },
+  "result": {
+    "id": "forja:armario_de_piezas"
+  }
+}

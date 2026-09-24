@@ -1,0 +1,147 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "piedra": "forja:block/canal_piedra",
+    "metal": "forja:block/canal_metal",
+    "borde": "forja:block/conducto_de_damasco",
+    "particle": "forja:block/canal_piedra"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        4,
+        0
+      ],
+      "to": [
+        11,
+        6,
+        5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5,
+            10,
+            11,
+            12
+          ],
+          "texture": "#piedra"
+        },
+        "south": {
+          "uv": [
+            5,
+            10,
+            11,
+            12
+          ],
+          "texture": "#piedra"
+        },
+        "east": {
+          "uv": [
+            0,
+            10,
+            5,
+            12
+          ],
+          "texture": "#piedra"
+        },
+        "west": {
+          "uv": [
+            0,
+            10,
+            5,
+            12
+          ],
+          "texture": "#piedra"
+        },
+        "up": {
+          "uv": [
+            5,
+            0,
+            11,
+            5
+          ],
+          "texture": "#piedra"
+        },
+        "down": {
+          "uv": [
+            5,
+            0,
+            11,
+            5
+          ],
+          "texture": "#piedra"
+        }
+      }
+    },
+    {
+      "from": [
+        6,
+        4,
+        5
+      ],
+      "to": [
+        10,
+        6,
+        6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            6,
+            10,
+            10,
+            12
+          ],
+          "texture": "#borde"
+        },
+        "south": {
+          "uv": [
+            6,
+            10,
+            10,
+            12
+          ],
+          "texture": "#borde"
+        },
+        "east": {
+          "uv": [
+            5,
+            10,
+            6,
+            12
+          ],
+          "texture": "#borde"
+        },
+        "west": {
+          "uv": [
+            5,
+            10,
+            6,
+            12
+          ],
+          "texture": "#borde"
+        },
+        "up": {
+          "uv": [
+            6,
+            5,
+            10,
+            6
+          ],
+          "texture": "#borde"
+        },
+        "down": {
+          "uv": [
+            6,
+            5,
+            10,
+            6
+          ],
+          "texture": "#borde"
+        }
+      }
+    }
+  ]
+}

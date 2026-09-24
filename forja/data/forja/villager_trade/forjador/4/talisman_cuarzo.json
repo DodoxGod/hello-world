@@ -1,0 +1,29 @@
+{
+  "gives": {
+    "id": "forja:talisman",
+    "components": {
+      "forja:talisman": "cuarzo",
+      "minecraft:custom_model_data": {
+        "colors": [
+          15656666
+        ]
+      },
+      "minecraft:item_name": {
+        "translate": "item.forja.talisman.de",
+        "with": [
+          {
+            "translate": "talisman.forja.cuarzo"
+          }
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  },
+  "max_uses": 2.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 26.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 20.0
+}

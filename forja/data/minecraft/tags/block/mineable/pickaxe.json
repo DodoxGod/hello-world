@@ -1,0 +1,26 @@
+{
+  "replace": false,
+  "values": [
+    "forja:mesa_de_forja",
+    "forja:mesa_de_forja_mayor",
+    "forja:mesa_de_piezas",
+    "forja:mesa_de_extraccion",
+    "forja:fragua_apagada",
+    "forja:yunque_del_herrero",
+    "forja:farol_de_pavesa",
+    "forja:crisol_de_barro",
+    "forja:crisol_de_hierro",
+    "forja:crisol_de_obsidiana",
+    "forja:cuba_de_colada",
+    "forja:cano_de_colada",
+    "forja:conducto_de_colada",
+    "forja:conducto_de_acero",
+    "forja:conducto_de_damasco",
+    "forja:caja_de_moldeo",
+    "forja:caja_de_moldeo_de_acero",
+    "forja:caja_de_moldeo_de_damasco",
+    "forja:mesa_de_losa",
+    "forja:mesa_de_brasa",
+    "forja:mesa_de_almas"
+  ]
+}

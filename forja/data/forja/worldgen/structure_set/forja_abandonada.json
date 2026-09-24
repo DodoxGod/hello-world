@@ -1,0 +1,18 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 1873465021,
+    "separation": 12,
+    "spacing": 40,
+    "exclusion_zone": {
+      "chunk_count": 4,
+      "other_set": "minecraft:villages"
+    }
+  },
+  "structures": [
+    {
+      "structure": "forja:forja_abandonada",
+      "weight": 1
+    }
+  ]
+}

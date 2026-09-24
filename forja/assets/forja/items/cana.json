@@ -1,0 +1,143 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:broken",
+    "on_true": {
+      "type": "minecraft:composite",
+      "models": [
+        {
+          "type": "minecraft:condition",
+          "property": "minecraft:fishing_rod/cast",
+          "on_true": {
+            "type": "minecraft:composite",
+            "models": [
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/cana/fishing_rod_cast_0",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 0,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/cana/fishing_rod_cast_1",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 1,
+                    "default": 12093775
+                  }
+                ]
+              }
+            ]
+          },
+          "on_false": {
+            "type": "minecraft:composite",
+            "models": [
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/cana/fishing_rod_0",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 0,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/cana/fishing_rod_1",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 1,
+                    "default": 12093775
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": "gui",
+              "model": {
+                "type": "minecraft:model",
+                "model": "forja:item/grieta"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:empty"
+          }
+        }
+      ]
+    },
+    "on_false": {
+      "type": "minecraft:condition",
+      "property": "minecraft:fishing_rod/cast",
+      "on_true": {
+        "type": "minecraft:composite",
+        "models": [
+          {
+            "type": "minecraft:model",
+            "model": "forja:item/cana/fishing_rod_cast_0",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 0,
+                "default": 12093775
+              }
+            ]
+          },
+          {
+            "type": "minecraft:model",
+            "model": "forja:item/cana/fishing_rod_cast_1",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 1,
+                "default": 12093775
+              }
+            ]
+          }
+        ]
+      },
+      "on_false": {
+        "type": "minecraft:composite",
+        "models": [
+          {
+            "type": "minecraft:model",
+            "model": "forja:item/cana/fishing_rod_0",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 0,
+                "default": 12093775
+              }
+            ]
+          },
+          {
+            "type": "minecraft:model",
+            "model": "forja:item/cana/fishing_rod_1",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 1,
+                "default": 12093775
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

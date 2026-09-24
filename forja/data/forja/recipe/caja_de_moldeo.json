@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "P P",
+    "PSP",
+    "PPP"
+  ],
+  "key": {
+    "P": "forja:peltre",
+    "S": "minecraft:sand"
+  },
+  "result": {
+    "id": "forja:caja_de_moldeo",
+    "count": 1
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "gives": {
+    "id": "forja:plantilla",
+    "components": {
+      "forja:molde": "mango",
+      "minecraft:item_name": {
+        "translate": "item.forja.plantilla.de",
+        "with": [
+          {
+            "translate": "part.forja.mango"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "strings": [
+          "mango"
+        ]
+      }
+    }
+  },
+  "max_uses": 4.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 3.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 10.0
+}

@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/root",
+  "display": {
+    "icon": {
+      "id": "forja:plantilla"
+    },
+    "title": {
+      "translate": "advancements.forja.plantilla.title"
+    },
+    "description": {
+      "translate": "advancements.forja.plantilla.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

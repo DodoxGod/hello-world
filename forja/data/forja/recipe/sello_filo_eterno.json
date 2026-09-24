@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:gold_ingot",
+    "minecraft:diamond",
+    "minecraft:obsidian"
+  ],
+  "result": {
+    "id": "forja:sello",
+    "components": {
+      "forja:sello": "filo_eterno",
+      "minecraft:item_name": {
+        "translate": "item.forja.sello.de",
+        "with": [
+          {
+            "translate": "perk.forja.filo_eterno"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          15263984
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

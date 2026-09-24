@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:gold_ingot",
+    "minecraft:phantom_membrane",
+    "minecraft:breeze_rod"
+  ],
+  "result": {
+    "id": "forja:sello",
+    "components": {
+      "forja:sello": "aeronauta",
+      "minecraft:item_name": {
+        "translate": "item.forja.sello.de",
+        "with": [
+          {
+            "translate": "perk.forja.aeronauta"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          13625855
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

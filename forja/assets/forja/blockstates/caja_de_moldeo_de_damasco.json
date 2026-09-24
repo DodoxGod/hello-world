@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "forja:block/caja_de_moldeo_de_damasco"
+    },
+    "lit=true": {
+      "model": "forja:block/caja_de_moldeo_de_damasco_lit"
+    }
+  }
+}

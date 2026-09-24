@@ -1,0 +1,79 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "piedra": "forja:block/canal_piedra",
+    "metal": "forja:block/canal_metal",
+    "borde": "forja:block/conducto_de_acero",
+    "particle": "forja:block/canal_piedra"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        6,
+        5
+      ],
+      "to": [
+        11,
+        16,
+        11
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5,
+            0,
+            11,
+            10
+          ],
+          "texture": "#borde"
+        },
+        "south": {
+          "uv": [
+            5,
+            0,
+            11,
+            10
+          ],
+          "texture": "#borde"
+        },
+        "east": {
+          "uv": [
+            5,
+            0,
+            11,
+            10
+          ],
+          "texture": "#borde"
+        },
+        "west": {
+          "uv": [
+            5,
+            0,
+            11,
+            10
+          ],
+          "texture": "#borde"
+        },
+        "up": {
+          "uv": [
+            5,
+            5,
+            11,
+            11
+          ],
+          "texture": "#borde"
+        },
+        "down": {
+          "uv": [
+            5,
+            5,
+            11,
+            11
+          ],
+          "texture": "#borde"
+        }
+      }
+    }
+  ]
+}

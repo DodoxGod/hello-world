@@ -1,0 +1,28 @@
+{
+  "gives": {
+    "id": "forja:plantilla",
+    "components": {
+      "forja:molde": "cuerda",
+      "minecraft:item_name": {
+        "translate": "item.forja.plantilla.de",
+        "with": [
+          {
+            "translate": "part.forja.cuerda"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "strings": [
+          "cuerda"
+        ]
+      }
+    }
+  },
+  "max_uses": 3.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 5.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 15.0
+}

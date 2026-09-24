@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "forja:item/talisman",
+    "layer1": "forja:item/talisman_marco"
+  }
+}
