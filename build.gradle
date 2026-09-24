@@ -22,6 +22,17 @@ loom {
 			sourceSet sourceSets.client
 		}
 	}
+
+	runs {
+		// Servidor sin pantalla que ejecuta las pruebas de FiloGameTests y se cierra.
+		gametest {
+			server()
+			name "Game Test"
+			vmArg "-Dfabric-api.gametest"
+			vmArg "-Dfabric-api.gametest.report-file=${project.layout.buildDirectory.get()}/gametest/junit.xml"
+			runDir "build/gametest"
+		}
+	}
 }
 
 dependencies {
