@@ -205,8 +205,8 @@ public class FiloGameTests implements FabricGameTest {
 		HuskEntity husk = context.spawnEntity(EntityType.HUSK, new BlockPos(2, 1, 1));
 		husk.setTarget(player);
 		StringBuilder goals = new StringBuilder();
-		context.waitAndRun(20, () -> ((MobEntityAccessor) husk).filo$getGoalSelector().getRunningGoals()
-				.forEach(g -> goals.append(g.getGoal().getClass().getSimpleName()).append(' ')));
+		context.waitAndRun(20, () -> ((MobEntityAccessor) husk).filo$getGoalSelector().getGoals().stream()
+				.filter(g -> g.isRunning()).forEach(g -> goals.append(g.getGoal().getClass().getSimpleName()).append(' ')));
 		context.waitAndRun(120, () -> {
 			if (player.getHealth() < player.getMaxHealth()) {
 				context.complete();
