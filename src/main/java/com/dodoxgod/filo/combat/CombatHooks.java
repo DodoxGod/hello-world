@@ -88,6 +88,9 @@ public final class CombatHooks {
 				&& StaminaManager.consumeTiredAttack(attacker)) {
 			scaled *= (float) cfg.stamina.tiredDamageMultiplier;
 		}
+		if (ChargedArrows.isCharged(source.getSource())) {
+			scaled *= (float) cfg.mobs.chargedArrowDamageMultiplier;
+		}
 		if (profile.precise() && profile.zone() == HitZone.HEAD) {
 			scaled *= (float) cfg.armor.headMultiplier;
 			CombatFeedback.headHit(target);

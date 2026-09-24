@@ -163,6 +163,30 @@ public class FiloConfig {
 		public int maxSimultaneousAttackers = 2;
 		/** Margen de alcance al final del aviso; si te alejas más, el golpe falla. */
 		public double strikeReachBonus = 0.5;
+
+		/** Zombis: embestida con agarre a media distancia. */
+		public boolean zombieLunge = true;
+		public double lungeMinDistance = 3.5;
+		public double lungeMaxDistance = 7.0;
+		public int lungeWindupTicks = 12;
+		public int lungeCooldownMinTicks = 100;
+		public int lungeCooldownMaxTicks = 200;
+		public double lungeSpeed = 0.85;
+		public double lungeLift = 0.35;
+		/** Ticks de lentitud al jugador si la embestida le alcanza (el "agarre"). */
+		public int lungeGrabTicks = 30;
+
+		/** Esqueletos: cada N disparos, uno cargado (0 = nunca). */
+		public int skeletonChargedEvery = 3;
+		/** Ticks extra que tensa el arco en el disparo cargado. */
+		public int chargedExtraDrawTicks = 20;
+		public double chargedArrowDamageMultiplier = 1.5;
+		public double chargedArrowExtraPenetration = 0.25;
+
+		/** Creepers: probabilidad de fintar (sisear y pararse) la primera vez que se encienden. */
+		public double creeperFeintChance = 0.35;
+		public int creeperFeintAtTicks = 12;
+		public int creeperFeintPauseTicks = 20;
 	}
 
 	private static Map<String, MaterialStats> defaultMaterials() {

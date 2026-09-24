@@ -19,6 +19,18 @@ public final class CombatFeedback {
 		sound(mob, SoundEvents.ENTITY_PLAYER_ATTACK_WEAK, 0.8f, 0.55f);
 	}
 
+	/** Un mob se agacha para embestir. */
+	public static void lungeTelegraph(Entity mob) {
+		particles(mob, ParticleTypes.POOF, mob.getY() + 0.2, 8, 0.35);
+		sound(mob, SoundEvents.ENTITY_RAVAGER_STEP, 0.7f, 1.4f);
+	}
+
+	/** Un esqueleto está a punto de soltar un disparo cargado. */
+	public static void chargedShotTelegraph(Entity mob) {
+		particles(mob, ParticleTypes.ENCHANTED_HIT, mob.getEyeY(), 12, 0.3);
+		sound(mob, SoundEvents.ENTITY_EVOKER_PREPARE_ATTACK, 0.8f, 1.6f);
+	}
+
 	public static void parry(Entity defender) {
 		particles(defender, ParticleTypes.ENCHANTED_HIT, defender.getEyeY() - 0.3, 14, 0.4);
 		sound(defender, SoundEvents.ITEM_SHIELD_BLOCK, 1.0f, 1.6f);

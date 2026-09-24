@@ -38,6 +38,9 @@ public final class AttackClassifier {
 		if (direct instanceof PersistentProjectileEntity arrow) {
 			double speed = arrow.getVelocity().length();
 			double p = ArmorMath.clamp(pen.arrowBase + speed * pen.arrowPerSpeed, 0.0, pen.arrowMax);
+			if (ChargedArrows.isCharged(arrow)) {
+				p = ArmorMath.clamp(p + FiloConfig.get().mobs.chargedArrowExtraPenetration, 0.0, 1.0);
+			}
 			return new AttackProfile(DamageKind.PIERCE, p, zoneAt(target, centerY(arrow)), true);
 		}
 		if (direct instanceof ProjectileEntity projectile) {

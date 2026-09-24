@@ -3,9 +3,12 @@
 	"package": "com.dodoxgod.filo.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
+		"BowAttackGoalMixin",
+		"CreeperIgniteGoalMixin",
 		"LivingEntityMixin",
 		"MeleeAttackGoalMixin",
-		"ServerPlayerEntityAccessor"
+		"ServerPlayerEntityAccessor",
+		"ZombieEntityMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

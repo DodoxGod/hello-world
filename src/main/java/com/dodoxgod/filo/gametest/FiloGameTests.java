@@ -1,6 +1,7 @@
 package com.dodoxgod.filo.gametest;
 
 import com.dodoxgod.filo.combat.ArmorMath;
+import com.dodoxgod.filo.combat.CombatStats;
 import com.dodoxgod.filo.combat.StaminaManager;
 import com.dodoxgod.filo.config.FiloConfig;
 import com.dodoxgod.filo.mixin.ServerPlayerEntityAccessor;
@@ -10,7 +11,9 @@ import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.HuskEntity;
+import net.minecraft.entity.mob.SkeletonEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.VillagerEntity;
@@ -210,6 +213,66 @@ public class FiloGameTests implements FabricGameTest {
 				throw new GameTestException(String.format(
 						"el husk no llegó a golpear al jugador quieto (distancia %.2f, ve=%s, alcance=%s)",
 						husk.distanceTo(player), husk.canSee(player), husk.isInAttackRange(player)));
+			}
+		});
+	}
+
+	/** A media distancia, el zombi se agacha y embiste. */
+	@GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+	public void zombieLungesAtMidRange(TestContext context) {
+		FakePlayer player = player(context, new BlockPos(1, 1, 1));
+		ZombieEntity zombie = context.spawnEntity(EntityType.ZOMBIE, new BlockPos(6, 1, 1));
+		zombie.equipStack(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET)); // que no arda al sol
+		zombie.setTarget(player);
+		context.waitAndRun(80, () -> {
+			if (CombatStats.count(zombie, CombatStats.LUNGE) > 0) {
+				context.complete();
+			} else {
+				throw new GameTestException(String.format("el zombi no embistió (distancia %.2f, en suelo=%s)",
+						zombie.distanceTo(player), zombie.isOnGround()));
+			}
+		});
+	}
+
+	/** Con disparo cargado en cada tiro, el esqueleto dispara uno y su flecha queda marcada. */
+	@GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+	public void skeletonFiresChargedShot(TestContext context) {
+		FiloConfig.Mobs cfg = FiloConfig.get().mobs;
+		int previous = cfg.skeletonChargedEvery;
+		cfg.skeletonChargedEvery = 1;
+		FakePlayer player = player(context, new BlockPos(1, 1, 1));
+		SkeletonEntity skeleton = context.spawnEntity(EntityType.SKELETON, new BlockPos(7, 1, 7));
+		skeleton.equipStack(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
+		skeleton.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+		skeleton.setTarget(player);
+		context.waitAndRun(110, () -> {
+			cfg.skeletonChargedEvery = previous;
+			if (CombatStats.count(skeleton, CombatStats.CHARGED_SHOT) > 0) {
+				context.complete();
+			} else {
+				throw new GameTestException("el esqueleto no hizo ningún disparo cargado");
+			}
+		});
+	}
+
+	/** Con finta segura, el creeper sisea y se detiene antes de explotar. */
+	@GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+	public void creeperFeints(TestContext context) {
+		FiloConfig.Mobs cfg = FiloConfig.get().mobs;
+		double previous = cfg.creeperFeintChance;
+		cfg.creeperFeintChance = 1.0;
+		FakePlayer player = player(context, new BlockPos(1, 1, 1));
+		CreeperEntity creeper = context.spawnEntity(EntityType.CREEPER, new BlockPos(3, 1, 1));
+		creeper.setTarget(player);
+		context.waitAndRun(40, () -> {
+			cfg.creeperFeintChance = previous;
+			boolean feinted = CombatStats.count(creeper, CombatStats.FEINT) > 0;
+			boolean alive = creeper.isAlive();
+			creeper.discard(); // que no explote después y afecte a otras pruebas
+			if (feinted && alive) {
+				context.complete();
+			} else {
+				throw new GameTestException("el creeper no fintó (finta=" + feinted + ", vivo=" + alive + ")");
 			}
 		});
 	}
