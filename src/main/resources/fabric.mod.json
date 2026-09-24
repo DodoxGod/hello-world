@@ -1,0 +1,24 @@
+{
+	"schemaVersion": 1,
+	"id": "filo",
+	"version": "${version}",
+	"name": "Filo",
+	"description": "Combate más difícil pero justo: nuevo cálculo de armadura, tipos de daño, estamina, esquiva, parry, postura y mobs que avisan antes de atacar.",
+	"authors": ["DodoxGod"],
+	"contact": {
+		"sources": "https://github.com/DodoxGod/hello-world"
+	},
+	"license": "GPL-3.0",
+	"environment": "*",
+	"entrypoints": {
+		"main": ["com.dodoxgod.filo.Filo"],
+		"client": ["com.dodoxgod.filo.client.FiloClient"]
+	},
+	"mixins": ["filo.mixins.json"],
+	"depends": {
+		"fabricloader": ">=0.16.0",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

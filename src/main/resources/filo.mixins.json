@@ -1,0 +1,12 @@
+{
+	"required": true,
+	"package": "com.dodoxgod.filo.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"LivingEntityMixin",
+		"MeleeAttackGoalMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
