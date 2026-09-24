@@ -54,3 +54,16 @@ jobs:
         with:
           name: forja-mod
           path: forja/build/libs/*.jar
+      - name: API dump (temporal, para portar Filo a 26.2)
+        run: |
+          MC=$(find ~/.gradle/caches .gradle -name "*.jar" 2>/dev/null | grep -i minecraft | grep -E "26\.2" | grep -viE "sources|client-only|server-only" | xargs ls -S | head -1)
+          echo "MC JAR: $MC"
+          unzip -l "$MC" | grep -oE "net/minecraft/[A-Za-z/]*(Creeper|SwellGoal|RangedBowAttackGoal|CombatRules|ThrownTrident|AbstractSkeleton|Zombie|Husk|MeleeAttackGoal|GameTestHelper|PathNavigation|DamageSource|AbstractArrow|ArmorType|Equippable|EquipmentSlot|MobEffects|ParticleTypes|SoundEvents|ItemAttributeModifiers|KeyMapping|FakePlayer)\.class" | sort -u
+          for c in net.minecraft.world.entity.LivingEntity net.minecraft.world.entity.Mob net.minecraft.world.entity.ai.goal.MeleeAttackGoal net.minecraft.world.entity.ai.goal.RangedBowAttackGoal net.minecraft.world.entity.ai.goal.SwellGoal net.minecraft.world.damagesource.CombatRules net.minecraft.world.entity.ai.navigation.PathNavigation net.minecraft.gametest.framework.GameTestHelper net.minecraft.world.item.component.ItemAttributeModifiers; do
+            echo "=== $c"; javap -p -cp "$MC" $c | grep -vE "^\s*$" | cut -c1-220
+          done
+          javap -c -p -cp "$MC" net.minecraft.world.entity.ai.goal.RangedBowAttackGoal | grep -E "invoke|public void tick" | cut -c1-200
+          javap -c -p -cp "$MC" net.minecraft.world.entity.ai.goal.MeleeAttackGoal | grep -E "invoke|public boolean canContinueToUse|protected void checkAndPerformAttack" | cut -c1-200
+          find ~/.gradle/caches .gradle -name "*.jar" 2>/dev/null | grep -iE "fabric-(gametest|entity-events|events-interaction|api-base)" | head
+          GT=$(find ~/.gradle/caches .gradle -name "fabric-gametest-api*.jar" 2>/dev/null | grep -v sources | head -1); [ -n "$GT" ] && unzip -l "$GT" | grep -oE "net/fabricmc/[A-Za-z/]*\.class" | head -20 && javap -cp "$GT" net.fabricmc.fabric.api.gametest.v1.GameTest || true
+          FP=$(find ~/.gradle/caches .gradle -name "*.jar" 2>/dev/null | xargs -I{} sh -c 'unzip -l {} 2>/dev/null | grep -q "api/entity/FakePlayer.class" && echo {}' | head -1); echo "FP: $FP"; [ -n "$FP" ] && javap -p -cp "$FP" net.fabricmc.fabric.api.entity.FakePlayer || true
