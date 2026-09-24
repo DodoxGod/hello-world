@@ -48,7 +48,7 @@ jobs:
       - name: Build Forja
         run: |
           chmod +x gradlew
-          ./gradlew build --stacktrace > build.log 2>&1 || { grep -E "error:|warning: \[|FAILED|What went wrong" -A 3 build.log | head -80; exit 1; }
+          ./gradlew build --stacktrace > build.log 2>&1 || { grep -E ": error:" -A 3 build.log | head -150; grep -E "What went wrong" -A 6 build.log | head -20; exit 1; }
           tail -5 build.log
       - uses: actions/upload-artifact@v4
         with:
