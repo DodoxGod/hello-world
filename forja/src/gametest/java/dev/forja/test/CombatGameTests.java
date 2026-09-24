@@ -24,7 +24,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.golem.IronGolem;
@@ -46,7 +46,7 @@ public class CombatGameTests {
 	private static final double EPS = 0.02;
 
 	/** A simulated player that, unlike Fabric's, can be hurt. */
-	static final class TestPlayer extends FakePlayer {
+	static class TestPlayer extends FakePlayer {
 		TestPlayer(ServerLevel level) {
 			super(level, new GameProfile(UUID.randomUUID(), "forja_test"));
 		}
@@ -61,7 +61,7 @@ public class CombatGameTests {
 	private static TestPlayer player(GameTestHelper helper, BlockPos relative) {
 		helper.getLevel().getServer().setDifficulty(Difficulty.NORMAL, true);
 		TestPlayer player = new TestPlayer(helper.getLevel());
-		((ServerPlayerAccess) player).forja$setSpawnInvulnerableTime(0);
+		((ServerPlayerAccess) (Object) player).forja$setSpawnInvulnerableTime(0);
 		Vec3 pos = helper.absoluteVec(Vec3.atBottomCenterOf(relative));
 		player.setPos(pos.x, pos.y, pos.z);
 		player.setYRot(-90.0F);
@@ -73,7 +73,7 @@ public class CombatGameTests {
 	}
 
 	private static Zombie bareZombie(GameTestHelper helper, BlockPos pos) {
-		Zombie zombie = helper.spawn(EntityType.ZOMBIE, pos);
+		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, pos);
 		for (EquipmentSlot slot : EquipmentSlot.values()) {
 			zombie.setItemSlot(slot, ItemStack.EMPTY);
 		}
@@ -138,7 +138,7 @@ public class CombatGameTests {
 	}
 
 	private static DamageSource arrowAt(GameTestHelper helper, LivingEntity target, double relativeHeight) {
-		Arrow arrow = EntityType.ARROW.create(helper.getLevel(), EntitySpawnReason.TRIGGERED);
+		Arrow arrow = EntityTypes.ARROW.create(helper.getLevel(), EntitySpawnReason.TRIGGERED);
 		helper.assertTrue(arrow != null, "no se pudo crear la flecha");
 		arrow.setPos(target.getX(), target.getY() + target.getBbHeight() * relativeHeight - arrow.getBbHeight() * 0.5, target.getZ());
 		arrow.setDeltaMovement(3.0, 0.0, 0.0);
@@ -148,7 +148,7 @@ public class CombatGameTests {
 	/** Blunt blows in a row stagger a big mob. */
 	@GameTest
 	public void postureBreakStaggersGolem(GameTestHelper helper) {
-		IronGolem golem = helper.spawn(EntityType.IRON_GOLEM, new BlockPos(1, 1, 1));
+		IronGolem golem = helper.spawn(EntityTypes.IRON_GOLEM, new BlockPos(1, 1, 1));
 		Zombie attacker = bareZombie(helper, new BlockPos(3, 1, 1));
 		for (int i = 0; i < 8 && !Posture.isStaggered(golem, helper.getLevel().getGameTime()); i++) {
 			hit(golem, helper.getLevel().damageSources().mobAttack(attacker), 10F);
@@ -225,7 +225,7 @@ public class CombatGameTests {
 	@GameTest(maxTicks = 200)
 	public void telegraphedAttackHitsStillPlayer(GameTestHelper helper) {
 		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
-		Husk husk = helper.spawn(EntityType.HUSK, new BlockPos(2, 1, 1));
+		Husk husk = helper.spawn(EntityTypes.HUSK, new BlockPos(2, 1, 1));
 		husk.setTarget(player);
 		helper.runAfterDelay(120, () -> {
 			helper.assertTrue(player.getHealth() < player.getMaxHealth(),
@@ -237,8 +237,8 @@ public class CombatGameTests {
 	/** Against villagers, mobs fight as they always did. */
 	@GameTest(maxTicks = 200)
 	public void mobsStillHitVillagers(GameTestHelper helper) {
-		Villager villager = helper.spawn(EntityType.VILLAGER, new BlockPos(1, 1, 1));
-		Husk husk = helper.spawn(EntityType.HUSK, new BlockPos(2, 1, 1));
+		Villager villager = helper.spawn(EntityTypes.VILLAGER, new BlockPos(1, 1, 1));
+		Husk husk = helper.spawn(EntityTypes.HUSK, new BlockPos(2, 1, 1));
 		husk.setTarget(villager);
 		float start = villager.getHealth();
 		helper.runAfterDelay(150, () -> {
@@ -250,7 +250,7 @@ public class CombatGameTests {
 	@GameTest(maxTicks = 200)
 	public void zombieLungesAtMidRange(GameTestHelper helper) {
 		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
-		Zombie zombie = helper.spawn(EntityType.ZOMBIE, new BlockPos(6, 1, 1));
+		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(6, 1, 1));
 		zombie.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
 		zombie.setTarget(player);
 		helper.runAfterDelay(80, () -> {
@@ -265,7 +265,7 @@ public class CombatGameTests {
 		int previous = cfg.skeletonChargedEvery;
 		cfg.skeletonChargedEvery = 1;
 		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
-		Skeleton skeleton = helper.spawn(EntityType.SKELETON, new BlockPos(6, 1, 6));
+		Skeleton skeleton = helper.spawn(EntityTypes.SKELETON, new BlockPos(6, 1, 6));
 		skeleton.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
 		skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
 		skeleton.setTarget(player);
@@ -282,7 +282,7 @@ public class CombatGameTests {
 		double previous = cfg.creeperFeintChance;
 		cfg.creeperFeintChance = 1.0;
 		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
-		Creeper creeper = helper.spawn(EntityType.CREEPER, new BlockPos(3, 1, 1));
+		Creeper creeper = helper.spawn(EntityTypes.CREEPER, new BlockPos(3, 1, 1));
 		creeper.setTarget(player);
 		helper.runAfterDelay(40, () -> {
 			cfg.creeperFeintChance = previous;
