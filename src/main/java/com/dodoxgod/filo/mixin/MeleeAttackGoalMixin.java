@@ -6,6 +6,7 @@ import com.dodoxgod.filo.combat.PostureManager;
 import com.dodoxgod.filo.config.FiloConfig;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
+import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Hand;
@@ -54,7 +55,7 @@ public abstract class MeleeAttackGoalMixin {
 		}
 
 		if (filo$windup > 0) {
-			mob.getNavigation().stop();
+			filo$holdStill(target);
 			mob.getLookControl().lookAt(target, 30.0f, 30.0f);
 			if (--filo$windup > 0) return;
 
@@ -72,8 +73,19 @@ public abstract class MeleeAttackGoalMixin {
 		if (!AttackTokens.tryAcquire(target, mob, cfg.mobs.maxSimultaneousAttackers)) return;
 		filo$windup = Math.max(1, cfg.mobs.windupTicks);
 		filo$target = target;
-		mob.getNavigation().stop();
+		filo$holdStill(target);
 		CombatFeedback.telegraph(mob);
+	}
+
+	/**
+	 * Quieto durante el aviso, pero sin parar la navegación: si se quedara sin ruta, el objetivo
+	 * de ataque se daría por terminado y el aviso se cancelaría antes de golpear.
+	 */
+	@Unique
+	private void filo$holdStill(LivingEntity target) {
+		EntityNavigation navigation = mob.getNavigation();
+		if (navigation.isIdle()) navigation.startMovingTo(target, 0.0);
+		navigation.setSpeed(0.0);
 	}
 
 	@Inject(method = "stop", at = @At("TAIL"))
