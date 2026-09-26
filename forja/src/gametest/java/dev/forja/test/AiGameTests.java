@@ -660,25 +660,26 @@ public class AiGameTests {
 		helper.succeed();
 	}
 
-	/** A siege: at least six come, led by an elite, and they hold the forge as their home. */
-	@GameTest
+	/**
+	 * A siege: at least six come, led by an elite, and they hold the forge as their home. Called a second into
+	 * the test and not at its first tick: the chunks round a test are not awake yet then, and a siege only
+	 * comes out where the world is awake.
+	 */
+	@GameTest(maxTicks = 60)
 	public void siegeComes(GameTestHelper helper) {
 		CombatGameTests.TestPlayer player = player(helper, new BlockPos(3, 1, 3));
-		helper.getLevel().getServer().getPlayerList();
-		int made = dev.forja.ai.WorldFights.siege(helper.getLevel(), player);
-		// Looked for everywhere, not in a box round the player: thirty blocks out there are other tests' buildings, and
-		// a zombie that comes over a roof there stands well above anything forty blocks up from here.
-		java.util.List<net.minecraft.world.entity.Mob> band = new java.util.ArrayList<>();
-		helper.getLevel().getEntities(net.minecraft.world.level.entity.EntityTypeTest.forClass(net.minecraft.world.entity.Mob.class),
-			m -> m.getTarget() == player, band);
-		helper.assertTrue(made >= dev.forja.ai.WorldFights.SIEGE_MIN, "asedio de " + made);
-		helper.assertTrue(band.stream().anyMatch(m -> dev.forja.difficulty.Threat.of(m) == dev.forja.difficulty.Threat.ELITE), "con un élite al frente (hechos "
-			+ made + ", en la banda " + band.size() + "; cerca: " + helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,
-				player.getBoundingBox().inflate(40.0)).stream().map(m -> m.getType().toShortString() + m.entityTags() + "->"
-				+ (m.getTarget() == null ? "nadie" : m.getTarget() == player ? "jugador" : m.getTarget().getType().toShortString())).toList() + ")");
-		helper.assertTrue(band.stream().allMatch(m -> dev.forja.ai.Personality.home(m) != null), "defienden la forja como su casa");
-		band.forEach(net.minecraft.world.entity.Entity::discard);
-		helper.succeed();
+		helper.runAfterDelay(20, () -> {
+			int made = dev.forja.ai.WorldFights.siege(helper.getLevel(), player);
+			java.util.List<net.minecraft.world.entity.Mob> band = new java.util.ArrayList<>();
+			helper.getLevel().getEntities(net.minecraft.world.level.entity.EntityTypeTest.forClass(net.minecraft.world.entity.Mob.class),
+				m -> m.getTarget() == player, band);
+			helper.assertTrue(made >= dev.forja.ai.WorldFights.SIEGE_MIN, "asedio de " + made);
+			helper.assertTrue(band.stream().anyMatch(m -> dev.forja.difficulty.Threat.of(m) == dev.forja.difficulty.Threat.ELITE),
+				"con un élite al frente (hechos " + made + ", en la banda " + band.size() + ")");
+			helper.assertTrue(band.stream().allMatch(m -> dev.forja.ai.Personality.home(m) != null), "defienden la forja como su casa");
+			band.forEach(net.minecraft.world.entity.Entity::discard);
+			helper.succeed();
+		});
 	}
 
 	/** An elite that got away comes back another night: named, holding a grudge. */

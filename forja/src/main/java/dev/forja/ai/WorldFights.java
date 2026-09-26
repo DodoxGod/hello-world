@@ -46,6 +46,8 @@ public final class WorldFights {
 	public static final double SIEGE_FORGE_RANGE = 16.0;
 	public static final int SIEGE_MIN = 6;
 	public static final int SIEGE_MAX = 10;
+	/** How far out the besiegers come from, the furthest first that the world is awake at. */
+	static final double[] SIEGE_DISTANCES = {30.0, 20.0, 12.0, 6.0};
 	public static final double THIEF_CHANCE = 0.1;
 	public static final double NEMESIS_CHANCE = 0.1;
 
@@ -119,23 +121,35 @@ public final class WorldFights {
 		for (int i = 0; i < count; i++) {
 			EntityType<? extends Mob> type = i % 3 == 2 ? EntityTypes.SKELETON : EntityTypes.ZOMBIE;
 			double a = angle + (i - count / 2.0) * 0.15;
-			double x = player.getX() + Math.cos(a) * 30.0;
-			double z = player.getZ() + Math.sin(a) * 30.0;
-			if (!level.isPositionEntityTicking(BlockPos.containing(x, player.getY(), z))) {
-				// That far is not loaded, or loaded but asleep (a chunk at the edge of view keeps its blocks and
-				// freezes its creatures, and one put there stands still until somebody walks up): they come out of
-				// the dark nearer.
-				x = player.getX() + Math.cos(a) * 12.0;
-				z = player.getZ() + Math.sin(a) * 12.0;
+			// As far out as the world is awake: a chunk at the edge of view keeps its blocks and hides its creatures,
+			// and one put there stands frozen and unseen until somebody walks up. Asleep all the way in on that side,
+			// it comes from the other side, or from either flank; asleep everywhere, it does not come.
+			double x = Double.NaN;
+			double z = Double.NaN;
+			search:
+			for (double turn : new double[] {0.0, Math.PI, Math.PI / 2.0, -Math.PI / 2.0}) {
+				for (double out : SIEGE_DISTANCES) {
+					double tx = player.getX() + Math.cos(a + turn) * out;
+					double tz = player.getZ() + Math.sin(a + turn) * out;
+					if (level.isPositionEntityTicking(BlockPos.containing(tx, player.getY(), tz))) {
+						x = tx;
+						z = tz;
+						break search;
+					}
+				}
 			}
-			int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int) x, (int) z);
+			if (Double.isNaN(x)) {
+				continue;
+			}
+			int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int) Math.floor(x), (int) Math.floor(z));
 			Mob mob = type.create(level, EntitySpawnReason.EVENT);
 			if (mob == null) {
 				continue;
 			}
 			mob.snapTo(x, y, z, 0.0F, 0.0F);
 			mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()), EntitySpawnReason.EVENT, null);
-			if (i == 0) {
+			// The first that actually comes leads it, so a siege is never without its elite.
+			if (made == 0) {
 				Threat.ELITE.mark(mob);
 			}
 			mob.addTag(Personality.HOME_TAG + home.getX() + "_" + home.getY() + "_" + home.getZ());

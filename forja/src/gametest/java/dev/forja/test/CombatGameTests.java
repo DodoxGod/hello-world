@@ -105,6 +105,15 @@ public class CombatGameTests {
 		CombatConfig.get().eliteChance = 0.0;
 		// Nor with a shield, which changes how they fight.
 		CombatConfig.get().shieldChance = 0.0;
+		// Nor with a staff or a tome, which makes them keep their distance and cast instead of swinging.
+		dev.forja.ForjaConfig.get().baculos = 0.0F;
+		dev.forja.ForjaConfig.get().grimorios = 0.0F;
+	}
+
+	/** A mob with nothing in its hands: vanilla gives some a spear or a sword, and a spear fights another way. */
+	static void emptyHands(net.minecraft.world.entity.Mob mob) {
+		mob.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+		mob.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
 	}
 
 	private static Zombie bareZombie(GameTestHelper helper, BlockPos pos) {
@@ -593,6 +602,7 @@ public class CombatGameTests {
 		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
 		noRandomThreat();
 		Husk husk = helper.spawn(EntityTypes.HUSK, new BlockPos(2, 1, 1));
+		emptyHands(husk);
 		husk.setTarget(player);
 		helper.runAfterDelay(120, () -> {
 			helper.assertTrue(player.getHealth() < player.getMaxHealth(),
@@ -663,8 +673,13 @@ public class CombatGameTests {
 	/** Against villagers, mobs fight as they always did. */
 	@GameTest(maxTicks = 200)
 	public void mobsStillHitVillagers(GameTestHelper helper) {
+		noRandomThreat();
 		Villager villager = helper.spawn(EntityTypes.VILLAGER, new BlockPos(1, 1, 1));
+		// Standing still: a villager runs from a husk faster than the husk walks, and whether it is caught in
+		// time was a race, not a question of how the husk fights.
+		villager.setNoAi(true);
 		Husk husk = helper.spawn(EntityTypes.HUSK, new BlockPos(2, 1, 1));
+		emptyHands(husk);
 		husk.setTarget(villager);
 		float start = villager.getHealth();
 		helper.runAfterDelay(150, () -> {
