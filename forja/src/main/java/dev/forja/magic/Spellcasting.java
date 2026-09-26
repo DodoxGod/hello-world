@@ -82,6 +82,8 @@ public final class Spellcasting {
 		final float pull;
 		final float heal;
 		final boolean collapses;
+		/** Laid by a monster: it leaves the other monsters alone, even once its reader is dead. */
+		boolean spareMonsters;
 		int age;
 
 		Rune(ServerLevel level, Vec3 at, double reach, int ticks, float opening, int colour, UUID owner, ItemStack weapon, Shockwave mark) {
@@ -203,7 +205,7 @@ public final class Spellcasting {
 	 * loud — a rising note and a ring of the núcleo's colour round the caster — because a charge nobody
 	 * knows they are holding is a charge spent on the first thing that moves.
 	 */
-	public static boolean overcharged(ServerLevel level, Player player, ItemStack stack, int colour) {
+	public static boolean overcharged(ServerLevel level, LivingEntity player, ItemStack stack, int colour) {
 		if (Upgrades.fraction(stack, Upgrade.SOBRECARGA) <= 0.0F) {
 			CASTS.remove(player.getUUID());
 			return false;
@@ -234,21 +236,7 @@ public final class Spellcasting {
 			return InteractionResult.FAIL;
 		}
 		if (level instanceof ServerLevel server) {
-			ForgeMaterial core = core(parts);
-			boolean big = overcharged(server, player, stack, core.color);
-			float power = big ? 1.0F + Upgrade.overchargeBonus(Upgrades.fraction(stack, Upgrade.SOBRECARGA)) : 1.0F;
-			float echo = Upgrade.echoShare(Upgrades.fraction(stack, Upgrade.RESONANCIA));
-			if (type == ForgeType.BACULO) {
-				volley(server, player, core, stack, power, big, true);
-				if (echo > 0.0F) {
-					ECHOES.add(new Echo(server, player.getUUID(), stack, server.getGameTime() + ECHO_BOLT_TICKS, power * echo, big, null));
-				}
-			} else {
-				Rune rune = open(server, player, core, stack, power, big);
-				if (echo > 0.0F) {
-					ECHOES.add(new Echo(server, player.getUUID(), stack, server.getGameTime() + ECHO_AREA_TICKS, echo, big, rune));
-				}
-			}
+			cast(server, player, stack, type, null);
 			player.getCooldowns().addCooldown(stack, cooldown(stack, type));
 			stack.hurtAndBreak(1, player, hand.asEquipmentSlot());
 		}
@@ -257,14 +245,73 @@ public final class Spellcasting {
 	}
 
 	/**
+	 * The spell itself, whoever reads it: a player's right click and a monster's rules (entity/ai/CasterGoal)
+	 * both come here, so a staff in a skeleton's hand throws the bolt it would throw in yours, upgrades and
+	 * all. What is only the player's — the item cooldown, the wear, the swing — stays in {@link #tryCast}.
+	 *
+	 * @param at where a tome's area opens; null for {@link #target}, five blocks ahead of the caster
+	 */
+	public static void cast(ServerLevel server, LivingEntity caster, ItemStack stack, ForgeType type, @org.jspecify.annotations.Nullable Vec3 at) {
+		ForgedParts parts = stack.get(ModComponents.PARTS);
+		if (parts == null || !casts(type)) {
+			return;
+		}
+		ForgeMaterial core = core(parts);
+		boolean big = overcharged(server, caster, stack, core.color);
+		float power = big ? 1.0F + Upgrade.overchargeBonus(Upgrades.fraction(stack, Upgrade.SOBRECARGA)) : 1.0F;
+		float echo = Upgrade.echoShare(Upgrades.fraction(stack, Upgrade.RESONANCIA));
+		if (type == ForgeType.BACULO) {
+			volley(server, caster, core, stack, power, big, true);
+			if (echo > 0.0F) {
+				ECHOES.add(new Echo(server, caster.getUUID(), stack, server.getGameTime() + ECHO_BOLT_TICKS, power * echo, big, null));
+			}
+		} else {
+			Rune rune = open(server, caster, core, stack, power, big, at != null ? at : target(server, caster));
+			if (echo > 0.0F) {
+				ECHOES.add(new Echo(server, caster.getUUID(), stack, server.getGameTime() + ECHO_AREA_TICKS, echo, big, rune));
+			}
+		}
+	}
+
+	/**
+	 * Which way a spell leaves its caster: where a player is looking, and for a monster straight at what it
+	 * is fighting, from where its bolt starts to the middle of the target — a mob's head turns towards its
+	 * prey a few degrees a tick, and a bolt thrown along it would miss anyone who had just stepped aside.
+	 */
+	public static Vec3 aim(LivingEntity caster) {
+		if (caster instanceof net.minecraft.world.entity.Mob mob && mob.getTarget() != null) {
+			Vec3 from = new Vec3(caster.getX(), caster.getEyeY() - 0.15, caster.getZ());
+			Vec3 to = mob.getTarget().getBoundingBox().getCenter().subtract(from);
+			if (to.lengthSqr() > 1.0E-6) {
+				return to.normalize();
+			}
+		}
+		return caster.getLookAngle();
+	}
+
+	/** Whether a monster's spell leaves this one alone: the others of its kind, the way a pillager's arrow would not. */
+	public static boolean spares(boolean spareMonsters, LivingEntity victim) {
+		return spareMonsters && victim instanceof net.minecraft.world.entity.monster.Enemy;
+	}
+
+	/** Who cast a spell, if they are still about: a player first, as it always was, and otherwise any creature. */
+	private static @org.jspecify.annotations.Nullable LivingEntity caster(ServerLevel level, UUID owner) {
+		Player player = level.getPlayerByUUID(owner);
+		if (player != null) {
+			return player;
+		}
+		return level.getEntity(owner) instanceof LivingEntity living ? living : null;
+	}
+
+	/**
 	 * What leaves the staff: the bolt, and with Prisma one more either side of it (two with Enjambre), each
 	 * worth a share of the one in the middle. Buscador is on every one of them. An echo is the middle bolt
 	 * alone: it is the spell heard again, not cast again.
 	 */
-	private static void volley(ServerLevel level, Player player, ForgeMaterial core, ItemStack staff, float power, boolean big, boolean fan) {
+	private static void volley(ServerLevel level, LivingEntity player, ForgeMaterial core, ItemStack staff, float power, boolean big, boolean fan) {
 		float damage = boltDamage(core) * power;
 		float seek = (float) Math.toRadians(Upgrade.seekDegrees(Upgrades.fraction(staff, Upgrade.BUSCADOR)));
-		Vec3 look = player.getLookAngle();
+		Vec3 look = aim(player);
 		MagicBolt bolt = new MagicBolt(level, player, look, core.color, damage, staff, seek, big);
 		level.addFreshEntity(fan ? bolt : bolt.insistent());
 		float prism = fan ? Upgrade.prismShare(Upgrades.fraction(staff, Upgrade.PRISMA)) : 0.0F;
@@ -280,14 +327,14 @@ public final class Spellcasting {
 				Synergy.ENJAMBRE.spark(level, player.getEyePosition().add(look.scale(0.8)), 8);
 			}
 		}
-		level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.2F, big ? 0.8F : fan ? 1.4F : 1.8F);
-		level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, big ? 0.6F : 0.35F, big ? 1.0F : 1.6F);
+		level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.AMETHYST_BLOCK_CHIME, player.getSoundSource(), 1.2F, big ? 0.8F : fan ? 1.4F : 1.8F);
+		level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLAZE_SHOOT, player.getSoundSource(), big ? 0.6F : 0.35F, big ? 1.0F : 1.6F);
 	}
 
 	/** Where the tome's area lands: five blocks along the way the reader faces, nearer if a wall is in the way, on the floor there. */
-	public static Vec3 target(Level level, Player player) {
+	public static Vec3 target(Level level, LivingEntity player) {
 		Vec3 eye = player.getEyePosition();
-		Vec3 look = player.getLookAngle();
+		Vec3 look = aim(player);
 		Vec3 flat = new Vec3(look.x, 0.0, look.z);
 		flat = flat.lengthSqr() < 1.0E-4 ? Vec3.directionFromRotation(0.0F, player.getYRot()) : flat.normalize();
 		Vec3 end = eye.add(flat.scale(TOME_DISTANCE));
@@ -297,8 +344,7 @@ public final class Spellcasting {
 		return new Vec3(spot.x, player.getY() + floor, spot.z);
 	}
 
-	private static Rune open(ServerLevel level, Player player, ForgeMaterial core, ItemStack tome, float power, boolean big) {
-		Vec3 at = target(level, player);
+	private static Rune open(ServerLevel level, LivingEntity player, ForgeMaterial core, ItemStack tome, float power, boolean big, Vec3 at) {
 		float damage = areaDamage(core) * power;
 		double reach = RUNE_REACH + (big ? OVERCHARGE_REACH : 0.0);
 		int ticks = runeTicks(tome);
@@ -306,11 +352,12 @@ public final class Spellcasting {
 		Shockwave.burst(level, at, reach, 10, core.color, big ? 0.8F : 0.45F);
 		Shockwave mark = Shockwave.rune(level, at, reach, ticks, core.color);
 		Rune rune = new Rune(level, at, reach, ticks, damage, core.color, player.getUUID(), tome, mark);
+		rune.spareMonsters = player instanceof net.minecraft.world.entity.monster.Enemy;
 		RUNES.add(rune);
 		strike(rune, damage, player, true);
 		level.sendParticles(new DustParticleOptions(core.color, 1.6F), at.x, at.y + 0.4, at.z, big ? 70 : 40, reach * 0.5, 0.3, reach * 0.5, 0.0);
-		level.playSound(null, at.x, at.y, at.z, SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 1.2F, big ? 0.55F : 0.8F);
-		level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 1.0F, 0.6F);
+		level.playSound(null, at.x, at.y, at.z, SoundEvents.ENCHANTMENT_TABLE_USE, player.getSoundSource(), 1.2F, big ? 0.55F : 0.8F);
+		level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_BLOCK_RESONATE, player.getSoundSource(), 1.0F, 0.6F);
 		return rune;
 	}
 
@@ -325,12 +372,13 @@ public final class Spellcasting {
 	 * pushes it further. So what a struck thing was doing it goes on doing — or, with Vortice, a bite drags
 	 * it towards the middle instead.
 	 */
-	private static void strike(Rune rune, float damage, @org.jspecify.annotations.Nullable Player caster, boolean blow) {
+	private static void strike(Rune rune, float damage, @org.jspecify.annotations.Nullable LivingEntity caster, boolean blow) {
 		ServerLevel level = rune.level;
 		Vec3 at = rune.at;
 		double reach = rune.reach;
 		AABB box = new AABB(at, at).inflate(reach, 2.0, reach);
-		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, box, other -> other.isAlive() && other != caster)) {
+		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, box,
+			other -> other.isAlive() && other != caster && !spares(rune.spareMonsters, other))) {
 			double dx = victim.getX() - at.x;
 			double dz = victim.getZ() - at.z;
 			if (dx * dx + dz * dz > reach * reach || (caster != null && victim.isAlliedTo(caster))) {
@@ -352,7 +400,7 @@ public final class Spellcasting {
 	}
 
 	/** Santuario: the reader's own rune mends them while they stand on it, and hardens them from half way. */
-	private static void shelter(Rune rune, @org.jspecify.annotations.Nullable Player caster) {
+	private static void shelter(Rune rune, @org.jspecify.annotations.Nullable LivingEntity caster) {
 		if (rune.heal <= 0.0F || caster == null || !caster.isAlive()) {
 			return;
 		}
@@ -398,7 +446,7 @@ public final class Spellcasting {
 					continue;
 				}
 				rune.age++;
-				Player caster = level.getPlayerByUUID(rune.owner);
+				LivingEntity caster = caster(level, rune.owner);
 				if (rune.age >= rune.ticks) {
 					RUNES.remove(index);
 					if (rune.collapses) {
@@ -421,7 +469,7 @@ public final class Spellcasting {
 
 	/** Resonancia, coming due: the staff speaks again the way its caster is looking now; the area opens again where it lies. */
 	private static void resound(ServerLevel level, Echo echo) {
-		Player caster = level.getPlayerByUUID(echo.owner());
+		LivingEntity caster = caster(level, echo.owner());
 		ForgedParts parts = echo.weapon().get(ModComponents.PARTS);
 		if (caster == null || !caster.isAlive() || parts == null) {
 			return;

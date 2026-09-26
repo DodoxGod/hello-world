@@ -9466,6 +9466,10 @@ def generate_data():
     write_json(mc / "spears.json", tag(["forja:lanza"]))
     # Forged arrows have to be ammunition, or no bow will take them.
     write_json(mc / "arrows.json", tag(["forja:flecha"]))
+    # A skeleton holding our bow (a pillager our crossbow) keeps it rather than trading it for the first
+    # sword on the floor: vanilla lets a mob drop anything not in its preferred tag for more damage.
+    write_json(mc / "skeleton_preferred_weapons.json", tag(["forja:arco"]))
+    write_json(mc / "pillager_preferred_weapons.json", tag(["forja:ballesta"]))
     write_json(mc / "head_armor.json", tag(["forja:casco"]))
     write_json(mc / "chest_armor.json", tag(["forja:pechera"]))
     write_json(mc / "leg_armor.json", tag(["forja:grebas"]))

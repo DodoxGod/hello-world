@@ -167,7 +167,7 @@ public final class ForgeRaiders {
 		captain.setCustomName(Component.translatable("entity.forja.capitan_saqueador"));
 		captain.setCustomNameVisible(true);
 		captain.setPersistenceRequired();
-		ItemStack legend = Legends.createWeapon(level.getRandom(), level.registryAccess());
+		ItemStack legend = Legends.createWeaponFor(captain, level.getRandom());
 		Mastery.setLevel(legend, Mastery.MAX_LEVEL, level.registryAccess());
 		captain.setItemSlot(EquipmentSlot.MAINHAND, legend);
 		// What makes him a captain rather than the biggest raider: he winds the horn, and he charges.

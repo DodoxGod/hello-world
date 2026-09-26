@@ -49,6 +49,8 @@ public final class MobAi {
 				MINDS.put(mob, mind);
 				var goals = ((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals();
 				goals.addGoal(0, new TacticGoal(mob, mind));
+				// Ahead of the specials at the same priority, so a caster's lunge never cuts into its casting.
+				goals.addGoal(1, new dev.forja.entity.ai.CasterGoal(mob));
 				List<Special> moveset = Movesets.of(mob);
 				if (!moveset.isEmpty()) {
 					mind.specials = new SpecialRunner(mob, moveset);
@@ -229,13 +231,17 @@ public final class MobAi {
 			mind.target = target;
 			mind.memory = null;
 			mind.ringAngle = Double.NaN;
+			mind.ringRadius = TacticGoal.RING_RADIUS;
 		}
 		if (target == null) {
 			mind.networked = false;
 			mind.decision = Decision.APPROACH;
 			return;
 		}
-		NetBrain net = mind.override != null ? mind.override : mode() == Mode.REGLAS ? null : net(familyOf(mob));
+		// A caster fights by the rules whatever the mode: no network has ever seen a staff or a tome, and
+		// the observation it would be fed has nothing in it that says one is in the hand.
+		NetBrain net = mind.override != null ? mind.override
+			: mode() == Mode.REGLAS || dev.forja.entity.ai.CasterGoal.casts(mob) ? null : net(familyOf(mob));
 		int every = net != null ? Math.max(1, net.ticksPerDecision) : 1;
 		if (now - mind.decidedAt < every) {
 			return;

@@ -21,6 +21,18 @@ public final class ForjaConfig {
 	/** The share of monsters that spawn as an elite carrying a legend. */
 	public float elites = 0.01F;
 
+	/**
+	 * The share of skeletons (strays, bogged and parched too) that spawn with a forged staff instead of a
+	 * bow and throw its bolts at you: 3 in 100 by default (world/ForjaMobs, entity/ai/CasterGoal).
+	 */
+	public float baculos = 0.03F;
+
+	/**
+	 * The share of zombies (husks and zombie villagers too) that spawn reading a forged tome: they open
+	 * its area under you after a warning on the floor. 3 in 100 by default.
+	 */
+	public float grimorios = 0.03F;
+
 	/** How often an event starts when none is running: checked once a minute. */
 	public float eventos = 0.02F;
 

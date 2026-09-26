@@ -34,14 +34,31 @@ public final class RuleBrain {
 	private RuleBrain() {
 	}
 
+	/**
+	 * The ones that fight from afar by nature - a pillager's crossbow, a witch's bottles, an evoker's fangs,
+	 * a blaze's fire. The tactics below are a body's (wait on the ring, circle, press in), and the goal that
+	 * carries them out outranks their shooting: given them, a pillager walked round you and never fired.
+	 * A drowned is the exception: it throws its trident, but it is a body that fights up close.
+	 */
+	static boolean shootsOrCasts(Mob mob, MobFamily family) {
+		return mob instanceof net.minecraft.world.entity.monster.RangedAttackMob && family != MobFamily.CUERPO
+			|| mob instanceof net.minecraft.world.entity.monster.illager.SpellcasterIllager
+			|| mob instanceof net.minecraft.world.entity.monster.Blaze;
+	}
+
 	public static Decision decide(MobMind mind, Player target) {
 		Mob mob = mind.mob;
+		// A staff or a tome in the hand: its own goal fights with it (entity/ai/CasterGoal), as an archer's
+		// bow goal does, and none of the tactics below is a caster's.
+		if (dev.forja.entity.ai.CasterGoal.casts(mob)) {
+			return Decision.APPROACH;
+		}
 		MobFamily family = MobFamily.of(mob);
 		// The ember wisp never stands and fights: close in and it drifts off, leaving fire behind (idea 45).
 		if (mob instanceof dev.forja.entity.EmberWisp && mob.distanceTo(target) < 4.0) {
 			return Decision.tactic(Tactic.RETIRARSE);
 		}
-		if (!(mob instanceof PathfinderMob) || family == MobFamily.ARQUERO || family == MobFamily.CREEPER
+		if (!(mob instanceof PathfinderMob) || family == MobFamily.ARQUERO || family == MobFamily.CREEPER || shootsOrCasts(mob, family)
 			|| !"minecraft".equals(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getNamespace())) {
 			return Decision.APPROACH;
 		}
@@ -101,8 +118,10 @@ public final class RuleBrain {
 		if (drawing && distance > 3.0) {
 			return new Decision((now / 10) % 2 == 0 ? 2 : 8, false, false, Tactic.LIBRE, 0, 0, false);
 		}
-		// A spear keeps its distance: too close for its point, it steps back (idea 57).
-		if (SwingStyle.of(mob.getMainHandItem()) == SwingStyle.THRUST && distance < 1.8 && mind.windup == 0) {
+		// A spear keeps its distance: too close for its point, it steps back (idea 57). A spear, not everything
+		// that thrusts: a dagger is at its best right up against you, and backing off with one made no sense.
+		if (SwingStyle.of(mob.getMainHandItem()) == SwingStyle.THRUST && mob.getMainHandItem().has(net.minecraft.core.component.DataComponents.KINETIC_WEAPON)
+			&& distance < 1.8 && mind.windup == 0) {
 			return new Decision(5, false, false, Tactic.LIBRE, 0, 0, false);
 		}
 		// An ally lies staggered by the player: close round it (its slot is set to the ally's side).

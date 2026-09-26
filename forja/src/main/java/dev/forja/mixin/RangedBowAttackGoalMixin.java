@@ -1,6 +1,7 @@
 package dev.forja.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import dev.forja.combat.ChargedArrows;
 import dev.forja.combat.CombatConfig;
 import dev.forja.combat.CombatFeedback;
@@ -38,9 +39,20 @@ abstract class RangedBowAttackGoalMixin {
 		return cfg.enabled && cfg.skeletonChargedEvery > 0 && (forja$shots + 1) % cfg.skeletonChargedEvery == 0;
 	}
 
-	/** Vanilla lets go once the bow has been drawn for 20 ticks: a charged shot takes longer. */
+	/** A forged bow is a bow: without this the goal would not even start for a skeleton holding one. */
+	@ModifyReturnValue(method = "isHoldingBow", at = @At("RETURN"))
+	private boolean forja$forgedBow(boolean holding) {
+		return holding || dev.forja.world.ForjaMobs.holdsForged(mob, net.minecraft.world.item.Items.BOW);
+	}
+
+	/**
+	 * Vanilla lets go once the bow has been drawn for 20 ticks: a charged shot takes longer. A forged bow
+	 * draws at its own speed first, the way it does in a player's hands (ForgedBowItem.releaseUsing): its
+	 * limbs and Tension count the ticks up faster, and a plain bow counts them as they come.
+	 */
 	@ModifyExpressionValue(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/monster/Monster;getTicksUsingItem()I"))
 	private int forja$chargedDraw(int ticks) {
+		ticks = Math.round(ticks * dev.forja.item.ForgedItems.ForgedBowItem.drawSpeed(mob.getUseItem()));
 		// Covering fire: with one of its own in the way, it holds the draw until the line is clear.
 		if (ticks >= 19 && mob.getTarget() instanceof net.minecraft.world.entity.player.Player player
 			&& dev.forja.ai.Squad.allyInLine(mob, player)) {

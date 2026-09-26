@@ -59,7 +59,10 @@ public final class ObsM1 {
 		double uz = dz / d;
 		double rx = -uz;
 		double rz = ux;
-		Vec3 tv = target.getDeltaMovement();
+		// A player's own movement is its client's: the server's delta barely moves except when it is knocked
+		// about, so a network trained on real speeds would see a statue. getKnownMovement is what the client
+		// last said it moved (and the delta, for anything that is not a player on a server).
+		Vec3 tv = target.getKnownMovement();
 		Vec3 mv = mob.getDeltaMovement();
 
 		o[0] = clip(d / 16.0, 0.0, 2.0);
@@ -100,7 +103,7 @@ public final class ObsM1 {
 		o[40] = mob.isBaby() ? 1.0 : 0.0;
 		double sightHeight = MobFamily.of(mob) == MobFamily.CREEPER ? 1.5 : target.getBbHeight() * 0.6;
 		o[41] = sees(mob, target.getX(), target.getY() + sightHeight, target.getZ()) ? 1.0 : 0.0;
-		o[42] = mob.getMainHandItem().is(Items.TRIDENT) ? 1.0 : 0.0;
+		o[42] = trident(mob.getMainHandItem()) ? 1.0 : 0.0;
 
 		// The ground around, in the mob's frame: 8 directions at 1.5 and 3 blocks.
 		boolean water = mob.isInWater();
@@ -200,6 +203,15 @@ public final class ObsM1 {
 	}
 
 	/** Line of sight from the mob's eyes to a point, through blocks only. */
+	/** A trident, vanilla's or one forged: the simulator's yo_tridente does not ask who made it. */
+	public static boolean trident(ItemStack stack) {
+		if (stack.is(Items.TRIDENT)) {
+			return true;
+		}
+		dev.forja.part.ForgedParts parts = stack.get(dev.forja.registry.ModComponents.PARTS);
+		return parts != null && parts.type() == dev.forja.forge.ForgeType.TRIDENTE;
+	}
+
 	public static boolean sees(Mob mob, double x, double y, double z) {
 		Vec3 eye = mob.getEyePosition();
 		HitResult hit = mob.level().clip(new ClipContext(eye, new Vec3(x, y, z), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mob));

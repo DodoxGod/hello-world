@@ -4,28 +4,41 @@ import java.util.List;
 
 import dev.forja.forge.Assembler;
 import dev.forja.forge.ForgeType;
+import dev.forja.item.ForgedItems;
 import dev.forja.material.ForgeMaterial;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.CrossbowAttackMob;
+import net.minecraft.world.entity.monster.illager.Pillager;
 import net.minecraft.world.entity.monster.illager.Vindicator;
 import net.minecraft.world.entity.monster.skeleton.AbstractSkeleton;
+import net.minecraft.world.entity.monster.skeleton.WitherSkeleton;
+import net.minecraft.world.entity.monster.zombie.Drowned;
 import net.minecraft.world.entity.monster.zombie.Zombie;
+import net.minecraft.world.entity.monster.zombie.ZombifiedPiglin;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Forja in the world, part two: zombies, skeletons and vindicators sometimes spawn wearing forged
- * armor or holding forged weapons instead of their vanilla gear, in the same materials. Enchanted
- * pieces are left alone. Skeletons keep vanilla bows, which their AI needs.
+ * Forja in the world, part two: zombies, skeletons, vindicators and pillagers sometimes spawn wearing
+ * forged armor or holding forged weapons instead of their vanilla gear, in the same materials. Enchanted
+ * pieces are left alone. The archers keep a bow and the pillagers a crossbow, forged or not — the
+ * mixins in dev.forja.mixin teach vanilla's ranged AI that ours is one — and a few skeletons and
+ * zombies turn up with a staff or a tome instead (entity/ai/CasterGoal).
  */
 public final class ForjaMobs {
 	public static final float CHANCE = 0.35F;
 	private static final ForgeMaterial[] LININGS = {ForgeMaterial.CUERO, ForgeMaterial.CUERO, ForgeMaterial.MADERA, ForgeMaterial.HIERRO, ForgeMaterial.HUESO};
 	private static final ForgeMaterial[] HANDLES = {ForgeMaterial.MADERA, ForgeMaterial.MADERA, ForgeMaterial.HUESO, ForgeMaterial.CUERO};
 	private static final EquipmentSlot[] ARMOR = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
+	/** What the limbs of a monster's forged bow are: the wood a vanilla bow is, or the bone a skeleton has to hand. */
+	private static final ForgeMaterial[] BOW_LIMBS = {ForgeMaterial.MADERA, ForgeMaterial.HUESO};
+	/** The stones a monster's staff or tome is cut round, which are the colour and the bite of its magic. */
+	private static final ForgeMaterial[] CORES = {ForgeMaterial.AMATISTA, ForgeMaterial.AMATISTA, ForgeMaterial.COBRE, ForgeMaterial.PRISMARINA};
 
 	/** How likely each armour slot is to be filled, on its own. */
 	public static final float ARMOUR_CHANCE = 0.15F;
@@ -50,6 +63,32 @@ public final class ForjaMobs {
 	 * it could use and neither of which did anything for it.
 	 */
 	public static void arm(Mob mob, RandomSource random, ForgeMaterial plate) {
+		int worn = armour(mob, random, plate);
+		if (random.nextFloat() >= weaponChance(worn)) {
+			return;
+		}
+		ForgeType weapon = HAND_WEAPONS[random.nextInt(HAND_WEAPONS.length)];
+		List<ForgeMaterial> materials = new java.util.ArrayList<>(Assembler.defaultMaterials(weapon));
+		materials.set(0, plate);
+		for (int i = 1; i < materials.size(); i++) {
+			if (weapon.slots.get(i).role == dev.forja.part.PartType.Role.HANDLE) {
+				materials.set(i, HANDLES[random.nextInt(HANDLES.length)]);
+			}
+		}
+		mob.setItemSlot(EquipmentSlot.MAINHAND, Assembler.create(weapon, materials, mob.registryAccess()));
+	}
+
+	/**
+	 * The armour half of Andy's rule on its own: each of the four slots at fifteen per cent.
+	 *
+	 * <p>This is the whole kit of anything whose hands are already spoken for — an archer's bow, a
+	 * pillager's crossbow, a caster's staff or tome. Before, a skeleton never got any of it: it always
+	 * holds a bow, so it was never "bare", and it only ever wore forged plate if vanilla had dressed it
+	 * first.
+	 *
+	 * @return how many pieces it put on
+	 */
+	public static int armour(Mob mob, RandomSource random, ForgeMaterial plate) {
 		int worn = 0;
 		for (EquipmentSlot slot : ARMOR) {
 			if (random.nextFloat() >= ARMOUR_CHANCE) {
@@ -65,23 +104,81 @@ public final class ForjaMobs {
 				List.of(plate, LININGS[random.nextInt(LININGS.length)]), mob.registryAccess()));
 			worn++;
 		}
-		if (random.nextFloat() >= weaponChance(worn)) {
-			return;
-		}
-		ForgeType weapon = HAND_WEAPONS[random.nextInt(HAND_WEAPONS.length)];
-		List<ForgeMaterial> materials = new java.util.ArrayList<>(Assembler.defaultMaterials(weapon));
-		materials.set(0, plate);
-		for (int i = 1; i < materials.size(); i++) {
-			if (weapon.slots.get(i).role == dev.forja.part.PartType.Role.HANDLE) {
-				materials.set(i, HANDLES[random.nextInt(HANDLES.length)]);
-			}
-		}
-		mob.setItemSlot(EquipmentSlot.MAINHAND, Assembler.create(weapon, materials, mob.registryAccess()));
+		return worn;
 	}
 
 	/** One minus fifteen per cent per piece already on: four pieces leaves forty. */
 	public static float weaponChance(int armourPieces) {
 		return Math.max(0.0F, 1.0F - WEAPON_PENALTY * armourPieces);
+	}
+
+	/**
+	 * What a mob shoots with, by what it is: a skeleton (and a stray, a bogged, a parched) a bow, a
+	 * pillager a crossbow; null for everything that fights up close, the wither skeleton included.
+	 */
+	public static @Nullable ForgeType launcher(LivingEntity mob) {
+		if (mob instanceof AbstractSkeleton && !(mob instanceof WitherSkeleton)) {
+			return ForgeType.ARCO;
+		}
+		return mob instanceof CrossbowAttackMob ? ForgeType.BALLESTA : null;
+	}
+
+	/** Whether a stack is our bow or our crossbow standing in for vanilla's {@code vanilla}. */
+	public static boolean forgedLauncher(ItemStack stack, Item vanilla) {
+		return vanilla == Items.BOW && stack.getItem() instanceof ForgedItems.ForgedBowItem
+			|| vanilla == Items.CROSSBOW && stack.getItem() instanceof ForgedItems.ForgedCrossbowItem;
+	}
+
+	/** Whether a mob has one of ours standing in for vanilla's bow or crossbow in either hand. */
+	public static boolean holdsForged(LivingEntity mob, Item vanilla) {
+		return forgedLauncher(mob.getMainHandItem(), vanilla) || forgedLauncher(mob.getOffhandItem(), vanilla);
+	}
+
+	/**
+	 * The magic a mob may be born carrying: a staff for the archers, a tome for the zombies that walk
+	 * the land. Not the drowned, whose tome would open on the sea floor, nor the zombified piglins, which
+	 * mind their own business until someone gives them a reason.
+	 */
+	public static @Nullable ForgeType spellFor(Mob mob) {
+		if (launcher(mob) == ForgeType.ARCO) {
+			return ForgeType.BACULO;
+		}
+		if (mob instanceof Zombie && !(mob instanceof Drowned) && !(mob instanceof ZombifiedPiglin)) {
+			return ForgeType.GRIMORIO;
+		}
+		return null;
+	}
+
+	/** How often, from the config: see ForjaConfig.baculos and ForjaConfig.grimorios. */
+	public static float spellChance(ForgeType spell) {
+		dev.forja.ForjaConfig config = dev.forja.ForjaConfig.get();
+		return spell == ForgeType.BACULO ? config.baculos : spell == ForgeType.GRIMORIO ? config.grimorios : 0.0F;
+	}
+
+	/** A plain staff or tome for a monster: a stone at its heart from {@link #CORES}, a handle of whatever was about. */
+	public static ItemStack magic(ForgeType spell, Mob mob, RandomSource random) {
+		List<ForgeMaterial> materials = new java.util.ArrayList<>(Assembler.defaultMaterials(spell));
+		materials.set(0, CORES[random.nextInt(CORES.length)]);
+		for (int i = 1; i < materials.size(); i++) {
+			if (spell.slots.get(i).role == dev.forja.part.PartType.Role.HANDLE) {
+				materials.set(i, HANDLES[random.nextInt(HANDLES.length)]);
+			}
+		}
+		return Assembler.create(spell, materials, mob.registryAccess());
+	}
+
+	/** Our bow or crossbow in place of vanilla's: the same wood, or bone for a bow, on a handle of whatever was about. */
+	public static ItemStack forgedBow(ForgeType type, Mob mob, RandomSource random) {
+		List<ForgeMaterial> materials = new java.util.ArrayList<>(Assembler.defaultMaterials(type));
+		if (type == ForgeType.ARCO) {
+			materials.set(0, BOW_LIMBS[random.nextInt(BOW_LIMBS.length)]);
+		}
+		for (int i = 1; i < materials.size(); i++) {
+			if (type.slots.get(i).role == dev.forja.part.PartType.Role.HANDLE) {
+				materials.set(i, HANDLES[random.nextInt(HANDLES.length)]);
+			}
+		}
+		return Assembler.create(type, materials, mob.registryAccess());
 	}
 
 	/** The only things that go in a hand. */
@@ -91,7 +188,7 @@ public final class ForjaMobs {
 	};
 
 	public static void forgeEquipment(Mob mob, RandomSource random, float chance) {
-		if (!(mob instanceof Zombie) && !(mob instanceof AbstractSkeleton) && !(mob instanceof Vindicator)) {
+		if (!(mob instanceof Zombie) && !(mob instanceof AbstractSkeleton) && !(mob instanceof Vindicator) && !(mob instanceof Pillager)) {
 			return;
 		}
 		// One in a hundred is not a monster with gear but an elite carrying a legend. They keep away from
@@ -112,6 +209,31 @@ public final class ForjaMobs {
 				};
 				mob.setItemSlot(slot, Assembler.create(type, List.of(plate, LININGS[random.nextInt(LININGS.length)]), mob.registryAccess()));
 			}
+		}
+		// A few are casters: a staff or a tome in the hand instead of what vanilla gave them, and the
+		// rules to fight with it (entity/ai/CasterGoal). The rest of the kit is armour, as for an archer.
+		ForgeType spell = spellFor(mob);
+		if (spell != null && random.nextFloat() < spellChance(spell)) {
+			mob.setItemSlot(EquipmentSlot.MAINHAND, magic(spell, mob, random));
+			if (unarmoured(mob) && random.nextFloat() < chance) {
+				armour(mob, random, ForgeMaterial.HIERRO);
+			}
+			return;
+		}
+		// The archers and the crossbowmen: their weapon is the one they shoot, so it may become ours but it
+		// is never swapped for a blade, and what the rule would have put in their hands goes unworn. Empty
+		// hands count as vanilla's: the raiders' band is made without vanilla's gear and its pillagers had
+		// nothing to shoot with.
+		ForgeType shot = launcher(mob);
+		if (shot != null) {
+			ItemStack bow = mob.getMainHandItem();
+			if ((bow.isEmpty() || bow.is(shot == ForgeType.ARCO ? Items.BOW : Items.CROSSBOW)) && !bow.isEnchanted() && random.nextFloat() < chance) {
+				mob.setItemSlot(EquipmentSlot.MAINHAND, forgedBow(shot, mob, random));
+			}
+			if (unarmoured(mob) && random.nextFloat() < chance) {
+				armour(mob, random, ForgeMaterial.HIERRO);
+			}
+			return;
 		}
 		ItemStack held = mob.getMainHandItem();
 		ForgeType weapon = weaponType(held.getItem());
@@ -134,9 +256,11 @@ public final class ForjaMobs {
 
 	/** Whether the mob is carrying nothing worth keeping. */
 	private static boolean bare(Mob mob) {
-		if (!mob.getMainHandItem().isEmpty()) {
-			return false;
-		}
+		return mob.getMainHandItem().isEmpty() && unarmoured(mob);
+	}
+
+	/** Whether it has nothing on: an archer with only its bow counts, where {@link #bare} would not. */
+	private static boolean unarmoured(Mob mob) {
 		for (EquipmentSlot slot : ARMOR) {
 			if (!mob.getItemBySlot(slot).isEmpty()) {
 				return false;

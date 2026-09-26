@@ -129,6 +129,12 @@ public final class MovementGoals {
 	/** Idea 51: an archer that can climb 2 or more blocks higher nearby does, and shoots from there. */
 	public static final class HighGround extends Goal {
 		public static final int EVERY = 100;
+
+		/** Whether a player has a bow or a crossbow up. */
+		static boolean aiming(Player player) {
+			return player.isUsingItem() && (player.getUseItem().getItem() instanceof net.minecraft.world.item.BowItem
+				|| player.getUseItem().getItem() instanceof net.minecraft.world.item.CrossbowItem);
+		}
 		private final Mob mob;
 		private final MobMind mind;
 		private long nextLook = Long.MIN_VALUE;
@@ -148,8 +154,10 @@ public final class MovementGoals {
 				// Not straight away: a fresh archer shoots first and looks for a better spot later.
 				this.nextLook = now + 2 * EVERY;
 			}
+			// Not while it is drawing itself (it would drop the shot), and not while the player is drawing on it
+			// (the spec: high ground is sought when the player is not aiming - a climbing archer is an easy mark).
 			if (this.mind.networked || !(this.mob.getTarget() instanceof Player player) || now < this.nextLook
-				|| this.mob.isUsingItem() || this.mob.distanceTo(player) > 16.0 || this.mob.distanceTo(player) < 8.0) {
+				|| this.mob.isUsingItem() || aiming(player) || this.mob.distanceTo(player) > 16.0 || this.mob.distanceTo(player) < 8.0) {
 				return false;
 			}
 			this.nextLook = now + EVERY;

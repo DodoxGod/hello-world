@@ -83,7 +83,7 @@ public final class Elites {
 	 */
 	public static void makeElite(Mob mob, RandomSource random) {
 		mob.addTag("forja_elite");
-		ItemStack weapon = Legends.createWeapon(random, mob.registryAccess());
+		ItemStack weapon = Legends.createWeaponFor(mob, random);
 		Mastery.setLevel(weapon, Mastery.MAX_LEVEL, mob.registryAccess());
 		mob.setItemSlot(EquipmentSlot.MAINHAND, weapon);
 		// Nothing it wears falls off on its own; the one piece it gives up is handled on death.

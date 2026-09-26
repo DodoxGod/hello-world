@@ -153,8 +153,8 @@ public final class ObsForja {
 		if (mind == null || Double.isNaN(mind.ringAngle)) {
 			return new double[] {0.0, 0.0};
 		}
-		double sx = player.getX() + Math.cos(mind.ringAngle) * TacticGoal.RING_RADIUS - mob.getX();
-		double sz = player.getZ() + Math.sin(mind.ringAngle) * TacticGoal.RING_RADIUS - mob.getZ();
+		double sx = player.getX() + Math.cos(mind.ringAngle) * mind.ringRadius - mob.getX();
+		double sz = player.getZ() + Math.sin(mind.ringAngle) * mind.ringRadius - mob.getZ();
 		double dx = player.getX() - mob.getX();
 		double dz = player.getZ() - mob.getZ();
 		double d = Math.max(1.0E-6, Math.hypot(dx, dz));

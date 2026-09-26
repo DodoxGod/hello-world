@@ -121,8 +121,10 @@ public final class WorldFights {
 			double a = angle + (i - count / 2.0) * 0.15;
 			double x = player.getX() + Math.cos(a) * 30.0;
 			double z = player.getZ() + Math.sin(a) * 30.0;
-			if (!level.isLoaded(BlockPos.containing(x, player.getY(), z))) {
-				// That far is not loaded: they come out of the dark nearer.
+			if (!level.isPositionEntityTicking(BlockPos.containing(x, player.getY(), z))) {
+				// That far is not loaded, or loaded but asleep (a chunk at the edge of view keeps its blocks and
+				// freezes its creatures, and one put there stands still until somebody walks up): they come out of
+				// the dark nearer.
 				x = player.getX() + Math.cos(a) * 12.0;
 				z = player.getZ() + Math.sin(a) * 12.0;
 			}

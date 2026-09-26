@@ -122,7 +122,7 @@ public final class TacticGoal extends Goal {
 		}
 		switch (decision.tactic()) {
 			case LIBRE, ACERCARSE -> this.free(decision, target);
-			case RODEAR -> this.toRing(target, Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle, RING_RADIUS, 1.0);
+			case RODEAR -> this.toRing(target, Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle, this.mind.ringRadius, 1.0);
 			case FLANQUEAR -> this.toRing(target, this.behindAngle(target), FLANK_RADIUS, 1.15);
 			case ESPERAR -> this.hold(target);
 			case RETIRARSE -> this.retreat(target);
@@ -269,6 +269,12 @@ public final class TacticGoal extends Goal {
 			this.mob.startUsingItem(hand);
 		}
 		if (++this.mind.draw >= BOW_DRAW) {
+			// Covering fire, as the rules' bow goal does it: drawn and one of its own in the way, it holds
+			// the arrow until the line is clear instead of putting it in its friend's back.
+			if (Squad.allyInLine(this.mob, target)) {
+				this.mind.draw = BOW_DRAW;
+				return;
+			}
 			this.mob.stopUsingItem();
 			((RangedAttackMob) this.mob).performRangedAttack(target, BowItem.getPowerForTime(this.mind.draw));
 			this.mind.draw = 0;

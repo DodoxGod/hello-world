@@ -34,6 +34,11 @@ public final class Squad {
 	public static final int ROUT_TICKS = 60;
 	/** Deaths remembered for a rout, in ticks. */
 	public static final int LOSS_WINDOW = 200;
+	/**
+	 * The least room between two neighbours on the ring. Evenly spaced at 3.5 blocks, seven or more stood
+	 * shoulder to shoulder, and anything that hits an area took them all; past that the ring widens instead.
+	 */
+	public static final double MIN_GAP = 3.0;
 
 	/** What each player's group has lost lately: [time of loss, ...] and its biggest size. */
 	private static final Map<Player, List<Long>> LOSSES = new WeakHashMap<>();
@@ -59,6 +64,11 @@ public final class Squad {
 			losses.clear();
 			PEAK.put(player, 0);
 		}
+	}
+
+	/** The ring's radius for n on it: 3.5, or wider so that neighbours are at least {@link #MIN_GAP} apart. */
+	public static double ringRadius(int n) {
+		return n < 2 ? TacticGoal.RING_RADIUS : Math.max(TacticGoal.RING_RADIUS, MIN_GAP / (2.0 * Math.sin(Math.PI / n)));
 	}
 
 	public static boolean routed(Player player, long now) {
@@ -109,6 +119,7 @@ public final class Squad {
 
 		// Slots on the ring: evenly spaced from where the nearest stands, each taken by the closest free member.
 		int n = members.size();
+		double radius = ringRadius(n);
 		double start = angle(members.get(0).mob, player);
 		boolean[] taken = new boolean[n];
 		for (MobMind mind : members) {
@@ -126,6 +137,7 @@ public final class Squad {
 			}
 			taken[slot] = true;
 			mind.ringAngle = start + slot * 2.0 * Math.PI / n;
+			mind.ringRadius = radius;
 		}
 
 		// A staggered ally near the player: the others close round it, between it and the player.

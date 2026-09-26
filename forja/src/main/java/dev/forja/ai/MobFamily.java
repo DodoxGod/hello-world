@@ -3,6 +3,7 @@ package dev.forja.ai;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.BowItem;
 
 /**
  * The families a brain is trained per (red_mob_v1 "grupo"): the mobs in a family fight the same way, so
@@ -40,8 +41,18 @@ public enum MobFamily {
 		return OTRO;
 	}
 
+	/**
+	 * A mob's family by what it fights with, not only by what it is: a skeleton that has put its bow away
+	 * for a sword walks up and swings, so it is a body. Without this an elite skeleton with a blade and a
+	 * network never attacked at all (the network sent it to its bow, and it had none).
+	 */
 	public static MobFamily of(LivingEntity entity) {
-		return of(entity.getType());
+		MobFamily family = of(entity.getType());
+		if (family == ARQUERO && !(entity.getMainHandItem().getItem() instanceof BowItem)
+			&& !(entity.getOffhandItem().getItem() instanceof BowItem)) {
+			return CUERPO;
+		}
+		return family;
 	}
 
 	/**

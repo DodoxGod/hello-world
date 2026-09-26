@@ -53,18 +53,42 @@ public final class Legends {
 	 * blanket and swing it at you. This picks from the ones that belong in a fist.
 	 */
 	public static ItemStack createWeapon(RandomSource random, HolderLookup.Provider registries) {
-		List<Legend> usable = new java.util.ArrayList<>();
+		return createWeapon(random, registries, Legends::heldInHand);
+	}
+
+	/**
+	 * A legend this particular mob can fight with.
+	 *
+	 * <p>Something held is not yet something used: a zombie elite could come up with Ojo de halcón and
+	 * walk at you holding a bow it cannot draw, and a skeleton handed a sword put its own bow away. So an
+	 * archer gets a legend with a bow, a pillager one with a crossbow, and everything that fights up close
+	 * one it swings (see {@link #swung}).
+	 */
+	public static ItemStack createWeaponFor(net.minecraft.world.entity.Mob mob, RandomSource random) {
+		ForgeType shot = ForjaMobs.launcher(mob);
+		return createWeapon(random, mob.registryAccess(), shot != null ? type -> type == shot : Legends::swung);
+	}
+
+	private static ItemStack createWeapon(RandomSource random, HolderLookup.Provider registries, java.util.function.Predicate<ForgeType> usable) {
+		List<Legend> fits = new java.util.ArrayList<>();
 		for (Legend legend : ALL) {
-			for (ForgeType type : legend.types()) {
-				if (heldInHand(type)) {
-					usable.add(legend);
-					break;
-				}
+			if (legend.types().stream().anyMatch(usable)) {
+				fits.add(legend);
 			}
 		}
-		Legend legend = usable.get(random.nextInt(usable.size()));
-		List<ForgeType> options = legend.types().stream().filter(Legends::heldInHand).toList();
+		Legend legend = fits.get(random.nextInt(fits.size()));
+		List<ForgeType> options = legend.types().stream().filter(usable).toList();
 		return build(legend, options.get(random.nextInt(options.size())), random, registries);
+	}
+
+	/**
+	 * Whether a mob fighting up close can use this: a weapon, or one of the tools that is one — an axe, a
+	 * hammer. Not a bow, not the hook (a claw on a rope is for throwing), not a staff or a tome, whose magic
+	 * wants the rules of entity/ai/CasterGoal and a mob born to them.
+	 */
+	public static boolean swung(ForgeType type) {
+		return type.kind == ForgeType.Kind.WEAPON && !dev.forja.magic.Spellcasting.casts(type)
+			|| type == ForgeType.HACHA || type == ForgeType.MARTILLO || type == ForgeType.PICAHACHA;
 	}
 
 	/** Whether a kind of gear is swung rather than worn. */

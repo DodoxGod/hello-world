@@ -51,6 +51,8 @@ public final class MobMind {
 	public long lastStrike = Long.MIN_VALUE / 2;
 	/** The slot on the ring around the target this mob was given, as an angle; NaN for none. */
 	public double ringAngle = Double.NaN;
+	/** How far out that slot is: the ring widens when a crowd would stand too close together on it. */
+	public double ringRadius = TacticGoal.RING_RADIUS;
 
 	MobMind(Mob mob) {
 		this.mob = mob;

@@ -599,7 +599,11 @@ public class CombatGameTests {
 				"el husk no golpeó al jugador quieto (distancia " + husk.distanceTo(player)
 					+ ", objetivo " + husk.getTarget() + ", le pegó " + husk.getLastHurtByMob()
 					+ ", vida " + husk.getHealth() + ", aturdido " + Posture.isStaggered(husk, helper.getLevel().getGameTime())
-					+ ", turnos del jugador " + dev.forja.combat.AttackTokens.held(player) + ")");
+					+ ", turnos del jugador " + dev.forja.combat.AttackTokens.held(player)
+					+ ", decisión " + (dev.forja.ai.MobAi.mind(husk) == null ? "sin mente" : dev.forja.ai.MobAi.mind(husk).decision)
+					+ ", etiquetas " + husk.entityTags() + ", mira un duelo " + dev.forja.ai.Duels.watching(husk)
+					+ ", metas " + ((dev.forja.mixin.MobGoalsAccess) husk).forjaGoals().getAvailableGoals().stream().filter(g -> g.isRunning())
+						.map(g -> g.getGoal().getClass().getSimpleName()).toList() + ")");
 			helper.succeed();
 		});
 	}

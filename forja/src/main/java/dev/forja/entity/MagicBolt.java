@@ -12,7 +12,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -48,6 +47,8 @@ public class MagicBolt extends Projectile {
 	 * Multishot do not all count on one target: a fan is for a crowd.
 	 */
 	private boolean insistent;
+	/** Thrown by a monster: it flies through the others of its side instead of spending itself on them. */
+	private boolean spareMonsters;
 
 	public MagicBolt insistent() {
 		this.insistent = true;
@@ -63,7 +64,7 @@ public class MagicBolt extends Projectile {
 		this.noPhysics = true;
 	}
 
-	public MagicBolt(ServerLevel level, Player owner, Vec3 look, int colour, float damage, net.minecraft.world.item.ItemStack weapon, float seek, boolean big) {
+	public MagicBolt(ServerLevel level, LivingEntity owner, Vec3 look, int colour, float damage, net.minecraft.world.item.ItemStack weapon, float seek, boolean big) {
 		this(ModEntities.PROYECTIL_MAGICO, level);
 		this.setOwner(owner);
 		this.colour = colour;
@@ -71,6 +72,7 @@ public class MagicBolt extends Projectile {
 		this.weapon = weapon;
 		this.seek = seek;
 		this.big = big;
+		this.spareMonsters = owner instanceof net.minecraft.world.entity.monster.Enemy;
 		this.setPos(owner.getX() + look.x * 0.6, owner.getEyeY() - 0.15 + look.y * 0.6, owner.getZ() + look.z * 0.6);
 		this.setDeltaMovement(look.scale(Spellcasting.BOLT_SPEED));
 	}
@@ -130,7 +132,8 @@ public class MagicBolt extends Projectile {
 				return;
 			}
 			AABB box = new AABB(at, at).inflate(this.big ? 0.6 : 0.35);
-			for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, box, other -> other.isAlive() && other != this.getOwner())) {
+			for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, box,
+				other -> other.isAlive() && other != this.getOwner() && !Spellcasting.spares(this.spareMonsters, other))) {
 				if (this.insistent) {
 					victim.invulnerableTime = 0;
 				}
@@ -165,8 +168,11 @@ public class MagicBolt extends Projectile {
 		Vec3 wanted = null;
 		double best = SEEK_CONE;
 		for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class, new AABB(from, from).inflate(SEEK_RANGE), e -> e.isAlive() && e != owner)) {
-			boolean hostile = other instanceof net.minecraft.world.entity.monster.Enemy
-				|| (other instanceof net.minecraft.world.entity.Mob mob && owner != null && mob.getTarget() == owner);
+			// A monster's bolt hunts the one thing it was thrown at, not every monster about.
+			boolean hostile = owner instanceof net.minecraft.world.entity.Mob caster
+				? other == caster.getTarget()
+				: other instanceof net.minecraft.world.entity.monster.Enemy
+					|| (other instanceof net.minecraft.world.entity.Mob mob && owner != null && mob.getTarget() == owner);
 			if (!hostile || (owner != null && other.isAlliedTo(owner))) {
 				continue;
 			}

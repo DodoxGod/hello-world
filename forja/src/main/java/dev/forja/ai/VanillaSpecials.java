@@ -255,7 +255,7 @@ public final class VanillaSpecials {
 		public void warn(Mob mob, Player target, SpecialRunner.Run run) {
 			CombatAnim.broadcast(mob, CombatAnim.Kind.TELEGRAPH, this.windup);
 			sound(mob, SoundEvents.EVOKER_PREPARE_ATTACK, 1.0F, 1.4F);
-			if (mob.getMainHandItem().is(Items.BOW)) {
+			if (mob.getMainHandItem().getItem() instanceof net.minecraft.world.item.BowItem) {
 				mob.startUsingItem(InteractionHand.MAIN_HAND);
 			}
 		}
