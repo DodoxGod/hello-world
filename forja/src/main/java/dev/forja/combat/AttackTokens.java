@@ -27,6 +27,26 @@ public final class AttackTokens {
 		return true;
 	}
 
+	/** Whether this mob holds one of the target's turns right now. */
+	public static boolean holds(LivingEntity target, Mob mob) {
+		Set<Mob> holders = HOLDERS.get(target);
+		return holders != null && holders.contains(mob);
+	}
+
+	/** Whether a turn on this target is free. */
+	public static boolean free(LivingEntity target, int max) {
+		Set<Mob> holders = HOLDERS.get(target);
+		if (holders == null) return true;
+		holders.removeIf(m -> !m.isAlive() || m.isRemoved() || m.getTarget() != target);
+		return holders.size() < max;
+	}
+
+	/** How many mobs hold a turn on this target. */
+	public static int held(LivingEntity target) {
+		Set<Mob> holders = HOLDERS.get(target);
+		return holders == null ? 0 : holders.size();
+	}
+
 	public static void release(LivingEntity target, Mob mob) {
 		if (target == null) return;
 		Set<Mob> holders = HOLDERS.get(target);

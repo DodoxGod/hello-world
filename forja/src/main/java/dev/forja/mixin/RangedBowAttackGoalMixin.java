@@ -41,6 +41,12 @@ abstract class RangedBowAttackGoalMixin {
 	/** Vanilla lets go once the bow has been drawn for 20 ticks: a charged shot takes longer. */
 	@ModifyExpressionValue(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/monster/Monster;getTicksUsingItem()I"))
 	private int forja$chargedDraw(int ticks) {
+		// Covering fire: with one of its own in the way, it holds the draw until the line is clear.
+		if (ticks >= 19 && mob.getTarget() instanceof net.minecraft.world.entity.player.Player player
+			&& dev.forja.ai.Squad.allyInLine(mob, player)) {
+			ticks = Math.min(ticks, 19 + (forja$chargedShot() ? Math.max(0, CombatConfig.get().chargedExtraDrawTicks) : 0));
+			return forja$chargedShot() ? ticks - Math.max(0, CombatConfig.get().chargedExtraDrawTicks) : ticks;
+		}
 		if (!forja$chargedShot()) return ticks;
 		int extra = Math.max(0, CombatConfig.get().chargedExtraDrawTicks);
 		if (!forja$flashed && ticks >= 10 + extra) {

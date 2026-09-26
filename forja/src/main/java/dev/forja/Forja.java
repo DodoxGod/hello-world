@@ -75,6 +75,8 @@ public final class Forja implements ModInitializer {
 		dev.forja.upgrade.TraitEffects.register();
 		// After every Forja damage hook, so trait dodges and shield reactions still come first.
 		dev.forja.combat.CombatOverhaul.register();
+		dev.forja.difficulty.DifficultyRules.register();
+		dev.forja.ai.MobAi.register();
 
 		// Forged gear is improved with upgrades at the forge table, never with the enchanting table or books.
 		EnchantmentEvents.ALLOW_ENCHANTING.register((enchantment, stack, context) ->

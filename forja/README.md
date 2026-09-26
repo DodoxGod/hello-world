@@ -9,6 +9,25 @@ dependen del calor bajo la mesa, crisoles y colada de metal, maestría de objeto
 (varios animados con GeckoLib), un jefe (el **Herrero Caído**, en el Nether), eventos del cielo, un aldeano
 Forjador y estructuras (forja abandonada, taller de montaña, castillo de forja, Bastión del gremio...).
 
+### Combate
+
+Forja incluye el sistema de combate de Filo: armadura por tipo de daño y zona del cuerpo, estamina, esquiva
+(`Alt izquierdo`), parada con escudo forjado, postura de los mobs y mobs que avisan antes de atacar. Encima:
+
+- **Animaciones de golpe** según el arma, en primera y tercera persona: tajo horizontal (espadas, espadón,
+  guadaña), golpe desde arriba (hachas, martillo, mazo, mangual, maza) y estocada (lanza, tridente, daga).
+- **Reacciones de los cuerpos**: retroceso al recibir un golpe, el mob se echa atrás al avisar y se lanza al
+  golpear, se agacha antes de la embestida, se tambalea aturdido, se inclina al esquivar y el escudo sale
+  hacia delante en una parada.
+- **Hitstop y temblor**: el golpe se congela unos milisegundos al acertar, y la cámara tiembla en paradas,
+  aturdimientos, guardias rotas y golpes recibidos (respeta el ajuste "Efectos de distorsión").
+- **Barra de postura** del enemigo bajo la mira: se llena al golpearlo y brilla en dorado mientras está aturdido.
+- **Resistencias en el tooltip** de cada armadura (corte, golpe, perforación y peso).
+- La esquiva usa las reglas del servidor, así que no se desincroniza en multijugador.
+
+Para ver las animaciones sin jugar: `FORJA_SOLO=combate ./gradlew runClientGameTest` saca capturas en
+`build/run/clientGameTest/screenshots/combate_*.png`.
+
 Esta carpeta es el **proyecto completo** y se compila tal cual:
 
 | Ruta | Contenido |

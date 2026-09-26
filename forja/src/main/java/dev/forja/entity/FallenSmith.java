@@ -371,6 +371,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 			Vec3 arc = this.getEyePosition().add(this.getLookAngle().scale(1.6)).subtract(0.0, 0.6, 0.0);
 			world.sendParticles(ParticleTypes.CRIT, arc.x, arc.y, arc.z, 2, 0.35, 0.2, 0.35, 0.02);
 		}, world -> {
+			dev.forja.ai.ForjaTraits.smithStruck(this);
 			Vec3 reach = this.position().add(this.getLookAngle().scale(STRIKE_REACH * 0.5));
 			world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.HOSTILE, 2.0F, 0.7F);
 			for (LivingEntity victim : world.getEntitiesOfClass(LivingEntity.class,
@@ -461,6 +462,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 					(int) (2 + grown * 4), 0.3, 0.2, 0.3, 0.01);
 			}
 		}, world -> {
+			dev.forja.ai.ForjaTraits.smithStruck(this);
 			this.wave = WAVE_TICKS;
 			this.waveHit.clear();
 			this.waveOrigin = this.position();

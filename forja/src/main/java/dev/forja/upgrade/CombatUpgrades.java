@@ -116,7 +116,8 @@ public final class CombatUpgrades {
 			}
 			// A hit the shield fully stops never reaches the after-damage event, so shield upgrades react here.
 			ItemStack shield = entity.getItemBlockingWith();
-			if (shield != null && shield.has(ModComponents.PARTS) && wouldBlock(entity, source, amount, shield)) {
+			if (shield != null && (shield.has(ModComponents.PARTS) || dev.forja.combat.WeaponGuard.is(shield))
+				&& wouldBlock(entity, source, amount, shield)) {
 				EXTRA_DAMAGE.set(true);
 				try {
 					onShieldBlock(level, entity, source, shield);
@@ -316,6 +317,7 @@ public final class CombatUpgrades {
 		}
 		// Combat overhaul: the first moments of the window are a perfect parry, the rest a plain one.
 		boolean perfect = isPerfectParry(defender, shield);
+		dev.forja.combat.CombatAnim.broadcast(defender, dev.forja.combat.CombatAnim.Kind.PARRY, 8, perfect ? 1.0F : 0.0F, 0.0F);
 		if (defender instanceof ServerPlayer player) {
 			player.sendOverlayMessage(Component.translatable(perfect ? "gui.forja.parada" : "gui.forja.parada_normal"));
 		}
@@ -339,7 +341,8 @@ public final class CombatUpgrades {
 		attacker.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 60, 0), defender);
 		// Combat overhaul: a perfect parry takes the attacker's balance at once, a plain one half of it;
 		// either gives the defender breath back.
-		if (perfect) {
+		// The striker fights to a beat: any parry on it, caught in time, takes its balance (idea 48).
+		if (perfect || attacker instanceof dev.forja.entity.Striker) {
 			dev.forja.combat.Posture.breakPosture(attacker, level.getGameTime());
 		} else {
 			dev.forja.combat.Posture.shake(attacker, 0.5, level.getGameTime());
@@ -407,6 +410,10 @@ public final class CombatUpgrades {
 	public static final int BALUARTE_EXTRA = 4;
 
 	public static int parryWindow(ItemStack shield) {
+		// A weapon's guard: a narrow window of its own, whatever the blade is made of.
+		if (dev.forja.combat.WeaponGuard.is(shield)) {
+			return dev.forja.combat.CombatConfig.get().weaponParryTicks;
+		}
 		ForgedParts parts = shield.get(ModComponents.PARTS);
 		if (parts == null) {
 			return 0;
@@ -852,10 +859,27 @@ public final class CombatUpgrades {
 		level.sendParticles(ParticleTypes.DAMAGE_INDICATOR, victim.getX(), victim.getY(0.7), victim.getZ(), 4 + stacks * 2, 0.3, 0.3, 0.3, 0.1);
 	}
 
+	/** Upgrade damage already dealt to each victim this tick: [game time, damage]. */
+	private static final java.util.Map<LivingEntity, double[]> PROCS_THIS_TICK = new java.util.WeakHashMap<>();
+
+	/**
+	 * Damage an upgrade adds on top of a blow. Several upgrades proccing on the same foe in the same tick
+	 * count for less and less (amount / (1 + already / softness)), so piling five damage upgrades on one
+	 * weapon does not multiply its damage by five.
+	 */
 	private static void extraDamage(ServerLevel level, LivingEntity victim, DamageSource source, float amount) {
 		if (victim.isAlive() && amount > 0.0F) {
+			long now = level.getGameTime();
+			double[] procs = PROCS_THIS_TICK.computeIfAbsent(victim, v -> new double[] {now, 0.0});
+			if (procs[0] != now) {
+				procs[0] = now;
+				procs[1] = 0.0;
+			}
+			double softness = Math.max(0.1, dev.forja.combat.CombatConfig.get().upgradeProcSoftness);
+			float softened = (float) (amount / (1.0 + procs[1] / softness));
+			procs[1] += softened;
 			victim.invulnerableTime = 0;
-			victim.hurtServer(level, source, amount);
+			victim.hurtServer(level, source, softened);
 		}
 	}
 

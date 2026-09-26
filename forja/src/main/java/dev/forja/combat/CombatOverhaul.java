@@ -20,15 +20,30 @@ public final class CombatOverhaul {
 		// Registers the synced stamina attachment now, on both sides, before any player joins.
 		java.util.Objects.requireNonNull(Stamina.VALUE);
 		PayloadTypeRegistry.serverboundPlay().register(DodgePayload.TYPE, DodgePayload.STREAM_CODEC);
-		ServerPlayNetworking.registerGlobalReceiver(DodgePayload.TYPE, (payload, context) -> Stamina.onDodge(context.player()));
+		PayloadTypeRegistry.serverboundPlay().register(ChargePayload.TYPE, ChargePayload.STREAM_CODEC);
+		ServerPlayNetworking.registerGlobalReceiver(ChargePayload.TYPE,
+			(payload, context) -> ChargedStrike.onPayload(context.player(), payload.action()));
+		WeaponGuard.register();
+		PayloadTypeRegistry.clientboundPlay().register(CombatAnim.TYPE, CombatAnim.STREAM_CODEC);
+		PayloadTypeRegistry.clientboundPlay().register(CombatRules.TYPE, CombatRules.STREAM_CODEC);
+		ServerPlayNetworking.registerGlobalReceiver(DodgePayload.TYPE,
+			(payload, context) -> Stamina.onDodge(context.player(), payload.x(), payload.z()));
+		// The client judges its own dodge before the server answers, so it has to judge it by the server's rules.
+		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> CombatRules.sendTo(handler.player));
 
 		AttackEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
 			if (!level.isClientSide() && !player.isSpectator()) {
+				dev.forja.ai.PlayerHabits.onAttack(player, player.distanceTo(entity), ChargedStrike.striking(player) != null);
+			}
+			// A charged blow goes through Player#attack too, and has already paid for itself.
+			if (!level.isClientSide() && !player.isSpectator() && ChargedStrike.striking(player) == null) {
 				Stamina.onAttack(player);
+				Combos.onAttack(player, player.getAttackStrengthScale(0.5F));
 			}
 			return InteractionResult.PASS;
 		});
 		ServerLivingEntityEvents.ALLOW_DAMAGE.register(CombatHooks::allowDamage);
+		ServerLivingEntityEvents.AFTER_DAMAGE.register(CombatHooks::afterDamage);
 		ServerTickEvents.END_SERVER_TICK.register(Stamina::tick);
 		ParryRhythm.register();
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Stamina.forget(handler.getPlayer()));

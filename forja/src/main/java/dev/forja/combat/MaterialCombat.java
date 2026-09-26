@@ -96,6 +96,25 @@ public final class MaterialCombat {
 		);
 	}
 
+	/**
+	 * Mail is the one vanilla armor the formula reads wrong: it is light, so the scale takes it for a soft
+	 * material, but rings are exactly what stops an edge. They do little against a hammer, and a point can
+	 * slip through them. Nudged per piece like any material, under the name "cota_de_malla".
+	 */
+	public static Profile chainmail(Profile generic) {
+		Profile mail = new Profile(1.35, 0.8, 0.95, generic.weight());
+		CombatConfig.MaterialOverride tweak = CombatConfig.get().materiales.get("cota_de_malla");
+		if (tweak == null) {
+			return mail;
+		}
+		return new Profile(
+			tweak.slash != null ? tweak.slash : mail.slash(),
+			tweak.blunt != null ? tweak.blunt : mail.blunt(),
+			tweak.pierce != null ? tweak.pierce : mail.pierce(),
+			tweak.weight != null ? tweak.weight : mail.weight()
+		);
+	}
+
 	private static Profile override(ForgeMaterial plate, Profile derived) {
 		CombatConfig.MaterialOverride tweak = CombatConfig.get().materiales.get(plate.getSerializedName());
 		if (tweak == null) {

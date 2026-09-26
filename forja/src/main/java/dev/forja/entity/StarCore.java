@@ -275,7 +275,9 @@ public class StarCore extends Monster implements GeoEntity {
 		float held = this.entityData.get(DATA_CHARGE);
 		this.triggerAnim("nucleo", "release");
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.BEACON_POWER_SELECT, SoundSource.HOSTILE, 1.8F, 0.7F);
-		this.windup.start(RELEASE_WINDUP, (world, left, total) -> {
+		// The warning shortens as it breaks up: half its length at the end (idea 50).
+		int warning = Math.max(RELEASE_WINDUP / 2, Math.round(RELEASE_WINDUP * (0.5F + 0.5F * this.getHealth() / this.getMaxHealth())));
+		this.windup.start(warning, (world, left, total) -> {
 			// The line it is about to fire down, so there is something to step out of.
 			Vec3 from = this.position().add(0.0, 1.0, 0.0);
 			Vec3 toward = owed.position().add(0.0, owed.getBbHeight() * 0.5, 0.0).subtract(from);

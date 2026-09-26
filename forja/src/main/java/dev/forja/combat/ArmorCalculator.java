@@ -65,6 +65,16 @@ public final class ArmorCalculator {
 		return weight;
 	}
 
+	/** What a piece of armor resists and weighs, as the formula would see it worn; null for anything that is not armor. */
+	public static MaterialCombat.Profile profileOf(ItemStack stack) {
+		net.minecraft.world.item.equipment.Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
+		if (equippable == null || !java.util.Arrays.asList(SLOTS).contains(equippable.slot())) {
+			return null;
+		}
+		Piece piece = piece(stack, equippable.slot(), CombatConfig.get());
+		return piece == null ? null : piece.profile();
+	}
+
 	static Piece piece(ItemStack stack, EquipmentSlot slot, CombatConfig cfg) {
 		if (stack.isEmpty()) return null;
 		ItemAttributeModifiers modifiers = stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
@@ -92,6 +102,10 @@ public final class ArmorCalculator {
 		double fullSet = armor * SLOT_NORMALIZER[index];
 		double toughness = modifiers.compute(Attributes.ARMOR_TOUGHNESS, 0.0, slot) * 4.0;
 		double knockback = modifiers.compute(Attributes.KNOCKBACK_RESISTANCE, 0.0, slot);
-		return MaterialCombat.generic(fullSet, toughness, knockback);
+		MaterialCombat.Profile generic = MaterialCombat.generic(fullSet, toughness, knockback);
+		net.minecraft.world.item.equipment.Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
+		boolean chain = equippable != null && equippable.assetId()
+			.map(net.minecraft.world.item.equipment.EquipmentAssets.CHAINMAIL::equals).orElse(false);
+		return chain ? MaterialCombat.chainmail(generic) : generic;
 	}
 }

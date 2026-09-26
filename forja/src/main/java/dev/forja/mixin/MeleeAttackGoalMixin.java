@@ -44,11 +44,16 @@ abstract class MeleeAttackGoalMixin {
 	@Unique
 	private LivingEntity forja$target;
 
+	/** This blow is a fake: dropped halfway through its warning (against players who parry a lot). */
+	@Unique
+	private boolean forja$feint;
+
 	@Inject(method = "checkAndPerformAttack", at = @At("HEAD"), cancellable = true)
 	private void forja$telegraphedAttack(LivingEntity target, CallbackInfo ci) {
 		CombatConfig cfg = CombatConfig.get();
 		if (!cfg.enabled || !cfg.telegraph || forja$windup == 0 && !(target instanceof Player)
-			|| !"minecraft".equals(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getNamespace())) {
+			|| !"minecraft".equals(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getNamespace())
+				&& !(mob instanceof dev.forja.entity.ForgeAutomaton)) {
 			return;
 		}
 		ci.cancel();
@@ -59,6 +64,14 @@ abstract class MeleeAttackGoalMixin {
 		if (forja$windup > 0) {
 			forja$holdStill(target);
 			mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
+			if (forja$feint && forja$windup <= Math.max(1, cfg.windupTicks) / 2) {
+				// The fake: it wound up, the player raised the shield for it, and nothing comes.
+				forja$feint = false;
+				dev.forja.combat.CombatStats.record(mob, dev.forja.combat.CombatStats.FEINT);
+				resetAttackCooldown();
+				forja$reset();
+				return;
+			}
 			if (--forja$windup > 0) return;
 			mob.swing(InteractionHand.MAIN_HAND);
 			double allowed = mob.getBbWidth() * 2.0 + target.getBbWidth() * 0.5 + cfg.strikeReachBonus;
@@ -66,12 +79,19 @@ abstract class MeleeAttackGoalMixin {
 				mob.doHurtTarget(level, target);
 			}
 			resetAttackCooldown();
+			dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
+			if (mind != null) {
+				mind.lastStrike = mob.level().getGameTime();
+			}
 			forja$reset();
 			return;
 		}
-		if (!canPerformAttack(target) || !AttackTokens.tryAcquire(target, mob, cfg.maxSimultaneousAttackers)) return;
-		forja$windup = Math.max(1, cfg.windupTicks);
+		if (!canPerformAttack(target) || !AttackTokens.tryAcquire(target, mob, dev.forja.ai.Aggression.maxAttackers(target))) return;
+		forja$windup = dev.forja.ai.MobDefense.windup(mob);
+		dev.forja.ai.MobDefense.spendCounter(mob);
 		forja$target = target;
+		forja$feint = mob.getRandom().nextDouble() < (mob instanceof dev.forja.entity.ForgeAutomaton
+			? dev.forja.ai.Aggression.adaptiveFeintChance(target) : dev.forja.ai.Aggression.feintChance(mob, target));
 		forja$holdStill(target);
 		CombatFeedback.telegraph(mob);
 	}

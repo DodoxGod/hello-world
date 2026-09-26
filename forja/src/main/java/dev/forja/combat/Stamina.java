@@ -39,6 +39,8 @@ public final class Stamina {
 		boolean tiredAttack;
 		long dodgeUntil = -1;
 		long dodgeCooldownUntil;
+		/** A blow was dodged that would have landed: the counter stays open until then. */
+		long counterUntil = -1;
 	}
 
 	private Stamina() {
@@ -82,6 +84,43 @@ public final class Stamina {
 		return data(player).dodgeUntil >= now;
 	}
 
+	/**
+	 * A blow met the i-frames of a dodge: the dodge was perfect. The next hit inside the window is a
+	 * counter, and a little breath comes back. Only the first blow of a dodge counts.
+	 */
+	public static void markPerfectDodge(Player player) {
+		Data data = data(player);
+		long now = player.level().getGameTime();
+		if (data.counterUntil >= now) {
+			return;
+		}
+		CombatConfig cfg = CombatConfig.get();
+		data.counterUntil = now + cfg.counterWindowTicks;
+		restore(player, cfg.counterStaminaRefund);
+		CombatAnim.broadcast(player, CombatAnim.Kind.PERFECT_DODGE, cfg.counterWindowTicks);
+		if (player instanceof ServerPlayer serverPlayer) {
+			serverPlayer.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("gui.forja.esquiva_perfecta"));
+		}
+	}
+
+	/** Whether the blow landing now is a counter after a perfect dodge. Reading it clears it. */
+	public static boolean consumeCounter(Player player) {
+		Data data = data(player);
+		boolean open = data.counterUntil >= player.level().getGameTime();
+		data.counterUntil = -1;
+		return open;
+	}
+
+	/** Whether a counter is open for this player. */
+	public static boolean counterOpen(Player player) {
+		return data(player).counterUntil >= player.level().getGameTime();
+	}
+
+	/** Ticks until the player can dodge again (0 when ready). */
+	public static int dodgeCooldown(Player player) {
+		return (int) Math.max(0L, data(player).dodgeCooldownUntil - player.level().getGameTime());
+	}
+
 	public static void onAttack(Player player) {
 		data(player).tiredAttack = !trySpend(player, CombatConfig.get().attackCost);
 	}
@@ -94,15 +133,44 @@ public final class Stamina {
 		return tired;
 	}
 
-	public static void onDodge(ServerPlayer player) {
+	/** Ticks of cooldown the server lets slide: the client counts its own, and a packet can arrive a tick or two late. */
+	private static final int DODGE_COOLDOWN_SLACK = 2;
+	/** Stamina the server lets slide: the client's copy is synced in half-point steps and can run a little behind. */
+	private static final float DODGE_STAMINA_SLACK = 3.0F;
+
+	/**
+	 * The client has already moved, so turning a dodge down here leaves the player jumping without the
+	 * i-frames. The checks mirror the client's with a little slack, so the two only disagree when the
+	 * client is really out of line.
+	 */
+	public static void onDodge(ServerPlayer player, float x, float z) {
 		CombatConfig cfg = CombatConfig.get();
 		if (!cfg.enabled || !cfg.dodge || player.isSpectator()) return;
 		Data data = data(player);
 		long now = player.level().getGameTime();
-		if (now < data.dodgeCooldownUntil || !trySpend(player, cfg.dodgeCost)) return;
+		if (now + DODGE_COOLDOWN_SLACK < data.dodgeCooldownUntil) return;
+		if (!exempt(player)) {
+			if (data.stamina + DODGE_STAMINA_SLACK < cfg.dodgeCost) return;
+			data.stamina = Math.max(0.0F, data.stamina - cfg.dodgeCost);
+			data.lastSpend = now;
+		}
 		data.dodgeUntil = now + cfg.dodgeIframeTicks;
 		data.dodgeCooldownUntil = now + cfg.dodgeCooldownTicks;
 		CombatFeedback.dodge(player);
+		double length = Math.sqrt(x * x + z * z);
+		if (Double.isFinite(length) && length > 1.0E-4) {
+			CombatAnim.broadcast(player, CombatAnim.Kind.DODGE, cfg.dodgeIframeTicks + 4, (float) (x / length), (float) (z / length));
+			// Which way it went, seen from the nearest monster after this player: habits the others learn.
+			var hunters = player.level().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(8.0),
+				mob -> mob.getTarget() == player && mob instanceof net.minecraft.world.entity.monster.Enemy);
+			hunters.stream().min(java.util.Comparator.comparingDouble(mob -> mob.distanceToSqr(player))).ifPresent(mob -> {
+				double ux = player.getX() - mob.getX();
+				double uz = player.getZ() - mob.getZ();
+				double d = Math.max(1.0E-6, Math.hypot(ux, uz));
+				double side = (x * (-uz / d) + z * (ux / d)) / length;
+				dev.forja.ai.PlayerHabits.onDodge(player, (float) Math.signum(side));
+			});
+		}
 	}
 
 	public static void tick(MinecraftServer server) {

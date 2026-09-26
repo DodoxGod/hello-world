@@ -38,6 +38,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
@@ -91,6 +92,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
 			TestServerConnection connection = singleplayer.getConnection();
 			TestServerContext server = singleplayer.getServer();
+			// The checks compare mobs against fixed numbers: none of them may come as a veteran or an elite by chance.
+			server.runOnServer(s -> {
+				dev.forja.combat.CombatConfig.get().veteranChance = 0.0;
+				dev.forja.combat.CombatConfig.get().eliteChance = 0.0;
+			});
 			connection.waitForChunksRender();
 			server.runCommand("time set noon");
 			server.runCommand("weather clear");
@@ -153,6 +159,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 			if ("pantallas".equals(solo)) {
 				shotStationScreens(context, server, connection, x, y, z);
 				checkPartsCabinet(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
+			if ("combate".equals(solo)) {
+				filmCombatPoses(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
@@ -9125,6 +9136,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 		try (TestSingleplayerContext singleplayer = context.worldBuilder().setUseConsistentSettings(false).create()) {
 			TestServerConnection connection = singleplayer.getConnection();
 			TestServerContext server = singleplayer.getServer();
+			// The checks compare mobs against fixed numbers: none of them may come as a veteran or an elite by chance.
+			server.runOnServer(s -> {
+				dev.forja.combat.CombatConfig.get().veteranChance = 0.0;
+				dev.forja.combat.CombatConfig.get().eliteChance = 0.0;
+			});
 			context.runOnClient(mc -> {
 				mc.options.renderDistance().set(32);
 				mc.options.simulationDistance().set(8);
@@ -10249,6 +10265,225 @@ public class ForjaClientTest implements FabricClientGameTest {
 			mc.gui.hud.getChat().clearMessages(false);
 			mc.gui.toastManager().clear();
 		});
+	}
+
+	/**
+	 * The fight's poses, looked at: a mob rearing back to strike and lunging into it, the three weapon
+	 * swings in third person and in first, a stagger, a flinch with the posture bar under the crosshair,
+	 * a dodge seen from behind, and the resistances on an armor tooltip. FORJA_SOLO=combate runs it alone.
+	 */
+	private static void filmCombatPoses(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		// Night, seen through night vision: a zombie in the sun burns, and every tick of fire is a flinch.
+		server.runCommand("time set midnight");
+		server.runCommand("weather clear");
+		server.runCommand("difficulty easy");
+		server.runCommand("gamemode survival @a");
+		server.runCommand("effect give @a night_vision infinite 0 true");
+		int sx = x + 200;
+		int sz = z + 40;
+		tp(server, sx + 0.5, y, sz + 0.5, 0.0F, 12.0F);
+		context.waitTicks(20);
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d smooth_stone", sx - 8, y - 1, sz - 4, sx + 8, y - 1, sz + 10));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", sx - 8, y, sz - 4, sx + 8, y + 5, sz + 10));
+		context.waitTicks(5);
+		context.runOnClient(mc -> {
+			mc.gui.hud.getChat().clearMessages(false);
+			mc.options.fov().set(60);
+			mc.options.fovEffectScale().set(0.0);
+		});
+		int[] ids = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			ServerPlayer player = connection.getServerPlayer();
+			player.getInventory().clearContent();
+			ItemStack[] weapons = {new ItemStack(Items.IRON_AXE), new ItemStack(Items.IRON_SWORD), new ItemStack(Items.TRIDENT)};
+			int[] made = new int[weapons.length];
+			for (int i = 0; i < weapons.length; i++) {
+				var mob = zombie(level, sx + 0.5 + (i - 1) * 1.6, y, sz + 3.5);
+				mob.snapTo(mob.getX(), mob.getY(), mob.getZ(), 180.0F, 0.0F);
+				mob.setYBodyRot(180.0F);
+				mob.setYHeadRot(180.0F);
+				mob.setItemSlot(EquipmentSlot.MAINHAND, weapons[i]);
+				made[i] = mob.getId();
+			}
+			return made;
+		});
+		context.waitTicks(10);
+		shot(context, "combate_00_escena");
+
+		// The sword zombie, in the middle, turned side-on to the camera (facing screen left, east), winds up
+		// and throws itself into the blow: its head should go right as it rears back, then left into the blow.
+		server.runOnServer(s -> {
+			var mob = (net.minecraft.world.entity.Mob) connection.getServerLevel().getEntity(ids[1]);
+			mob.snapTo(mob.getX(), mob.getY(), mob.getZ(), -90.0F, 0.0F);
+			mob.setYBodyRot(-90.0F);
+			mob.setYHeadRot(-90.0F);
+		});
+		context.waitTicks(5);
+		shot(context, "combate_01_perfil");
+		server.runOnServer(s -> dev.forja.combat.CombatFeedback.telegraph(connection.getServerLevel().getEntity(ids[1])));
+		context.waitTicks(6);
+		check(context.computeOnClient(mc -> dev.forja.client.CombatAnims.get(ids[1]) != null), "the client should have heard about the telegraph");
+		shot(context, "combate_02_aviso");
+		context.waitTicks(4);
+		shot(context, "combate_02b_embestida");
+
+		// All three swing at once, facing the camera: the axe chops, the sword sweeps, the trident thrusts.
+		context.waitTicks(10);
+		server.runOnServer(s -> {
+			var mob = (net.minecraft.world.entity.Mob) connection.getServerLevel().getEntity(ids[1]);
+			mob.snapTo(mob.getX(), mob.getY(), mob.getZ(), 180.0F, 0.0F);
+			mob.setYBodyRot(180.0F);
+			mob.setYHeadRot(180.0F);
+		});
+		context.waitTicks(3);
+		server.runOnServer(s -> {
+			for (int id : ids) {
+				((net.minecraft.world.entity.LivingEntity) connection.getServerLevel().getEntity(id)).swing(InteractionHand.MAIN_HAND, true);
+			}
+		});
+		context.waitTicks(1);
+		shot(context, "combate_03a_golpes");
+		context.waitTicks(1);
+		shot(context, "combate_03b_golpes");
+		context.waitTicks(1);
+		shot(context, "combate_03c_golpes");
+
+		// A blow from the player: the zombie flinches, and its balance shows under the crosshair.
+		context.waitTicks(10);
+		server.runOnServer(s -> {
+			var mob = (net.minecraft.world.entity.LivingEntity) connection.getServerLevel().getEntity(ids[1]);
+			mob.invulnerableTime = 0;
+			mob.hurtServer(connection.getServerLevel(), connection.getServerLevel().damageSources().playerAttack(connection.getServerPlayer()), 3.0F);
+		});
+		context.waitTicks(2);
+		check(context.computeOnClient(mc -> dev.forja.client.CombatAnims.posture(ids[1], 0.0F) > 0.0F), "a blow should show on the posture bar");
+		check(context.computeOnClient(mc -> dev.forja.client.CombatAnims.lastHitEntity() == ids[1]), "the player's blow should have reached the client as a hit");
+		shot(context, "combate_04_retroceso_y_postura");
+
+		// Its balance gone: swaying on its feet, the bar glowing gold under the crosshair.
+		server.runOnServer(s -> dev.forja.combat.Posture.breakPosture(
+			(net.minecraft.world.entity.LivingEntity) connection.getServerLevel().getEntity(ids[1]), connection.getServerLevel().getGameTime()));
+		context.waitTicks(5);
+		check(context.computeOnClient(mc -> dev.forja.client.CombatAnims.staggerLeft(ids[1], 0.0F) > 0.0F), "the stagger should have reached the client");
+		shot(context, "combate_05a_aturdido");
+		context.waitTicks(6);
+		shot(context, "combate_05b_aturdido");
+
+		// First person, each weapon: two frames of its swing.
+		String[] names = {"hacha", "espada", "tridente"};
+		Item[] held = {Items.IRON_AXE, Items.IRON_SWORD, Items.TRIDENT};
+		for (int i = 0; i < held.length; i++) {
+			Item item = held[i];
+			server.runOnServer(s -> connection.getServerPlayer().setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(item)));
+			context.waitTicks(25);
+			context.runOnClient(mc -> mc.player.swing(InteractionHand.MAIN_HAND));
+			context.waitTicks(1);
+			shot(context, "combate_06_" + names[i] + "_a");
+			context.waitTicks(1);
+			shot(context, "combate_06_" + names[i] + "_b");
+		}
+
+		// A dodge to the side, from behind: the body leans into it.
+		context.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+		context.waitTicks(25);
+		server.runOnServer(s -> dev.forja.combat.Stamina.onDodge(connection.getServerPlayer(), -1.0F, 0.0F));
+		context.waitTicks(4);
+		shot(context, "combate_07_esquiva");
+		context.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
+
+		// A charged blow at the sword zombie in the middle: drawn back, full and trembling, then let go.
+		server.runOnServer(s -> {
+			connection.getServerPlayer().setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_SWORD));
+			var mob = (net.minecraft.world.entity.LivingEntity) connection.getServerLevel().getEntity(ids[1]);
+			mob.setHealth(mob.getMaxHealth());
+		});
+		context.waitTicks(25);
+		context.getInput().holdKey(options -> options.keyAttack);
+		context.waitTicks(12);
+		shot(context, "combate_09a_cargando");
+		context.waitTicks(14);
+		check(context.computeOnClient(mc -> dev.forja.client.CombatClient.localCharge(0.0F) >= 1.0F), "holding the attack button should fill the charge");
+		shot(context, "combate_09b_carga_llena");
+		float beforeRelease = server.computeOnServer(s -> ((net.minecraft.world.entity.LivingEntity) connection.getServerLevel().getEntity(ids[1])).getHealth());
+		context.getInput().releaseKey(options -> options.keyAttack);
+		context.waitTicks(2);
+		shot(context, "combate_09c_golpe_cargado");
+		float afterRelease = server.computeOnServer(s -> ((net.minecraft.world.entity.LivingEntity) connection.getServerLevel().getEntity(ids[1])).getHealth());
+		check(afterRelease < beforeRelease, "letting the charge go should strike the zombie (" + beforeRelease + " -> " + afterRelease + ")");
+
+		// The same charge, seen from the front.
+		context.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+		context.waitTicks(25);
+		context.getInput().holdKey(options -> options.keyAttack);
+		context.waitTicks(22);
+		shot(context, "combate_09d_carga_tercera_persona");
+		context.getInput().releaseKey(options -> options.keyAttack);
+		context.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
+		context.waitTicks(25);
+
+		// The third blow of a combo: the sweep comes back the other way.
+		server.runOnServer(s -> {
+			dev.forja.combat.Combos.onAttack(connection.getServerPlayer(), 1.0F);
+			dev.forja.combat.Combos.onAttack(connection.getServerPlayer(), 1.0F);
+		});
+		context.waitTicks(6);
+		context.runOnClient(mc -> mc.player.swing(InteractionHand.MAIN_HAND));
+		context.waitTicks(1);
+		shot(context, "combate_10a_combo_reves");
+		context.waitTicks(1);
+		shot(context, "combate_10b_combo_reves");
+		context.waitTicks(30);
+
+		// The sword raised to guard, in first person and from the front.
+		context.getInput().holdKey(options -> options.keyUse);
+		context.waitTicks(5);
+		check(context.computeOnClient(mc -> mc.player.isUsingItem()), "right click with a sword should raise it to guard");
+		shot(context, "combate_11a_guardia_espada");
+		context.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+		context.waitTicks(3);
+		shot(context, "combate_11b_guardia_espada_frente");
+		context.getInput().releaseKey(options -> options.keyUse);
+		context.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
+		context.waitTicks(5);
+
+		// And the armor tooltip: what the piece is good against.
+		server.runOnServer(s -> {
+			connection.getServerPlayer().getInventory().clearContent();
+			connection.getServerPlayer().getInventory().setItem(0, new ItemStack(Items.CHAINMAIL_CHESTPLATE));
+		});
+		context.waitTicks(5);
+		context.runOnClient(mc -> mc.gui.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
+		context.waitTicks(5);
+		double[] slot = context.computeOnClient(mc -> {
+			double scale = mc.getWindow().getGuiScale();
+			double left = (mc.getWindow().getGuiScaledWidth() - 176) / 2.0;
+			double top = (mc.getWindow().getGuiScaledHeight() - 166) / 2.0;
+			return new double[] {(left + 8 + 8) * scale, (top + 142 + 8) * scale};
+		});
+		context.getInput().setCursorPos(slot[0], slot[1]);
+		context.waitTicks(5);
+		shot(context, "combate_08_tooltip_armadura");
+		context.getInput().setCursorPos(0, 0);
+		context.runOnClient(mc -> {
+			mc.gui.setScreen(null);
+			mc.options.fov().set(70);
+			mc.options.fovEffectScale().set(1.0);
+		});
+		server.runOnServer(s -> {
+			for (int id : ids) {
+				var mob = connection.getServerLevel().getEntity(id);
+				if (mob != null) {
+					mob.discard();
+				}
+			}
+			connection.getServerPlayer().getInventory().clearContent();
+		});
+		server.runCommand("effect clear @a night_vision");
+		server.runCommand("time set noon");
+	}
+
+	private static void shot(ClientGameTestContext context, String name) {
+		context.takeScreenshot(TestScreenshotOptions.of(name).disableCounterPrefix().withSize(960, 540));
 	}
 
 	private static void tp(TestServerContext server, double x, double y, double z, float yaw, float pitch) {

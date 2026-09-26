@@ -4,12 +4,19 @@ import java.util.List;
 import java.util.UUID;
 
 import com.mojang.authlib.GameProfile;
+import dev.forja.combat.ArmorCalculator;
 import dev.forja.combat.ArmorMath;
 import dev.forja.combat.CombatConfig;
+import dev.forja.combat.WeaponGuard;
+import dev.forja.combat.Combos;
+import dev.forja.combat.ChargedStrike;
+import dev.forja.combat.ChargePayload;
 import dev.forja.combat.CombatStats;
+import dev.forja.combat.MaterialCombat;
 import dev.forja.combat.ParryRhythm;
 import dev.forja.combat.Posture;
 import dev.forja.combat.Stamina;
+import dev.forja.combat.SwingStyle;
 import dev.forja.forge.Assembler;
 import dev.forja.forge.ForgeType;
 import dev.forja.material.ForgeMaterial;
@@ -46,8 +53,8 @@ public class CombatGameTests {
 	private static final double EPS = 0.02;
 
 	/** A simulated player that, unlike Fabric's, can be hurt. */
-	static class TestPlayer extends FakePlayer {
-		TestPlayer(ServerLevel level) {
+	public static class TestPlayer extends FakePlayer {
+		public TestPlayer(ServerLevel level) {
 			super(level, new GameProfile(UUID.randomUUID(), "forja_test"));
 		}
 
@@ -92,7 +99,14 @@ public class CombatGameTests {
 		}
 	}
 
+	/** Tests compare mobs with each other, so none of them may come as a veteran or an elite by chance. */
+	private static void noRandomThreat() {
+		CombatConfig.get().veteranChance = 0.0;
+		CombatConfig.get().eliteChance = 0.0;
+	}
+
 	private static Zombie bareZombie(GameTestHelper helper, BlockPos pos) {
+		noRandomThreat();
 		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, pos);
 		for (EquipmentSlot slot : EquipmentSlot.values()) {
 			zombie.setItemSlot(slot, ItemStack.EMPTY);
@@ -204,8 +218,338 @@ public class CombatGameTests {
 		TestPlayer dodger = player(helper, new BlockPos(1, 1, 4));
 		DamageSource blow = helper.getLevel().damageSources().mobAttack(attacker);
 		helper.assertTrue(hit(control, blow, 6F) > 0, "control: sin esquivar el golpe debería entrar");
-		Stamina.onDodge(dodger);
+		Stamina.onDodge(dodger, 1.0F, 0.0F);
 		helper.assertTrue(hit(dodger, blow, 6F) == 0, "la esquiva no dio invulnerabilidad");
+		helper.succeed();
+	}
+
+	/**
+	 * The client moves first and asks after, from a stamina bar synced in half-point steps: a dodge a
+	 * hair short of the cost still goes through, one far short does not.
+	 */
+	@GameTest
+	public void dodgeForgivesAStaleStaminaBar(GameTestHelper helper) {
+		Zombie attacker = bareZombie(helper, new BlockPos(3, 1, 1));
+		TestPlayer nearly = player(helper, new BlockPos(1, 1, 1));
+		TestPlayer spent = player(helper, new BlockPos(1, 1, 4));
+		CombatConfig cfg = CombatConfig.get();
+		Stamina.trySpend(nearly, cfg.staminaMax - (cfg.dodgeCost - 2.0F));
+		Stamina.trySpend(spent, cfg.staminaMax - cfg.dodgeCost * 0.4F);
+		Stamina.onDodge(nearly, 0.0F, -1.0F);
+		Stamina.onDodge(spent, 0.0F, -1.0F);
+		helper.assertTrue(Stamina.value(nearly) == 0.0F, "la esquiva perdonada debería vaciar la estamina, no dejarla negativa");
+		DamageSource blow = helper.getLevel().damageSources().mobAttack(attacker);
+		helper.assertTrue(hit(nearly, blow, 6F) == 0, "una esquiva a 2 puntos del coste debería contar");
+		helper.assertTrue(hit(spent, blow, 6F) > 0, "una esquiva sin estamina no debería dar invulnerabilidad");
+		helper.succeed();
+	}
+
+	/** Each weapon gets its own swing: blades sweep, heavy heads chop, points thrust, the rest stay vanilla. */
+	@GameTest
+	public void weaponsSwingTheirOwnWay(GameTestHelper helper) {
+		helper.assertTrue(SwingStyle.of(new ItemStack(Items.IRON_SWORD)) == SwingStyle.SLASH, "espada");
+		helper.assertTrue(SwingStyle.of(new ItemStack(Items.IRON_AXE)) == SwingStyle.CHOP, "hacha");
+		helper.assertTrue(SwingStyle.of(new ItemStack(Items.MACE)) == SwingStyle.CHOP, "maza");
+		helper.assertTrue(SwingStyle.of(new ItemStack(Items.TRIDENT)) == SwingStyle.THRUST, "tridente");
+		helper.assertTrue(SwingStyle.of(new ItemStack(Items.STICK)) == SwingStyle.VANILLA, "palo");
+		helper.assertTrue(SwingStyle.of(ItemStack.EMPTY) == SwingStyle.VANILLA, "mano vacia");
+		helper.assertTrue(SwingStyle.of(Assembler.create(ForgeType.MARTILLO, Assembler.defaultMaterials(ForgeType.MARTILLO))) == SwingStyle.CHOP, "martillo forjado");
+		helper.assertTrue(SwingStyle.of(Assembler.create(ForgeType.LANZA, Assembler.defaultMaterials(ForgeType.LANZA))) == SwingStyle.THRUST, "lanza forjada");
+		helper.assertTrue(SwingStyle.of(Assembler.create(ForgeType.ESPADON, Assembler.defaultMaterials(ForgeType.ESPADON))) == SwingStyle.SLASH, "espadon forjado");
+		helper.succeed();
+	}
+
+	/** What the tooltip shows is what the formula uses: chain turns edges, leather soaks blows, a sword is not armor. */
+	@GameTest
+	public void armorTooltipProfileMatchesTheFormula(GameTestHelper helper) {
+		MaterialCombat.Profile chain = ArmorCalculator.profileOf(new ItemStack(Items.CHAINMAIL_CHESTPLATE));
+		MaterialCombat.Profile leather = ArmorCalculator.profileOf(new ItemStack(Items.LEATHER_CHESTPLATE));
+		MaterialCombat.Profile plate = ArmorCalculator.profileOf(new ItemStack(Items.NETHERITE_CHESTPLATE));
+		helper.assertTrue(chain != null && leather != null && plate != null, "las armaduras deberian tener perfil");
+		helper.assertTrue(leather.blunt() > leather.slash(), "el cuero deberia aguantar mejor los golpes que los cortes");
+		helper.assertTrue(plate.weight() > leather.weight(), "la netherite deberia pesar mas que el cuero");
+		helper.assertTrue(ArmorCalculator.profileOf(new ItemStack(Items.IRON_SWORD)) == null, "una espada no es armadura");
+		helper.assertTrue(ArmorCalculator.profileOf(Assembler.create(ForgeType.PECHERA, Assembler.defaultMaterials(ForgeType.PECHERA))) != null,
+			"una pechera forjada deberia tener perfil");
+		helper.succeed();
+	}
+
+	/** A player holding a weapon, standing at a relative position and looking along +X. */
+	private static TestPlayer armed(GameTestHelper helper, BlockPos pos, ItemStack weapon) {
+		TestPlayer player = player(helper, pos);
+		player.setItemInHand(InteractionHand.MAIN_HAND, weapon);
+		return player;
+	}
+
+	/** Turns a player to look straight at an entity. */
+	private static void face(ServerPlayer player, LivingEntity target) {
+		player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, target.getEyePosition());
+	}
+
+	private static float strike(ServerPlayer player, LivingEntity target) {
+		float before = target.getHealth();
+		target.invulnerableTime = 0;
+		player.attack(target);
+		return before - target.getHealth();
+	}
+
+	/** A charged blow let go at full charge hits about twice as hard as a plain one. */
+	@GameTest(maxTicks = 100)
+	public void chargedStrikeHitsHarder(GameTestHelper helper) {
+		Zombie plain = bareZombie(helper, new BlockPos(3, 1, 1));
+		Zombie charged = bareZombie(helper, new BlockPos(3, 1, 4));
+		TestPlayer a = armed(helper, new BlockPos(1, 1, 1), new ItemStack(Items.IRON_SWORD));
+		TestPlayer b = armed(helper, new BlockPos(1, 1, 4), new ItemStack(Items.IRON_SWORD));
+		face(a, plain);
+		face(b, charged);
+		float normal = strike(a, plain);
+		ChargedStrike.onPayload(b, ChargePayload.START);
+		helper.runAfterDelay(CombatConfig.get().chargeFullTicks + 1, () -> {
+			float before = charged.getHealth();
+			charged.invulnerableTime = 0;
+			ChargedStrike.onPayload(b, ChargePayload.RELEASE);
+			float heavy = before - charged.getHealth();
+			helper.assertTrue(normal > 0, "el golpe normal no hizo daño");
+			helper.assertTrue(heavy > normal * 1.6F, "cargado " + heavy + " vs normal " + normal);
+			helper.succeed();
+		});
+	}
+
+	/** Let go too early and the charge strikes nothing. */
+	@GameTest
+	public void earlyReleaseStrikesNothing(GameTestHelper helper) {
+		Zombie target = bareZombie(helper, new BlockPos(3, 1, 1));
+		TestPlayer player = armed(helper, new BlockPos(1, 1, 1), new ItemStack(Items.IRON_SWORD));
+		face(player, target);
+		float before = target.getHealth();
+		ChargedStrike.onPayload(player, ChargePayload.START);
+		ChargedStrike.onPayload(player, ChargePayload.RELEASE);
+		helper.assertTrue(target.getHealth() == before, "una carga soltada al instante no debería golpear");
+		helper.succeed();
+	}
+
+	/** A staggered foe struck from behind takes a finisher, and the stagger ends. */
+	@GameTest
+	public void finisherFromBehind(GameTestHelper helper) {
+		Zombie front = bareZombie(helper, new BlockPos(1, 1, 2));
+		Zombie back = bareZombie(helper, new BlockPos(5, 1, 2));
+		// Both face +Z; one player stands in front of its zombie, the other behind.
+		TestPlayer facing = armed(helper, new BlockPos(1, 1, 4), new ItemStack(Items.IRON_SWORD));
+		TestPlayer behind = armed(helper, new BlockPos(5, 1, 0), new ItemStack(Items.IRON_SWORD));
+		face(facing, front);
+		face(behind, back);
+		long now = helper.getLevel().getGameTime();
+		Posture.breakPosture(front, now);
+		Posture.breakPosture(back, now);
+		float plain = strike(facing, front);
+		float finished = strike(behind, back);
+		helper.assertTrue(finished > plain * 1.7F, "remate " + finished + " vs de frente " + plain);
+		helper.assertFalse(Posture.isStaggered(back, now), "el remate debería acabar el aturdimiento");
+		helper.succeed();
+	}
+
+	/** The third full-strength hit of a combo lands heavier than the first. */
+	@GameTest
+	public void comboThirdHitIsHeavier(GameTestHelper helper) {
+		Zombie target = bareZombie(helper, new BlockPos(3, 1, 1));
+		target.setHealth(target.getMaxHealth());
+		TestPlayer player = armed(helper, new BlockPos(1, 1, 1), new ItemStack(Items.IRON_SWORD));
+		face(player, target);
+		float[] hits = new float[3];
+		for (int i = 0; i < 3; i++) {
+			// Straight through the damage hook: a simulated player never recovers its swing, so a real
+			// attack from it always counts as a weak one and would break the combo on its own.
+			Combos.onAttack(player, 1.0F);
+			target.setHealth(target.getMaxHealth());
+			hits[i] = hit(target, helper.getLevel().damageSources().playerAttack(player), 6F);
+		}
+		helper.assertTrue(hits[2] > hits[0] * 1.2F, "tercer golpe " + hits[2] + " vs primero " + hits[0]);
+		helper.succeed();
+	}
+
+	/** A dodge that meets a blow opens a counter: the next hit lands harder. */
+	@GameTest
+	public void perfectDodgeOpensACounter(GameTestHelper helper) {
+		Zombie attacker = bareZombie(helper, new BlockPos(3, 1, 1));
+		Zombie control = bareZombie(helper, new BlockPos(3, 1, 4));
+		TestPlayer dodger = armed(helper, new BlockPos(1, 1, 1), new ItemStack(Items.IRON_SWORD));
+		TestPlayer plain = armed(helper, new BlockPos(1, 1, 4), new ItemStack(Items.IRON_SWORD));
+		face(dodger, attacker);
+		face(plain, control);
+		Stamina.onDodge(dodger, -1.0F, 0.0F);
+		helper.assertTrue(hit(dodger, helper.getLevel().damageSources().mobAttack(attacker), 6F) == 0, "la esquiva debería evitar el golpe");
+		helper.assertTrue(Stamina.counterOpen(dodger), "esquivar un golpe de verdad debería abrir el contraataque");
+		float counter = strike(dodger, attacker);
+		float normal = strike(plain, control);
+		helper.assertTrue(counter > normal * 1.3F, "contraataque " + counter + " vs normal " + normal);
+		helper.assertFalse(Stamina.counterOpen(dodger), "el contraataque se gasta con el golpe");
+		helper.succeed();
+	}
+
+	/** A sword raised in time parries a blow completely; with a shield in the other hand, the shield is used. */
+	@GameTest
+	public void swordGuardParries(GameTestHelper helper) {
+		ItemStack sword = new ItemStack(Items.IRON_SWORD);
+		helper.assertTrue(WeaponGuard.is(sword), "una espada debería poder ponerse en guardia");
+		helper.assertFalse(WeaponGuard.is(new ItemStack(Items.SHIELD)), "un escudo no es una guardia de arma");
+		Zombie attacker = bareZombie(helper, new BlockPos(3, 1, 1));
+		TestPlayer player = armed(helper, new BlockPos(1, 1, 1), sword);
+		face(player, attacker);
+		player.startUsingItem(InteractionHand.MAIN_HAND);
+		helper.assertTrue(player.getItemBlockingWith() != null, "la espada levantada debería bloquear");
+		helper.assertTrue(hit(player, helper.getLevel().damageSources().mobAttack(attacker), 6F) == 0, "la parada con la espada debería parar todo el golpe");
+		TestPlayer both = armed(helper, new BlockPos(1, 1, 4), new ItemStack(Items.IRON_SWORD));
+		both.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.SHIELD));
+		helper.assertTrue(WeaponGuard.yieldsToShield(both, InteractionHand.MAIN_HAND, both.getMainHandItem()), "con escudo en la otra mano, manda el escudo");
+		helper.succeed();
+	}
+
+	/** Mail turns edges better than hammers, and says so. */
+	@GameTest
+	public void chainmailTurnsEdges(GameTestHelper helper) {
+		MaterialCombat.Profile mail = ArmorCalculator.profileOf(new ItemStack(Items.CHAINMAIL_CHESTPLATE));
+		helper.assertTrue(mail != null && mail.slash() > 1.2 && mail.blunt() < 1.0, "la cota de malla debería parar cortes y no golpes");
+		helper.succeed();
+	}
+
+	/** No ordinary blow takes more than 45 % of a normal mob's health; a blow on a staggered one does. */
+	@GameTest
+	public void hitCapStopsOneShots(GameTestHelper helper) {
+		Zombie capped = bareZombie(helper, new BlockPos(3, 1, 1));
+		Zombie staggered = bareZombie(helper, new BlockPos(3, 1, 4));
+		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
+		float max = capped.getMaxHealth();
+		float dealt = hit(capped, helper.getLevel().damageSources().playerAttack(player), 100F);
+		helper.assertTrue(dealt <= max * 0.45F + 0.01F && dealt > 0, "tope: " + dealt + " de " + max);
+		Posture.breakPosture(staggered, helper.getLevel().getGameTime());
+		float open = hit(staggered, helper.getLevel().damageSources().playerAttack(player), 100F);
+		helper.assertTrue(open > max * 0.45F, "a un aturdido no le aplica el tope: " + open);
+		helper.succeed();
+	}
+
+	/** An elite's guard halves what reaches its health until its posture breaks. */
+	@GameTest
+	public void eliteGuardHalvesDamage(GameTestHelper helper) {
+		Zombie normal = bareZombie(helper, new BlockPos(3, 1, 1));
+		Zombie elite = bareZombie(helper, new BlockPos(3, 1, 4));
+		dev.forja.difficulty.Threat.ELITE.mark(elite);
+		// The same blow on both: a mob's swing lands at the same height on either.
+		Zombie attacker = bareZombie(helper, new BlockPos(5, 1, 3));
+		float plain = hit(normal, helper.getLevel().damageSources().mobAttack(attacker), 4F);
+		float guarded = hit(elite, helper.getLevel().damageSources().mobAttack(attacker), 4F);
+		helper.assertTrue(Math.abs(guarded - plain * 0.5F) < 0.05F, "guardia: " + guarded + " vs " + plain);
+		helper.succeed();
+	}
+
+	/** Blows in a row build pressure, up to 0.7, and pressure gets through armor. */
+	@GameTest
+	public void pressureBuildsAndPierces(GameTestHelper helper) {
+		Zombie attacker = bareZombie(helper, new BlockPos(3, 1, 1));
+		TestPlayer fresh = player(helper, new BlockPos(1, 1, 1));
+		TestPlayer pressed = player(helper, new BlockPos(1, 1, 4));
+		for (TestPlayer p : List.of(fresh, pressed)) {
+			p.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
+			p.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Items.DIAMOND_LEGGINGS));
+		}
+		for (int i = 0; i < 20; i++) {
+			dev.forja.difficulty.Pressure.onHit(pressed);
+		}
+		double pressure = dev.forja.difficulty.Pressure.of(pressed);
+		helper.assertTrue(Math.abs(pressure - 0.7) < 1.0E-6, "la presión debería topar en 0,7: " + pressure);
+		DamageSource blow = helper.getLevel().damageSources().mobAttack(attacker);
+		float calm = hit(fresh, blow, 6F);
+		pressed.setHealth(pressed.getMaxHealth());
+		float under = hit(pressed, blow, 6F);
+		helper.assertTrue(under > calm * 1.3F, "bajo presión " + under + " vs tranquilo " + calm);
+		helper.succeed();
+	}
+
+	/** Each stagger in a row is shorter, and the bar to the next one is longer. */
+	@GameTest
+	public void staggersResistRepeats(GameTestHelper helper) {
+		Zombie zombie = bareZombie(helper, new BlockPos(3, 1, 1));
+		long now = helper.getLevel().getGameTime();
+		double firstMax = Posture.max(zombie);
+		Posture.breakPosture(zombie, now);
+		int first = Posture.staggerLeft(zombie);
+		Posture.endStagger(zombie);
+		Posture.breakPosture(zombie, now);
+		int second = Posture.staggerLeft(zombie);
+		helper.assertTrue(second < first, "el segundo aturdimiento debería durar menos: " + first + " -> " + second);
+		helper.assertTrue(Posture.max(zombie) > firstMax, "la postura máxima debería subir tras aturdirlo");
+		helper.assertTrue(Posture.resistance(zombie) > 0.0, "debería tener resistencia al aturdimiento");
+		helper.succeed();
+	}
+
+	/** Right after a finisher the same foe cannot take another one. */
+	@GameTest
+	public void finisherHasACooldown(GameTestHelper helper) {
+		Zombie zombie = bareZombie(helper, new BlockPos(5, 1, 2));
+		TestPlayer behind = armed(helper, new BlockPos(5, 1, 0), new ItemStack(Items.IRON_SWORD));
+		face(behind, zombie);
+		long now = helper.getLevel().getGameTime();
+		Posture.breakPosture(zombie, now);
+		zombie.setHealth(zombie.getMaxHealth());
+		strike(behind, zombie);
+		helper.assertFalse(Posture.isStaggered(zombie, now), "el primer remate debería acabar el aturdimiento");
+		Posture.breakPosture(zombie, now);
+		zombie.setHealth(zombie.getMaxHealth());
+		strike(behind, zombie);
+		helper.assertTrue(Posture.isStaggered(zombie, now), "un segundo remate enseguida no debería contar");
+		helper.succeed();
+	}
+
+	/** Each mob takes each kind of blow its own way. */
+	@GameTest
+	public void mobsResistKindsOfBlow(GameTestHelper helper) {
+		Skeleton skeleton = helper.spawn(EntityTypes.SKELETON, new BlockPos(3, 1, 1));
+		helper.assertTrue(dev.forja.difficulty.MobResistances.factor(skeleton, dev.forja.combat.DamageKind.BLUNT)
+			> dev.forja.difficulty.MobResistances.factor(skeleton, dev.forja.combat.DamageKind.PIERCE), "un esqueleto sufre más los golpes que las flechas");
+		skeleton.discard();
+		helper.succeed();
+	}
+
+	/** Legend makes monsters hit harder than Smith. */
+	@GameTest
+	public void difficultyScalesMobDamage(GameTestHelper helper) {
+		Zombie attacker = bareZombie(helper, new BlockPos(3, 1, 1));
+		TestPlayer a = player(helper, new BlockPos(1, 1, 1));
+		TestPlayer b = player(helper, new BlockPos(1, 1, 4));
+		CombatConfig cfg = CombatConfig.get();
+		String previous = cfg.dificultad;
+		try {
+			cfg.dificultad = "HERRERO";
+			float smith = hit(a, helper.getLevel().damageSources().mobAttack(attacker), 4F);
+			cfg.dificultad = "LEYENDA";
+			float legend = hit(b, helper.getLevel().damageSources().mobAttack(attacker), 4F);
+			helper.assertTrue(Math.abs(legend - smith * 1.5F) < 0.05F, "leyenda " + legend + " vs herrero " + smith);
+		} finally {
+			cfg.dificultad = previous;
+		}
+		helper.succeed();
+	}
+
+	/** With the chances forced up, a fresh hostile comes as an elite: tagged, named and tougher. */
+	@GameTest
+	public void spawnsRollThreat(GameTestHelper helper) {
+		CombatConfig cfg = CombatConfig.get();
+		double vet = cfg.veteranChance;
+		double elite = cfg.eliteChance;
+		double eliteMax = cfg.eliteChanceMax;
+		cfg.eliteChance = 1.0;
+		cfg.eliteChanceMax = 1.0;
+		Zombie zombie;
+		try {
+			zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(3, 1, 1));
+		} finally {
+			cfg.veteranChance = vet;
+			cfg.eliteChance = elite;
+			cfg.eliteChanceMax = eliteMax;
+		}
+		helper.assertTrue(dev.forja.difficulty.Threat.of(zombie) == dev.forja.difficulty.Threat.ELITE, "debería salir de élite");
+		helper.assertTrue(zombie.getMaxHealth() >= 20.0F * 2.5F - 0.01F, "un élite debería tener más vida: " + zombie.getMaxHealth());
+		helper.assertTrue(zombie.hasCustomName(), "un élite lleva nombre");
+		zombie.discard();
 		helper.succeed();
 	}
 

@@ -76,6 +76,146 @@ public final class CombatConfig {
 	/** Extra damage of a riposte against a staggered foe, as a share of the blow (1.0 = double). */
 	public double riposteStaggeredExtra = 2.0;
 
+	// --- Charged strike, finisher, combos, counter, weapon guard ----------------------------------
+	/** Keep the attack button held after a swing to charge a heavy blow; let go to strike. */
+	public boolean chargedAttack = true;
+	/** Ticks the button has to stay down after the swing before the charge begins. */
+	public int chargeDelayTicks = 6;
+	/** Ticks from the start of the charge to a full one. */
+	public int chargeFullTicks = 14;
+	/** A release below this share of a full charge strikes nothing and costs nothing. */
+	public double chargeMinShare = 0.35;
+	/** Extra damage at full charge, as a share of the blow (1.0 = double). */
+	public double chargeDamageBonus = 1.0;
+	/** Extra posture damage at full charge (1.5 = two and a half times). */
+	public double chargePostureBonus = 1.5;
+	/** Stamina a charged strike costs: this, plus chargeStaminaPerShare times the charge. */
+	public float chargeStaminaCost = 20F;
+	public float chargeStaminaPerShare = 15F;
+	/** Blow on a staggered foe that is charged or comes from behind: a finisher, this many times as hard. */
+	public double finisherMultiplier = 2.0;
+	/** Hits at nearly full strength this close together chain into a combo; the third is heavier. */
+	public int comboWindowTicks = 30;
+	public double comboFinisherDamage = 1.3;
+	public double comboFinisherPosture = 1.5;
+	/** After dodging a blow that would have landed: the next hit inside this window is a counter. */
+	public int counterWindowTicks = 30;
+	public double counterDamage = 1.5;
+	public double counterPosture = 2.0;
+	public float counterStaminaRefund = 10F;
+	/** Swords, the greatsword and the dagger block on right click; a raise caught in time parries. */
+	public boolean weaponGuard = true;
+	/** Share of a blow a weapon guard stops (a shield stops all of it). */
+	public float weaponGuardBlock = 0.5F;
+	/** Ticks from raising the weapon in which a blow is parried. */
+	public int weaponParryTicks = 3;
+
+	// --- Mob brains (dev.forja.ai) ----------------------------------------------------------------
+	/** auto: networks where there are any (config/forja/redes), rules elsewhere; reglas: rules only; red: networks only. */
+	public String iaModo = "auto";
+	/** Sampling temperature of the networks: 1 as trained, lower is sharper. Also scaled by difficulty and threat. */
+	public double iaTemperatura = 1.0;
+	/** With several players about, monsters share themselves out between them (idea 20). */
+	public boolean iaRepartirObjetivos = true;
+	/** Where the network files are read from; empty: config/forja/redes. */
+	public String iaCarpetaRedes = "";
+	/** Mobs think only while their player target is this close. */
+	public double iaAlcance = 32.0;
+
+	// --- Difficulty (dev.forja.difficulty) -------------------------------------------------------
+	/** APRENDIZ, HERRERO, MAESTRO or LEYENDA; also /forja dificultad. */
+	public String dificultad = "HERRERO";
+	/** Most of a mob's max health one ordinary blow can take (finishers and blows on the staggered go past). */
+	public double hitCapNormal = 0.45;
+	public double hitCapVeteran = 0.35;
+	public double hitCapElite = 0.20;
+	public double hitCapChampion = 0.12;
+	public double hitCapBoss = 0.08;
+	/** Elites, champions and bosses: share of a blow that reaches their health while their guard holds. */
+	public double guardHealthShare = 0.5;
+	/** Pressure: armor penetration each blow a player takes adds to the next ones, up to a total cap. */
+	public double pressurePerHit = 0.07;
+	public double pressureMax = 0.70;
+	public int pressureDelayTicks = 40;
+	public double pressureDrainPerTick = 0.02;
+	/** Stagger resistance: each stagger in a row is shorter and raises max posture; it fades with time. */
+	public double staggerRepeatDuration = 0.7;
+	public int staggerMinTicks = 12;
+	public double staggerRepeatPosture = 0.3;
+	public int staggerResistanceFadeTicks = 200;
+	/** Ticks before the same foe can take another finisher. */
+	public int finisherCooldownTicks = 100;
+	/** A boss can only be finished at or below this share of its health. */
+	public double bossFinisherHealth = 0.5;
+	/** Chance a hostile mob spawns a veteran or an elite, before the multipliers (difficulty, distance, depth, nights, gear, adaptive). */
+	public double veteranChance = 0.12;
+	public double eliteChance = 0.03;
+	public double veteranChanceMax = 0.5;
+	public double eliteChanceMax = 0.25;
+	/** Gear score tiers (0 to 3): each adds this share of health and this much armor to mobs spawning near. */
+	public double gearHealthPerTier = 0.2;
+	public double gearArmorPerTier = 1.5;
+	/** Adaptive difficulty: nudges mob damage and threat chances by how the player is doing. */
+	public boolean adaptive = true;
+	/** Nights: each survived night makes natural night spawns a little more likely to come in twos, up to a cap. */
+	public double nightCompanionPerDoubling = 0.04;
+	public double nightCompanionMax = 0.35;
+	public double nightThreatPerNight = 0.03;
+	public double nightThreatMax = 1.5;
+	/** Rewards for beating a stronger foe: an extra loot roll, and mastery. */
+	public double rewardVeteranLoot = 0.35;
+	public double rewardEliteLoot = 1.0;
+	/** Diminishing returns: each extra upgrade proc on the same foe in the same tick counts for less. */
+	public double upgradeProcSoftness = 4.0;
+	/** Chance a zombie (or kin) spawns with a shield, before the difficulty's threat multiplier. */
+	public double shieldChance = 0.08;
+	/** Only Forja's upgrades: vanilla enchantments on non-forged gear stop doing anything. */
+	public boolean soloMejorasForja = false;
+	/** Damage each mob type takes from each kind of blow (1 = normal), by entity id. */
+	public Map<String, MobResistance> resistenciasMobs = defaultMobResistances();
+
+	public static final class MobResistance {
+		public double slash = 1.0;
+		public double blunt = 1.0;
+		public double pierce = 1.0;
+
+		public MobResistance() {
+		}
+
+		public MobResistance(double slash, double blunt, double pierce) {
+			this.slash = slash;
+			this.blunt = blunt;
+			this.pierce = pierce;
+		}
+
+		public double factor(DamageKind kind) {
+			return switch (kind) {
+				case SLASH -> slash;
+				case BLUNT -> blunt;
+				case PIERCE -> pierce;
+				case OTHER -> 1.0;
+			};
+		}
+	}
+
+	private static Map<String, MobResistance> defaultMobResistances() {
+		Map<String, MobResistance> m = new LinkedHashMap<>();
+		m.put("forja:yunque_andante", new MobResistance(0.5, 1.15, 0.7));
+		m.put("forja:automata_de_forja", new MobResistance(0.8, 1.1, 0.7));
+		m.put("forja:escoria_viviente", new MobResistance(1.2, 0.5, 1.0));
+		m.put("forja:herrumbre", new MobResistance(0.8, 1.25, 0.4));
+		m.put("forja:coraza_vacia", new MobResistance(0.7, 1.3, 0.9));
+		m.put("forja:percutor", new MobResistance(0.9, 0.8, 1.1));
+		m.put("forja:guardian_de_cuno", new MobResistance(0.75, 1.1, 0.8));
+		m.put("minecraft:skeleton", new MobResistance(1.0, 1.3, 0.7));
+		m.put("minecraft:stray", new MobResistance(1.0, 1.3, 0.7));
+		m.put("minecraft:wither_skeleton", new MobResistance(1.0, 1.25, 0.75));
+		m.put("minecraft:spider", new MobResistance(1.15, 1.0, 0.9));
+		m.put("minecraft:slime", new MobResistance(1.2, 0.6, 1.0));
+		m.put("minecraft:magma_cube", new MobResistance(1.1, 0.6, 1.0));
+		return m;
+	}
+
 	// --- Posture (mobs) ---------------------------------------------------------------------------
 	public boolean posture = true;
 	public double postureHealthFactor = 0.6;

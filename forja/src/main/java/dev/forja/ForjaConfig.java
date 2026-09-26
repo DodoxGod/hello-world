@@ -58,6 +58,17 @@ public final class ForjaConfig {
 		return current;
 	}
 
+	/** Writes the config as it is now to config/forja.json (after a command changed it). */
+	public static void save() {
+		Path path = FabricLoader.getInstance().getConfigDir().resolve("forja.json");
+		try {
+			Files.createDirectories(path.getParent());
+			Files.writeString(path, GSON.toJson(current));
+		} catch (IOException failure) {
+			Forja.LOGGER.warn("No se pudo guardar config/forja.json", failure);
+		}
+	}
+
 	/** Reads config/forja.json, writing it with the defaults if it is not there yet. */
 	public static void load() {
 		Path path = FabricLoader.getInstance().getConfigDir().resolve("forja.json");

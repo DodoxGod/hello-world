@@ -61,6 +61,35 @@ public final class ForjaCommand {
 		CommandRegistrationCallback.EVENT.register((dispatcher, context, selection) -> dispatcher.register(
 			Commands.literal("forja")
 				.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+				.then(dev.forja.ai.AiDebug.command())
+				.then(Commands.literal("dificultad")
+					.executes(c -> {
+						ServerPlayer player = c.getSource().getPlayer();
+						dev.forja.difficulty.ForjaDifficulty difficulty = dev.forja.difficulty.ForjaDifficulty.current();
+						int nights = dev.forja.difficulty.Nights.count(c.getSource().getLevel());
+						float adaptive = dev.forja.difficulty.Adaptive.value(player);
+						double gear = dev.forja.difficulty.GearScore.of(player);
+						c.getSource().sendSuccess(() -> Component.translatable("commands.forja.dificultad",
+							Component.translatable(difficulty.key()), nights,
+							String.format(java.util.Locale.ROOT, "%+.2f", adaptive),
+							String.format(java.util.Locale.ROOT, "%.2f", gear), dev.forja.difficulty.GearScore.tier(gear)), false);
+						return 1;
+					})
+					.then(Commands.argument("nivel", StringArgumentType.word())
+						.suggests((c, builder) -> SharedSuggestionProvider.suggest(java.util.Arrays.stream(dev.forja.difficulty.ForjaDifficulty.values())
+							.map(d -> d.name().toLowerCase(java.util.Locale.ROOT)), builder))
+						.executes(c -> {
+							String name = StringArgumentType.getString(c, "nivel");
+							dev.forja.difficulty.ForjaDifficulty chosen = dev.forja.difficulty.ForjaDifficulty.parse(name);
+							if (!chosen.name().equalsIgnoreCase(name)) {
+								c.getSource().sendFailure(Component.translatable("commands.forja.dificultad.no_existe", name));
+								return 0;
+							}
+							dev.forja.combat.CombatConfig.get().dificultad = chosen.name();
+							dev.forja.ForjaConfig.save();
+							c.getSource().sendSuccess(() -> Component.translatable("commands.forja.dificultad.cambiada", Component.translatable(chosen.key())), true);
+							return 1;
+						})))
 				.then(Commands.literal("kit").executes(c -> {
 					ServerPlayer player = c.getSource().getPlayerOrException();
 					giveKit(player);

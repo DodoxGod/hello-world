@@ -6,7 +6,8 @@
 	"environment": "*",
 	"entrypoints": {
 		"fabric-gametest": [
-			"dev.forja.test.CombatGameTests"
+			"dev.forja.test.CombatGameTests",
+			"dev.forja.test.AiGameTests"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"

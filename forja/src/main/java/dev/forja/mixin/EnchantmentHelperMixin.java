@@ -19,7 +19,7 @@ abstract class EnchantmentHelperMixin {
 		cancellable = true
 	)
 	private static void forja$skipBroken(ItemStack piece, EnchantmentHelper.EnchantmentVisitor method, CallbackInfo ci) {
-		if (BrokenGear.isBroken(piece)) {
+		if (BrokenGear.isBroken(piece) || forja$onlyForja(piece)) {
 			ci.cancel();
 		}
 	}
@@ -30,8 +30,17 @@ abstract class EnchantmentHelperMixin {
 		cancellable = true
 	)
 	private static void forja$skipBrokenInSlot(ItemStack piece, EquipmentSlot slot, LivingEntity owner, EnchantmentHelper.EnchantmentInSlotVisitor method, CallbackInfo ci) {
-		if (BrokenGear.isBroken(piece)) {
+		if (BrokenGear.isBroken(piece) || forja$onlyForja(piece)) {
 			ci.cancel();
 		}
+	}
+
+	/**
+	 * The "only Forja's upgrades" option: vanilla enchantments on gear that is not forged stop doing
+	 * anything, so they cannot stack with the upgrades and break the damage curve. Forged gear keeps the
+	 * hidden enchantments its upgrades and traits ride on.
+	 */
+	private static boolean forja$onlyForja(ItemStack piece) {
+		return dev.forja.combat.CombatConfig.get().soloMejorasForja && !piece.has(dev.forja.registry.ModComponents.PARTS);
 	}
 }

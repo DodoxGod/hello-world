@@ -201,6 +201,15 @@ public class Tongs extends Monster implements GeoEntity {
 		}
 	}
 
+	/** Lets go of whatever it holds (a heavy blunt blow knocks the jaws open; see dev.forja.ai.ForjaTraits). */
+	public void letGo() {
+		if (this.heldTicks > 0 && this.level() instanceof ServerLevel level) {
+			level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.IRON_DOOR_OPEN, SoundSource.HOSTILE, 1.2F, 1.3F);
+		}
+		this.heldTicks = 0;
+		this.held = null;
+	}
+
 	/** Whether it is holding something, and what. */
 	public @org.jspecify.annotations.Nullable LivingEntity holding() {
 		return this.heldTicks > 0 ? this.held : null;

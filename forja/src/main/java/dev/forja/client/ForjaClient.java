@@ -97,6 +97,7 @@ public final class ForjaClient implements ClientModInitializer {
 		// Forged arrows fly like vanilla ones, so they use the vanilla renderer.
 		EntityRenderers.register(ModEntities.FLECHA_FORJADA, context -> new net.minecraft.client.renderer.entity.TippableArrowRenderer(context));
 		ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> addPartLines(stack, lines));
+		ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> addArmorLines(stack, lines));
 		net.fabricmc.fabric.api.client.rendering.v1.ClientTooltipComponentCallback.EVENT.register(
 			data -> data instanceof dev.forja.item.PartsStrip strip ? new PartsStripTooltip(strip) : null);
 		registerGuideKey();
@@ -155,6 +156,39 @@ public final class ForjaClient implements ClientModInitializer {
 		};
 		ForgedParts parts = equipped.get(ModComponents.PARTS);
 		return equipped != stack && parts != null && parts.type() == type && !ItemStack.matches(equipped, stack) ? equipped : ItemStack.EMPTY;
+	}
+
+	/**
+	 * What a piece of armor is good against, and how heavy it is. The combat overhaul treats every piece
+	 * differently by the kind of blow, and none of that shows anywhere else: without these two lines,
+	 * nobody would know chain turns edges or that a soft lining soaks up a hammer.
+	 */
+	private static void addArmorLines(ItemStack stack, List<Component> lines) {
+		if (!dev.forja.combat.CombatConfig.get().enabled) {
+			return;
+		}
+		dev.forja.combat.MaterialCombat.Profile profile = dev.forja.combat.ArmorCalculator.profileOf(stack);
+		if (profile == null) {
+			return;
+		}
+		lines.add(Component.translatable("tooltip.forja.resiste",
+			resistance("tooltip.forja.resiste.corte", profile.slash()),
+			resistance("tooltip.forja.resiste.golpe", profile.blunt()),
+			resistance("tooltip.forja.resiste.perforacion", profile.pierce())
+		).withColor(0xFF9A9A9A));
+		double weight = profile.weight();
+		String key = weight < 0.25 ? "ligera" : weight < 0.6 ? "media" : "pesada";
+		int colour = weight < 0.25 ? 0xFF7FD34E : weight < 0.6 ? 0xFFE8C547 : 0xFFE0533D;
+		lines.add(Component.translatable("tooltip.forja.peso", Component.translatable("tooltip.forja.peso." + key).withColor(colour))
+			.withColor(0xFF9A9A9A));
+	}
+
+	/** One kind of blow: "corte +15 %", green when it resists, red when it does not. */
+	private static Component resistance(String key, double multiplier) {
+		int percent = (int) Math.round((multiplier - 1.0) * 100.0);
+		String text = (percent > 0 ? "+" : percent < 0 ? "−" : "±") + Math.abs(percent) + " %";
+		int colour = percent >= 5 ? 0xFF7FD34E : percent <= -5 ? 0xFFE0533D : 0xFFBBBBBB;
+		return Component.translatable(key, text).withColor(colour);
 	}
 
 	/** Lists the colored stats, traits and upgrades, right under the item name and its row of parts. */
