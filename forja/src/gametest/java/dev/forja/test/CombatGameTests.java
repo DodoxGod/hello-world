@@ -612,8 +612,10 @@ public class CombatGameTests {
 	@GameTest(maxTicks = 200)
 	public void forjaMobsWarnTheirBlowToo(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(3, 1, 3));
-		helper.assertTrue(dev.forja.combat.AttackTokens.warns(zombie), "un zombi vanilla debería avisar");
+		// Asked of mobs that are never put in the world: a zombie standing about with nothing to do goes after the
+		// nearest player, and in a run of seventy tests that is another test's, whose turn it then takes.
+		Zombie zombie = EntityTypes.ZOMBIE.create(level, EntitySpawnReason.EVENT);
+		helper.assertTrue(zombie != null && dev.forja.combat.AttackTokens.warns(zombie), "un zombi vanilla debería avisar");
 		for (var type : List.of(dev.forja.registry.ModEntities.TENAZA, dev.forja.registry.ModEntities.PERCUTOR,
 			dev.forja.registry.ModEntities.MOLDE_ROTO, dev.forja.registry.ModEntities.CARGADOR_DE_CARBON,
 			dev.forja.registry.ModEntities.AUTOMATA)) {
@@ -641,6 +643,7 @@ public class CombatGameTests {
 	public void staggerLetsGoOfTheTurn(GameTestHelper helper) {
 		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
 		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(2, 1, 1));
+		zombie.setNoAi(true);                      // it only has to hold the turn, not go looking for anybody
 		zombie.setTarget(player);
 		helper.assertTrue(dev.forja.combat.AttackTokens.tryAcquire(player, zombie, 2), "el zombi debería coger turno");
 		helper.assertTrue(dev.forja.combat.AttackTokens.holds(player, zombie), "y tenerlo");
