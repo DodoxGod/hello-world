@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import dev.forja.ForjaPath;
 import dev.forja.forge.Assembler;
 import dev.forja.forge.ForgeStats;
 import dev.forja.forge.ForgeType;
@@ -80,6 +82,10 @@ public class GuideBookScreen extends Screen {
 	private int turnedWay;
 	private PageButton backButton;
 	private PageButton forwardButton;
+	/** The forja/ advancements the reader has done, read once when the book is put together. */
+	private Set<String> pathDone = Set.of();
+	/** Set by the client test to lay the book out for a given progress instead of the player's own. */
+	private @Nullable Set<String> forcedDone;
 
 	public GuideBookScreen() {
 		super(Component.translatable("item.forja.guia_de_forja"));
@@ -481,20 +487,85 @@ public class GuideBookScreen extends Screen {
 		return new double[] {this.pageX(side) + MARGIN + dx, this.bookTop() + 4 + MARGIN + dy};
 	}
 
+	/** A book as a reader with exactly these forja/ advancements done would see it, for the client test. */
+	public static GuideBookScreen showing(Set<String> done) {
+		GuideBookScreen book = new GuideBookScreen();
+		book.forcedDone = done;
+		return book;
+	}
+
+	/**
+	 * Whether the head of the "Siguiente paso" page, what to do and the way to its chapter all landed on
+	 * one page, for the client test: split over a turn, the link is on a page nobody is looking at.
+	 */
+	public boolean nextStepOnOnePage() {
+		if (this.pages.isEmpty()) {
+			this.build();
+		}
+		for (List<Element> page : this.pages) {
+			if (page.stream().anyMatch(element -> element instanceof StepCard)) {
+				return page.stream().anyMatch(element -> element instanceof ChapterLink);
+			}
+		}
+		return false;
+	}
+
+	/** Whether the list of the whole path is on one page, rather than its last line alone over the page. */
+	public boolean pathListOnOnePage() {
+		if (this.pages.isEmpty()) {
+			this.build();
+		}
+		for (List<Element> page : this.pages) {
+			long rows = page.stream().filter(element -> element instanceof PathRow).count();
+			if (rows > 0) {
+				return rows == ForjaPath.STEPS.size();
+			}
+		}
+		return false;
+	}
+
 	/** First page of a chapter by key (mesas, objetos, piezas, materiales, rasgos, mejoras, estadisticas). */
 	public int chapterPage(String key) {
 		Chapter chapter = this.chapters.get(key);
 		return chapter == null ? 0 : chapter.page;
 	}
 
+	/**
+	 * What the "Siguiente paso" page and the sign on the cover are showing, for the client test: the
+	 * step's advancement id, "completo" once the path is walked, and "portada" in front when the cover
+	 * carries the sign.
+	 */
+	public String shownStep() {
+		if (this.pages.isEmpty()) {
+			this.build();
+		}
+		String shown = "";
+		boolean signed = false;
+		for (List<Element> page : this.pages) {
+			for (Element element : page) {
+				if (element instanceof StepCard card) {
+					shown = card.step == null ? "completo" : card.step.advancement();
+				}
+				signed |= element instanceof PathSign;
+			}
+		}
+		return (signed ? "portada:" : "") + shown;
+	}
+
 	// ------------------------------------------------------------------ content
 
 	private void build() {
+		this.pathDone = this.forcedDone != null ? this.forcedDone : PathClient.done();
+		ForjaPath.Step next = ForjaPath.next(this.pathDone::contains);
 		List<Element> cover = new ArrayList<>();
 		cover.add(new Emblem(
 			Assembler.create(ForgeType.MARTILLO, List.of(ForgeMaterial.DAMASCO, ForgeMaterial.MADERA, ForgeMaterial.ORO)),
 			new ItemStack(ModItems.CORAZON_DE_FORJA)));
 		cover.add(new Title(Component.translatable("item.forja.guia_de_forja")));
+		// Until the path is walked, the first thing under the title is where to go next.
+		if (next != null) {
+			cover.add(new PathSign(next));
+		}
 		cover.add(new IconRow(List.of(
 			new ItemStack(ModItems.MESA_DE_PIEZAS),
 			Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.DIAMANTE),
@@ -517,6 +588,7 @@ public class GuideBookScreen extends Screen {
 		this.sink = body;
 
 		this.chapter("primeros_pasos", this.firstStepsChapter());
+		this.chapter("siguiente_paso", this.nextStepChapter());
 		List<Element> tables = new ArrayList<>(this.tablesChapter());
 		tables.add(new Divider());
 		tables.addAll(this.cabinetEntry());
@@ -603,7 +675,7 @@ public class GuideBookScreen extends Screen {
 	private static final Map<String, List<String>> SECTIONS = new LinkedHashMap<>(Map.of());
 
 	static {
-		SECTIONS.put("taller", List.of("primeros_pasos", "mesas", "objetos", "piezas", "materiales", "rasgos", "aleaciones", "fundicion", "temple", "herrero", "tecnicas"));
+		SECTIONS.put("taller", List.of("primeros_pasos", "siguiente_paso", "mesas", "objetos", "piezas", "materiales", "rasgos", "aleaciones", "fundicion", "temple", "herrero", "tecnicas"));
 		SECTIONS.put("mejoras", List.of("mejoras", "potencial", "maestria", "sinergias", "pactos"));
 		SECTIONS.put("pelear", List.of("combate", "accesorios"));
 		SECTIONS.put("mundo", List.of("eventos", "encargos", "amenazas", "bestiario", "mundo"));
@@ -614,6 +686,7 @@ public class GuideBookScreen extends Screen {
 	private static ItemStack chapterIcon(String key) {
 		return switch (key) {
 			case "primeros_pasos" -> new ItemStack(ModItems.GUIA_DE_FORJA);
+			case "siguiente_paso" -> new ItemStack(Items.COMPASS);
 			case "mesas" -> new ItemStack(ModItems.MESA_DE_FORJA);
 			case "objetos" -> Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO));
 			case "piezas" -> Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.HIERRO);
@@ -729,6 +802,33 @@ public class GuideBookScreen extends Screen {
 			new ItemStack(ModItems.JARRA), new ItemStack(ModItems.TALISMAN), new ItemStack(ModItems.CORAZON_DE_FORJA)
 		)));
 		body.add(new Text(Component.translatable("gui.forja.libro.paso6"), INK_SOFT));
+		return body;
+	}
+
+	/**
+	 * Siguiente paso: the page about where the reader is rather than about the mod. The step to do next
+	 * (the first of ForjaPath's not done yet), what to do, where and with what, and a link to the chapter
+	 * that explains it; then the whole path as a list that ticks itself off from the player's own
+	 * advancements, each line a way to its chapter.
+	 */
+	private List<Element> nextStepChapter() {
+		ForjaPath.Step next = ForjaPath.next(this.pathDone::contains);
+		List<Element> body = new ArrayList<>();
+		body.add(new StepCard(next, ForjaPath.doneCount(this.pathDone::contains)));
+		if (next != null) {
+			body.add(new Text(next.description(), INK));
+			body.add(new ChapterLink(next.chapter));
+		} else {
+			// The end of the path is the start of the rest of the book, which is the world.
+			body.add(new Text(Component.translatable("gui.forja.camino.completo.desc"), INK));
+			body.add(new ChapterLink("eventos"));
+		}
+		body.add(new Divider());
+		body.add(new SubHeader(Component.translatable("gui.forja.camino.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.camino.intro", ForjaPath.STEPS.size()), INK_SOFT));
+		for (ForjaPath.Step step : ForjaPath.STEPS) {
+			body.add(new PathRow(step, this.pathDone.contains(step.advancement()), step == next));
+		}
 		return body;
 	}
 
@@ -1464,6 +1564,12 @@ public class GuideBookScreen extends Screen {
 		body.add(new IconRow(List.of(new ItemStack(ModItems.PLANTILLA), engraved, Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.HIERRO))));
 		body.add(new Text(Component.translatable("gui.forja.libro.mesa_forja"), INK));
 		body.add(new Crafting(new Item[] {iron, iron, iron, planks, Items.CRAFTING_TABLE, planks, planks, null, planks}, new ItemStack(ModItems.MESA_DE_FORJA)));
+		// The second bench, which the path ends on and the chapter never showed.
+		body.add(new Text(Component.translatable("gui.forja.libro.mesa_mayor", dev.forja.menu.Station.FORJA_MAYOR.capacity()), INK));
+		Item stone = Items.POLISHED_BLACKSTONE;
+		Item damascus = ModItems.alloy("damasco");
+		body.add(new Crafting(new Item[] {stone, Items.GOLD_INGOT, stone, damascus, ModItems.MESA_DE_FORJA, damascus, stone, stone, stone},
+			new ItemStack(ModItems.MESA_DE_FORJA_MAYOR)));
 		body.add(new Text(Component.translatable("gui.forja.libro.receta_libro"), INK));
 		body.add(new Crafting(new Item[] {Items.BOOK, iron, null, null, null, null, null, null, null}, new ItemStack(ModItems.GUIA_DE_FORJA)));
 		return body;
@@ -2637,6 +2743,297 @@ public class GuideBookScreen extends Screen {
 		@Override
 		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
 			return GuideText.upgradeTooltip(this.upgrade);
+		}
+	}
+
+	// ------------------------------------------------------------------ the smith's path
+
+	/** The scale a line is written at so it fits its room: the one asked for, or smaller, never cut. */
+	private static float fitScale(Font font, Component text, int room, float scale) {
+		int width = font.width(text);
+		return width * scale <= room ? scale : room / (float) width;
+	}
+
+	/** Every step of the path as done or not, in order, for the pips and the list. */
+	private boolean[] stepsDone() {
+		boolean[] done = new boolean[ForjaPath.STEPS.size()];
+		for (ForjaPath.Step step : ForjaPath.STEPS) {
+			done[step.ordinal()] = this.pathDone.contains(step.advancement());
+		}
+		return done;
+	}
+
+	/**
+	 * The sign under the title on the cover, for a reader who has not walked the path yet: the step to do
+	 * next and the page it is on. A click goes there.
+	 */
+	private final class PathSign extends Element {
+		private static final int ROOM = CONTENT_W - 18;
+
+		private final ItemStack icon;
+		private final Component title;
+
+		PathSign(ForjaPath.Step step) {
+			this.icon = step.icon();
+			this.title = step.title();
+		}
+
+		private Component where() {
+			return Component.translatable("gui.forja.camino.portada", GuideBookScreen.this.chapterPage("siguiente_paso") + 1);
+		}
+
+		@Override
+		int height() {
+			return 22;
+		}
+
+		@Override
+		int widest(Font font) {
+			return 18 + Math.max(Math.round(font.width(this.where()) * SMALL),
+				Math.round(font.width(this.title) * fitScale(font, this.title, ROOM, 1.0F)));
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			boolean hovered = over(mouseX, mouseY, x - 2, y, CONTENT_W + 4, 21);
+			g.fill(x - 2, y, x + CONTENT_W + 2, y + 21, hovered ? PAPER_SHADE : BAND);
+			g.fill(x - 2, y + 20, x + CONTENT_W + 2, y + 21, INK_SOFT);
+			g.item(this.icon, x, y + 2);
+			screen.small(g, this.where(), x + 18, y + 2, INK_SOFT);
+			float scale = fitScale(screen.font, this.title, ROOM, 1.0F);
+			g.pose().pushMatrix();
+			g.pose().translate(x + 18, y + 10 + (1.0F - scale) * 4.0F);
+			g.pose().scale(scale, scale);
+			g.text(screen.font, this.title, 0, 0, 0xFF000000 | GuideText.RUBRIC, false);
+			g.pose().popMatrix();
+		}
+
+		@Override
+		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
+			return over(mouseX, mouseY, x, y + 2, 16, 16) ? this.icon : null;
+		}
+
+		@Override
+		boolean click(GuideBookScreen screen) {
+			screen.jumpTo(screen.chapterPage("siguiente_paso"));
+			return true;
+		}
+	}
+
+	/**
+	 * The head of the "Siguiente paso" page: the step's icon half as large again, which step it is of how
+	 * many, one pip for every step of the path (filled for the ones already done), and under them the
+	 * step's name across the whole width of the page, where it has room to be read.
+	 */
+	private final class StepCard extends Element {
+		private static final int ROOM = CONTENT_W - 30;
+
+		private final ForjaPath.@Nullable Step step;
+		private final boolean[] done;
+		private final ItemStack icon;
+		private final Component count;
+		private final Component title;
+
+		StepCard(ForjaPath.@Nullable Step step, int doneCount) {
+			this.step = step;
+			this.done = GuideBookScreen.this.stepsDone();
+			this.icon = step == null ? new ItemStack(ModItems.MESA_DE_FORJA_MAYOR) : step.icon();
+			this.count = step == null
+				? Component.translatable("gui.forja.camino.paso", doneCount, ForjaPath.STEPS.size())
+				: Component.translatable("gui.forja.camino.paso", step.number(), ForjaPath.STEPS.size());
+			this.title = step == null ? Component.translatable("gui.forja.camino.completo") : step.title();
+		}
+
+		@Override
+		int height() {
+			return 44;
+		}
+
+		@Override
+		int widest(Font font) {
+			return Math.max(30 + Math.round(font.width(this.count) * SMALL),
+				Math.round(font.width(this.title) * fitScale(font, this.title, CONTENT_W, 1.0F)));
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			g.fill(x - 2, y + 1, x + CONTENT_W + 2, y + 42, PAPER_SHADE);
+			g.fill(x - 2, y + 1, x + CONTENT_W + 2, y + 2, INK_SOFT);
+			g.fill(x - 2, y + 41, x + CONTENT_W + 2, y + 42, INK_SOFT);
+			g.pose().pushMatrix();
+			g.pose().translate(x + 1, y + 4);
+			g.pose().scale(1.5F, 1.5F);
+			g.item(this.icon, 0, 0);
+			g.pose().popMatrix();
+			int textX = x + 30;
+			screen.small(g, this.count, textX, y + 7, INK_SOFT);
+			// The whole path at a glance: done in the workshop's own colour, the one to do in the rubric.
+			int each = (ROOM + 2) / this.done.length;
+			for (int i = 0; i < this.done.length; i++) {
+				int colour = this.done[i] ? SECTION_COLOURS[0]
+					: this.step != null && i == this.step.ordinal() ? 0xFF000000 | GuideText.RUBRIC
+					: 0x50806848;
+				g.fill(textX + i * each, y + 17, textX + (i + 1) * each - 2, y + 22, colour);
+			}
+			float scale = fitScale(screen.font, this.title, CONTENT_W, 1.0F);
+			int width = Math.round(screen.font.width(this.title) * scale);
+			g.pose().pushMatrix();
+			g.pose().translate(x + (CONTENT_W - width) / 2.0F, y + 30 + (1.0F - scale) * 4.0F);
+			g.pose().scale(scale, scale);
+			g.text(screen.font, this.title, 0, 0, 0xFF000000 | GuideText.RUBRIC, false);
+			g.pose().popMatrix();
+		}
+
+		@Override
+		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
+			return over(mouseX, mouseY, x + 1, y + 4, 24, 24) ? this.icon : null;
+		}
+	}
+
+	/**
+	 * "Read it in (chapter), p. N" behind an arrow: the way from a step to the chapter that explains it.
+	 *
+	 * <p>Laid out for a three-figure page number, because the real one is only known once the whole book
+	 * has been put together, after this has already been given its place on a page.
+	 */
+	private final class ChapterLink extends Element {
+		private final String chapter;
+		private final Component name;
+		private final int laidOut;
+
+		ChapterLink(String chapter) {
+			this.chapter = chapter;
+			this.name = Component.translatable("gui.forja.libro.cap." + chapter);
+			this.laidOut = this.lines(999).size();
+		}
+
+		private List<FormattedCharSequence> lines(int page) {
+			return GuideBookScreen.this.font.split(Component.translatable("gui.forja.camino.leer", this.name, page), WRAP - 12);
+		}
+
+		private List<FormattedCharSequence> shown() {
+			return this.lines(GuideBookScreen.this.chapterPage(this.chapter) + 1);
+		}
+
+		@Override
+		int height() {
+			return this.laidOut * 8 + 5;
+		}
+
+		@Override
+		int widest(Font font) {
+			int widest = 0;
+			for (FormattedCharSequence line : this.shown()) {
+				widest = Math.max(widest, Math.round(font.width(line) * SMALL));
+			}
+			return 9 + widest;
+		}
+
+		@Override
+		boolean elided() {
+			return this.shown().size() > this.laidOut;
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			boolean hovered = over(mouseX, mouseY, x - 2, y, CONTENT_W + 4, this.height() - 1);
+			if (hovered) {
+				g.fill(x - 2, y, x + CONTENT_W + 2, y + this.height() - 1, PAPER_SHADE);
+			}
+			int ink = hovered ? 0xFF6B2A0E : 0xFF000000 | GuideText.RUBRIC;
+			for (int i = 0; i < 3; i++) {
+				g.fill(x + 2 + i, y + 2 + i, x + 3 + i, y + 7 - i, ink);
+			}
+			List<FormattedCharSequence> lines = this.shown();
+			for (int i = 0; i < lines.size(); i++) {
+				screen.small(g, lines.get(i), x + 9, y + 2 + i * 8, ink);
+			}
+		}
+
+		@Override
+		boolean click(GuideBookScreen screen) {
+			screen.jumpTo(screen.chapterPage(this.chapter));
+			return true;
+		}
+	}
+
+	/** One step in the list: whether it is done, what it is done with, its name, and a way to its chapter. */
+	private final class PathRow extends Element {
+		private static final int ROOM = CONTENT_W - 24;
+
+		private final ForjaPath.Step step;
+		private final boolean done;
+		private final boolean current;
+		private final ItemStack icon;
+		private final Component title;
+		private final Component description;
+
+		PathRow(ForjaPath.Step step, boolean done, boolean current) {
+			this.step = step;
+			this.done = done;
+			this.current = current;
+			this.icon = step.icon();
+			this.title = step.title();
+			// The hover says the whole of it; a tooltip is dark, so without the rubric marks.
+			this.description = Component.literal(step.description().getString().replace("**", ""));
+		}
+
+		@Override
+		int height() {
+			return 12;
+		}
+
+		@Override
+		int widest(Font font) {
+			return 22 + Math.round(font.width(this.title) * fitScale(font, this.title, ROOM, SMALL));
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			if (over(mouseX, mouseY, x - 2, y, CONTENT_W + 4, 12)) {
+				g.fill(x - 2, y, x + CONTENT_W + 2, y + 12, PAPER_SHADE);
+			}
+			if (this.done) {
+				// A filled box with a tick knocked out of it.
+				g.fill(x + 1, y + 2, x + 8, y + 9, 0xFF5E7A34);
+				g.fill(x + 2, y + 5, x + 3, y + 6, PAPER);
+				g.fill(x + 3, y + 6, x + 4, y + 7, PAPER);
+				g.fill(x + 4, y + 5, x + 5, y + 6, PAPER);
+				g.fill(x + 5, y + 4, x + 6, y + 5, PAPER);
+				g.fill(x + 6, y + 3, x + 7, y + 4, PAPER);
+			} else if (this.current) {
+				for (int i = 0; i < 4; i++) {
+					g.fill(x + 2 + i, y + 2 + i, x + 3 + i, y + 9 - i, 0xFF000000 | GuideText.RUBRIC);
+				}
+			} else {
+				g.fill(x + 1, y + 2, x + 8, y + 3, INK_SOFT);
+				g.fill(x + 1, y + 8, x + 8, y + 9, INK_SOFT);
+				g.fill(x + 1, y + 2, x + 2, y + 9, INK_SOFT);
+				g.fill(x + 7, y + 2, x + 8, y + 9, INK_SOFT);
+			}
+			g.pose().pushMatrix();
+			g.pose().translate(x + 10, y + 1);
+			g.pose().scale(0.62F, 0.62F);
+			g.item(this.icon, 0, 0);
+			g.pose().popMatrix();
+			float scale = fitScale(screen.font, this.title, ROOM, SMALL);
+			int ink = this.done ? INK_SOFT : this.current ? 0xFF000000 | GuideText.RUBRIC : INK;
+			g.pose().pushMatrix();
+			g.pose().translate(x + 22, y + 3 + (SMALL - scale) * 4.0F);
+			g.pose().scale(scale, scale);
+			g.text(screen.font, this.title, 0, 0, ink, false);
+			g.pose().popMatrix();
+		}
+
+		@Override
+		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
+			return List.of(this.title.copy().withColor(0xFFE9A8), this.description);
+		}
+
+		@Override
+		boolean click(GuideBookScreen screen) {
+			screen.jumpTo(screen.chapterPage(this.step.chapter));
+			return true;
 		}
 	}
 

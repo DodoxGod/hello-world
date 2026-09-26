@@ -10,7 +10,8 @@
 			"dev.forja.test.AiGameTests",
 			"dev.forja.test.ObjetosContrato",
 			"dev.forja.test.ArsenalGameTests",
-			"dev.forja.test.TwoPlayerGameTests"
+			"dev.forja.test.TwoPlayerGameTests",
+			"dev.forja.test.PathGameTests"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"

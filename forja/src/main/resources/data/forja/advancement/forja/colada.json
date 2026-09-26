@@ -1,0 +1,127 @@
+{
+  "parent": "forja:forja/aleacion",
+  "display": {
+    "icon": {
+      "id": "forja:caja_de_moldeo"
+    },
+    "title": {
+      "translate": "advancements.forja.colada.title"
+    },
+    "description": {
+      "translate": "advancements.forja.colada.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "pieza": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:colada": true
+            }
+          }
+        ]
+      }
+    },
+    "basta": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:basta": true
+            }
+          }
+        ]
+      }
+    },
+    "entera_1": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:coladas": 1
+            }
+          }
+        ]
+      }
+    },
+    "entera_2": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:coladas": 3
+            }
+          }
+        ]
+      }
+    },
+    "entera_3": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:coladas": 7
+            }
+          }
+        ]
+      }
+    },
+    "entera_4": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:coladas": 15
+            }
+          }
+        ]
+      }
+    },
+    "entera_5": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:coladas": 31
+            }
+          }
+        ]
+      }
+    },
+    "entera_6": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:coladas": 63
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "pieza",
+      "basta",
+      "entera_1",
+      "entera_2",
+      "entera_3",
+      "entera_4",
+      "entera_5",
+      "entera_6"
+    ]
+  ]
+}

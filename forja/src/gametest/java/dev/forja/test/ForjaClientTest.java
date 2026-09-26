@@ -131,6 +131,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 			if ("libro".equals(solo)) {
 				checkEverythingIsNamed(context);
 				checkGuideBook(context);
+				checkSmithPath(context, server);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
+			if ("camino".equals(solo)) {
+				checkSmithPath(context, server);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
@@ -191,6 +197,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			checkForgeTable(context, server, connection, x, y, z);
 			checkEverythingIsNamed(context);
 			checkGuideBook(context);
+			checkSmithPath(context, server);
 			checkLoot(server, connection);
 			checkAbandonedForge(context, server, connection, x, y, z);
 			checkNewUpgrades(context, server, connection, x, y, z);
@@ -850,6 +857,154 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.takeScreenshot("forja_06e_libro_mi_taller");
 		context.runOnClient(mc -> mc.gui.setScreen(null));
 		context.waitTicks(5);
+	}
+
+	/**
+	 * The guide's path, from the client: the chat line when the path moves on (and none when a step is
+	 * done out of order), the sign on the cover and where it leads, and the "Siguiente paso" page for a
+	 * smith two steps in and for one who has walked it all. Whatever the player had done is put back.
+	 */
+	private static void checkSmithPath(ClientGameTestContext context, TestServerContext server) {
+		List<dev.forja.ForjaPath.Step> steps = dev.forja.ForjaPath.STEPS;
+		java.util.Set<String> before = context.computeOnClient(mc -> new java.util.HashSet<>(dev.forja.client.PathClient.done()));
+		int untouched = context.computeOnClient(mc -> dev.forja.client.PathClient.hintsShown);
+		// The guide in hand opens the tab; then the path starts from nothing.
+		server.runCommand("give @a forja:guia_de_forja");
+		for (dev.forja.ForjaPath.Step step : steps) {
+			server.runCommand("advancement revoke @a only forja:forja/" + step.advancement());
+		}
+		context.waitFor(mc -> dev.forja.client.PathClient.done().contains("root") && dev.forja.ForjaPath.doneCount(dev.forja.client.PathClient.done()::contains) == 0, 200);
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+		int start = context.computeOnClient(mc -> dev.forja.client.PathClient.hintsShown);
+		// Going backwards (steps taken away) is not the path moving on.
+		check(start == untouched, "taking steps away should say nothing, it said " + (start - untouched) + " lines");
+
+		// The first template: one line, pointing at the part.
+		server.runCommand("advancement grant @a only forja:forja/plantilla");
+		context.waitFor(mc -> dev.forja.client.PathClient.done().contains("plantilla"), 200);
+		context.waitTicks(10);
+		String first = context.computeOnClient(mc -> dev.forja.client.PathClient.hintsShown - start + " " + hintKeys(dev.forja.client.PathClient.lastHint));
+		check(first.equals("1 gui.forja.camino.pista gui.forja.camino.pieza"), "the first template should put one line in chat pointing at the part, got " + first);
+		context.takeScreenshot("forja_04c_pista_camino");
+		// An alloy before the part: the next step has not moved, so nothing is said.
+		server.runCommand("advancement grant @a only forja:forja/aleacion");
+		context.waitFor(mc -> dev.forja.client.PathClient.done().contains("aleacion"), 200);
+		context.waitTicks(5);
+		int afterAlloy = context.computeOnClient(mc -> dev.forja.client.PathClient.hintsShown - start);
+		check(afterAlloy == 1, "a step done out of order should say nothing, got " + afterAlloy + " lines");
+		server.runCommand("advancement grant @a only forja:forja/pieza");
+		context.waitFor(mc -> dev.forja.client.PathClient.done().contains("pieza"), 200);
+		context.waitTicks(5);
+		String second = context.computeOnClient(mc -> dev.forja.client.PathClient.hintsShown - start + " " + hintKeys(dev.forja.client.PathClient.lastHint));
+		check(second.equals("2 gui.forja.camino.pista gui.forja.camino.forja"), "the part should point at the forge, got " + second);
+
+		// The book: the sign on the cover, a click on it, and the page it opens.
+		context.runOnClient(mc -> {
+			mc.gui.setScreen(new GuideBookScreen());
+			mc.gui.toastManager().clear();
+		});
+		context.waitForScreen(GuideBookScreen.class);
+		context.waitTicks(5);
+		String[] book = context.computeOnClient(mc -> {
+			GuideBookScreen guide = (GuideBookScreen) mc.gui.screen();
+			StringBuilder missing = new StringBuilder();
+			for (dev.forja.ForjaPath.Step step : steps) {
+				if (guide.chapterPage(step.chapter) <= 0) {
+					missing.append(step.chapter).append(' ');
+				}
+			}
+			return new String[] {guide.shownStep(), String.valueOf(guide.chapterPage("siguiente_paso")), missing.toString(),
+				guide.overflowingPages() + " " + guide.wideElements() + " " + guide.elidedElements() + " " + guide.rawKeys() + " " + guide.misplacedChapters()};
+		});
+		log("camino: la guia muestra " + book[0] + ", siguiente paso en la pagina " + (Integer.parseInt(book[1]) + 1) + ", maquetacion " + book[3]);
+		check(book[0].equals("portada:forja"), "with the template and the part done the book should show the forge, and on the cover, got " + book[0]);
+		check(book[2].isEmpty(), "every step should link to a chapter the book has, these are missing: " + book[2]);
+		check(book[3].equals("[] [] [] [] []"), "the book with the path in it must still lay out cleanly, got " + book[3]);
+		context.takeScreenshot("forja_04a_libro_portada_camino");
+		int[] jumped = context.computeOnClient(mc -> {
+			GuideBookScreen guide = (GuideBookScreen) mc.gui.screen();
+			// The sign sits under the emblem (58) and the title (22) on the first page.
+			boolean clicked = guide.clickAt(guide.contentPoint(0, 40, 88));
+			return new int[] {clicked ? 1 : 0, guide.openSpread(), guide.chapterPage("siguiente_paso") / 2};
+		});
+		check(jumped[0] == 1 && jumped[1] == jumped[2], "the sign on the cover should open the next step's page, got spread " + jumped[1] + " instead of " + jumped[2]);
+		context.runOnClient(mc -> mc.gui.toastManager().clear());
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(5);
+		context.takeScreenshot("forja_04d_libro_siguiente_paso");
+		// The list of the whole path is the page after; on a turn it is the next spread.
+		context.runOnClient(mc -> {
+			GuideBookScreen guide = (GuideBookScreen) mc.gui.screen();
+			guide.goToPage(guide.chapterPage("siguiente_paso") + 1);
+		});
+		context.waitTicks(5);
+		context.takeScreenshot("forja_04f_libro_camino_lista");
+
+		// Every point of the path laid out, without a server in between: a book for each progress from
+		// nothing to all of it, each showing the right step, with its link on the same page and nothing
+		// out of place.
+		String sweep = context.computeOnClient(mc -> {
+			StringBuilder wrong = new StringBuilder();
+			java.util.Set<String> done = new java.util.HashSet<>();
+			for (int i = 0; i <= steps.size(); i++) {
+				GuideBookScreen guide = GuideBookScreen.showing(java.util.Set.copyOf(done));
+				String expected = i < steps.size() ? "portada:" + steps.get(i).advancement() : "completo";
+				String layout = guide.overflowingPages() + " " + guide.wideElements() + " " + guide.elidedElements() + " " + guide.rawKeys();
+				if (!guide.shownStep().equals(expected) || (i < steps.size() && !guide.nextStepOnOnePage()) || !guide.pathListOnOnePage()
+					|| !layout.equals("[] [] [] []")) {
+					wrong.append(i).append(": ").append(guide.shownStep()).append(" linked ").append(guide.nextStepOnOnePage())
+						.append(" list ").append(guide.pathListOnOnePage()).append(' ').append(layout).append("; ");
+				}
+				if (i < steps.size()) {
+					done.add(steps.get(i).advancement());
+				}
+			}
+			return wrong.toString();
+		});
+		check(sweep.isEmpty(), "every point of the path should lay out on its page with its link, these did not: " + sweep);
+
+		// The whole path walked: one last line, and the page says so instead.
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+		for (dev.forja.ForjaPath.Step step : steps) {
+			server.runCommand("advancement grant @a only forja:forja/" + step.advancement());
+		}
+		context.waitFor(mc -> dev.forja.ForjaPath.next(dev.forja.client.PathClient.done()::contains) == null, 200);
+		context.waitTicks(5);
+		String end = context.computeOnClient(mc -> hintKeys(dev.forja.client.PathClient.lastHint));
+		check(end.equals("gui.forja.camino.pista.completo"), "walking the whole path should end on its own line, got " + end);
+		context.runOnClient(mc -> {
+			GuideBookScreen guide = new GuideBookScreen();
+			mc.gui.setScreen(guide);
+			guide.goToPage(guide.chapterPage("siguiente_paso"));
+			mc.gui.toastManager().clear();
+		});
+		context.waitForScreen(GuideBookScreen.class);
+		context.waitTicks(5);
+		String walked = context.computeOnClient(mc -> ((GuideBookScreen) mc.gui.screen()).shownStep());
+		check(walked.equals("completo"), "a walked path should say so and leave the cover alone, got " + walked);
+		context.takeScreenshot("forja_04e_libro_camino_completo");
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+
+		// And the player is left as they were.
+		for (dev.forja.ForjaPath.Step step : steps) {
+			server.runCommand("advancement " + (before.contains(step.advancement()) ? "grant" : "revoke") + " @a only forja:forja/" + step.advancement());
+		}
+		server.runCommand("clear @a forja:guia_de_forja 1");
+		context.waitTicks(5);
+		log("camino: " + (context.computeOnClient(mc -> dev.forja.client.PathClient.hintsShown) - start) + " lineas en el chat por todo el camino");
+	}
+
+	/** The translation keys of a path hint and of its first argument, space separated. */
+	private static String hintKeys(net.minecraft.network.chat.@org.jspecify.annotations.Nullable Component hint) {
+		if (hint == null || !(hint.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents line)) {
+			return "none";
+		}
+		StringBuilder keys = new StringBuilder(line.getKey());
+		if (line.getArgs().length > 0 && line.getArgs()[0] instanceof net.minecraft.network.chat.Component title
+			&& title.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents titleKey) {
+			keys.append(' ').append(titleKey.getKey());
+		}
+		return keys.toString();
 	}
 
 	/** Village smith chests and dungeon chests carry templates and forged gear. */

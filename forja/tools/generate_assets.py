@@ -4364,6 +4364,18 @@ ADVANCEMENTS = {
     "pavesa": ("ruina", "forja:huevo_pavesa", "goal", None),
     # Taking one alive is harder than killing it: the catch only works while it is fed.
     "farol": ("pavesa", "forja:farol_de_pavesa", "challenge", None),
+    # The two steps of the guide's path (ForjaPath) that nothing marked. Holding anything that came out
+    # of the foundry: a part from a casting box, clean or rough, or a whole tool off a casting table,
+    # whose mask has every one of its slots cast (a table makes tools of two to six parts).
+    "colada": ("aleacion", "forja:caja_de_moldeo", "task", {"any": dict(
+        [("pieza", {"trigger": "minecraft:inventory_changed", "conditions": {"items": [{"components": {"forja:colada": True}}]}}),
+         ("basta", {"trigger": "minecraft:inventory_changed", "conditions": {"items": [{"components": {"forja:basta": True}}]}})]
+        + [(f"entera_{slots}", {"trigger": "minecraft:inventory_changed",
+                                "conditions": {"items": [{"components": {"forja:coladas": (1 << slots) - 1}}]}})
+           for slots in range(1, 7)])}),
+    # Holding the greater table: it is crafted round damascus, so this is the end of the early path.
+    "mesa_mayor": ("aleacion", "forja:mesa_de_forja_mayor", "goal",
+                   {"trigger": "minecraft:inventory_changed", "conditions": {"items": [{"items": "forja:mesa_de_forja_mayor"}]}}),
 }
 
 
@@ -4505,6 +4517,22 @@ def generate_advancements():
                     for name in names
                 },
                 "requirements": [names],
+            })
+            continue
+        if isinstance(criteria, dict) and "any" in criteria:
+            # Several ways to earn it, any one of which is enough.
+            write_json(folder / f"forja/{key}.json", {
+                "parent": f"forja:forja/{parent}",
+                "display": {
+                    "icon": {"id": icon},
+                    "title": {"translate": f"advancements.forja.{key}.title"},
+                    "description": {"translate": f"advancements.forja.{key}.description"},
+                    "frame": frame,
+                    "show_toast": True,
+                    "announce_to_chat": True,
+                },
+                "criteria": criteria["any"],
+                "requirements": [list(criteria["any"])],
             })
             continue
         if isinstance(criteria, dict):

@@ -559,6 +559,109 @@ GUI = {
         "commissions, talismans and the belt, raiders who come for what you have made, and at the end the "
         "Fallen Smith and his forge heart.",
     ),
+    # ------------------------------------------------------------------ the smith's path (ForjaPath)
+    "gui.forja.libro.cap.siguiente_paso": ("Siguiente paso", "Next Step"),
+    "gui.forja.camino.titulo": ("El camino del herrero", "The smith's path"),
+    "gui.forja.camino.intro": (
+        "%s pasos hasta la mesa mayor. Se marcan solos; pulsa uno para ir a su capítulo.",
+        "%s steps to the greater table. They tick themselves off; click one for its chapter.",
+    ),
+    "gui.forja.camino.paso": ("Paso %s de %s", "Step %s of %s"),
+    "gui.forja.camino.leer": ("Léelo en «%s», pág. %s", "Read it in %s, p. %s"),
+    "gui.forja.camino.portada": ("Tu siguiente paso · pág. %s", "Your next step · p. %s"),
+    "gui.forja.camino.completo": ("Camino completo", "Path complete"),
+    "gui.forja.camino.completo.desc": (
+        "Ya sabes lo que hace falta para valerte. Lo que queda está ahí fuera: eventos, encargos, "
+        "saqueadores y, al final, el Herrero Caído.",
+        "You know what it takes to fend for yourself. What is left is out there: events, commissions, "
+        "raiders and, at the end, the Fallen Smith.",
+    ),
+    "gui.forja.camino.pista": ("Siguiente paso: %s. Lo explica «%s», en la guía de forja.",
+                               "Next step: %s. The forge guide explains it under %s."),
+    "gui.forja.camino.pista.completo": ("Has recorrido el camino del herrero: el resto de la guía es tuyo.",
+                                        "You have walked the smith's path: the rest of the guide is yours."),
+    "gui.forja.camino.plantilla": ("Graba una plantilla", "Engrave a template"),
+    "gui.forja.camino.plantilla.desc": (
+        "En la **mesa de piezas** (hierro, una piedra de afilar y tablones) pon una **plantilla** en blanco "
+        "en su ranura y elige una forma: cabeza de pico, hoja, mango... Queda grabada para siempre, y la "
+        "plantilla no se gasta.",
+        "At the **parts table** (iron, a grindstone and planks) set a blank **template** in its slot and "
+        "pick a shape: pickaxe head, blade, handle... It stays engraved for good, and the template is never "
+        "used up.",
+    ),
+    "gui.forja.camino.pieza": ("Corta tu primera pieza", "Cut your first part"),
+    "gui.forja.camino.pieza.desc": (
+        "Plantilla grabada y material en la misma mesa, y recoge la pieza. Allí sólo se corta lo que se "
+        "trabaja en frío: **madera, piedra, hueso, cuero**, cuarzo... El metal no se corta: se **cuela**.",
+        "The engraved template and a material on the same table, then take the part. It only cuts what is "
+        "worked cold: **wood, stone, bone, leather**, quartz... Metal is not cut: it is **cast**.",
+    ),
+    "gui.forja.camino.forja": ("Forja tu primera herramienta", "Forge your first tool"),
+    "gui.forja.camino.forja.desc": (
+        "En la **mesa de forja** (hierro, una mesa de crafteo y tablones) pon las piezas en las puntas de "
+        "la estrella: un pico es **cabeza, mango y atadura**. Pulsa Forjar y para el martillo en el centro.",
+        "At the **forge table** (iron, a crafting table and planks) set the parts on the points of the "
+        "star: a pickaxe is a **head, a handle and a binding**. Press Forge and stop the hammer in the middle.",
+    ),
+    "gui.forja.camino.temple": ("Témplala", "Quench it"),
+    "gui.forja.camino.temple.desc": (
+        "Lo recién forjado sale caliente **%s segundos**. Llévalo en la mano o puesto y métete en **agua** "
+        "antes de que se enfríe (o en lava, nieve polvo, o sobre miel): el temple se queda en el acero.",
+        "What you just forged stays hot for **%s seconds**. Hold it or wear it and step into **water** "
+        "before it cools (or lava, powder snow, or onto honey): the quench stays in the steel.",
+    ),
+    "gui.forja.camino.mejora": ("Mejórala", "Upgrade it"),
+    "gui.forja.camino.mejora.desc": (
+        "La herramienta al **centro** de la estrella y el ingrediente en las puntas: el **azúcar** le da "
+        "Eficiencia a un pico. Esta mesa sube cada mejora hasta el **%s%%**; el resto, la mesa mayor.",
+        "The tool in the **centre** of the star and the ingredient on the points: **sugar** gives a pickaxe "
+        "Efficiency. This table takes each upgrade to **%s%%**; the rest is the greater table's.",
+    ),
+    "gui.forja.camino.parada": ("Para un golpe", "Parry a blow"),
+    "gui.forja.camino.parada.desc": (
+        "Con una espada o un escudo, **levántalo justo cuando llega el golpe**, no antes: los monstruos "
+        "avisan antes de pegar. Parar devuelve el golpe, desequilibra al que ataca y te devuelve aguante.",
+        "With a sword or a shield, **raise it just as the blow lands**, not before: monsters give warning "
+        "before they strike. A parry turns the blow back, unsettles the attacker and gives you stamina back.",
+    ),
+    "gui.forja.camino.aleacion": ("Funde tu primera aleación", "Melt your first alloy"),
+    "gui.forja.camino.aleacion.desc": (
+        "Una **fogata** encendida bajo la mesa de forja, el centro vacío y en las puntas **dos lingotes de "
+        "cobre y uno de hierro**: sale **bronce**. Cobre y ladrillo de resina dan **peltre**. Lo que hay "
+        "bajo la mesa es su calor.",
+        "A lit **campfire** under the forge table, the centre empty and **two copper ingots and one iron** "
+        "on the points: out comes **bronze**. Copper and a resin brick give **pewter**. What is under the "
+        "table is its heat.",
+    ),
+    "gui.forja.camino.colada": ("Cuela tu primera pieza", "Cast your first part"),
+    "gui.forja.camino.colada.desc": (
+        "Crisol de barro y caja de moldeo son de **peltre**; la cuba, de **bronce**. El crisol quema "
+        "**ascuas** de pavesa y funde el metal en la cuba. En la caja, una pieza y **%s de acero "
+        "refractario** dan su molde, y la caja lo llena.",
+        "The clay crucible and the casting box are **pewter**; the tank is **bronze**. The crucible burns "
+        "wisp **embers** and melts metal into the tank. In the box, a part and **%s refractory steel** "
+        "make its mould, and the box fills it.",
+    ),
+    "gui.forja.camino.mesa_mayor": ("La mesa de forja mayor", "The greater forge table"),
+    "gui.forja.camino.mesa_mayor.desc": (
+        "La primera mesa no monta espadones, escudos, manguales ni alas. La **mayor** sí: tu mesa de forja "
+        "rodeada de **damasco**, oro y piedra negra pulida. El damasco es acero y chatarra de netherita "
+        "sobre una mesa con **lava** debajo.",
+        "The first table will not put together greatswords, shields, flails or wings. The **greater** one "
+        "will: your forge table ringed with **damascus**, gold and polished blackstone. Damascus is steel "
+        "and netherite scrap on a table with **lava** underneath.",
+    ),
+    "gui.forja.libro.mesa_mayor": (
+        "La **mesa de forja mayor**: la misma estrella, todo lo que la primera no monta (espadones, "
+        "lanzas, escudos, alas...) y las mejoras hasta el %s%%. El damasco sale de una mesa sobre lava.",
+        "The **greater forge table**: the same star, everything the first one will not assemble "
+        "(greatswords, spears, shields, wings...) and upgrades all the way to %s%%. Damascus comes off a "
+        "table over lava.",
+    ),
+    "advancements.forja.colada.title": ("Primera colada", "First Pour"),
+    "advancements.forja.colada.description": ("Saca una pieza de la fundición", "Take a part out of the foundry"),
+    "advancements.forja.mesa_mayor.title": ("La mesa mayor", "The Greater Table"),
+    "advancements.forja.mesa_mayor.description": ("Hazte con una mesa de forja mayor", "Get a greater forge table"),
     "gui.forja.libro.cap.combate": ("Combate", "Fighting"),
     "gui.forja.libro.cap.pactos": ("Pactos", "Pacts"),
     "gui.forja.libro.cap.potencial": ("Potencial", "Potential"),

@@ -60,6 +60,13 @@ public final class ForjaConfig {
 	/** The combat overhaul: armor formula, stamina, dodge, posture and vanilla mob behaviour. */
 	public dev.forja.combat.CombatConfig combate = new dev.forja.combat.CombatConfig();
 
+	/**
+	 * One line in chat pointing at the next step of the guide's path (ForjaPath) each time the path moves
+	 * on. Not a chance but a switch: it is read by each client for its own player, so on a server every
+	 * player decides for themselves.
+	 */
+	public boolean pistas = true;
+
 	/** Everything in this file is a chance per check, from 0 (never) to 1 (always). */
 	public String _comentario = "Probabilidades por comprobacion, de 0 (nunca) a 1 (siempre).";
 
