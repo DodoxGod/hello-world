@@ -44,6 +44,8 @@ public final class MobMind {
 	/** Where it last saw its player, and when (to follow the trail when it loses them). */
 	public Vec3 lastSeen;
 	public long lastSeenAt = Long.MIN_VALUE / 2;
+	/** The player those two belong to: the one it was after when it last thought (boredom counts for them). */
+	public Player hunted;
 	/** The cover spot it last found from the player's arrows, and when it looked. */
 	public Vec3 cover;
 	public long coverAt = Long.MIN_VALUE / 2;

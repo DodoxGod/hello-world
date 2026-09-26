@@ -50,6 +50,8 @@ public final class TacticGoal extends Goal {
 	private final Mob mob;
 	private final MobMind mind;
 	private int repath;
+	/** Who the blow being wound up is for: the player whose turn it holds. */
+	private Player struck;
 
 	public TacticGoal(Mob mob, MobMind mind) {
 		this.mob = mob;
@@ -79,6 +81,13 @@ public final class TacticGoal extends Goal {
 		if (this.mob.isUsingItem()) {
 			this.mob.stopUsingItem();
 		}
+		// A blow still being wound up is dropped with its turn. Left alone it stayed paused in the mind
+		// and landed, with no warning, on whoever the mob took on next.
+		if (this.mind.windup > 0) {
+			this.mind.windup = 0;
+			AttackTokens.release(this.struck, this.mob);
+		}
+		this.struck = null;
 		this.mind.draw = 0;
 		if (this.mob instanceof Creeper creeper && this.mind.networked) {
 			creeper.setSwellDir(-1);
@@ -113,6 +122,9 @@ public final class TacticGoal extends Goal {
 			}
 		}
 		// A blow being wound up is finished before anything else: that is what makes it fair.
+		if (this.mind.windup > 0 && this.struck != target) {
+			this.retarget(target);
+		}
 		if (this.mind.windup > 0) {
 			this.tickWindup(target);
 			return;
@@ -232,8 +244,25 @@ public final class TacticGoal extends Goal {
 		this.mind.windupTotal = MobDefense.windup(this.mob);
 		MobDefense.spendCounter(this.mob);
 		this.mind.windup = this.mind.windupTotal;
+		this.struck = target;
 		this.mob.getNavigation().stop();
 		CombatFeedback.telegraph(this.mob);
+	}
+
+	/**
+	 * The target changed while a blow was being wound up (another player struck the mob, the squad was
+	 * shared out...). The turn the blow was wound up under goes back at once, and the blow carries on
+	 * against the new target only if a turn is free there too: nobody takes a blow outside their own
+	 * turns, and the one it was meant for is not left waiting on a turn nobody is using.
+	 */
+	private void retarget(Player target) {
+		AttackTokens.release(this.struck, this.mob);
+		this.struck = null;
+		if (AttackTokens.tryAcquire(target, this.mob, Aggression.maxAttackers(this.mob, target))) {
+			this.struck = target;
+		} else {
+			this.mind.windup = 0;
+		}
 	}
 
 	private void tickWindup(Player target) {
@@ -243,6 +272,7 @@ public final class TacticGoal extends Goal {
 			this.mind.windup = 0;
 			this.mind.cooldown = MELEE_COOLDOWN / 2;
 			AttackTokens.release(target, this.mob);
+			this.struck = null;
 			return;
 		}
 		if (--this.mind.windup > 0) {
@@ -257,6 +287,7 @@ public final class TacticGoal extends Goal {
 		this.mind.cooldown = MELEE_COOLDOWN;
 		this.mind.lastStrike = this.mob.level().getGameTime();
 		AttackTokens.release(target, this.mob);
+		this.struck = null;
 	}
 
 	/** Draw while asked, seeing the target within 16 blocks; at 20 ticks, loose. Letting go early unstrings it. */

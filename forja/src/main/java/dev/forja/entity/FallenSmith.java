@@ -604,6 +604,15 @@ public class FallenSmith extends Monster implements GeoEntity {
 
 	/** Everyone close enough sees the bar; everyone who walks away loses it. */
 	private void watchers(ServerLevel level) {
+		// And so does everyone no longer in this world at all: gone through a portal, or the body a
+		// respawn left behind. Those are not in level.players() any more, so the loop below never took
+		// the bar off them; the second kind shares its connection with the new body, and a bar update
+		// for a bar that client has already dropped fails on its side and disconnects it.
+		for (ServerPlayer shown : List.copyOf(this.bar.getPlayers())) {
+			if (shown.isRemoved() || shown.level() != level) {
+				this.bar.removePlayer(shown);
+			}
+		}
 		for (ServerPlayer player : level.players()) {
 			if (player.distanceToSqr(this) <= 60.0 * 60.0) {
 				this.bar.addPlayer(player);

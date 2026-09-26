@@ -49,6 +49,8 @@ public final class ForjaTraits {
 	private static final Map<LivingEntity, Long> SMITH_OPEN_UNTIL = new WeakHashMap<>();
 	private static final Map<HollowArmor, Long> FEIGNING = new WeakHashMap<>();
 	private static final Map<HollowArmor, Boolean> FEIGNED = new WeakHashMap<>();
+	/** Who each one playing dead was fighting when it went down: who it gets up behind. */
+	private static final Map<HollowArmor, Player> FEIGNED_FOE = new WeakHashMap<>();
 	private static final Map<LivingSlag, Integer> SPLITS = new WeakHashMap<>();
 
 	private record Piece(LivingSlag piece, LivingSlag parent) {
@@ -114,10 +116,11 @@ public final class ForjaTraits {
 
 	private static boolean allowDamage(LivingEntity entity, DamageSource source, float amount) {
 		// 46: the hollow armor plays dead once, instead of going under 30 %.
-		if (entity instanceof HollowArmor hollow && !FEIGNED.getOrDefault(hollow, false) && source.getEntity() instanceof Player
+		if (entity instanceof HollowArmor hollow && !FEIGNED.getOrDefault(hollow, false) && source.getEntity() instanceof Player striker
 			&& hollow.getHealth() - amount < hollow.getMaxHealth() * HOLLOW_FEIGN_HEALTH && hollow.level() instanceof ServerLevel level) {
 			FEIGNED.put(hollow, true);
 			FEIGNING.put(hollow, level.getGameTime() + HOLLOW_FEIGN_TICKS);
+			FEIGNED_FOE.put(hollow, hollow.getTarget() instanceof Player fighting ? fighting : striker);
 			hollow.setHealth(Math.max(1.0F, hollow.getMaxHealth() * HOLLOW_FEIGN_HEALTH));
 			hollow.setNoAi(true);
 			hollow.setInvulnerable(true);
@@ -183,6 +186,7 @@ public final class ForjaTraits {
 			}
 			if (!hollow.isAlive()) {
 				it.remove();
+				FEIGNED_FOE.remove(hollow);
 				continue;
 			}
 			if (now < entry.getValue()) {
@@ -191,7 +195,12 @@ public final class ForjaTraits {
 			it.remove();
 			hollow.setNoAi(false);
 			hollow.setInvulnerable(false);
-			Player player = level.getNearestPlayer(hollow, 16.0);
+			// Behind the one it was fighting, not whoever happens to stand nearest: with two players about,
+			// the nearest was as likely as not the other one. Only if that one is gone does it take the
+			// nearest, as it always did.
+			Player fought = FEIGNED_FOE.remove(hollow);
+			Player player = fought != null && fought.isAlive() && fought.level() == level && hollow.distanceTo(fought) <= 16.0
+				? fought : level.getNearestPlayer(hollow, 16.0);
 			if (player != null && !player.isCreative() && !player.isSpectator()) {
 				double yaw = Math.toRadians(player.getYRot());
 				hollow.randomTeleport(player.getX() + Math.sin(yaw) * 2.0, player.getY(), player.getZ() - Math.cos(yaw) * 2.0, true);

@@ -142,6 +142,9 @@ public final class SpecialRunner {
 		Special special = this.run.special;
 		int spread = Math.max(0, special.cooldownMax - special.cooldownMin);
 		this.readyAt[k] = this.mob.level().getGameTime() + special.cooldownMin + (spread > 0 ? this.mob.getRandom().nextInt(spread + 1) : 0);
+		// A special that took a turn (the zombie's lunge) gives it back however it ends. Cut short (the goal
+		// was taken over, the mob fell back), it used to keep the turn while doing something else.
+		dev.forja.combat.AttackTokens.release(this.run.target, this.mob);
 		this.run = null;
 	}
 }

@@ -66,6 +66,17 @@ abstract class MeleeAttackGoalMixin {
 			forja$reset();
 			return;
 		}
+		if (forja$windup > 0 && target != forja$target) {
+			// Turned on somebody else mid-warning (another player struck it): the turn the blow was wound
+			// up under goes back, and the blow carries on only if the new target has a turn free as well.
+			AttackTokens.release(forja$target, mob);
+			forja$target = null;
+			if (!AttackTokens.tryAcquire(target, mob, dev.forja.ai.Aggression.maxAttackers(mob, target))) {
+				forja$reset();
+				return;
+			}
+			forja$target = target;
+		}
 		if (forja$windup > 0) {
 			forja$holdStill(target);
 			mob.getLookControl().setLookAt(target, 30.0F, 30.0F);

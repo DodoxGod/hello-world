@@ -205,6 +205,18 @@ public final class MobAi {
 
 	private static void think(MobMind mind, long now) {
 		Mob mob = mind.mob;
+		// The trail and the boredom clock belong to one player: taking on a new one (or the same one again,
+		// after losing them) starts both afresh. They used to carry over, so a mob that had last seen
+		// anybody half a minute ago dropped the next player it took on the moment it took them on, and
+		// once it had lost or killed one player it would never fight another.
+		Player hunting = mob.getTarget() instanceof Player chased ? chased : null;
+		if (hunting != mind.hunted) {
+			mind.hunted = hunting;
+			if (hunting != null) {
+				mind.lastSeen = null;
+				mind.lastSeenAt = now;
+			}
+		}
 		// Boredom (69): a player it has not seen for 30 seconds is given up.
 		if (mob.getTarget() instanceof Player hunted && mind.lastSeenAt > Long.MIN_VALUE / 2 && now - mind.lastSeenAt > Personality.BORED_TICKS) {
 			mob.setTarget(null);
@@ -233,6 +245,15 @@ public final class MobAi {
 			mind.memory = null;
 			mind.ringAngle = Double.NaN;
 			mind.ringRadius = TacticGoal.RING_RADIUS;
+			// Its part in the old player's squad is no part in the new one: until the squads are next
+			// worked out it is a plain reserve, not the other group's flanker, rout or guard, and the cover
+			// it found was cover from the other player's arrows.
+			mind.role = SquadRole.RESERVA;
+			mind.routed = false;
+			mind.guarding = false;
+			mind.othersWaiting = false;
+			mind.cover = null;
+			mind.coverAt = Long.MIN_VALUE / 2;
 		}
 		if (target == null) {
 			mind.networked = false;

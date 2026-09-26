@@ -22,31 +22,40 @@ public final class AttackTokens {
 		// A staggered mob cannot swing, so it does not get to hold a turn it cannot use.
 		if (Posture.isStaggered(mob, mob.level().getGameTime())) return false;
 		Set<Mob> holders = HOLDERS.computeIfAbsent(target, t -> Collections.newSetFromMap(new WeakHashMap<>()));
-		holders.removeIf(m -> !m.isAlive() || m.isRemoved() || m.getTarget() != target);
+		holders.removeIf(m -> !current(m, target));
 		if (holders.contains(mob)) return true;
 		if (holders.size() >= max) return false;
 		holders.add(mob);
 		return true;
 	}
 
+	/**
+	 * A turn only counts while its mob is alive and still after that target. One that turned on somebody
+	 * else let go of it the moment it did: with two players about, the first one's turns used to go on
+	 * counting it (in the network's "turnos_ocupados" and "tengo_turno" too) until some other mob happened
+	 * to ask for a turn on them.
+	 */
+	private static boolean current(Mob mob, LivingEntity target) {
+		return mob.isAlive() && !mob.isRemoved() && mob.getTarget() == target;
+	}
+
 	/** Whether this mob holds one of the target's turns right now. */
 	public static boolean holds(LivingEntity target, Mob mob) {
 		Set<Mob> holders = HOLDERS.get(target);
-		return holders != null && holders.contains(mob);
+		return holders != null && holders.contains(mob) && current(mob, target);
 	}
 
 	/** Whether a turn on this target is free. */
 	public static boolean free(LivingEntity target, int max) {
-		Set<Mob> holders = HOLDERS.get(target);
-		if (holders == null) return true;
-		holders.removeIf(m -> !m.isAlive() || m.isRemoved() || m.getTarget() != target);
-		return holders.size() < max;
+		return held(target) < max;
 	}
 
 	/** How many mobs hold a turn on this target. */
 	public static int held(LivingEntity target) {
 		Set<Mob> holders = HOLDERS.get(target);
-		return holders == null ? 0 : holders.size();
+		if (holders == null) return 0;
+		holders.removeIf(m -> !current(m, target));
+		return holders.size();
 	}
 
 	public static void release(LivingEntity target, Mob mob) {

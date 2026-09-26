@@ -116,7 +116,11 @@ public class CuneGuardian extends Monster implements GeoEntity {
 		Component.translatable("entity.forja.guardian_de_cuno"), BossBarColor.YELLOW, BossBarOverlay.NOTCHED_6);
 
 	private int stampCooldown = 60;
-	private boolean announced;
+	/**
+	 * Who has been told it is sealed. Each player once: it was once for the whole fight, so the second
+	 * player to reach it never heard why their blows were doing nothing.
+	 */
+	private final java.util.Set<java.util.UUID> announced = new java.util.HashSet<>();
 
 	/** Where it was stood up: the middle of its hall, and the centre of the seal search. */
 	private @org.jspecify.annotations.Nullable BlockPos home;
@@ -198,8 +202,7 @@ public class CuneGuardian extends Monster implements GeoEntity {
 			level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.SHIELD_BLOCK.value(), SoundSource.HOSTILE, 1.4F, 0.6F);
 		}
 		level.sendParticles(SEAL, this.getX(), this.getY(1.9), this.getZ(), 10, 0.5, 0.5, 0.5, 0.02);
-		if (source.getEntity() instanceof ServerPlayer player && !this.announced) {
-			this.announced = true;
+		if (source.getEntity() instanceof ServerPlayer player && this.announced.add(player.getUUID())) {
 			player.sendSystemMessage(Component.translatable("gui.forja.cuno_sellado", this.seals()).withColor(0xD8B454));
 		}
 	}
@@ -362,6 +365,15 @@ public class CuneGuardian extends Monster implements GeoEntity {
 
 	/** Everyone close enough sees the bar; everyone who walks away loses it. */
 	private void watchers(ServerLevel level) {
+		// And so does everyone no longer in this world at all: gone through a portal, or the body a
+		// respawn left behind. Those are not in level.players() any more, so the loop below never took
+		// the bar off them; the second kind shares its connection with the new body, and a bar update
+		// for a bar that client has already dropped fails on its side and disconnects it.
+		for (ServerPlayer shown : List.copyOf(this.bar.getPlayers())) {
+			if (shown.isRemoved() || shown.level() != level) {
+				this.bar.removePlayer(shown);
+			}
+		}
 		for (ServerPlayer player : level.players()) {
 			if (player.distanceToSqr(this) <= 48.0 * 48.0) {
 				this.bar.addPlayer(player);
