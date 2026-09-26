@@ -98,6 +98,37 @@ public final class ObsV3 {
 		MEANING.put("peligro_tras_jugador", "1 si hay lava o caída (Terrain.dangerNear, a 1.5 o 3) al otro lado del jugador visto desde el mob");
 		MEANING.put("jug_bloquea_a_aliado", "1 si el jugador tiene el escudo arriba y mira más a otro monstruo que a este");
 		MEANING.put("flanco_escudo", "1 si el jugador tiene el escudo arriba y el mob está fuera de sus 90° de delante");
+		// --- D: the player fighting from afar
+		MEANING.put("obj_mano_ballesta", "1 si el jugador lleva una ballesta en alguna mano");
+		MEANING.put("obj_mano_baculo", "1 si lleva un báculo forjado");
+		MEANING.put("obj_mano_grimorio", "1 si lleva un grimorio forjado");
+		MEANING.put("obj_mano_arrojadiza", "1 si lleva algo que se lanza (tridente vanilla o forjado, bola de nieve, poción arrojadiza, "
+			+ "carga de viento...: ProjectileItem que no sea flecha)");
+		MEANING.put("obj_ballesta_cargada", "1 si su ballesta está cargada (dispara en cuanto quiera)");
+		MEANING.put("obj_baculo_recarga/14", "ticks que le faltan al báculo para poder lanzar otra vez / 14 (0 = listo; 0..2)");
+		MEANING.put("obj_grimorio_recarga/70", "ticks que le faltan al grimorio / 70 (0 = listo; 0..2)");
+		MEANING.put("obj_arco_tensado_real/20", "ticks tensando × velocidad de tensado del arco (Tensión, material) / 20 (0..2): 1 = tiro completo");
+		// --- W: the player's weapon and what it reaches
+		MEANING.put("jug_alcance/6", "alcance real del jugador: atributo entity_interaction_range (base 3 + guadaña 0.75, tridente 0.5, "
+			+ "mangual 3, Alcance...) o attack_range.max_reach de la lanza si es mayor / 6");
+		MEANING.put("jug_area_radio/6", "radio del área que puede hacer su arma: especial (espadón 3.5, martillo/mazo 4.5, guadaña 6) o runa "
+			+ "del grimorio (3) / 6; 0 si no tiene");
+		MEANING.put("jug_area_lista", "1 si esa área está disponible ya (sin enfriamiento; el sismo además pide estar en el suelo)");
+		MEANING.put("jug_sinergia_area", "1 si su arma golpea en área al impactar: mejoras Onda de choque o Tormenta, o sinergias Cadena de "
+			+ "rayos, Meteoro o Vendaval");
+		MEANING.put("aliados_en_radio_area/5", "monstruos dentro de ese radio alrededor del jugador / 5 (0..2; 0 si no tiene área)");
+		MEANING.put("yo_aliado_mas_cerca/4", "distancia a su monstruo aliado más cercano / 4 (0..2; 2 si no hay)");
+		// --- V: how the player moves
+		MEANING.put("jug_vel_max", "atributo movement_speed del jugador / 0.1 (1 = andar normal; armaduras, conjuntos y efectos lo cambian)");
+		MEANING.put("jug_planeando", "1 si el jugador planea (alas, élitros)");
+		// --- E: what the player has in store
+		MEANING.put("jug_replica", "1 si el jugador acaba de parar y su siguiente golpe hace el doble (réplica, 20 ticks; 40 si fue perfecta)");
+		MEANING.put("jug_parada_perfecta_hab", "1 si tiene el escudo arriba y aún dentro de su ventana de parada perfecta");
+		MEANING.put("jug_muralla", "1 si su escudo tiene el grabado Muralla (devuelve parte del golpe parado)");
+		MEANING.put("jug_frenesi", "cuánto lleva de Frenesí, 0..1 (golpes seguidos / 5)");
+		MEANING.put("jug_anclaje", "parte del empuje que resiste por la mejora Anclaje de sus botas (0..1)");
+		MEANING.put("jug_sujeto", "1 si una Tenaza lo tiene sujeto");
+		MEANING.put("jug_ocupado", "1 si está comiendo o bebiendo, con estamina < 25, o con el escudo en enfriamiento (guardia rota)");
 	}
 
 	private ObsV3() {
@@ -242,7 +273,119 @@ public final class ObsV3 {
 		boolean shield = target.isBlocking();
 		o[i++] = shield && looksElsewhere ? 1.0 : 0.0;
 		o[i++] = shield && atMe > Math.toRadians(90.0) ? 1.0 : 0.0;
+
+		// --- D: the player fighting from afar
+		ItemStack main = target.getMainHandItem();
+		ItemStack off = target.getOffhandItem();
+		ItemStack crossbowHeld = main.getItem() instanceof CrossbowItem ? main : off.getItem() instanceof CrossbowItem ? off : ItemStack.EMPTY;
+		ItemStack staff = forgedOf(main, ForgeType.BACULO) ? main : forgedOf(off, ForgeType.BACULO) ? off : ItemStack.EMPTY;
+		ItemStack tome = forgedOf(main, ForgeType.GRIMORIO) ? main : forgedOf(off, ForgeType.GRIMORIO) ? off : ItemStack.EMPTY;
+		o[i++] = crossbowHeld.isEmpty() ? 0.0 : 1.0;
+		o[i++] = staff.isEmpty() ? 0.0 : 1.0;
+		o[i++] = tome.isEmpty() ? 0.0 : 1.0;
+		o[i++] = thrown(main) || thrown(off) ? 1.0 : 0.0;
+		o[i++] = !crossbowHeld.isEmpty() && CrossbowItem.isCharged(crossbowHeld) ? 1.0 : 0.0;
+		o[i++] = staff.isEmpty() ? 0.0 : ObsM1.clip(waitLeft(target, staff, ForgeType.BACULO) / (double) Spellcasting.BOLT_COOLDOWN, 0.0, 2.0);
+		o[i++] = tome.isEmpty() ? 0.0 : ObsM1.clip(waitLeft(target, tome, ForgeType.GRIMORIO) / (double) Spellcasting.TOME_COOLDOWN, 0.0, 2.0);
+		double drawn = target.isUsingItem() && target.getUseItem().getItem() instanceof BowItem
+			? target.getTicksUsingItem() * dev.forja.item.ForgedItems.ForgedBowItem.drawSpeed(target.getUseItem()) : 0.0;
+		o[i++] = ObsM1.clip(drawn / 20.0, 0.0, 2.0);
+
+		// --- W: the player's weapon and what it reaches
+		double playerReach = target.getAttributes().hasAttribute(Attributes.ENTITY_INTERACTION_RANGE)
+			? target.getAttributeValue(Attributes.ENTITY_INTERACTION_RANGE) : 3.0;
+		var attackRange = main.get(DataComponents.ATTACK_RANGE);
+		if (attackRange != null) {
+			playerReach = Math.max(playerReach, attackRange.maxReach());
+		}
+		o[i++] = ObsM1.clip(playerReach / 6.0, 0.0, 2.0);
+		double area = areaRadius(main);
+		o[i++] = area / 6.0;
+		boolean quake = forgedOf(main, ForgeType.MARTILLO) || forgedOf(main, ForgeType.MAZO);
+		o[i++] = area > 0.0 && !target.getCooldowns().isOnCooldown(main) && (!quake || target.onGround()) ? 1.0 : 0.0;
+		o[i++] = areaOnHit(main) ? 1.0 : 0.0;
+		int caught = 0;
+		if (area > 0.0) {
+			for (Mob other : mob.level().getEntitiesOfClass(Mob.class, target.getBoundingBox().inflate(area + 0.5),
+				m -> m.isAlive() && m instanceof net.minecraft.world.entity.monster.Enemy)) {
+				if (other.distanceTo(target) <= area + 0.5) {
+					caught++;
+				}
+			}
+		}
+		o[i++] = ObsM1.clip(caught / 5.0, 0.0, 2.0);
+		List<Mob> allies = ObsM1.allies(mob);
+		o[i++] = allies.isEmpty() ? 2.0 : ObsM1.clip(mob.distanceTo(allies.get(0)) / 4.0, 0.0, 2.0);
+
+		// --- V: how the player moves
+		o[i++] = target.getAttributeValue(Attributes.MOVEMENT_SPEED) / 0.1;
+		o[i++] = target.isFallFlying() ? 1.0 : 0.0;
+
+		// --- E: what the player has in store
+		ItemStack guard = forgedOf(off, ForgeType.ESCUDO) ? off : main;
+		o[i++] = dev.forja.upgrade.CombatUpgrades.riposteReady(target) ? 1.0 : 0.0;
+		o[i++] = target.isBlocking() && dev.forja.upgrade.CombatUpgrades.isPerfectParry(target, target.getUseItem()) ? 1.0 : 0.0;
+		o[i++] = dev.forja.forge.Perk.has(guard, dev.forja.forge.Perk.MURALLA) ? 1.0 : 0.0;
+		o[i++] = ObsM1.clip(dev.forja.upgrade.Frenzy.level(target), 0.0, 1.0);
+		o[i++] = ObsM1.clip(dev.forja.upgrade.Upgrade.anchorShare(dev.forja.upgrade.Upgrades.armorFraction(target, dev.forja.upgrade.Upgrade.ANCLAJE)), 0.0, 1.0);
+		boolean pinned = false;
+		for (dev.forja.entity.Tongs tongs : mob.level().getEntitiesOfClass(dev.forja.entity.Tongs.class, target.getBoundingBox().inflate(8.0))) {
+			if (tongs.holding() == target) {
+				pinned = true;
+				break;
+			}
+		}
+		o[i++] = pinned ? 1.0 : 0.0;
+		boolean eating = target.isUsingItem() && target.getUseItem().has(DataComponents.CONSUMABLE);
+		boolean guardDown = off.has(DataComponents.BLOCKS_ATTACKS) && target.getCooldowns().isOnCooldown(off)
+			|| main.has(DataComponents.BLOCKS_ATTACKS) && target.getCooldowns().isOnCooldown(main);
+		o[i++] = eating || dev.forja.combat.Stamina.value(target) < 25.0F || guardDown ? 1.0 : 0.0;
+		if (i != o.length) {
+			// a name declared and never worked out, or the other way round: the contract would lie
+			throw new IllegalStateException("ObsV3 rellena " + i + " de " + o.length + " entradas");
+		}
 		return o;
+	}
+
+	private static boolean forgedOf(ItemStack stack, ForgeType type) {
+		dev.forja.part.ForgedParts parts = stack.get(dev.forja.registry.ModComponents.PARTS);
+		return parts != null && parts.type() == type;
+	}
+
+	/** Something thrown by hand: a projectile item that is not an arrow, or a trident of any make. */
+	private static boolean thrown(ItemStack stack) {
+		return stack.getItem() instanceof net.minecraft.world.item.ProjectileItem && !(stack.getItem() instanceof net.minecraft.world.item.ArrowItem)
+			|| ObsM1.trident(stack);
+	}
+
+	/** Ticks until a spell item can be used again: the share of its cooldown left, times the full wait. */
+	private static double waitLeft(Player player, ItemStack stack, ForgeType type) {
+		return player.getCooldowns().getCooldownPercent(stack, 0.0F) * Spellcasting.cooldown(stack, type);
+	}
+
+	/** The radius of the area the player's weapon can make: its special, or a tome's rune; 0 for none. */
+	static double areaRadius(ItemStack weapon) {
+		if (forgedOf(weapon, ForgeType.ESPADON)) {
+			return dev.forja.forge.SpecialAttacks.WHIRL_RANGE;
+		}
+		if (forgedOf(weapon, ForgeType.MARTILLO) || forgedOf(weapon, ForgeType.MAZO)) {
+			return dev.forja.forge.SpecialAttacks.QUAKE_RANGE;
+		}
+		if (forgedOf(weapon, ForgeType.GUADANA)) {
+			return dev.forja.forge.SpecialAttacks.REAP_RANGE;
+		}
+		if (forgedOf(weapon, ForgeType.GRIMORIO)) {
+			return Spellcasting.RUNE_REACH;
+		}
+		return 0.0;
+	}
+
+	/** Whether the weapon strikes an area when it hits: a shockwave or a storm on it, or one of the synergies built on them. */
+	static boolean areaOnHit(ItemStack weapon) {
+		return dev.forja.upgrade.Upgrades.fraction(weapon, dev.forja.upgrade.Upgrade.ONDA_DE_CHOQUE) > 0.0F
+			|| dev.forja.upgrade.Upgrades.fraction(weapon, dev.forja.upgrade.Upgrade.TORMENTA) > 0.0F
+			|| dev.forja.upgrade.Synergy.CADENA_DE_RAYOS.active(weapon) || dev.forja.upgrade.Synergy.METEORO.active(weapon)
+			|| dev.forja.upgrade.Synergy.VENDAVAL.active(weapon);
 	}
 
 	// ---------------------------------------------------------------- projectiles

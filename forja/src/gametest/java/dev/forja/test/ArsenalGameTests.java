@@ -115,6 +115,25 @@ public class ArsenalGameTests {
 		});
 	}
 
+	/** red_mob_v3, D and W: what the player holds is read as it is (a tome, a greatsword's whirl, a flail's reach). */
+	@GameTest
+	public void playerWeaponIsRead(GameTestHelper helper) {
+		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(5, 1, 1));
+		zombie.setNoAi(true);
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
+		var names = ObsV3.names();
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, forged(ForgeType.GRIMORIO));
+		double[] o = ObsV3.of(zombie, player);
+		helper.assertTrue(o[names.indexOf("obj_mano_grimorio")] == 1.0, "lleva un grimorio");
+		helper.assertTrue(Math.abs(o[names.indexOf("jug_area_radio/6")] - 3.0 / 6.0) < 1.0E-6, "su runa es de radio 3");
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, forged(ForgeType.ESPADON));
+		o = ObsV3.of(zombie, player);
+		helper.assertTrue(Math.abs(o[names.indexOf("jug_area_radio/6")] - 3.5 / 6.0) < 1.0E-6, "el torbellino es de 3.5");
+		helper.assertTrue(o[names.indexOf("jug_area_lista")] == 1.0, "y está listo");
+		helper.assertTrue(o[names.indexOf("obj_mano_grimorio")] == 0.0, "ya no lleva grimorio");
+		helper.succeed();
+	}
+
 	/** red_mob_v3, P: an arrow flying at a mob is seen coming; one flying away is not. */
 	@GameTest
 	public void incomingArrowIsSeen(GameTestHelper helper) {

@@ -668,7 +668,8 @@ public class CombatGameTests {
 		husk.setTarget(villager);
 		float start = villager.getHealth();
 		helper.runAfterDelay(150, () -> {
-			helper.assertTrue(!villager.isAlive() || villager.getHealth() < start, "el husk no golpeó al aldeano");
+			helper.assertTrue(!villager.isAlive() || villager.getHealth() < start, "el husk no golpeó al aldeano (distancia " + husk.distanceTo(villager)
+				+ ", ticks vividos " + husk.tickCount + ", trozo activo " + helper.getLevel().isPositionEntityTicking(husk.blockPosition()) + ")");
 			helper.succeed();
 		});
 	}

@@ -73,6 +73,12 @@ public final class CombatUpgrades {
 
 	/** Who has just parried: their next blow lands doubled. Weak keys, so nothing is kept alive by this. */
 	private static final java.util.Map<LivingEntity, Integer> RIPOSTE = new java.util.WeakHashMap<>();
+
+	/** Whether someone has a riposte in hand right now: they parried and their next blow lands doubled (ai/ObsV3). */
+	public static boolean riposteReady(LivingEntity entity) {
+		Integer until = RIPOSTE.get(entity);
+		return until != null && entity.level().getServer() != null && entity.level().getServer().getTickCount() <= until;
+	}
 	public static final double VENDAVAL_LIFT = 1.0;
 	private static final EquipmentSlot[] ARMOR = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
 
