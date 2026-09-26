@@ -6,3 +6,6 @@ run/
 *.iml
 .vscode/
 bin/
+
+# Copias de trabajo de los agentes de Claude Code
+.claude/
