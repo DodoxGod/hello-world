@@ -1002,6 +1002,9 @@ def generate(api):
     no_saplings(world)
     resolve(world)
     problems += validate(world)
+    import castillo_botin
+    castillo_botin.write(api)
+    problems += [f"no loot table {table}" for table in castillo_botin.missing(world, api.DATA)]
     docs = Path(__file__).resolve().parent.parent / "docs/castillo"
     for turns, view in ((0, "sur"), (2, "norte")):
         try:

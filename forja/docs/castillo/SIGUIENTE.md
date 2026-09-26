@@ -186,3 +186,30 @@ interiores sala a sala con su botín y sus criaturas; al final generación natur
 Carga por pesos + todo-o-nada: test completo en verde (02:42), jar `build/libs/forja-1.0.0.jar` (02:44),
 docs y memoria al día, capturas en `E:\\IA\\Claude\\Forja_capturas_mejoras` (falta añadir al índice los
 planos v2 y v3: están en `docs/castillo/`; el script es `carpeta_capturas.py` del scratchpad).
+
+## 2026-09-26 — torres, sótanos, botín y salas vacías (sesión «Mod Forja»)
+
+Andy: «termina el bastión, revisa todas las salas… algunas tienen poca decoración, otras nada o casi nada o llegan a
+ser muy feas, mejora todo lo del castillo».
+
+- **Medir antes de tocar**: la auditoría (scratchpad `bastion/auditoria.py`) construye el castillo como el generador y
+  cuenta lo que hay a la altura de la vista (suelo+1..3) en cada sala. Antes: 0 muebles en las 11 torres (pisos
+  macizos sin escalera), en almas, antesala, bodega, cámara, lingotes, mazmorras y osario; 16 cosas en 541 bloques de
+  la sala de cuños; el gabinete de orbes sin amueblar nunca. Sólo 2 tablas de botín para todo el castillo.
+- `castillo_torres.py`: escalera de caracol de piedra alrededor de un machón 3×3 en cada torre, que corta cada piso;
+  cada piso con su tema (cobre, eco, obsidiana, resina, escama, vidrio, archivo, pavesas, fuelle, vigía; la Hundida en
+  ruinas), alfombra alrededor del hueco y estandartes con el color de la torre. Inquilinos: herrumbres en Cobre y
+  Hundida, pavesas en la suya.
+- `castillo_sotanos_salas.py`: cripta de los Nueve (9 tumbas entre los pilares, altar al norte con el cofre), osario,
+  mazmorras (14 celdas, 3 forjadores presos, pozo con escalera de mano desde la sexta celda oeste hasta la cámara),
+  guardia de mazmorras, bodega, lingotes, carbonera, antesala, forja de almas y cámara acorazada.
+- `castillo_retoques.py`: muebles contra la pared en las salas que otros módulos dejaron desnudas, leyendo el castillo
+  construido (hueco libre con piedra detrás, lejos de puertas, escaleras y huecos del suelo). La sala de cuños y la
+  Fragua Profunda guardan el centro para la pelea.
+- `castillo_botin.py`: 9 tablas nuevas (`bastion_torre`, `_torre_cima`, `_cripta`, `_guardia`, `_bodega`, `_lingotes`,
+  `_carbonera`, `_almas`, `_camara`); los talismanes salen ya con gema. `castillo.generate` avisa si un cofre nombra una
+  tabla que no existe.
+- Fotos: `filmWholeBastion` suma 13 tomas dentro de las torres; `filmBastionCellars` 8 de los sótanos nuevos.
+
+Pendiente: la luz aún deja 15 suelos a 0 (ver `castillo_luz`); casas de aprendices; los tejados a dos aguas la
+auditoría los lee como «CIELO».

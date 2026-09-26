@@ -438,6 +438,9 @@ def build():
     castillo_torres.build(w)
     import castillo_sotanos_salas
     castillo_sotanos_salas.build(w)
+    # the rooms other modules built and left bare
+    import castillo_retoques
+    castillo_retoques.build(w)
     import castillo_luz
     castillo_luz.light(w)
     return w

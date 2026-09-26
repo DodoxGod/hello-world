@@ -9051,6 +9051,20 @@ public class ForjaClientTest implements FabricClientGameTest {
 			{"int_encargos", 191.5, 4.0, 166.5, 156.0, 1.0, 158.0, false},
 			{"int_caballerizas", 42.5, 4.0, 174.0, 12.0, 1.0, 182.0, false},
 			{"int_guardia", 139.5, 4.0, 187.5, 122.0, 1.0, 193.0, false},
+			// inside the towers, from beside the north wall across the floor's quarter east of the stair
+			{"torre_cobre_taller", 2.5, 8.62, -3.5, 7.5, 7.5, -0.5, false},
+			{"torre_eco_escucha", 101.5, 8.62, -3.5, 106.5, 7.5, -0.5, false},
+			{"torre_obsidiana_crisol", 199.5, 22.62, -3.5, 204.5, 21.5, -0.5, false},
+			{"torre_resina_tienda", 2.5, 22.62, 95.5, 7.5, 21.5, 98.5, false},
+			{"torre_hundida", 199.5, 8.62, 95.5, 204.5, 7.5, 98.5, false},
+			{"torre_escama_armeria", 2.5, 22.62, 193.5, 7.5, 21.5, 196.5, false},
+			{"torre_vidrio_vidrieria", 199.5, 8.62, 193.5, 204.5, 7.5, 196.5, false},
+			{"torre_archivo", 43.5, 8.62, 8.5, 48.5, 7.5, 10.5, false},
+			{"torre_archivo_cima", 43.5, 26.62, 8.5, 48.5, 25.5, 10.5, false},
+			{"torre_pavesas_jaulas", 158.5, 8.62, 8.5, 163.5, 7.5, 10.5, false},
+			{"torre_fuelle", 43.5, 8.62, 118.5, 48.5, 7.5, 120.5, false},
+			{"torre_vigia_cuartel", 158.5, 8.62, 118.5, 163.5, 7.5, 120.5, false},
+			{"torre_vigia_cima", 158.5, 26.62, 118.5, 163.5, 25.5, 120.5, false},
 			{"aerea_cenital_tarde", 100.0, 190.0, 118.0, 100.0, 0.0, 110.0, false},
 		};
 		boolean dark = false;
@@ -9111,7 +9125,15 @@ public class ForjaClientTest implements FabricClientGameTest {
 			{"fragua_profunda", 100.0, -17.0, 114.0, 100.0, -24.0, 90.0},
 			{"fragua_profunda_estrella", 100.0, -13.5, 92.5, 100.0, -25.0, 92.0},
 			{"forja_de_almas", 133.0, -21.0, 102.0, 152.0, -23.0, 82.0},
-			{"camara_acorazada", 50.0, -21.5, 102.0, 70.0, -23.0, 82.0},
+			{"camara_acorazada", 53.0, -21.5, 100.0, 70.0, -23.0, 82.0},
+			{"cripta_altar", 100.0, -7.5, 34.0, 100.0, -8.5, 18.0},
+			{"cripta_tumbas", 74.0, -7.0, 22.0, 104.0, -9.5, 50.0},
+			{"osario", 155.0, -8.0, 38.5, 155.0, -9.5, 22.0},
+			{"guardia_mazmorras", 66.0, -8.4, 63.0, 50.0, -9.5, 63.0},
+			{"mazmorras_celda", 60.5, -8.4, 103.5, 49.5, -9.5, 103.5},
+			{"bodega", 80.0, -8.2, 117.0, 80.0, -9.5, 103.0},
+			{"lingotes", 152.0, -8.2, 106.0, 133.0, -9.5, 106.0},
+			{"antesala_armaduras", 100.5, -22.5, 42.0, 100.5, -24.5, 60.0},
 		};
 		for (Object[] shot : shots) {
 			double ex = bx + ((double) shot[1] - BastionLayout.ORIGIN_X);

@@ -9,3 +9,6 @@ bin/
 
 # Copias de trabajo de los agentes de Claude Code
 .claude/
+
+# Vistas del castillo que tools/castillo.py vuelve a dibujar en cada generacion
+forja/docs/castillo/render_*.png

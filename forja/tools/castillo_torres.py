@@ -348,16 +348,45 @@ TENANTS = {
 }
 
 
+# The colour each tower's rooms are dressed in: the runner round the stair and the banners on the wall.
+COLOURS = {"t_cobre": "orange", "t_eco": "cyan", "t_obsidiana": "purple", "t_resina": "orange", "t_escama": "brown",
+           "t_vidrio": "light_blue", "t_archivo": "red", "t_pavesas": "red", "t_fuelle": "gray", "t_vigia": "green"}
+
+
+def dress_floor(w, key, cx, cz, radius, y, level, doors_here):
+    """A runner of carpet round the stair's well, and the tower's colours hung on the wall above the furniture.
+    Plank floor and bare stone were most of what the pictures showed; this is what makes it somebody's room."""
+    colour = COLOURS.get(key)
+    if colour is None:
+        return
+    ring = WELL + 1
+    for dx in range(-ring, ring + 1):
+        for dz in range(-ring, ring + 1):
+            if max(abs(dx), abs(dz)) != ring:
+                continue
+            x, z = cx + dx, cz + dz
+            if w.name(x, y, z) in (None, "minecraft:air") and w.name(x, y - 1, z) not in (None, "minecraft:air"):
+                corner = abs(dx) == ring and abs(dz) == ring
+                w.put(x, y, z, "black_carpet" if corner else f"{colour}_carpet")
+    # banners three blocks up the wall, where nothing stands that high, kept off the doorways
+    for index, (dx, dz) in enumerate(wall_places(w, cx, cz, radius, y + 3, doors_here, spacing=5, salt=level * 7 + 3)):
+        banner(w, cx + dx, y + 3, cz + dz, _inward(dx, dz), colour="black" if index % 2 else colour)
+
+
 def furnish(w, key, cx, cz, radius, level, floor_y, doors_here):
     theme = THEMES[key][level]
     pieces = PIECES[theme]
     y = floor_y + 1
-    places = wall_places(w, cx, cz, radius, y, doors_here, spacing=2 if theme in ("archive", "archive_top") else 3,
+    # the top room has no stair going on up through it, and is the smallest: closer together there
+    top = level == len(THEMES[key]) - 1
+    places = wall_places(w, cx, cz, radius, y, doors_here, spacing=2 if top or theme in ("archive", "archive_top") else 3,
                          salt=zlib.crc32(f"{key}/{level}".encode()) & 0xFFFF)
     for index, (dx, dz) in enumerate(places):
         x, z = cx + dx, cz + dz
         if w.name(x, y, z) in (None, "minecraft:air"):
             pieces[index % len(pieces)](w, x, y, z, _inward(dx, dz), 80 + index)
+    if theme != "ruin":
+        dress_floor(w, key, cx, cz, radius, y, level, doors_here)
 
 
 def build(w):
