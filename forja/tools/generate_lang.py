@@ -1513,6 +1513,8 @@ GUI = {
     "commands.forja.sin_evento": ("No hay ningún evento llamado %s", "There is no event called %s"),
     "commands.forja.sin_tecnica": ("No existe la técnica %s", "There is no technique called %s"),
     "commands.forja.tecnicas_borradas": ("Técnicas olvidadas", "Techniques forgotten"),
+    "commands.forja.fundicion": ("Una línea de fundición entera, encendida y en marcha, delante de ti",
+                                 "A whole foundry line, lit and running, in front of you"),
     "gui.forja.encargo": ("Encargo: %s con %s, y %s al %s%% o más", "Order: a %s with %s, and %s at %s%% or more"),
     "gui.forja.encargo.paga": ("Paga: %s esmeraldas, un orbe de %s al %s%% y una plantilla", "Pays: %s emeralds, an orb of %s at %s%% and a template"),
     "gui.forja.encargo.hecho": ("El herrero acepta el encargo", "The smith takes the order"),

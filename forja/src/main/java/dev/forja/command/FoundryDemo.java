@@ -8,6 +8,7 @@ import dev.forja.item.CastingFrameItem;
 import dev.forja.registry.ModBlocks;
 import dev.forja.registry.ModItems;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -17,16 +18,38 @@ import net.minecraft.world.level.block.Blocks;
  * The whole foundry line, stood up and running, for looking at: Andy asked to be shown "un sistema entero de
  * fundicion" in a world before deciding what to change about it. Pot, channels, a bank of tanks, the working row
  * with a moulding box and two casting tables kept hot by pavesa lanterns, and a gantry with a spout pouring down.
+ * {@code /forja fundicion} puts one down in front of whoever asks.
  */
 public final class FoundryDemo {
+	/** The box {@link #build} clears around its origin, floor to ceiling: everything it puts down is inside. */
+	public static final int MIN_X = -3;
+	public static final int MAX_X = 8;
+	public static final int MIN_Z = -3;
+	public static final int MAX_Z = 7;
+	/** How far in front of whoever asked the box starts: their own block and the two after it are left alone. */
+	private static final int CLEAR = 3;
+
 	private FoundryDemo() {
+	}
+
+	/**
+	 * Where the origin goes for someone standing at {@code feet} and looking {@code facing}: the whole box in
+	 * front of them, {@link #CLEAR} blocks off, with the line itself across the middle of their view.
+	 */
+	public static BlockPos originFor(BlockPos feet, Direction facing) {
+		return switch (facing) {
+			case NORTH -> feet.offset(-2, 0, -CLEAR - MAX_Z);
+			case SOUTH -> feet.offset(-2, 0, CLEAR - MIN_Z);
+			case WEST -> feet.offset(-CLEAR - MAX_X, 0, -1);
+			default -> feet.offset(CLEAR - MIN_X, 0, -1);
+		};
 	}
 
 	public static void build(ServerLevel level, BlockPos origin) {
 		int px = origin.getX();
 		int y = origin.getY();
 		int pz = origin.getZ();
-		for (BlockPos pos : BlockPos.betweenClosed(px - 3, y - 1, pz - 3, px + 8, y + 5, pz + 7)) {
+		for (BlockPos pos : BlockPos.betweenClosed(px + MIN_X, y - 1, pz + MIN_Z, px + MAX_X, y + 5, pz + MAX_Z)) {
 			level.setBlockAndUpdate(pos, pos.getY() == y - 1 ? Blocks.SMOOTH_STONE.defaultBlockState() : Blocks.AIR.defaultBlockState());
 		}
 		// Back row: the pot, two lengths of channel and the bank of tanks it fills.

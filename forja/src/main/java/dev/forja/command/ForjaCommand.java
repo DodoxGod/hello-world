@@ -48,7 +48,8 @@ import static dev.forja.material.ForgeMaterial.VARA_DE_BLAZE;
 /**
  * Admin commands: {@code /forja kit} hands out both tables, the guide, gear and upgrade ingredients;
  * {@code /forja maestria <nivel>} and {@code /forja mejora <mejora> <porcentaje>} tune the held gear for testing;
- * {@code /forja orbe <mejora> <porcentaje>} hands out an upgrade orb.
+ * {@code /forja orbe <mejora> <porcentaje>} hands out an upgrade orb; {@code /forja fundicion} stands up a whole
+ * foundry line in front of you (FoundryDemo).
  */
 public final class ForjaCommand {
 	private static final String KIT_TAG = "forja_kit_noche";
@@ -118,6 +119,15 @@ public final class ForjaCommand {
 					ServerPlayer player = c.getSource().getPlayerOrException();
 					museum(player);
 					c.getSource().sendSuccess(() -> Component.literal("Los mobs, en fila."), false);
+					return 1;
+				}))
+				// A whole foundry line, lit and running, set down in front of whoever asks: the one way to
+				// see every piece of it working together without building it first.
+				.then(Commands.literal("fundicion").executes(c -> {
+					net.minecraft.core.Direction facing = net.minecraft.core.Direction.fromYRot(c.getSource().getRotation().y);
+					net.minecraft.core.BlockPos feet = net.minecraft.core.BlockPos.containing(c.getSource().getPosition());
+					FoundryDemo.build(c.getSource().getLevel(), FoundryDemo.originFor(feet, facing));
+					c.getSource().sendSuccess(() -> Component.translatable("commands.forja.fundicion"), false);
 					return 1;
 				}))
 				// The smith's ring on demand. He is stood in front of you with his mind switched off, so he

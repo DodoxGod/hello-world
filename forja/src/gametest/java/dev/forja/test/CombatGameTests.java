@@ -650,6 +650,105 @@ public class CombatGameTests {
 	}
 
 	/**
+	 * The broken mould holds what it copied (Andy, 2026-09-26): after a recast its main hand carries a cast
+	 * of the weapon that hit it — same item, same colours — which adds nothing to its attack and which it
+	 * never drops, not even killed by the player it copied.
+	 */
+	@GameTest(maxTicks = 100)
+	public void mouldHoldsItsCopyAndNeverDropsIt(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
+		noRandomThreat();
+		ItemStack sword = Assembler.create(ForgeType.ESPADA,
+			List.of(ForgeMaterial.NETHERITA, ForgeMaterial.MADERA, ForgeMaterial.HIERRO), level.registryAccess());
+		player.setItemInHand(InteractionHand.MAIN_HAND, sword);
+		var mould = helper.spawn(dev.forja.registry.ModEntities.MOLDE_ROTO, new BlockPos(3, 1, 1));
+		mould.setNoAi(true);
+		var attack = mould.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+		java.util.Set<net.minecraft.resources.Identifier> modifiersBefore = attack.getModifiers().stream()
+			.map(net.minecraft.world.entity.ai.attributes.AttributeModifier::id).collect(java.util.stream.Collectors.toSet());
+		helper.assertTrue(mould.getMainHandItem().isEmpty(), "un molde recién hecho no sostiene nada");
+		mould.consider(level, player.getMainHandItem());
+		helper.runAfterDelay(dev.forja.entity.BrokenMould.RECAST_WINDUP + 2, () -> {
+			ItemStack held = mould.getMainHandItem();
+			helper.assertTrue(held.is(sword.getItem()), "tras refundir debería sostener la copia de la espada, sostiene " + held);
+			helper.assertTrue(held != player.getMainHandItem() && player.getMainHandItem().has(dev.forja.registry.ModComponents.PARTS),
+				"lo que sostiene es una copia: el jugador sigue con su espada");
+			helper.assertTrue(java.util.Objects.equals(held.get(net.minecraft.core.component.DataComponents.CUSTOM_MODEL_DATA),
+				sword.get(net.minecraft.core.component.DataComponents.CUSTOM_MODEL_DATA)), "la copia lleva los colores de la espada");
+			float chance = mould.getDropChances().byEquipment(EquipmentSlot.MAINHAND);
+			helper.assertTrue(chance == 0.0F, "la copia no se suelta nunca, probabilidad " + chance);
+			// It hits for what the recast set, and the copy in its hand does not add its own numbers on top.
+			double expected = Math.max(dev.forja.entity.BrokenMould.BASE_DAMAGE,
+				Math.min(dev.forja.entity.BrokenMould.COPY_CEILING, dev.forja.entity.BrokenMould.damageOf(sword) * 1.4));
+			java.util.Set<net.minecraft.resources.Identifier> modifiersAfter = attack.getModifiers().stream()
+				.map(net.minecraft.world.entity.ai.attributes.AttributeModifier::id).collect(java.util.stream.Collectors.toSet());
+			helper.assertTrue(Math.abs(attack.getBaseValue() - expected) < EPS,
+				"el ataque base debería ser " + expected + " y es " + attack.getBaseValue());
+			helper.assertTrue(modifiersAfter.equals(modifiersBefore) && dev.forja.entity.BrokenMould.damageOf(held) == 0.0,
+				"la copia no suma su propio daño: modificadores " + modifiersBefore + " -> " + modifiersAfter);
+			// Killed by the player, which is when a mob drops what it holds: the template, never the sword.
+			var around = mould.getBoundingBox().inflate(3.0);
+			for (var stray : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, around)) {
+				stray.discard();
+			}
+			mould.setLastHurtByPlayer(player, 100);
+			mould.die(level.damageSources().playerAttack(player));
+			int swords = 0;
+			int templates = 0;
+			for (var dropped : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, around)) {
+				swords += dropped.getItem().is(sword.getItem()) ? 1 : 0;
+				templates += dev.forja.item.TemplateItem.pattern(dropped.getItem()) == dev.forja.part.PartType.HOJA ? 1 : 0;
+				dropped.discard();
+			}
+			helper.assertTrue(swords == 0, "el molde soltó " + swords + " espada(s) al morir");
+			helper.assertTrue(templates >= 1, "y debería soltar la plantilla de la hoja, soltó " + templates);
+			helper.succeed();
+		});
+	}
+
+	/** {@code /forja fundicion} stands the whole foundry line up in front of whoever asks (command/FoundryDemo). */
+	@GameTest
+	public void foundryCommandStandsUpTheLine(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		// A long way from every other test: the line clears a box twelve blocks across around itself.
+		BlockPos feet = helper.absolutePos(new BlockPos(1, 1, 1)).offset(4096, 0, 0);
+		var source = level.getServer().createCommandSourceStack().withLevel(level)
+			.withPosition(Vec3.atBottomCenterOf(feet)).withRotation(new net.minecraft.world.phys.Vec2(0.0F, 0.0F))
+			.withSuppressedOutput();
+		int result;
+		try {
+			result = level.getServer().getCommands().getDispatcher().execute("forja fundicion", source);
+		} catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+			helper.fail("/forja fundicion no se pudo ejecutar: " + e.getMessage());
+			return;
+		}
+		// Looking south (yaw 0), so the box starts past the feet on +Z.
+		BlockPos origin = dev.forja.command.FoundryDemo.originFor(feet, net.minecraft.core.Direction.SOUTH);
+		int tanks = 0;
+		int full = 0;
+		int tables = 0;
+		int framed = 0;
+		for (BlockPos pos : BlockPos.betweenClosed(origin.offset(dev.forja.command.FoundryDemo.MIN_X, 0, dev.forja.command.FoundryDemo.MIN_Z),
+			origin.offset(dev.forja.command.FoundryDemo.MAX_X, 5, dev.forja.command.FoundryDemo.MAX_Z))) {
+			if (level.getBlockEntity(pos) instanceof dev.forja.block.entity.MeltTankBlockEntity tank
+				&& level.getBlockState(pos).is(dev.forja.registry.ModBlocks.CUBA_DE_COLADA)) {
+				tanks++;
+				full += tank.amount() > 0 ? 1 : 0;
+			}
+			if (level.getBlockEntity(pos) instanceof dev.forja.block.entity.CastingTableBlockEntity table) {
+				tables++;
+				framed += table.frame().isEmpty() ? 0 : 1;
+			}
+		}
+		helper.assertTrue(result == 1, "/forja fundicion devolvió " + result);
+		helper.assertTrue(tanks == 4 && full == 4, "la línea debería tener 4 cubas con metal, tiene " + tanks + " (" + full + " con metal)");
+		helper.assertTrue(tables == 2 && framed == 2, "y 2 mesas de colada con su marco, tiene " + tables + " (" + framed + " con marco)");
+		helper.assertTrue(origin.getZ() + dev.forja.command.FoundryDemo.MIN_Z > feet.getZ(), "la línea debería quedar delante, no encima");
+		helper.succeed();
+	}
+
+	/**
 	 * A stunned mob lets go of its turn (Andy, 2026-09-26). The network's goal dropped its warning on a
 	 * stagger but kept the turn until its next blow, so in a group one stunned mob held the pack back.
 	 */

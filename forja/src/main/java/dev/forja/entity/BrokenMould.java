@@ -17,6 +17,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -66,6 +67,8 @@ public class BrokenMould extends Monster implements GeoEntity {
 	private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
 	private static final RawAnimation WALK = RawAnimation.begin().thenLoop("walk");
 	private static final RawAnimation RECAST = RawAnimation.begin().thenPlay("recast");
+	private static final RawAnimation BLANK_SHOWN = RawAnimation.begin().thenLoop("blank_shown");
+	private static final RawAnimation BLANK_GONE = RawAnimation.begin().thenLoop("blank_gone");
 
 	private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 	private final dev.forja.entity.ai.Windup windup = new dev.forja.entity.ai.Windup();
@@ -126,11 +129,13 @@ public class BrokenMould extends Monster implements GeoEntity {
 		if (damage <= 0.0) {
 			return;
 		}
-		this.recast(level, shape, damage);
+		// Taken now, off the weapon that landed: by the time the copy comes out the player may be
+		// holding something else.
+		this.recast(level, shape, damage, castOf(weapon));
 	}
 
-	/** The blank goes into the furnace and comes back out as a copy. */
-	public void recast(ServerLevel level, PartType shape, double damage) {
+	/** The blank goes into the furnace and comes back out as a copy, which it then holds. */
+	public void recast(ServerLevel level, PartType shape, double damage, ItemStack cast) {
 		this.recastCooldown = RECAST_COOLDOWN;
 		this.triggerAnim("molde", "recast");
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.BLASTFURNACE_FIRE_CRACKLE, SoundSource.HOSTILE, 1.8F, 0.7F);
@@ -147,22 +152,60 @@ public class BrokenMould extends Monster implements GeoEntity {
 					.add(new net.minecraft.world.phys.Vec3(0.4, 2.7, 0.2).yRot(-this.getYRot() * ((float) Math.PI / 180.0F)));
 				world.sendParticles(dev.forja.registry.ModParticles.CENIZA, stack.x, stack.y, stack.z, 2, 0.08, 0.0, 0.08, 0.12);
 			}
-		}, world -> this.take(world, shape, damage));
+		}, world -> this.take(world, shape, damage, cast));
 	}
 
-	/** The copy coming out: from here it fights with your numbers. */
-	private void take(ServerLevel level, PartType shape, double damage) {
+	/** The copy coming out: from here it fights with your numbers, and holds your weapon's shape. */
+	private void take(ServerLevel level, PartType shape, double damage, ItemStack cast) {
 		this.copied = shape;
 		this.copiedDamage = damage;
 		AttributeInstance attack = this.getAttribute(Attributes.ATTACK_DAMAGE);
 		if (attack != null) {
 			attack.setBaseValue(Math.max(BASE_DAMAGE, damage));
 		}
+		this.hold(level, cast);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ANVIL_USE, SoundSource.HOSTILE, 1.8F, 0.8F);
 		level.sendParticles(dev.forja.registry.ModParticles.CHISPA, this.getX(), this.getY(1.4), this.getZ(), 40, 0.4, 0.6, 0.4, 0.4);
 		if (this.getTarget() instanceof ServerPlayer player) {
 			player.sendSystemMessage(Component.translatable("gui.forja.molde_copia", shape.displayName()).withColor(0xFF7A1E));
 		}
+	}
+
+	/**
+	 * Puts the copy in its hands, where the renderer draws it and the model scales the blank away. It is
+	 * never dropped: the only thing the mould leaves behind is the engraved template.
+	 */
+	private void hold(ServerLevel level, ItemStack cast) {
+		ItemStack before = this.getMainHandItem();
+		// A thief (ai/WorldFights) may be carrying something real it took out of a player's bag. That is
+		// not the mould's to melt down, so it lets go of it rather than lose it.
+		if (!before.isEmpty() && this.getDropChances().byEquipment(EquipmentSlot.MAINHAND) > 0.0F) {
+			this.spawnAtLocation(level, before);
+		}
+		this.setItemSlot(EquipmentSlot.MAINHAND, cast);
+		this.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+	}
+
+	/**
+	 * What comes out of the furnace: the shape and the colours of the weapon it copied, and nothing else
+	 * of it. None of the upgrades, enchantments, material traits or numbers come across — what the mould
+	 * hits for is its own attack, set by the recast, and a copy that carried its original's stats as well
+	 * would have it hitting for both. Nor does it wear, since nothing will ever repair it.
+	 */
+	public static ItemStack castOf(ItemStack weapon) {
+		ItemStack cast = new ItemStack(weapon.getItem());
+		net.minecraft.world.item.component.CustomModelData colours = weapon.get(DataComponents.CUSTOM_MODEL_DATA);
+		if (colours != null) {
+			cast.set(DataComponents.CUSTOM_MODEL_DATA, colours);
+		}
+		// A fresh forged stack still carries the default build its item was registered with, so the
+		// parts, the upgrades and the modifiers have to be taken out, not merely left uncopied.
+		cast.set(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
+		cast.set(DataComponents.ENCHANTMENTS, net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+		cast.remove(ModComponents.PARTS);
+		cast.remove(ModComponents.UPGRADES);
+		cast.set(DataComponents.UNBREAKABLE, net.minecraft.util.Unit.INSTANCE);
+		return cast;
 	}
 
 	@Override
@@ -268,6 +311,10 @@ public class BrokenMould extends Monster implements GeoEntity {
 		controllers.add(new AnimationController<BrokenMould>("molde", test ->
 			test.setAndContinue(test.isMoving() ? WALK : IDLE)
 		).triggerableAnim("recast", RECAST));
+		// The blank on a controller of its own. GeckoLib 5 cannot hide a bone, so while there is a copy in
+		// its hands (drawn by the renderer) the molten bar is scaled down into the fist that held it.
+		controllers.add(new AnimationController<BrokenMould>("blank", test ->
+			test.setAndContinue(test.animatable().getMainHandItem().isEmpty() ? BLANK_SHOWN : BLANK_GONE)));
 	}
 
 	@Override

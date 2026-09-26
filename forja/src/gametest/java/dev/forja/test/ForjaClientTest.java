@@ -174,6 +174,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			if ("molde".equals(solo)) {
+				shotMouldCopy(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 
 			checkStats(server);
 			checkEverythingForges(context, server, connection);
@@ -206,6 +211,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			shotForge(context, server, connection, x, y, z);
 			filmMeteor(context, server, connection, x, y, z);
 			shotNewMobs(context, server, connection, x, y, z);
+			shotMouldCopy(context, server, connection, x, y, z);
 			checkMiningUpgrades(server, connection, x, y, z);
 			writeUpgradeDoc(server, connection);
 			checkBalanceLimits(server, connection);
@@ -7206,6 +7212,79 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.runOnClient(mc -> mc.gui.hud.getChat().clearMessages(false));
 		context.waitTicks(2);
 		context.takeScreenshot(TestScreenshotOptions.of(name).disableCounterPrefix().withSize(1280, 720));
+	}
+
+	/**
+	 * The broken mould holding what it copied (Andy, 2026-09-26): after the recast the molten blank is gone
+	 * and the forged sword it copied stands upright in both fists. Same stage and framing as forja_mob_molde,
+	 * so the two pictures compare side by side. FORJA_SOLO=molde runs it alone.
+	 */
+	private static void shotMouldCopy(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		server.runCommand("gamemode spectator @a");
+		server.runCommand("time set noon");
+		server.runCommand("difficulty easy");
+		context.runOnClient(mc -> {
+			mc.options.fov().set(60);
+			mc.options.fovEffectScale().set(0.0);
+		});
+		double px = x + 70.0;
+		double pz = z + 70.0;
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			for (int fx = -5; fx <= 5; fx++) {
+				for (int fz = -5; fz <= 5; fz++) {
+					level.setBlockAndUpdate(new BlockPos((int) px + fx, y - 1, (int) pz + fz),
+						net.minecraft.world.level.block.Blocks.SMOOTH_STONE.defaultBlockState());
+					for (int fy = 0; fy <= 3; fy++) {
+						level.setBlockAndUpdate(new BlockPos((int) px + fx, y + fy, (int) pz + fz),
+							net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+					}
+				}
+			}
+			var golem = dev.forja.registry.ModEntities.MOLDE_ROTO.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+			check(golem != null, "the broken mould should be creatable");
+			golem.snapTo(px, y, pz, 180.0F, 0.0F);
+			golem.setNoAi(true);
+			golem.setPersistenceRequired();
+			level.addFreshEntity(golem);
+		});
+		// Run alone, the new world's recipe toast is still up and sits over the top of the picture.
+		context.runOnClient(mc -> mc.gui.toastManager().clear());
+		// First as it is, molten blank and all, framed exactly as the copy is: the pair is the comparison.
+		mobShot(context, server, px, y + 2.2, pz + 6.4, px, y + 1.2, pz, 40, "forja_mob_molde_antes");
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var golem = level.getEntitiesOfClass(dev.forja.entity.BrokenMould.class,
+				new net.minecraft.world.phys.AABB(new BlockPos((int) px, y, (int) pz)).inflate(4)).getFirst();
+			ItemStack sword = Assembler.create(ForgeType.ESPADA, List.of(NETHERITA, MADERA, HIERRO), level.registryAccess());
+			golem.consider(level, sword);
+			for (int tick = 0; tick < dev.forja.entity.BrokenMould.RECAST_WINDUP; tick++) {
+				golem.tick();
+			}
+			check(golem.getMainHandItem().is(sword.getItem()), "the mould should come out of the recast holding the sword it copied");
+		});
+		// Long enough for the recast animation (2.6 s) to finish and the mould to stand still again.
+		mobShot(context, server, px, y + 2.2, pz + 6.4, px, y + 1.2, pz, 70, "forja_mob_molde_copia");
+		// Measured on the client, not only looked at: the copy arrived, and the blank's own controller is
+		// the one that scaled the molten bar away.
+		String blank = context.computeOnClient(mc -> {
+			for (net.minecraft.world.entity.Entity entity : mc.level.entitiesForRendering()) {
+				if (entity instanceof dev.forja.entity.BrokenMould mould) {
+					var controller = mould.getAnimatableInstanceCache().getManagerForId(mould.getId())
+						.getAnimationControllers().get("blank");
+					var playing = controller == null ? null : controller.getCurrentRawAnimation();
+					return (mould.getMainHandItem().isEmpty() ? "empty:" : "held:")
+						+ (playing == null ? "none" : playing.getAnimationStages().get(0).animationName());
+				}
+			}
+			return "no mould";
+		});
+		log("molde con copia: " + blank);
+		check("held:blank_gone".equals(blank), "the mould should hold the copy with the blank scaled away, got " + blank);
+		clearStage(server, connection, px, y, pz);
+		context.runOnClient(mc -> mc.options.fov().set(70));
+		server.runCommand("gamemode survival @a");
+		server.runCommand("difficulty peaceful");
 	}
 
 	private static void filmMeteor(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {

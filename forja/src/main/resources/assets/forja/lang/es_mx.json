@@ -847,6 +847,7 @@
   "commands.forja.sin_evento": "No hay ningún evento llamado %s",
   "commands.forja.sin_tecnica": "No existe la técnica %s",
   "commands.forja.tecnicas_borradas": "Técnicas olvidadas",
+  "commands.forja.fundicion": "Una línea de fundición entera, encendida y en marcha, delante de ti",
   "gui.forja.encargo": "Encargo: %s con %s, y %s al %s%% o más",
   "gui.forja.encargo.paga": "Paga: %s esmeraldas, un orbe de %s al %s%% y una plantilla",
   "gui.forja.encargo.hecho": "El herrero acepta el encargo",

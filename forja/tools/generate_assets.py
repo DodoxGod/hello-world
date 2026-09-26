@@ -7024,7 +7024,39 @@ MOULD_PALETTE = {
 }
 
 
+# How far forward the recast brings the white-hot door, from inside the belly to the furnace mouth.
+MOULD_HOT_SLIDE = -4
+
+
+def check_broken_mould_fit():
+    """The fists close on the grip, and the hot door stays out of sight until the recast fetches it.
+
+    Measured on the cubes rather than trusted to the eye: each hand meets the grip face to face with no
+    gap, the white-hot door sits wholly inside the stone belly in the rest pose, and at the height of the
+    recast its face stands in front of the dull door and behind the bars, which is the fire turning
+    strong orange without anything swelling.
+    """
+    def box(name):
+        origin, size, _ = MOULD_CUBES[name]
+        return [(origin[axis], origin[axis] + size[axis]) for axis in range(3)]
+
+    grip, right, left = box("blade_grip"), box("hand_right"), box("hand_left")
+    gaps = (grip[0][0] - right[0][1], left[0][0] - grip[0][1])
+    assert gaps == (0, 0), f"the mould's hands do not close on the grip: gaps {gaps}"
+    for hand in (right, left):
+        for axis in (1, 2):
+            assert hand[axis][0] < grip[axis][1] and grip[axis][0] < hand[axis][1], "a hand misses the grip"
+    belly, hot, door = box("belly"), box("door_hot"), box("door")
+    assert all(belly[axis][0] < hot[axis][0] and hot[axis][1] < belly[axis][1] for axis in range(3)), \
+        "the hot door shows through the belly in the rest pose"
+    bars = min(box(name)[2][0] for name in ("bar_right", "bar_middle", "bar_left"))
+    front = hot[2][0] + MOULD_HOT_SLIDE
+    assert bars < front < door[2][0], f"the recast leaves the hot door at z {front}, not between the bars and the door"
+    return gaps, front
+
+
 def generate_broken_mould_assets():
+    check_broken_mould_fit()
     atlas = (256, 256)
     uvs = write_geo("molde_roto", MOULD_CUBES, MOULD_BONES, atlas, (2.5, 3.25, 1.6))
     skin, glow = paint_model(MOULD_CUBES, MOULD_PALETTE, uvs, atlas, 56001, wear=0.95,
@@ -7086,8 +7118,8 @@ def generate_broken_mould_assets():
                         scale([(0, [1, 1, 1]), (1.2, [0.85, 0.7, 0.85]), (1.5, [0.6, 0.4, 0.6]),
                                (1.9, [1.15, 1.15, 1.15]), (2.6, [1, 1, 1])]),
                     ),
-                    "fire_hot": pos([(0, [0, 0, 0]), (0.5, [0, 0, 0]), (0.8, [0, 0, -4]),
-                                     (1.9, [0, 0, -4]), (2.2, [0, 0, 0]), (2.6, [0, 0, 0])]),
+                    "fire_hot": pos([(0, [0, 0, 0]), (0.5, [0, 0, 0]), (0.8, [0, 0, MOULD_HOT_SLIDE]),
+                                     (1.9, [0, 0, MOULD_HOT_SLIDE]), (2.2, [0, 0, 0]), (2.6, [0, 0, 0])]),
                     "arm_right": rot([(0, [14, 0, 7]), (0.6, [42, 0, 10]), (1.5, [46, 0, 10]),
                                       (1.9, [14, 0, 7]), (2.6, [14, 0, 7])]),
                     "arm_left": rot([(0, [14, 0, -7]), (0.6, [42, 0, -10]), (1.5, [46, 0, -10]),

@@ -847,6 +847,7 @@
   "commands.forja.sin_evento": "There is no event called %s",
   "commands.forja.sin_tecnica": "There is no technique called %s",
   "commands.forja.tecnicas_borradas": "Techniques forgotten",
+  "commands.forja.fundicion": "A whole foundry line, lit and running, in front of you",
   "gui.forja.encargo": "Order: a %s with %s, and %s at %s%% or more",
   "gui.forja.encargo.paga": "Pays: %s emeralds, an orb of %s at %s%% and a template",
   "gui.forja.encargo.hecho": "The smith takes the order",
