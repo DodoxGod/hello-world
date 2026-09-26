@@ -140,7 +140,19 @@ def walls(w):
     wall_run(w, (ix1, iz0), (ix1, iz1), "east", INNER_H, INNER_T, 0.10)
 
 
+# What towers() raised, for the tower interiors (castillo_torres) to read rather than work out again:
+# (key, name, cx, cz, radius, base, height, floors, doors, ragged).
+TOWER_SPECS = []
+
+OUTER_NAMES = (("t_cobre", "Torre del Cobre"), ("t_eco", "Torre del Eco"), ("t_obsidiana", "Torre de la Obsidiana"),
+               ("t_resina", "Torre de la Resina"), ("t_hundida", "Torre Hundida"), ("t_escama", "Torre de la Escama"),
+               ("t_vidrio", "Torre del Vidrio"))
+INNER_NAMES = (("t_archivo", "Torre del Archivo"), ("t_pavesas", "Torre de las Pavesas"), ("t_fuelle", "Torre del Fuelle"),
+               ("t_vigia", "Torre del Vigía"))
+
+
 def towers(w):
+    TOWER_SPECS.clear()
     x0, z0, x1, z1 = OUTER
     walk = OUTER_H - 1
     floors = [0, 6, walk, walk + 7]
@@ -153,20 +165,23 @@ def towers(w):
         (x0 + 3, z1 - 3, ("north", "east"), 0.12, 0.0),          # Escama
         (x1 - 3, z1 - 3, ("north", "west"), 0.14, 0.0),          # Vidrio
     )
-    for cx, cz, sides, decay, ragged in outer:
+    for (cx, cz, sides, decay, ragged), (key, name) in zip(outer, OUTER_NAMES):
         noise_origin(cx, 0, cz)
         inward = "south" if cz < 50 else "north" if cz > 150 else "east" if cx < 100 else "west"
         doors = [(side, walk) for side in sides] + [(inward, 0)]
         round_tower(w, cx, cz, 9, 0, 26, decay=decay, floors=floors, doors=doors, roof=not ragged, lit=not ragged, ragged=ragged)
+        TOWER_SPECS.append((key, name, cx, cz, 9, 0, 26, list(floors), list(doors), ragged))
     ix0, iz0, ix1, iz1 = INNER
     walk = INNER_H - 1
     floors = [0, 6, 12, walk, walk + 7]
-    for cx, cz, sides, ground_door in (
+    for (cx, cz, sides, ground_door), (key, name) in zip((
         (ix0 + 1, iz0 + 1, ("south", "east"), "south"), (ix1 - 1, iz0 + 1, ("south", "west"), "south"),
         (ix0 + 1, iz1 - 1, ("north", "east"), "north"), (ix1 - 1, iz1 - 1, ("north", "west"), "north"),
-    ):
+    ), INNER_NAMES):
         noise_origin(cx, 0, cz)
-        round_tower(w, cx, cz, 8, 0, 32, decay=0.08, floors=floors, doors=[(side, walk) for side in sides] + [(ground_door, 0)])
+        doors = [(side, walk) for side in sides] + [(ground_door, 0)]
+        round_tower(w, cx, cz, 8, 0, 32, decay=0.08, floors=floors, doors=doors)
+        TOWER_SPECS.append((key, name, cx, cz, 8, 0, 32, list(floors), doors, 0.0))
     noise_origin()
 
 
@@ -418,6 +433,11 @@ def build():
     import castillo_interiores
     castillo_interiores.build(w)
     # and when everything is where it is going to be, enough light to read it by
+    # The towers inside: a stair in each and every floor a room. Before the light, which lights what it finds.
+    import castillo_torres
+    castillo_torres.build(w)
+    import castillo_sotanos_salas
+    castillo_sotanos_salas.build(w)
     import castillo_luz
     castillo_luz.light(w)
     return w
