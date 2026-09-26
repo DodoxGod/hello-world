@@ -37,6 +37,11 @@ public final class SpecialAttacks {
 	public static final double REAP_RANGE = 6.0;
 	/** How far the gauntlets carry you when you throw yourself forward. */
 	public static final double CHARGE_PUSH = 1.4;
+	/** What each move hits for, as a share of the weapon's own blow (the tables the simulator reads, docs/objetos_contrato.json, take them from here). */
+	public static final float WHIRL_DAMAGE = 0.6F;
+	public static final float QUAKE_DAMAGE = 0.5F;
+	public static final float REAP_DAMAGE = 0.35F;
+	public static final float CHARGE_DAMAGE = 1.5F;
 
 	private SpecialAttacks() {
 	}
@@ -93,7 +98,7 @@ public final class SpecialAttacks {
 
 	/** Torbellino: one turn of the greatsword that cuts everything around. */
 	private static void whirl(ServerLevel level, Player player, ItemStack weapon, InteractionHand hand) {
-		float damage = attackDamage(player, weapon) * 0.6F;
+		float damage = attackDamage(player, weapon) * WHIRL_DAMAGE;
 		List<LivingEntity> targets = around(level, player, WHIRL_RANGE);
 		for (LivingEntity victim : targets) {
 			DamageSource source = level.damageSources().playerAttack(player);
@@ -109,7 +114,7 @@ public final class SpecialAttacks {
 
 	/** Sismo: the head comes down and the ground throws everything nearby up. */
 	private static void quake(ServerLevel level, Player player, ItemStack weapon, InteractionHand hand) {
-		float damage = attackDamage(player, weapon) * 0.5F;
+		float damage = attackDamage(player, weapon) * QUAKE_DAMAGE;
 		List<LivingEntity> targets = around(level, player, QUAKE_RANGE);
 		for (LivingEntity victim : targets) {
 			DamageSource source = level.damageSources().playerAttack(player);
@@ -135,7 +140,7 @@ public final class SpecialAttacks {
 	 * own; what it is for is putting a crowd where the next swing can reach all of it.
 	 */
 	private static void reap(ServerLevel level, Player player, ItemStack weapon, InteractionHand hand) {
-		float damage = attackDamage(player, weapon) * 0.35F;
+		float damage = attackDamage(player, weapon) * REAP_DAMAGE;
 		List<LivingEntity> targets = around(level, player, REAP_RANGE);
 		for (LivingEntity victim : targets) {
 			DamageSource source = level.damageSources().playerAttack(player);
@@ -168,7 +173,7 @@ public final class SpecialAttacks {
 		player.setDeltaMovement(look.x * CHARGE_PUSH, Math.max(0.25, look.y * 0.4), look.z * CHARGE_PUSH);
 		player.hurtMarked = true;
 		player.resetFallDistance();
-		float damage = attackDamage(player, weapon) * 1.5F;
+		float damage = attackDamage(player, weapon) * CHARGE_DAMAGE;
 		List<LivingEntity> ahead = level.getEntitiesOfClass(
 			LivingEntity.class,
 			player.getBoundingBox().expandTowards(look.scale(3.0)).inflate(1.0),
