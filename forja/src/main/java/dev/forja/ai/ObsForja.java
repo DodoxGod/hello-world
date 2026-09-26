@@ -140,6 +140,14 @@ public final class ObsForja {
 		add("luz/15", (m, p, k) -> m.level().getMaxLocalRawBrightness(m.blockPosition()) / 15.0);
 	}
 
+	static {
+		// --- The world's fights (fase 9) ---
+		add("duelo_retador", (m, p, k) -> Duels.challenger(m) ? 1.0 : 0.0);
+		add("duelo_espectador", (m, p, k) -> Duels.watching(m) ? 1.0 : 0.0);
+		add("ladron", (m, p, k) -> WorldFights.thief(m) ? 1.0 : 0.0);
+		add("enfurecido", (m, p, k) -> k != null && k.enraged ? 1.0 : 0.0);
+	}
+
 	/** Where the mob's ring slot is from it, in its own frame (forward, right), divided by 8. */
 	private static double[] slot(Mob mob, Player player, MobMind mind) {
 		if (mind == null || Double.isNaN(mind.ringAngle)) {

@@ -123,12 +123,13 @@ public final class VanillaSpecials {
 			double d = mob.distanceTo(target);
 			return cfg.zombieLunge && mob.onGround() && d >= cfg.lungeMinDistance && d <= cfg.lungeMaxDistance && sees(mob, target)
 				&& !dev.forja.world.Elites.isElite(mob)
-				&& (dev.forja.combat.AttackTokens.holds(target, mob) || dev.forja.combat.AttackTokens.free(target, Aggression.maxAttackers(target)));
+				&& !Duels.watching(mob)
+				&& (dev.forja.combat.AttackTokens.holds(target, mob) || dev.forja.combat.AttackTokens.free(target, Aggression.maxAttackers(mob, target)));
 		}
 
 		@Override
 		public void warn(Mob mob, Player target, SpecialRunner.Run run) {
-			dev.forja.combat.AttackTokens.tryAcquire(target, mob, Aggression.maxAttackers(target));
+			dev.forja.combat.AttackTokens.tryAcquire(target, mob, Aggression.maxAttackers(mob, target));
 			CombatFeedback.lungeTelegraph(mob);
 		}
 

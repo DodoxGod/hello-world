@@ -650,3 +650,81 @@ Veteranía y rencor multiplican el término de daño hecho: ×(1 + 0,1·min(pele
 - `rasgo_agresivo`, `rasgo_prudente`, `rasgo_cobarde`, `rasgo_astuto`
 - `veterania` (peleas/3, máx. 1), `rencor`, `miedo`, `intrepido`, `en_casa`
 - `noche`, `lluvia`, `luz/15`
+
+### Peleas del mundo (fase 9; `WorldFights`, `Duels`)
+- **Asedio** (91):
+  - Una vez por minuto, por jugador, de noche: con un bloque de Forja a ≤ 16, probabilidad `siegeChance` (0,03)
+    × dificultad.amenaza. También con `/forja ia asedio`.
+  - Llegan 6 + noches/10 (máx. 10) mobs a 30 bloques, en abanico (uno de cada tres esqueleto, el resto zombis). El
+    primero es élite; todos tienen como casa la forja (o la posición del jugador) y a él como objetivo.
+- **Ladrones** (92, 94):
+  - Un mob astuto con alguna mano libre que golpea a un jugador tiene un 10 % de robarle un objeto forjado o una
+    pieza de la mochila (ranuras 9–35; nunca lo que lleva puesto o en la mano).
+  - Si es un arma, la empuña y pelea con ella; si no, la lleva en la otra mano. La suelta al morir (100 %), no
+    desaparece solo y huye (RETIRARSE siempre).
+- **Hordas de evento** (93): con un evento del cielo activo, los hostiles que aparecen son agresivos y la amenaza
+  se multiplica ×1,5.
+- **Némesis** (95):
+  - Un élite o campeón que termina una pelea vivo queda anotado en el jugador (`tipo|nombre`, máx. 5).
+  - Una vez por minuto, de noche, con un 10 % (si no hubo asedio), vuelve el más antiguo: a 26 bloques, con su
+    nombre ("X, el que volvió"), como élite (o campeón si lo era), con rencor y a por él. También con
+    `/forja ia nemesis`.
+- **Duelos** (96):
+  - Un élite o campeón a ≤ 10 de su jugador, con ≥ 2 mobs más con el mismo objetivo, reta con probabilidad 0,005
+    por decisión.
+  - Anillo de 6 bloques de radio en el punto del retador. Los demás mobs MIRAN: táctica ESPERAR a 7–9 bloques, sin
+    turno, sin golpe ni especiales.
+  - **Aceptar**: entrar en el anillo o golpear al retador desde dentro.
+  - **Rechazar**: 100 ticks sin entrar, o dispararle desde fuera. Todos quedan **enfurecidos** (+1 turno).
+  - **Trampa**: salir del anillo más de 40 ticks (además, el retador lo recuerda como némesis), golpear a un
+    espectador, o que otro jugador golpee al retador. Todos se enfurecen.
+  - **Victoria**: los espectadores se asustan, el retador suelta botín extra una vez y el arma gana +10 de maestría.
+- **Patrullas** (97): un mob con casa, sin objetivo: a > 16 vuelve (0,9). Cerca de casa, cada ~200 ticks va a un
+  punto a 8–12 bloques de ella (0,7).
+- **Noche** (98): de noche, un jugador a > 12 bloques con luz < 4 a sus pies no cuenta como visto (vale para el
+  rastro y el aburrimiento).
+- **Lluvia** (99): bajo la lluvia, las flechas del esqueleto se desvían hasta ±6° en horizontal y ±3° en vertical.
+  Los ahogados persiguen fuera del agua también de día.
+- **El Herrero recuerda** (100): cuando cae su onda o su revés y el jugador no pierde vida en 10 ticks, se anota un
+  fallo en el jugador (`forja_herrero_onda_fallo_N`, `forja_herrero_reves_fallo_N`). Si los fallos de onda superan a
+  los de revés en más de 1, abre de cerca (el revés antes que la onda).
+
+**Bloque Forja**, a continuación: `duelo_retador`, `duelo_espectador`, `ladron`, `enfurecido`.
+
+## 4. Contrato final `red_mob_v2` (fase 10)
+El contrato exacto está en [red_mob_v2_contrato.json](red_mob_v2_contrato.json). Lo escribe la prueba `writeContract`
+(`FORJA_CONTRATO=<archivo> ./gradlew runGameTest`) a partir del propio código, así que no se desincroniza.
+
+**Entradas: 200**
+- las 102 de M1 (`ObsM1`), en su orden
+- el bloque Forja, 98 entradas (`ObsForja.names()`): jugador, hábitos, dificultad, escuadrón, especiales, el propio
+  mob (postura, guardia, esquiva, amenaza), mobs de Forja, personalidad y mundo, y peleas del mundo
+- Una red puede tomar solo un prefijo de las 200; sus `nombres_obs` tienen que coincidir con los primeros N.
+
+**Salidas: 29**
+
+| Índices | Cabeza | Tipo |
+|---|---|---|
+| 0–8 | `mover` | categórica |
+| 9 | `saltar` | Bernoulli |
+| 10 | `usar` | Bernoulli |
+| 11–19 | `tactica` | categórica, índice de `Tactic`: libre, acercarse, rodear, flanquear, esperar, retirarse, reagruparse, cubrirse, parapetarse |
+| 20–24 | `especial` | categórica: 0 ninguno, k = hueco k |
+| 25–27 | `defensa` | categórica: nada, escudo, esquivar |
+| 28 | `fintar` | Bernoulli |
+
+Una red con 11 salidas es v1: tácticas LIBRE y sin cabezas de Forja.
+
+**Máscara** (0 = prohibido; el índice 0 de cada categórica nunca se prohíbe):
+- mover 1..8 y usar: prohibidos a un creeper encendido
+- saltar: prohibido fuera del suelo y del agua
+- especial k: prohibido si no está disponible (en enfriamiento o sin poder empezar)
+- defensa 1: prohibida sin escudo o con la guardia rota
+- defensa 2: prohibida sin esquiva lista o fuera del suelo
+- fintar: prohibido fuera de la primera mitad de un aviso
+
+**Muestreo**: cada cabeza por separado, con temperatura T = `iaTemperatura` × dificultad × amenaza.
+
+**Familias** (10 archivos): `red_cuerpo`, `red_arquero`, `red_creeper`, `red_arana`, `red_forja_cuerpo`,
+`red_forja_distancia`, `red_forja_area`, `red_forja_tanque`, `red_forja_enjambre` y `red_forja_jefe`, en
+`config/forja/redes/` (o `iaCarpetaRedes`).

@@ -103,6 +103,8 @@ public class CombatGameTests {
 	private static void noRandomThreat() {
 		CombatConfig.get().veteranChance = 0.0;
 		CombatConfig.get().eliteChance = 0.0;
+		// Nor with a shield, which changes how they fight.
+		CombatConfig.get().shieldChance = 0.0;
 	}
 
 	private static Zombie bareZombie(GameTestHelper helper, BlockPos pos) {
@@ -589,6 +591,7 @@ public class CombatGameTests {
 	@GameTest(maxTicks = 200)
 	public void telegraphedAttackHitsStillPlayer(GameTestHelper helper) {
 		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
+		noRandomThreat();
 		Husk husk = helper.spawn(EntityTypes.HUSK, new BlockPos(2, 1, 1));
 		husk.setTarget(player);
 		helper.runAfterDelay(120, () -> {

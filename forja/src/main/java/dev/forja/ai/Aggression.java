@@ -40,6 +40,12 @@ public final class Aggression {
 		return Math.max(1, Math.min(base + 2, turns));
 	}
 
+	/** For a given mob: an enraged one (a duel refused or cheated) counts one more turn (idea 96). */
+	public static int maxAttackers(net.minecraft.world.entity.Mob mob, LivingEntity target) {
+		MobMind mind = MobAi.mind(mob);
+		return maxAttackers(target) + (mind != null && mind.enraged ? 1 : 0);
+	}
+
 	/** Whether the player is winding up a charged blow (mobs back out of its reach). */
 	public static boolean charging(Player player) {
 		return ChargedStrike.isCharging(player);

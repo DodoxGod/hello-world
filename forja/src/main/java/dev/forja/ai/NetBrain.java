@@ -64,6 +64,11 @@ public final class NetBrain {
 		this.memory = this.gruHh[0].length;
 	}
 
+	/** A network from its JSON, already parsed (tests, tools). */
+	public static NetBrain fromJson(JsonObject json) {
+		return new NetBrain(json);
+	}
+
 	public static NetBrain load(Path file) throws java.io.IOException {
 		try (Reader reader = Files.newBufferedReader(file)) {
 			return new NetBrain(JsonParser.parseReader(reader).getAsJsonObject());
@@ -118,8 +123,67 @@ public final class NetBrain {
 		return dense(f, this.wOut, this.bOut, false);
 	}
 
-	/** Samples a decision from the logits (v1: 11 of them; v2 adds Forja's heads after). */
+	/** Where each head's logits start in a v2 network's output, and how many it has. */
+	public static final int V1_OUTPUTS = 11;
+	public static final int TACTIC_AT = 11;
+	public static final int SPECIAL_AT = TACTIC_AT + 9;
+	public static final int DEFENSE_AT = SPECIAL_AT + 5;
+	public static final int FEINT_AT = DEFENSE_AT + 3;
+	public static final int V2_OUTPUTS = FEINT_AT + 1;
+
+	public int outputs() {
+		return this.bOut.length;
+	}
+
+	/**
+	 * Samples a decision. A v1 network (11 outputs) gives the three heads of the simulator and LIBRE; a v2
+	 * network (29) adds tactica (9), especial (5), defensa (3) and fintar (1), each sampled on its own with
+	 * the same temperature and its part of the mask.
+	 */
 	public static Decision sample(float[] logits, double temperature, RandomSource random, boolean[] mask) {
+		Decision base = sampleV1(logits, temperature, random, mask);
+		if (logits.length < V2_OUTPUTS) {
+			return base;
+		}
+		int tactic = categorical(logits, TACTIC_AT, 9, temperature, random, mask);
+		int special = categorical(logits, SPECIAL_AT, 5, temperature, random, mask);
+		int defense = categorical(logits, DEFENSE_AT, 3, temperature, random, mask);
+		boolean feint = (mask == null || mask.length <= FEINT_AT || mask[FEINT_AT])
+			&& random.nextDouble() < sigmoid((float) (logits[FEINT_AT] / Math.max(0.05, temperature)));
+		return new Decision(base.move(), base.jump(), base.use(), Tactic.of(tactic), special, defense, feint);
+	}
+
+	/** One categorical head: logits [at, at + n), masked where the mask says so (never all masked: 0 stays). */
+	private static int categorical(float[] logits, int at, int n, double temperature, RandomSource random, boolean[] mask) {
+		double t = Math.max(0.05, temperature);
+		double max = Double.NEGATIVE_INFINITY;
+		for (int k = 0; k < n; k++) {
+			if (allowed(mask, at + k) || k == 0) {
+				max = Math.max(max, logits[at + k] / t);
+			}
+		}
+		double[] p = new double[n];
+		double sum = 0.0;
+		for (int k = 0; k < n; k++) {
+			p[k] = allowed(mask, at + k) || k == 0 ? Math.exp(logits[at + k] / t - max) : 0.0;
+			sum += p[k];
+		}
+		double roll = random.nextDouble() * sum;
+		for (int k = 0; k < n; k++) {
+			roll -= p[k];
+			if (roll <= 0.0) {
+				return k;
+			}
+		}
+		return 0;
+	}
+
+	private static boolean allowed(boolean[] mask, int index) {
+		return mask == null || index >= mask.length || mask[index];
+	}
+
+	/** The simulator's three heads. */
+	private static Decision sampleV1(float[] logits, double temperature, RandomSource random, boolean[] mask) {
 		double t = Math.max(0.05, temperature);
 		double max = Double.NEGATIVE_INFINITY;
 		for (int k = 0; k < 9; k++) {

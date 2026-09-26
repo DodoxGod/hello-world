@@ -51,6 +51,11 @@ abstract class MeleeAttackGoalMixin {
 	@Inject(method = "checkAndPerformAttack", at = @At("HEAD"), cancellable = true)
 	private void forja$telegraphedAttack(LivingEntity target, CallbackInfo ci) {
 		CombatConfig cfg = CombatConfig.get();
+		// A duel's watchers do not swing (idea 96).
+		if (forja$windup == 0 && dev.forja.ai.Duels.watching(mob)) {
+			ci.cancel();
+			return;
+		}
 		if (!cfg.enabled || !cfg.telegraph || forja$windup == 0 && !(target instanceof Player)
 			|| !"minecraft".equals(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getNamespace())
 				&& !(mob instanceof dev.forja.entity.ForgeAutomaton)) {
@@ -86,7 +91,7 @@ abstract class MeleeAttackGoalMixin {
 			forja$reset();
 			return;
 		}
-		if (!canPerformAttack(target) || !AttackTokens.tryAcquire(target, mob, dev.forja.ai.Aggression.maxAttackers(target))) return;
+		if (!canPerformAttack(target) || !AttackTokens.tryAcquire(target, mob, dev.forja.ai.Aggression.maxAttackers(mob, target))) return;
 		forja$windup = dev.forja.ai.MobDefense.windup(mob);
 		dev.forja.ai.MobDefense.spendCounter(mob);
 		forja$target = target;

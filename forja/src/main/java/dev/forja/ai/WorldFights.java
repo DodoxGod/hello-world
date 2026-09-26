@@ -72,6 +72,7 @@ public final class WorldFights {
 			}
 		});
 		Duels.register();
+		ServerTickEvents.END_SERVER_TICK.register(server -> checkSmithMisses(server.overworld().getGameTime()));
 	}
 
 	private static void tick(MinecraftServer server) {
@@ -120,6 +121,11 @@ public final class WorldFights {
 			double a = angle + (i - count / 2.0) * 0.15;
 			double x = player.getX() + Math.cos(a) * 30.0;
 			double z = player.getZ() + Math.sin(a) * 30.0;
+			if (!level.isLoaded(BlockPos.containing(x, player.getY(), z))) {
+				// That far is not loaded: they come out of the dark nearer.
+				x = player.getX() + Math.cos(a) * 12.0;
+				z = player.getZ() + Math.sin(a) * 12.0;
+			}
 			int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int) x, (int) z);
 			Mob mob = type.create(level, EntitySpawnReason.EVENT);
 			if (mob == null) {
@@ -132,9 +138,10 @@ public final class WorldFights {
 			}
 			mob.addTag(Personality.HOME_TAG + home.getX() + "_" + home.getY() + "_" + home.getZ());
 			mob.setPersistenceRequired();
-			level.addFreshEntity(mob);
-			mob.setTarget(player);
-			made++;
+			if (level.addFreshEntity(mob)) {
+				mob.setTarget(player);
+				made++;
+			}
 		}
 		player.sendOverlayMessage(Component.translatable("gui.forja.asedio"));
 		level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 3.0F, 0.8F);
@@ -303,10 +310,6 @@ public final class WorldFights {
 		int n = count(player, prefix);
 		player.removeTag(prefix + "_" + n);
 		player.addTag(prefix + "_" + (n + 1));
-	}
-
-	static {
-		ServerTickEvents.END_SERVER_TICK.register(server -> checkSmithMisses(server.overworld().getGameTime()));
 	}
 
 	/** Whether this monster is on the side a duel or a siege counts: any hostile. */

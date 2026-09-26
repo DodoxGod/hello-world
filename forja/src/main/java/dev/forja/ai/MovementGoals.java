@@ -68,17 +68,27 @@ public final class MovementGoals {
 		@Override
 		public boolean canUse() {
 			net.minecraft.core.BlockPos home = Personality.home(this.mob);
-			return this.mob.getTarget() == null && home != null && this.mob.blockPosition().distSqr(home) > 16.0 * 16.0
-				&& this.mob.getRandom().nextInt(40) == 0;
+			return this.mob.getTarget() == null && home != null && this.mob.getRandom().nextInt(
+				this.mob.blockPosition().distSqr(home) > 16.0 * 16.0 ? 40 : PATROL_EVERY) == 0;
 		}
 
+		/** Far from home: back to it. Near it: a round of its ground, to a point 8 to 12 blocks out (idea 97). */
 		@Override
 		public void start() {
 			net.minecraft.core.BlockPos home = Personality.home(this.mob);
-			if (home != null) {
+			if (home == null) {
+				return;
+			}
+			if (this.mob.blockPosition().distSqr(home) > 16.0 * 16.0) {
 				this.mob.getNavigation().moveTo(home.getX() + 0.5, home.getY(), home.getZ() + 0.5, 0.9);
+			} else {
+				double a = this.mob.getRandom().nextDouble() * Math.PI * 2.0;
+				double r = 8.0 + this.mob.getRandom().nextDouble() * 4.0;
+				this.mob.getNavigation().moveTo(home.getX() + 0.5 + Math.cos(a) * r, home.getY(), home.getZ() + 0.5 + Math.sin(a) * r, 0.7);
 			}
 		}
+
+		public static final int PATROL_EVERY = 200;
 
 		@Override
 		public boolean canContinueToUse() {

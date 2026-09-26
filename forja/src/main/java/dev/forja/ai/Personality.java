@@ -148,6 +148,8 @@ public final class Personality {
 		if (mob.getHealth() < mob.getMaxHealth()) {
 			mob.addTag(GRUDGE_TAG + player.getUUID());
 		}
+		// An elite or champion that got away comes back another night (idea 95).
+		WorldFights.remember(mob, player);
 		if (before + 1 >= VETERAN_FIGHTS && dev.forja.difficulty.Threat.of(mob) == dev.forja.difficulty.Threat.NORMAL) {
 			dev.forja.difficulty.Threat.VETERANO.mark(mob);
 			mob.setCustomName(Component.translatable("entity.forja.amenaza.veterano", mob.getType().getDescription()));
@@ -185,6 +187,13 @@ public final class Personality {
 			if (trait(other) != Trait.AGRESIVO && dev.forja.difficulty.Threat.of(other).ordinal() < dev.forja.difficulty.Threat.ELITE.ordinal()) {
 				AFRAID_UNTIL.put(other, now + FEAR_TICKS);
 			}
+		}
+	}
+
+	/** Frightens one mob for the usual while (a duel lost by its champion, idea 96). */
+	public static void scare(Mob mob, long now) {
+		if (!fearless(mob)) {
+			AFRAID_UNTIL.put(mob, now + FEAR_TICKS);
 		}
 	}
 

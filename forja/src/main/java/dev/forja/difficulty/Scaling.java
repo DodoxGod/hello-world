@@ -79,6 +79,13 @@ public final class Scaling {
 		mob.setHealth(mob.getMaxHealth());
 		dev.forja.ai.MobDefense.arm(mob);
 		dev.forja.ai.Personality.roll(mob, level);
+		// The hordes of a sky event come out fighting (idea 93).
+		if (dev.forja.world.WorldEvents.active(level) != null) {
+			for (dev.forja.ai.Personality.Trait trait : dev.forja.ai.Personality.Trait.values()) {
+				mob.removeTag(dev.forja.ai.Personality.TRAIT_TAG + trait.name().toLowerCase(java.util.Locale.ROOT));
+			}
+			mob.addTag(dev.forja.ai.Personality.TRAIT_TAG + "agresivo");
+		}
 
 		if (natural && level.isDarkOutside() && random.nextDouble() < Nights.companionChance(level)) {
 			companion(mob, level);
@@ -94,7 +101,8 @@ public final class Scaling {
 			* (level.dimension() == Level.NETHER ? 1.5 : mob.getY() < 0.0 ? 1.3 : 1.0)
 			* Nights.threatMultiplier(level)
 			* (1.0 + gear)
-			* Adaptive.threatMultiplier(near);
+			* Adaptive.threatMultiplier(near)
+			* (dev.forja.world.WorldEvents.active(level) != null ? 1.5 : 1.0);
 		double roll = random.nextDouble();
 		double elite = Math.min(cfg.eliteChanceMax, cfg.eliteChance * k);
 		if (roll < elite) {

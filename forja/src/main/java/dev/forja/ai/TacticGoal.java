@@ -34,6 +34,8 @@ public final class TacticGoal extends Goal {
 	public static final double WAIT_MIN = 4.0;
 	public static final double WAIT_MAX = 6.0;
 	public static final double RETREAT_DISTANCE = 6.0;
+	public static final double DUEL_WATCH_MIN = 7.0;
+	public static final double DUEL_WATCH_MAX = 9.0;
 	public static final int MELEE_COOLDOWN = 20;
 	public static final int BOW_DRAW = 20;
 	public static final int BOW_COOLDOWN = 20;
@@ -213,7 +215,7 @@ public final class TacticGoal extends Goal {
 		if (this.mind.cooldown > 0 || !ObsM1.reaches(this.mob, target)) {
 			return;
 		}
-		if (!AttackTokens.tryAcquire(target, this.mob, Aggression.maxAttackers(target))) {
+		if (!AttackTokens.tryAcquire(target, this.mob, Aggression.maxAttackers(this.mob, target))) {
 			return;
 		}
 		this.mind.windupTotal = MobDefense.windup(this.mob);
@@ -323,9 +325,13 @@ public final class TacticGoal extends Goal {
 
 	private void hold(Player target) {
 		double d = this.mob.distanceTo(target);
-		if (d < WAIT_MIN) {
+		// A duel's watchers stand round the ring, outside it.
+		boolean watching = Duels.watching(this.mob);
+		double min = watching ? DUEL_WATCH_MIN : WAIT_MIN;
+		double max = watching ? DUEL_WATCH_MAX : WAIT_MAX;
+		if (d < min) {
 			this.move(5, target, 0.8);
-		} else if (d > WAIT_MAX) {
+		} else if (d > max) {
 			this.move(1, target, 0.8);
 		} else {
 			this.mob.getNavigation().stop();

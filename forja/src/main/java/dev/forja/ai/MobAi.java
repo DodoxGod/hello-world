@@ -69,6 +69,7 @@ public final class MobAi {
 		TemporaryBlocks.register();
 		ForjaTraits.register();
 		Personality.register();
+		WorldFights.register();
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
 			if (entity instanceof Mob mob && entity instanceof Enemy) {
 				Squad.onDeath(mob, mob.level().getGameTime());
@@ -217,7 +218,7 @@ public final class MobAi {
 		}
 		Player target = mob.getTarget() instanceof Player player && player.isAlive() && !player.isCreative() && !player.isSpectator()
 			&& mob.distanceTo(player) <= CombatConfig.get().iaAlcance ? player : null;
-		if (target != null && ObsM1.sees(mob, target.getX(), target.getEyeY(), target.getZ())) {
+		if (target != null && ObsM1.sees(mob, target.getX(), target.getEyeY(), target.getZ()) && !WorldFights.hiddenByNight(mob, target)) {
 			mind.lastSeen = target.position();
 			mind.lastSeenAt = now;
 		}
@@ -253,7 +254,7 @@ public final class MobAi {
 		if (net.inputs() > obs.length) {
 			obs = ObsForja.full(mob, target, mind, obs, net.inputs());
 		}
-		boolean[] mask = mask(mob);
+		boolean[] mask = mask(mob, mind, target, net.outputs());
 		float[] logits = net.forward(obs, mind.memory);
 		double temperature = CombatConfig.get().iaTemperatura * ForjaDifficulty.current().temperature * Threat.of(mob).temperature();
 		mind.decision = NetBrain.sample(logits, temperature, mind.random, mask);
@@ -304,6 +305,28 @@ public final class MobAi {
 			player.push(danger.x * 0.35, 0.05, danger.z * 0.35);
 			player.hurtMarked = true;
 		}
+	}
+
+	/**
+	 * What the network may not choose right now. The simulator's part: a lit creeper holds still, a jump
+	 * needs the ground or water. Forja's (v2): a special only if it is available, the shield only if it has
+	 * one and its guard holds, a dodge only when ready and on the ground, a feint only in the first half of
+	 * a warning.
+	 */
+	static boolean[] mask(Mob mob, MobMind mind, Player target, int outputs) {
+		boolean[] mask = new boolean[Math.max(11, outputs)];
+		java.util.Arrays.fill(mask, true);
+		boolean[] v1 = mask(mob);
+		System.arraycopy(v1, 0, mask, 0, v1.length);
+		if (outputs >= NetBrain.V2_OUTPUTS) {
+			for (int k = 1; k <= 4; k++) {
+				mask[NetBrain.SPECIAL_AT + k] = mind.specials != null && mind.specials.available(k - 1, target);
+			}
+			mask[NetBrain.DEFENSE_AT + 1] = MobDefense.hasShield(mob) && !MobDefense.guardBroken(mob);
+			mask[NetBrain.DEFENSE_AT + 2] = MobDefense.dodgeReady(mob) && mob.onGround();
+			mask[NetBrain.FEINT_AT] = mind.windup > mind.windupTotal / 2;
+		}
+		return mask;
 	}
 
 	/** What the network may not choose right now, as in the simulator: a lit creeper holds still. */

@@ -8,6 +8,10 @@ más las mecánicas del jugador que faltaban. Después, la sesión del bot ("Có
 Las reglas exactas y los números están en [COMBATE_ESPECIFICACION.md](COMBATE_ESPECIFICACION.md), que se actualiza
 en cada fase.
 
+**Estado (2026-09-26): todas las fases hechas (0, 0b y 1–10).** Se prueban con 69 pruebas de servidor y la batería
+de cliente, y están documentadas en COMBATE_ESPECIFICACION.md. El contrato final está en red_mob_v2_contrato.json.
+Cambio respecto al borrador del §4: `tactica` tiene 9 valores (se añadió PARAPETARSE en la fase 7).
+
 ## 1. Principios
 
 1. **Separar la decisión de la ejecución.** Cada mob tiene un *cerebro* que solo decide ("qué hacer ahora") y un

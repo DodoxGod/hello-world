@@ -47,6 +47,17 @@ public final class RuleBrain {
 		}
 		double distance = mob.distanceTo(target);
 		long now = mob.level().getGameTime();
+		// A thief runs with what it took (idea 92).
+		if (WorldFights.thief(mob)) {
+			return Decision.tactic(Tactic.RETIRARSE);
+		}
+		// A duel: the watchers stand back round the ring; the challenger fights on its own (idea 96).
+		if (Duels.watching(mob)) {
+			return Decision.tactic(Tactic.ESPERAR);
+		}
+		if (Duels.challenger(mob) || Duels.mayChallenge(mind, target)) {
+			return Decision.APPROACH;
+		}
 		boolean fearless = Personality.fearless(mob) || Personality.atHome(mob);
 		// Fear (65) or a broken group: everyone falls back for a moment; the elites, and those defending
 		// their home, never do (66, 68).
@@ -56,7 +67,7 @@ public final class RuleBrain {
 		if (!fearless && mob.getHealth() < mob.getMaxHealth() * Personality.retreatHealth(mob) && ObsM1.allies(mob).size() >= 2 && distance < 8.0) {
 			return Decision.tactic(Tactic.RETIRARSE);
 		}
-		boolean hasTurn = AttackTokens.holds(target, mob) || AttackTokens.free(target, Aggression.maxAttackers(target));
+		boolean hasTurn = AttackTokens.holds(target, mob) || AttackTokens.free(target, Aggression.maxAttackers(mob, target));
 		// A charged blow is coming: shield up if it has one, a dodge if it is right on top, else out of reach.
 		if (Aggression.charging(target) && distance < CHARGE_RANGE && mind.windup == 0 && !AttackTokens.holds(target, mob)) {
 			if (MobDefense.hasShield(mob) && !MobDefense.guardBroken(mob)) {

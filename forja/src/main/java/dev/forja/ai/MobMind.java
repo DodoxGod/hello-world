@@ -37,6 +37,8 @@ public final class MobMind {
 	public SquadRole role = SquadRole.RESERVA;
 	public boolean routed;
 	public boolean guarding;
+	/** Enraged: a duel refused or cheated (it presses harder: one more turn). */
+	public boolean enraged;
 	/** Whether others in its squad are waiting for a turn. */
 	public boolean othersWaiting;
 	/** Where it last saw its player, and when (to follow the trail when it loses them). */

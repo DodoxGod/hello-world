@@ -64,6 +64,9 @@ abstract class RangedBowAttackGoalMixin {
 				arrow -> arrow.getOwner() == mob && arrow.tickCount == 0).forEach(ChargedArrows::mark);
 			CombatStats.record(mob, CombatStats.CHARGED_SHOT);
 		}
+		// In the rain the arrows fly wider (idea 99).
+		mob.level().getEntitiesOfClass(AbstractArrow.class, mob.getBoundingBox().inflate(3.0),
+			arrow -> arrow.getOwner() == mob && arrow.tickCount == 0).forEach(arrow -> dev.forja.ai.WorldFights.rainSpread(mob, arrow));
 		forja$shots++;
 		forja$flashed = false;
 	}

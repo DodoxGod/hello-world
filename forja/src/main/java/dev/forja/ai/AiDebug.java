@@ -89,6 +89,18 @@ public final class AiDebug {
 				c.getSource().sendSuccess(() -> Component.literal(status()), false);
 				return 1;
 			}))
+			.then(Commands.literal("asedio").executes(c -> {
+				ServerPlayer player = c.getSource().getPlayerOrException();
+				int made = WorldFights.siege((net.minecraft.server.level.ServerLevel) player.level(), player);
+				c.getSource().sendSuccess(() -> Component.literal("Asedio: " + made + " atacantes."), true);
+				return 1;
+			}))
+			.then(Commands.literal("nemesis").executes(c -> {
+				ServerPlayer player = c.getSource().getPlayerOrException();
+				var mob = WorldFights.nemesisReturns((net.minecraft.server.level.ServerLevel) player.level(), player);
+				c.getSource().sendSuccess(() -> Component.literal(mob == null ? "No tienes némesis pendientes." : "Vuelve: " + mob.getName().getString()), true);
+				return 1;
+			}))
 			.then(Commands.literal("estadisticas").executes(c -> {
 				c.getSource().sendSuccess(() -> Component.literal(AiStats.summary()), false);
 				return 1;

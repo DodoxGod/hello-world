@@ -115,6 +115,8 @@ public final class CombatConfig {
 	public String iaModo = "auto";
 	/** Sampling temperature of the networks: 1 as trained, lower is sharper. Also scaled by difficulty and threat. */
 	public double iaTemperatura = 1.0;
+	/** Chance, once a minute per player at night near their forge, that a siege comes (× the difficulty's threat). */
+	public double siegeChance = 0.03;
 	/** With several players about, monsters share themselves out between them (idea 20). */
 	public boolean iaRepartirObjetivos = true;
 	/** Where the network files are read from; empty: config/forja/redes. */

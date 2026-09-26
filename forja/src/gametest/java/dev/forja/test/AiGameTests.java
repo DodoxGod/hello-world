@@ -659,4 +659,181 @@ public class AiGameTests {
 		anvil.discard();
 		helper.succeed();
 	}
+
+	/** A siege: at least six come, led by an elite, and they hold the forge as their home. */
+	@GameTest
+	public void siegeComes(GameTestHelper helper) {
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(3, 1, 3));
+		helper.getLevel().getServer().getPlayerList();
+		int made = dev.forja.ai.WorldFights.siege(helper.getLevel(), player);
+		var band = helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(40.0),
+			m -> m.getTarget() == player);
+		helper.assertTrue(made >= dev.forja.ai.WorldFights.SIEGE_MIN, "asedio de " + made);
+		helper.assertTrue(band.stream().anyMatch(m -> dev.forja.difficulty.Threat.of(m) == dev.forja.difficulty.Threat.ELITE), "con un élite al frente");
+		helper.assertTrue(band.stream().allMatch(m -> dev.forja.ai.Personality.home(m) != null), "defienden la forja como su casa");
+		band.forEach(net.minecraft.world.entity.Entity::discard);
+		helper.succeed();
+	}
+
+	/** An elite that got away comes back another night: named, holding a grudge. */
+	@GameTest
+	public void nemesisComesBack(GameTestHelper helper) {
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(3, 1, 3));
+		Zombie elite = zombie(helper, new BlockPos(1, 1, 1));
+		elite.setNoAi(true);
+		dev.forja.difficulty.Threat.ELITE.mark(elite);
+		elite.setCustomName(net.minecraft.network.chat.Component.literal("Garra"));
+		dev.forja.ai.Personality.survived(elite, player);
+		elite.discard();
+		var back = dev.forja.ai.WorldFights.nemesisReturns(helper.getLevel(), player);
+		helper.assertTrue(back != null, "debería volver");
+		helper.assertTrue(back.getCustomName().getString().contains("Garra"), "con su nombre: " + back.getCustomName().getString());
+		helper.assertTrue(dev.forja.ai.Personality.grudge(back, player), "y rencor");
+		back.discard();
+		helper.succeed();
+	}
+
+	/** A duel: stepping in accepts, the others watch, beating the challenger scatters them. */
+	@GameTest(maxTicks = 60)
+	public void duelPlaysOut(GameTestHelper helper) {
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(1, 1, 1));
+		Zombie challenger = zombie(helper, new BlockPos(3, 1, 3));
+		Zombie watcher = zombie(helper, new BlockPos(6, 1, 6));
+		challenger.setNoAi(true);
+		watcher.setNoAi(true);
+		challenger.setTarget(player);
+		watcher.setTarget(player);
+		for (dev.forja.ai.Personality.Trait trait : dev.forja.ai.Personality.Trait.values()) {
+			watcher.removeTag(dev.forja.ai.Personality.TRAIT_TAG + trait.name().toLowerCase(java.util.Locale.ROOT));
+		}
+		watcher.addTag(dev.forja.ai.Personality.TRAIT_TAG + "prudente");
+		var duel = dev.forja.ai.Duels.start(challenger, player);
+		helper.assertTrue(dev.forja.ai.Duels.watching(watcher), "el otro zombi mira");
+		helper.runAfterDelay(3, () -> {
+			helper.assertTrue(duel.stage == dev.forja.ai.Duels.Stage.DUELO, "dentro del círculo, el duelo se acepta");
+			challenger.setHealth(1.0F);
+			challenger.hurtServer(helper.getLevel(), helper.getLevel().damageSources().playerAttack(player), 5.0F);
+			helper.assertFalse(challenger.isAlive(), "el retador cae");
+			helper.assertTrue(dev.forja.ai.Personality.afraid(watcher), "ganar el duelo asusta a los que miraban");
+			helper.succeed();
+		});
+	}
+
+	/** The smith remembers: against a player who keeps escaping his wave, he goes in close first. */
+	@GameTest
+	public void smithRemembers(GameTestHelper helper) {
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(1, 1, 1));
+		helper.assertFalse(dev.forja.ai.WorldFights.smithPrefersClose(player), "sin recuerdos, abre con la onda");
+		player.addTag(dev.forja.ai.WorldFights.SMITH_WAVE_MISS + "_3");
+		helper.assertTrue(dev.forja.ai.WorldFights.smithPrefersClose(player), "tras esquivar su onda, va de cerca");
+		helper.succeed();
+	}
+
+	/** A v2 network with every input and head: all zeros but for its output biases. */
+	private static com.google.gson.JsonObject fakeV2(float[] outBias) {
+		java.util.List<String> names = new java.util.ArrayList<>(ObsNames.M1);
+		names.addAll(dev.forja.ai.ObsForja.names());
+		int n = names.size();
+		com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+		json.addProperty("formato", "red_mob_v2");
+		json.addProperty("grupo", "cuerpo");
+		json.addProperty("ticks_por_decision", 2);
+		com.google.gson.JsonArray namesJson = new com.google.gson.JsonArray();
+		names.forEach(namesJson::add);
+		json.add("nombres_obs", namesJson);
+		json.add("w1", zeros(n, 8));
+		json.add("b1", zeros(8));
+		json.add("w2", zeros(8, 8));
+		json.add("b2", zeros(8));
+		json.add("gru_ih", zeros(12, 8));
+		json.add("gru_hh", zeros(12, 4));
+		json.add("gru_bih", zeros(12));
+		json.add("gru_bhh", zeros(12));
+		json.add("w_out", zeros(12, outBias.length));
+		com.google.gson.JsonArray bias = new com.google.gson.JsonArray();
+		for (float b : outBias) {
+			bias.add(b);
+		}
+		json.add("b_out", bias);
+		return json;
+	}
+
+	private static com.google.gson.JsonArray zeros(int n) {
+		com.google.gson.JsonArray a = new com.google.gson.JsonArray();
+		for (int i = 0; i < n; i++) {
+			a.add(0.0F);
+		}
+		return a;
+	}
+
+	private static com.google.gson.JsonArray zeros(int rows, int cols) {
+		com.google.gson.JsonArray a = new com.google.gson.JsonArray();
+		for (int i = 0; i < rows; i++) {
+			a.add(zeros(cols));
+		}
+		return a;
+	}
+
+	/** A v2 network is accepted, and its heads obey the mask: a special on cooldown is never asked for. */
+	@GameTest
+	public void v2HeadsAndMask(GameTestHelper helper) {
+		float[] bias = new float[NetBrain.V2_OUTPUTS];
+		bias[NetBrain.TACTIC_AT + dev.forja.ai.Tactic.RODEAR.ordinal()] = 20.0F;
+		bias[NetBrain.SPECIAL_AT + 1] = 20.0F;
+		NetBrain net = NetBrain.fromJson(fakeV2(bias));
+		helper.assertTrue(MobAi.check(net) == null, "la red v2 debería encajar: " + MobAi.check(net));
+		boolean[] mask = new boolean[NetBrain.V2_OUTPUTS];
+		java.util.Arrays.fill(mask, true);
+		Decision free = NetBrain.sample(net.forward(new float[net.inputs()], new float[net.memory]), 1.0, RandomSource.create(3), mask);
+		helper.assertTrue(free.tactic() == dev.forja.ai.Tactic.RODEAR, "la cabeza táctica manda: " + free.tactic());
+		helper.assertTrue(free.special() == 1, "con el especial disponible, lo pide");
+		mask[NetBrain.SPECIAL_AT + 1] = false;
+		Decision masked = NetBrain.sample(net.forward(new float[net.inputs()], new float[net.memory]), 1.0, RandomSource.create(3), mask);
+		helper.assertTrue(masked.special() != 1, "con el especial en enfriamiento, no lo pide");
+		helper.succeed();
+	}
+
+	/** Writes the v2 contract (inputs, outputs, tactics, families) when FORJA_CONTRATO names a file. */
+	@GameTest
+	public void writeContract(GameTestHelper helper) throws java.io.IOException {
+		String file = System.getenv("FORJA_CONTRATO");
+		if (file == null || file.isBlank()) {
+			helper.succeed();
+			return;
+		}
+		com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+		json.addProperty("formato", "red_mob_v2");
+		java.util.List<String> names = new java.util.ArrayList<>(ObsNames.M1);
+		names.addAll(dev.forja.ai.ObsForja.names());
+		json.addProperty("n_obs", names.size());
+		com.google.gson.JsonArray obs = new com.google.gson.JsonArray();
+		names.forEach(obs::add);
+		json.add("nombres_obs", obs);
+		com.google.gson.JsonArray outs = new com.google.gson.JsonArray();
+		for (String o : new String[] {"quieto", "adelante", "adelante_derecha", "derecha", "atras_derecha", "atras", "atras_izquierda",
+			"izquierda", "adelante_izquierda", "saltar", "usar"}) {
+			outs.add(o);
+		}
+		for (dev.forja.ai.Tactic t : dev.forja.ai.Tactic.values()) {
+			outs.add("tactica_" + t.name().toLowerCase(java.util.Locale.ROOT));
+		}
+		for (int k = 0; k <= 4; k++) {
+			outs.add("especial_" + k);
+		}
+		for (String d : new String[] {"defensa_nada", "defensa_escudo", "defensa_esquivar"}) {
+			outs.add(d);
+		}
+		outs.add("fintar");
+		json.add("salidas", outs);
+		json.addProperty("n_salidas", outs.size());
+		com.google.gson.JsonObject families = new com.google.gson.JsonObject();
+		for (String f : MobAi.families()) {
+			families.addProperty(f, "red_" + f + ".json");
+		}
+		json.add("familias", families);
+		json.addProperty("ticks_por_decision", 2);
+		java.nio.file.Files.writeString(Path.of(file),
+			new com.google.gson.GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(json));
+		helper.succeed();
+	}
 }

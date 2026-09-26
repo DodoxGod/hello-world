@@ -345,7 +345,10 @@ public class FallenSmith extends Monster implements GeoEntity {
 			return;
 		}
 		double distance = this.distanceTo(target);
-		if (this.waveCooldown == 0 && distance >= 3.0 && distance <= WAVE_REACH + 4.0) {
+		// He remembers: against someone who keeps getting out of his wave, he goes in close first (idea 100).
+		if (dev.forja.ai.WorldFights.smithPrefersClose(target) && this.strikeCooldown == 0 && distance <= STRIKE_REACH) {
+			this.backhand(level);
+		} else if (this.waveCooldown == 0 && distance >= 3.0 && distance <= WAVE_REACH + 4.0) {
 			this.anvilWave(level);
 		} else if (this.strikeCooldown == 0 && distance <= STRIKE_REACH) {
 			this.backhand(level);
@@ -372,6 +375,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 			world.sendParticles(ParticleTypes.CRIT, arc.x, arc.y, arc.z, 2, 0.35, 0.2, 0.35, 0.02);
 		}, world -> {
 			dev.forja.ai.ForjaTraits.smithStruck(this);
+			dev.forja.ai.WorldFights.smithBlowLanded(this, false);
 			Vec3 reach = this.position().add(this.getLookAngle().scale(STRIKE_REACH * 0.5));
 			world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.HOSTILE, 2.0F, 0.7F);
 			for (LivingEntity victim : world.getEntitiesOfClass(LivingEntity.class,
@@ -463,6 +467,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 			}
 		}, world -> {
 			dev.forja.ai.ForjaTraits.smithStruck(this);
+			dev.forja.ai.WorldFights.smithBlowLanded(this, true);
 			this.wave = WAVE_TICKS;
 			this.waveHit.clear();
 			this.waveOrigin = this.position();

@@ -79,6 +79,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {
 		CompletableFuture<Void> reload = context.computeOnClient(mc -> {
+			// Silent: the test window has nothing to say out loud.
+			mc.options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.MASTER).set(0.0);
 			mc.options.languageCode = "es_mx";
 			mc.getLanguageManager().setSelected("es_mx");
 			return mc.reloadResourcePacks();

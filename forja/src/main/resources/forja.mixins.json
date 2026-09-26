@@ -17,6 +17,7 @@
 		"MobGoalsAccess",
 		"MobMixin",
 		"MobSpawnMixin",
+		"DrownedRainMixin",
 		"LivingEntityAiAccess",
 		"CreeperAiAccess",
 		"PiglinAiMixin",
