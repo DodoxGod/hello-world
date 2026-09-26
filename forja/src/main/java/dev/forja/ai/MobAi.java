@@ -133,6 +133,7 @@ public final class MobAi {
 	public static String check(NetBrain net) {
 		List<String> ours = new ArrayList<>(ObsNames.M1);
 		ours.addAll(ObsForja.names());
+		ours.addAll(ObsV3.names());
 		if (net.inputs() < ObsNames.M1.size() || net.names.size() != net.inputs()) {
 			return "espera " + net.inputs() + " entradas con " + net.names.size() + " nombres; el mod da al menos " + ObsNames.M1.size();
 		}
@@ -331,6 +332,22 @@ public final class MobAi {
 			mask[NetBrain.DEFENSE_AT + 1] = MobDefense.hasShield(mob) && !MobDefense.guardBroken(mob);
 			mask[NetBrain.DEFENSE_AT + 2] = MobDefense.dodgeReady(mob) && mob.onGround();
 			mask[NetBrain.FEINT_AT] = mind.windup > mind.windupTotal / 2;
+		}
+		if (outputs >= NetBrain.V3_OUTPUTS) {
+			// v3's tactics, only where they can be carried out: bait and hide need somebody to run to (hide
+			// also takes a block), the push needs lava or a drop by the player.
+			boolean ally = false;
+			for (Mob other : ObsM1.allies(mob)) {
+				if (other.getTarget() == target) {
+					ally = true;
+					break;
+				}
+			}
+			int at = NetBrain.NEW_TACTICS_AT;
+			mask[at + Tactic.CEBO.ordinal() - Tactic.V2_COUNT] = ally;
+			mask[at + Tactic.RELEVO.ordinal() - Tactic.V2_COUNT] = true;
+			mask[at + Tactic.OCULTARSE.ordinal() - Tactic.V2_COUNT] = ally || Terrain.cover(mob, target) != null;
+			mask[at + Tactic.EMPUJAR.ordinal() - Tactic.V2_COUNT] = Terrain.dangerNear(target) != null;
 		}
 		return mask;
 	}

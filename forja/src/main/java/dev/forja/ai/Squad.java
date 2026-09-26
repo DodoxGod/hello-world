@@ -227,14 +227,21 @@ public final class Squad {
 
 	/** Whether any of the squad's other hostiles stands in the way of a shot from the archer at the target. */
 	public static boolean allyInLine(Mob archer, Player target) {
+		return allyInLineOf(archer, target) != null;
+	}
+
+	/** The nearest of its own side standing in its line of fire at the target, or null (red_mob_v3's aliado_en_linea). */
+	public static Mob allyInLineOf(Mob archer, Player target) {
 		var from = archer.getEyePosition();
 		var to = target.getEyePosition();
+		Mob nearest = null;
 		for (Mob other : archer.level().getEntitiesOfClass(Mob.class, archer.getBoundingBox().expandTowards(to.subtract(from)).inflate(1.0),
 			m -> m != archer && m.isAlive() && m instanceof Enemy)) {
-			if (other.getBoundingBox().inflate(0.3).clip(from, to).isPresent()) {
-				return true;
+			if (other.getBoundingBox().inflate(0.3).clip(from, to).isPresent()
+				&& (nearest == null || archer.distanceToSqr(other) < archer.distanceToSqr(nearest))) {
+				nearest = other;
 			}
 		}
-		return false;
+		return nearest;
 	}
 }

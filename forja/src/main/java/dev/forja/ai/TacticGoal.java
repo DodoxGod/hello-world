@@ -39,6 +39,13 @@ public final class TacticGoal extends Goal {
 	public static final int MELEE_COOLDOWN = 20;
 	public static final int BOW_DRAW = 20;
 	public static final int BOW_COOLDOWN = 20;
+	/** red_mob_v3. CEBO: how far past the ally it runs. RELEVO: how far off, how far round (radians) it steps. */
+	public static final double BAIT_PAST = 2.5;
+	public static final double RELAY_RADIUS = 5.0;
+	public static final double RELAY_SWING = 0.5;
+	/** OCULTARSE: how far behind an ally it stands. EMPUJAR: how far out on the player's far side from the danger. */
+	public static final double SHADOW_BEHIND = 1.5;
+	public static final double PUSH_SIDE = 1.5;
 
 	private final Mob mob;
 	private final MobMind mind;
@@ -129,6 +136,10 @@ public final class TacticGoal extends Goal {
 			case REAGRUPARSE -> this.regroup(target);
 			case CUBRIRSE -> this.cover(target);
 			case PARAPETARSE -> this.parapet(target);
+			case CEBO -> this.bait(target);
+			case RELEVO -> this.toRing(target, this.currentAngle(target) + this.side() * RELAY_SWING, RELAY_RADIUS, 1.0);
+			case OCULTARSE -> this.hide(target);
+			case EMPUJAR -> this.pushTowardsDanger(decision, target);
 		}
 		if (decision.tactic() != Tactic.LIBRE && decision.tactic() != Tactic.ACERCARSE && decision.use()) {
 			this.use(target, true);
@@ -400,6 +411,81 @@ public final class TacticGoal extends Goal {
 			this.mob.getNavigation().stop();
 		} else {
 			this.pathTo(this.mind.cover.x, this.mind.cover.y, this.mind.cover.z, 1.2);
+		}
+	}
+
+	// --- red_mob_v3's four ---------------------------------------------------------------------------
+
+	/** The ally fighting the same player nearest to this mob, or null. */
+	private Mob nearestAlly(Player target) {
+		for (Mob other : ObsM1.allies(this.mob)) {
+			if (other.getTarget() == target) {
+				return other;
+			}
+		}
+		return null;
+	}
+
+	/** Which way this one steps aside: fixed per mob, so a relay does not dither from side to side. */
+	private double side() {
+		return (this.mob.getId() & 1) == 0 ? 1.0 : -1.0;
+	}
+
+	/** CEBO: to the nearest ally and {@link #BAIT_PAST} beyond it, away from the player, drawing them in. */
+	private void bait(Player target) {
+		Mob ally = this.nearestAlly(target);
+		if (ally == null) {
+			this.retreat(target);
+			return;
+		}
+		double dx = ally.getX() - target.getX();
+		double dz = ally.getZ() - target.getZ();
+		double d = Math.max(1.0E-6, Math.hypot(dx, dz));
+		this.pathTo(ally.getX() + dx / d * BAIT_PAST, ally.getY(), ally.getZ() + dz / d * BAIT_PAST, 1.2);
+	}
+
+	/** OCULTARSE: behind a block if one is near, else in the shadow of an ally (the ally between it and the player). */
+	private void hide(Player target) {
+		long now = this.mob.level().getGameTime();
+		if (now - this.mind.coverAt > 20) {
+			this.mind.cover = Terrain.cover(this.mob, target);
+			this.mind.coverAt = now;
+		}
+		if (this.mind.cover != null) {
+			if (this.mob.distanceToSqr(this.mind.cover) < 0.5) {
+				this.mob.getNavigation().stop();
+			} else {
+				this.pathTo(this.mind.cover.x, this.mind.cover.y, this.mind.cover.z, 1.2);
+			}
+			return;
+		}
+		Mob ally = this.nearestAlly(target);
+		if (ally == null) {
+			this.retreat(target);
+			return;
+		}
+		double dx = ally.getX() - target.getX();
+		double dz = ally.getZ() - target.getZ();
+		double d = Math.max(1.0E-6, Math.hypot(dx, dz));
+		this.pathTo(ally.getX() + dx / d * SHADOW_BEHIND, ally.getY(), ally.getZ() + dz / d * SHADOW_BEHIND, 1.1);
+	}
+
+	/**
+	 * EMPUJAR: round to the player's far side from the danger, {@link #PUSH_SIDE} out, so that its blows (which
+	 * push a player towards a danger within 3 blocks: MobAi.pushToDanger) send them in; once there, straight in.
+	 */
+	private void pushTowardsDanger(Decision decision, Player target) {
+		Vec3 danger = Terrain.dangerNear(target);
+		if (danger == null) {
+			this.free(Decision.APPROACH, target);
+			return;
+		}
+		double x = target.getX() - danger.x * PUSH_SIDE;
+		double z = target.getZ() - danger.z * PUSH_SIDE;
+		if (this.mob.distanceToSqr(x, this.mob.getY(), z) > 1.0) {
+			this.pathTo(x, target.getY(), z, 1.1);
+		} else {
+			this.pathTo(target.getX(), target.getY(), target.getZ(), 1.0);
 		}
 	}
 

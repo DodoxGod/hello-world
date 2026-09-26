@@ -130,6 +130,22 @@ public final class NetBrain {
 	public static final int DEFENSE_AT = SPECIAL_AT + 5;
 	public static final int FEINT_AT = DEFENSE_AT + 3;
 	public static final int V2_OUTPUTS = FEINT_AT + 1;
+	/**
+	 * red_mob_v3: the four new tactics (CEBO, RELEVO, OCULTARSE, EMPUJAR) come after everything v2 has, so no
+	 * head of v2 moves; the tactic is then one choice among the nine at TACTIC_AT and these four.
+	 */
+	public static final int NEW_TACTICS_AT = V2_OUTPUTS;
+	public static final int V3_OUTPUTS = NEW_TACTICS_AT + 4;
+
+	/** The logits the tactic head is read from, in the order of {@link Tactic}. */
+	static int[] tacticLogits(int outputs) {
+		int n = outputs >= V3_OUTPUTS ? Tactic.values().length : Tactic.V2_COUNT;
+		int[] at = new int[n];
+		for (int k = 0; k < n; k++) {
+			at[k] = k < Tactic.V2_COUNT ? TACTIC_AT + k : NEW_TACTICS_AT + (k - Tactic.V2_COUNT);
+		}
+		return at;
+	}
 
 	public int outputs() {
 		return this.bOut.length;
@@ -145,7 +161,7 @@ public final class NetBrain {
 		if (logits.length < V2_OUTPUTS) {
 			return base;
 		}
-		int tactic = categorical(logits, TACTIC_AT, 9, temperature, random, mask);
+		int tactic = categorical(logits, tacticLogits(logits.length), temperature, random, mask);
 		int special = categorical(logits, SPECIAL_AT, 5, temperature, random, mask);
 		int defense = categorical(logits, DEFENSE_AT, 3, temperature, random, mask);
 		boolean feint = (mask == null || mask.length <= FEINT_AT || mask[FEINT_AT])
@@ -155,17 +171,27 @@ public final class NetBrain {
 
 	/** One categorical head: logits [at, at + n), masked where the mask says so (never all masked: 0 stays). */
 	private static int categorical(float[] logits, int at, int n, double temperature, RandomSource random, boolean[] mask) {
+		int[] indices = new int[n];
+		for (int k = 0; k < n; k++) {
+			indices[k] = at + k;
+		}
+		return categorical(logits, indices, temperature, random, mask);
+	}
+
+	/** One categorical head over the logits at {@code indices}; the answer is the position in that list. */
+	private static int categorical(float[] logits, int[] indices, double temperature, RandomSource random, boolean[] mask) {
+		int n = indices.length;
 		double t = Math.max(0.05, temperature);
 		double max = Double.NEGATIVE_INFINITY;
 		for (int k = 0; k < n; k++) {
-			if (allowed(mask, at + k) || k == 0) {
-				max = Math.max(max, logits[at + k] / t);
+			if (allowed(mask, indices[k]) || k == 0) {
+				max = Math.max(max, logits[indices[k]] / t);
 			}
 		}
 		double[] p = new double[n];
 		double sum = 0.0;
 		for (int k = 0; k < n; k++) {
-			p[k] = allowed(mask, at + k) || k == 0 ? Math.exp(logits[at + k] / t - max) : 0.0;
+			p[k] = allowed(mask, indices[k]) || k == 0 ? Math.exp(logits[indices[k]] / t - max) : 0.0;
 			sum += p[k];
 		}
 		double roll = random.nextDouble() * sum;

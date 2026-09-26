@@ -108,6 +108,21 @@ public final class Spellcasting {
 
 	private static final List<Rune> RUNES = new ArrayList<>();
 
+	/** A rune lying open, as the monsters see it (ai/ObsV3): where, how far, how long it has left, and whose. */
+	public record Area(Vec3 at, double reach, int ticksLeft, boolean sparesMonsters, UUID owner) {
+	}
+
+	/** Every rune open in a level right now. */
+	public static List<Area> areas(ServerLevel level) {
+		List<Area> out = new ArrayList<>();
+		for (Rune rune : RUNES) {
+			if (rune.level == level) {
+				out.add(new Area(rune.at, rune.reach, rune.ticks - rune.age, rune.spareMonsters, rune.owner));
+			}
+		}
+		return out;
+	}
+
 	/** A spell that Resonancia will repeat: a bolt from wherever its caster is looking by then, or the same area again. */
 	private record Echo(ServerLevel level, UUID owner, ItemStack weapon, long due, float share, boolean big, @org.jspecify.annotations.Nullable Rune rune) {
 	}

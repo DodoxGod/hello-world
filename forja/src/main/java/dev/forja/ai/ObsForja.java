@@ -189,6 +189,11 @@ public final class ObsForja {
 		for (int i = 0; i < INPUTS.size() && m1.length + i < out.length; i++) {
 			out[m1.length + i] = (float) INPUTS.get(i).source().of(mob, target, mind);
 		}
+		// red_mob_v3's block, for a network that asks for more than v2's 200
+		int v3 = m1.length + INPUTS.size();
+		if (out.length > v3) {
+			ObsV3.fill(mob, target, out, v3);
+		}
 		return out;
 	}
 }

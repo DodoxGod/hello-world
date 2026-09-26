@@ -820,7 +820,8 @@ public class AiGameTests {
 			"izquierda", "adelante_izquierda", "saltar", "usar"}) {
 			outs.add(o);
 		}
-		for (dev.forja.ai.Tactic t : dev.forja.ai.Tactic.values()) {
+		// v2's nine: the four v3 added come after everything else, in the v3 contract
+		for (dev.forja.ai.Tactic t : java.util.Arrays.copyOf(dev.forja.ai.Tactic.values(), dev.forja.ai.Tactic.V2_COUNT)) {
 			outs.add("tactica_" + t.name().toLowerCase(java.util.Locale.ROOT));
 		}
 		for (int k = 0; k <= 4; k++) {
@@ -840,6 +841,103 @@ public class AiGameTests {
 		json.addProperty("ticks_por_decision", 2);
 		java.nio.file.Files.writeString(Path.of(file),
 			new com.google.gson.GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(json));
+		helper.succeed();
+	}
+
+	/**
+	 * Writes the v3 contract when FORJA_CONTRATO_V3 names a file: v2's 200 inputs unchanged and ObsV3's after
+	 * them, v2's 29 outputs unchanged and the four new tactics after them, with what each new thing means.
+	 */
+	@GameTest
+	public void writeContractV3(GameTestHelper helper) throws java.io.IOException {
+		String file = System.getenv("FORJA_CONTRATO_V3");
+		if (file == null || file.isBlank()) {
+			helper.succeed();
+			return;
+		}
+		com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+		json.addProperty("formato", "red_mob_v3");
+		java.util.List<String> names = new java.util.ArrayList<>(ObsNames.M1);
+		names.addAll(dev.forja.ai.ObsForja.names());
+		int v2 = names.size();
+		names.addAll(dev.forja.ai.ObsV3.names());
+		json.addProperty("n_obs", names.size());
+		json.addProperty("n_obs_v2", v2);
+		com.google.gson.JsonArray obs = new com.google.gson.JsonArray();
+		names.forEach(obs::add);
+		json.add("nombres_obs", obs);
+		com.google.gson.JsonObject meaning = new com.google.gson.JsonObject();
+		dev.forja.ai.ObsV3.meanings().forEach(meaning::addProperty);
+		json.add("significado_entradas_nuevas", meaning);
+		com.google.gson.JsonArray outs = new com.google.gson.JsonArray();
+		for (String o : new String[] {"quieto", "adelante", "adelante_derecha", "derecha", "atras_derecha", "atras", "atras_izquierda",
+			"izquierda", "adelante_izquierda", "saltar", "usar"}) {
+			outs.add(o);
+		}
+		for (dev.forja.ai.Tactic t : java.util.Arrays.copyOf(dev.forja.ai.Tactic.values(), dev.forja.ai.Tactic.V2_COUNT)) {
+			outs.add("tactica_" + t.name().toLowerCase(java.util.Locale.ROOT));
+		}
+		for (int k = 0; k <= 4; k++) {
+			outs.add("especial_" + k);
+		}
+		for (String d : new String[] {"defensa_nada", "defensa_escudo", "defensa_esquivar"}) {
+			outs.add(d);
+		}
+		outs.add("fintar");
+		for (int k = dev.forja.ai.Tactic.V2_COUNT; k < dev.forja.ai.Tactic.values().length; k++) {
+			outs.add("tactica_" + dev.forja.ai.Tactic.values()[k].name().toLowerCase(java.util.Locale.ROOT));
+		}
+		json.add("salidas", outs);
+		json.addProperty("n_salidas", outs.size());
+		com.google.gson.JsonObject tactics = new com.google.gson.JsonObject();
+		dev.forja.ai.ObsV3.tactics().forEach(tactics::addProperty);
+		json.add("tacticas_nuevas", tactics);
+		json.addProperty("cabeza_tactica", "una sola elección (softmax) entre las 13 salidas tactica_*: las 9 de v2 en " + NetBrain.TACTIC_AT
+			+ ".." + (NetBrain.TACTIC_AT + 8) + " y las 4 nuevas en " + NetBrain.NEW_TACTICS_AT + ".." + (NetBrain.V3_OUTPUTS - 1)
+			+ "; índice de la táctica = orden de Tactic (0 LIBRE .. 8 PARAPETARSE, 9 CEBO, 10 RELEVO, 11 OCULTARSE, 12 EMPUJAR)");
+		json.addProperty("compatibilidad", "Una red v2 (200 entradas, 29 salidas) funciona igual: recibe sus 200 y nunca elige las tácticas "
+			+ "nuevas. Una red v3 pide 252 entradas y da 33 salidas; el mod la acepta si sus nombres_obs coinciden con estos en orden.");
+		com.google.gson.JsonObject families = new com.google.gson.JsonObject();
+		for (String f : MobAi.families()) {
+			families.addProperty(f, "red_" + f + ".json");
+		}
+		json.add("familias", families);
+		json.addProperty("ticks_por_decision", 2);
+		java.nio.file.Files.writeString(Path.of(file),
+			new com.google.gson.GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(json));
+		helper.succeed();
+	}
+
+	/** A v3 network is accepted, and its tactic head reaches the four new tactics, which the mask can shut. */
+	@GameTest
+	public void v3HeadsAndMask(GameTestHelper helper) {
+		java.util.List<String> names = new java.util.ArrayList<>(ObsNames.M1);
+		names.addAll(dev.forja.ai.ObsForja.names());
+		names.addAll(dev.forja.ai.ObsV3.names());
+		float[] bias = new float[NetBrain.V3_OUTPUTS];
+		bias[NetBrain.NEW_TACTICS_AT + (dev.forja.ai.Tactic.EMPUJAR.ordinal() - dev.forja.ai.Tactic.V2_COUNT)] = 20.0F;
+		com.google.gson.JsonObject json = fakeV2(bias);
+		json.addProperty("formato", "red_mob_v3");
+		com.google.gson.JsonArray namesJson = new com.google.gson.JsonArray();
+		names.forEach(namesJson::add);
+		json.add("nombres_obs", namesJson);
+		json.add("w1", zeros(names.size(), 8));
+		NetBrain net = NetBrain.fromJson(json);
+		helper.assertTrue(net.inputs() == names.size(), "entradas " + net.inputs());
+		helper.assertTrue(MobAi.check(net) == null, "la red v3 debería encajar: " + MobAi.check(net));
+		boolean[] mask = new boolean[NetBrain.V3_OUTPUTS];
+		java.util.Arrays.fill(mask, true);
+		Decision free = NetBrain.sample(net.forward(new float[net.inputs()], new float[net.memory]), 1.0, RandomSource.create(3), mask);
+		helper.assertTrue(free.tactic() == dev.forja.ai.Tactic.EMPUJAR, "la cabeza táctica llega a las nuevas: " + free.tactic());
+		mask[NetBrain.NEW_TACTICS_AT + (dev.forja.ai.Tactic.EMPUJAR.ordinal() - dev.forja.ai.Tactic.V2_COUNT)] = false;
+		Decision masked = NetBrain.sample(net.forward(new float[net.inputs()], new float[net.memory]), 1.0, RandomSource.create(3), mask);
+		helper.assertTrue(masked.tactic() != dev.forja.ai.Tactic.EMPUJAR, "sin peligro junto al jugador, no empuja");
+		// and a v2 network never reaches them
+		float[] v2bias = new float[NetBrain.V2_OUTPUTS];
+		v2bias[NetBrain.TACTIC_AT + dev.forja.ai.Tactic.RODEAR.ordinal()] = 20.0F;
+		NetBrain old = NetBrain.fromJson(fakeV2(v2bias));
+		Decision oldDecision = NetBrain.sample(old.forward(new float[old.inputs()], new float[old.memory]), 1.0, RandomSource.create(3), null);
+		helper.assertTrue(oldDecision.tactic().ordinal() < dev.forja.ai.Tactic.V2_COUNT, "una red v2 sigue en sus nueve tácticas");
 		helper.succeed();
 	}
 }
