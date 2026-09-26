@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "B B",
+    "BCB",
+    "BBB"
+  ],
+  "key": {
+    "B": "forja:bronce",
+    "C": "forja:crisol_de_barro"
+  },
+  "result": {
+    "id": "forja:crisol_de_hierro",
+    "count": 1
+  }
+}

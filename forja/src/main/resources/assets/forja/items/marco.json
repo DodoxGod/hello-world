@@ -1,0 +1,235 @@
+{
+  "model": {
+    "type": "minecraft:composite",
+    "models": [
+      {
+        "type": "minecraft:model",
+        "model": "forja:item/marco/base"
+      },
+      {
+        "type": "minecraft:select",
+        "property": "minecraft:custom_model_data",
+        "index": 0,
+        "cases": [
+          {
+            "when": "baculo",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/baculo"
+            }
+          },
+          {
+            "when": "grimorio",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/grimorio"
+            }
+          },
+          {
+            "when": "pico",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/pico"
+            }
+          },
+          {
+            "when": "hacha",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/hacha"
+            }
+          },
+          {
+            "when": "pala",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/pala"
+            }
+          },
+          {
+            "when": "azada",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/azada"
+            }
+          },
+          {
+            "when": "martillo",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/martillo"
+            }
+          },
+          {
+            "when": "lanza",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/lanza"
+            }
+          },
+          {
+            "when": "tridente",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/tridente"
+            }
+          },
+          {
+            "when": "mazo",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/mazo"
+            }
+          },
+          {
+            "when": "guadana",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/guadana"
+            }
+          },
+          {
+            "when": "mangual",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/mangual"
+            }
+          },
+          {
+            "when": "flecha",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/flecha"
+            }
+          },
+          {
+            "when": "gancho",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/gancho"
+            }
+          },
+          {
+            "when": "barda",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/barda"
+            }
+          },
+          {
+            "when": "armadura_de_lobo",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/armadura_de_lobo"
+            }
+          },
+          {
+            "when": "guanteletes",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/guanteletes"
+            }
+          },
+          {
+            "when": "picahacha",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/picahacha"
+            }
+          },
+          {
+            "when": "espada",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/espada"
+            }
+          },
+          {
+            "when": "cincel",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/cincel"
+            }
+          },
+          {
+            "when": "daga",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/daga"
+            }
+          },
+          {
+            "when": "espadon",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/espadon"
+            }
+          },
+          {
+            "when": "alas",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/alas"
+            }
+          },
+          {
+            "when": "casco",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/casco"
+            }
+          },
+          {
+            "when": "pechera",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/pechera"
+            }
+          },
+          {
+            "when": "grebas",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/grebas"
+            }
+          },
+          {
+            "when": "botas",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/botas"
+            }
+          },
+          {
+            "when": "arco",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/arco"
+            }
+          },
+          {
+            "when": "ballesta",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/ballesta"
+            }
+          },
+          {
+            "when": "cana",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/cana"
+            }
+          },
+          {
+            "when": "escudo",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/escudo"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "forja-test",
+	"version": "1.0.0",
+	"name": "Forja client test",
+	"environment": "*",
+	"entrypoints": {
+		"fabric-gametest": [
+			"dev.forja.test.CombatGameTests",
+			"dev.forja.test.AiGameTests"
+		],
+		"fabric-client-gametest": [
+			"dev.forja.test.ForjaClientTest"
+		]
+	},
+	"depends": {
+		"forja": "*"
+	}
+}

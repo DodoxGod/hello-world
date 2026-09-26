@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "forja:block/mesa_de_extraccion_top",
+    "bottom": "forja:block/mesa_de_extraccion_bottom",
+    "side": "forja:block/mesa_de_extraccion_side",
+    "particle": "forja:block/mesa_de_extraccion_side"
+  }
+}

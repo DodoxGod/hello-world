@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "forja:block/caja_de_moldeo_de_damasco_top",
+    "bottom": "forja:block/caja_de_moldeo_de_damasco_side",
+    "side": "forja:block/caja_de_moldeo_de_damasco_side",
+    "particle": "forja:block/caja_de_moldeo_de_damasco_side"
+  }
+}

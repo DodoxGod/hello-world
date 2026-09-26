@@ -1,0 +1,32 @@
+{
+  "gives": {
+    "id": "forja:orbe_de_mejora",
+    "components": {
+      "forja:orbe": {
+        "mejora": "aturdimiento",
+        "porcentaje": 50
+      },
+      "minecraft:item_name": {
+        "translate": "item.forja.orbe_de_mejora.de",
+        "with": [
+          {
+            "translate": "upgrade.forja.aturdimiento"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          15258218
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  },
+  "max_uses": 1.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 30.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 30.0
+}

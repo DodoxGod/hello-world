@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "forja:block/crisol_de_obsidiana"
+    },
+    "lit=true": {
+      "model": "forja:block/crisol_de_obsidiana_lit"
+    }
+  }
+}

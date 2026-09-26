@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "gsg",
+    "geg",
+    "ggg"
+  ],
+  "key": {
+    "g": "minecraft:glass",
+    "s": "minecraft:nether_star",
+    "e": "minecraft:echo_shard"
+  },
+  "result": {
+    "id": "forja:jarra",
+    "count": 1
+  }
+}

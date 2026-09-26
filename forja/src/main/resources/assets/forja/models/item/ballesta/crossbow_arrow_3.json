@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/crossbow",
+  "textures": {
+    "layer0": "forja:item/ballesta/crossbow_arrow_3"
+  }
+}

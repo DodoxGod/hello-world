@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "forja:forjador/2/plantilla_mango",
+    "forja:forjador/2/plantilla_atadura",
+    "forja:forjador/2/plantilla_guarda",
+    "forja:forjador/2/plantilla_forro",
+    "forja:forjador/2/plantilla_membrana"
+  ]
+}

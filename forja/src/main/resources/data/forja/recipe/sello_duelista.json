@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:gold_ingot",
+    "minecraft:blaze_powder",
+    "minecraft:redstone"
+  ],
+  "result": {
+    "id": "forja:sello",
+    "components": {
+      "forja:sello": "duelista",
+      "minecraft:item_name": {
+        "translate": "item.forja.sello.de",
+        "with": [
+          {
+            "translate": "perk.forja.duelista"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          15246140
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

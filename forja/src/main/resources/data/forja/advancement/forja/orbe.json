@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/desarmar",
+  "display": {
+    "icon": {
+      "id": "forja:orbe_de_mejora"
+    },
+    "title": {
+      "translate": "advancements.forja.orbe.title"
+    },
+    "description": {
+      "translate": "advancements.forja.orbe.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

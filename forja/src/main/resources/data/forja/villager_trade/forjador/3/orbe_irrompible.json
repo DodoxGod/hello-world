@@ -1,0 +1,32 @@
+{
+  "gives": {
+    "id": "forja:orbe_de_mejora",
+    "components": {
+      "forja:orbe": {
+        "mejora": "irrompible",
+        "porcentaje": 25
+      },
+      "minecraft:item_name": {
+        "translate": "item.forja.orbe_de_mejora.de",
+        "with": [
+          {
+            "translate": "upgrade.forja.irrompible"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          8018600
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  },
+  "max_uses": 3.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 14.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 15.0
+}

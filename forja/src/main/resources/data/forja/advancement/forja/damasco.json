@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/aleacion",
+  "display": {
+    "icon": {
+      "id": "forja:damasco"
+    },
+    "title": {
+      "translate": "advancements.forja.damasco.title"
+    },
+    "description": {
+      "translate": "advancements.forja.damasco.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

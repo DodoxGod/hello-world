@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "forja:block/armario_de_piezas_front",
+    "down": "forja:block/armario_de_piezas_top",
+    "up": "forja:block/armario_de_piezas_top",
+    "north": "forja:block/armario_de_piezas_front",
+    "south": "forja:block/armario_de_piezas_front",
+    "east": "forja:block/armario_de_piezas_side",
+    "west": "forja:block/armario_de_piezas_side"
+  }
+}

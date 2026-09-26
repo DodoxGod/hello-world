@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " G ",
+    "GAG",
+    " G "
+  ],
+  "key": {
+    "G": "minecraft:glass",
+    "A": "minecraft:amethyst_shard"
+  },
+  "result": {
+    "id": "forja:orbe_vacio",
+    "count": 2
+  }
+}

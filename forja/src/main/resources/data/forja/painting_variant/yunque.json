@@ -1,0 +1,13 @@
+{
+  "asset_id": "forja:yunque",
+  "width": 2,
+  "height": 2,
+  "title": {
+    "color": "yellow",
+    "translate": "painting.forja.yunque.title"
+  },
+  "author": {
+    "color": "gray",
+    "translate": "painting.forja.yunque.author"
+  }
+}

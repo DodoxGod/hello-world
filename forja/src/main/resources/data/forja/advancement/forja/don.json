@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/maestria",
+  "display": {
+    "icon": {
+      "id": "forja:sello"
+    },
+    "title": {
+      "translate": "advancements.forja.don.title"
+    },
+    "description": {
+      "translate": "advancements.forja.don.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

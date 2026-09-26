@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "III",
+    "LBL",
+    " S "
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "L": "minecraft:leather",
+    "B": "minecraft:iron_block",
+    "S": "minecraft:stick"
+  },
+  "result": {
+    "id": "forja:yunque_portatil"
+  }
+}

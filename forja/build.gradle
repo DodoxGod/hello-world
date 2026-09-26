@@ -1,0 +1,73 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+version = project.version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+loom {
+	mods {
+		"forja" {
+			sourceSet sourceSets.main
+		}
+	}
+}
+
+repositories {
+	// Modrinth serves both of the mods below as maven artifacts, so no third-party maven is needed.
+	maven {
+		name = "Modrinth"
+		url = "https://api.modrinth.com/maven"
+		content {
+			includeGroup "maven.modrinth"
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// The boss is animated with GeckoLib, so this one ships as a hard dependency.
+	implementation "maven.modrinth:geckolib:${project.geckolib_version}"
+	// JEI is compile-only: the recipe plugin is an entrypoint that loads only when JEI is there.
+	compileOnly "maven.modrinth:jei:${project.jei_version}"
+	// Jade is compile-only too: the tooltip provider is registered through its own entrypoint.
+	compileOnly "maven.modrinth:jade:${project.jade_version}"
+}
+
+processResources {
+	def version = project.version
+	inputs.property "version", version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+	it.options.encoding = "UTF-8"
+	it.options.compilerArgs << "-Xlint:deprecation"
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+// Client game test: boots the real client, spawns the dwarf and screenshots him (./gradlew runClientGameTest).
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "forja-test"
+		enableGameTests = true
+		enableClientGameTests = true
+		eula = false
+	}
+}
