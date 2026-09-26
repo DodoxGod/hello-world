@@ -135,12 +135,12 @@ peso sale de la fórmula. Se pueden cambiar en `materiales` con la clave `cota_d
 | Máximo | `vida_máx × 0,6 + 5` (zombi: 17) |
 | Llenado por golpe | `daño × {corte 1,0 · golpe 1,5 · perforación 0,6 · otro 0,5}` |
 | Vaciado | tras **60** ticks sin golpes, **0,3**/tick |
-| Aturdimiento | **40** ticks (menos si se repite, ver Dificultad): Lentitud V y Debilidad II, no ataca ni embiste, recibe ×**1,25** de daño |
+| Aturdimiento | **40** ticks (menos si se repite, ver Dificultad): Lentitud V y Debilidad II, no ataca ni embiste, recibe ×**1,25** de daño, **suelta el turno** que tuviera y no puede coger otro hasta que se le pase |
 
-### Mobs normales (namespace `minecraft`)
+### Mobs normales (namespace `minecraft`) y los propios de Forja
 | Qué | Valor |
 |---|---|
-| Aviso cuerpo a cuerpo | **8** ticks quieto antes del golpe (solo contra jugadores). El golpe entra si la distancia es ≤ `2×ancho_mob + 0,5×ancho_jugador + 0,5` y hay línea de visión |
+| Aviso cuerpo a cuerpo | **8** ticks quieto antes del golpe (solo contra jugadores). El golpe entra si la distancia es ≤ `2×ancho_mob + 0,5×ancho_jugador + 0,5` y hay línea de visión. Lo tienen los mobs vanilla **y los de Forja** (decisión de Andy, 2026-09-26: antes los de Forja daban su golpe normal sin aviso). Sus ataques especiales siguen con su propio aviso (`Windup`) |
 | Atacantes simultáneos | **2** por jugador (los demás esperan) |
 | Embestida del zombi | de **3,5** a **7** bloques de distancia. **12** ticks agachado y luego salto con velocidad horizontal **0,85** y vertical **0,35**. Si alcanza, golpea y pone Lentitud II **30** ticks. Enfriamiento de **100** a **200** ticks |
 | Disparo cargado del esqueleto | **1 de cada 3** disparos; tensa **20** ticks más |

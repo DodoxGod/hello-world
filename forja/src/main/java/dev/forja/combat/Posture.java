@@ -112,6 +112,10 @@ public final class Posture {
 			state.lastStagger = now;
 			entity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, ticks, 4, false, false));
 			entity.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, ticks, 1, false, false));
+			// Stunned: whatever turn it held goes back to the pack, whichever brain was driving it.
+			if (entity instanceof net.minecraft.world.entity.Mob mob) {
+				AttackTokens.releaseAll(mob);
+			}
 			CombatFeedback.stagger(entity, ticks);
 		}
 		// The bar is drawn on the client, which drains it on its own between blows at the same pace.

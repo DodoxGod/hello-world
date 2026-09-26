@@ -21,9 +21,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Vanilla melee monsters warn a player before they strike: they stop, flash and wait a few ticks, and
- * a player who steps back, dodges or raises a shield in time is not hit. Only a few of them swing at
- * the same player at once. Forja's own monsters keep their Windup telegraphs; against anything that
+ * Melee monsters warn a player before they strike: they stop, flash and wait a few ticks, and a player
+ * who steps back, dodges or raises a shield in time is not hit. Only a few of them swing at the same
+ * player at once. That covers vanilla's monsters and Forja's own (see {@link AttackTokens#warns}):
+ * Forja's keep their Windup telegraphs for their special moves on top of this. Against anything that
  * is not a player, mobs fight as they always have (a villager running away would never be caught).
  */
 @Mixin(MeleeAttackGoal.class)
@@ -57,8 +58,7 @@ abstract class MeleeAttackGoalMixin {
 			return;
 		}
 		if (!cfg.enabled || !cfg.telegraph || forja$windup == 0 && !(target instanceof Player)
-			|| !"minecraft".equals(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getNamespace())
-				&& !(mob instanceof dev.forja.entity.ForgeAutomaton)) {
+			|| !AttackTokens.warns(mob)) {
 			return;
 		}
 		ci.cancel();

@@ -596,9 +596,61 @@ public class CombatGameTests {
 		husk.setTarget(player);
 		helper.runAfterDelay(120, () -> {
 			helper.assertTrue(player.getHealth() < player.getMaxHealth(),
-				"el husk no golpeó al jugador quieto (distancia " + husk.distanceTo(player) + ")");
+				"el husk no golpeó al jugador quieto (distancia " + husk.distanceTo(player)
+					+ ", objetivo " + husk.getTarget() + ", le pegó " + husk.getLastHurtByMob()
+					+ ", vida " + husk.getHealth() + ", aturdido " + Posture.isStaggered(husk, helper.getLevel().getGameTime())
+					+ ", turnos del jugador " + dev.forja.combat.AttackTokens.held(player) + ")");
 			helper.succeed();
 		});
+	}
+
+	/**
+	 * Forja's own monsters warn their plain blow as well (Andy, 2026-09-26). Before this they struck with
+	 * no warning while the network-driven mob of the same family always warned, which put the rules a
+	 * head start ahead in every comparison.
+	 */
+	@GameTest(maxTicks = 200)
+	public void forjaMobsWarnTheirBlowToo(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(3, 1, 3));
+		helper.assertTrue(dev.forja.combat.AttackTokens.warns(zombie), "un zombi vanilla debería avisar");
+		for (var type : List.of(dev.forja.registry.ModEntities.TENAZA, dev.forja.registry.ModEntities.PERCUTOR,
+			dev.forja.registry.ModEntities.MOLDE_ROTO, dev.forja.registry.ModEntities.CARGADOR_DE_CARBON,
+			dev.forja.registry.ModEntities.AUTOMATA)) {
+			var mob = type.create(level, EntitySpawnReason.EVENT);
+			helper.assertTrue(mob != null && dev.forja.combat.AttackTokens.warns(mob),
+				"los mobs de Forja también avisan su golpe: " + type);
+		}
+		// And the warned blow still lands on somebody who stands there and takes it.
+		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
+		noRandomThreat();
+		var mould = helper.spawn(dev.forja.registry.ModEntities.MOLDE_ROTO, new BlockPos(2, 1, 1));
+		mould.setTarget(player);
+		helper.runAfterDelay(150, () -> {
+			helper.assertTrue(player.getHealth() < player.getMaxHealth(),
+				"el molde roto no golpeó al jugador quieto (distancia " + mould.distanceTo(player) + ")");
+			helper.succeed();
+		});
+	}
+
+	/**
+	 * A stunned mob lets go of its turn (Andy, 2026-09-26). The network's goal dropped its warning on a
+	 * stagger but kept the turn until its next blow, so in a group one stunned mob held the pack back.
+	 */
+	@GameTest(maxTicks = 40)
+	public void staggerLetsGoOfTheTurn(GameTestHelper helper) {
+		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
+		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(2, 1, 1));
+		zombie.setTarget(player);
+		helper.assertTrue(dev.forja.combat.AttackTokens.tryAcquire(player, zombie, 2), "el zombi debería coger turno");
+		helper.assertTrue(dev.forja.combat.AttackTokens.holds(player, zombie), "y tenerlo");
+		long now = helper.getLevel().getGameTime();
+		Posture.breakPosture(zombie, now);
+		helper.assertTrue(Posture.isStaggered(zombie, now), "romperle la postura debería aturdirlo");
+		helper.assertTrue(!dev.forja.combat.AttackTokens.holds(player, zombie), "aturdido, debería soltar el turno");
+		helper.assertTrue(!dev.forja.combat.AttackTokens.tryAcquire(player, zombie, 2),
+			"y no poder coger otro mientras dure");
+		helper.succeed();
 	}
 
 	/** Against villagers, mobs fight as they always did. */
