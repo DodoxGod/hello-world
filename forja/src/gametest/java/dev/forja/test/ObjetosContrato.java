@@ -201,6 +201,10 @@ public class ObjetosContrato {
 			row.addProperty("encantamiento", upgrade.enchantment == null ? null : upgrade.enchantment.identifier().toString());
 			row.addProperty("nivel_max", upgrade.maxLevel);
 			row.addProperty("pacto", upgrade.isPact());
+			if (upgrade.isPact()) {
+				net.minecraft.world.item.Item offering = dev.forja.upgrade.Pacts.offering(upgrade);
+				row.addProperty("ofrenda", offering == null ? null : net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(offering).toString());
+			}
 			JsonArray on = new JsonArray();
 			for (ForgeType type : ForgeType.values()) {
 				if (upgrade.appliesTo(type)) {
@@ -235,6 +239,13 @@ public class ObjetosContrato {
 			synergies.add(row);
 		}
 		out.add("sinergias", synergies);
+		JsonObject rules = new JsonObject();
+		rules.addProperty("sinergia_umbral", Synergy.THRESHOLD);
+		rules.addProperty("sinergias_max_despiertas", Synergy.MOST);
+		rules.addProperty("sinergias_orden", "suma de los dos porcentajes, mayor primero; empate por orden de la lista");
+		rules.addProperty("pactos_max_por_objeto", dev.forja.upgrade.Pacts.MOST);
+		rules.addProperty("pactos_desbloqueo", "una vez por jugador, ofreciendo 'ofrenda' en la estrella con los ingredientes");
+		out.add("reglas_mejoras", rules);
 		JsonObject sets = new JsonObject();
 		sets.addProperty("armadura_extra", ArmorSets.ARMOR_BONUS);
 		sets.addProperty("dureza_extra", ArmorSets.TOUGHNESS_BONUS);
@@ -471,6 +482,7 @@ public class ObjetosContrato {
 		switch (type.kind) {
 			case WEAPON, TOOL, SHIELD -> {
 				row.addProperty("estilo", SwingStyle.of(stack).name().toLowerCase(Locale.ROOT));
+				row.addProperty("carga_golpe", dev.forja.combat.ChargedStrike.charges(stack));
 				holder.setItemSlot(EquipmentSlot.MAINHAND, stack.copy());
 				try {
 					row.add("golpe", reflect(AttackClassifier.classify(level.damageSources().mobAttack(holder), struck), 0));
