@@ -63,6 +63,16 @@ public final class Spellcasting {
 	public static final double OVERCHARGE_REACH = 1.0;
 	/** Colapso: what a rune going out is worth, against its opening. */
 	public static final float COLLAPSE_SHARE = 0.75F;
+	/**
+	 * "Las armas mágicas se cargan con golpe izquierdo en lugar de derecho": the right button is the magic,
+	 * so that is where the charge goes. Held, the spell gathers for this long; let go, it leaves, and a full
+	 * charge is worth {@link #CHARGE_BONUS} more. A tap is still the plain spell, as it always was.
+	 */
+	public static final int STAFF_CHARGE_TICKS = 20;
+	public static final int TOME_CHARGE_TICKS = 30;
+	public static final float CHARGE_BONUS = 0.5F;
+	/** Who is gathering a spell right now, so the pose is dropped when the charge ends some other way. */
+	private static final Map<LivingEntity, ForgeType> GATHERING = new java.util.WeakHashMap<>();
 
 	/**
 	 * A rune lying on the floor. It counts its own age rather than what it has left, and bites on the tens of
@@ -250,13 +260,88 @@ public final class Spellcasting {
 		if (player.getCooldowns().isOnCooldown(stack)) {
 			return InteractionResult.FAIL;
 		}
+		// Held, not thrown: the spell leaves when the button is let go (release).
+		player.startUsingItem(hand);
+		return InteractionResult.CONSUME;
+	}
+
+	/** How long this weapon takes to gather a full charge. */
+	public static int chargeTicks(ForgeType type) {
+		return type == ForgeType.BACULO ? STAFF_CHARGE_TICKS : TOME_CHARGE_TICKS;
+	}
+
+	/** How far a charge held this long has got, 0 to 1. */
+	public static float chargeShare(ForgeType type, int held) {
+		return Math.min(1.0F, Math.max(0, held) / (float) chargeTicks(type));
+	}
+
+	/**
+	 * A tick of the right button held on a staff or a tome: the arm draws back into its charge pose, and
+	 * small motes of the núcleo's colour drift in towards the hand, closer and thicker the further it has
+	 * got ("que cuando se carguen den pequeñas partículas"). Full, a chime and a little ring of them.
+	 */
+	public static void charging(Level level, LivingEntity caster, ItemStack stack, ForgeType type, int held) {
+		ForgedParts parts = stack.get(ModComponents.PARTS);
+		if (!(level instanceof ServerLevel server) || parts == null) {
+			return;
+		}
+		int full = chargeTicks(type);
+		if (GATHERING.put(caster, type) == null) {
+			dev.forja.combat.CombatAnim.broadcast(caster, dev.forja.combat.CombatAnim.Kind.CHARGE, full, 1.0F, 0.0F);
+		}
+		int colour = core(parts).color;
+		Vec3 hand = hand(caster);
+		float share = chargeShare(type, held);
+		var random = server.getRandom();
+		int motes = share >= 1.0F ? (held % 4 == 0 ? 1 : 0) : 1 + (share > 0.5F ? 1 : 0);
+		for (int i = 0; i < motes; i++) {
+			// Somewhere on a shell round the hand that shrinks as the charge grows, drifting inwards.
+			double radius = 0.9 - 0.55 * share;
+			Vec3 dir = new Vec3(random.nextGaussian(), random.nextGaussian(), random.nextGaussian()).normalize();
+			Vec3 from = hand.add(dir.scale(radius));
+			Vec3 in = dir.scale(-0.06);
+			server.sendParticles(new DustParticleOptions(colour, 0.4F + 0.3F * share), from.x, from.y, from.z, 0, in.x, in.y, in.z, 1.0);
+		}
+		if (held == full) {
+			for (int step = 0; step < 10; step++) {
+				double angle = step * Math.PI / 5.0;
+				server.sendParticles(new DustParticleOptions(colour, 0.7F), hand.x + Math.cos(angle) * 0.35, hand.y, hand.z + Math.sin(angle) * 0.35,
+					1, 0.0, 0.0, 0.0, 0.0);
+			}
+			server.playSound(null, caster.getX(), caster.getY(), caster.getZ(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.8F, 1.4F);
+		}
+	}
+
+	/** The button let go: the spell leaves, as strong as the charge got. */
+	public static boolean release(Level level, LivingEntity caster, ItemStack stack, ForgeType type, int held) {
+		ForgedParts parts = stack.get(ModComponents.PARTS);
+		if (parts == null || stack.isBroken() || !(caster instanceof Player player)) {
+			return false;
+		}
+		InteractionHand hand = player.getUsedItemHand();
 		if (level instanceof ServerLevel server) {
-			cast(server, player, stack, type, null);
+			stopGathering(caster);
+			cast(server, player, stack, type, null, chargeShare(type, held));
 			player.getCooldowns().addCooldown(stack, cooldown(stack, type));
 			stack.hurtAndBreak(1, player, hand.asEquipmentSlot());
 		}
 		player.swing(hand);
-		return InteractionResult.SUCCESS;
+		return true;
+	}
+
+	private static void stopGathering(LivingEntity caster) {
+		if (GATHERING.remove(caster) != null) {
+			dev.forja.combat.CombatAnim.broadcast(caster, dev.forja.combat.CombatAnim.Kind.CHARGE, 0, 0.0F, 0.0F);
+		}
+	}
+
+	/** Roughly where the hand holding the spell is: ahead of the eyes, a little down and to the side. */
+	private static Vec3 hand(LivingEntity caster) {
+		Vec3 look = caster.getViewVector(1.0F);
+		Vec3 side = look.cross(new Vec3(0.0, 1.0, 0.0));
+		side = side.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : side.normalize();
+		double sign = caster.getMainArm() == net.minecraft.world.entity.HumanoidArm.RIGHT ? 1.0 : -1.0;
+		return caster.getEyePosition().add(look.scale(0.55)).add(side.scale(0.32 * sign)).add(0.0, -0.35, 0.0);
 	}
 
 	/**
@@ -267,13 +352,19 @@ public final class Spellcasting {
 	 * @param at where a tome's area opens; null for {@link #target}, five blocks ahead of the caster
 	 */
 	public static void cast(ServerLevel server, LivingEntity caster, ItemStack stack, ForgeType type, @org.jspecify.annotations.Nullable Vec3 at) {
+		cast(server, caster, stack, type, at, 0.0F);
+	}
+
+	/** The same, gathered for a while first: {@code charge} from 0 (a tap) to 1 (full). */
+	public static void cast(ServerLevel server, LivingEntity caster, ItemStack stack, ForgeType type, @org.jspecify.annotations.Nullable Vec3 at, float charge) {
 		ForgedParts parts = stack.get(ModComponents.PARTS);
 		if (parts == null || !casts(type)) {
 			return;
 		}
 		ForgeMaterial core = core(parts);
 		boolean big = overcharged(server, caster, stack, core.color);
-		float power = big ? 1.0F + Upgrade.overchargeBonus(Upgrades.fraction(stack, Upgrade.SOBRECARGA)) : 1.0F;
+		float power = (big ? 1.0F + Upgrade.overchargeBonus(Upgrades.fraction(stack, Upgrade.SOBRECARGA)) : 1.0F)
+			* (1.0F + CHARGE_BONUS * Math.max(0.0F, Math.min(1.0F, charge)));
 		float echo = Upgrade.echoShare(Upgrades.fraction(stack, Upgrade.RESONANCIA));
 		if (type == ForgeType.BACULO) {
 			volley(server, caster, core, stack, power, big, true);
@@ -446,6 +537,18 @@ public final class Spellcasting {
 	}
 
 	public static void register() {
+		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			// A charge dropped without a release (another slot, a hit that stops the use, death) drops its pose too.
+			for (var it = GATHERING.entrySet().iterator(); it.hasNext();) {
+				var entry = it.next();
+				LivingEntity caster = entry.getKey();
+				if (!caster.isAlive() || !caster.isUsingItem() || !(caster.getUseItem().getItem() instanceof dev.forja.item.ForgedItems.Forged forged)
+					|| forged.forgeType() != entry.getValue()) {
+					it.remove();
+					dev.forja.combat.CombatAnim.broadcast(caster, dev.forja.combat.CombatAnim.Kind.CHARGE, 0, 0.0F, 0.0F);
+				}
+			}
+		});
 		ServerTickEvents.END_LEVEL_TICK.register(level -> {
 			for (int index = ECHOES.size() - 1; index >= 0; index--) {
 				Echo echo = ECHOES.get(index);

@@ -40,7 +40,9 @@ public final class ChargedStrike {
 		// Every forged thing that is swung: the gauntlets, the staff and the tome, the tools. They had a charge pose
 		// and never got to use it, because charging went by the swing style and theirs is the plain one.
 		dev.forja.part.ForgedParts parts = weapon.get(dev.forja.registry.ModComponents.PARTS);
-		return parts != null && (parts.type().kind == dev.forja.forge.ForgeType.Kind.WEAPON || parts.type().kind == dev.forja.forge.ForgeType.Kind.TOOL);
+		// Except the staff and the tome: their charge is the spell's, on the right button (magic/Spellcasting).
+		return parts != null && !dev.forja.magic.Spellcasting.casts(parts.type())
+			&& (parts.type().kind == dev.forja.forge.ForgeType.Kind.WEAPON || parts.type().kind == dev.forja.forge.ForgeType.Kind.TOOL);
 	}
 
 	public static void onPayload(ServerPlayer player, byte action) {

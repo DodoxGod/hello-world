@@ -96,6 +96,29 @@ public final class ForgedItems {
 			InteractionResult thrown = HeadThrow.tryThrow(level, player, hand, this.type);
 			return thrown != InteractionResult.PASS ? thrown : super.use(level, player, hand);
 		}
+
+		// The staff and the tome charge on the right button, held: see Spellcasting.tryCast.
+		@Override
+		public int getUseDuration(ItemStack stack, LivingEntity user) {
+			return dev.forja.magic.Spellcasting.casts(this.type) ? 72000 : super.getUseDuration(stack, user);
+		}
+
+		@Override
+		public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int ticksRemaining) {
+			if (dev.forja.magic.Spellcasting.casts(this.type)) {
+				dev.forja.magic.Spellcasting.charging(level, entity, stack, this.type, this.getUseDuration(stack, entity) - ticksRemaining);
+				return;
+			}
+			super.onUseTick(level, entity, stack, ticksRemaining);
+		}
+
+		@Override
+		public boolean releaseUsing(ItemStack stack, Level level, LivingEntity entity, int remainingTime) {
+			if (dev.forja.magic.Spellcasting.casts(this.type)) {
+				return dev.forja.magic.Spellcasting.release(level, entity, stack, this.type, this.getUseDuration(stack, entity) - remainingTime);
+			}
+			return super.releaseUsing(stack, level, entity, remainingTime);
+		}
 	}
 
 	public static class ForgedAxeItem extends AxeItem implements Forged {

@@ -24,6 +24,14 @@ public final class ChargeHud implements HudElement {
 		}
 		float partial = delta.getGameTimeDeltaPartialTick(false);
 		float charge = CombatClient.localCharge(partial);
+		// A staff or a tome gathering its spell on the right button uses the same bar; any charge of it is worth casting.
+		float min = (float) dev.forja.combat.CombatConfig.get().chargeMinShare;
+		if (charge < 0.0F && minecraft.player.isUsingItem()
+			&& minecraft.player.getUseItem().getItem() instanceof dev.forja.item.ForgedItems.Forged forged
+			&& dev.forja.magic.Spellcasting.casts(forged.forgeType())) {
+			charge = Math.min(1.0F, (minecraft.player.getTicksUsingItem() + partial) / dev.forja.magic.Spellcasting.chargeTicks(forged.forgeType()));
+			min = 0.0F;
+		}
 		boolean counter = CombatAnims.counterOpen(minecraft.player.getId(), partial);
 		if (charge < 0.0F && !counter) {
 			return;
@@ -33,7 +41,6 @@ public final class ChargeHud implements HudElement {
 		float time = (Util.getMillis() % 60000L) / 1000.0F;
 		HudBars.well(graphics, x, y, WIDTH, HEIGHT);
 		if (charge >= 0.0F) {
-			float min = (float) dev.forja.combat.CombatConfig.get().chargeMinShare;
 			int colour = charge >= 1.0F ? 0xFFD75E : charge >= min ? 0xE8B04A : 0x9A9A9A;
 			HudBars.fill(graphics, x, x + Math.round(WIDTH * Mth.clamp(charge, 0.0F, 1.0F)), y, HEIGHT, colour, time, x, WIDTH);
 			if (charge >= 1.0F) {

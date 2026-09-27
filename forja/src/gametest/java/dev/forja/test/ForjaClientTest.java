@@ -8688,7 +8688,9 @@ public class ForjaClientTest implements FabricClientGameTest {
 			var cow = level.getEntitiesOfClass(net.minecraft.world.entity.animal.cow.Cow.class, player.getBoundingBox().inflate(12.0)).getFirst();
 			float before = cow.getHealth();
 			var cast = dev.forja.magic.Spellcasting.tryCast(level, player, net.minecraft.world.InteractionHand.MAIN_HAND, ForgeType.BACULO);
-			check(cast == net.minecraft.world.InteractionResult.SUCCESS, "using the staff should cast, got " + cast);
+			// A tap: pressed and let go at once, the plain spell.
+			player.releaseUsingItem();
+			check(cast == net.minecraft.world.InteractionResult.CONSUME, "using the staff should cast, got " + cast);
 			int flying = level.getEntitiesOfClass(dev.forja.entity.MagicBolt.class, player.getBoundingBox().inflate(16.0)).size();
 			check(flying == 1, "one bolt should be in the air, saw " + flying);
 			check(player.getCooldowns().isOnCooldown(made), "and the staff should be cooling down");
@@ -8727,7 +8729,9 @@ public class ForjaClientTest implements FabricClientGameTest {
 			int runes = dev.forja.magic.Spellcasting.runes();
 			net.minecraft.world.phys.Vec3 where = dev.forja.magic.Spellcasting.target(level, player);
 			var cast = dev.forja.magic.Spellcasting.tryCast(level, player, net.minecraft.world.InteractionHand.MAIN_HAND, ForgeType.GRIMORIO);
-			check(cast == net.minecraft.world.InteractionResult.SUCCESS, "using the tome should cast, got " + cast);
+			// A tap: pressed and let go at once, the plain spell.
+			player.releaseUsingItem();
+			check(cast == net.minecraft.world.InteractionResult.CONSUME, "using the tome should cast, got " + cast);
 			check(dev.forja.magic.Spellcasting.runes() == runes + 1, "and leave a rune");
 			return new double[] {Math.sqrt(player.distanceToSqr(where.x, player.getY(), where.z)), cow.getHealth(), cow.getMaxHealth()};
 		});
@@ -8756,7 +8760,9 @@ public class ForjaClientTest implements FabricClientGameTest {
 			player.getInventory().setSelectedSlot(3);
 			player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetHeldSlotPacket(3));
 			var cast = dev.forja.magic.Spellcasting.tryCast(connection.getServerLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND, ForgeType.GRIMORIO);
-			check(cast == net.minecraft.world.InteractionResult.SUCCESS, "the second tome should cast once the first has cooled, got " + cast);
+			// A tap: pressed and let go at once, the plain spell.
+			player.releaseUsingItem();
+			check(cast == net.minecraft.world.InteractionResult.CONSUME, "the second tome should cast once the first has cooled, got " + cast);
 		});
 		server.runCommand("gamemode spectator @a");
 		tp(server, px + 0.5, y + 7.0, pz + 0.5 - dev.forja.magic.Spellcasting.TOME_DISTANCE, 180.0F, 90.0F);
@@ -8782,7 +8788,9 @@ public class ForjaClientTest implements FabricClientGameTest {
 			player.getInventory().setSelectedSlot(4);
 			player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetHeldSlotPacket(4));
 			var cast = dev.forja.magic.Spellcasting.tryCast(level, player, net.minecraft.world.InteractionHand.MAIN_HAND, ForgeType.BACULO);
-			check(cast == net.minecraft.world.InteractionResult.SUCCESS, "the upgraded staff should cast, got " + cast);
+			// A tap: pressed and let go at once, the plain spell.
+			player.releaseUsingItem();
+			check(cast == net.minecraft.world.InteractionResult.CONSUME, "the upgraded staff should cast, got " + cast);
 			var target = level.getEntitiesOfClass(net.minecraft.world.entity.animal.golem.IronGolem.class, player.getBoundingBox().inflate(12.0)).getFirst();
 			return new float[] {target.getHealth(), dev.forja.magic.Spellcasting.boltDamage(DIAMANTE)};
 		});
@@ -8956,7 +8964,9 @@ public class ForjaClientTest implements FabricClientGameTest {
 		player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetHeldSlotPacket(0));
 		player.getCooldowns().removeCooldown(player.getCooldowns().getCooldownGroup(weapon));
 		var cast = dev.forja.magic.Spellcasting.tryCast(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND, type);
-		check(cast == net.minecraft.world.InteractionResult.SUCCESS, "the " + type + " should cast, got " + cast);
+		// A tap: pressed and let go at once, the plain spell.
+		player.releaseUsingItem();
+		check(cast == net.minecraft.world.InteractionResult.CONSUME, "the " + type + " should cast, got " + cast);
 	}
 
 	/**
@@ -11160,7 +11170,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.waitTicks(45);
 		quiet(context);
 		handShot(context, "anim_x_5_grimorio_1_cerrado");
-		context.runOnClient(mc -> mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND));
+		// The right button held gathers the spell, motes of the núcleo drifting in; let go, it leaves.
+		context.getInput().holdKey(options -> options.keyUse);
+		context.waitTicks(16);
+		handShot(context, "anim_x_5b_grimorio_1_cargando");
+		check(server.computeOnServer(s -> connection.getServerPlayer().isUsingItem()), "holding the right button should be gathering the spell");
+		context.getInput().releaseKey(options -> options.keyUse);
 		context.waitTicks(4);
 		check(context.computeOnClient(mc -> dev.forja.client.HeldTome.reading(mc.player, 0.0F).open()) > 0.9F, "casting should open the tome");
 		handShot(context, "anim_x_6_grimorio_1_lanzando");
@@ -11168,7 +11183,10 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
 		hideHud(context, true);
 		context.waitTicks(10);
-		context.runOnClient(mc -> mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND));
+		context.getInput().holdKey(options -> options.keyUse);
+		context.waitTicks(20);
+		shot(context, "anim_x_7a_grimorio_3_cargando");
+		context.getInput().releaseKey(options -> options.keyUse);
 		context.waitTicks(4);
 		shot(context, "anim_x_7_grimorio_3_lanzando");
 		context.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
