@@ -1857,6 +1857,45 @@ GUI = {
 }
 
 
+# Texts that went straight into the lang files (combat, duels, difficulty, armour resistances) and were
+# never brought back here: listed now, so that running this no longer deletes them.
+GUI.update({
+    "gui.forja.parada_normal": ("¡Parada!", "Parry!"),
+    "gui.forja.parada_tarde": ("Un poco tarde...", "A little late..."),
+    "gui.forja.parada_apresurada": ("Demasiado pronto: sube el escudo a tiempo", "Too soon: raise the shield with timing"),
+    "key.forja.esquivar": ("Esquivar", "Dodge"),
+    "gui.forja.asedio": ("¡Asedio! Vienen a por tu forja", "A siege! They are coming for your forge"),
+    "gui.forja.robado": ("Te han robado: %s", "Stolen from you: %s"),
+    "gui.forja.nemesis": ("%s ha vuelto", "%s is back"),
+    "entity.forja.nemesis": ("%s, el que volvió", "%s, who came back"),
+    "gui.forja.duelo.reto": ("%s te reta a un duelo: entra en el círculo", "%s challenges you to a duel: step into the ring"),
+    "gui.forja.duelo.aceptado": ("Duelo aceptado", "Duel accepted"),
+    "gui.forja.duelo.rechazado": ("Rechazaste el duelo: están furiosos", "You refused the duel: they are furious"),
+    "gui.forja.duelo.trampa": ("¡Trampa! El duelo se rompe", "Foul play! The duel is off"),
+    "gui.forja.duelo.huida": ("Huiste del duelo: te recordará", "You fled the duel: it will remember"),
+    "gui.forja.duelo.victoria": ("¡Duelo ganado!", "Duel won!"),
+    "commands.forja.dificultad": ("Dificultad de Forja: %s · noches sobrevividas: %s · adaptativa: %s · tu equipo: %s (tramo %s)", "Forja difficulty: %s · nights survived: %s · adaptive: %s · your gear: %s (tier %s)"),
+    "commands.forja.dificultad.cambiada": ("La dificultad de Forja ahora es %s", "Forja difficulty is now %s"),
+    "commands.forja.dificultad.no_existe": ("No existe la dificultad %s (aprendiz, herrero, maestro, leyenda)", "There is no difficulty called %s (aprendiz, herrero, maestro, leyenda)"),
+    "dificultad.forja.aprendiz": ("Aprendiz", "Apprentice"),
+    "dificultad.forja.herrero": ("Herrero", "Smith"),
+    "dificultad.forja.maestro": ("Maestro", "Master"),
+    "dificultad.forja.leyenda": ("Leyenda", "Legend"),
+    "entity.forja.amenaza.veterano": ("%s veterano", "Veteran %s"),
+    "entity.forja.amenaza.elite": ("%s de élite", "Elite %s"),
+    "gui.forja.esquiva_perfecta": ("¡Esquiva perfecta! Contraataca", "Perfect dodge! Strike back"),
+    "tooltip.forja.resiste": ("Resiste: %s · %s · %s", "Resists: %s · %s · %s"),
+    "tooltip.forja.resiste.corte": ("corte %s", "slash %s"),
+    "tooltip.forja.resiste.golpe": ("golpe %s", "blunt %s"),
+    "tooltip.forja.resiste.perforacion": ("perforación %s", "pierce %s"),
+    "tooltip.forja.peso": ("Peso: %s", "Weight: %s"),
+    "tooltip.forja.peso.ligera": ("ligera", "light"),
+    "tooltip.forja.peso.media": ("media", "medium"),
+    "tooltip.forja.peso.pesada": ("pesada", "heavy"),
+    "gui.forja.estamina": ("Estamina", "Stamina"),
+})
+
+
 def build(index):
     lang = {}
     for key, names in GUI.items():
