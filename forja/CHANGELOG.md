@@ -86,6 +86,9 @@ Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (120).
 - **Entrar, pegar y salir**: tras acertar un golpe, cualquier mob cuerpo a cuerpo (arañas incluidas) se agacha un
   instante y salta 2-3 bloques atrás, como mucho cada 6 segundos, y deja su turno a otro; nunca contra un muro,
   por un barranco o a la lava. El creeper da un saltito corto cuando finta su sisseo.
+- **Estamina**: saltar cuesta 4 (8 corriendo; sin estamina se salta igual, pero no se recupera ese segundo) y
+  los especiales del arma cuestan además de durabilidad: Torbellino 30, Sismo 35, Siega 30, Embestida 20; sin
+  la estamina suficiente no salen.
 - **Todos los mobs fintan** un poco (5–20 % según la dificultad), más contra quien para mucho.
 - **Mangual en 3D**: mango, cadena de eslabones y bola con pinchos; la bola cuelga, se arrastra y en el golpe
   sale en arco hasta el enemigo con la cadena estirada.

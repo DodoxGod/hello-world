@@ -75,6 +75,24 @@ public final class Stamina {
 		return false;
 	}
 
+	/** A jump: a little, twice that at a run. It goes regardless; out of stamina, the wait before it comes back starts again. */
+	public static void onJump(Player player) {
+		CombatConfig cfg = CombatConfig.get();
+		trySpend(player, player.isSprinting() ? cfg.sprintJumpCost : cfg.jumpCost);
+	}
+
+	/**
+	 * Whether there is this much to spend. On the client, what the server last said (the synced value), so
+	 * a move the server would refuse is not shown going off.
+	 */
+	public static boolean canAfford(Player player, float amount) {
+		if (exempt(player)) {
+			return true;
+		}
+		float have = player.level().isClientSide() ? player.getAttachedOrElse(VALUE, CombatConfig.get().staminaMax) : data(player).stamina;
+		return have >= amount;
+	}
+
 	public static void restore(Player player, float amount) {
 		Data data = data(player);
 		data.stamina = Math.min(CombatConfig.get().staminaMax, data.stamina + amount);

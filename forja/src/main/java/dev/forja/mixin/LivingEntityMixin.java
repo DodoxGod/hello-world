@@ -35,6 +35,14 @@ abstract class LivingEntityMixin {
 		}
 	}
 
+	/** Jumping costs stamina (combat/Stamina.onJump); the server sees a player's jump here. */
+	@Inject(method = "jumpFromGround", at = @At("TAIL"))
+	private void forja$jumpCostsStamina(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+		if ((Object) this instanceof net.minecraft.server.level.ServerPlayer player) {
+			dev.forja.combat.Stamina.onJump(player);
+		}
+	}
+
 	@Inject(method = "canBeAffected", at = @At("HEAD"), cancellable = true)
 	private void forja$resonantSenses(MobEffectInstance effect, CallbackInfoReturnable<Boolean> cir) {
 		if ((effect.is(MobEffects.DARKNESS) || effect.is(MobEffects.BLINDNESS)) && TraitEffects.resonantArmor((LivingEntity) (Object) this)) {

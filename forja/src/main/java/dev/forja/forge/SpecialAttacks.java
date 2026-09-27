@@ -64,7 +64,13 @@ public final class SpecialAttacks {
 		if (quake && !player.onGround()) {
 			return InteractionResult.PASS;
 		}
+		// Stamina as well as wear, and not without it, like the dodge.
+		float stamina = stamina(type);
+		if (!dev.forja.combat.Stamina.canAfford(player, stamina)) {
+			return InteractionResult.FAIL;
+		}
 		if (level instanceof ServerLevel serverLevel) {
+			dev.forja.combat.Stamina.trySpend(player, stamina);
 			switch (type) {
 				case MARTILLO, MAZO -> quake(serverLevel, player, weapon, hand);
 				case GUADANA -> reap(serverLevel, player, weapon, hand);
@@ -80,6 +86,17 @@ public final class SpecialAttacks {
 		});
 		player.swing(hand, true);
 		return InteractionResult.CONSUME;
+	}
+
+	/** What each move costs in stamina (CombatConfig). */
+	public static float stamina(ForgeType type) {
+		dev.forja.combat.CombatConfig cfg = dev.forja.combat.CombatConfig.get();
+		return switch (type) {
+			case MARTILLO, MAZO -> cfg.quakeStamina;
+			case GUADANA -> cfg.reapStamina;
+			case GUANTELETES -> cfg.chargeMoveStamina;
+			default -> cfg.whirlStamina;
+		};
 	}
 
 	/**

@@ -7,6 +7,8 @@ import dev.forja.ai.MobAi;
 import dev.forja.ai.MobMind;
 import dev.forja.combat.CombatConfig;
 import dev.forja.difficulty.Scaling;
+import dev.forja.forge.Assembler;
+import dev.forja.forge.ForgeType;
 import dev.forja.difficulty.Threat;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
@@ -187,5 +189,37 @@ public class GruposGameTests {
 				helper.succeed();
 			});
 		});
+	}
+
+	/** Andy: a jump costs a little stamina (twice at a run), and a special move stamina it will not go without. */
+	@GameTest
+	public void jumpsAndSpecialsCostStamina(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		CombatGameTests.TestPlayer player = new CombatGameTests.TestPlayer(level);
+		Vec3 at = helper.absoluteVec(new Vec3(1.5, 1.0, 1.5));
+		player.setPos(at.x, at.y, at.z);
+		dev.forja.combat.Stamina.forget(player);
+		CombatConfig cfg = CombatConfig.get();
+		float full = dev.forja.combat.Stamina.value(player);
+		dev.forja.combat.Stamina.onJump(player);
+		float afterJump = dev.forja.combat.Stamina.value(player);
+		player.setSprinting(true);
+		dev.forja.combat.Stamina.onJump(player);
+		float afterRun = dev.forja.combat.Stamina.value(player);
+		player.setSprinting(false);
+		helper.assertTrue(Math.abs(full - afterJump - cfg.jumpCost) < 0.01F && Math.abs(afterJump - afterRun - cfg.sprintJumpCost) < 0.01F,
+			"saltar cuesta " + cfg.jumpCost + " y corriendo " + cfg.sprintJumpCost + ": " + full + " -> " + afterJump + " -> " + afterRun);
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+			Assembler.create(ForgeType.ESPADON, Assembler.defaultMaterials(ForgeType.ESPADON), level.registryAccess()));
+		player.setShiftKeyDown(true);
+		dev.forja.combat.Stamina.trySpend(player, dev.forja.combat.Stamina.value(player) - (cfg.whirlStamina - 5.0F));
+		var refused = dev.forja.forge.SpecialAttacks.tryUse(level, player, net.minecraft.world.InteractionHand.MAIN_HAND, ForgeType.ESPADON);
+		helper.assertTrue(refused == net.minecraft.world.InteractionResult.FAIL, "sin estamina el torbellino no sale: " + refused);
+		dev.forja.combat.Stamina.restore(player, 1000.0F);
+		var done = dev.forja.forge.SpecialAttacks.tryUse(level, player, net.minecraft.world.InteractionHand.MAIN_HAND, ForgeType.ESPADON);
+		helper.assertTrue(done == net.minecraft.world.InteractionResult.CONSUME
+			&& Math.abs(cfg.staminaMax - dev.forja.combat.Stamina.value(player) - cfg.whirlStamina) < 0.01F,
+			"con estamina sale y cuesta " + cfg.whirlStamina + ": " + done + ", queda " + dev.forja.combat.Stamina.value(player));
+		helper.succeed();
 	}
 }

@@ -57,6 +57,17 @@ public final class CombatConfig {
 	public int staminaRegenDelayTicks = 20;
 	public float attackCost = 12F;
 	public float dodgeCost = 25F;
+	/**
+	 * Andy, 2026-09-27: jumping costs a little, and the weapons' special moves cost stamina as well as wear.
+	 * A jump always goes (out of stamina it still jumps, and the regeneration waits); a special does not
+	 * go without the stamina for it, like the dodge.
+	 */
+	public float jumpCost = 4F;
+	public float sprintJumpCost = 8F;
+	public float whirlStamina = 30F;
+	public float quakeStamina = 35F;
+	public float reapStamina = 30F;
+	public float chargeMoveStamina = 20F;
 	/** Stamina a raised shield pays per point of damage it stops. Out of stamina, the guard breaks. */
 	public float blockCostPerDamage = 3F;
 	public double tiredDamageMultiplier = 0.6;
