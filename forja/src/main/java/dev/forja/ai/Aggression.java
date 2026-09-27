@@ -65,12 +65,16 @@ public final class Aggression {
 			return 0.0;
 		}
 		float habit = Math.max(PlayerHabits.get(player, PlayerHabits.PARRY), PlayerHabits.get(player, PlayerHabits.DODGE));
-		return Math.min(0.6, habit * 0.8);
+		return Math.min(0.6, dev.forja.difficulty.ForjaDifficulty.current().feint + habit * 0.8);
 	}
 
-	/** Chance a vanilla melee mob fakes its blow, against a player who parries a lot. */
+	/**
+	 * Chance a melee mob fakes its blow: more against a player who parries a lot, and never nothing ("que
+	 * todos los mobs puedan fintar"): the difficulty's floor (0.05 to 0.20) comes first, whatever the player does.
+	 */
 	public static double feintChance(LivingEntity target) {
-		return target instanceof Player player ? Math.min(0.5, PlayerHabits.get(player, PlayerHabits.PARRY) * 0.6) : 0.0;
+		return target instanceof Player player
+			? Math.min(0.5, dev.forja.difficulty.ForjaDifficulty.current().feint + PlayerHabits.get(player, PlayerHabits.PARRY) * 0.6) : 0.0;
 	}
 
 	/** The same, for a given mob: the cunning ones fake more (idea 61). */

@@ -11,11 +11,11 @@ import dev.forja.combat.CombatConfig;
  * beating them pays.
  */
 public enum ForjaDifficulty {
-	//          health damage posture threat  cap   temperature loot
-	APRENDIZ(   0.8,   0.7,   0.8,    0.5,    1.4,  1.3,        0.8),
-	HERRERO(    1.0,   1.0,   1.0,    1.0,    1.0,  1.0,        1.0),
-	MAESTRO(    1.3,   1.25,  1.2,    1.5,    0.85, 0.8,        1.3),
-	LEYENDA(    1.7,   1.5,   1.4,    2.2,    0.7,  0.6,        1.7);
+	//          health damage posture threat  cap   temperature loot  feint
+	APRENDIZ(   0.8,   0.7,   0.8,    0.5,    1.4,  1.3,        0.8,  0.05),
+	HERRERO(    1.0,   1.0,   1.0,    1.0,    1.0,  1.0,        1.0,  0.10),
+	MAESTRO(    1.3,   1.25,  1.2,    1.5,    0.85, 0.8,        1.3,  0.15),
+	LEYENDA(    1.7,   1.5,   1.4,    2.2,    0.7,  0.6,        1.7,  0.20);
 
 	/** Multiplier on a hostile mob's max health. */
 	public final double health;
@@ -31,8 +31,10 @@ public enum ForjaDifficulty {
 	public final double temperature;
 	/** Multiplier on the rewards for beating stronger foes. */
 	public final double loot;
+	/** The least chance any mob that warns its blow fakes it, whatever the player does (ai/Aggression.feintChance). */
+	public final double feint;
 
-	ForjaDifficulty(double health, double damage, double posture, double threat, double cap, double temperature, double loot) {
+	ForjaDifficulty(double health, double damage, double posture, double threat, double cap, double temperature, double loot, double feint) {
 		this.health = health;
 		this.damage = damage;
 		this.posture = posture;
@@ -40,6 +42,7 @@ public enum ForjaDifficulty {
 		this.cap = cap;
 		this.temperature = temperature;
 		this.loot = loot;
+		this.feint = feint;
 	}
 
 	/** The one in the config; HERRERO if the config names none that exists. */

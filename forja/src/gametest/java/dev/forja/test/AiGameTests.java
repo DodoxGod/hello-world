@@ -157,6 +157,9 @@ public class AiGameTests {
 	@GameTest
 	public void habitsFollowWhatThePlayerDoes(GameTestHelper helper) {
 		CombatGameTests.TestPlayer player = player(helper, new BlockPos(1, 1, 1));
+		// "Que todos los mobs puedan fintar": even against a player who has never parried, the difficulty's floor.
+		helper.assertTrue(dev.forja.ai.Aggression.feintChance(player) >= dev.forja.difficulty.ForjaDifficulty.current().feint - 1.0E-9,
+			"siempre hay un mínimo de fintas: " + dev.forja.ai.Aggression.feintChance(player));
 		float parryBefore = dev.forja.ai.PlayerHabits.get(player, dev.forja.ai.PlayerHabits.PARRY);
 		for (int i = 0; i < 30; i++) {
 			dev.forja.ai.PlayerHabits.onBlow(player, dev.forja.ai.PlayerHabits.Outcome.PARRIED);
