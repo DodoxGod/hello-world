@@ -1,5 +1,50 @@
 # Novedades
 
+## 2026-09-26
+
+Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (117).
+
+### Bastión del Gremio
+
+- **Las once torres por dentro**: escalera de caracol de piedra alrededor de un machón, y cada piso una
+  sala con el tema de su torre (cobre, eco, obsidiana, resina, escama, vidrio, archivo, pavesas, fuelle,
+  vigía; la Hundida en ruinas), alfombra alrededor de la escalera y estandartes de su color.
+- **Los sótanos**: cripta de los Nueve Maestros (tumbas entre los pilares y altar), osario, mazmorras con
+  forjadores presos y un pozo hasta la cámara, guardia, bodega, lingotes, carbonera, antesala, forja de
+  almas y cámara acorazada.
+- **Salas que estaban desnudas**, amuebladas: sala de cuños, pisos altos de la torre del homenaje,
+  taberna, arquero, talabartería, caballerizas, guardia, polvorín, aleaciones, sacristía, gabinete de
+  orbes, estandartes en mástiles, taller, Fragua Profunda y las seis casas de aprendices, cada una con su
+  oficio.
+- **Botín por zonas**: nueve tablas nuevas (torre, cima de torre, cripta, guardia, bodega, lingotes,
+  carbonera, forja de almas, cámara).
+
+### Peso
+
+- **Cada arma pesa** según su tipo y sus materiales (una daga medio kilo, un martillo tres y medio; la
+  madera aligera, la netherita pesa), y la hoja lo muestra.
+- **Jugador**: un arma más pesada tarda más en llegar al golpe al 100 % (la de hierro va como siempre); la
+  armadura pesada quita velocidad de ataque y un conjunto que da velocidad la sube. El golpe se ve más
+  lento con armas pesadas.
+- **Enemigos**: cuanto más peso llevan (arma y armadura), más largo es su aviso y más esperan entre golpes.
+
+### Enemigos y armas
+
+- Los **esqueletos con arco forjado** y los **saqueadores con ballesta forjada** disparan de verdad.
+- Algunos **esqueletos llevan báculo** y algunos **zombis grimorio**, y los usan con aviso.
+- La **lanza** en manos de un enemigo avisa y espera su turno; el tridente forjado cuenta como tridente.
+- **Dos jugadores**: los turnos, las escuadras y las barras de jefe ya no se mezclan entre jugadores.
+- El **molde roto** sostiene de verdad la copia del arma que le golpeó; `/forja fundicion` levanta la línea
+  de fundición delante de ti.
+- Un **arma lanzada** (daga, hacha, tridente) pega con su propio daño (antes hacía 1).
+
+### Guía y logros
+
+- **Camino guiado**: la guía dice cuál es el siguiente paso y te lleva a su capítulo; una pista en el chat
+  al avanzar (se puede apagar).
+- "Primeros pasos" corregido (el metal se cuela, no se corta; Filo sale de la amatista).
+- Los logros **Acero plegado, Del cielo, Corazón de forja y Cazador de élites** ya se pueden conseguir.
+
 ## 2026-09-17 (mañana)
 
 Todo probado con `./gradlew runClientGameTest` (todas las comprobaciones pasan) y compilado en
