@@ -76,6 +76,19 @@ Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (120).
 - **Todas las armas y herramientas forjadas cargan el golpe** (guanteletes, báculo, grimorio y
   herramientas tenían la pose de carga y nunca la usaban).
 
+### Rangos, mangual y golpes (27-09)
+
+- **Veteranos, élites y campeones se reconocen de un vistazo**: insignia sobre la cabeza (un galón de bronce,
+  dos de plata, dos de oro con estrella), visible hasta 25 bloques; nombre propio con apodo de su rango
+  ("Karn Rompehuesos", "Morvek la Hoja Gris", "Ulgar, Azote de Reinos") en una placa del metal de su rango.
+- **Botín**: el veterano suelta como mucho 1 cosa extra y la élite 2 (antes repetían todo su botín); el
+  campeón solo su arma legendaria. El logro pasa a llamarse **Cazador de campeones**.
+- **Todos los mobs fintan** un poco (5–20 % según la dificultad), más contra quien para mucho.
+- **Mangual en 3D**: mango, cadena de eslabones y bola con pinchos; la bola cuelga, se arrastra y en el golpe
+  sale en arco hasta el enemigo con la cadena estirada.
+- **3 o 4 golpes distintos por arma** (tajos, reveses, estocadas, golpes desde arriba y desde abajo...), sin
+  repetir el mismo dos veces seguidas; todos ven el mismo golpe.
+
 ### Magia, grupos y rodear (27-09)
 
 - **Báculo y grimorio cargan con clic derecho**: mantenido, el hechizo se reúne con motas del color del
