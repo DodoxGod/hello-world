@@ -14,6 +14,7 @@ import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -23,8 +24,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * First person only poses bows and crossbows that are exactly Items.BOW or Items.CROSSBOW: aiming a
  * loaded crossbow, winding it up, hiding the other hand while drawing. Forged ones count too.
  *
- * <p>It also swings each weapon its own way (see {@link CombatPoses#firstPersonSwing}) and moves the
- * hands for the player's parries, broken guards and dodges.
+ * <p>It also swings each weapon its own way (see {@link CombatPoses#firstPersonSwing}), throws the other
+ * fist when the gauntlets punch with it, and moves the hands for the player's parries, broken guards and
+ * dodges.
  */
 @Mixin(ItemInHandRenderer.class)
 abstract class ItemInHandRendererMixin {
@@ -52,11 +54,26 @@ abstract class ItemInHandRendererMixin {
 		return item == Items.CROSSBOW ? stack.getItem() instanceof CrossbowItem : item == Items.BOW && stack.getItem() instanceof BowItem;
 	}
 
+	@Shadow
+	private void renderPlayerArm(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, float inverseArmHeight,
+		float attackValue, HumanoidArm arm) {
+	}
+
 	@Inject(method = "submitArmWithItem", at = @At("HEAD"))
 	private void forja$remember(AbstractClientPlayer player, float frameInterp, float xRot, InteractionHand hand, float attack,
 		ItemStack itemStack, float inverseArmHeight, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords,
 		CallbackInfo ci) {
 		this.forja$drawing = itemStack;
+		// The gauntlets' second punch in a row is thrown with the other fist, which first person never
+		// draws while that hand is empty: bring the bare arm up for it, and down again after.
+		if (hand == InteractionHand.OFF_HAND && itemStack.isEmpty() && !player.isInvisible() && !player.isScoping()) {
+			HumanoidArm arm = player.getMainArm().getOpposite();
+			poseStack.pushPose();
+			if (CombatPoses.firstPersonOtherFist(player, frameInterp, poseStack, arm == HumanoidArm.RIGHT ? 1 : -1)) {
+				this.renderPlayerArm(poseStack, submitNodeCollector, lightCoords, 0.0F, 0.0F, arm);
+			}
+			poseStack.popPose();
+		}
 	}
 
 	@Inject(method = "swingArm", at = @At("HEAD"), cancellable = true)

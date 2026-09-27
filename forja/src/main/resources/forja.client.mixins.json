@@ -14,6 +14,8 @@
 		"LivingEntityHitstopMixin",
 		"LivingEntityRendererMixin",
 		"LightmapExtractorMixin",
+		"PiglinModelMixin",
+		"SkeletonModelMixin",
 		"SkyRendererMixin"
 	],
 	"injectors": {

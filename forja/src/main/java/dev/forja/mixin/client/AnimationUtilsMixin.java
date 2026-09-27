@@ -14,6 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 abstract class AnimationUtilsMixin {
 	@Inject(method = "animateZombieArms", at = @At("TAIL"))
 	private static void forja$weaponSwing(ModelPart leftArm, ModelPart rightArm, boolean aggressive, UndeadRenderState state, CallbackInfo ci) {
-		CombatPoses.reapplyAfterZombieArms(leftArm, rightArm, state);
+		CombatPoses.reapplyAfterZombieArms(leftArm, rightArm, aggressive, state);
 	}
 }

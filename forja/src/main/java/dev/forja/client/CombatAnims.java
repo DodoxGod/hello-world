@@ -57,6 +57,11 @@ public final class CombatAnims {
 	/** Forget an entity this long after the last thing that happened to it. */
 	private static final double FORGET_AFTER = 20.0 * 30.0;
 
+	/** Per entity: the tick its current swing started (its own tick count), how many in a row, and when last looked at. */
+	private static final Int2ObjectMap<long[]> SWINGS = new Int2ObjectOpenHashMap<>();
+	/** A swing starting this many ticks after the one before it starts the count again. */
+	private static final long SWINGS_RESTART = 30L;
+
 	/** How long a combo waits for its next hit, in ticks; matches the server's default window. */
 	static final double COMBO_WINDOW = 30.0;
 
@@ -82,6 +87,7 @@ public final class CombatAnims {
 		ClientPlayNetworking.registerGlobalReceiver(CombatRules.TYPE, (payload, context) -> rules = payload);
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			STATES.clear();
+			SWINGS.clear();
 			rules = null;
 			lastHitEntity = -1;
 			pressureAt = State.NEVER;
@@ -93,6 +99,7 @@ public final class CombatAnims {
 			}
 			double now = client.level.getGameTime();
 			STATES.values().removeIf(state -> now - state.lastSeen > FORGET_AFTER);
+			SWINGS.values().removeIf(seen -> now - seen[2] > FORGET_AFTER);
 		});
 	}
 
@@ -274,6 +281,28 @@ public final class CombatAnims {
 		}
 		double now = now(partialTick);
 		return now >= state.comboReadyFrom && now < state.comboReadyUntil || now < state.comboFinisherUntil;
+	}
+
+	/**
+	 * How many swings in a row an entity has made, counting the one under way: 1 for the first, 2 for
+	 * the next, and so on; a pause of a second and a half starts again from 1, and 0 means it has not
+	 * swung. The server never says which blow of a flurry this is (only the third of a combo), so the
+	 * client counts the swings it sees start. Weapons that alternate their blows (a stab and a backhand,
+	 * the right fist and the left) go by whether it is odd or even.
+	 */
+	public static int swings(net.minecraft.world.entity.LivingEntity entity) {
+		long[] seen = SWINGS.computeIfAbsent(entity.getId(), id -> new long[] {Long.MIN_VALUE / 2, 0L, 0L});
+		if (entity.swinging) {
+			// Both count up once a tick, so their difference stays put for the whole of one swing.
+			long started = entity.tickCount - entity.swingTime;
+			if (Math.abs(started - seen[0]) > 1L) {
+				seen[1] = started - seen[0] > SWINGS_RESTART ? 1L : seen[1] + 1L;
+				seen[0] = started;
+			}
+		}
+		Minecraft minecraft = Minecraft.getInstance();
+		seen[2] = minecraft.level == null ? 0L : minecraft.level.getGameTime();
+		return (int) seen[1];
 	}
 
 	/** Whether a counter is open for this entity after a perfect dodge. */

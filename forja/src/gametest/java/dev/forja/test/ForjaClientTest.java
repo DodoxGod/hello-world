@@ -175,6 +175,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			if ("animaciones".equals(solo)) {
+				filmWeaponBlows(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("cielo".equals(solo)) {
 				shotSkies(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
@@ -242,6 +247,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			checkEssenceJar(context, server, connection, x, y, z);
 			shotWorkshop(context, server, connection, x, y, z);
 			checkRaiderCamp(context, server, connection, x, y, z);
+			filmWeaponBlows(context, server, connection, x, y, z);
 			log("ALL CHECKS PASSED");
 		}
 	}
@@ -10738,6 +10744,282 @@ public class ForjaClientTest implements FabricClientGameTest {
 		});
 		server.runCommand("effect clear @a night_vision");
 		server.runCommand("time set noon");
+	}
+
+	/**
+	 * Every weapon's own blow at the two moments that matter, fully wound up and landing: in third person
+	 * on two mannequins holding it (the player's model; one side-on, one three-quarters to the camera),
+	 * with the second blow of a pair where there is one and the combo finisher, and in first person. Then
+	 * zombies with heavy weapons holding their wind-up while they warn (a short warning and a long one,
+	 * which must look the same at the same share of it), letting it go into the blow, and lowering it
+	 * after a feint. FORJA_SOLO=animaciones runs it alone and FORJA_ARMAS=espada,martillo films only
+	 * those; tools/hoja_animaciones.py lays the shots out on one contact sheet.
+	 */
+	private static void filmWeaponBlows(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		// Night, seen through night vision: a zombie in the sun burns, and every tick of fire is a flinch.
+		server.runCommand("time set midnight");
+		server.runCommand("weather clear");
+		server.runCommand("difficulty easy");
+		server.runCommand("gamemode creative @a");
+		server.runCommand("effect give @a night_vision infinite 0 true");
+		int sx = x + 240;
+		int sz = z + 60;
+		tp(server, sx + 0.5, y, sz + 0.5, 180.0F, 8.0F);
+		context.waitTicks(20);
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d smooth_stone", sx - 10, y - 1, sz - 10, sx + 10, y - 1, sz + 10));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", sx - 10, y, sz - 10, sx + 10, y + 6, sz + 10));
+		context.waitTicks(5);
+		context.runOnClient(mc -> {
+			mc.gui.hud.getChat().clearMessages(false);
+			mc.options.fov().set(60);
+			mc.options.fovEffectScale().set(0.0);
+		});
+		hideHud(context, true);
+
+		// Two mannequins, which wear the player's own model: one side-on, facing the right of the screen,
+		// and one nearly facing the camera, where an arm through the body would show.
+		server.runCommand(String.format(Locale.ROOT,
+			"summon minecraft:mannequin %.2f %d %.2f {Rotation:[-90f,0f],hide_description:1b,immovable:1b,Tags:[\"forja_anim\"]}", sx - 0.7, y, sz - 3.0));
+		server.runCommand(String.format(Locale.ROOT,
+			"summon minecraft:mannequin %.2f %d %.2f {Rotation:[-15f,0f],hide_description:1b,immovable:1b,Tags:[\"forja_anim\"]}", sx + 1.9, y, sz - 3.0));
+		context.waitTicks(5);
+		int[] dolls = server.computeOnServer(s -> connection.getServerLevel()
+			.getEntitiesOfClass(net.minecraft.world.entity.decoration.Mannequin.class,
+				new net.minecraft.world.phys.AABB(new BlockPos(sx, y, sz)).inflate(8.0), doll -> doll.entityTags().contains("forja_anim"))
+			.stream()
+			.peek(doll -> {
+				doll.setYBodyRot(doll.getYRot());
+				doll.setYHeadRot(doll.getYRot());
+			})
+			.mapToInt(net.minecraft.world.entity.Entity::getId)
+			.toArray());
+		check(dolls.length == 2, "two mannequins should stand for the shots, found " + dolls.length);
+
+		ForgeType[] types = {
+			ForgeType.ESPADA, ForgeType.ESPADON, ForgeType.GUADANA, ForgeType.HACHA, ForgeType.PICAHACHA, ForgeType.MAZO,
+			ForgeType.MARTILLO, ForgeType.MANGUAL, ForgeType.DAGA, ForgeType.TRIDENTE, ForgeType.LANZA, ForgeType.GUANTELETES,
+			ForgeType.BACULO, ForgeType.GRIMORIO, ForgeType.PICO, ForgeType.PALA, ForgeType.AZADA
+		};
+		String only = System.getenv("FORJA_ARMAS");
+		List<ForgeType> filmed = new ArrayList<>();
+		for (ForgeType type : types) {
+			if (only == null || only.isBlank() || List.of(only.split(",")).contains(type.id())) {
+				filmed.add(type);
+			}
+		}
+
+		// Each weapon's swing starts a hundred ticks after the last one, as far as the client can tell, so it
+		// counts as the first of a new flurry; five ticks after that is the second blow of the same flurry.
+		int start = 100;
+		for (ForgeType type : filmed) {
+			String name = type.id();
+			server.runOnServer(s -> {
+				ItemStack weapon = Assembler.create(type, Assembler.defaultMaterials(type), connection.getServerLevel().registryAccess());
+				for (int id : dolls) {
+					((net.minecraft.world.entity.LivingEntity) connection.getServerLevel().getEntity(id)).setItemSlot(EquipmentSlot.MAINHAND, weapon.copy());
+				}
+			});
+			context.waitTicks(3);
+			float[] moments = dev.forja.client.CombatPoses.keyMoments(Assembler.create(type, Assembler.defaultMaterials(type)));
+			check(moments != null, name + " should have a blow of its own");
+			int first = start;
+			start += 100;
+			holdSwing(context, dolls, moments[0], -first);
+			shot(context, "anim_" + name + "_3a_carga");
+			holdSwing(context, dolls, moments[1], -first);
+			shot(context, "anim_" + name + "_3b_golpe");
+			if (moments[2] > 0.0F) {
+				holdSwing(context, dolls, moments[1], -first - 5);
+				shot(context, "anim_" + name + "_3c_segundo");
+			}
+			// The third blow of a combo, the way the server announces it.
+			server.runOnServer(s -> {
+				for (int id : dolls) {
+					dev.forja.combat.CombatAnim.broadcast(connection.getServerLevel().getEntity(id), dev.forja.combat.CombatAnim.Kind.COMBO, 3);
+				}
+			});
+			context.waitTicks(2);
+			holdSwing(context, dolls, moments[1], -first - 10);
+			shot(context, "anim_" + name + "_3d_remate");
+			holdSwing(context, dolls, 0.0F, 0);
+			// Past the finisher's window, so the next weapon starts with a plain blow.
+			context.waitTicks(9);
+		}
+
+		// First person, turned away from the mannequins and with the hand back on screen.
+		tp(server, sx + 0.5, y, sz + 0.5, 0.0F, 4.0F);
+		hideHud(context, false);
+		int[] self = {context.computeOnClient(mc -> mc.player.getId())};
+		for (ForgeType type : filmed) {
+			String name = type.id();
+			server.runOnServer(s -> connection.getServerPlayer().setItemInHand(InteractionHand.MAIN_HAND,
+				Assembler.create(type, Assembler.defaultMaterials(type), connection.getServerLevel().registryAccess())));
+			// Long enough for the new weapon to come up into the hand: a slow one stays lowered until the
+			// attack strength has recovered, a second and a half for the hammer.
+			context.waitTicks(45);
+			quiet(context);
+			float[] moments = dev.forja.client.CombatPoses.keyMoments(Assembler.create(type, Assembler.defaultMaterials(type)));
+			int first = start;
+			start += 100;
+			holdSwing(context, self, moments[0], -first);
+			handShot(context, "anim_" + name + "_1a_carga");
+			holdSwing(context, self, moments[1], -first);
+			handShot(context, "anim_" + name + "_1b_golpe");
+			if (moments[2] > 0.0F) {
+				holdSwing(context, self, moments[1], -first - 5);
+				handShot(context, "anim_" + name + "_1c_segundo");
+			}
+			holdSwing(context, self, 0.0F, 0);
+		}
+		server.runOnServer(s -> {
+			connection.getServerPlayer().getInventory().clearContent();
+			for (int id : dolls) {
+				connection.getServerLevel().getEntity(id).discard();
+			}
+		});
+
+		// Zombies with heavy weapons, side-on: while they warn they hold the weapon where its blow starts
+		// (the hammer overhead, the spear back past the hip, the greatsword out to the side).
+		tp(server, sx + 0.5, y, sz + 0.5, 180.0F, 8.0F);
+		hideHud(context, true);
+		ForgeType[] heavy = {ForgeType.MARTILLO, ForgeType.LANZA, ForgeType.ESPADON};
+		int[] zombies = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			int[] made = new int[heavy.length];
+			for (int i = 0; i < heavy.length; i++) {
+				// Turned before it is added: the client takes the body's facing from the spawn and never
+				// hears of it again, so a zombie turned afterwards keeps its body the old way.
+				var mob = net.minecraft.world.entity.EntityTypes.ZOMBIE.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				check(mob != null, "a zombie should be creatable");
+				mob.snapTo(sx - 2.4 + i * 2.4, y, sz - 4.5, -90.0F, 0.0F);
+				mob.setYBodyRot(-90.0F);
+				mob.setYHeadRot(-90.0F);
+				mob.setNoAi(true);
+				mob.setPersistenceRequired();
+				mob.setItemSlot(EquipmentSlot.MAINHAND, Assembler.create(heavy[i], Assembler.defaultMaterials(heavy[i]), level.registryAccess()));
+				level.addFreshEntity(mob);
+				// Some zombies spawn with a shield (MobDefense.arm): the spearman gets one on purpose, since it
+				// fights one-handed, and the two-handed ones none, which would keep their other hand off the grip.
+				mob.setItemSlot(EquipmentSlot.OFFHAND, heavy[i] == ForgeType.LANZA ? new ItemStack(Items.SHIELD) : ItemStack.EMPTY);
+				made[i] = mob.getId();
+			}
+			return made;
+		});
+		context.waitTicks(10);
+		shot(context, "anim_z_0_quietos");
+		int windup = server.computeOnServer(s -> dev.forja.combat.CombatConfig.get().windupTicks);
+		server.runOnServer(s -> {
+			for (int id : zombies) {
+				dev.forja.combat.CombatFeedback.telegraph(connection.getServerLevel().getEntity(id));
+			}
+		});
+		context.waitTicks(Math.max(1, windup * 3 / 4));
+		check(context.computeOnClient(mc -> dev.forja.client.CombatAnims.get(zombies[0]) != null), "the client should have heard the zombies warn");
+		float drawn = poseOf(context, zombies[0]).windup();
+		check(drawn > 0.9F, "three quarters into its warning the hammer should be drawn all the way back, is at " + drawn);
+		shot(context, "anim_z_1_aviso");
+		context.waitTicks(Math.max(0, windup - Math.max(1, windup * 3 / 4)));
+		server.runOnServer(s -> {
+			for (int id : zombies) {
+				((net.minecraft.world.entity.LivingEntity) connection.getServerLevel().getEntity(id)).swing(InteractionHand.MAIN_HAND);
+			}
+		});
+		context.waitFor(mc -> mc.level.getEntity(zombies[0]) instanceof net.minecraft.world.entity.LivingEntity living && living.swinging, 20);
+		check(poseOf(context, zombies[0]).released(), "the blow that ends a warning should start from the top of the wind-up");
+		// Released from the wind-up, a blow lands a share of 0.3 into its swing.
+		holdAttack(context, zombies, 0.3F);
+		shot(context, "anim_z_2_golpe");
+		context.waitTicks(20);
+
+		// A warning three times as long (a heavier weapon's). The pose goes by the length the server
+		// announced, never a fixed one: where a short warning would be fully drawn, this one is still
+		// drawing, and at the same share of it, it is the same pose.
+		int longer = windup * 3;
+		server.runOnServer(s -> {
+			for (int id : zombies) {
+				dev.forja.combat.CombatAnim.broadcast(connection.getServerLevel().getEntity(id), dev.forja.combat.CombatAnim.Kind.TELEGRAPH, longer);
+			}
+		});
+		context.waitTicks(Math.max(1, windup * 3 / 4));
+		float early = poseOf(context, zombies[0]).windup();
+		check(early > 0.0F && early < 0.95F, "a warning three times as long should still be drawing the weapon back, is at " + early);
+		context.waitTicks(longer * 3 / 4 - Math.max(1, windup * 3 / 4));
+		drawn = poseOf(context, zombies[0]).windup();
+		check(drawn > 0.9F, "three quarters into the long warning the hammer should be drawn all the way back, is at " + drawn);
+		shot(context, "anim_z_3_aviso_largo");
+		// ...and this time no blow comes (a feint): the weapons go back down.
+		context.waitTicks(longer - longer * 3 / 4 + 8);
+		drawn = poseOf(context, zombies[0]).windup();
+		check(drawn < 0.0F, "after a warning with no blow the weapon should be lowered again, is at " + drawn);
+		shot(context, "anim_z_4_amago");
+
+		server.runOnServer(s -> {
+			for (int id : zombies) {
+				connection.getServerLevel().getEntity(id).discard();
+			}
+		});
+		hideHud(context, false);
+		context.runOnClient(mc -> {
+			mc.options.fov().set(70);
+			mc.options.fovEffectScale().set(1.0);
+		});
+		server.runCommand("effect clear @a night_vision");
+		server.runCommand("gamemode survival @a");
+		server.runCommand("time set noon");
+	}
+
+	/**
+	 * Holds the entities' swings at one share, on the client, for the next screenshot: no tick runs between
+	 * this and the shot. {@code swingTime} decides where the swing began as the client counts swings in a
+	 * row (see CombatAnims.swings); 0 at a share of 0 ends the swing.
+	 */
+	private static void holdSwing(ClientGameTestContext context, int[] ids, float attack, int swingTime) {
+		context.runOnClient(mc -> {
+			for (int id : ids) {
+				if (mc.level.getEntity(id) instanceof net.minecraft.world.entity.LivingEntity living) {
+					living.swinging = attack > 0.0F;
+					living.swingingArm = InteractionHand.MAIN_HAND;
+					living.swingTime = swingTime;
+					living.attackAnim = attack;
+					living.oAttackAnim = attack;
+				}
+			}
+		});
+	}
+
+	/** F1: the HUD and the hand hidden, for shots of the world and nothing else. */
+	private static void hideHud(ClientGameTestContext context, boolean hidden) {
+		context.runOnClient(mc -> {
+			if (mc.gui.hud.isHidden() != hidden) {
+				mc.gui.hud.toggle();
+			}
+		});
+	}
+
+	/** The fight's pose of an entity as the renderer would work it out right now. */
+	private static dev.forja.client.CombatPoses.Pose poseOf(ClientGameTestContext context, int id) {
+		return context.computeOnClient(mc -> dev.forja.client.CombatPoses.compute((net.minecraft.world.entity.LivingEntity) mc.level.getEntity(id),
+			new net.minecraft.client.renderer.entity.state.LivingEntityRenderState(), 0.0F));
+	}
+
+	/** Holds only where the swing is, leaving the swing itself (and when it began) as the game has it. */
+	private static void holdAttack(ClientGameTestContext context, int[] ids, float attack) {
+		context.runOnClient(mc -> {
+			for (int id : ids) {
+				if (mc.level.getEntity(id) instanceof net.minecraft.world.entity.LivingEntity living) {
+					living.attackAnim = attack;
+					living.oAttackAnim = attack;
+				}
+			}
+		});
+	}
+
+	/**
+	 * First person at the window's own size: resized, the HUD stays laid out for the old size, and the
+	 * hotbar and its shade end up in a corner of the shot.
+	 */
+	private static void handShot(ClientGameTestContext context, String name) {
+		context.takeScreenshot(TestScreenshotOptions.of(name).disableCounterPrefix());
 	}
 
 	private static void shot(ClientGameTestContext context, String name) {
