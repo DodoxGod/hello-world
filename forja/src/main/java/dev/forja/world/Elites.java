@@ -52,7 +52,7 @@ public final class Elites {
 		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
 			if (entity.level() instanceof ServerLevel level && isElite(entity)) {
 				drop(level, entity);
-				// "Cazador de élites": the one who brought it down.
+				// "Cazador de campeones": the one who brought it down.
 				if (source.getEntity() instanceof net.minecraft.world.entity.player.Player killer) {
 					dev.forja.ForjaAdvancements.award(killer, "elite");
 				}
@@ -137,7 +137,9 @@ public final class Elites {
 		if (carried.isEmpty()) {
 			return;
 		}
-		ItemStack prize = carried.get(level.getRandom().nextInt(carried.size()));
+		// Its legend, the weapon in its hand; only if that is gone, whatever else of the forge it had on.
+		ItemStack held = entity.getMainHandItem();
+		ItemStack prize = !held.isEmpty() && held.has(ModComponents.PARTS) ? held.copy() : carried.get(level.getRandom().nextInt(carried.size()));
 		level.addFreshEntity(new ItemEntity(level, entity.getX(), entity.getY(0.5), entity.getZ(), prize));
 		level.playSound(null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.TOTEM_USE, SoundSource.HOSTILE, 1.0F, 1.2F);
 		level.sendParticles(ParticleTypes.END_ROD, entity.getX(), entity.getY(1.0), entity.getZ(), 40, 0.4, 0.6, 0.4, 0.1);

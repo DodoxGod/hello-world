@@ -121,4 +121,32 @@ public class GruposGameTests {
 			helper.succeed();
 		});
 	}
+
+	/** "Los campeones deben de dar solo la legendaria": killed by a player, a champion leaves its legend and nothing else. */
+	@GameTest
+	public void aChampionGivesOnlyItsLegend(GameTestHelper helper) {
+		for (int x = 0; x < 8; x++) {
+			for (int z = 0; z < 8; z++) {
+				helper.setBlock(new BlockPos(x, 0, z), net.minecraft.world.level.block.Blocks.STONE);
+			}
+		}
+		ServerLevel level = helper.getLevel();
+		Zombie champion = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(4, 1, 4));
+		dev.forja.world.Elites.makeElite(champion, level.getRandom());
+		net.minecraft.world.item.ItemStack legend = champion.getMainHandItem().copy();
+		CombatGameTests.TestPlayer player = new CombatGameTests.TestPlayer(level);
+		Vec3 at = helper.absoluteVec(Vec3.atBottomCenterOf(new BlockPos(2, 1, 4)));
+		player.setPos(at.x, at.y, at.z);
+		champion.setLastHurtByPlayer(player, 100);
+		// Straight to the death: a champion's guard and the cap on a single blow would turn any one blow away.
+		champion.setHealth(0.0F);
+		champion.die(level.damageSources().playerAttack(player));
+		helper.runAfterDelay(2, () -> {
+			var drops = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new AABB(champion.blockPosition()).inflate(4.0));
+			helper.assertTrue(drops.size() == 1, "el campeón suelta una cosa, soltó " + drops.stream().map(d -> d.getItem().toString()).toList());
+			helper.assertTrue(net.minecraft.world.item.ItemStack.isSameItemSameComponents(drops.getFirst().getItem(), legend),
+				"y es su leyenda: " + drops.getFirst().getItem() + " / " + legend);
+			helper.succeed();
+		});
+	}
 }
