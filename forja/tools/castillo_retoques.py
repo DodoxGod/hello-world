@@ -467,8 +467,75 @@ def vault_and_soul_forge(w):
           spacing=3, salt=35, limit=10)
 
 
+def apprentice_houses(w):
+    """The six apprentices' houses in the lower ward (castillo_obra: 10 by 12, door in the north wall, the hearth's
+    chimney in the south-west corner), bare until now. Each apprentice learnt a trade of the forge and the room
+    says which; the fifth burnt, and what is left is what fire leaves."""
+    y = 0
+
+    def put(x, z, name, props=None, high=0):
+        if _free(w, x, y + high, z, 1) and w.name(x, y - 1, z) not in AIR:
+            w.put(x, y + high, z, name, props)
+            return True
+        return False
+
+    trades = ("herreria", "joyeria", "curtiduria", "carpinteria", "quemada", "fundicion")
+    for k, trade in enumerate(trades):
+        hx = 118 + k * 13
+        x0, x1, z0, z1 = hx + 1, hx + 8, 141, 150
+        if trade == "quemada":
+            # Charred: the bed a black stain, the chest burnt open, soot heaped where the fire was hottest.
+            for x in range(x0, x1 + 1):
+                for z in range(z0 + 2, z1 + 1):
+                    roll = _hash(x, y, z, 320)
+                    if roll < 0.12:
+                        put(x, z, "coal_block")
+                    elif roll < 0.2:
+                        put(x, z, "black_carpet")
+                    elif roll < 0.26:
+                        put(x, z, "cobweb")
+                    elif roll < 0.3:
+                        put(x, z, *slab("blackstone_slab"))
+            put(x1, z1, "chest", {"facing": "west", "type": "single", "waterlogged": "false"})
+            continue
+        # the bed against the south wall, its chest at the foot, a cask in the corner
+        if _free(w, x1 - 1, y, z1 - 1, 1) and _free(w, x1 - 1, y, z1, 1):
+            w.put(x1 - 1, y, z1 - 1, f"{'brown' if k % 2 else 'gray'}_bed", {"facing": "south", "part": "foot", "occupied": "false"})
+            w.put(x1 - 1, y, z1, f"{'brown' if k % 2 else 'gray'}_bed", {"facing": "south", "part": "head", "occupied": "false"})
+        if put(x1, z1, "chest", {"facing": "west", "type": "single", "waterlogged": "false"}):
+            w.put(x1, y, z1, "chest", {"facing": "west", "type": "single", "waterlogged": "false"},
+                  {"id": "minecraft:chest", "LootTable": "forja:chests/bastion_torre"})
+        put(x0 + 1, z1, "barrel", {"facing": "up", "open": "false"})
+        put(x0 + 1, z1, "barrel", {"facing": "up", "open": "false"}, high=1)
+        # a small table and a stool in the middle, a rug under them
+        for x in range(x0 + 2, x1 - 1):
+            for z in range(z0 + 3, z1 - 2):
+                put(x, z, "brown_carpet" if (x + z) % 2 else "orange_carpet")
+        if w.name(x0 + 4, y, z0 + 5) and "carpet" in w.name(x0 + 4, y, z0 + 5):
+            w.put(x0 + 4, y, z0 + 5, "spruce_fence")
+            w.put(x0 + 4, y + 1, z0 + 5, "candle", CANDLE)
+            w.put(x0 + 5, y, z0 + 5, *stairs("dark_oak_stairs", "east"))
+        # the trade, along the east wall
+        benches = {
+            "herreria": [("anvil", {"facing": "north"}), ("grindstone", {"face": "floor", "facing": "west"}), ("smithing_table", None)],
+            "joyeria": [("lectern", {"facing": "west", "has_book": "false", "powered": "false"}), ("amethyst_block", None),
+                        ("gilded_blackstone", None)],
+            "curtiduria": [("loom", {"facing": "west"}), ("brown_wool", None), ("water_cauldron", {"level": "3"})],
+            "carpinteria": [("stonecutter", {"facing": "west"}), ("stripped_spruce_log", {"axis": "z"}), ("crafting_table", None)],
+            "fundicion": [("forja:mesa_de_forja", None), ("cauldron", None), ("blast_furnace", {"facing": "west", "lit": "false"})],
+        }[trade]
+        for i, (name, props) in enumerate(benches):
+            put(x1, z0 + 3 + i * 2, name, props)
+        if trade == "joyeria":
+            put(x1, z0 + 5, "amethyst_cluster", {"facing": "up", "waterlogged": "false"}, high=1)
+        # a shelf of what they were reading, on the west wall clear of the hearth
+        for z in (z0 + 3, z0 + 4):
+            put(x0, z, "bookshelf")
+
+
 def build(w):
     stamping_hall(w)
+    apprentice_houses(w)
     keep_upstairs(w)
     tavern_upstairs(w)
     fletcher(w)
