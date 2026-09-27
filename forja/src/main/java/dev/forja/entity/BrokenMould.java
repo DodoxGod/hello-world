@@ -298,7 +298,7 @@ public class BrokenMould extends Monster implements GeoEntity {
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
 		controllers.add(new AnimationController<BrokenMould>("molde", test ->
-			test.setAndContinue(test.isMoving() ? WALK : IDLE)
+			GeoGait.walk(test, WALK, IDLE)
 		).triggerableAnim("recast", RECAST));
 		// The blank on a controller of its own. GeckoLib 5 cannot hide a bone, so while there is a copy in
 		// its hands (drawn by the renderer) the molten bar is scaled down into the fist that held it.

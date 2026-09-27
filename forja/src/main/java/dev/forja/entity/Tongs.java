@@ -270,7 +270,7 @@ public class Tongs extends Monster implements GeoEntity {
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
 		controllers.add(new AnimationController<Tongs>("tenaza", test ->
-			test.setAndContinue(test.isMoving() ? WALK : IDLE)
+			GeoGait.walk(test, WALK, IDLE)
 		).triggerableAnim("grab", GRAB));
 	}
 

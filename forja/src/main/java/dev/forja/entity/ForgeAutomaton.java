@@ -419,7 +419,7 @@ public class ForgeAutomaton extends Monster implements GeoEntity {
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
 		controllers.add(new AnimationController<ForgeAutomaton>("automata", test ->
-			test.setAndContinue(test.isMoving() ? WALK : IDLE)
+			GeoGait.walk(test, WALK, IDLE)
 		).triggerableAnim("smash", SMASH).triggerableAnim("vent", VENT).triggerableAnim("steam", STEAM)
 			.triggerableAnim("coz", SLAG));
 	}

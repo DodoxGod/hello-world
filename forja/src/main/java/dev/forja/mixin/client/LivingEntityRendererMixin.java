@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import dev.forja.client.CombatPoses;
 import dev.forja.client.HeldFlail;
 import dev.forja.client.HeldTome;
+import dev.forja.client.MobGaits;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.world.entity.LivingEntity;
@@ -16,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Puts the fight on every living body: {@link CombatPoses} works the pose out while the entity is at
  * hand, and it is applied before the body is turned to face its way, so a lean is a lean in the world.
  * How far open a tome in its hand is gets worked out here too ({@link HeldTome}), and what a flail in
- * its hand is aimed at ({@link HeldFlail}).
+ * its hand is aimed at ({@link HeldFlail}). A monster's run and leap ({@link MobGaits}) lean it the same way.
  */
 @Mixin(LivingEntityRenderer.class)
 abstract class LivingEntityRendererMixin {
@@ -33,5 +34,6 @@ abstract class LivingEntityRendererMixin {
 	@Inject(method = "setupRotations", at = @At("HEAD"))
 	private void forja$lean(LivingEntityRenderState state, PoseStack poseStack, float bodyRot, float entityScale, CallbackInfo ci) {
 		CombatPoses.applyLean(state.getData(CombatPoses.KEY), poseStack);
+		MobGaits.applyBody(state.getData(MobGaits.KEY), poseStack);
 	}
 }

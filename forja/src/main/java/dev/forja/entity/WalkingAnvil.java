@@ -222,7 +222,7 @@ public class WalkingAnvil extends Monster implements GeoEntity {
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
 		controllers.add(new AnimationController<WalkingAnvil>("yunque", test ->
-			test.setAndContinue(test.isMoving() ? WALK : IDLE)
+			GeoGait.walk(test, WALK, IDLE)
 		).triggerableAnim("weld", WELD));
 	}
 

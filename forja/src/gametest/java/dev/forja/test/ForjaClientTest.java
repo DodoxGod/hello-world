@@ -175,6 +175,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			if ("carrera".equals(solo)) {
+				filmRunning(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("animaciones".equals(solo)) {
 				filmWeaponBlows(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
@@ -11010,6 +11015,417 @@ public class ForjaClientTest implements FabricClientGameTest {
 		});
 		server.runCommand("effect clear @a night_vision");
 		server.runCommand("time set noon");
+	}
+
+	/**
+	 * Monsters running and leaping (client.MobGaits), looked at: "¿correr tiene animación o harás una?" and
+	 * "dale animación al salto". A row of humanoids and a row of the rest (a spider, a creeper, a husk, two of
+	 * the mod's own) go past the camera side-on walking and then running, and come at it running and
+	 * walking; one warns of a blow and one swings mid-run, which must win over the run. Then the leaps: two
+	 * zombies (one bare-handed, one with a sword) and a spider crouch and leap, side-on, in the air and landing;
+	 * a zombie leaps at the camera; a zombie, a spider and a creeper hop back off a target; a piglin brute
+	 * charges shoulder first. The mobs are moved by the test (no AI) so every shot is the same; the sprint flag
+	 * is set as the server's MobSprint sets it. FORJA_SOLO=carrera runs it alone.
+	 */
+	private static void filmRunning(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		server.runCommand("time set midnight");
+		server.runCommand("weather clear");
+		server.runCommand("difficulty easy");
+		server.runCommand("gamemode creative @a");
+		server.runCommand("effect give @a night_vision infinite 0 true");
+		int sx = x + 240;
+		int sz = z + 60;
+		double laneZ = sz - 7.5;
+		tp(server, sx + 0.5, y, sz + 0.5, 180.0F, 10.0F);
+		context.waitTicks(20);
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d smooth_stone", sx - 18, y - 1, sz - 26, sx + 18, y - 1, sz + 6));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", sx - 18, y, sz - 26, sx + 18, y + 6, sz + 6));
+		context.waitTicks(5);
+		context.runOnClient(mc -> {
+			mc.gui.hud.getChat().clearMessages(false);
+			mc.options.fov().set(60);
+			mc.options.fovEffectScale().set(0.0);
+			if (!mc.gui.hud.isHidden()) {
+				mc.gui.hud.toggle();
+			}
+		});
+
+		// The humanoids: a zombie with bare hands and one with a sword, a skeleton with its bow, a wither
+		// skeleton with a sword, a piglin brute with its axe, a vindicator with its axe.
+		net.minecraft.world.entity.EntityType<?>[] humanTypes = {
+			net.minecraft.world.entity.EntityTypes.ZOMBIE, net.minecraft.world.entity.EntityTypes.ZOMBIE,
+			net.minecraft.world.entity.EntityTypes.SKELETON, net.minecraft.world.entity.EntityTypes.WITHER_SKELETON,
+			net.minecraft.world.entity.EntityTypes.PIGLIN_BRUTE, net.minecraft.world.entity.EntityTypes.VINDICATOR};
+		Item[] humanItems = {Items.AIR, Items.IRON_SWORD, Items.BOW, Items.STONE_SWORD, Items.GOLDEN_AXE, Items.IRON_AXE};
+		int[] humans = spawnRunners(server, connection, humanTypes, humanItems, sx, y, laneZ);
+		double[] humanX = rowX(sx, humans.length, 2.3);
+		runPass(context, server, connection, humans, humanX, y, laneZ, true, false, "carrera_01_humanoides_andando_lado");
+		runPass(context, server, connection, humans, humanX, y, laneZ, true, true, "carrera_02_humanoides_corriendo_lado");
+		check(context.computeOnClient(mc -> mc.level.getEntity(humans[0]) instanceof net.minecraft.world.entity.LivingEntity living
+			&& living.isSprinting()), "the client should see the zombie's sprint flag");
+		runPass(context, server, connection, humans, humanX, y, laneZ, false, true, "carrera_03_humanoides_corriendo_frente");
+		runPass(context, server, connection, humans, humanX, y, laneZ, false, false, "carrera_03b_humanoides_andando_frente");
+		// Mid-run, the sword zombie warns of a blow and the brute swings: the fight's poses win over the run.
+		combatPass(context, server, connection, humans, humanX, y, laneZ);
+		discard(server, connection, humans);
+
+		// The rest: a creeper, a husk, a spider, and two of the mod's own (a percutor and a hollow armor).
+		net.minecraft.world.entity.EntityType<?>[] otherTypes = {
+			net.minecraft.world.entity.EntityTypes.CREEPER, net.minecraft.world.entity.EntityTypes.HUSK,
+			net.minecraft.world.entity.EntityTypes.SPIDER, dev.forja.registry.ModEntities.PERCUTOR, dev.forja.registry.ModEntities.CORAZA};
+		Item[] otherItems = {Items.AIR, Items.AIR, Items.AIR, Items.AIR, Items.AIR};
+		int[] others = spawnRunners(server, connection, otherTypes, otherItems, sx, y, laneZ);
+		double[] otherX = rowX(sx, others.length, 2.8);
+		runPass(context, server, connection, others, otherX, y, laneZ, true, false, "carrera_05_resto_andando_lado");
+		runPass(context, server, connection, others, otherX, y, laneZ, true, true, "carrera_06_resto_corriendo_lado");
+		// The mod's own play their walk faster at a run (entity.GeoGait).
+		double walkRate = context.computeOnClient(mc -> {
+			if (mc.level.getEntity(others[3]) instanceof com.geckolib.animatable.GeoEntity geo) {
+				var controller = geo.getAnimatableInstanceCache().getManagerForId(others[3]).getAnimationControllers().get("percutor");
+				return controller == null ? 0.0 : controller.getAnimationSpeed();
+			}
+			return 0.0;
+		});
+		log("carrera: el percutor corriendo anda a x" + String.format(Locale.ROOT, "%.2f", walkRate));
+		check(walkRate > 1.3, "a running percutor should play its walk faster (" + walkRate + ")");
+		runPass(context, server, connection, others, otherX, y, laneZ, false, true, "carrera_07_resto_corriendo_frente");
+		discard(server, connection, others);
+
+		filmLeaps(context, server, connection, sx, y, sz, laneZ);
+
+		context.runOnClient(mc -> {
+			if (mc.gui.hud.isHidden()) {
+				mc.gui.hud.toggle();
+			}
+			mc.options.fov().set(70);
+			mc.options.fovEffectScale().set(1.0);
+		});
+		server.runCommand("effect clear @a night_vision");
+		server.runCommand("gamemode survival @a");
+		server.runCommand("time set noon");
+	}
+
+	/** Mobs for the runs: no AI (the test moves them), aggressive (a running monster is after something). */
+	private static int[] spawnRunners(TestServerContext server, TestServerConnection connection, net.minecraft.world.entity.EntityType<?>[] types,
+		Item[] items, int sx, int y, double laneZ) {
+		return server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			int[] made = new int[types.length];
+			for (int i = 0; i < types.length; i++) {
+				var entity = types[i].create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				check(entity instanceof net.minecraft.world.entity.Mob, "a " + types[i] + " should be a mob");
+				var mob = (net.minecraft.world.entity.Mob) entity;
+				mob.snapTo(sx + 0.5, y, laneZ - 20.0, 0.0F, 0.0F);
+				mob.setNoAi(true);
+				mob.setPersistenceRequired();
+				mob.setInvulnerable(true);
+				mob.setItemSlot(EquipmentSlot.MAINHAND, items[i] == Items.AIR ? ItemStack.EMPTY : new ItemStack(items[i]));
+				if (mob instanceof net.minecraft.world.entity.monster.piglin.AbstractPiglin piglin) {
+					piglin.setImmuneToZombification(true);
+				}
+				level.addFreshEntity(mob);
+				mob.setAggressive(true);
+				made[i] = mob.getId();
+			}
+			return made;
+		});
+	}
+
+	private static double[] rowX(int sx, int count, double spacing) {
+		double[] xs = new double[count];
+		for (int i = 0; i < count; i++) {
+			xs[i] = sx + 0.5 + (i - (count - 1) / 2.0) * spacing;
+		}
+		return xs;
+	}
+
+	/** How long a pass lasts, in ticks, and how fast the mobs go walking and running, in blocks a tick. */
+	private static final int PASS_TICKS = 18;
+	private static final double WALK_SPEED = 0.18;
+	private static final double RUN_SPEED = 0.3;
+
+	/** Where a runner is {@code along} blocks from its spot: across the camera's view, or coming at it. */
+	private static void placeRunner(net.minecraft.world.entity.Mob mob, double px, int y, double laneZ, boolean side, double along) {
+		float yaw = side ? -90.0F : 0.0F;
+		mob.setPos(side ? px + along : px, y, side ? laneZ : laneZ + along);
+		mob.setYRot(yaw);
+		mob.setYHeadRot(yaw);
+		mob.setYBodyRot(yaw);
+	}
+
+	/**
+	 * One pass of a row of mobs, walking or running, side-on (to screen right) or coming at the camera; it
+	 * ends with them on their spots, and films two moments of a stride on the way there.
+	 */
+	private static void runPass(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int[] ids,
+		double[] xs, int y, double laneZ, boolean side, boolean sprint, String name) {
+		double speed = sprint ? RUN_SPEED : WALK_SPEED;
+		server.runOnServer(s -> {
+			for (int i = 0; i < ids.length; i++) {
+				var mob = (net.minecraft.world.entity.Mob) connection.getServerLevel().getEntity(ids[i]);
+				mob.setSprinting(false);
+				placeRunner(mob, xs[i], y, laneZ, side, -PASS_TICKS * speed);
+			}
+		});
+		context.waitTicks(8);
+		for (int t = 1; t <= PASS_TICKS; t++) {
+			double along = (t - PASS_TICKS) * speed;
+			boolean flag = sprint;
+			server.runOnServer(s -> {
+				for (int i = 0; i < ids.length; i++) {
+					var mob = (net.minecraft.world.entity.Mob) connection.getServerLevel().getEntity(ids[i]);
+					mob.setSprinting(flag);
+					placeRunner(mob, xs[i], y, laneZ, side, along);
+				}
+			});
+			context.waitTicks(1);
+			if (t == PASS_TICKS - 3) {
+				shot(context, name + "_a");
+			}
+		}
+		shot(context, name + "_b");
+	}
+
+	/** A run side-on in which the sword zombie warns of a blow and the brute swings: those poses must show. */
+	private static void combatPass(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int[] ids,
+		double[] xs, int y, double laneZ) {
+		server.runOnServer(s -> {
+			for (int i = 0; i < ids.length; i++) {
+				placeRunner((net.minecraft.world.entity.Mob) connection.getServerLevel().getEntity(ids[i]), xs[i], y, laneZ, true, -PASS_TICKS * RUN_SPEED);
+			}
+		});
+		context.waitTicks(8);
+		for (int t = 1; t <= PASS_TICKS; t++) {
+			double along = (t - PASS_TICKS) * RUN_SPEED;
+			int at = t;
+			server.runOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				for (int i = 0; i < ids.length; i++) {
+					var mob = (net.minecraft.world.entity.Mob) level.getEntity(ids[i]);
+					mob.setSprinting(true);
+					placeRunner(mob, xs[i], y, laneZ, true, along);
+				}
+				if (at == PASS_TICKS - 8) {
+					dev.forja.combat.CombatFeedback.telegraph(level.getEntity(ids[1]), 20);
+				}
+				if (at == PASS_TICKS - 2) {
+					((net.minecraft.world.entity.LivingEntity) level.getEntity(ids[4])).swing(InteractionHand.MAIN_HAND, true);
+				}
+			});
+			context.waitTicks(1);
+		}
+		shot(context, "carrera_04_combate_gana_a");
+		context.waitTicks(1);
+		shot(context, "carrera_04_combate_gana_b");
+		server.runOnServer(s -> {
+			for (int id : ids) {
+				((net.minecraft.world.entity.Mob) connection.getServerLevel().getEntity(id)).setSprinting(false);
+			}
+		});
+		context.waitTicks(25);
+	}
+
+	private static void discard(TestServerContext server, TestServerConnection connection, int[] ids) {
+		server.runOnServer(s -> {
+			for (int id : ids) {
+				var entity = connection.getServerLevel().getEntity(id);
+				if (entity != null) {
+					entity.discard();
+				}
+			}
+		});
+	}
+
+	/** A mob for a leap, standing on its spot facing {@code yaw}, its AI off until it leaps. */
+	private static int leaper(TestServerContext server, TestServerConnection connection, net.minecraft.world.entity.EntityType<?> type, Item item,
+		double px, int y, double pz, float yaw) {
+		return server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var mob = (net.minecraft.world.entity.Mob) type.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+			mob.snapTo(px, y, pz, yaw, 0.0F);
+			mob.setYHeadRot(yaw);
+			mob.setYBodyRot(yaw);
+			mob.setNoAi(true);
+			mob.setPersistenceRequired();
+			mob.setInvulnerable(true);
+			if (item != Items.AIR) {
+				mob.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(item));
+			}
+			if (mob instanceof net.minecraft.world.entity.monster.piglin.AbstractPiglin piglin) {
+				piglin.setImmuneToZombification(true);
+			}
+			level.addFreshEntity(mob);
+			mob.setAggressive(true);
+			return mob.getId();
+		});
+	}
+
+	/** Lets a mob fly: physics need its AI on. */
+	private static void launch(TestServerContext server, TestServerConnection connection, int id, double vx, double vy, double vz, float style, int ticks) {
+		server.runOnServer(s -> {
+			var mob = (net.minecraft.world.entity.Mob) connection.getServerLevel().getEntity(id);
+			mob.setNoAi(false);
+			mob.setDeltaMovement(vx, vy, vz);
+			mob.hurtMarked = true;
+			dev.forja.combat.CombatAnim.broadcast(mob, dev.forja.combat.CombatAnim.Kind.LEAP, ticks, style, 0.0F);
+		});
+	}
+
+	/** Waits until the client draws a mob back down on the floor it leapt from (a tick into its landing). */
+	private static void waitForLanding(ClientGameTestContext context, int id, int y) {
+		boolean up = false;
+		for (int i = 0; i < 40; i++) {
+			double at = context.computeOnClient(mc -> {
+				var entity = mc.level.getEntity(id);
+				return entity == null ? y : entity.getY();
+			});
+			if (at > y + 0.2) {
+				up = true;
+			} else if (up && at < y + 0.02) {
+				break;
+			}
+			context.waitTicks(1);
+		}
+		context.waitTicks(1);
+	}
+
+	private static void filmLeaps(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int sx, int y, int sz, double laneZ) {
+		var cfg = dev.forja.combat.CombatConfig.get();
+		// Two zombies (bare hands, a sword) and a spider crouch and leap to screen right, as the lunge and the
+		// pounce do (VanillaSpecials: the same crouch, speed, lift and packet), side-on.
+		int zombie = leaper(server, connection, net.minecraft.world.entity.EntityTypes.ZOMBIE, Items.AIR, sx - 4.5, y, laneZ, -90.0F);
+		int swordZombie = leaper(server, connection, net.minecraft.world.entity.EntityTypes.ZOMBIE, Items.IRON_SWORD, sx - 1.0, y, laneZ - 2.5, -90.0F);
+		int spider = leaper(server, connection, net.minecraft.world.entity.EntityTypes.SPIDER, Items.AIR, sx + 2.0, y, laneZ + 0.5, -90.0F);
+		context.waitTicks(15);
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			dev.forja.combat.CombatFeedback.lungeTelegraph(level.getEntity(zombie));
+			dev.forja.combat.CombatFeedback.lungeTelegraph(level.getEntity(swordZombie));
+			dev.forja.combat.CombatAnim.broadcast(level.getEntity(spider), dev.forja.combat.CombatAnim.Kind.LUNGE, cfg.lungeWindupTicks);
+		});
+		context.waitTicks(cfg.lungeWindupTicks - 3);
+		shot(context, "carrera_10_salto_preparacion");
+		context.waitTicks(3);
+		launch(server, connection, zombie, cfg.lungeSpeed, cfg.lungeLift, 0.0, dev.forja.combat.CombatAnim.Kind.LEAP_FORWARD, 25);
+		launch(server, connection, swordZombie, cfg.lungeSpeed, cfg.lungeLift, 0.0, dev.forja.combat.CombatAnim.Kind.LEAP_FORWARD, 25);
+		launch(server, connection, spider, 0.7, 0.45, 0.0, dev.forja.combat.CombatAnim.Kind.LEAP_FORWARD, 25);
+		context.waitTicks(3);
+		shot(context, "carrera_11_salto_aire_a");
+		context.waitTicks(3);
+		shot(context, "carrera_11_salto_aire_b");
+		waitForLanding(context, zombie, y);
+		shot(context, "carrera_12_salto_aterrizaje_a");
+		context.waitTicks(2);
+		shot(context, "carrera_12_salto_aterrizaje_b");
+		check(context.computeOnClient(mc -> {
+			var anim = dev.forja.client.CombatAnims.get(zombie);
+			return anim != null;
+		}), "the client should have heard about the leap");
+		discard(server, connection, new int[] {zombie, swordZombie, spider});
+		context.waitTicks(10);
+
+		// A zombie leaps at the camera, by the lunge's own code (VanillaSpecials.LUNGE, the player as its target).
+		int atCamera = leaper(server, connection, net.minecraft.world.entity.EntityTypes.ZOMBIE, Items.AIR, sx + 0.5, y, sz - 7.5, 0.0F);
+		context.waitTicks(15);
+		server.runOnServer(s -> dev.forja.combat.CombatFeedback.lungeTelegraph(connection.getServerLevel().getEntity(atCamera)));
+		context.waitTicks(cfg.lungeWindupTicks);
+		server.runOnServer(s -> {
+			var mob = (net.minecraft.world.entity.Mob) connection.getServerLevel().getEntity(atCamera);
+			mob.setNoAi(false);
+			dev.forja.ai.VanillaSpecials.LUNGE.release(mob, connection.getServerPlayer(), null);
+		});
+		context.waitTicks(4);
+		shot(context, "carrera_13_salto_de_frente");
+		context.waitTicks(20);
+		discard(server, connection, new int[] {atCamera});
+		// Its dust settles before the next shots.
+		context.waitTicks(30);
+
+		// Hopping back off a target (an armor stand to their left, screen left), by HopBack's own code: a zombie
+		// with a sword, a spider, a creeper (the short one it takes breaking off a hiss).
+		int[] hoppers = {
+			leaper(server, connection, net.minecraft.world.entity.EntityTypes.ZOMBIE, Items.IRON_SWORD, sx - 6.0, y, laneZ, 90.0F),
+			leaper(server, connection, net.minecraft.world.entity.EntityTypes.SPIDER, Items.AIR, sx - 0.5, y, laneZ - 1.0, 90.0F),
+			leaper(server, connection, net.minecraft.world.entity.EntityTypes.CREEPER, Items.AIR, sx + 5.5, y, laneZ, 90.0F)};
+		int[] stands = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			int[] made = new int[hoppers.length];
+			for (int i = 0; i < hoppers.length; i++) {
+				var hopper = level.getEntity(hoppers[i]);
+				var stand = net.minecraft.world.entity.EntityTypes.ARMOR_STAND.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				stand.snapTo(hopper.getX() - 1.6, y, hopper.getZ(), 0.0F, 0.0F);
+				level.addFreshEntity(stand);
+				made[i] = stand.getId();
+			}
+			return made;
+		});
+		// On, so it stands on the ground again (a mob without AI never finds out it is on the ground).
+		server.runOnServer(s -> {
+			for (int id : hoppers) {
+				((net.minecraft.world.entity.Mob) connection.getServerLevel().getEntity(id)).setNoAi(false);
+			}
+		});
+		context.waitTicks(4);
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			for (int i = 0; i < hoppers.length; i++) {
+				var mob = (net.minecraft.world.entity.Mob) level.getEntity(hoppers[i]);
+				var stand = (net.minecraft.world.entity.LivingEntity) level.getEntity(stands[i]);
+				mob.snapTo(mob.getX(), mob.getY(), mob.getZ(), 90.0F, 0.0F);
+				mob.setYHeadRot(90.0F);
+				mob.setYBodyRot(90.0F);
+				check(mob.onGround(), "a " + mob.getType() + " should stand on the ground to hop back");
+				if (mob instanceof net.minecraft.world.entity.monster.Creeper creeper) {
+					dev.forja.ai.HopBack.afterFeint(creeper, stand);
+				} else {
+					dev.forja.ai.HopBack.afterHit(mob, stand);
+				}
+			}
+		});
+		context.waitTicks(2);
+		shot(context, "carrera_14_salto_atras_preparacion");
+		context.waitTicks(4);
+		shot(context, "carrera_15_salto_atras_aire");
+		context.waitTicks(3);
+		shot(context, "carrera_15_salto_atras_aire_b");
+		waitForLanding(context, hoppers[0], y);
+		shot(context, "carrera_16_salto_atras_aterrizaje");
+		boolean hopped = server.computeOnServer(s -> connection.getServerLevel().getEntity(hoppers[0]).getX() > sx - 5.0);
+		check(hopped, "the zombie should have hopped back off its target");
+		discard(server, connection, hoppers);
+		discard(server, connection, stands);
+		context.waitTicks(10);
+
+		// A piglin brute's charge (VanillaSpecials.CHARGE: the roar and crouch, then 0.9 a tick in a straight line),
+		// to screen left, so the shoulder it leads with is the one on the camera's side.
+		int brute = leaper(server, connection, net.minecraft.world.entity.EntityTypes.PIGLIN_BRUTE, Items.GOLDEN_AXE, sx + 10.5, y, laneZ, 90.0F);
+		context.waitTicks(15);
+		server.runOnServer(s -> dev.forja.combat.CombatAnim.broadcast(connection.getServerLevel().getEntity(brute), dev.forja.combat.CombatAnim.Kind.LUNGE, 15));
+		context.waitTicks(15);
+		server.runOnServer(s -> {
+			var mob = (net.minecraft.world.entity.Mob) connection.getServerLevel().getEntity(brute);
+			mob.setNoAi(false);
+			dev.forja.combat.CombatAnim.broadcast(mob, dev.forja.combat.CombatAnim.Kind.LEAP, 15, dev.forja.combat.CombatAnim.Kind.LEAP_CHARGE, 0.0F);
+		});
+		for (int t = 0; t < 14; t++) {
+			server.runOnServer(s -> {
+				var mob = (net.minecraft.world.entity.Mob) connection.getServerLevel().getEntity(brute);
+				mob.setDeltaMovement(-0.9, mob.getDeltaMovement().y, 0.0);
+				mob.hurtMarked = true;
+				// Facing where it charges, as it faces its target in a fight (its AI would look at the camera).
+				mob.setYRot(90.0F);
+				mob.setYHeadRot(90.0F);
+				mob.setYBodyRot(90.0F);
+			});
+			context.waitTicks(1);
+			if (t == 11) {
+				shot(context, "carrera_17_carga_a");
+			}
+		}
+		shot(context, "carrera_17_carga_b");
+		context.waitTicks(5);
+		shot(context, "carrera_18_carga_frenada");
+		discard(server, connection, new int[] {brute});
 	}
 
 	/**

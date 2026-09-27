@@ -31,6 +31,20 @@ public final class CombatAnims {
 		int telegraphSeed;
 		double lungeAt = NEVER;
 		int lungeTicks;
+		/**
+		 * A leap under way since then (see {@link MobGaits}): its style (CombatAnim.Kind.LEAP_*), the longest
+		 * it can last, the height it left from and the highest it has been seen at since (NaN until it is
+		 * first drawn), and whether it has been seen off the ground, which is what coming down needs.
+		 */
+		double leapAt = NEVER;
+		int leapTicks;
+		float leapStyle;
+		double leapY = Double.NaN;
+		double leapPeak;
+		boolean leapAirborne;
+		/** When the last leap came down, and which kind of leap it was. */
+		double landAt = NEVER;
+		float landStyle;
 		double staggerAt = NEVER;
 		int staggerTicks;
 		double dodgeAt = NEVER;
@@ -143,6 +157,15 @@ public final class CombatAnims {
 			case LUNGE -> {
 				state.lungeAt = now;
 				state.lungeTicks = Math.max(1, payload.ticks());
+			}
+			case LEAP -> {
+				state.leapAt = now;
+				state.leapTicks = Math.max(1, payload.ticks());
+				state.leapStyle = payload.a();
+				state.leapY = Double.NaN;
+				state.leapAirborne = false;
+				// The crouch it leapt out of is over, however long it was announced for.
+				state.lungeAt = State.NEVER;
 			}
 			case STAGGER -> {
 				state.staggerAt = now;

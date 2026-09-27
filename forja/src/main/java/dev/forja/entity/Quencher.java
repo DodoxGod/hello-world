@@ -227,7 +227,7 @@ public class Quencher extends Monster implements GeoEntity {
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
 		controllers.add(new AnimationController<Quencher>("templador", test ->
-			test.setAndContinue(test.isMoving() ? WALK : IDLE)
+			GeoGait.walk(test, WALK, IDLE)
 		).triggerableAnim("douse", DOUSE));
 	}
 

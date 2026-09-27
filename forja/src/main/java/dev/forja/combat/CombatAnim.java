@@ -63,7 +63,20 @@ public record CombatAnim(int entity, byte kind, short ticks, float a, float b) i
 		/** A player dodged a blow that would have landed; ticks is how long the counter stays open. */
 		PERFECT_DODGE,
 		/** To the player only: the pressure on them changed; a is its value, b how much drains per tick, ticks the wait before it does. */
-		PRESSURE;
+		PRESSURE,
+		/**
+		 * A mob has just left the ground (or, for a charge, set off along it): a is which way, one of the
+		 * {@code LEAP_*} styles below, and ticks the longest it can last. The client holds a pose for it
+		 * until it lands, then a short crouch as it does (Andy, 2026-09-27: "dale animación al salto").
+		 */
+		LEAP;
+
+		/** A leap at the target: stretched out forward. */
+		public static final float LEAP_FORWARD = 1.0F;
+		/** A hop back out of reach: gathered up, guard in front. */
+		public static final float LEAP_BACK = -1.0F;
+		/** A charge along the ground: shoulder first. */
+		public static final float LEAP_CHARGE = 2.0F;
 
 		private static final Kind[] VALUES = values();
 

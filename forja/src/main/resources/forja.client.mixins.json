@@ -8,9 +8,12 @@
 		"BossHealthOverlayMixin",
 		"ClientAdvancementsMixin",
 		"CameraMixin",
+		"CreeperModelMixin",
 		"EntityRendererMixin",
 		"FogRendererMixin",
+		"GeoEntityRendererMixin",
 		"HumanoidModelMixin",
+		"IllagerModelMixin",
 		"ItemInHandLayerMixin",
 		"ItemInHandRendererMixin",
 		"LevelRendererMixin",
@@ -19,7 +22,8 @@
 		"LightmapExtractorMixin",
 		"PiglinModelMixin",
 		"SkeletonModelMixin",
-		"SkyRendererMixin"
+		"SkyRendererMixin",
+		"SpiderModelMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

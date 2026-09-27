@@ -113,6 +113,7 @@ public final class HopBack {
 		mob.setDeltaMovement(away.x * speed, hop.small ? SHORT_LIFT : LIFT, away.z * speed);
 		mob.hurtMarked = true;
 		mob.getNavigation().stop();
+		CombatAnim.broadcast(mob, CombatAnim.Kind.LEAP, 20, CombatAnim.Kind.LEAP_BACK, 0.0F);
 		AttackTokens.release(hop.from, mob);
 		level.sendParticles(ParticleTypes.POOF, mob.getX(), mob.getY() + 0.1, mob.getZ(), 4, 0.2, 0.02, 0.2, 0.01);
 		level.playSound(null, mob.getX(), mob.getY(), mob.getZ(), SoundEvents.GOAT_LONG_JUMP, SoundSource.HOSTILE, 0.5F, 1.4F);

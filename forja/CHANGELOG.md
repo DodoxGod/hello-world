@@ -92,6 +92,15 @@ Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (120).
 - **Los mobs corren** (+35 %) con una estamina propia (100; 2 por tick corriendo, se recupera 1 por tick tras 1 s
   sin correr; agotados, no vuelven a correr hasta tener 25): para alcanzar a quien se aleja (a 4–12 bloques), para
   llegar a su hueco del anillo y para huir malheridos. No los jefes. Se les ve el polvo del sprint.
+- **Animación de correr**: el cuerpo se inclina hacia delante con la cabeza aún hacia el objetivo, zancada más
+  larga y un leve bote; brazos que bombean con la mano vacía, el arma llevada baja y adelantada (a dos manos,
+  cruzada delante), el zombi con los brazos por delante y la araña más baja y rápida; el creeper se bambolea.
+  Los mobs de Forja aceleran su animación de andar (×1,6). Entra y sale en unos ticks; el golpe, el aviso, la
+  carga y el aturdimiento mandan sobre ella.
+- **Animación de salto**: al saltar hacia el objetivo se estiran hacia delante con las piernas atrás (el zombi
+  con los brazos para agarrar, la araña con las patas abiertas, el arma echada atrás lista para el golpe); el
+  salto atrás va encogido con la guardia delante; la carga del bruto, con el hombro por delante. Al caer, un
+  instante agachados y polvo del suelo.
 - **Todos los mobs fintan** un poco (5–20 % según la dificultad), más contra quien para mucho.
 - **Mangual en 3D**: mango, cadena de eslabones y bola con pinchos; la bola cuelga, se arrastra y en el golpe
   sale en arco hasta el enemigo con la cadena estirada.

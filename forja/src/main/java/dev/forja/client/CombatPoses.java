@@ -394,6 +394,12 @@ public final class CombatPoses {
 			float tremble = pose.charge() >= 1.0F ? Mth.sin(state.ageInTicks * 2.3F) * 0.05F : 0.0F;
 			return new Frame(motion, null, blow.wind(), t, t, false, otherFree, spin, CHARGE_BOOST, tremble);
 		}
+		float ready = MobGaits.readyToStrike(state);
+		if (ready > 0.0F) {
+			// Leaping at its target: the weapon drawn back through the air, ready for the blow it lands with.
+			Blow blow = motion.plain();
+			return new Frame(motion, null, blow.wind(), ready, ready, false, otherFree, 0.0F, 1.0F, 0.0F);
+		}
 		return null;
 	}
 

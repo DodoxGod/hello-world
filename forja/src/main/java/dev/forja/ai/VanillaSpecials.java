@@ -142,6 +142,7 @@ public final class VanillaSpecials {
 			Vec3 dir = flatTo(mob, target.position());
 			mob.setDeltaMovement(dir.x * cfg.lungeSpeed, cfg.lungeLift, dir.z * cfg.lungeSpeed);
 			mob.hurtMarked = true;
+			CombatAnim.broadcast(mob, CombatAnim.Kind.LEAP, 25, CombatAnim.Kind.LEAP_FORWARD, 0.0F);
 		}
 
 		@Override
@@ -177,6 +178,7 @@ public final class VanillaSpecials {
 			Vec3 dir = flatTo(mob, target.position());
 			mob.setDeltaMovement(dir.x * 0.7, 0.45, dir.z * 0.7);
 			mob.hurtMarked = true;
+			CombatAnim.broadcast(mob, CombatAnim.Kind.LEAP, 25, CombatAnim.Kind.LEAP_FORWARD, 0.0F);
 		}
 
 		@Override
@@ -234,6 +236,7 @@ public final class VanillaSpecials {
 			Vec3 away = flatTo(mob, target.position()).scale(-1.0);
 			mob.setDeltaMovement(away.x * 0.6, 0.35, away.z * 0.6);
 			mob.hurtMarked = true;
+			CombatAnim.broadcast(mob, CombatAnim.Kind.LEAP, 20, CombatAnim.Kind.LEAP_BACK, 0.0F);
 		}
 
 		@Override
@@ -430,6 +433,7 @@ public final class VanillaSpecials {
 		@Override
 		public void release(Mob mob, Player target, SpecialRunner.Run run) {
 			run.mark = flatTo(mob, target.position());
+			CombatAnim.broadcast(mob, CombatAnim.Kind.LEAP, 15, CombatAnim.Kind.LEAP_CHARGE, 0.0F);
 		}
 
 		@Override
