@@ -207,5 +207,17 @@ public final class Stamina {
 			}
 		}
 		data.weight = weight;
+		// Peso (combat/Weight): heavy plate also slows the arm, and a set that quickens the walk quickens it.
+		double swing = cfg.enabled ? Weight.armourSwing(player) : 0.0;
+		AttributeInstance attack = player.getAttribute(Attributes.ATTACK_SPEED);
+		if (attack != null) {
+			AttributeModifier current = attack.getModifier(WEIGHT_MODIFIER);
+			if (current == null ? Math.abs(swing) > 0.0001 : Math.abs(current.amount() - swing) > 0.0001) {
+				attack.removeModifier(WEIGHT_MODIFIER);
+				if (Math.abs(swing) > 0.0001) {
+					attack.addTransientModifier(new AttributeModifier(WEIGHT_MODIFIER, swing, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+				}
+			}
+		}
 	}
 }

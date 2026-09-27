@@ -128,6 +128,12 @@ public final class MaterialCombat {
 		);
 	}
 
+	/** How heavy a material is, 0 to 1, on the same scale as a plate of it (combat/Weight reads weapons by it too). */
+	public static double heaviness(ForgeMaterial material) {
+		double weight = weight(fullSetDefense(material), material.knockbackResistance);
+		return material.trait == ForgeMaterial.Trait.DIAFANO ? weight * 0.2 : weight;
+	}
+
 	private static double fullSetDefense(ForgeMaterial m) {
 		return m.defense(ArmorType.HELMET) + m.defense(ArmorType.CHESTPLATE)
 			+ m.defense(ArmorType.LEGGINGS) + m.defense(ArmorType.BOOTS);

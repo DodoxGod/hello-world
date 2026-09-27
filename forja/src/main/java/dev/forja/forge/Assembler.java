@@ -288,6 +288,9 @@ public final class Assembler {
 			writeSpear(parts.primary(), stats, reach, sink);
 			return;
 		}
+		// Peso: a heavy weapon is seen to swing slower than a light one (the swing only; how often it can hit
+		// at full strength is its attack speed, which the weight has already moved).
+		sink.set(DataComponents.SWING_ANIMATION, new SwingAnimation(SwingAnimationType.WHACK, dev.forja.combat.Weight.swingTicks(stats.weight)));
 		if (type == ForgeType.MAZO) {
 			sink.set(DataComponents.TOOL, MaceItem.createToolProperties());
 			sink.set(DataComponents.WEAPON, new Weapon(1));

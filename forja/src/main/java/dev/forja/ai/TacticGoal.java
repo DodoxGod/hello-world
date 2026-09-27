@@ -284,7 +284,7 @@ public final class TacticGoal extends Goal {
 			&& this.mob.level() instanceof ServerLevel level) {
 			this.mob.doHurtTarget(level, target);
 		}
-		this.mind.cooldown = MELEE_COOLDOWN;
+		this.mind.cooldown = dev.forja.combat.Weight.interval(this.mob, MELEE_COOLDOWN);
 		this.mind.lastStrike = this.mob.level().getGameTime();
 		AttackTokens.release(target, this.mob);
 		this.struck = null;

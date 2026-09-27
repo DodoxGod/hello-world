@@ -1,6 +1,6 @@
 {
   "formato": "red_mob_v3",
-  "n_obs": 275,
+  "n_obs": 277,
   "n_obs_v2": 200,
   "nombres_obs": [
     "obj_distancia/16",
@@ -277,7 +277,9 @@
     "jug_frenesi",
     "jug_anclaje",
     "jug_sujeto",
-    "jug_ocupado"
+    "jug_ocupado",
+    "yo_peso/10",
+    "jug_peso/10"
   ],
   "significado_entradas_nuevas": {
     "proy0_presente": "el proyectil que llega antes: 1 si hay (se acerca, a <=16, y su trayectoria con gravedad pasa a <=0.5 de la caja del mob)",
@@ -354,7 +356,9 @@
     "jug_frenesi": "cuánto lleva de Frenesí, 0..1 (golpes seguidos / 5)",
     "jug_anclaje": "parte del empuje que resiste por la mejora Anclaje de sus botas (0..1)",
     "jug_sujeto": "1 si una Tenaza lo tiene sujeto",
-    "jug_ocupado": "1 si está comiendo o bebiendo, con estamina < 25, o con el escudo en enfriamiento (guardia rota)"
+    "jug_ocupado": "1 si está comiendo o bebiendo, con estamina < 25, o con el escudo en enfriamiento (guardia rota)",
+    "yo_peso/10": "kilos que lleva el mob (arma en mano + armadura, combat/Weight.carried) / 10; alarga su aviso (1.5 ticks por kilo, tope 14) y su espera entre golpes (+10 % por kilo)",
+    "jug_peso/10": "kilos que lleva el jugador (arma + armadura) / 10: cuanto más, más tarda en cargar su golpe al 100 %"
   },
   "salidas": [
     "quieto",

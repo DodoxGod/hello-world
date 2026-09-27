@@ -11,7 +11,8 @@
 			"dev.forja.test.ObjetosContrato",
 			"dev.forja.test.ArsenalGameTests",
 			"dev.forja.test.TwoPlayerGameTests",
-			"dev.forja.test.PathGameTests"
+			"dev.forja.test.PathGameTests",
+			"dev.forja.test.PesoGameTests"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"

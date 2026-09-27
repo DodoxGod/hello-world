@@ -593,6 +593,7 @@
   "gui.forja.desarmar.boton": "Salvage",
   "gui.forja.desarmar.desgastada": "Worn head or plate: it is lost",
   "gui.forja.stat.tensado": "Draw speed: %s",
+  "gui.forja.stat.peso": "Weight: %s kg",
   "gui.forja.stat.flecha": "Arrow damage: %s",
   "gui.forja.stat.planeo": "Glide: %s",
   "gui.forja.stat.vuelo": "Flight: %s s",

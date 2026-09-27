@@ -87,9 +87,12 @@ public final class MobDefense {
 		}
 	}
 
-	/** The warning of the mob's next melee blow: short while its counter is up. */
+	/**
+	 * The warning of the mob's next melee blow: short while its counter is up, and otherwise the base warning
+	 * and as much again as what it carries makes it slower (combat/Weight: weapon and armour).
+	 */
 	public static int windup(Mob mob) {
-		return counterReady(mob) ? COUNTER_WINDUP : Math.max(1, CombatConfig.get().windupTicks);
+		return counterReady(mob) ? COUNTER_WINDUP : Math.max(1, CombatConfig.get().windupTicks) + dev.forja.combat.Weight.windupExtra(mob);
 	}
 
 	/** Raise the shield (if it has one and its guard is not broken). */

@@ -593,6 +593,7 @@
   "gui.forja.desarmar.boton": "Desarmar",
   "gui.forja.desarmar.desgastada": "Cabeza o placa muy gastada: se pierde",
   "gui.forja.stat.tensado": "Tensado: %s",
+  "gui.forja.stat.peso": "Peso: %s kg",
   "gui.forja.stat.flecha": "Daño flecha: %s",
   "gui.forja.stat.planeo": "Planeo: %s",
   "gui.forja.stat.vuelo": "Vuelo: %s s",

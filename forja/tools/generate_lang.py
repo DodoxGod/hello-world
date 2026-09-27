@@ -1278,6 +1278,7 @@ GUI = {
     "gui.forja.desarmar.boton": ("Desarmar", "Salvage"),
     "gui.forja.desarmar.desgastada": ("Cabeza o placa muy gastada: se pierde", "Worn head or plate: it is lost"),
     "gui.forja.stat.tensado": ("Tensado: %s", "Draw speed: %s"),
+    "gui.forja.stat.peso": ("Peso: %s kg", "Weight: %s kg"),
     "gui.forja.stat.flecha": ("Daño flecha: %s", "Arrow damage: %s"),
     "gui.forja.stat.planeo": ("Planeo: %s", "Glide: %s"),
     "gui.forja.stat.vuelo": ("Vuelo: %s s", "Flight: %s s"),

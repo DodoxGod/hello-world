@@ -339,7 +339,7 @@ public class ObjetosContrato {
 			dev.forja.combat.ChargedStrike.class, dev.forja.combat.ParryRhythm.class, dev.forja.combat.WeaponGuard.class,
 			dev.forja.ai.Squad.class, dev.forja.ai.TacticGoal.class, dev.forja.ai.RuleBrain.class, dev.forja.ai.Aggression.class,
 			dev.forja.ai.MobDefense.class, dev.forja.ai.ObsM1.class, dev.forja.forge.Potential.class, dev.forja.forge.Mastery.class,
-			dev.forja.forge.Quality.class, BowItem.class, CrossbowItem.class}) {
+			dev.forja.forge.Quality.class, dev.forja.combat.Weight.class, BowItem.class, CrossbowItem.class}) {
 			constants.add(c.getSimpleName(), constants(c));
 		}
 		JsonObject vanilla = new JsonObject();

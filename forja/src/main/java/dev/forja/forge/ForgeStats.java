@@ -41,6 +41,8 @@ public final class ForgeStats {
 		DUREZA(true, Format.PLAIN),
 		EMPUJE(true, Format.PERCENT),
 		TENSADO(true, Format.MULTIPLIER),
+		/** Kilograms (combat/Weight): lighter swings sooner, which is why it ranks low as better. */
+		PESO(false, Format.PLAIN),
 		FLECHA(true, Format.PLAIN),
 		BLOQUEO(true, Format.SECONDS),
 		HACHA(false, Format.MULTIPLIER),
@@ -178,6 +180,8 @@ public final class ForgeStats {
 		public float axeDisable;
 		public float glide;
 		public float flight;
+		/** Kilograms of it (combat/Weight); 0 for what is not swung or held up. */
+		public float weight;
 
 		/** A perfect press lifts everything the piece does by the same small share. */
 		/**
@@ -238,6 +242,7 @@ public final class ForgeStats {
 						lines.add(new Line(Stat.TENSADO, this.drawSpeed));
 					}
 					lines.add(new Line(Stat.FLECHA, this.arrowDamage));
+					lines.add(new Line(Stat.PESO, this.weight));
 				}
 				case MONTURA -> {
 					lines.add(new Line(Stat.ARMADURA, this.armor));
@@ -254,10 +259,14 @@ public final class ForgeStats {
 				case SHIELD -> {
 					lines.add(new Line(Stat.BLOQUEO, this.blockDelay));
 					lines.add(new Line(Stat.HACHA, this.axeDisable));
+					lines.add(new Line(Stat.PESO, this.weight));
 				}
 				default -> {
 					lines.add(new Line(Stat.DANO, 1.0F + this.attackDamage));
 					lines.add(new Line(Stat.VELOCIDAD, 4.0F + this.attackSpeed));
+					if (this.weight > 0.0F) {
+						lines.add(new Line(Stat.PESO, this.weight));
+					}
 					if (this.type.kind == ForgeType.Kind.TOOL) {
 						lines.add(new Line(Stat.MINADO, this.bestMiningSpeed()));
 					}
@@ -350,6 +359,14 @@ public final class ForgeStats {
 				sheet.durability = Math.max(64, Math.round((64.0F + rod.durability * 0.25F + line.durability * 0.15F) * rod.handleDurability));
 			}
 			default -> toolOrWeapon(sheet, type, materials, upgrades);
+		}
+		// Peso (combat/Weight): what it weighs, and for what is swung, how that moves the swing - an iron one
+		// swings as it always did, a lighter material sooner, a heavier one later.
+		sheet.weight = dev.forja.combat.Weight.kg(type, materials);
+		// Not the spear: how long its jab takes already comes from its tip (spearAttackDuration).
+		if (sheet.weight > 0.0F && type != ForgeType.LANZA && (type.kind == ForgeType.Kind.WEAPON || type.kind == ForgeType.Kind.TOOL)) {
+			float speed = (4.0F + sheet.attackSpeed) * dev.forja.combat.Weight.swingFactor(dev.forja.combat.Weight.relative(type, materials));
+			sheet.attackSpeed = speed - 4.0F;
 		}
 		if (mastery > 0) {
 			applyMastery(sheet, mastery);

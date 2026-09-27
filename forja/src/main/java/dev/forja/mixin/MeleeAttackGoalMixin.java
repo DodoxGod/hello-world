@@ -123,6 +123,17 @@ abstract class MeleeAttackGoalMixin {
 		navigation.setSpeedModifier(0.0);
 	}
 
+	@Shadow
+	private int ticksUntilNextAttack;
+
+	/** Peso (combat/Weight): the more it carries, the longer it waits before the next blow. */
+	@Inject(method = "resetAttackCooldown", at = @At("TAIL"))
+	private void forja$heavyWait(CallbackInfo ci) {
+		if (CombatConfig.get().enabled) {
+			ticksUntilNextAttack = Math.round(ticksUntilNextAttack * (1.0F + dev.forja.combat.Weight.INTERVAL_PER_KG * dev.forja.combat.Weight.carried(mob)));
+		}
+	}
+
 	@Inject(method = "stop", at = @At("TAIL"))
 	private void forja$onStop(CallbackInfo ci) {
 		forja$reset();

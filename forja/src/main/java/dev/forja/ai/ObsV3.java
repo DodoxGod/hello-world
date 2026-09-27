@@ -129,6 +129,10 @@ public final class ObsV3 {
 		MEANING.put("jug_anclaje", "parte del empuje que resiste por la mejora Anclaje de sus botas (0..1)");
 		MEANING.put("jug_sujeto", "1 si una Tenaza lo tiene sujeto");
 		MEANING.put("jug_ocupado", "1 si está comiendo o bebiendo, con estamina < 25, o con el escudo en enfriamiento (guardia rota)");
+		// --- Peso (combat/Weight): what each side carries into a blow
+		MEANING.put("yo_peso/10", "kilos que lleva el mob (arma en mano + armadura, combat/Weight.carried) / 10; alarga su aviso "
+			+ "(1.5 ticks por kilo, tope 14) y su espera entre golpes (+10 % por kilo)");
+		MEANING.put("jug_peso/10", "kilos que lleva el jugador (arma + armadura) / 10: cuanto más, más tarda en cargar su golpe al 100 %");
 	}
 
 	private ObsV3() {
@@ -340,6 +344,8 @@ public final class ObsV3 {
 		boolean guardDown = off.has(DataComponents.BLOCKS_ATTACKS) && target.getCooldowns().isOnCooldown(off)
 			|| main.has(DataComponents.BLOCKS_ATTACKS) && target.getCooldowns().isOnCooldown(main);
 		o[i++] = eating || dev.forja.combat.Stamina.value(target) < 25.0F || guardDown ? 1.0 : 0.0;
+		o[i++] = dev.forja.combat.Weight.carried(mob) / 10.0;
+		o[i++] = dev.forja.combat.Weight.carried(target) / 10.0;
 		if (i != o.length) {
 			// a name declared and never worked out, or the other way round: the contract would lie
 			throw new IllegalStateException("ObsV3 rellena " + i + " de " + o.length + " entradas");
