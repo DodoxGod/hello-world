@@ -95,7 +95,7 @@ public final class ThreatBadge {
 	}
 
 	/** Size multiplier for the camera's distance. */
-	private static float grow(EntityRenderState state) {
+	static float grow(EntityRenderState state) {
 		float distance = (float) Math.sqrt(state.distanceToCameraSq);
 		return 1.0F + (GROW_MAX - 1.0F) * Mth.clamp((distance - GROW_FROM) / GROW_SPAN, 0.0F, 1.0F);
 	}
@@ -109,7 +109,7 @@ public final class ThreatBadge {
 	}
 
 	/** Height of the badge's top over the feet, bob left out so the name above it holds still. */
-	private static float top(EntityRenderState state, Threat threat) {
+	static float top(EntityRenderState state, Threat threat) {
 		float width = width(state, threat);
 		return state.boundingBoxHeight + GAP + width * ROWS[threat.ordinal()] / 16.0F + 0.08F * width;
 	}

@@ -2,6 +2,7 @@ package dev.forja.mixin.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.forja.client.ThreatBadge;
+import dev.forja.client.ThreatPlate;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
@@ -14,7 +15,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * The rank badge over veterans, elites and champions ({@link ThreatBadge}). Hooked on the base renderer
+ * The rank badge over veterans, elites and champions ({@link ThreatBadge}), and the plate their name is
+ * written on ({@link ThreatPlate}). Hooked on the base renderer
  * rather than LivingEntityRenderer because Forja's own monsters are GeckoLib models, which skip that
  * one but still come through here.
  */
@@ -23,7 +25,9 @@ abstract class EntityRendererMixin {
 	@Inject(method = "extractRenderState", at = @At("TAIL"))
 	private void forja$threat(Entity entity, EntityRenderState state, float partialTicks, CallbackInfo ci) {
 		if (entity instanceof LivingEntity living) {
-			state.setData(ThreatBadge.KEY, ThreatBadge.of(living));
+			var threat = ThreatBadge.of(living);
+			state.setData(ThreatBadge.KEY, threat);
+			state.setData(ThreatPlate.KEY, ThreatPlate.of(living, state, threat));
 		}
 	}
 
@@ -32,7 +36,19 @@ abstract class EntityRendererMixin {
 		ThreatBadge.submit(state, poseStack, collector, camera);
 	}
 
-	/** The name goes up over the badge rather than through it. */
+	/** A ranked mob's name goes on its plate instead of vanilla's tag. */
+	@Inject(
+		method = "submitNameDisplay(Lnet/minecraft/client/renderer/entity/state/EntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;I)V",
+		at = @At("HEAD"),
+		cancellable = true
+	)
+	private void forja$plate(EntityRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera, int offset, CallbackInfo ci) {
+		if (ThreatPlate.submit(state, poseStack, collector, camera)) {
+			ci.cancel();
+		}
+	}
+
+	/** Otherwise (a line under the name, say) the name goes up over the badge rather than through it. */
 	@Inject(
 		method = "submitNameDisplay(Lnet/minecraft/client/renderer/entity/state/EntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;I)V",
 		at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;pushPose()V", shift = At.Shift.AFTER)

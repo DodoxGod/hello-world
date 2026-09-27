@@ -5936,6 +5936,36 @@ public class ForjaClientTest implements FabricClientGameTest {
 		server.runCommand("time set noon");
 		clearBadgeScene(context, server, connection, px, y, pz);
 
+		// The name plates (client.ThreatPlate), all three ranks with their names up, beside a named unranked
+		// zombie whose tag stays vanilla's: near and at fifteen blocks, by day and by night.
+		badgeScene(server, connection, px, y, pz, new Object[][] {
+			{zombie, normal, -6.0, 0.0, true}, {zombie, veteran, -2.0, 0.0, true}, {zombie, elite, 2.0, 0.0, true},
+			{zombie, champion, 6.0, 0.0, true},
+		});
+		context.waitTicks(20);
+		for (String time : new String[] {"noon", "midnight"}) {
+			server.runCommand("time set " + time);
+			String when = time.equals("noon") ? "dia" : "noche";
+			tp(server, px + 0.5, y + 0.6, pz + 0.5 - 9.0, 0.0F, 3.0F);
+			badgeShot(context, "forja_38_veteranos_placas_cerca_" + when);
+			tp(server, px + 0.5, y + 1.6, pz + 0.5 - 15.0, 0.0F, 3.0F);
+			badgeShot(context, "forja_38_veteranos_placas_15_" + when);
+		}
+		server.runCommand("time set noon");
+		// Close enough to read every edge of them.
+		tp(server, px + 0.5 + 2.0, y + 0.9, pz + 0.5 - 3.2, 0.0F, -4.0F);
+		badgeShot(context, "forja_38_veteranos_placa_veterano");
+		tp(server, px + 0.5 - 2.0, y + 0.9, pz + 0.5 - 3.2, 0.0F, -4.0F);
+		badgeShot(context, "forja_38_veteranos_placa_elite");
+		tp(server, px + 0.5 - 6.0, y + 0.9, pz + 0.5 - 3.2, 0.0F, -4.0F);
+		badgeShot(context, "forja_38_veteranos_placa_campeon");
+		// Through a wall the letters still show, faint, the way vanilla's do.
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d stone_bricks", px - 6, y, pz - 2, px + 6, y + 4, pz - 2));
+		tp(server, px + 0.5, y + 0.6, pz + 0.5 - 7.5, 0.0F, 0.0F);
+		badgeShot(context, "forja_38_veteranos_placas_pared");
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", px - 6, y, pz - 2, px + 6, y + 4, pz - 2));
+		clearBadgeScene(context, server, connection, px, y, pz);
+
 		// Looked at, the name comes up over the badge rather than through it; the champion's always shows.
 		badgeScene(server, connection, px, y, pz, new Object[][] {
 			{zombie, veteran, 0.0, 0.0}, {zombie, champion, 2.5, 1.0},
@@ -5992,9 +6022,16 @@ public class ForjaClientTest implements FabricClientGameTest {
 					case CAMPEON -> dev.forja.world.Elites.makeElite(mob, level.getRandom());
 					default -> {
 						threat.mark(mob);
-						mob.setCustomName(Component.translatable("entity.forja.amenaza." + threat.name().toLowerCase(Locale.ROOT),
-							mob.getType().getDescription()));
+						dev.forja.difficulty.Names.give(mob, threat);
 					}
+				}
+				if (entry.length > 4 && (boolean) entry[4]) {
+					// Its name always up, for the pictures of the plates; an unranked one gets a name of its
+					// own, to show that its tag stays vanilla's.
+					if (threat == dev.forja.difficulty.Threat.NORMAL) {
+						mob.setCustomName(Component.literal("Pepe"));
+					}
+					mob.setCustomNameVisible(true);
 				}
 				level.addFreshEntity(mob);
 			}
