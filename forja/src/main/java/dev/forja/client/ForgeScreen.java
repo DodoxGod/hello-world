@@ -803,6 +803,19 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 		// progress and not beside the name: a name can be as long as the panel is wide.
 		boolean weighed = application.before() <= 0 && weight > 0;
 		lines.add(upgrade.displayName(), 0xFF000000 | upgrade.color);
+		if (upgrade == this.menu.sealedPact()) {
+			// Sealed: what it would do, and what it asks before it does anything.
+			net.minecraft.world.item.Item offering = dev.forja.upgrade.Pacts.offering(upgrade);
+			lines.wrap(this.font, Component.translatable("gui.forja.pacto.sellado",
+				offering == null ? Component.empty() : new ItemStack(offering).getHoverName()), BAD);
+			lines.wrap(this.font, upgrade.effect(Math.max(1, application.after())), MUTED);
+			return;
+		}
+		if (upgrade == this.menu.offeredPact()) {
+			net.minecraft.world.item.Item offering = dev.forja.upgrade.Pacts.offering(upgrade);
+			lines.wrap(this.font, Component.translatable("gui.forja.pacto.ofrenda",
+				offering == null ? Component.empty() : new ItemStack(offering).getHoverName()), 0xFFC89BFF);
+		}
 		if (application.limit() == dev.forja.forge.Potential.Limit.LOAD) {
 			lines.wrap(this.font, Component.translatable("gui.forja.carga.no_cabe", weight,
 				Math.max(0, dev.forja.forge.Potential.capacity(gear) - dev.forja.forge.Potential.load(gear))), 0xFFFFB347);

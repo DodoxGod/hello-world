@@ -115,6 +115,9 @@ public final class UpgradeRecipes {
 					break;
 				}
 			}
+			if (!Pacts.fits(target, upgrade)) {
+				return new Application(ItemStack.EMPTY, new int[ingredients.size()], upgrade, 0, 0, null, 0, Potential.Limit.PACTS);
+			}
 			Upgrade conflict = conflictWith(target, upgrade);
 			return conflict == null ? application
 				: new Application(ItemStack.EMPTY, new int[ingredients.size()], upgrade, application.before(), application.before(), conflict,

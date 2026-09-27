@@ -161,7 +161,8 @@ public class BrokenMould extends Monster implements GeoEntity {
 		this.copiedDamage = damage;
 		AttributeInstance attack = this.getAttribute(Attributes.ATTACK_DAMAGE);
 		if (attack != null) {
-			attack.setBaseValue(Math.max(BASE_DAMAGE, damage));
+			// The copy in its hand brings its own damage the way any weapon does; the base makes up the rest.
+			attack.setBaseValue(Math.max(1.0, Math.max(BASE_DAMAGE, damage) - damageOf(cast)));
 		}
 		this.hold(level, cast);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ANVIL_USE, SoundSource.HOSTILE, 1.8F, 0.8F);
@@ -187,25 +188,13 @@ public class BrokenMould extends Monster implements GeoEntity {
 	}
 
 	/**
-	 * What comes out of the furnace: the shape and the colours of the weapon it copied, and nothing else
-	 * of it. None of the upgrades, enchantments, material traits or numbers come across — what the mould
-	 * hits for is its own attack, set by the recast, and a copy that carried its original's stats as well
-	 * would have it hitting for both. Nor does it wear, since nothing will ever repair it.
+	 * What comes out of the furnace: the weapon it copied, exactly - its parts, its upgrades, its
+	 * enchantments, its traits (Andy: "si lleva mejoras del arma, se copia exactamente igual"). What it hits
+	 * for is still the recast's number: the copy's own damage is taken off the mould's base attack when it
+	 * takes it (see {@link #take}), so the two are not counted twice.
 	 */
 	public static ItemStack castOf(ItemStack weapon) {
-		ItemStack cast = new ItemStack(weapon.getItem());
-		net.minecraft.world.item.component.CustomModelData colours = weapon.get(DataComponents.CUSTOM_MODEL_DATA);
-		if (colours != null) {
-			cast.set(DataComponents.CUSTOM_MODEL_DATA, colours);
-		}
-		// A fresh forged stack still carries the default build its item was registered with, so the
-		// parts, the upgrades and the modifiers have to be taken out, not merely left uncopied.
-		cast.set(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
-		cast.set(DataComponents.ENCHANTMENTS, net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
-		cast.remove(ModComponents.PARTS);
-		cast.remove(ModComponents.UPGRADES);
-		cast.set(DataComponents.UNBREAKABLE, net.minecraft.util.Unit.INSTANCE);
-		return cast;
+		return weapon.copyWithCount(1);
 	}
 
 	@Override

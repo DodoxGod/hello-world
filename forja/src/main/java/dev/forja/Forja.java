@@ -61,6 +61,7 @@ public final class Forja implements ModInitializer {
 		dev.forja.forge.Temple.register();
 		dev.forja.forge.SmithLevel.register();
 		dev.forja.forge.Techniques.register();
+		dev.forja.upgrade.Pacts.register();
 		dev.forja.forge.SmithRecord.register();
 		ForjaCommand.register();
 		ForjaLoot.register();

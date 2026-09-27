@@ -402,8 +402,9 @@ public final class Report {
 			}
 		});
 		this.row("7", "SwingStyle es sólo animación; el ×" + f(CombatConfig.get().headMultiplier, 1) + " a la cabeza es igual para todos",
-			"**Confirmada a medias**", "SwingStyle no entra en ningún número de daño salvo en *quién puede cargar*: no cargan "
-				+ String.join(", ", noCharge) + ". Pero no es sólo animación: la IA de los mobs lo lee (`ObsForja`, `RuleBrain`: reaccionan "
+			"**Confirmada a medias**", "SwingStyle no entra en ningún número de daño salvo en *quién puede cargar*: "
+				+ (noCharge.isEmpty() ? "hoy cargan todas las armas forjadas" : "no cargan " + String.join(", ", noCharge))
+				+ ". Pero no es sólo animación: la IA de los mobs lo lee (`ObsForja`, `RuleBrain`: reaccionan "
 				+ "distinto a un tajo, un golpe desde arriba o una estocada), y eso aquí no se mide. Todo a la cabeza: TTK "
 				+ change(this.min(fd.headshotRatio)) + " a " + change(this.max(fd.headshotRatio))
 				+ " según el tipo, no igual para todos: el tope por golpe y los extras (que no llevan el ×" + f(CombatConfig.get().headMultiplier, 1)

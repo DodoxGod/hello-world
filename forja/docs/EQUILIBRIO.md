@@ -1,6 +1,6 @@
 # Equilibrio de Forja, medido
 
-> Esta página la escribe `./gradlew runGametest` (prueba `BalanceGameTests.equilibrio`, código en `src/gametest/java/dev/forja/test/balance`). No se edita a mano: se regenera sola cada vez que se pasan las pruebas, así que siempre dice lo que hace el código de hoy. Dificultad medida: **HERRERO**. Esta vez: 33 mobs, 12 tipos de arma, 5291940 peleas simuladas.
+> Esta página la escribe `./gradlew runGametest` (prueba `BalanceGameTests.equilibrio`, código en `src/gametest/java/dev/forja/test/balance`). No se edita a mano: se regenera sola cada vez que se pasan las pruebas, así que siempre dice lo que hace el código de hoy. Dificultad medida: **HERRERO**. Esta vez: 33 mobs, 12 tipos de arma, 6123482 peleas simuladas.
 
 ## Cómo se mide
 
@@ -20,7 +20,7 @@
 - Ningún tipo de arma está dominado en todo: cada uno gana a los demás contra algún mob en algún escenario.
 - **Estamina**: en una pelea larga casi todos los golpes son cansados (mediana 93 % de los golpes de las mejores armas cuerpo a cuerpo al 100 %): se golpea sin parar a ×0,6 en vez de esperar.
 - **Los extras de las mejoras no tienen el tope de un golpe**: cada uno es un golpe aparte con su propio tope, y son el 40 % del daño de las mejores armas al 100 % (mediana). Un zombi muere en 2,0 golpes, no en 3.
-- **Pocos materiales deciden casi todo**: de 60 mejores armas (12 tipos × 0/50/100 % con y sin pactos), los que más aparecen son damasco (50), vidriacero (50), corazon (31), eco (25). Ver *Hallazgos* (Afilado en cualquier pieza, el mango de vidriacero).
+- **Pocos materiales deciden casi todo**: de 60 mejores armas (12 tipos × 0/50/100 % con y sin pactos), los que más aparecen son damasco (50), vidriacero (50), corazon (32), eco (24). Ver *Hallazgos* (Afilado en cualquier pieza, el mango de vidriacero).
 - **Pactos**: al 50 % los dos pactos bajan el TTK medio una mediana de −38 % (daño, techo y carga a la vez, peso 0).
 - Consulta *Las siete sospechas* para los veredictos, *Hallazgos que no estaban en la lista* y *Valores atípicos* para el porqué.
 
@@ -30,11 +30,11 @@
 |---|---|---|---|
 | 1 | La estamina apenas frena a las armas rápidas: golpear cansado (×0,6) sale mejor que esperar | **Confirmada** | En la pelea larga (60 s) el mejor ritmo de 10 de 10 armas rápidas no espera a la estamina; mediana de golpes cansados 93 %. Daño con estamina / sin estamina: espada 65 %, daga 76 %, espadon 58 %, hacha 61 %, lanza 63 %, mazo 54 %, tridente 60 %, mangual 55 %, guanteletes 71 %, guadana 60 %. |
 | 2 | El tope por golpe (45 % de la vida) deja a las mejores armas en un mínimo de 3 golpes contra mobs de 20 de vida, y decide la velocidad | **Confirmada a medias** | Al 100 %, mediana de golpes que el tope recorta contra los vanilla: 49 %. Pero cada extra de mejora es otro golpe con su propio tope: golpes para matar un zombi, mediana 2,0 (2,0–2,0), no 3; los extras son el 40 % del daño de las mejores armas al 100 % (mediana). |
-| 3 | Los pactos son ganancia pura para el daño y encima dan sitio (+10 de potencial cada uno) | **Confirmada** | Al 50 % el potencial pasa de 50 a 70 (carga 7 → 12) y el TTK baja en 12 de 12 tipos (hasta −52 %). Al 100 %: mediana −20 %. |
+| 3 | Los pactos son ganancia pura para el daño y encima dan sitio (+10 de potencial cada uno) | **Confirmada** | Al 50 % el potencial pasa de 50 a 70 (carga 7 → 12) y el TTK baja en 12 de 12 tipos (hasta −51 %). Al 100 %: mediana −20 %. |
 | 4 | Frenesí suma velocidad plana (+0,6), así que casi dobla el mazo | **Confirmada a medias** | Un mazo corriente pasa de 0,60 a 1,20 golpes/s (×2,00); el mejor mazo, de 1,05 a 1,54 (×1,48). Pero su TTK sólo baja 16 % con Frenesí sola, frente a una mediana de 12 % en todos los tipos: la estamina (golpes cansados) y la invulnerabilidad se comen la cadencia extra. |
 | 5 | Con el frenesí lleno, Matagigantes, Ejecución y Crítico rinden mucho para lo que pesan | **Confirmada** | Por punto de carga, esas tres superan a Filo en 20 de 36 casos (tipo × mejora). Sin el frenesí, el TTK medio al 100 % sube una mediana de +13 % (techo del frenesí: ×2,5 para las de un solo ingrediente). |
 | 6 | Las mejoras de evento no pesan ni tienen techo: poder gratis | **Confirmada a medias** (gratis, pero rinde poco) | Lluvia estelar al 100 % encima de la mejor al 100 % (peso 0): TTK medio −3 % de mediana (−7 % a −1 %). Carnicero y Conductor sólo cuentan con más enemigos cerca, y aquí hay uno. |
-| 7 | SwingStyle es sólo animación; el ×1,3 a la cabeza es igual para todos | **Confirmada a medias** | SwingStyle no entra en ningún número de daño salvo en *quién puede cargar*: no cargan guanteletes, baculo, grimorio. Pero no es sólo animación: la IA de los mobs lo lee (`ObsForja`, `RuleBrain`: reaccionan distinto a un tajo, un golpe desde arriba o una estocada), y eso aquí no se mide. Todo a la cabeza: TTK −21 % a +0 % según el tipo, no igual para todos: el tope por golpe y los extras (que no llevan el ×1,3) se comen parte. |
+| 7 | SwingStyle es sólo animación; el ×1,3 a la cabeza es igual para todos | **Confirmada a medias** | SwingStyle no entra en ningún número de daño salvo en *quién puede cargar*: hoy cargan todas las armas forjadas. Pero no es sólo animación: la IA de los mobs lo lee (`ObsForja`, `RuleBrain`: reaccionan distinto a un tajo, un golpe desde arriba o una estocada), y eso aquí no se mide. Todo a la cabeza: TTK −21 % a +0 % según el tipo, no igual para todos: el tope por golpe y los extras (que no llevan el ×1,3) se comen parte. |
 
 ## Hallazgos que no estaban en la lista
 
@@ -91,11 +91,11 @@ Ráfaga: daño en los 3 primeros segundos con la estamina llena. Sostenido: dañ
 | mangual | 50 % con pactos | bola damasco · cadena eco · mango vidriacero | critico 70 %, frenesi 70 %, ejecucion 70 %, matagigantes 70 %, brecha 70 %, pacto_de_sed, pacto_de_vidrio | 110,4 | 38,1 | 0,56 | cada 11 ticks | 93 % | 0 % |
 | mangual | 100 % | bola corazon · cadena damasco · mango vidriacero | tormenta, critico, frenesi, ejecucion, matagigantes, filo | 77,2 | 31,6 | 0,57 | cada 11 ticks | 93 % | 0 % |
 | mangual | 100 % con pactos | bola damasco · cadena eco · mango vidriacero | tormenta, critico, frenesi, ejecucion, matagigantes, brecha, pacto_de_sed, pacto_de_vidrio | 116,2 | 46,6 | 0,46 | cada 11 ticks | 93 % | 0 % |
-| guanteletes | 0 % | manopla vidriacero · nudillos corazon · remache damasco | — | 27,0 | 20,5 | 1,09 | cada 5 ticks | 97 % | 100 % |
-| guanteletes | 50 % | manopla vidriacero · nudillos damasco · remache eco | matagigantes 50 %, castigo 50 %, rafaga 50 % | 38,0 | 25,4 | 0,75 | cada 5 ticks | 97 % | 100 % |
-| guanteletes | 50 % con pactos | manopla vidriacero · nudillos corazon · remache damasco | tormenta 70 %, ejecucion 70 %, brecha 70 %, pacto_de_sed, pacto_de_vidrio, rafaga 70 %, nudillos_de_hierro 70 % | 71,8 | 48,8 | 0,36 | cada 5 ticks | 97 % | 100 % |
-| guanteletes | 100 % | manopla vidriacero · nudillos corazon · remache damasco | tormenta, frenesi, ejecucion, matagigantes, filo, rafaga, nudillos_de_hierro | 74,1 | 52,2 | 0,26 | cada 4 ticks | 97 % | 100 % |
-| guanteletes | 100 % con pactos | manopla vidriacero · nudillos damasco · remache eco | critico, frenesi, ejecucion, matagigantes, filo, pacto_de_sed, pacto_de_vidrio, rafaga, nudillos_de_hierro | 108,1 | 73,0 | 0,20 | cada 4 ticks | 97 % | 100 % |
+| guanteletes | 0 % | manopla vidriacero · nudillos corazon · remache damasco | — | 30,7 | 20,5 | 1,09 | cada 5 ticks | 97 % | 100 % |
+| guanteletes | 50 % | manopla vidriacero · nudillos corazon · remache damasco | matagigantes 50 %, castigo 50 %, rafaga 50 % | 48,5 | 26,5 | 0,73 | cada 5 ticks | 97 % | 100 % |
+| guanteletes | 50 % con pactos | manopla vidriacero · nudillos corazon · remache damasco | tormenta 70 %, ejecucion 70 %, brecha 70 %, pacto_de_sed, pacto_de_vidrio, rafaga 70 %, nudillos_de_hierro 70 % | 76,5 | 48,8 | 0,36 | cada 5 ticks | 97 % | 100 % |
+| guanteletes | 100 % | manopla vidriacero · nudillos corazon · remache damasco | tormenta, frenesi, ejecucion, matagigantes, filo, rafaga, nudillos_de_hierro | 81,5 | 52,2 | 0,26 | cada 4 ticks | 97 % | 100 % |
+| guanteletes | 100 % con pactos | manopla vidriacero · nudillos damasco · remache eco | critico, frenesi, ejecucion, matagigantes, filo, pacto_de_sed, pacto_de_vidrio, rafaga, nudillos_de_hierro | 114,2 | 73,0 | 0,20 | cada 4 ticks | 97 % | 100 % |
 | guadana | 0 % | hoja corazon · mango vidriacero · atadura damasco | — | 36,5 | 14,3 | 1,56 | cada 13 ticks | 91 % | 0 % |
 | guadana | 50 % | hoja corazon · mango vidriacero · atadura damasco | critico 50 %, matagigantes 50 %, brecha 50 % | 61,4 | 18,5 | 1,21 | cada 13 ticks | 91 % | 21 % |
 | guadana | 50 % con pactos | hoja damasco · mango vidriacero · atadura eco | critico 70 %, frenesi 70 %, matagigantes 70 %, filo 70 %, pacto_de_sed, pacto_de_vidrio | 100,0 | 37,8 | 0,79 | cada 11 ticks | 93 % | 36 % |
@@ -122,7 +122,7 @@ Ráfaga: daño en los 3 primeros segundos con la estamina llena. Sostenido: dañ
 - **mazo** (3934 combinaciones tras podar cada hueco, 3890 distintas en pelea, 52 en el frente): cabeza_mazo corazon · mango vidriacero · atadura damasco (1,50 s); cabeza_mazo damasco · mango vidriacero · atadura eco (1,51 s); cabeza_mazo damasco · mango vidriacero · atadura vara_de_blaze (1,53 s).
 - **tridente** (3914 combinaciones tras podar cada hueco, 3879 distintas en pelea, 55 en el frente): punta_tridente damasco · mango vidriacero · atadura eco (1,59 s); punta_tridente corazon · mango vidriacero · atadura damasco (1,60 s); punta_tridente damasco · mango vidriacero · atadura prismarina (1,61 s).
 - **mangual** (3927 combinaciones tras podar cada hueco, 3883 distintas en pelea, 52 en el frente): bola damasco · cadena eco · mango vidriacero (1,18 s); bola corazon · cadena damasco · mango vidriacero (1,20 s); bola damasco · cadena vara_de_blaze · mango vidriacero (1,21 s).
-- **guanteletes** (4343 combinaciones tras podar cada hueco, 4301 distintas en pelea, 53 en el frente): manopla vidriacero · nudillos corazon · remache damasco (1,09 s); manopla vidriacero · nudillos damasco · remache eco (1,23 s); manopla vidriacero · nudillos damasco · remache prismarina (1,25 s).
+- **guanteletes** (4343 combinaciones tras podar cada hueco, 4301 distintas en pelea, 53 en el frente): manopla vidriacero · nudillos corazon · remache damasco (1,09 s); manopla vidriacero · nudillos damasco · remache eco (1,23 s); manopla cuarzo · nudillos corazon · remache prismarina (1,24 s).
 - **guadana** (3917 combinaciones tras podar cada hueco, 3879 distintas en pelea, 55 en el frente): hoja corazon · mango vidriacero · atadura damasco (1,56 s); hoja damasco · mango vidriacero · atadura eco (1,59 s); hoja damasco · mango vidriacero · atadura prismarina (1,60 s).
 - **baculo** (3870 combinaciones tras podar cada hueco, 3840 distintas en pelea, 54 en el frente): nucleo corazon · engaste prismarina · mango cuarzo (1,83 s); nucleo corazon · engaste vara_de_blaze · mango cuarzo (1,83 s); nucleo corazon · engaste eco · mango cuarzo (1,83 s).
 - **grimorio** (3905 combinaciones tras podar cada hueco, 3868 distintas en pelea, 51 en el frente): nucleo corazon · tapas cuarzo · remache prismarina (3,41 s); nucleo corazon · tapas cuarzo · remache vara_de_blaze (3,41 s); nucleo corazon · tapas cuarzo · remache eco (3,41 s).
@@ -168,7 +168,7 @@ En negrita el tipo más rápido contra ese mob. "—": no se le puede hacer dañ
 | piglin_brute | 0,70 | 0,50 | 0,54 | 0,80 | 1,00 | 1,00 | 0,90 | 0,60 | **0,40** | 0,90 | **0,40** | 1,24 |
 | herrero_caido *(Forja)* | 31,65 | 23,42 | 32,13 | 31,07 | 43,96 | 43,91 | 33,63 | 35,77 | 19,84 | 32,17 | **9,60** | 16,25 |
 | automata_de_forja *(Forja)* | 2,40 | 1,91 | 2,25 | 2,25 | 4,00 | 1,79 | 2,63 | 1,38 | 0,80 | 2,25 | **0,70** | 2,10 |
-| coraza_vacia *(Forja)* | 4,90 | 4,51 | 4,50 | 4,80 | 4,98 | **1,75** | 4,50 | 3,50 | 3,40 | 4,52 | 3,97 | 4,20 |
+| coraza_vacia *(Forja)* | 4,90 | 4,51 | 4,50 | 4,80 | 4,98 | **1,75** | 4,50 | 3,50 | 2,35 | 4,52 | 3,97 | 4,20 |
 | pavesa *(Forja)* | 0,12 | 0,08 | 0,15 | 0,13 | 0,15 | 0,17 | 0,15 | 0,17 | **0,02** | 0,15 | 0,18 | 0,26 |
 | herrumbre *(Forja)* | 0,12 | 0,08 | 0,15 | 0,13 | 0,26 | **0,00** | 0,26 | **0,00** | **0,00** | 0,15 | **0,00** | 0,26 |
 | ascua_mayor *(Forja)* | 0,35 | 0,35 | 0,45 | 0,40 | 0,83 | 0,50 | 0,45 | 0,50 | **0,21** | 0,45 | 0,33 | 0,80 |
@@ -199,28 +199,28 @@ En negrita el tipo más rápido contra ese mob. "—": no se le puede hacer dañ
 | creeper | **0,40** | 0,59 | 0,50 | 0,50 | 0,70 | 0,50 | 0,50 | 0,50 | 0,43 | 0,50 | 0,55 | 0,95 |
 | spider | 0,40 | 0,23 | 0,50 | 0,35 | 0,50 | 0,50 | 0,50 | 0,35 | **0,18** | 0,37 | 0,30 | 0,45 |
 | cave_spider | 0,40 | 0,23 | 0,50 | 0,35 | 0,50 | 0,50 | 0,50 | 0,35 | **0,18** | 0,35 | 0,30 | 0,45 |
-| pillager | **0,45** | 0,59 | 0,50 | 0,50 | 1,00 | 0,50 | 0,50 | 0,50 | 0,50 | 0,50 | 0,55 | 0,95 |
-| vindicator | **0,45** | 0,59 | 0,50 | 0,50 | 1,00 | 0,50 | 0,50 | 0,50 | 0,50 | 0,50 | 0,55 | 0,95 |
-| evoker | **0,45** | 0,59 | 0,50 | 0,50 | 1,00 | 0,50 | 0,50 | 0,50 | 0,50 | 0,50 | 0,55 | 0,95 |
-| witch | **0,50** | 0,70 | **0,50** | **0,50** | 1,00 | 0,85 | **0,50** | **0,50** | 0,60 | 0,65 | 1,40 | 7,00 |
-| enderman | **0,90** | 1,08 | 1,00 | 1,00 | 1,50 | 1,00 | 1,00 | 1,00 | 0,92 | 1,00 | 1,10 | 3,50 |
+| pillager | **0,45** | 0,59 | 0,50 | 0,50 | 1,00 | 0,50 | 0,50 | 0,50 | 0,48 | 0,50 | 0,55 | 0,95 |
+| vindicator | **0,45** | 0,59 | 0,50 | 0,50 | 1,00 | 0,50 | 0,50 | 0,50 | 0,48 | 0,50 | 0,55 | 0,95 |
+| evoker | **0,45** | 0,59 | 0,50 | 0,50 | 1,00 | 0,50 | 0,50 | 0,50 | 0,48 | 0,50 | 0,55 | 0,95 |
+| witch | **0,50** | 0,70 | **0,50** | **0,50** | 1,00 | 0,85 | **0,50** | **0,50** | **0,50** | 0,65 | 1,40 | 7,00 |
+| enderman | 0,90 | 1,08 | 1,00 | 1,00 | 1,50 | 1,00 | 1,00 | 1,00 | **0,89** | 1,00 | 1,10 | 3,50 |
 | blaze | **0,40** | 0,59 | 0,50 | 0,50 | 0,70 | 0,50 | 0,50 | 0,50 | 0,43 | 0,50 | 0,55 | 0,95 |
 | piglin_brute | 1,35 | 1,38 | **1,00** | **1,00** | 1,65 | **1,00** | **1,00** | **1,00** | 1,14 | **1,00** | 1,40 | 3,50 |
-| herrero_caido *(Forja)* | 56,50 | 53,66 | 49,50 | 60,80 | 83,50 | 83,50 | 56,65 | 72,10 | 49,49 | 59,98 | **25,30** | 52,95 |
-| automata_de_forja *(Forja)* | 5,00 | 5,41 | 3,50 | 4,04 | 9,10 | 2,50 | 6,00 | 2,40 | 2,45 | 4,34 | **2,20** | 5,45 |
-| coraza_vacia *(Forja)* | 6,00 | 6,40 | 5,50 | 6,00 | 6,60 | 4,50 | 5,40 | **3,48** | 4,10 | 6,00 | 4,95 | 7,00 |
+| herrero_caido *(Forja)* | 56,50 | 53,66 | 49,50 | 60,80 | 83,50 | 83,50 | 56,65 | 72,10 | 49,36 | 59,98 | **25,30** | 52,95 |
+| automata_de_forja *(Forja)* | 5,00 | 5,41 | 3,50 | 4,04 | 9,10 | 2,50 | 6,00 | 2,40 | 2,25 | 4,34 | **2,20** | 5,45 |
+| coraza_vacia *(Forja)* | 6,00 | 6,40 | 5,50 | 6,00 | 6,60 | 4,50 | 5,40 | 3,48 | **1,79** | 6,00 | 4,95 | 7,00 |
 | pavesa *(Forja)* | 0,40 | 0,23 | 0,50 | 0,35 | 0,50 | 0,50 | 0,50 | 0,35 | **0,18** | 0,35 | 0,30 | 0,80 |
 | herrumbre *(Forja)* | 0,40 | 0,23 | 0,50 | 0,35 | 0,50 | **0,00** | 0,50 | **0,00** | **0,00** | 0,35 | **0,00** | 0,45 |
 | ascua_mayor *(Forja)* | 0,80 | 0,99 | 1,00 | 1,00 | 1,00 | 1,00 | 1,00 | 1,00 | **0,69** | 1,00 | 1,10 | 3,50 |
-| escoria_viviente *(Forja)* | 0,40 | **0,30** | 0,50 | 0,50 | 0,65 | 1,00 | 0,50 | 1,00 | 1,07 | 0,37 | 1,40 | 2,45 |
-| yunque_andante *(Forja)* | 5,00 | 5,33 | 4,00 | 4,55 | 4,55 | **1,00** | 2,55 | **1,00** | 1,20 | 4,72 | 1,65 | 4,30 |
-| percutor *(Forja)* | **2,40** | 3,40 | 2,50 | 2,50 | 2,50 | 2,50 | 2,50 | **2,40** | 4,26 | 2,50 | 3,05 | 7,00 |
-| tenaza *(Forja)* | 1,00 | 1,08 | 1,00 | 1,00 | 1,50 | 1,00 | 1,00 | 1,00 | **0,89** | 1,00 | 1,10 | 3,45 |
-| cargador_de_carbon *(Forja)* | 1,00 | 1,29 | 1,00 | 1,00 | 1,50 | 1,00 | 1,00 | 1,00 | **0,93** | 1,00 | 1,10 | 3,50 |
+| escoria_viviente *(Forja)* | 0,40 | **0,30** | 0,50 | 0,50 | 0,65 | 1,00 | 0,50 | 1,00 | 1,00 | 0,37 | 1,40 | 2,45 |
+| yunque_andante *(Forja)* | 5,00 | 5,33 | 4,00 | 4,55 | 4,55 | **1,00** | 2,55 | **1,00** | 1,19 | 4,72 | 1,65 | 4,30 |
+| percutor *(Forja)* | **2,40** | 3,40 | 2,50 | 2,50 | 2,50 | 2,50 | 2,50 | **2,40** | 4,00 | 2,50 | 3,05 | 7,00 |
+| tenaza *(Forja)* | 1,00 | 1,08 | 1,00 | 1,00 | 1,50 | 1,00 | 1,00 | 1,00 | **0,86** | 1,00 | 1,10 | 3,45 |
+| cargador_de_carbon *(Forja)* | 1,00 | 1,29 | 1,00 | 1,00 | 1,50 | 1,00 | 1,00 | 1,00 | **0,91** | 1,00 | 1,10 | 3,50 |
 | templador *(Forja)* | **0,50** | 0,70 | **0,50** | 0,65 | 1,00 | 0,85 | 1,00 | **0,50** | 0,60 | 0,65 | 0,55 | 1,95 |
 | nucleo_estelar *(Forja)* | — | — | — | — | — | — | — | — | — | — | — | — |
-| molde_roto *(Forja)* | 1,90 | 1,93 | 1,50 | **1,38** | 2,50 | 1,85 | 2,20 | **1,38** | 1,53 | 1,39 | 1,65 | 4,30 |
-| guardian_de_cuno *(Forja)* | 13,00 | 12,82 | 10,50 | 12,32 | 18,20 | 5,50 | 11,55 | **3,27** | 6,42 | 12,28 | 4,40 | 10,95 |
+| molde_roto *(Forja)* | 1,90 | 1,93 | 1,50 | **1,38** | 2,50 | 1,85 | 2,20 | **1,38** | 1,51 | 1,39 | 1,65 | 4,30 |
+| guardian_de_cuno *(Forja)* | 13,00 | 12,82 | 10,50 | 12,32 | 18,20 | 5,50 | 11,55 | **3,27** | 6,53 | 12,28 | 4,40 | 10,95 |
 
 ## Tiempo para matar (s), mejores armas al 0 %
 
@@ -248,7 +248,7 @@ En negrita el tipo más rápido contra ese mob. "—": no se le puede hacer dañ
 | piglin_brute | **1,50** | 2,00 | **1,50** | **1,50** | 2,50 | 1,95 | 1,60 | **1,50** | **1,50** | **1,50** | 2,80 | 4,45 |
 | herrero_caido *(Forja)* | 61,00 | 67,20 | 72,00 | 68,25 | 97,00 | 96,00 | 67,80 | 77,50 | 52,75 | 73,45 | **44,80** | 59,95 |
 | automata_de_forja *(Forja)* | 6,00 | 7,50 | 6,00 | 5,85 | 12,35 | 2,50 | 7,15 | **2,40** | 3,50 | 6,50 | 3,50 | 7,00 |
-| coraza_vacia *(Forja)* | 6,50 | 7,00 | 6,60 | 6,60 | 7,50 | **1,50** | 6,00 | 4,50 | 4,50 | 2,50 | 7,70 | 7,00 |
+| coraza_vacia *(Forja)* | 6,50 | 7,00 | 6,60 | 6,60 | 7,50 | **1,50** | 6,00 | 4,50 | **1,50** | 2,50 | 7,70 | 7,00 |
 | pavesa *(Forja)* | 0,50 | 0,30 | 0,50 | 0,50 | 0,50 | 0,50 | 0,50 | 0,50 | **0,25** | 0,50 | 0,70 | 0,95 |
 | herrumbre *(Forja)* | 0,50 | 0,30 | 0,50 | 0,50 | 0,65 | **0,00** | 0,50 | **0,00** | **0,00** | 0,50 | **0,00** | 0,45 |
 | ascua_mayor *(Forja)* | **1,00** | 1,30 | **1,00** | **1,00** | 1,65 | 1,50 | **1,00** | **1,00** | **1,00** | **1,00** | 2,10 | 3,50 |
@@ -259,7 +259,7 @@ En negrita el tipo más rápido contra ese mob. "—": no se le puede hacer dañ
 | cargador_de_carbon *(Forja)* | 1,50 | 1,70 | 1,40 | **1,30** | 2,50 | 1,50 | 1,50 | 1,50 | 1,50 | 1,50 | 2,10 | 3,95 |
 | templador *(Forja)* | 1,00 | 1,00 | **0,70** | 0,75 | 1,50 | 1,00 | 1,00 | 1,00 | 0,75 | 1,00 | 1,40 | 2,95 |
 | nucleo_estelar *(Forja)* | — | — | — | — | — | — | — | — | — | — | — | — |
-| molde_roto *(Forja)* | 2,00 | 2,30 | 2,40 | 2,30 | 4,00 | 2,00 | 2,50 | **1,80** | 2,25 | 2,30 | 2,80 | 4,95 |
+| molde_roto *(Forja)* | 2,00 | 2,30 | 2,40 | 2,30 | 4,00 | 2,00 | 2,50 | **1,80** | 1,90 | 2,30 | 2,80 | 4,95 |
 | guardian_de_cuno *(Forja)* | 15,00 | 17,40 | 17,25 | 15,60 | 22,50 | 15,00 | 14,40 | 10,00 | 8,50 | 16,90 | **8,40** | 13,95 |
 
 ### Comprobación: pelea simulada contra vida ÷ daño sostenido
@@ -276,7 +276,7 @@ Para cada pelea de 2 s o más al 100 %, el TTK simulado dividido por la cuenta s
 | mazo | 3 | ×0,42 | ×0,25 – ×0,97 | guardian_de_cuno (2,5 s simulado, 10,2 s estimado) |
 | tridente | 4 | ×0,95 | ×0,37 – ×2,09 | automata_de_forja (2,6 s simulado, 7,0 s estimado) |
 | mangual | 4 | ×1,01 | ×0,30 – ×2,25 | guardian_de_cuno (2,5 s simulado, 8,4 s estimado) |
-| guanteletes | 2 | ×4,51 | ×1,01 – ×4,51 | coraza_vacia (3,4 s simulado, 0,8 s estimado) |
+| guanteletes | 2 | ×1,31 | ×1,01 – ×1,31 | coraza_vacia (2,4 s simulado, 1,8 s estimado) |
 | guadana | 6 | ×0,79 | ×0,62 – ×1,60 | coraza_vacia (4,5 s simulado, 2,8 s estimado) |
 | baculo | 2 | ×4,66 | ×1,16 – ×4,66 | coraza_vacia (4,0 s simulado, 0,9 s estimado) |
 | grimorio | 7 | ×1,38 | ×1,04 – ×4,52 | coraza_vacia (4,2 s simulado, 0,9 s estimado) |
@@ -295,7 +295,7 @@ Cada preset multiplica la vida de los monstruos, el tope por golpe y la barra de
 | mazo | 0,61 | ×0,64 | ×1,00 | ×1,38 | ×1,60 |
 | tridente | 0,67 | ×0,59 | ×1,00 | ×1,22 | ×1,50 |
 | mangual | 0,56 | ×0,58 | ×1,00 | ×1,35 | ×1,54 |
-| guanteletes | 0,25 | ×0,67 | ×1,00 | ×1,28 | ×1,74 |
+| guanteletes | 0,24 | ×0,68 | ×1,00 | ×1,31 | ×1,75 |
 | guadana | 0,66 | ×0,53 | ×1,00 | ×1,19 | ×1,38 |
 | baculo | 0,39 | ×0,75 | ×1,00 | ×1,25 | ×1,44 |
 | grimorio | 1,01 | ×0,53 | ×1,00 | ×1,24 | ×1,48 |
@@ -350,21 +350,21 @@ Cambio del TTK medio al añadirla sola (negativo es mejor), y entre paréntesis 
 
 | Mejora (peso) | espada | daga | espadon | hacha | lanza | mazo | tridente | mangual | guanteletes | guadana | baculo | grimorio |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| filo (4) | −16 % (−4 %) | −37 % (−9 %) | −6 % (−2 %) | −11 % (−3 %) | −32 % (−8 %) | −25 % (−6 %) | −20 % (−5 %) | −11 % (−3 %) | −32 % (−8 %) | −14 % (−3 %) | −18 % (−5 %) | −43 % (−11 %) |
+| filo (4) | −16 % (−4 %) | −37 % (−9 %) | −6 % (−2 %) | −11 % (−3 %) | −32 % (−8 %) | −25 % (−6 %) | −20 % (−5 %) | −11 % (−3 %) | −33 % (−8 %) | −14 % (−3 %) | −18 % (−5 %) | −43 % (−11 %) |
 | castigo (2) | +0 % (+0 %) | −16 % (−8 %) | +0 % (+0 %) | +0 % (+0 %) | −20 % (−10 %) | −6 % (−3 %) | −8 % (−4 %) | +0 % (+0 %) | −8 % (−4 %) | +0 % (+0 %) | +0 % (+0 %) | −28 % (−14 %) |
 | perdicion_de_artropodos (1) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | −14 % (−14 %) |
-| brecha (2) | −9 % (−4 %) | −11 % (−5 %) | −6 % (−3 %) | −6 % (−3 %) | −9 % (−4 %) | −8 % (−4 %) | −8 % (−4 %) | −6 % (−3 %) | −7 % (−4 %) | −8 % (−4 %) | −1 % (−1 %) | +0 % (+0 %) |
+| brecha (2) | −9 % (−4 %) | −11 % (−5 %) | −6 % (−3 %) | −6 % (−3 %) | −9 % (−4 %) | −8 % (−4 %) | −8 % (−4 %) | −6 % (−3 %) | −8 % (−4 %) | −8 % (−4 %) | −1 % (−1 %) | +0 % (+0 %) |
 | densidad (3) | · | · | · | · | · | +0 % (+0 %) | · | · | · | · | · | · |
 | aspecto_igneo (2) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) |
-| critico (3) | −7 % (−2 %) | −16 % (−5 %) | −5 % (−2 %) | −6 % (−2 %) | −5 % (−2 %) | −8 % (−3 %) | −6 % (−2 %) | −6 % (−2 %) | −6 % (−2 %) | −12 % (−4 %) | −9 % (−3 %) | −4 % (−1 %) |
+| critico (3) | −7 % (−2 %) | −16 % (−5 %) | −5 % (−2 %) | −6 % (−2 %) | −5 % (−2 %) | −8 % (−3 %) | −6 % (−2 %) | −6 % (−2 %) | −8 % (−3 %) | −12 % (−4 %) | −9 % (−3 %) | −4 % (−1 %) |
 | frenesi (3) | −8 % (−3 %) | −16 % (−5 %) | −7 % (−2 %) | −12 % (−4 %) | −14 % (−5 %) | −16 % (−5 %) | −10 % (−3 %) | −10 % (−3 %) | −15 % (−5 %) | −13 % (−4 %) | +0 % (+0 %) | +0 % (+0 %) |
 | tormenta (3) | −10 % (−3 %) | −18 % (−6 %) | −3 % (−1 %) | −3 % (−1 %) | −11 % (−4 %) | −3 % (−1 %) | −5 % (−2 %) | −1 % (−0 %) | −13 % (−4 %) | −7 % (−2 %) | −7 % (−2 %) | −2 % (−1 %) |
-| ejecucion (2) | −11 % (−5 %) | −10 % (−5 %) | −7 % (−3 %) | −8 % (−4 %) | −11 % (−5 %) | −24 % (−12 %) | −12 % (−6 %) | −11 % (−6 %) | −3 % (−1 %) | −9 % (−5 %) | −13 % (−6 %) | −1 % (−1 %) |
-| matagigantes (2) | −18 % (−9 %) | −26 % (−13 %) | −15 % (−8 %) | −18 % (−9 %) | −26 % (−13 %) | −31 % (−16 %) | −18 % (−9 %) | −19 % (−9 %) | −26 % (−13 %) | −18 % (−9 %) | −18 % (−9 %) | −3 % (−2 %) |
+| ejecucion (2) | −11 % (−5 %) | −10 % (−5 %) | −7 % (−3 %) | −8 % (−4 %) | −11 % (−5 %) | −24 % (−12 %) | −12 % (−6 %) | −11 % (−6 %) | −6 % (−3 %) | −9 % (−5 %) | −13 % (−6 %) | −1 % (−1 %) |
+| matagigantes (2) | −18 % (−9 %) | −26 % (−13 %) | −15 % (−8 %) | −18 % (−9 %) | −26 % (−13 %) | −31 % (−16 %) | −18 % (−9 %) | −19 % (−9 %) | −30 % (−15 %) | −18 % (−9 %) | −18 % (−9 %) | −3 % (−2 %) |
 | veneno (2) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | −0 % (−0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | +0 % (+0 %) | −1 % (−1 %) | +0 % (+0 %) |
 | desgarro (3) | · | +0 % (+0 %) | · | · | · | · | · | · | · | +0 % (+0 %) | · | · |
-| nudillos_de_hierro (3) | · | · | · | · | · | · | · | · | −11 % (−4 %) | · | · | · |
-| rafaga (2) | · | · | · | · | · | · | · | · | −15 % (−8 %) | · | · | · |
+| nudillos_de_hierro (3) | · | · | · | · | · | · | · | · | −14 % (−5 %) | · | · | · |
+| rafaga (2) | · | · | · | · | · | · | · | · | −21 % (−10 %) | · | · | · |
 | conjuro_veloz (3) | · | · | · | · | · | · | · | · | · | · | −44 % (−15 %) | −15 % (−5 %) |
 | sobrecarga (3) | · | · | · | · | · | · | · | · | · | · | −10 % (−3 %) | +0 % (+0 %) |
 | resonancia (4) | · | · | · | · | · | · | · | · | · | · | −41 % (−10 %) | −29 % (−7 %) |
@@ -407,7 +407,7 @@ La programación dinámica es exacta para valores que se suman; en una pelea no 
 | mangual | 100 % | 20 | 639 | tormenta, critico, frenesi, ejecucion, matagigantes, filo | 0,66 | tormenta, critico, frenesi, ejecucion, matagigantes, filo | 0,66 | +0 % |
 | mangual | 50 % con pactos | 12 | 470 | critico, frenesi, ejecucion, matagigantes, brecha | 0,59 | critico, frenesi, ejecucion, matagigantes, brecha | 0,59 | +0 % |
 | mangual | 100 % con pactos | 20 | 639 | tormenta, critico, frenesi, ejecucion, matagigantes, filo | 0,53 | tormenta, critico, frenesi, ejecucion, matagigantes, brecha | 0,52 | +1 % |
-| guanteletes | 50 % | 7 | 242 | matagigantes, rafaga, nudillos_de_hierro | 0,77 | matagigantes, castigo, rafaga | 0,75 | +3 % |
+| guanteletes | 50 % | 7 | 242 | matagigantes, rafaga, nudillos_de_hierro | 0,75 | matagigantes, castigo, rafaga | 0,73 | +3 % |
 | guanteletes | 100 % | 20 | 2493 | tormenta, critico, frenesi, matagigantes, filo, rafaga, nudillos_de_hierro | 0,26 | tormenta, frenesi, ejecucion, matagigantes, filo, rafaga, nudillos_de_hierro | 0,26 | +0 % |
 | guanteletes | 50 % con pactos | 12 | 1216 | critico, ejecucion, matagigantes, rafaga, nudillos_de_hierro | 0,40 | tormenta, ejecucion, brecha, rafaga, nudillos_de_hierro | 0,36 | +11 % |
 | guanteletes | 100 % con pactos | 20 | 2493 | critico, frenesi, ejecucion, matagigantes, filo, rafaga, nudillos_de_hierro | 0,21 | critico, frenesi, ejecucion, matagigantes, filo, rafaga, nudillos_de_hierro | 0,21 | +0 % |
@@ -472,15 +472,15 @@ Vida y tope por golpe en HERRERO, sin veteranos ni élites (un veterano es ×1,5
 
 ## Valores atípicos y el porqué
 
-1. **guanteletes es la más rápida al 100 % (0,26 s).** Porqué: 6,0 de daño a 4,06 golpes/s; ritmo cada 4 ticks; 97 % de los golpes cansado; 1,0 aturdidos por pelea; Afilado +3 en cada golpe; no puede cargar golpes.
+1. **guanteletes es la más rápida al 100 % (0,26 s).** Porqué: 6,0 de daño a 4,06 golpes/s; ritmo cada 4 ticks; 97 % de los golpes cansado; 1,0 aturdidos por pelea; Afilado +3 en cada golpe.
 2. **lanza es la más lenta al 100 % (1,10 s).** Porqué: 5,5 de daño a 2,02 golpes/s; ritmo cada 10 ticks; 93 % de los golpes cansado; 0,2 aturdidos por pelea; Afilado +3 en cada golpe.
 3. **La mejora que más rinde por punto de carga: matagigantes en mazo** (16 % menos de TTK por punto). Porqué: el frenesí la multiplica por su techo (×2,5 las de un solo ingrediente) en cuanto se encadenan 5 golpes, y pesa poco.
 4. **Contra herrero_caido *(Forja)*, baculo mata en 9,6 s y la mediana de los tipos en 32,1 s.** Porqué: cada punto de su hechizo le quita 0,50 (magia: sin armadura, sin estamina); el de las armas cuerpo a cuerpo, 0,30 a 0,32; es jefe: guardia al 50 % y tope del 8 % por golpe, que los extras y la cadencia esquivan mejor; 1,0 aturdidos por pelea; Afilado +3 en cada golpe; hechizo de 8,0 cada 8 ticks, sin estamina y atravesando armadura.
 5. **Contra automata_de_forja *(Forja)*, baculo mata en 0,7 s y la mediana de los tipos en 2,3 s.** Porqué: cada punto de su hechizo le quita 1,10 (magia: sin armadura, sin estamina); el de las armas cuerpo a cuerpo, 0,49 a 0,76; 1,0 aturdidos por pelea; Afilado +3 en cada golpe; hechizo de 8,0 cada 8 ticks, sin estamina y atravesando armadura.
 6. **Contra coraza_vacia *(Forja)*, mazo mata en 1,8 s y la mediana de los tipos en 4,5 s.** Porqué: cada punto de su golpe le quita 0,95; el de las armas cuerpo a cuerpo, 0,48 a 0,95; 8,0 de daño a 1,62 golpes/s; ritmo cada 11 ticks; 93 % de los golpes cansado; 1,1 aturdidos por pelea; Afilado +3 en cada golpe.
-7. **Contra yunque_andante *(Forja)*, guanteletes mata en 0,4 s y la mediana de los tipos en 2,1 s.** Porqué: cada punto de su golpe le quita 1,09; el de las armas cuerpo a cuerpo, 0,45 a 1,09; 6,0 de daño a 4,06 golpes/s; ritmo cada 4 ticks; 97 % de los golpes cansado; 1,0 aturdidos por pelea; Afilado +3 en cada golpe; no puede cargar golpes.
+7. **Contra yunque_andante *(Forja)*, guanteletes mata en 0,4 s y la mediana de los tipos en 2,1 s.** Porqué: cada punto de su golpe le quita 1,09; el de las armas cuerpo a cuerpo, 0,45 a 1,09; 6,0 de daño a 4,06 golpes/s; ritmo cada 4 ticks; 97 % de los golpes cansado; 1,0 aturdidos por pelea; Afilado +3 en cada golpe.
 8. **Contra guardian_de_cuno *(Forja)*, baculo mata en 1,2 s y la mediana de los tipos en 5,5 s.** Porqué: cada punto de su hechizo le quita 1,10 (magia: sin armadura, sin estamina); el de las armas cuerpo a cuerpo, 0,49 a 0,76; 1,0 aturdidos por pelea; Afilado +3 en cada golpe; hechizo de 8,0 cada 8 ticks, sin estamina y atravesando armadura.
-9. **Los pactos en guanteletes al 50 %: TTK −52 %.** Porqué: +32 % y +40 % de daño al atributo, peso 0, sin techo, y +20 de potencial que sube el techo de las demás de 50 a 70 % y la carga de 7 a 12. Lo que cuestan (hambre, durabilidad) no es daño.
+9. **Los pactos en guanteletes al 50 %: TTK −51 %.** Porqué: +32 % y +40 % de daño al atributo, peso 0, sin techo, y +20 de potencial que sube el techo de las demás de 50 a 70 % y la carga de 7 a 12. Lo que cuestan (hambre, durabilidad) no es daño.
 
 ## Recomendaciones
 

@@ -270,6 +270,12 @@ public final class ForjaClient implements ClientModInitializer {
 				if (synergy.active(stack) || first <= 0 || second <= 0) {
 					continue;
 				}
+				if (synergy.reached(upgrades) && !stack.isBroken()) {
+					// Far enough along, and asleep anyway: three stronger ones are awake.
+					added.add(Component.translatable("tooltip.forja.sinergia_dormida", synergy.displayName(),
+						dev.forja.upgrade.Synergy.MOST).withColor(0xFF7A7A7A));
+					continue;
+				}
 				added.add(Component.translatable("tooltip.forja.sinergia_cerca", synergy.displayName(),
 					Math.min(first, second), dev.forja.upgrade.Synergy.THRESHOLD).withColor(0xFF7A7A7A));
 			}

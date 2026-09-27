@@ -34,7 +34,13 @@ public final class ChargedStrike {
 
 	/** Whether this stack swings with a style of its own; only those charge. */
 	public static boolean charges(net.minecraft.world.item.ItemStack weapon) {
-		return SwingStyle.of(weapon) != SwingStyle.VANILLA;
+		if (SwingStyle.of(weapon) != SwingStyle.VANILLA) {
+			return true;
+		}
+		// Every forged thing that is swung: the gauntlets, the staff and the tome, the tools. They had a charge pose
+		// and never got to use it, because charging went by the swing style and theirs is the plain one.
+		dev.forja.part.ForgedParts parts = weapon.get(dev.forja.registry.ModComponents.PARTS);
+		return parts != null && (parts.type().kind == dev.forja.forge.ForgeType.Kind.WEAPON || parts.type().kind == dev.forja.forge.ForgeType.Kind.TOOL);
 	}
 
 	public static void onPayload(ServerPlayer player, byte action) {

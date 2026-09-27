@@ -2,7 +2,7 @@
 
 ## 2026-09-26
 
-Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (117).
+Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (120).
 
 ### Bastión del Gremio
 
@@ -45,6 +45,19 @@ Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (117).
   girando sobre la cabeza, estocadas de daga y tridente, directos alternos de los guanteletes...
 - **Los enemigos avisan con la pose de su arma** (martillo en alto, lanza recogida, espadón abierto) durante
   todo su aviso, y la sueltan en el golpe; si amagan, la bajan.
+
+### Pactos y sinergias
+
+- **Dos pactos por objeto como mucho**, y **tres sinergias despiertas** por objeto: si una pieza llega a
+  una cuarta, despiertan las tres más fuertes (sus dos porcentajes sumados) y la otra duerme hasta
+  superar a alguna. El tooltip dice cuál duerme.
+- **Cada pacto se abre una vez**, ofreciendo algo raro en la estrella junto a sus ingredientes: sed, un
+  tótem de la inmortalidad; vidrio, una estrella del Nether; sombra, un fragmento de eco; prisa, un
+  corazón del mar. La ofrenda se gasta y el pacto queda abierto para ese jugador para siempre (también
+  tras morir). Sin abrir, la forja enseña el pacto sellado y lo que pide.
+- El **molde roto** copia el arma **exactamente**, mejoras incluidas.
+- **Todas las armas y herramientas forjadas cargan el golpe** (guanteletes, báculo, grimorio y
+  herramientas tenían la pose de carga y nunca la usaban).
 
 ### Guía y logros
 

@@ -665,8 +665,6 @@ public class CombatGameTests {
 		var mould = helper.spawn(dev.forja.registry.ModEntities.MOLDE_ROTO, new BlockPos(3, 1, 1));
 		mould.setNoAi(true);
 		var attack = mould.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
-		java.util.Set<net.minecraft.resources.Identifier> modifiersBefore = attack.getModifiers().stream()
-			.map(net.minecraft.world.entity.ai.attributes.AttributeModifier::id).collect(java.util.stream.Collectors.toSet());
 		helper.assertTrue(mould.getMainHandItem().isEmpty(), "un molde recién hecho no sostiene nada");
 		mould.consider(level, player.getMainHandItem());
 		helper.runAfterDelay(dev.forja.entity.BrokenMould.RECAST_WINDUP + 2, () -> {
@@ -674,19 +672,17 @@ public class CombatGameTests {
 			helper.assertTrue(held.is(sword.getItem()), "tras refundir debería sostener la copia de la espada, sostiene " + held);
 			helper.assertTrue(held != player.getMainHandItem() && player.getMainHandItem().has(dev.forja.registry.ModComponents.PARTS),
 				"lo que sostiene es una copia: el jugador sigue con su espada");
-			helper.assertTrue(java.util.Objects.equals(held.get(net.minecraft.core.component.DataComponents.CUSTOM_MODEL_DATA),
-				sword.get(net.minecraft.core.component.DataComponents.CUSTOM_MODEL_DATA)), "la copia lleva los colores de la espada");
+			helper.assertTrue(ItemStack.isSameItemSameComponents(held, sword),
+				"la copia es exactamente la espada, con sus piezas y mejoras");
 			float chance = mould.getDropChances().byEquipment(EquipmentSlot.MAINHAND);
 			helper.assertTrue(chance == 0.0F, "la copia no se suelta nunca, probabilidad " + chance);
-			// It hits for what the recast set, and the copy in its hand does not add its own numbers on top.
+			// It hits for what the recast set: the copy brings its own damage and the base makes up the rest,
+			// so the two are not counted twice.
 			double expected = Math.max(dev.forja.entity.BrokenMould.BASE_DAMAGE,
 				Math.min(dev.forja.entity.BrokenMould.COPY_CEILING, dev.forja.entity.BrokenMould.damageOf(sword) * 1.4));
-			java.util.Set<net.minecraft.resources.Identifier> modifiersAfter = attack.getModifiers().stream()
-				.map(net.minecraft.world.entity.ai.attributes.AttributeModifier::id).collect(java.util.stream.Collectors.toSet());
-			helper.assertTrue(Math.abs(attack.getBaseValue() - expected) < EPS,
-				"el ataque base debería ser " + expected + " y es " + attack.getBaseValue());
-			helper.assertTrue(modifiersAfter.equals(modifiersBefore) && dev.forja.entity.BrokenMould.damageOf(held) == 0.0,
-				"la copia no suma su propio daño: modificadores " + modifiersBefore + " -> " + modifiersAfter);
+			double total = attack.getBaseValue() + dev.forja.entity.BrokenMould.damageOf(held);
+			helper.assertTrue(Math.abs(total - expected) < EPS,
+				"base " + attack.getBaseValue() + " + copia " + dev.forja.entity.BrokenMould.damageOf(held) + " deberían sumar " + expected);
 			// Killed by the player, which is when a mob drops what it holds: the template, never the sword.
 			var around = mould.getBoundingBox().inflate(3.0);
 			for (var stray : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, around)) {

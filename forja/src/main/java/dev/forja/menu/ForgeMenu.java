@@ -142,6 +142,10 @@ public class ForgeMenu extends AbstractContainerMenu {
 	private dev.forja.forge.@Nullable ForgeType beyondBench;
 	private @Nullable Refusal refusal;
 	private UpgradeRecipes.@Nullable Application application;
+	/** The pact the ingredients match that this smith has not opened, with nothing on the star to open it. */
+	private @Nullable Upgrade sealedPact;
+	/** The pact this upgrade opens as it goes in, its offering taken from the star with the ingredients. */
+	private @Nullable Upgrade offeredPact;
 	private final int[] repairUse = new int[STAR_COUNT];
 	private final Player smith;
 	private int inheritSlot = -1;
@@ -337,6 +341,16 @@ public class ForgeMenu extends AbstractContainerMenu {
 		}
 	}
 
+	/** A pact the star matches that this smith has not opened yet, and nothing there to open it. */
+	public @Nullable Upgrade sealedPact() {
+		return this.sealedPact;
+	}
+
+	/** The pact the upgrade on offer opens as it goes in. */
+	public @Nullable Upgrade offeredPact() {
+		return this.offeredPact;
+	}
+
 	/** What the ingredients on the star would do to the center gear, or null when they match nothing. */
 	public UpgradeRecipes.@Nullable Application application() {
 		return this.application;
@@ -425,6 +439,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 		Action performed = this.action;
 		ItemStack result = this.forgePreview.copy();
 		UpgradeRecipes.Application applied = this.application;
+		Upgrade opened = this.offeredPact;
 		int[] repairUse = this.repairUse.clone();
 		int[] alloyUse = this.alloyUse.clone();
 		switch (performed) {
@@ -501,6 +516,12 @@ public class ForgeMenu extends AbstractContainerMenu {
 				this.starBurst(applied.upgrade(), applied.after());
 				dev.forja.forge.SmithLevel.award(player, dev.forja.forge.SmithLevel.XP_UPGRADE);
 				dev.forja.forge.SmithRecord.add(player, dev.forja.forge.SmithRecord.UPGRADED);
+				if (opened != null && player instanceof ServerPlayer) {
+					dev.forja.upgrade.Pacts.unlock(player, opened);
+					player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("gui.forja.pacto.abierto", opened.displayName())
+						.withColor(0xFF000000 | opened.color));
+					this.playSound(SoundEvents.RESPAWN_ANCHOR_CHARGE);
+				}
 				ForjaAdvancements.upgraded(player, result, applied.after());
 			}
 			case BOOK -> {
@@ -730,7 +751,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 				int passed = Math.round(entry.getValue() * (dev.forja.forge.Techniques.has(this.smith, dev.forja.forge.Technique.HERENCIA_LIMPIA)
 					? dev.forja.forge.Technique.INHERIT_SHARE
 					: INHERIT_SHARE));
-				if (passed <= 0 || !entry.getKey().appliesTo(target.type())) {
+				if (passed <= 0 || !entry.getKey().appliesTo(target.type()) || !dev.forja.upgrade.Pacts.fits(inherited, entry.getKey())) {
 					continue;
 				}
 				int before = inherited.percent(entry.getKey());
@@ -849,6 +870,8 @@ public class ForgeMenu extends AbstractContainerMenu {
 		this.missingParts = null;
 		this.application = null;
 		this.refusal = null;
+		this.sealedPact = null;
+		this.offeredPact = null;
 
 		List<ItemStack> points = contents(this.star);
 		boolean anyPoint = points.stream().anyMatch(stack -> !stack.isEmpty());
@@ -952,7 +975,15 @@ public class ForgeMenu extends AbstractContainerMenu {
 				+ (dev.forja.forge.Techniques.has(this.smith, dev.forja.forge.Technique.MANO_DE_ORFEBRE) ? dev.forja.forge.Technique.ORB_BONUS : 0);
 			this.application = UpgradeRecipes.apply(gear, points, this.level.registryAccess(), bonus,
 				(upgrade, flux) -> dev.forja.forge.Potential.ceiling(gear, upgrade, this.station, flux));
-			if (this.application != null && this.application.conflict() == null && !this.application.result().isEmpty()) {
+			if (this.application == null) {
+				this.application = this.planOffering(gear, points, bonus);
+			} else if (!dev.forja.upgrade.Pacts.unlocked(this.smith, this.application.upgrade())) {
+				// The right ingredients for a pact this smith has never opened: it shows what it would do and
+				// what it asks, and does nothing until it is given that.
+				this.sealedPact = this.application.upgrade();
+			}
+			if (this.application != null && this.application.conflict() == null && !this.application.result().isEmpty()
+				&& this.sealedPact == null) {
 				this.forgePreview = this.application.result();
 				this.action = Action.UPGRADE;
 			} else if (this.planHeartRepair(gear, points) || this.planRepair(gear, points)) {
@@ -960,6 +991,32 @@ public class ForgeMenu extends AbstractContainerMenu {
 				this.action = Action.REPAIR;
 			}
 		}
+	}
+
+	/**
+	 * A pact's ingredients with the rare thing that opens it lying among them: matched without the
+	 * offering, and the offering is taken with them. Only tried when the star matched nothing as it is,
+	 * because an echo shard or a heart of the sea is an ingredient of other upgrades too.
+	 */
+	private UpgradeRecipes.@Nullable Application planOffering(ItemStack gear, List<ItemStack> points, int bonus) {
+		for (int i = 0; i < points.size(); i++) {
+			Upgrade pact = dev.forja.upgrade.Pacts.opens(this.smith, points.get(i));
+			if (pact == null) {
+				continue;
+			}
+			List<ItemStack> without = new ArrayList<>(points);
+			without.set(i, ItemStack.EMPTY);
+			UpgradeRecipes.Application application = UpgradeRecipes.apply(gear, without, this.level.registryAccess(), bonus,
+				(upgrade, flux) -> dev.forja.forge.Potential.ceiling(gear, upgrade, this.station, flux));
+			if (application != null && application.upgrade() == pact) {
+				if (!application.result().isEmpty()) {
+					application.consumed()[i] = 1;
+					this.offeredPact = pact;
+				}
+				return application;
+			}
+		}
+		return null;
 	}
 
 	/**

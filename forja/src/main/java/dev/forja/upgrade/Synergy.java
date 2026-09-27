@@ -76,6 +76,8 @@ public enum Synergy {
 
 	/** How far both upgrades have to be for the pair to work. */
 	public static final int THRESHOLD = 50;
+	/** At most this many awake on one piece: "3 sinergias por objeto". */
+	public static final int MOST = 3;
 
 	public final Upgrade first;
 	public final Upgrade second;
@@ -104,9 +106,39 @@ public enum Synergy {
 		return !stack.isBroken() && this.active(stack.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY));
 	}
 
-	/** Whether these upgrades alone wake the pair, for the stats that are worked out without a stack. */
+	/**
+	 * Whether these upgrades alone wake the pair, for the stats that are worked out without a stack.
+	 *
+	 * <p>Only the {@link #MOST} strongest of the pairs that reach the threshold are awake; a fourth one
+	 * sleeps until it outgrows one of them. Strongest is the two percentages added up, and on a tie the one
+	 * written first here, so the same piece always wakes the same three.
+	 */
 	public boolean active(Upgrades upgrades) {
+		if (!this.reached(upgrades)) {
+			return false;
+		}
+		int ahead = 0;
+		for (Synergy other : values()) {
+			if (other != this && other.reached(upgrades) && other.outranks(this, upgrades) && ++ahead >= MOST) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/** Whether both upgrades are far enough along, awake or not. */
+	public boolean reached(Upgrades upgrades) {
 		return upgrades.percent(this.first) >= THRESHOLD && upgrades.percent(this.second) >= THRESHOLD;
+	}
+
+	private int strength(Upgrades upgrades) {
+		return upgrades.percent(this.first) + upgrades.percent(this.second);
+	}
+
+	private boolean outranks(Synergy other, Upgrades upgrades) {
+		int mine = this.strength(upgrades);
+		int theirs = other.strength(upgrades);
+		return mine != theirs ? mine > theirs : this.ordinal() < other.ordinal();
 	}
 
 	/**

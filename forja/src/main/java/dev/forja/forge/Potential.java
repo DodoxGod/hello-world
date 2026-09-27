@@ -80,7 +80,9 @@ public final class Potential {
 		/** Not a ceiling on the percentage at all: the piece has no room left for another upgrade this heavy. */
 		LOAD,
 		/** A heavy all-or-nothing upgrade on a plain bench: not one percent of it, it is the greater table's. */
-		GREATER;
+		GREATER,
+		/** A pact on a piece that already carries as many as a piece may (Pacts.MOST). */
+		PACTS;
 
 		public Component message(int ceiling) {
 			return Component.translatable("gui.forja.potencial.tope." + this.name().toLowerCase(java.util.Locale.ROOT), ceiling);

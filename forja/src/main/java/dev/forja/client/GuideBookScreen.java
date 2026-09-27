@@ -1250,8 +1250,14 @@ public class GuideBookScreen extends Screen {
 			Upgrade.PACTO_DE_LA_PRISA)) {
 			body.add(new SubHeader(pact.displayName()));
 			body.add(new Text(pact.effect(100), INK_SOFT));
+			net.minecraft.world.item.Item offering = dev.forja.upgrade.Pacts.offering(pact);
+			if (offering != null) {
+				body.add(new IconRow(List.of(new ItemStack(offering))));
+				body.add(new Text(Component.translatable("gui.forja.libro.pacto_ofrenda", new ItemStack(offering).getHoverName()), INK_SOFT));
+			}
 		}
 		body.add(new Spacer(3));
+		body.add(new Text(Component.translatable("gui.forja.libro.pactos_limite", dev.forja.upgrade.Pacts.MOST), INK));
 		body.add(new Text(Component.translatable("gui.forja.libro.pactos_aviso"), INK));
 		return body;
 	}
@@ -1502,7 +1508,8 @@ public class GuideBookScreen extends Screen {
 	/** The upgrade pairs that do something extra together. */
 	private List<Element> synergiesChapter() {
 		List<Element> body = new ArrayList<>();
-		body.add(new Text(Component.translatable("gui.forja.libro.sinergias_intro", dev.forja.upgrade.Synergy.THRESHOLD), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.sinergias_intro", dev.forja.upgrade.Synergy.THRESHOLD,
+			dev.forja.upgrade.Synergy.MOST), INK_SOFT));
 		for (dev.forja.upgrade.Synergy synergy : dev.forja.upgrade.Synergy.values()) {
 			body.add(new Spacer(2));
 			body.add(new SubHeader(synergy.displayName()));

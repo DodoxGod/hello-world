@@ -8292,8 +8292,21 @@ public class ForjaClientTest implements FabricClientGameTest {
 			ItemStack poor = Assembler.create(ForgeType.ESPADA, List.of(HIERRO, MADERA, HIERRO), registries);
 			poor.set(ModComponents.POTENCIAL, 45);
 			menu.getSlot(ForgeMenu.CENTER_SLOT).set(poor);
+			// Sealed first: the right ingredients show the pact and ask for its offering, and nothing happens.
+			player.removeAttached(dev.forja.upgrade.Pacts.UNLOCKED);
 			menu.getSlot(ForgeMenu.STAR_FIRST).set(new ItemStack(Items.GLASS, 64));
+			menu.slotsChanged(menu.getSlot(ForgeMenu.STAR_FIRST).container);
+			check(menu.sealedPact() == Upgrade.PACTO_DE_VIDRIO && !menu.clickMenuButton(player, ForgeMenu.BUTTON_FORGE),
+				"a pact the smith has not opened should stay sealed, got " + menu.sealedPact() + " / " + menu.action());
+			// The star opens it, once, and goes with the glass.
+			menu.getSlot(ForgeMenu.STAR_FIRST + 1).set(new ItemStack(Items.NETHER_STAR, 2));
+			menu.slotsChanged(menu.getSlot(ForgeMenu.STAR_FIRST).container);
+			check(menu.offeredPact() == Upgrade.PACTO_DE_VIDRIO, "a nether star beside the glass should open the pact, got " + menu.action());
 			check(menu.clickMenuButton(player, ForgeMenu.BUTTON_FORGE), "a pact should go on whatever the piece's potential");
+			check(dev.forja.upgrade.Pacts.unlocked(player, Upgrade.PACTO_DE_VIDRIO) && menu.getSlot(ForgeMenu.STAR_FIRST + 1).getItem().getCount() == 1,
+				"the offering should be taken once and the pact stay open, star left " + menu.getSlot(ForgeMenu.STAR_FIRST + 1).getItem());
+			check(!dev.forja.upgrade.Pacts.unlocked(player, Upgrade.PACTO_DE_SED), "and only that pact: thirst is still sealed");
+			menu.getSlot(ForgeMenu.STAR_FIRST + 1).set(ItemStack.EMPTY);
 			ItemStack sworn = menu.getSlot(ForgeMenu.CENTER_SLOT).getItem();
 			int pact = sworn.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY).percent(Upgrade.PACTO_DE_VIDRIO);
 			int widened = dev.forja.forge.Potential.of(sworn);
@@ -8496,6 +8509,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			boolean orbRefused = menu.action() != ForgeMenu.Action.BOOK && turned != null && turned.upgrade() == Upgrade.VENENO
 				&& turned.limit() == dev.forja.forge.Potential.Limit.LOAD;
 			// A pact weighs nothing, goes on a full piece, and the ten points it brings open two more of load...
+			dev.forja.upgrade.Pacts.unlock(player, Upgrade.PACTO_DE_VIDRIO);
 			menu.getSlot(ForgeMenu.STAR_FIRST).set(new ItemStack(Items.GLASS, 64));
 			check(menu.clickMenuButton(player, ForgeMenu.BUTTON_FORGE), "a pact should go on a full piece: it weighs nothing");
 			int widened = dev.forja.forge.Potential.capacity(menu.getSlot(ForgeMenu.CENTER_SLOT).getItem());
@@ -9856,6 +9870,32 @@ public class ForjaClientTest implements FabricClientGameTest {
 				check(strip[0] == ForgeType.ESPADON.slots.size(), "a greatsword's tooltip should draw one cell per part, got " + strip[0]);
 				check(strip[2] <= 210, "and keep the row inside its width, got " + strip[2]);
 				check(strip[3] == 0, "and no longer write the parts out as lines");
+
+				// A pact the smith has not opened: the panel names it, says what it would do and what it asks;
+				// then the offering beside the glass, and the panel says it is being paid.
+				server.runOnServer(s -> {
+					ForgeMenu menu = menu(connection);
+					connection.getServerPlayer().removeAttached(dev.forja.upgrade.Pacts.UNLOCKED);
+					menu.getSlot(ForgeMenu.CENTER_SLOT).set(Assembler.create(ForgeType.ESPADA, List.of(HIERRO, MADERA, HIERRO)));
+					menu.getSlot(ForgeMenu.STAR_FIRST).set(new ItemStack(net.minecraft.world.item.Items.GLASS, 8));
+				});
+				context.waitTicks(8);
+				context.runOnClient(mc -> mc.gui.toastManager().clear());
+				context.waitTicks(2);
+				context.takeScreenshot(TestScreenshotOptions.of("forja_02h_pacto_sellado").disableCounterPrefix());
+				server.runOnServer(s -> menu(connection).getSlot(ForgeMenu.STAR_FIRST + 2).set(new ItemStack(net.minecraft.world.item.Items.NETHER_STAR)));
+				context.waitTicks(8);
+				context.runOnClient(mc -> mc.gui.toastManager().clear());
+				context.waitTicks(2);
+				context.takeScreenshot(TestScreenshotOptions.of("forja_02h_pacto_ofrenda").disableCounterPrefix());
+				server.runOnServer(s -> {
+					ForgeMenu menu = menu(connection);
+					check(menu.offeredPact() == dev.forja.upgrade.Upgrade.PACTO_DE_VIDRIO, "the star beside the glass should be the offering");
+					menu.getSlot(ForgeMenu.CENTER_SLOT).set(ItemStack.EMPTY);
+					for (int i = 0; i < ForgeMenu.STAR_COUNT; i++) {
+						menu.getSlot(ForgeMenu.STAR_FIRST + i).set(ItemStack.EMPTY);
+					}
+				});
 			}
 			// The techniques tab, which is all painted by the screen and none of it by the texture: on the
 			// greater table it has to come out in the greater table's colours, not the forge's.
