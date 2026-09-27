@@ -2272,6 +2272,11 @@ def generate_worn_gear_textures():
     boxes at the same places), plus the gem in the front cover and the corner caps. The covers, the gem
     and the caps are grey for their material to tint; the pages and the leather of the spine keep their
     own colour, as the item's untinted layer does.
+
+    mangual.png is the flail client/HeldFlail draws in the hand: four grey skins a quarter of the sheet
+    each, for the wood of the haft (grain along it, a darker wrap of cord where the fist closes), the iron
+    of the links and the haft's fittings (bright, darker at the edges), the ball (hammered, mottled) and its
+    spikes (bright towards their points). Every box takes its faces from its own skin, whatever its size.
     """
     folder = ASSETS / "textures/entity"
     folder.mkdir(parents=True, exist_ok=True)
@@ -2349,6 +2354,24 @@ def generate_worn_gear_textures():
         for x in range(48, 53):
             put(x, y, 250 if y == 20 else 226)
     tome.save(folder / "grimorio.png")
+
+    flail = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    for y in range(32):
+        for x in range(32):
+            # wood: streaks along the haft (the boxes' long side runs down the sheet), a knot here and there
+            grain = ((x * 3) % 7) * 5 + ((x * 11 + y) % 13 == 0) * -18
+            wood = 196 + grain - (24 if (y // 2) % 5 == 0 else 0)
+            # iron: bright, a darker rim every few pixels, a pale glint
+            iron = 214 - (26 if x % 4 == 0 or y % 4 == 0 else 0) + (22 if (x * 7 + y * 5) % 17 == 0 else 0)
+            # the ball: hammered, a soft mottle of dents
+            dent = ((x * 5 + y * 3) % 6) * 6 + ((x * x + y * 7) % 11 == 0) * -20
+            ball = 176 + dent
+            # the spikes: brighter, and brightest along the edge
+            spike = 228 + ((x + y) % 3) * 9
+            for (dx, dy), value in (((0, 0), wood), ((32, 0), iron), ((0, 32), ball), ((32, 32), spike)):
+                value = max(0, min(255, value))
+                flail.putpixel((dx + x, dy + y), (value, value, value, 255))
+    flail.save(folder / "mangual.png")
 
 
 def generate_shield_textures(item_dir):

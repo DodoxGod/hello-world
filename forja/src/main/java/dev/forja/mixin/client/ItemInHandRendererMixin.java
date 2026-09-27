@@ -4,10 +4,12 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.forja.client.CombatPoses;
+import dev.forja.client.HeldFlail;
 import dev.forja.client.HeldTome;
 import dev.forja.client.WornGauntlets;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.InteractionHand;
@@ -31,7 +33,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * <p>It also swings each weapon its own way (see {@link CombatPoses#firstPersonSwing}), throws the other
  * fist when the gauntlets punch with it, and moves the hands for the player's parries, broken guards and
- * dodges. The gauntlets show as the gauntleted hand rather than as a held item, and the tome as a book.
+ * dodges. The gauntlets show as the gauntleted hand rather than as a held item, the tome as a book, and
+ * the flail as a haft with its ball on a chain.
  */
 @Mixin(ItemInHandRenderer.class)
 abstract class ItemInHandRendererMixin {
@@ -101,9 +104,9 @@ abstract class ItemInHandRendererMixin {
 	}
 
 	/**
-	 * The gauntlets and the tome in first person. The pose here is the held item's, already moved by the
-	 * arm and the blow; the gauntlets draw the hand itself there instead (with the gauntlet over it, see
-	 * AvatarRendererMixin), and the tome draws the book.
+	 * The gauntlets, the tome and the flail in first person. The pose here is the held item's, already moved
+	 * by the arm and the blow; the gauntlets draw the hand itself there instead (with the gauntlet over it,
+	 * see AvatarRendererMixin), the tome draws the book and the flail its haft, chain and ball.
 	 */
 	@WrapOperation(
 		method = "submitArmWithItem",
@@ -123,6 +126,9 @@ abstract class ItemInHandRendererMixin {
 		} else if (HeldTome.is(stack) && context.firstPerson()) {
 			float partial = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false);
 			HeldTome.submitFirstPerson(poseStack, submitNodeCollector, lightCoords, stack, left, HeldTome.reading(entity, partial));
+		} else if (HeldFlail.is(stack) && context.firstPerson() && entity instanceof LocalPlayer player) {
+			float partial = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false);
+			HeldFlail.submitFirstPerson(poseStack, submitNodeCollector, lightCoords, stack, left, player, partial);
 		} else {
 			original.call(self, entity, stack, context, poseStack, submitNodeCollector, lightCoords);
 		}

@@ -1,6 +1,7 @@
 package dev.forja.mixin.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import dev.forja.client.HeldFlail;
 import dev.forja.client.HeldTome;
 import dev.forja.client.WornGauntlets;
 import net.minecraft.client.model.ArmedModel;
@@ -19,10 +20,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * What a hand holds in third person, for the two forged things that are not held like a weapon: the
- * gauntlets are worn on both hands instead of held in one, and the tome is a book held by its spine
- * (see {@link WornGauntlets} and {@link HeldTome}). Every armed body goes through here: players,
- * mannequins, armour stands, zombies, skeletons, piglins.
+ * What a hand holds in third person, for the forged things that are not drawn as the flat item: the
+ * gauntlets are worn on both hands instead of held in one, the tome is a book held by its spine, and the
+ * flail is a haft with its ball hanging on a chain (see {@link WornGauntlets}, {@link HeldTome} and
+ * {@link HeldFlail}). Every armed body goes through here: players, mannequins, armour stands, zombies,
+ * skeletons, piglins.
  */
 @Mixin(ItemInHandLayer.class)
 abstract class ItemInHandLayerMixin {
@@ -59,6 +61,12 @@ abstract class ItemInHandLayerMixin {
 			poseStack.pushPose();
 			forja$translateToHand(model, state, arm, poseStack);
 			HeldTome.submitInHand(poseStack, collector, light, state.outlineColor, itemStack, arm == HumanoidArm.LEFT, state.getData(HeldTome.KEY));
+			poseStack.popPose();
+			ci.cancel();
+		} else if (HeldFlail.is(itemStack)) {
+			poseStack.pushPose();
+			forja$translateToHand(model, state, arm, poseStack);
+			HeldFlail.submitInHand(poseStack, collector, light, itemStack, arm, state);
 			poseStack.popPose();
 			ci.cancel();
 		}

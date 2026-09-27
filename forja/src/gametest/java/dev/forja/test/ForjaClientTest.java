@@ -11013,13 +11013,14 @@ public class ForjaClientTest implements FabricClientGameTest {
 	}
 
 	/**
-	 * Every weapon's own blow at the two moments that matter, fully wound up and landing: in third person
+	 * Every weapon's own blows at the two moments that matter, fully wound up and landing: in third person
 	 * on two mannequins holding it (the player's model; one side-on, one three-quarters to the camera),
-	 * with the second blow of a pair where there is one and the combo finisher, and in first person. Then
-	 * zombies with heavy weapons holding their wind-up while they warn (a short warning and a long one,
-	 * which must look the same at the same share of it), letting it go into the blow, and lowering it
-	 * after a feint. FORJA_SOLO=animaciones runs it alone and FORJA_ARMAS=espada,martillo films only
-	 * those; tools/hoja_animaciones.py lays the shots out on one contact sheet.
+	 * each of its blows in turn (one swing in a row after another, which is how a flurry goes through
+	 * them) and the combo finisher, and the same in first person. Then zombies with heavy weapons holding
+	 * their wind-up while they warn (a short warning and a long one, which must look the same at the same
+	 * share of it), letting it go into the blow, and lowering it after a feint; and the flail's chain (see
+	 * {@link #filmFlailChain}). FORJA_SOLO=animaciones runs it alone and FORJA_ARMAS=espada,martillo films
+	 * only those; tools/hoja_animaciones.py lays the shots out on one contact sheet.
 	 */
 	private static void filmWeaponBlows(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
 		// Night, seen through night vision: a zombie in the sun burns, and every tick of fire is a flinch.
@@ -11075,7 +11076,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 		}
 
 		// Each weapon's swing starts a hundred ticks after the last one, as far as the client can tell, so it
-		// counts as the first of a new flurry; five ticks after that is the second blow of the same flurry.
+		// counts as the first of a new flurry; five ticks after that is the second blow of the same flurry
+		// (see holdSwingFrom: counted from each entity's own ticks, whatever ticks go by between shots).
 		int start = 100;
 		for (ForgeType type : filmed) {
 			String name = type.id();
@@ -11090,16 +11092,20 @@ public class ForjaClientTest implements FabricClientGameTest {
 			check(moments != null, name + " should have a blow of its own");
 			int first = start;
 			start += 100;
+			int blows = (int) moments[2];
 			// Just held: where the hand grips it (the tome shut, the gauntlets on both hands).
 			holdSwing(context, dolls, 0.0F, 0);
 			shot(context, "anim_" + name + "_3q_quieto");
-			holdSwing(context, dolls, moments[0], -first);
-			shot(context, "anim_" + name + "_3a_carga");
-			holdSwing(context, dolls, moments[1], -first);
-			shot(context, "anim_" + name + "_3b_golpe");
-			if (moments[2] > 0.0F) {
-				holdSwing(context, dolls, moments[1], -first - 5);
-				shot(context, "anim_" + name + "_3c_segundo");
+			// Each blow in turn: every swing five ticks after the one before is the next in the flurry, and a
+			// flurry goes through the weapon's blows one after another (a new weapon is worn not at all, so
+			// its flurry starts from the first).
+			for (int blow = 0; blow < blows; blow++) {
+				holdSwingFrom(context, dolls, moments[0], first + 5L * blow);
+				settleFlails(context);
+				shot(context, "anim_" + name + "_3v" + (blow + 1) + "a");
+				holdSwingFrom(context, dolls, moments[1], first + 5L * blow);
+				settleFlails(context);
+				shot(context, "anim_" + name + "_3v" + (blow + 1) + "b");
 			}
 			// The third blow of a combo, the way the server announces it.
 			server.runOnServer(s -> {
@@ -11108,7 +11114,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 				}
 			});
 			context.waitTicks(2);
-			holdSwing(context, dolls, moments[1], -first - 10);
+			holdSwingFrom(context, dolls, moments[1], first + 5L * blows);
+			settleFlails(context);
 			shot(context, "anim_" + name + "_3d_remate");
 			holdSwing(context, dolls, 0.0F, 0);
 			// Past the finisher's window, so the next weapon starts with a plain blow.
@@ -11146,17 +11153,26 @@ public class ForjaClientTest implements FabricClientGameTest {
 			float[] moments = dev.forja.client.CombatPoses.keyMoments(Assembler.create(type, filmMaterials(type)));
 			int first = start;
 			start += 100;
+			int blows = (int) moments[2];
 			holdSwing(context, self, 0.0F, 0);
+			settleFlails(context);
 			handShot(context, "anim_" + name + "_1q_quieto");
-			holdSwing(context, self, moments[0], -first);
-			handShot(context, "anim_" + name + "_1a_carga");
-			holdSwing(context, self, moments[1], -first);
-			handShot(context, "anim_" + name + "_1b_golpe");
-			if (moments[2] > 0.0F) {
-				holdSwing(context, self, moments[1], -first - 5);
-				handShot(context, "anim_" + name + "_1c_segundo");
+			for (int blow = 0; blow < blows; blow++) {
+				holdSwingFrom(context, self, moments[0], first + 5L * blow);
+				settleFlails(context);
+				handShot(context, "anim_" + name + "_1v" + (blow + 1) + "a");
+				holdSwingFrom(context, self, moments[1], first + 5L * blow);
+				settleFlails(context);
+				handShot(context, "anim_" + name + "_1v" + (blow + 1) + "b");
 			}
+			server.runOnServer(s -> dev.forja.combat.CombatAnim.broadcast(connection.getServerPlayer(), dev.forja.combat.CombatAnim.Kind.COMBO, 3));
+			context.waitTicks(2);
+			holdSwingFrom(context, self, moments[1], first + 5L * blows);
+			settleFlails(context);
+			handShot(context, "anim_" + name + "_1d_remate");
 			holdSwing(context, self, 0.0F, 0);
+			// Past the finisher's window, so the charge below is not taken for one.
+			context.waitTicks(9);
 			holdLocalCharge(context, true);
 			handShot(context, "anim_" + name + "_1k_cargando");
 			holdLocalCharge(context, false);
@@ -11252,6 +11268,9 @@ public class ForjaClientTest implements FabricClientGameTest {
 		if (only == null || only.isBlank() || filmed.stream().anyMatch(HELD_GEAR::contains)) {
 			filmHeldGear(context, server, connection, sx, y, sz);
 		}
+		if (filmed.contains(ForgeType.MANGUAL)) {
+			filmFlailChain(context, server, connection, sx, y, sz);
+		}
 		hideHud(context, false);
 		context.runOnClient(mc -> {
 			mc.options.fov().set(70);
@@ -11260,6 +11279,171 @@ public class ForjaClientTest implements FabricClientGameTest {
 		server.runCommand("effect clear @a night_vision");
 		server.runCommand("gamemode survival @a");
 		server.runCommand("time set noon");
+	}
+
+	/**
+	 * A still shot holds a swing at one moment with no time going by, and a flail's ball is where the chain
+	 * has swung it over time: let it get to where that moment of the blow puts it before the shot.
+	 */
+	private static void settleFlails(ClientGameTestContext context) {
+		context.runOnClient(mc -> dev.forja.client.HeldFlail.settle(1.5F));
+	}
+
+	/**
+	 * The flail's ball on its chain, on a mannequin side-on with a zombie four blocks in front of it to hit:
+	 * hanging still; trailing behind as the mannequin is carried along, and swinging on after it stops; each
+	 * blow whirled (or swung back), in flight and landing on the zombie, which it has to reach; the ball let
+	 * out to the chain's full length with nothing to hit; and in first person, trailing as the view turns,
+	 * in flight and landing on a zombie in front.
+	 */
+	private static void filmFlailChain(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int sx, int y, int sz) {
+		tp(server, sx + 0.5, y, sz + 0.5, 180.0F, 8.0F);
+		hideHud(context, true);
+		ItemStack flail = Assembler.create(ForgeType.MANGUAL, filmMaterials(ForgeType.MANGUAL));
+		double dollX = sx - 2.4;
+		double dollZ = sz - 4.0;
+		server.runCommand(String.format(Locale.ROOT,
+			"summon minecraft:mannequin %.2f %d %.2f {Rotation:[-90f,0f],hide_description:1b,immovable:1b,Tags:[\"forja_cadena\"]}", dollX, y, dollZ));
+		context.waitTicks(3);
+		int[] cast = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var doll = level.getEntitiesOfClass(net.minecraft.world.entity.decoration.Mannequin.class,
+				new net.minecraft.world.phys.AABB(dollX, y, dollZ, dollX, y, dollZ).inflate(2.0), found -> found.entityTags().contains("forja_cadena"))
+				.getFirst();
+			doll.setYBodyRot(-90.0F);
+			doll.setYHeadRot(-90.0F);
+			doll.setItemSlot(EquipmentSlot.MAINHAND, Assembler.create(ForgeType.MANGUAL, filmMaterials(ForgeType.MANGUAL), level.registryAccess()));
+			var target = net.minecraft.world.entity.EntityTypes.ZOMBIE.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+			check(target != null, "a zombie should be creatable");
+			target.snapTo(dollX + 4.0, y, dollZ, 90.0F, 0.0F);
+			target.setYBodyRot(90.0F);
+			target.setYHeadRot(90.0F);
+			target.setNoAi(true);
+			target.setPersistenceRequired();
+			target.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+			target.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
+			level.addFreshEntity(target);
+			return new int[] {doll.getId(), target.getId()};
+		});
+		int[] doll = {cast[0]};
+		context.waitTicks(10);
+		shot(context, "anim_m_1_quieto");
+
+		// Carried along a quarter of a block a tick to the camera's left, then stopped.
+		for (int step = 1; step <= 6; step++) {
+			double at = dollX - step * 0.25;
+			server.runOnServer(s -> connection.getServerLevel().getEntity(doll[0]).teleportTo(at, y, dollZ));
+			context.waitTick();
+		}
+		shot(context, "anim_m_2_arrastre");
+		context.waitTicks(4);
+		shot(context, "anim_m_3_vaiven");
+		server.runOnServer(s -> connection.getServerLevel().getEntity(doll[0]).teleportTo(dollX, y, dollZ));
+		context.waitTicks(40);
+
+		float[] moments = dev.forja.client.CombatPoses.keyMoments(flail);
+		int blows = (int) moments[2];
+		float wind = moments[0];
+		float strike = moments[1];
+		// Every swing starts five ticks after the one before, so each blow is the next of the flurry.
+		long first = 5000L;
+		for (int blow = 0; blow <= blows; blow++) {
+			boolean finisher = blow == blows;
+			String name = "anim_m_4_" + (finisher ? "remate" : "v" + (blow + 1));
+			if (finisher) {
+				server.runOnServer(s -> dev.forja.combat.CombatAnim.broadcast(connection.getServerLevel().getEntity(doll[0]),
+					dev.forja.combat.CombatAnim.Kind.COMBO, 3));
+				context.waitTicks(2);
+			}
+			long swing = first + 5L * blow;
+			holdSwingFrom(context, doll, wind * 0.5F, swing);
+			settleFlails(context);
+			shot(context, name + "_1_giro");
+			holdSwingFrom(context, doll, wind, swing);
+			settleFlails(context);
+			shot(context, name + "_2_arriba");
+			holdSwingFrom(context, doll, (wind + strike) * 0.5F, swing);
+			settleFlails(context);
+			shot(context, name + "_3_vuelo");
+			holdSwingFrom(context, doll, strike, swing);
+			settleFlails(context);
+			shot(context, name + "_4_golpe");
+			// It has to get there: the ball lands on the zombie, whatever the blow.
+			String miss = context.computeOnClient(mc -> {
+				Vec3 ball = dev.forja.client.HeldFlail.lastLanding(doll[0]);
+				net.minecraft.world.entity.Entity zombie = mc.level.getEntity(cast[1]);
+				if (ball == null || zombie == null) {
+					return "no ball or no zombie";
+				}
+				double off = Math.sqrt(zombie.getBoundingBox().distanceToSqr(ball));
+				return off < 0.6 ? null : off + " blocks off (ball at " + ball + ", zombie at " + zombie.getBoundingBox() + ")";
+			});
+			check(miss == null, "the flail's ball should land on the zombie it swings at: " + miss);
+			holdSwingFrom(context, doll, strike + (1.0F - strike) * 0.6F, swing);
+			settleFlails(context);
+			shot(context, name + "_5_vuelta");
+		}
+		holdSwing(context, doll, 0.0F, 0);
+		context.waitTicks(20);
+
+		// Nothing to hit: the ball goes out the chain's whole length.
+		server.runOnServer(s -> connection.getServerLevel().getEntity(cast[1]).discard());
+		context.waitTicks(3);
+		holdSwingFrom(context, doll, strike, first + 200L);
+		settleFlails(context);
+		shot(context, "anim_m_6_sin_blanco");
+		holdSwing(context, doll, 0.0F, 0);
+		server.runOnServer(s -> connection.getServerLevel().getEntity(doll[0]).discard());
+
+		// First person: the view swung round fast drags the ball behind it; then a blow at a zombie ahead.
+		tp(server, sx + 0.5, y, sz + 0.5, 0.0F, 4.0F);
+		hideHud(context, false);
+		server.runOnServer(s -> connection.getServerPlayer().setItemInHand(InteractionHand.MAIN_HAND,
+			Assembler.create(ForgeType.MANGUAL, filmMaterials(ForgeType.MANGUAL), connection.getServerLevel().registryAccess())));
+		context.waitTicks(45);
+		quiet(context);
+		int[] self = {context.computeOnClient(mc -> mc.player.getId())};
+		for (int step = 1; step <= 5; step++) {
+			float yaw = step * 9.0F;
+			context.runOnClient(mc -> mc.player.setYRot(yaw));
+			context.waitTick();
+		}
+		handShot(context, "anim_m_7_1_arrastre");
+		context.runOnClient(mc -> mc.player.setYRot(0.0F));
+		context.waitTicks(30);
+		int zombie = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var target = net.minecraft.world.entity.EntityTypes.ZOMBIE.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+			check(target != null, "a zombie should be creatable");
+			target.snapTo(sx + 0.5, y, sz + 4.5, 180.0F, 0.0F);
+			target.setYBodyRot(180.0F);
+			target.setYHeadRot(180.0F);
+			target.setNoAi(true);
+			target.setPersistenceRequired();
+			target.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+			target.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
+			level.addFreshEntity(target);
+			return target.getId();
+		});
+		context.waitTicks(10);
+		// Aimed at it, the way a click would pick it.
+		context.runOnClient(mc -> mc.crosshairPickEntity = mc.level.getEntity(zombie));
+		long thrown = first + 300L;
+		holdSwingFrom(context, self, wind, thrown);
+		settleFlails(context);
+		handShot(context, "anim_m_8_1_arriba");
+		holdSwingFrom(context, self, (wind + strike) * 0.5F, thrown);
+		settleFlails(context);
+		handShot(context, "anim_m_8_1_vuelo");
+		holdSwingFrom(context, self, strike, thrown);
+		settleFlails(context);
+		handShot(context, "anim_m_8_1_golpe");
+		holdSwing(context, self, 0.0F, 0);
+		server.runOnServer(s -> {
+			connection.getServerLevel().getEntity(zombie).discard();
+			connection.getServerPlayer().getInventory().clearContent();
+		});
+		context.waitTicks(10);
 	}
 
 	/** The four weapons whose grip or whose look in hand is not the flat item's: filmed on stands, zombies and in a cast. */
@@ -11442,6 +11626,30 @@ public class ForjaClientTest implements FabricClientGameTest {
 					living.swinging = attack > 0.0F;
 					living.swingingArm = InteractionHand.MAIN_HAND;
 					living.swingTime = swingTime;
+					living.attackAnim = attack;
+					living.oAttackAnim = attack;
+				}
+			}
+		});
+	}
+
+	/** Each entity's own tick count when a shot first held a swing of it, which the swings' starts count from. */
+	private static final java.util.Map<Integer, Long> SWING_CLOCKS = new java.util.HashMap<>();
+
+	/**
+	 * Holds the entities' swings at one share like {@link #holdSwing}, as a swing that started {@code started}
+	 * ticks after the first swing the shots held for that entity (in its own ticks): the same swing however many
+	 * ticks go by between one shot of it and the next (a shot can let one or two by), and the next swing of a
+	 * flurry when it starts a few ticks after the last. The client counts swings in a row by when they start.
+	 */
+	private static void holdSwingFrom(ClientGameTestContext context, int[] ids, float attack, long started) {
+		context.runOnClient(mc -> {
+			for (int id : ids) {
+				if (mc.level.getEntity(id) instanceof net.minecraft.world.entity.LivingEntity living) {
+					long clock = SWING_CLOCKS.computeIfAbsent(id, key -> (long) living.tickCount + 10000L);
+					living.swinging = attack > 0.0F;
+					living.swingingArm = InteractionHand.MAIN_HAND;
+					living.swingTime = (int) (living.tickCount - clock - started);
 					living.attackAnim = attack;
 					living.oAttackAnim = attack;
 				}

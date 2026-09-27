@@ -53,6 +53,15 @@ Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (120).
   gema y las esquinas): cerrado en la mano, agarrado por el lomo; se abre y pasa las páginas al golpear, al
   lanzar un hechizo, al cargar y mientras un enemigo lo lee, y luego se cierra.
 - En el inventario los cuatro se ven como siempre.
+- **El mangual en 3D con la bola encadenada**: mango en el puño, una cadena de eslabones y la bola con
+  pinchos, teñidos por sus materiales. La cadena cuelga con gravedad y se arrastra detrás de la mano al
+  moverla; al atacar, la bola se voltea (por arriba, de lado o desde abajo), sale en arco y recorre la
+  distancia del golpe hasta lo que golpea (con nada delante, los 3 bloques de la cadena), y vuelve.
+  Jugadores, soportes, zombis y demás mobs (también en su aviso) y primera persona.
+- **Más golpes por arma**: cada arma tiene tres o cuatro golpes distintos más el remate (la espada: tajo
+  diagonal, tajo horizontal, revés y estocada; el martillo: martillazo, barrido y uppercut...), y una
+  racha los va encadenando sin repetir. Quien mira ve el mismo golpe que quien lo da, y el aviso de un
+  enemigo muestra el golpe que va a soltar.
 
 ### Pactos y sinergias
 

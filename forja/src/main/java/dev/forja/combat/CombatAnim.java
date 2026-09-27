@@ -33,7 +33,10 @@ public record CombatAnim(int entity, byte kind, short ticks, float a, float b) i
 	);
 
 	public enum Kind {
-		/** A melee mob is winding up a blow. */
+		/**
+		 * A melee mob is winding up a blow; a is a seed that picks which of its weapon's blows it is, so the
+		 * pose it warns with is the blow that comes, and everyone watching sees the same one.
+		 */
 		TELEGRAPH,
 		/** A zombie crouches to leap. */
 		LUNGE,
@@ -95,7 +98,20 @@ public record CombatAnim(int entity, byte kind, short ticks, float a, float b) i
 	}
 
 	public static void broadcast(Entity entity, Kind kind, int ticks) {
-		broadcast(entity, kind, ticks, 0.0F, 0.0F);
+		broadcast(entity, kind, ticks, kind == Kind.TELEGRAPH ? seed(entity) : 0.0F, 0.0F);
+	}
+
+	/**
+	 * A number to pick a warned blow by (for the look of it only): another one warning after warning, and
+	 * worked out from the entity and the time rather than drawn from a random source, so nothing else that
+	 * draws from one comes out any different.
+	 */
+	private static float seed(Entity entity) {
+		long mixed = entity.getId() * 0x9E3779B97F4A7C15L ^ entity.level().getGameTime() * 0xBF58476D1CE4E5B9L;
+		mixed ^= mixed >>> 29;
+		mixed *= 0x94D049BB133111EBL;
+		mixed ^= mixed >>> 32;
+		return (float) (mixed & 0xFFFFL);
 	}
 
 	/** To one player, about an entity (their target, or themselves). */

@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 
 /**
@@ -26,6 +27,8 @@ public final class CombatAnims {
 		static final double NEVER = -1.0E9;
 		double telegraphAt = NEVER;
 		int telegraphTicks;
+		/** The seed the server sent with the warning, which picks the blow it winds up (see WeaponMotions.Motion#variant). */
+		int telegraphSeed;
 		double lungeAt = NEVER;
 		int lungeTicks;
 		double staggerAt = NEVER;
@@ -57,7 +60,10 @@ public final class CombatAnims {
 	/** Forget an entity this long after the last thing that happened to it. */
 	private static final double FORGET_AFTER = 20.0 * 30.0;
 
-	/** Per entity: the tick its current swing started (its own tick count), how many in a row, and when last looked at. */
+	/**
+	 * Per entity: the tick its current swing started (its own tick count), how many in a row, when last
+	 * looked at, and the seed the flurry started with.
+	 */
 	private static final Int2ObjectMap<long[]> SWINGS = new Int2ObjectOpenHashMap<>();
 	/** A swing starting this many ticks after the one before it starts the count again. */
 	private static final long SWINGS_RESTART = 30L;
@@ -132,6 +138,7 @@ public final class CombatAnims {
 			case TELEGRAPH -> {
 				state.telegraphAt = now;
 				state.telegraphTicks = Math.max(1, payload.ticks());
+				state.telegraphSeed = (int) payload.a();
 			}
 			case LUNGE -> {
 				state.lungeAt = now;
@@ -291,18 +298,39 @@ public final class CombatAnims {
 	 * the right fist and the left) go by whether it is odd or even.
 	 */
 	public static int swings(net.minecraft.world.entity.LivingEntity entity) {
-		long[] seen = SWINGS.computeIfAbsent(entity.getId(), id -> new long[] {Long.MIN_VALUE / 2, 0L, 0L});
+		return (int) seen(entity)[1];
+	}
+
+	/**
+	 * The seed an entity's flurry of swings started with, which with the count of swings in a row picks
+	 * each blow (see WeaponMotions.Motion#variant). It has to come out the same for the one swinging and
+	 * for everyone watching, so it is something they all know when the flurry starts: how worn the weapon
+	 * is. The server wears it down on the hits it lands and tells everyone, and a swing reaches those
+	 * watching before the wear of its own hit does, so they all read the same number; it moves on as the
+	 * blows land, so one flurry does not start where the last one did.
+	 */
+	public static int flurrySeed(net.minecraft.world.entity.LivingEntity entity) {
+		return (int) seen(entity)[3];
+	}
+
+	private static long[] seen(net.minecraft.world.entity.LivingEntity entity) {
+		long[] seen = SWINGS.computeIfAbsent(entity.getId(), id -> new long[] {Long.MIN_VALUE / 2, 0L, 0L, 0L});
 		if (entity.swinging) {
 			// Both count up once a tick, so their difference stays put for the whole of one swing.
 			long started = entity.tickCount - entity.swingTime;
 			if (Math.abs(started - seen[0]) > 1L) {
-				seen[1] = started - seen[0] > SWINGS_RESTART ? 1L : seen[1] + 1L;
+				boolean restart = started - seen[0] > SWINGS_RESTART;
+				seen[1] = restart ? 1L : seen[1] + 1L;
 				seen[0] = started;
+				if (restart) {
+					InteractionHand hand = entity.swingingArm == null ? InteractionHand.MAIN_HAND : entity.swingingArm;
+					seen[3] = entity.getItemInHand(hand).getDamageValue();
+				}
 			}
 		}
 		Minecraft minecraft = Minecraft.getInstance();
 		seen[2] = minecraft.level == null ? 0L : minecraft.level.getGameTime();
-		return (int) seen[1];
+		return seen;
 	}
 
 	/** Whether a counter is open for this entity after a perfect dodge. */

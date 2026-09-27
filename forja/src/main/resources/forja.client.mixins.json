@@ -13,6 +13,7 @@
 		"HumanoidModelMixin",
 		"ItemInHandLayerMixin",
 		"ItemInHandRendererMixin",
+		"LevelRendererMixin",
 		"LivingEntityHitstopMixin",
 		"LivingEntityRendererMixin",
 		"LightmapExtractorMixin",

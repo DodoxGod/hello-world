@@ -1,5 +1,7 @@
 package dev.forja.client;
 
+import java.util.List;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.forja.client.WeaponMotions.Blow;
 import dev.forja.client.WeaponMotions.Hand;
@@ -50,11 +52,13 @@ public final class CombatPoses {
 	 * @param windup   how far a mob's weapon is drawn into its wind-up while it warns (0 to 1), -1 when not
 	 * @param released the swing under way is the blow a warning wound up, so it goes straight into the strike
 	 * @param swings   how many swings in a row, counting the one under way (see {@link CombatAnims#swings})
+	 * @param seed     what picks which of its weapon's blows this is (see WeaponMotions.Motion#variant)
+	 * @param warned   the seed is a warning's, which picks the blow by itself
 	 * @param mining   the local player breaking a block: the swing is left to vanilla
 	 */
 	public record Pose(float leanX, float leanZ, float squash, float shieldKick, float charge, boolean comboFinish,
-		float windup, boolean released, int swings, boolean mining) {
-		public static final Pose NONE = new Pose(0.0F, 0.0F, 1.0F, 0.0F, -1.0F, false, -1.0F, false, 0, false);
+		float windup, boolean released, int swings, int seed, boolean warned, boolean mining) {
+		public static final Pose NONE = new Pose(0.0F, 0.0F, 1.0F, 0.0F, -1.0F, false, -1.0F, false, 0, 0, false, false);
 
 		boolean still() {
 			return this == NONE;
@@ -197,7 +201,11 @@ public final class CombatPoses {
 			&& drawn < 0.0F && !released && swings == 0 && !mining) {
 			return Pose.NONE;
 		}
-		return new Pose(leanX, leanZ, squash, shieldKick, charge, comboFinish, drawn, released, swings, mining);
+		// A warning picks the blow it winds up, and the swing that ends it is that blow; any other swing goes
+		// by its flurry.
+		boolean warned = anim != null && (drawn >= 0.0F || released);
+		int seed = warned ? anim.telegraphSeed : swings > 0 ? CombatAnims.flurrySeed(entity) : 0;
+		return new Pose(leanX, leanZ, squash, shieldKick, charge, comboFinish, drawn, released, swings, seed, warned, mining);
 	}
 
 	/**
@@ -241,7 +249,10 @@ public final class CombatPoses {
 	/** Where the other fist takes a two-handed grip, in the leading arm's own space (pixels): just behind the first. */
 	private static final Vector3f SECOND_GRIP = new Vector3f(0.0F, 9.5F, 2.5F);
 
-	/** Which two moments of a blow a swing is between (0 rest, 1 wind-up, 2 through, 3 strike), how far, and how much the other hand is in it. */
+	/**
+	 * Which two moments of a blow a swing is between (0 rest, 1 wind-up, then the keys on the way, then the
+	 * strike: see {@link #key}), how far, and how much the other hand is in it.
+	 */
 	private record Span(int from, int to, float t, float hold) {
 	}
 
@@ -276,45 +287,63 @@ public final class CombatPoses {
 	}
 
 	/**
+	 * Where a swing is as a share of the whole of it. A blow that was wound up during a warning starts at
+	 * the top of the wind-up, and spends the rest of its swing striking and coming back.
+	 */
+	private static float share(Motion motion, float attack, boolean released) {
+		if (!released) {
+			return attack;
+		}
+		return attack < RELEASE_STRIKE
+			? Mth.lerp(attack / RELEASE_STRIKE, motion.windEnd(), motion.strikeEnd())
+			: Mth.lerp((attack - RELEASE_STRIKE) / (1.0F - RELEASE_STRIKE), motion.strikeEnd(), 1.0F);
+	}
+
+	/**
 	 * The part of a blow a swing is in. Everything is a share of the swing (0 to 1), never ticks, so a
 	 * heavy weapon's longer swing plays the same blow more slowly.
 	 *
-	 * @param through  the blow passes through a middle key on its way to the strike
+	 * @param via      how many keys the strike passes through on its way, each taking an equal share of it
 	 * @param released the blow was wound up during a warning: it starts at the top of the wind-up
 	 */
-	private static Span span(Motion motion, boolean through, float attack, boolean released) {
+	private static Span span(Motion motion, int via, float attack, boolean released) {
 		float windEnd = motion.windEnd();
 		float strikeEnd = motion.strikeEnd();
-		if (released) {
-			attack = attack < RELEASE_STRIKE
-				? Mth.lerp(attack / RELEASE_STRIKE, windEnd, strikeEnd)
-				: Mth.lerp((attack - RELEASE_STRIKE) / (1.0F - RELEASE_STRIKE), strikeEnd, 1.0F);
-		}
+		attack = share(motion, attack, released);
+		int strike = via + 2;
 		if (attack < windEnd) {
 			float t = Ease.outCubic(attack / windEnd);
 			return new Span(0, 1, t, t);
 		}
 		if (attack < strikeEnd) {
-			float t = Ease.outQuart((attack - windEnd) / (strikeEnd - windEnd));
-			if (through) {
-				return t < 0.5F ? new Span(1, 2, t * 2.0F, 1.0F) : new Span(2, 3, t * 2.0F - 1.0F, 1.0F);
-			}
-			return new Span(1, 3, t, 1.0F);
+			float along = Ease.outQuart((attack - windEnd) / (strikeEnd - windEnd)) * (via + 1);
+			int leg = Math.min(via, (int) along);
+			return new Span(leg == 0 ? 1 : leg + 1, leg + 2, along - leg, 1.0F);
 		}
 		if (attack < motion.holdEnd()) {
-			return new Span(3, 3, 1.0F, 1.0F);
+			return new Span(strike, strike, 1.0F, 1.0F);
 		}
 		float t = Ease.inOutSine((attack - motion.holdEnd()) / (1.0F - motion.holdEnd()));
-		return new Span(3, 0, t, 1.0F - t);
+		return new Span(strike, 0, t, 1.0F - t);
 	}
 
+	/** A moment of a blow: 0 the arm's own rest (null), 1 the wind-up, then the keys on the way, then the strike. */
 	private static @Nullable Key key(Blow blow, int which) {
-		return switch (which) {
-			case 1 -> blow.wind();
-			case 2 -> blow.through();
-			case 3 -> blow.strike();
-			default -> null;
-		};
+		if (which <= 0) {
+			return null;
+		}
+		if (which == 1) {
+			return blow.wind();
+		}
+		return which - 2 < blow.via().size() ? blow.via().get(which - 2) : blow.strike();
+	}
+
+	/** Which of a weapon's blows a swing (or the warning of one) throws, as its pose says. */
+	private static Blow blowOf(Motion motion, @Nullable Pose pose) {
+		if (pose == null) {
+			return motion.plain();
+		}
+		return motion.blow(pose.comboFinish() && !pose.warned(), motion.variant(pose.swings(), pose.seed(), pose.warned()));
 	}
 
 	/**
@@ -337,27 +366,30 @@ public final class CombatPoses {
 				// A spear's stab stays vanilla's, which goes with its kinetic charge.
 				return null;
 			}
-			boolean finisher = pose != null && pose.comboFinish();
-			boolean fists = motion.hands() == WeaponMotions.Hands.FISTS;
-			boolean second = !finisher && pose != null && motion.alternates(pose.swings()) && (otherFree || !fists);
-			Blow blow = motion.blow(finisher, second);
-			Span span = span(motion, blow.through() != null, attack, pose != null && pose.released());
-			float whirl = span.from() == 0 && span.to() == 1 ? motion.whirl() * Mth.TWO_PI * span.t() : 0.0F;
+			boolean finisher = pose != null && pose.comboFinish() && !pose.warned();
+			// The fists take turns, the second of a pair thrown by the other one (while it is free to).
+			boolean second = !finisher && pose != null && motion.alternates(pose.swings()) && otherFree;
+			Blow blow = blowOf(motion, pose);
+			Span span = span(motion, blow.via().size(), attack, pose != null && pose.released());
+			float whirl = span.from() == 0 && span.to() == 1 ? blow.whirl() * Mth.TWO_PI * span.t() : 0.0F;
 			// When the other fist throws the blow, the gauntlet's hand is the one left over, and it is never empty.
 			return new Frame(motion, key(blow, span.from()), key(blow, span.to()), span.t(), span.hold(),
-				second && fists, otherFree || second && fists, whirl, 1.0F, 0.0F);
+				second, otherFree || second, whirl, 1.0F, 0.0F);
 		}
 		if (pose == null) {
 			return null;
 		}
-		Blow blow = motion.plain();
-		float spin = motion.whirl() > 0.0F ? state.ageInTicks * WHIRL_PER_TICK : 0.0F;
 		if (pose.windup() >= 0.0F) {
-			// A mob warning of a blow holds its weapon where that blow starts from, so the pose says what is coming.
+			// A mob warning of a blow holds its weapon where that blow starts from, so the pose says what is
+			// coming: the blow its warning picked, which is the one it then throws.
+			Blow blow = blowOf(motion, pose);
+			float spin = blow.whirl() > 0.0F ? state.ageInTicks * WHIRL_PER_TICK : 0.0F;
 			return new Frame(motion, null, blow.wind(), pose.windup(), pose.windup(), false, otherFree, spin, 1.0F, 0.0F);
 		}
 		if (pose.charge() >= 0.0F) {
 			// Charging: drawn back further than a plain blow and held, trembling once it is full.
+			Blow blow = motion.plain();
+			float spin = blow.whirl() > 0.0F ? state.ageInTicks * WHIRL_PER_TICK : 0.0F;
 			float t = Ease.outCubic(pose.charge());
 			float tremble = pose.charge() >= 1.0F ? Mth.sin(state.ageInTicks * 2.3F) * 0.05F : 0.0F;
 			return new Frame(motion, null, blow.wind(), t, t, false, otherFree, spin, CHARGE_BOOST, tremble);
@@ -493,13 +525,15 @@ public final class CombatPoses {
 	}
 
 	/**
-	 * Where a weapon's swing is fully wound up and where its blow lands, as shares of the swing, then 1 if
-	 * every second blow in a row is a different one and 0 if not; null for anything that swings like
-	 * vanilla. The client test films the poses at these moments.
+	 * Where a weapon's swing is fully wound up and where its blow lands, as shares of the swing, then how
+	 * many blows of its own it has (besides the finisher), and 1 if the second blow of a pair is thrown with
+	 * the other fist (0 if not); null for anything that swings like vanilla. The client test films the poses
+	 * at these moments, one swing in a row after another so it sees each blow.
 	 */
 	public static float @Nullable [] keyMoments(ItemStack weapon) {
 		Motion motion = WeaponMotions.of(weapon);
-		return motion == null ? null : new float[] {motion.windEnd(), motion.strikeEnd(), motion.alternate() != null ? 1.0F : 0.0F};
+		return motion == null ? null : new float[] {motion.windEnd(), motion.strikeEnd(), motion.blows().size(),
+			motion.hands() == WeaponMotions.Hands.FISTS ? 1.0F : 0.0F};
 	}
 
 	/** A shield thrown out to meet a blow: the shield arm snaps forward and up for a moment. */
@@ -513,14 +547,92 @@ public final class CombatPoses {
 		arm.z -= 2.5F * kick;
 	}
 
+	// --- The flail's ball ------------------------------------------------------------------------------
+
+	/**
+	 * Where a flail's swing is, for the ball on its chain (see {@link HeldFlail}): the stage of the blow
+	 * ({@link HeldFlail#STILL} and on), how far into it (0 to 1; while a warning or a charge whirls it, how
+	 * far that has got), and which blow it is.
+	 */
+	record FlailCue(int stage, float t, @Nullable Blow blow) {
+		static final FlailCue STILL = new FlailCue(HeldFlail.STILL, 0.0F, null);
+	}
+
+	/**
+	 * The stage of a blow a flail's swing is in, by the same shares of the swing as the arm's keys, so the
+	 * ball lands when the arm does. Within the strike it goes evenly: the arm's own easing is for the arm.
+	 */
+	private static FlailCue flailStage(Motion motion, Blow blow, float attack, boolean released) {
+		float at = share(motion, attack, released);
+		if (at <= motion.windEnd()) {
+			return new FlailCue(HeldFlail.WIND, at / motion.windEnd(), blow);
+		}
+		if (at < motion.strikeEnd()) {
+			return new FlailCue(HeldFlail.STRIKE, (at - motion.windEnd()) / (motion.strikeEnd() - motion.windEnd()), blow);
+		}
+		if (at < motion.holdEnd()) {
+			return new FlailCue(HeldFlail.HOLD, (at - motion.strikeEnd()) / (motion.holdEnd() - motion.strikeEnd()), blow);
+		}
+		return new FlailCue(HeldFlail.BACK, (at - motion.holdEnd()) / (1.0F - motion.holdEnd()), blow);
+	}
+
+	/** Where the swing of the flail in one hand of a body in third person is, as its pose has it. */
+	static FlailCue flailCue(net.minecraft.client.renderer.entity.state.ArmedEntityRenderState armed, HumanoidArm arm) {
+		if (!(armed instanceof HumanoidRenderState state) || arm != state.attackArm) {
+			return FlailCue.STILL;
+		}
+		Pose pose = state.getData(KEY);
+		Motion motion = WeaponMotions.of(state.getUseItemStackForArm(arm));
+		if (motion != WeaponMotions.MANGUAL || pose != null && pose.mining()) {
+			return FlailCue.STILL;
+		}
+		if (state.attackTime > 0.0F) {
+			return state.swingAnimationType == SwingAnimationType.WHACK
+				? flailStage(motion, blowOf(motion, pose), state.attackTime, pose != null && pose.released())
+				: FlailCue.STILL;
+		}
+		if (pose != null && pose.windup() >= 0.0F) {
+			return new FlailCue(HeldFlail.WHIRL, pose.windup(), blowOf(motion, pose));
+		}
+		if (pose != null && pose.charge() >= 0.0F) {
+			return new FlailCue(HeldFlail.WHIRL, Ease.outCubic(pose.charge()), motion.plain());
+		}
+		return FlailCue.STILL;
+	}
+
+	/** The same for the local player's flail in first person, in its main hand or the other. */
+	static FlailCue firstPersonFlailCue(LocalPlayer player, boolean mainHand, float partialTick) {
+		Motion motion = WeaponMotions.of(mainHand ? player.getMainHandItem() : player.getOffhandItem());
+		if (motion != WeaponMotions.MANGUAL || mining(player)) {
+			return FlailCue.STILL;
+		}
+		InteractionHand swung = player.swingingArm == null ? InteractionHand.MAIN_HAND : player.swingingArm;
+		float attack = player.getAttackAnim(partialTick);
+		if (attack > 0.0F && (swung == InteractionHand.MAIN_HAND) == mainHand) {
+			return flailStage(motion, localBlow(motion, player, partialTick), attack, false);
+		}
+		float charge = mainHand ? CombatClient.localCharge(partialTick) : -1.0F;
+		return charge >= 0.0F ? new FlailCue(HeldFlail.WHIRL, Ease.outCubic(charge), motion.plain()) : FlailCue.STILL;
+	}
+
 	// --- First person swings ------------------------------------------------------------------------
 
+	/** A moment of a blow in first person, counted as {@link #key} counts them, with first person's own keys on the way. */
 	private static Hand hand(Blow blow, int which) {
-		return switch (which) {
-			case 1 -> blow.handWind();
-			case 2, 3 -> blow.handStrike();
-			default -> Hand.REST;
-		};
+		if (which <= 0) {
+			return Hand.REST;
+		}
+		if (which == 1) {
+			return blow.handWind();
+		}
+		return which - 2 < blow.handVia().size() ? blow.handVia().get(which - 2) : blow.handStrike();
+	}
+
+	/** Which blow the local player's swing throws, worked out as {@link #blowOf} does for everyone who watches it. */
+	private static Blow localBlow(Motion motion, AbstractClientPlayer player, float partial) {
+		boolean finisher = CombatAnims.comboFinishing(player.getId(), partial);
+		int swings = CombatAnims.swings(player);
+		return motion.blow(finisher, motion.variant(swings, CombatAnims.flurrySeed(player), false));
 	}
 
 	/**
@@ -539,9 +651,12 @@ public final class CombatPoses {
 		}
 		float partial = minecraft.getDeltaTracker().getGameTimeDeltaPartialTick(false);
 		boolean finisher = CombatAnims.comboFinishing(player.getId(), partial);
-		boolean second = !finisher && attack > 0.0F && motion.alternates(CombatAnims.swings(player))
-			&& (motion.hands() != WeaponMotions.Hands.FISTS || player.getOffhandItem().isEmpty());
-		Blow blow = motion.blow(finisher, second);
+		// The other fist is throwing this one: the gauntlet's own hand only pulls back to guard.
+		boolean second = !finisher && attack > 0.0F && motion.alternates(CombatAnims.swings(player)) && player.getOffhandItem().isEmpty();
+		Blow blow = attack > 0.0F ? localBlow(motion, player, partial) : motion.plain();
+		if (second) {
+			blow = new Blow(blow.wind(), List.of(), blow.strike(), WeaponMotions.GUARD_WIND, List.of(), WeaponMotions.GUARD_STRIKE, 0.0F, null);
+		}
 		Hand from;
 		Hand to;
 		float t;
@@ -559,16 +674,16 @@ public final class CombatPoses {
 				float shake = Mth.sin((player.tickCount + partial) * 2.6F) * 0.012F;
 				poseStack.translate(shake, shake * 0.5F, 0.0F);
 			}
-			if (motion.whirl() > 0.0F) {
+			if (blow.whirl() > 0.0F) {
 				whirl = (player.tickCount + partial) * WHIRL_PER_TICK;
 			}
 		} else {
-			Span span = span(motion, false, attack, false);
+			Span span = span(motion, blow.handVia().size(), attack, false);
 			from = hand(blow, span.from());
 			to = hand(blow, span.to());
 			t = span.t();
 			if (span.from() == 0 && span.to() == 1) {
-				whirl = motion.whirl() * Mth.TWO_PI * t;
+				whirl = blow.whirl() * Mth.TWO_PI * t;
 			}
 		}
 		poseStack.translate(
@@ -608,9 +723,10 @@ public final class CombatPoses {
 			|| !motion.alternates(CombatAnims.swings(player))) {
 			return true;
 		}
-		Span span = span(motion, false, attack, false);
-		Hand from = hand(motion.plain(), span.from());
-		Hand to = hand(motion.plain(), span.to());
+		Blow blow = localBlow(motion, player, partialTick);
+		Span span = span(motion, blow.handVia().size(), attack, false);
+		Hand from = hand(blow, span.from());
+		Hand to = hand(blow, span.to());
 		float t = span.t();
 		poseStack.translate(
 			invert * Mth.lerp(t, from.x(), to.x()),
