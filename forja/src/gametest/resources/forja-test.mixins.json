@@ -1,0 +1,28 @@
+{
+	"required": true,
+	"package": "dev.forja.test.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"mixins": [
+		"BrainPerfMixin",
+		"BuilderPerfMixin",
+		"GoalsPerfMixin",
+		"HelpersCountMixin",
+		"MobAiPerfMixin",
+		"MovementPerfMixin",
+		"NetPerfMixin",
+		"ObsForjaPerfMixin",
+		"ObsPerfMixin",
+		"ParticlesCountMixin",
+		"PathCountMixin",
+		"PathFinderCountMixin",
+		"PostureCountMixin",
+		"ShockwavePerfMixin",
+		"SmithPerfMixin",
+		"SpecialGoalPerfMixin",
+		"SquadPerfMixin",
+		"TraitCountMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

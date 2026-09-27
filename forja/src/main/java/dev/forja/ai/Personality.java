@@ -79,12 +79,26 @@ public final class Personality {
 	// --- 61: traits ---------------------------------------------------------------------------------
 
 	public static Trait trait(LivingEntity mob) {
-		for (Trait trait : Trait.values()) {
-			if (mob.entityTags().contains(TRAIT_TAG + trait.name().toLowerCase(java.util.Locale.ROOT))) {
-				return trait;
+		var tags = mob.entityTags();
+		for (int i = 0; i < TRAITS.length; i++) {
+			if (tags.contains(TRAIT_TAGS[i])) {
+				return TRAITS[i];
 			}
 		}
 		return Trait.AGRESIVO;
+	}
+
+	/**
+	 * The traits and their tags, in the enum's order, written once: the observation of a network asks for
+	 * the trait four times per decision, and building the four tag names each time was most of the cost.
+	 */
+	private static final Trait[] TRAITS = Trait.values();
+	private static final String[] TRAIT_TAGS = new String[TRAITS.length];
+
+	static {
+		for (int i = 0; i < TRAITS.length; i++) {
+			TRAIT_TAGS[i] = TRAIT_TAG + TRAITS[i].name().toLowerCase(java.util.Locale.ROOT);
+		}
 	}
 
 	/**

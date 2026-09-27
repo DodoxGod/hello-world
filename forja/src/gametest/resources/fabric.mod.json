@@ -12,12 +12,17 @@
 			"dev.forja.test.ArsenalGameTests",
 			"dev.forja.test.TwoPlayerGameTests",
 			"dev.forja.test.PathGameTests",
-			"dev.forja.test.PesoGameTests"
+			"dev.forja.test.PesoGameTests",
+			"dev.forja.test.BenchmarkGameTests",
+			"dev.forja.test.OptimizationGameTests"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"
 		]
 	},
+	"mixins": [
+		"forja-test.mixins.json"
+	],
 	"depends": {
 		"forja": "*"
 	}

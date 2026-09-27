@@ -35,6 +35,13 @@ public final class NetBrain {
 	private final float[][] gruHh;
 	private final float[] gruBih;
 	private final float[] gruBhh;
+	/**
+	 * The same GRU weights laid out by input rather than by gate, so the gate sums can run the way
+	 * {@link #dense} does: each gate still adds its terms in the same order, so the result is the same to
+	 * the last bit, but the gates no longer wait on each other. Null when the file's rows are uneven.
+	 */
+	private final float[][] gruIhByInput;
+	private final float[][] gruHhByInput;
 	private final float[][] wOut;
 	private final float[] bOut;
 	/** Mean and spread per input, when the file carries them (v2); null otherwise. */
@@ -57,6 +64,8 @@ public final class NetBrain {
 		this.gruHh = matrix(json, "gru_hh");
 		this.gruBih = vector(json, "gru_bih");
 		this.gruBhh = vector(json, "gru_bhh");
+		this.gruIhByInput = byInput(this.gruIh);
+		this.gruHhByInput = byInput(this.gruHh);
 		this.wOut = matrix(json, "w_out");
 		this.bOut = vector(json, "b_out");
 		this.mean = json.has("media") ? vector(json, "media") : null;
@@ -93,21 +102,29 @@ public final class NetBrain {
 		float[] h1 = dense(x, this.w1, this.b1, true);
 		float[] h2 = dense(h1, this.w2, this.b2, true);
 		int h = this.memory;
-		float[] gi = new float[3 * h];
-		float[] gh = new float[3 * h];
-		for (int g = 0; g < 3 * h; g++) {
-			float si = this.gruBih[g];
-			float[] rowI = this.gruIh[g];
-			for (int k = 0; k < h2.length; k++) {
-				si += rowI[k] * h2[k];
+		float[] gi;
+		float[] gh;
+		if (this.gruIhByInput != null && this.gruHhByInput != null && this.gruIh.length >= 3 * h && this.gruHh.length >= 3 * h
+			&& this.gruIhByInput.length >= h2.length && this.gruHhByInput.length >= h) {
+			gi = gates(this.gruBih, this.gruIhByInput, h2, h2.length, 3 * h);
+			gh = gates(this.gruBhh, this.gruHhByInput, memory, h, 3 * h);
+		} else {
+			gi = new float[3 * h];
+			gh = new float[3 * h];
+			for (int g = 0; g < 3 * h; g++) {
+				float si = this.gruBih[g];
+				float[] rowI = this.gruIh[g];
+				for (int k = 0; k < h2.length; k++) {
+					si += rowI[k] * h2[k];
+				}
+				gi[g] = si;
+				float sh = this.gruBhh[g];
+				float[] rowH = this.gruHh[g];
+				for (int k = 0; k < h; k++) {
+					sh += rowH[k] * memory[k];
+				}
+				gh[g] = sh;
 			}
-			gi[g] = si;
-			float sh = this.gruBhh[g];
-			float[] rowH = this.gruHh[g];
-			for (int k = 0; k < h; k++) {
-				sh += rowH[k] * memory[k];
-			}
-			gh[g] = sh;
 		}
 		float[] next = new float[h];
 		for (int k = 0; k < h; k++) {
@@ -256,6 +273,46 @@ public final class NetBrain {
 			}
 		}
 		return y;
+	}
+
+	/**
+	 * {@code n} gate sums, bias[g] + Σ_k weight[g][k] · x[k] over the first {@code count} inputs, with the
+	 * weights laid out by input. Every gate adds its terms in k order, exactly as a gate-by-gate loop does,
+	 * so the floats come out identical; the inner loop is over independent gates, which the JIT vectorises.
+	 */
+	private static float[] gates(float[] bias, float[][] byInput, float[] x, int count, int n) {
+		float[] out = new float[n];
+		for (int g = 0; g < n; g++) {
+			out[g] = bias[g];
+		}
+		for (int k = 0; k < count; k++) {
+			float v = x[k];
+			float[] row = byInput[k];
+			for (int g = 0; g < n; g++) {
+				out[g] += row[g] * v;
+			}
+		}
+		return out;
+	}
+
+	/** A matrix by columns (m[i][j] at [j][i]), or null when its rows are not all the same length. */
+	private static float[][] byInput(float[][] m) {
+		if (m.length == 0) {
+			return null;
+		}
+		int cols = m[0].length;
+		for (float[] row : m) {
+			if (row.length != cols) {
+				return null;
+			}
+		}
+		float[][] t = new float[cols][m.length];
+		for (int i = 0; i < m.length; i++) {
+			for (int j = 0; j < cols; j++) {
+				t[j][i] = m[i][j];
+			}
+		}
+		return t;
 	}
 
 	private static float sigmoid(float v) {

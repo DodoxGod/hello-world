@@ -1,7 +1,6 @@
 package dev.forja.ai;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import dev.forja.mixin.CreeperAiAccess;
@@ -184,11 +183,24 @@ public final class ObsM1 {
 		int i1 = halfWidth <= 0.0 ? i0 : (int) Math.floor(x + halfWidth - 1.0E-6);
 		int j0 = (int) Math.floor(z - halfWidth);
 		int j1 = halfWidth <= 0.0 ? j0 : (int) Math.floor(z + halfWidth - 1.0E-6);
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		for (int i = i0; i <= i1; i++) {
 			for (int j = j0; j <= j1; j++) {
+				// The column's chunk is looked up once, not once per block: this is what Level.getBlockState
+				// does, out-of-bounds air included, minus the chunk lookup for every block.
+				net.minecraft.world.level.chunk.LevelChunk chunk = null;
 				for (int k = (int) Math.floor(y) + 4; k >= (int) Math.floor(y) - 8; k--) {
-					BlockPos pos = new BlockPos(i, k, j);
-					var shape = level.getBlockState(pos).getCollisionShape(level, pos);
+					pos.set(i, k, j);
+					net.minecraft.world.level.block.state.BlockState state;
+					if (!level.isInValidBounds(pos)) {
+						state = net.minecraft.world.level.block.Blocks.VOID_AIR.defaultBlockState();
+					} else {
+						if (chunk == null) {
+							chunk = level.getChunk(i >> 4, j >> 4);
+						}
+						state = chunk.getBlockState(pos);
+					}
+					var shape = state.getCollisionShape(level, pos);
 					if (!shape.isEmpty()) {
 						double top = k + shape.max(net.minecraft.core.Direction.Axis.Y);
 						if (top > best) {
@@ -244,14 +256,70 @@ public final class ObsM1 {
 
 	/** Other hostile mobs alive near the mob, nearest first. */
 	public static List<Mob> allies(Mob mob) {
-		List<Mob> found = new ArrayList<>(mob.level().getEntitiesOfClass(Mob.class, mob.getBoundingBox().inflate(ALLY_RANGE),
-			other -> other != mob && other.isAlive() && other instanceof Enemy));
-		found.sort(Comparator.comparingDouble(other -> {
-			double ox = other.getX() - mob.getX();
-			double oz = other.getZ() - mob.getZ();
-			return ox * ox + oz * oz;
-		}));
-		return found;
+		List<Mob> near = mob.level().getEntitiesOfClass(Mob.class, mob.getBoundingBox().inflate(ALLY_RANGE),
+			other -> other != mob && other.isAlive() && other instanceof Enemy);
+		// Sorting the list with a comparator was most of the cost of this search in a crowd: every
+		// comparison went through two interface calls the JIT cannot inline, as every sort on the server
+		// shares them. Each distance is worked out once and sorted as a plain number, stably, in the order
+		// Double.compare gives: the same order as before, ties included.
+		int n = near.size();
+		Mob[] mobs = near.toArray(new Mob[0]);
+		double[] keys = new double[n];
+		for (int i = 0; i < n; i++) {
+			double ox = mobs[i].getX() - mob.getX();
+			double oz = mobs[i].getZ() - mob.getZ();
+			keys[i] = ox * ox + oz * oz;
+		}
+		sortStable(keys, mobs, new double[n], new Mob[n], 0, n);
+		return new ArrayList<>(java.util.Arrays.asList(mobs));
+	}
+
+	/** A stable merge sort of {@code mobs} by {@code keys} over [from, to), ordered as Double.compare orders. */
+	private static void sortStable(double[] keys, Mob[] mobs, double[] spareKeys, Mob[] spareMobs, int from, int to) {
+		if (to - from <= 16) {
+			for (int i = from + 1; i < to; i++) {
+				double key = keys[i];
+				Mob held = mobs[i];
+				int j = i - 1;
+				while (j >= from && Double.compare(keys[j], key) > 0) {
+					keys[j + 1] = keys[j];
+					mobs[j + 1] = mobs[j];
+					j--;
+				}
+				keys[j + 1] = key;
+				mobs[j + 1] = held;
+			}
+			return;
+		}
+		int mid = (from + to) >>> 1;
+		sortStable(keys, mobs, spareKeys, spareMobs, from, mid);
+		sortStable(keys, mobs, spareKeys, spareMobs, mid, to);
+		if (Double.compare(keys[mid - 1], keys[mid]) <= 0) {
+			return;
+		}
+		System.arraycopy(keys, from, spareKeys, from, to - from);
+		System.arraycopy(mobs, from, spareMobs, from, to - from);
+		int left = from;
+		int right = mid;
+		int out = from;
+		while (left < mid && right < to) {
+			// On a tie the left one goes first: that is what keeps the sort stable.
+			if (Double.compare(spareKeys[right], spareKeys[left]) < 0) {
+				keys[out] = spareKeys[right];
+				mobs[out++] = spareMobs[right++];
+			} else {
+				keys[out] = spareKeys[left];
+				mobs[out++] = spareMobs[left++];
+			}
+		}
+		while (left < mid) {
+			keys[out] = spareKeys[left];
+			mobs[out++] = spareMobs[left++];
+		}
+		while (right < to) {
+			keys[out] = spareKeys[right];
+			mobs[out++] = spareMobs[right++];
+		}
 	}
 
 	static double clip(double v, double min, double max) {
