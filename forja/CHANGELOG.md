@@ -38,6 +38,14 @@ Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (117).
   de fundición delante de ti.
 - Un **arma lanzada** (daga, hacha, tridente) pega con su propio daño (antes hacía 1).
 
+### Animaciones
+
+- **Cada arma tiene su propio golpe**, en tercera y en primera persona, con su remate de combo y su pose
+  de carga: tajo de espada, barrido del espadón, siega de la guadaña, martillazo hasta el suelo, el mangual
+  girando sobre la cabeza, estocadas de daga y tridente, directos alternos de los guanteletes...
+- **Los enemigos avisan con la pose de su arma** (martillo en alto, lanza recogida, espadón abierto) durante
+  todo su aviso, y la sueltan en el golpe; si amagan, la bajan.
+
 ### Guía y logros
 
 - **Camino guiado**: la guía dice cuál es el siguiente paso y te lleva a su capítulo; una pista en el chat
