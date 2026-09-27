@@ -102,7 +102,8 @@ public final class HeldTome {
 			return Reading.SHUT;
 		}
 		double now = CombatAnims.now(partialTick);
-		double[] last = LAST_OPEN.computeIfAbsent(entity, e -> new double[] {-1.0E9});
+		// [when last seen open, pages turned so far, when that was counted]
+		double[] last = LAST_OPEN.computeIfAbsent(entity, e -> new double[] {-1.0E9, 0.0, now});
 		float open = 0.0F;
 
 		InteractionHand swung = entity.swingingArm == null ? InteractionHand.MAIN_HAND : entity.swingingArm;
@@ -123,6 +124,17 @@ public final class HeldTome {
 		if (charge >= 0.0F) {
 			open = Math.max(open, Ease.outCubic(Math.min(1.0F, charge * 3.0F)));
 		}
+		// The spell gathering on the right button (magic/Spellcasting): "se abre el libro e inicia a moverse las
+		// hojas violentamente" - it falls open at once and the pages tear round, faster the fuller the charge,
+		// the covers shaking with it.
+		float gathering = -1.0F;
+		if (entity.isUsingItem() && is(entity.getUseItem())) {
+			gathering = Math.min(1.0F, (entity.getTicksUsingItem() + partialTick) / dev.forja.magic.Spellcasting.TOME_CHARGE_TICKS);
+			open = Math.max(open, Ease.outCubic(Math.min(1.0F, (entity.getTicksUsingItem() + partialTick) / 3.0F)));
+		}
+		double elapsed = Math.max(0.0, Math.min(2.0, now - last[2]));
+		last[2] = now;
+		last[1] += elapsed * TURNS_PER_TICK * (gathering >= 0.0F ? 3.0F + 9.0F * gathering : 1.0F);
 
 		if (open >= 1.0F) {
 			last[0] = now;
@@ -135,8 +147,12 @@ public final class HeldTome {
 				open = Math.max(open, 1.0F - Ease.inOutSine((since - LINGER_TICKS) / CLOSE_TICKS));
 			}
 		}
+		if (gathering >= 0.0F && open >= 1.0F) {
+			// The covers strain against it: a quick uneven shudder that grows with the charge.
+			open -= (0.05F + 0.12F * gathering) * Math.abs(Mth.sin((float) now * 2.7F) * Mth.cos((float) now * 1.9F));
+		}
 		// The pages keep turning while it is open, so they are wherever time has got them to when it opens.
-		return open <= 0.0F ? Reading.SHUT : new Reading(open, (float) (now * TURNS_PER_TICK % 1000.0));
+		return open <= 0.0F ? Reading.SHUT : new Reading(open, (float) (last[1] % 1000.0));
 	}
 
 	/**

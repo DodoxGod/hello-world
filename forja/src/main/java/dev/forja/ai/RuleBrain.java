@@ -18,6 +18,10 @@ import net.minecraft.world.entity.player.Player;
 public final class RuleBrain {
 	/** Mobs closer than this that cannot attack circle instead of pressing in. */
 	static final double CIRCLE_RANGE = 6.0;
+	/** A mob with a turn further than this round the ring from its slot goes round to it before it strikes. */
+	static final double GO_ROUND_ANGLE = Math.toRadians(60.0);
+	/** ...unless it is already this close: then it just strikes. */
+	static final double GO_ROUND_MIN = 2.5;
 	/** A mob below this share of its health backs off, if it has company. */
 	static final double RETREAT_HEALTH = 0.2;
 	/** Within this distance of a player charging a blow, a mob steps back out of it. */
@@ -171,6 +175,12 @@ public final class RuleBrain {
 				case ASTUTO -> Decision.tactic(Tactic.FLANQUEAR);
 				default -> Decision.tactic(Tactic.RODEAR);
 			};
+		}
+		// Going in from its own side: with others at the same player, one with a turn that is still well round
+		// the ring from its slot goes round to it first, so the blows come from all sides and not one.
+		if (distance > GO_ROUND_MIN && distance < CIRCLE_RANGE + 2.0 && !Double.isNaN(mind.ringAngle) && ObsM1.allies(mob).size() >= 1
+			&& Math.abs(Squad.wrap(Squad.angle(mob, target) - mind.ringAngle)) > GO_ROUND_ANGLE) {
+			return Decision.tactic(Tactic.RODEAR);
 		}
 		return Decision.APPROACH;
 	}

@@ -67,6 +67,18 @@ Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (120).
 - **Todas las armas y herramientas forjadas cargan el golpe** (guanteletes, báculo, grimorio y
   herramientas tenían la pose de carga y nunca la usaban).
 
+### Magia, grupos y rodear (27-09)
+
+- **Báculo y grimorio cargan con clic derecho**: mantenido, el hechizo se reúne con motas del color del
+  núcleo que se acercan a la mano (barra de carga sobre la mira, carillón al llenarse); al soltar sale con
+  hasta +50 %. Un toque es el hechizo de siempre. El clic izquierdo con ellos ya no carga.
+- **El grimorio al cargar** se abre de golpe y las hojas pasan cada vez más rápido, con las tapas temblando.
+- **Casi nunca aparece un monstruo solo**: uno corriente viene con compañeros (grupo de 2 o 3) el 75 % de
+  las veces, y un veterano o una élite siempre, en grupos de 3 a 6. Nunca con más de 12 hostiles cerca.
+- **Rodean**: los huecos del anillo se llenan desde el lado por el que llegan hacia los lados y la espalda;
+  el que tiene turno y está lejos de su hueco da la vuelta antes de golpear, los que esperan lo hacen en su
+  hueco (no delante) y todos van por el anillo en vez de cruzar por delante del jugador.
+
 ### Guía y logros
 
 - **Camino guiado**: la guía dice cuál es el siguiente paso y te lleva a su capítulo; una pista en el chat

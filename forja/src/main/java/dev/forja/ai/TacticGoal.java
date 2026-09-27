@@ -32,6 +32,8 @@ public final class TacticGoal extends Goal {
 	public static final double RING_RADIUS = 3.5;
 	public static final double FLANK_RADIUS = 2.5;
 	public static final double WAIT_MIN = 4.0;
+	/** How much of the ring a mob going round to its slot covers at a time, in radians (50 degrees). */
+	public static final double ARC_STEP = Math.toRadians(50.0);
 	public static final double WAIT_MAX = 6.0;
 	public static final double RETREAT_DISTANCE = 6.0;
 	public static final double DUEL_WATCH_MIN = 7.0;
@@ -143,7 +145,7 @@ public final class TacticGoal extends Goal {
 			case LIBRE, ACERCARSE -> this.free(decision, target);
 			case RODEAR -> this.toRing(target, Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle, this.mind.ringRadius, 1.0);
 			case FLANQUEAR -> this.toRing(target, this.behindAngle(target), FLANK_RADIUS, 1.15);
-			case ESPERAR -> this.hold(target);
+			case ESPERAR -> this.waitOnRing(target);
 			case RETIRARSE -> this.retreat(target);
 			case REAGRUPARSE -> this.regroup(target);
 			case CUBRIRSE -> this.cover(target);
@@ -362,6 +364,14 @@ public final class TacticGoal extends Goal {
 	}
 
 	private void toRing(Player target, double angle, double radius, double speed) {
+		// Round, not through: a slot on the far side is reached along the ring, a step of the arc at a time,
+		// instead of by walking straight at the player and into the blade.
+		double current = this.currentAngle(target);
+		double turn = Squad.wrap(angle - current);
+		if (Math.abs(turn) > ARC_STEP) {
+			angle = current + Math.signum(turn) * ARC_STEP;
+			radius = Math.max(radius, Math.min(this.mob.distanceTo(target), radius + 1.5));
+		}
 		double x = target.getX() + Math.cos(angle) * radius;
 		double z = target.getZ() + Math.sin(angle) * radius;
 		if (this.mob.distanceToSqr(x, this.mob.getY(), z) < 0.5) {
@@ -369,6 +379,18 @@ public final class TacticGoal extends Goal {
 			return;
 		}
 		this.pathTo(x, target.getY(), z, speed);
+	}
+
+	/**
+	 * Waiting for a turn: out of reach as before, but at its own slot of the ring rather than straight in
+	 * front, so the ones waiting stand round the player's sides and back and not in a queue before them.
+	 */
+	private void waitOnRing(Player target) {
+		if (Duels.watching(this.mob) || Double.isNaN(this.mind.ringAngle)) {
+			this.hold(target);
+			return;
+		}
+		this.toRing(target, this.mind.ringAngle, Math.max(this.mind.ringRadius, (WAIT_MIN + WAIT_MAX) / 2.0), 0.8);
 	}
 
 	private void hold(Player target) {

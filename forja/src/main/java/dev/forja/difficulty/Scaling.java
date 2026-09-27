@@ -87,9 +87,41 @@ public final class Scaling {
 			mob.addTag(dev.forja.ai.Personality.TRAIT_TAG + "agresivo");
 		}
 
-		if (natural && level.isDarkOutside() && random.nextDouble() < Nights.companionChance(level)) {
+		if (natural) {
+			pack(mob, level, threat, random);
+		}
+	}
+
+	/**
+	 * The companions a natural spawn brings: a veteran or an elite never comes alone (three to six in all),
+	 * an ordinary one rarely (two or three, most of the time), and the nights survived add one more now and
+	 * then, as they always did. Same kind, beside it, and never past the crowd.
+	 */
+	static void pack(Mob mob, ServerLevel level, Threat threat, RandomSource random) {
+		CombatConfig cfg = CombatConfig.get();
+		int group = 1;
+		if (threat == Threat.VETERANO || threat == Threat.ELITE) {
+			group = cfg.packVeteranMin + random.nextInt(Math.max(1, cfg.packVeteranMax - cfg.packVeteranMin + 1));
+		} else if (random.nextDouble() < cfg.packChance) {
+			group = cfg.packMin + random.nextInt(Math.max(1, cfg.packMax - cfg.packMin + 1));
+		}
+		if (level.isDarkOutside() && random.nextDouble() < Nights.companionChance(level)) {
+			group++;
+		}
+		int room = room(mob, level, cfg);
+		for (int i = 1; i < group && i <= room; i++) {
 			companion(mob, level);
 		}
+	}
+
+	/**
+	 * How many more hostiles may come here: no more than the crowd within 32 blocks leaves room for. The
+	 * world's monster cap is not asked again: the spawner asked it before this one came, and vanilla's own
+	 * packs are let out whole on that one question too.
+	 */
+	private static int room(Mob mob, ServerLevel level, CombatConfig cfg) {
+		int near = level.getEntitiesOfClass(Mob.class, mob.getBoundingBox().inflate(32.0), other -> other instanceof Enemy && other.isAlive()).size();
+		return Math.max(0, cfg.packCrowd - near);
 	}
 
 	/** Veteran, elite or nothing. The champion is decided elsewhere (Elites), with its own rules. */
@@ -120,9 +152,16 @@ public final class Scaling {
 		if (!(other instanceof Mob friend)) {
 			return;
 		}
-		double angle = mob.getRandom().nextDouble() * Math.PI * 2.0;
-		friend.snapTo(mob.getX() + Math.cos(angle) * 1.5, mob.getY(), mob.getZ() + Math.sin(angle) * 1.5, mob.getYRot(), 0.0F);
-		if (!level.noCollision(friend)) {
+		// A few tries round it, one to three blocks off, on something to stand on and with room to stand.
+		boolean placed = false;
+		for (int attempt = 0; attempt < 6 && !placed; attempt++) {
+			double angle = mob.getRandom().nextDouble() * Math.PI * 2.0;
+			double reach = 1.0 + mob.getRandom().nextDouble() * 2.0;
+			friend.snapTo(mob.getX() + Math.cos(angle) * reach, mob.getY(), mob.getZ() + Math.sin(angle) * reach, mob.getYRot(), 0.0F);
+			net.minecraft.core.BlockPos below = friend.blockPosition().below();
+			placed = level.noCollision(friend) && level.getBlockState(below).isFaceSturdy(level, below, net.minecraft.core.Direction.UP);
+		}
+		if (!placed) {
 			return;
 		}
 		friend.finalizeSpawn(level, level.getCurrentDifficultyAt(friend.blockPosition()), EntitySpawnReason.EVENT, null);

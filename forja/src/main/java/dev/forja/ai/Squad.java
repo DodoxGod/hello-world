@@ -117,24 +117,32 @@ public final class Squad {
 		LEADER.put(player, leader(members));
 		boolean routed = routed(player, now);
 
-		// Slots on the ring: evenly spaced from where the nearest stands, each taken by the closest free member.
+		// Slots on the ring, evenly spaced all the way round from the side the group comes from, and filled
+		// outwards from there: the nearest takes the slot on its own side, the next the free one either side of
+		// it (whichever side it is already on), and the last to arrive the ones round the back. Andy wants them
+		// to surround ("que rodeen"), and taking the free slot nearest to each one's own angle, as this did,
+		// let everyone who came the same way settle on the same side of the player.
 		int n = members.size();
 		double radius = ringRadius(n);
 		double start = angle(members.get(0).mob, player);
 		boolean[] taken = new boolean[n];
 		for (MobMind mind : members) {
-			double best = Double.MAX_VALUE;
-			int slot = 0;
-			for (int i = 0; i < n; i++) {
-				if (taken[i]) {
-					continue;
-				}
-				double gap = Math.abs(wrap(start + i * 2.0 * Math.PI / n - angle(mind.mob, player)));
-				if (gap < best) {
-					best = gap;
-					slot = i;
+			double own = angle(mind.mob, player);
+			int slot = -1;
+			for (int step = 0; step <= n / 2 && slot < 0; step++) {
+				int left = Math.floorMod(step, n);
+				int right = Math.floorMod(-step, n);
+				boolean leftFree = !taken[left];
+				boolean rightFree = right != left && !taken[right];
+				if (leftFree && rightFree) {
+					slot = Math.abs(wrap(start + left * 2.0 * Math.PI / n - own)) <= Math.abs(wrap(start + right * 2.0 * Math.PI / n - own)) ? left : right;
+				} else if (leftFree) {
+					slot = left;
+				} else if (rightFree) {
+					slot = right;
 				}
 			}
+			slot = Math.max(0, slot);
 			taken[slot] = true;
 			mind.ringAngle = start + slot * 2.0 * Math.PI / n;
 			mind.ringRadius = radius;

@@ -163,6 +163,18 @@ public final class CombatConfig {
 	public double nightCompanionPerDoubling = 0.04;
 	public double nightCompanionMax = 0.35;
 	public double nightThreatPerNight = 0.03;
+	/**
+	 * Packs (Andy, 2026-09-27): "que sea difícil que aparezca un zombi solo; si hay un veterano, que aparezcan
+	 * en grupos de 3 a 6". A natural hostile spawn brings companions of its kind with this chance, for a group
+	 * of packMin..packMax; a veteran or an elite always does, for packVeteranMin..packVeteranMax. None past
+	 * packCrowd hostiles within 32 blocks (the monster cap is the spawner's, asked once, as vanilla's packs do).
+	 */
+	public double packChance = 0.75;
+	public int packMin = 2;
+	public int packMax = 3;
+	public int packVeteranMin = 3;
+	public int packVeteranMax = 6;
+	public int packCrowd = 12;
 	public double nightThreatMax = 1.5;
 	/** Rewards for beating a stronger foe: an extra loot roll, and mastery. */
 	public double rewardVeteranLoot = 0.35;
