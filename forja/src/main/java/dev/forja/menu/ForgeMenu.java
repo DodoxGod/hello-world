@@ -439,6 +439,17 @@ public class ForgeMenu extends AbstractContainerMenu {
 					// What its parts add was marked slot by slot when the star put them together.
 					result.set(ModComponents.POTENCIAL, dev.forja.forge.Potential.atForge(quality, player, this.station, this.wholeWorkshop()));
 					dev.forja.forge.SmithRecord.add(player, dev.forja.forge.SmithRecord.FORGED);
+					// What it was forged from: the star's iron, the Smith's heart (two goals nothing used to award).
+					dev.forja.part.ForgedParts made = result.get(ModComponents.PARTS);
+					if (made != null) {
+						var used = made.materials();
+						if (used.contains(dev.forja.material.ForgeMaterial.ESTELAR) || used.contains(dev.forja.material.ForgeMaterial.ACERO_ESTELAR)) {
+							ForjaAdvancements.award(player, "estelar");
+						}
+						if (used.contains(dev.forja.material.ForgeMaterial.CORAZON) || used.contains(dev.forja.material.ForgeMaterial.ACERO_VIVO)) {
+							ForjaAdvancements.award(player, "corazon");
+						}
+					}
 					if (quality >= 2) {
 						dev.forja.forge.SmithRecord.add(player, dev.forja.forge.SmithRecord.PERFECT);
 						dev.forja.forge.Quality.markPerfect(result);

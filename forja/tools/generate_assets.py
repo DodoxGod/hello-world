@@ -4353,7 +4353,9 @@ ADVANCEMENTS = {
     "fundir": ("desarmar", "minecraft:lava_bucket", "task", None),
     "herrero_caido": ("damasco", "forja:fragua_apagada", "challenge", None),
     "corazon": ("herrero_caido", "forja:corazon_de_forja", "challenge", None),
-    "damasco": ("aleacion", "forja:damasco", "goal", None),
+    # Nothing ever awarded it (nor what hangs from it): having the ingot is having folded the steel.
+    "damasco": ("aleacion", "forja:damasco", "goal",
+                {"trigger": "minecraft:inventory_changed", "conditions": {"items": [{"items": "forja:damasco"}]}}),
     "leyenda": ("forja", "minecraft:nether_star", "goal", "LEGENDS"),
     "trato": ("root", "minecraft:emerald", "task",
               {"trigger": "minecraft:villager_trade",

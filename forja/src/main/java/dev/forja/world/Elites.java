@@ -52,6 +52,10 @@ public final class Elites {
 		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
 			if (entity.level() instanceof ServerLevel level && isElite(entity)) {
 				drop(level, entity);
+				// "Cazador de élites": the one who brought it down.
+				if (source.getEntity() instanceof net.minecraft.world.entity.player.Player killer) {
+					dev.forja.ForjaAdvancements.award(killer, "elite");
+				}
 			}
 		});
 	}

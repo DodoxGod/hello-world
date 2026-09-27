@@ -16,12 +16,14 @@
   },
   "criteria": {
     "done": {
-      "trigger": "minecraft:impossible"
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "forja:damasco"
+          }
+        ]
+      }
     }
-  },
-  "requirements": [
-    [
-      "done"
-    ]
-  ]
+  }
 }
