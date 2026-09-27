@@ -283,8 +283,8 @@ public final class TacticGoal extends Goal {
 		this.mob.swing(InteractionHand.MAIN_HAND);
 		double allowed = this.mob.getBbWidth() * 2.0 + target.getBbWidth() * 0.5 + CombatConfig.get().strikeReachBonus;
 		if (this.mob.distanceTo(target) <= allowed && ObsM1.sees(this.mob, target.getX(), target.getEyeY(), target.getZ())
-			&& this.mob.level() instanceof ServerLevel level) {
-			this.mob.doHurtTarget(level, target);
+			&& this.mob.level() instanceof ServerLevel level && this.mob.doHurtTarget(level, target)) {
+			HopBack.afterHit(this.mob, target);
 		}
 		this.mind.cooldown = dev.forja.combat.Weight.interval(this.mob, MELEE_COOLDOWN);
 		this.mind.lastStrike = this.mob.level().getGameTime();

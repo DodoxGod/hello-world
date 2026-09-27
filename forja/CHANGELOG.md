@@ -83,6 +83,9 @@ Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (120).
   ("Karn Rompehuesos", "Morvek la Hoja Gris", "Ulgar, Azote de Reinos") en una placa del metal de su rango.
 - **Botín**: el veterano suelta como mucho 1 cosa extra y la élite 2 (antes repetían todo su botín); el
   campeón solo su arma legendaria. El logro pasa a llamarse **Cazador de campeones**.
+- **Entrar, pegar y salir**: tras acertar un golpe, cualquier mob cuerpo a cuerpo (arañas incluidas) se agacha un
+  instante y salta 2-3 bloques atrás, como mucho cada 6 segundos, y deja su turno a otro; nunca contra un muro,
+  por un barranco o a la lava. El creeper da un saltito corto cuando finta su sisseo.
 - **Todos los mobs fintan** un poco (5–20 % según la dificultad), más contra quien para mucho.
 - **Mangual en 3D**: mango, cadena de eslabones y bola con pinchos; la bola cuelga, se arrastra y en el golpe
   sale en arco hasta el enemigo con la cadena estirada.

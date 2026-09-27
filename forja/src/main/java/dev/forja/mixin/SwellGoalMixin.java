@@ -68,6 +68,7 @@ abstract class SwellGoalMixin {
 			forja$feinted = true;
 			forja$fuseTicks = 0;
 			CombatStats.record(creeper, CombatStats.FEINT);
+			dev.forja.ai.HopBack.afterFeint(creeper, target);
 		}
 	}
 }

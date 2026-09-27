@@ -95,8 +95,9 @@ abstract class MeleeAttackGoalMixin {
 			if (--forja$windup > 0) return;
 			mob.swing(InteractionHand.MAIN_HAND);
 			double allowed = mob.getBbWidth() * 2.0 + target.getBbWidth() * 0.5 + cfg.strikeReachBonus;
-			if (mob.distanceTo(target) <= allowed && mob.getSensing().hasLineOfSight(target) && mob.level() instanceof ServerLevel level) {
-				mob.doHurtTarget(level, target);
+			if (mob.distanceTo(target) <= allowed && mob.getSensing().hasLineOfSight(target) && mob.level() instanceof ServerLevel level
+				&& mob.doHurtTarget(level, target)) {
+				dev.forja.ai.HopBack.afterHit(mob, target);
 			}
 			resetAttackCooldown();
 			dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);

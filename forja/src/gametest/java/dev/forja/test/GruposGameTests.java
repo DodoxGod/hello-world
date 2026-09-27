@@ -149,4 +149,43 @@ public class GruposGameTests {
 			helper.succeed();
 		});
 	}
+
+	/** In, strike, out: after a blow it hops back out of reach, not again for six seconds, and never into a wall. */
+	@GameTest(maxTicks = 120)
+	public void aMonsterHopsBackAfterItsBlow(GameTestHelper helper) {
+		for (int x = 0; x < 8; x++) {
+			for (int z = 0; z < 8; z++) {
+				helper.setBlock(new BlockPos(x, 0, z), net.minecraft.world.level.block.Blocks.STONE);
+			}
+		}
+		// A wall right behind the second one.
+		for (int z = 4; z < 8; z++) {
+			helper.setBlock(new BlockPos(4, 1, z), net.minecraft.world.level.block.Blocks.STONE);
+			helper.setBlock(new BlockPos(4, 2, z), net.minecraft.world.level.block.Blocks.STONE);
+		}
+		ServerLevel level = helper.getLevel();
+		CombatConfig.get().veteranChance = 0.0;
+		CombatConfig.get().eliteChance = 0.0;
+		Zombie free = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(3, 1, 1));
+		Zombie walled = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(3, 1, 5));
+		CombatGameTests.TestPlayer player = new CombatGameTests.TestPlayer(level);
+		Vec3 at = helper.absoluteVec(new Vec3(1.5, 1.0, 1.5));
+		player.setPos(at.x, at.y, at.z);
+		CombatGameTests.TestPlayer other = new CombatGameTests.TestPlayer(level);
+		Vec3 there = helper.absoluteVec(new Vec3(1.5, 1.0, 5.5));
+		other.setPos(there.x, there.y, there.z);
+		helper.runAfterDelay(10, () -> {
+			double before = free.getX();
+			dev.forja.ai.HopBack.afterHit(free, player);
+			dev.forja.ai.HopBack.afterHit(walled, other);
+			helper.assertTrue(!dev.forja.ai.HopBack.ready(free), "tras golpear, el salto está planeado y en recarga");
+			helper.assertTrue(dev.forja.ai.HopBack.ready(walled), "con un muro detrás no salta");
+			helper.runAfterDelay(dev.forja.ai.HopBack.TELL + 6, () -> {
+				double moved = Math.hypot(free.getX() - player.getX(), free.getZ() - player.getZ());
+				double was = before - player.getX();
+				helper.assertTrue(moved > was + 0.8, "salta hacia atrás: de " + was + " a " + moved);
+				helper.succeed();
+			});
+		});
+	}
 }
