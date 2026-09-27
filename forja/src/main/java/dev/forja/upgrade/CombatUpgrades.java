@@ -881,12 +881,21 @@ public final class CombatUpgrades {
 				procs[0] = now;
 				procs[1] = 0.0;
 			}
-			double softness = Math.max(0.1, dev.forja.combat.CombatConfig.get().upgradeProcSoftness);
-			float softened = (float) (amount / (1.0 + procs[1] / softness));
+			float softened = softened(amount, procs[1]);
 			procs[1] += softened;
 			victim.invulnerableTime = 0;
 			victim.hurtServer(level, source, softened);
 		}
+	}
+
+	/**
+	 * What one more upgrade proc is worth on a foe that has already taken {@code already} from procs this
+	 * tick: {@code amount / (1 + already / softness)}. Pure, so the balance report (docs/EQUILIBRIO.md)
+	 * uses the very same rule instead of a copy of it.
+	 */
+	public static float softened(float amount, double already) {
+		double softness = Math.max(0.1, dev.forja.combat.CombatConfig.get().upgradeProcSoftness);
+		return (float) (amount / (1.0 + already / softness));
 	}
 
 	private static ItemStack weaponOf(DamageSource source, LivingEntity attacker) {

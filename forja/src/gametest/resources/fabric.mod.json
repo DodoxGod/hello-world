@@ -14,7 +14,8 @@
 			"dev.forja.test.PathGameTests",
 			"dev.forja.test.PesoGameTests",
 			"dev.forja.test.BenchmarkGameTests",
-			"dev.forja.test.OptimizationGameTests"
+			"dev.forja.test.OptimizationGameTests",
+			"dev.forja.test.BalanceGameTests"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"
