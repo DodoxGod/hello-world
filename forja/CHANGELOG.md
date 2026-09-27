@@ -89,6 +89,9 @@ Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (120).
 - **Estamina**: saltar cuesta 4 (8 corriendo; sin estamina se salta igual, pero no se recupera ese segundo) y
   los especiales del arma cuestan además de durabilidad: Torbellino 30, Sismo 35, Siega 30, Embestida 20; sin
   la estamina suficiente no salen.
+- **Los mobs corren** (+35 %) con una estamina propia (100; 2 por tick corriendo, se recupera 1 por tick tras 1 s
+  sin correr; agotados, no vuelven a correr hasta tener 25): para alcanzar a quien se aleja (a 4–12 bloques), para
+  llegar a su hueco del anillo y para huir malheridos. No los jefes. Se les ve el polvo del sprint.
 - **Todos los mobs fintan** un poco (5–20 % según la dificultad), más contra quien para mucho.
 - **Mangual en 3D**: mango, cadena de eslabones y bola con pinchos; la bola cuelga, se arrastra y en el golpe
   sale en arco hasta el enemigo con la cadena estirada.

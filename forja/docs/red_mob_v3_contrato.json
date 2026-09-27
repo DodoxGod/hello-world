@@ -1,6 +1,6 @@
 {
   "formato": "red_mob_v3",
-  "n_obs": 277,
+  "n_obs": 280,
   "n_obs_v2": 200,
   "nombres_obs": [
     "obj_distancia/16",
@@ -279,7 +279,10 @@
     "jug_sujeto",
     "jug_ocupado",
     "yo_peso/10",
-    "jug_peso/10"
+    "jug_peso/10",
+    "yo_estamina/100",
+    "yo_corriendo",
+    "aliados_corriendo/5"
   ],
   "significado_entradas_nuevas": {
     "proy0_presente": "el proyectil que llega antes: 1 si hay (se acerca, a <=16, y su trayectoria con gravedad pasa a <=0.5 de la caja del mob)",
@@ -358,7 +361,10 @@
     "jug_sujeto": "1 si una Tenaza lo tiene sujeto",
     "jug_ocupado": "1 si está comiendo o bebiendo, con estamina < 25, o con el escudo en enfriamiento (guardia rota)",
     "yo_peso/10": "kilos que lleva el mob (arma en mano + armadura, combat/Weight.carried) / 10; alarga su aviso (1.5 ticks por kilo, tope 14) y su espera entre golpes (+10 % por kilo)",
-    "jug_peso/10": "kilos que lleva el jugador (arma + armadura) / 10: cuanto más, más tarda en cargar su golpe al 100 %"
+    "jug_peso/10": "kilos que lleva el jugador (arma + armadura) / 10: cuanto más, más tarda en cargar su golpe al 100 %",
+    "yo_estamina/100": "estamina de carrera del mob / 100 (0..1): correr gasta 2 por tick, se recupera 1 por tick tras 20 sin correr",
+    "yo_corriendo": "1 si el mob está corriendo (+35 % de velocidad)",
+    "aliados_corriendo/5": "monstruos a 16 bloques con el mismo objetivo que están corriendo / 5 (0..2)"
   },
   "salidas": [
     "quieto",
@@ -393,9 +399,10 @@
     "tactica_cebo",
     "tactica_relevo",
     "tactica_ocultarse",
-    "tactica_empujar"
+    "tactica_empujar",
+    "correr"
   ],
-  "n_salidas": 33,
+  "n_salidas": 34,
   "tacticas_nuevas": {
     "tactica_cebo": "corre al aliado más cercano que pelea con el mismo jugador y 2.5 bloques más allá (lejos del jugador), velocidad 1.2; sin aliado = RETIRARSE. Máscara: hace falta un aliado.",
     "tactica_relevo": "fuera del alcance del jugador: a 5.0 bloques, girando 0.5 rad hacia su lado fijo (id par = +, impar = -), velocidad 1.0. Siempre permitida.",
@@ -403,7 +410,16 @@
     "tactica_empujar": "al lado del jugador contrario a la lava/caída más cercana (a 1.5 o 3 de él), a 1.5 bloques; una vez allí, directo al jugador (sus golpes empujan 0.35 extra hacia el peligro: MobAi.pushToDanger); sin peligro = ACERCARSE. Máscara: peligro junto al jugador."
   },
   "cabeza_tactica": "una sola elección (softmax) entre las 13 salidas tactica_*: las 9 de v2 en 11..19 y las 4 nuevas en 29..32; índice de la táctica = orden de Tactic (0 LIBRE .. 8 PARAPETARSE, 9 CEBO, 10 RELEVO, 11 OCULTARSE, 12 EMPUJAR)",
-  "compatibilidad": "Una red v2 (200 entradas, 29 salidas) funciona igual: recibe sus 200 y nunca elige las tácticas nuevas. Una red v3 pide 252 entradas y da 33 salidas; el mod la acepta si sus nombres_obs coinciden con estos en orden.",
+  "compatibilidad": "Una red v2 (200 entradas, 29 salidas) funciona igual: recibe sus 200 y nunca elige las tácticas nuevas. Una red v3 da 33 salidas (sin correr: corre por reglas) o 34 (con correr, índice 33, Bernoulli como fintar, máscara: sin estamina, aturdido, avisando o en agua); pide las entradas que declare en nombres_obs, que deben coincidir con estas en orden (las 3 de correr van al final, así que una red de 277 sigue valiendo).",
+  "correr": {
+    "estamina_max": 100.0,
+    "gasto_por_tick": 2.0,
+    "recupera_por_tick": 1.0,
+    "descanso_ticks": 20,
+    "vuelve_a_correr_desde": 25.0,
+    "velocidad_extra": 0.35,
+    "reglas": "corre si: RETIRARSE con vida < 30 %; RODEAR/ESPERAR a más de 50° de su hueco; o el jugador está a 4..12 y se aleja a más de 0,05 bloques/tick por la línea entre ambos. Nunca aturdido, avisando, en agua, ni los jefes."
+  },
   "familias": {
     "cuerpo": "red_cuerpo.json",
     "arquero": "red_arquero.json",

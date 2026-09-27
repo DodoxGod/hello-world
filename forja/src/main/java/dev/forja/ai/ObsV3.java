@@ -133,6 +133,10 @@ public final class ObsV3 {
 		MEANING.put("yo_peso/10", "kilos que lleva el mob (arma en mano + armadura, combat/Weight.carried) / 10; alarga su aviso "
 			+ "(1.5 ticks por kilo, tope 14) y su espera entre golpes (+10 % por kilo)");
 		MEANING.put("jug_peso/10", "kilos que lleva el jugador (arma + armadura) / 10: cuanto más, más tarda en cargar su golpe al 100 %");
+		// --- Correr (ai/MobSprint): the monster's own breath for running
+		MEANING.put("yo_estamina/100", "estamina de carrera del mob / 100 (0..1): correr gasta 2 por tick, se recupera 1 por tick tras 20 sin correr");
+		MEANING.put("yo_corriendo", "1 si el mob está corriendo (+35 % de velocidad)");
+		MEANING.put("aliados_corriendo/5", "monstruos a 16 bloques con el mismo objetivo que están corriendo / 5 (0..2)");
 	}
 
 	private ObsV3() {
@@ -346,6 +350,16 @@ public final class ObsV3 {
 		o[i++] = eating || dev.forja.combat.Stamina.value(target) < 25.0F || guardDown ? 1.0 : 0.0;
 		o[i++] = dev.forja.combat.Weight.carried(mob) / 10.0;
 		o[i++] = dev.forja.combat.Weight.carried(target) / 10.0;
+		MobMind self = MobAi.mind(mob);
+		o[i++] = self == null ? 1.0 : self.stamina / MobSprint.MAX;
+		o[i++] = self != null && self.running ? 1.0 : 0.0;
+		int runners = 0;
+		for (Mob other : mob.level().getEntitiesOfClass(Mob.class, mob.getBoundingBox().inflate(16.0),
+			m -> m != mob && m.isAlive() && m.getTarget() == target)) {
+			MobMind them = MobAi.mind(other);
+			runners += them != null && them.running ? 1 : 0;
+		}
+		o[i++] = ObsM1.clip(runners / 5.0, 0.0, 2.0);
 		if (i != o.length) {
 			// a name declared and never worked out, or the other way round: the contract would lie
 			throw new IllegalStateException("ObsV3 rellena " + i + " de " + o.length + " entradas");

@@ -931,6 +931,7 @@ public class AiGameTests {
 		for (int k = dev.forja.ai.Tactic.V2_COUNT; k < dev.forja.ai.Tactic.values().length; k++) {
 			outs.add("tactica_" + dev.forja.ai.Tactic.values()[k].name().toLowerCase(java.util.Locale.ROOT));
 		}
+		outs.add("correr");
 		json.add("salidas", outs);
 		json.addProperty("n_salidas", outs.size());
 		com.google.gson.JsonObject tactics = new com.google.gson.JsonObject();
@@ -940,7 +941,19 @@ public class AiGameTests {
 			+ ".." + (NetBrain.TACTIC_AT + 8) + " y las 4 nuevas en " + NetBrain.NEW_TACTICS_AT + ".." + (NetBrain.V3_OUTPUTS - 1)
 			+ "; índice de la táctica = orden de Tactic (0 LIBRE .. 8 PARAPETARSE, 9 CEBO, 10 RELEVO, 11 OCULTARSE, 12 EMPUJAR)");
 		json.addProperty("compatibilidad", "Una red v2 (200 entradas, 29 salidas) funciona igual: recibe sus 200 y nunca elige las tácticas "
-			+ "nuevas. Una red v3 pide 252 entradas y da 33 salidas; el mod la acepta si sus nombres_obs coinciden con estos en orden.");
+			+ "nuevas. Una red v3 da 33 salidas (sin correr: corre por reglas) o 34 (con correr, índice " + NetBrain.RUN_AT + ", Bernoulli como "
+			+ "fintar, máscara: sin estamina, aturdido, avisando o en agua); pide las entradas que declare en nombres_obs, que deben coincidir "
+			+ "con estas en orden (las 3 de correr van al final, así que una red de 277 sigue valiendo).");
+		com.google.gson.JsonObject run = new com.google.gson.JsonObject();
+		run.addProperty("estamina_max", dev.forja.ai.MobSprint.MAX);
+		run.addProperty("gasto_por_tick", dev.forja.ai.MobSprint.COST);
+		run.addProperty("recupera_por_tick", dev.forja.ai.MobSprint.REGEN);
+		run.addProperty("descanso_ticks", dev.forja.ai.MobSprint.REST_TICKS);
+		run.addProperty("vuelve_a_correr_desde", dev.forja.ai.MobSprint.RESUME);
+		run.addProperty("velocidad_extra", dev.forja.ai.MobSprint.BOOST);
+		run.addProperty("reglas", "corre si: RETIRARSE con vida < 30 %; RODEAR/ESPERAR a más de 50° de su hueco; o el jugador está a 4..12 y se "
+			+ "aleja a más de 0,05 bloques/tick por la línea entre ambos. Nunca aturdido, avisando, en agua, ni los jefes.");
+		json.add("correr", run);
 		com.google.gson.JsonObject families = new com.google.gson.JsonObject();
 		for (String f : MobAi.families()) {
 			families.addProperty(f, "red_" + f + ".json");

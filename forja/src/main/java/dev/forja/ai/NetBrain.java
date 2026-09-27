@@ -153,6 +153,17 @@ public final class NetBrain {
 	 */
 	public static final int NEW_TACTICS_AT = V2_OUTPUTS;
 	public static final int V3_OUTPUTS = NEW_TACTICS_AT + 4;
+	/** v3, widened at the end (2026-09-27): correr, a Bernoulli like fintar. A 33-output network does without it. */
+	public static final int RUN_AT = V3_OUTPUTS;
+	public static final int V3_RUN_OUTPUTS = RUN_AT + 1;
+
+	/** The run head, sampled like the feint; false for a network that has none. */
+	public static boolean sampleRun(float[] logits, double temperature, RandomSource random, boolean[] mask) {
+		if (logits.length <= RUN_AT || mask != null && mask.length > RUN_AT && !mask[RUN_AT]) {
+			return false;
+		}
+		return random.nextDouble() < sigmoid((float) (logits[RUN_AT] / Math.max(0.05, temperature)));
+	}
 
 	/** The logits the tactic head is read from, in the order of {@link Tactic}. */
 	static int[] tacticLogits(int outputs) {

@@ -199,6 +199,7 @@ public final class MobAi {
 		}
 		for (MobMind mind : minds) {
 			think(mind, now);
+			MobSprint.tick(mind, now);
 		}
 		AiDebug.tick(level, now);
 	}
@@ -258,6 +259,7 @@ public final class MobAi {
 		if (target == null) {
 			mind.networked = false;
 			mind.decision = Decision.APPROACH;
+			mind.wantsRun = false;
 			return;
 		}
 		// A caster fights by the rules whatever the mode: no network has ever seen a staff or a tome, and
@@ -272,6 +274,7 @@ public final class MobAi {
 		if (net == null) {
 			mind.networked = false;
 			mind.decision = RuleBrain.decide(mind, target);
+			mind.wantsRun = MobSprint.rules(mind, target);
 			AiStats.count(mob, mind.decision);
 			return;
 		}
@@ -286,6 +289,9 @@ public final class MobAi {
 		float[] logits = net.forward(obs, mind.memory);
 		double temperature = CombatConfig.get().iaTemperatura * ForjaDifficulty.current().temperature * Threat.of(mob).temperature();
 		mind.decision = NetBrain.sample(logits, temperature, mind.random, mask);
+		// A network without the run head leaves running to the rules.
+		mind.wantsRun = logits.length > NetBrain.RUN_AT ? NetBrain.sampleRun(logits, temperature, mind.random, mask)
+			: MobSprint.rules(mind, target);
 		mind.networked = true;
 		mind.lastObs = obs;
 		mind.lastLogits = logits;
@@ -369,6 +375,9 @@ public final class MobAi {
 			mask[at + Tactic.RELEVO.ordinal() - Tactic.V2_COUNT] = true;
 			mask[at + Tactic.OCULTARSE.ordinal() - Tactic.V2_COUNT] = ally || Terrain.cover(mob, target) != null;
 			mask[at + Tactic.EMPUJAR.ordinal() - Tactic.V2_COUNT] = Terrain.dangerNear(target) != null;
+		}
+		if (outputs > NetBrain.RUN_AT) {
+			mask[NetBrain.RUN_AT] = MobSprint.able(mind, mob.level().getGameTime());
 		}
 		return mask;
 	}

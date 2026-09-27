@@ -222,4 +222,45 @@ public class GruposGameTests {
 			"con estamina sale y cuesta " + cfg.whirlStamina + ": " + done + ", queda " + dev.forja.combat.Stamina.value(player));
 		helper.succeed();
 	}
+
+	/** Running: 35 % faster, two a tick of its own breath, out of it until 25 is back, and never a boss. */
+	@GameTest(maxTicks = 200)
+	public void monstersRunOnTheirOwnBreath(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		CombatConfig.get().veteranChance = 0.0;
+		CombatConfig.get().eliteChance = 0.0;
+		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(3, 1, 3));
+		CombatGameTests.TestPlayer player = new CombatGameTests.TestPlayer(level);
+		Vec3 at = helper.absoluteVec(new Vec3(1.5, 1.0, 1.5));
+		player.setPos(at.x, at.y, at.z);
+		helper.runAfterDelay(2, () -> {
+			MobMind mind = MobAi.mind(zombie);
+			double walk = zombie.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+			long now = level.getGameTime();
+			mind.target = player;
+			mind.wantsRun = true;
+			dev.forja.ai.MobSprint.tick(mind, now);
+			double run = zombie.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+			helper.assertTrue(mind.running && Math.abs(run / walk - 1.35) < 0.01, "corre un 35 % más rápido: " + walk + " -> " + run);
+			helper.assertTrue(Math.abs(mind.stamina - (dev.forja.ai.MobSprint.MAX - dev.forja.ai.MobSprint.COST)) < 0.01F, "y gasta 2: " + mind.stamina);
+			for (int t = 1; t < 60; t++) {
+				dev.forja.ai.MobSprint.tick(mind, now + t);
+			}
+			helper.assertTrue(!mind.running && mind.winded && mind.stamina == 0.0F, "sin aliento deja de correr: " + mind.stamina);
+			helper.assertTrue(Math.abs(zombie.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED) - walk) < 1.0E-6,
+				"y vuelve a su paso");
+			// Rests 20 ticks, then 1 a tick: at 24 still winded, at 25 it may run again.
+			long rest = now + 59 + dev.forja.ai.MobSprint.REST_TICKS;
+			for (int t = 0; t < 24; t++) {
+				dev.forja.ai.MobSprint.tick(mind, rest + t);
+			}
+			helper.assertTrue(!mind.running, "no corre antes de recuperar 25: " + mind.stamina);
+			dev.forja.ai.MobSprint.tick(mind, rest + 24);
+			dev.forja.ai.MobSprint.tick(mind, rest + 25);
+			helper.assertTrue(mind.running, "con 25 vuelve a correr: " + mind.stamina);
+			mind.wantsRun = false;
+			dev.forja.ai.MobSprint.tick(mind, rest + 26);
+			helper.succeed();
+		});
+	}
 }
