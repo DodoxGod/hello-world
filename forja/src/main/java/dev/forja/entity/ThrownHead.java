@@ -331,6 +331,22 @@ public class ThrownHead extends Projectile {
 		}
 	}
 
+	/** A weapon's blow as if it were in the owner's hand: their bare attack and what the weapon adds to it. */
+	public static float thrownDamage(ServerPlayer owner, ItemStack weapon) {
+		var attack = owner.getAttribute(Attributes.ATTACK_DAMAGE);
+		double damage = attack != null ? attack.getBaseValue() : 1.0;
+		var modifiers = weapon.get(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS);
+		if (modifiers != null) {
+			for (var entry : modifiers.modifiers()) {
+				if (entry.attribute().equals(Attributes.ATTACK_DAMAGE) && entry.slot().test(net.minecraft.world.entity.EquipmentSlot.MAINHAND)
+					&& entry.modifier().operation() == net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE) {
+					damage += entry.modifier().amount();
+				}
+			}
+		}
+		return (float) damage;
+	}
+
 	private void hitEntities(ServerLevel level, ServerPlayer owner, Vec3 start, Vec3 end) {
 		AABB sweep = new AABB(start, end).inflate(0.4);
 		for (Entity entity : level.getEntities(this, sweep, e -> e instanceof LivingEntity && e != owner && e.isAlive() && !this.hitEntities.contains(e.getId()))) {
@@ -340,8 +356,10 @@ public class ThrownHead extends Projectile {
 			switch (this.mode) {
 				case HEAD -> entity.hurtServer(level, this.damageSources().thrown(this, owner), Math.max(2.0F, damage));
 				case WEAPON -> {
-					// Thrown, it bites for two thirds of what it does in the hand.
-					entity.hurtServer(level, this.damageSources().thrown(this, owner), Math.max(1.0F, damage * 2.0F / 3.0F));
+					// Thrown, it bites for two thirds of what it does in the hand. What it does in the hand is its
+					// own: the hand it left is empty by now (or holds something else), so the owner's attack is no
+					// measure of it - thrown daggers, axes and tridents used to land for 1.
+					entity.hurtServer(level, this.damageSources().thrown(this, owner), Math.max(1.0F, thrownDamage(owner, this.tool) * 2.0F / 3.0F));
 					this.stopFlight(level);
 					return;
 				}

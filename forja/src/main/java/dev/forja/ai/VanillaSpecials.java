@@ -124,6 +124,9 @@ public final class VanillaSpecials {
 			return cfg.zombieLunge && mob.onGround() && d >= cfg.lungeMinDistance && d <= cfg.lungeMaxDistance && sees(mob, target)
 				&& !dev.forja.world.Elites.isElite(mob)
 				&& !Duels.watching(mob)
+				// A spear has a charge of its own (SpearUseGoal, warned in SpearUseGoalMixin): a lunge on top cut it
+				// short every time and the spear hardly ever went in.
+				&& !mob.getMainHandItem().has(net.minecraft.core.component.DataComponents.KINETIC_WEAPON)
 				&& (dev.forja.combat.AttackTokens.holds(target, mob) || dev.forja.combat.AttackTokens.free(target, Aggression.maxAttackers(mob, target)));
 		}
 

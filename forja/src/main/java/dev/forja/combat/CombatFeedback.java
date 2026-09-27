@@ -13,9 +13,17 @@ public final class CombatFeedback {
 	private CombatFeedback() {
 	}
 
-	/** A mob is about to swing. */
+	/** A mob is about to swing, with the base warning. */
 	public static void telegraph(Entity mob) {
-		CombatAnim.broadcast(mob, CombatAnim.Kind.TELEGRAPH, CombatConfig.get().windupTicks);
+		telegraph(mob, CombatConfig.get().windupTicks);
+	}
+
+	/**
+	 * A mob is about to swing, and will in {@code ticks}: the pose it takes is timed by this, so it has to be the
+	 * warning it really gives (which weight and counters lengthen or shorten), not the base one.
+	 */
+	public static void telegraph(Entity mob, int ticks) {
+		CombatAnim.broadcast(mob, CombatAnim.Kind.TELEGRAPH, ticks);
 		particles(mob, ParticleTypes.CRIT, mob.getEyeY() + 0.35, 6, 0.25);
 		sound(mob, SoundEvents.PLAYER_ATTACK_WEAK, 0.8F, 0.55F);
 	}

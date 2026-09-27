@@ -25,7 +25,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * <p>Now at the edge of its charge it asks for a turn, and waits there until it has one; then it stands
  * and shows the warning for {@link dev.forja.ai.MobDefense#windup} ticks, and only then lowers the spear.
- * The turn goes back as soon as the charge is spent, not when it has finished falling back to charge again.
+ * The warning is counted on the world's clock, not in the goal's own ticks: vanilla runs this goal every
+ * other tick, and counting its ticks made the warning twice as long as anyone else's. A player who steps
+ * out of reach before the charge comes has escaped it: the warning is off, the turn goes back, and the
+ * next approach warns again. The turn also goes back as soon as a charge is spent, not when the mob has
+ * finished falling back to charge again.
  */
 @Mixin(SpearUseGoal.class)
 abstract class SpearUseGoalMixin {
@@ -40,8 +44,9 @@ abstract class SpearUseGoalMixin {
 	@Final
 	private float approachDistanceSq;
 
+	/** The game tick the warning ends at, once one has been given. */
 	@Unique
-	private int forja$windup;
+	private long forja$releaseAt;
 
 	@Unique
 	private boolean forja$warned;
@@ -61,8 +66,9 @@ abstract class SpearUseGoalMixin {
 			|| !AttackTokens.warns(this.mob)) {
 			return;
 		}
-		if (Posture.isStaggered(this.mob, this.mob.level().getGameTime())) {
-			forja$release();
+		long now = this.mob.level().getGameTime();
+		if (Posture.isStaggered(this.mob, now)) {
+			forja$reset();
 			this.mob.getNavigation().stop();
 			ci.cancel();
 			return;
@@ -74,16 +80,22 @@ abstract class SpearUseGoalMixin {
 			}
 			return;
 		}
-		if (this.forja$windup > 0) {
-			this.mob.getNavigation().stop();
-			this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
-			if (--this.forja$windup > 0) {
+		boolean inReach = this.mob.distanceToSqr(target) <= this.approachDistanceSq;
+		if (this.forja$warned) {
+			if (!inReach) {
+				// Out of reach before the charge came: escaped. No chasing it down with the turn in hand.
+				forja$reset();
+				return;
+			}
+			if (now < this.forja$releaseAt) {
+				this.mob.getNavigation().stop();
+				this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
 				ci.cancel();
 			}
-			// at nought vanilla goes on this very tick: the spear comes down and it runs
+			// the warning is over: vanilla goes on this very tick, the spear comes down and it runs
 			return;
 		}
-		if (this.forja$warned || this.mob.distanceToSqr(target) > this.approachDistanceSq) {
+		if (!inReach) {
 			return;
 		}
 		if (!AttackTokens.tryAcquire(target, this.mob, dev.forja.ai.Aggression.maxAttackers(this.mob, target))) {
@@ -95,18 +107,23 @@ abstract class SpearUseGoalMixin {
 		}
 		this.forja$target = target;
 		this.forja$warned = true;
-		this.forja$windup = dev.forja.ai.MobDefense.windup(this.mob);
+		this.forja$releaseAt = now + dev.forja.ai.MobDefense.windup(this.mob);
 		this.mob.getNavigation().stop();
-		CombatFeedback.telegraph(this.mob);
+		CombatFeedback.telegraph(this.mob, (int) (this.forja$releaseAt - now));
 		CombatStats.record(this.mob, WARNED);
 		ci.cancel();
 	}
 
 	@Inject(method = "stop", at = @At("TAIL"))
 	private void forja$onStop(CallbackInfo ci) {
+		forja$reset();
+	}
+
+	@Unique
+	private void forja$reset() {
 		forja$release();
 		this.forja$warned = false;
-		this.forja$windup = 0;
+		this.forja$releaseAt = 0L;
 	}
 
 	@Unique

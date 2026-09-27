@@ -115,6 +115,20 @@ public class ArsenalGameTests {
 		});
 	}
 
+	/** A thrown weapon bites with its own blow, not with the empty hand it left (it used to land for 1). */
+	@GameTest
+	public void thrownWeaponBitesWithItsOwnBlow(GameTestHelper helper) {
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+		ItemStack dagger = forged(ForgeType.DAGA);
+		ItemStack axe = forged(ForgeType.HACHA);
+		float daggerHit = dev.forja.entity.ThrownHead.thrownDamage(player, dagger);
+		float axeHit = dev.forja.entity.ThrownHead.thrownDamage(player, axe);
+		helper.assertTrue(daggerHit > 2.0F, "una daga lanzada debería pegar como una daga, no como la mano vacía: " + daggerHit);
+		helper.assertTrue(axeHit > daggerHit, "y un hacha más que una daga: " + axeHit);
+		helper.succeed();
+	}
+
 	/** red_mob_v3, D and W: what the player holds is read as it is (a tome, a greatsword's whirl, a flail's reach). */
 	@GameTest
 	public void playerWeaponIsRead(GameTestHelper helper) {

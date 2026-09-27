@@ -212,7 +212,10 @@ public class ObjetosContrato {
 		}
 		out.add("mejoras", upgrades);
 		JsonObject effects = new JsonObject();
-		for (Method method : Upgrade.class.getDeclaredMethods()) {
+		// by name: reflection hands methods over in no fixed order
+		Method[] methods = Upgrade.class.getDeclaredMethods();
+		java.util.Arrays.sort(methods, java.util.Comparator.comparing(Method::getName));
+		for (Method method : methods) {
 			if (Modifier.isStatic(method.getModifiers()) && Modifier.isPublic(method.getModifiers()) && method.getParameterCount() == 1
 				&& method.getParameterTypes()[0] == float.class && (method.getReturnType() == float.class || method.getReturnType() == int.class)) {
 				JsonObject values = new JsonObject();
@@ -280,7 +283,10 @@ public class ObjetosContrato {
 			+ "los esqueletos llevan arco (a veces forjado) y los saqueadores ballesta; baculos/grimorios de ForjaConfig "
 			+ "para esqueletos/zombis; elites (ForjaConfig.elites) con un arma de leyenda que pueden usar.");
 		mobs.add("equipo", kit);
-		mobs.add("config", fields(dev.forja.ForjaConfig.get(), false));
+		// The defaults as the code has them, not the config the running tests have turned down (veterans, elites,
+		// shields, staffs and tomes are all set to nothing by tests that must not meet them by chance).
+		dev.forja.ForjaConfig defaults = new dev.forja.ForjaConfig();
+		mobs.add("config", fields(defaults, false));
 		mobs.add("elites", constants(dev.forja.world.Elites.class));
 		JsonArray legends = new JsonArray();
 		for (dev.forja.world.Legends.Legend legend : dev.forja.world.Legends.ALL) {
@@ -332,7 +338,7 @@ public class ObjetosContrato {
 
 		// ---------------------------------------------------------------- constants
 		JsonObject constants = new JsonObject();
-		constants.add("combate_config", fields(CombatConfig.get(), false));
+		constants.add("combate_config", fields(new dev.forja.ForjaConfig().combate, false));
 		for (Class<?> c : new Class<?>[] {Spellcasting.class, dev.forja.entity.ai.CasterGoal.class, dev.forja.entity.MagicBolt.class,
 			SpecialAttacks.class, Assembler.class, ArmorSets.class, ArmorCalculator.class, dev.forja.combat.MaterialCombat.class,
 			dev.forja.combat.Stamina.class, dev.forja.combat.Posture.class, dev.forja.combat.AttackTokens.class, dev.forja.combat.Combos.class,
@@ -445,15 +451,18 @@ public class ObjetosContrato {
 			return row;
 		}
 		row.addProperty("item", BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
-		JsonObject components = new JsonObject();
+		// sorted by name: the stack's own order is a hash map's, and would change the file on every run
+		java.util.TreeMap<String, JsonElement> sorted = new java.util.TreeMap<>();
 		for (TypedDataComponent<?> component : stack.getComponents()) {
 			DataComponentType<?> kind = component.type();
 			Identifier key = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(kind);
 			if (key == null || COSMETIC.contains(key.toString()) || kind.codec() == null) {
 				continue;
 			}
-			component.encodeValue(ops).result().ifPresent(value -> components.add(key.toString(), trim(key.toString(), value)));
+			component.encodeValue(ops).result().ifPresent(value -> sorted.put(key.toString(), canonical(trim(key.toString(), value))));
 		}
+		JsonObject components = new JsonObject();
+		sorted.forEach(components::add);
 		row.add("componentes", components);
 		ForgedParts parts = stack.get(ModComponents.PARTS);
 		if (parts != null) {
@@ -518,6 +527,21 @@ public class ObjetosContrato {
 		return value;
 	}
 
+	/** The same value with every object's keys in order, all the way down, so the file only changes when a value does. */
+	private static JsonElement canonical(JsonElement value) {
+		if (value instanceof JsonObject object) {
+			JsonObject out = new JsonObject();
+			new java.util.TreeMap<>(object.asMap()).forEach((k, v) -> out.add(k, canonical(v)));
+			return out;
+		}
+		if (value instanceof JsonArray array) {
+			JsonArray out = new JsonArray();
+			array.forEach(v -> out.add(canonical(v)));
+			return out;
+		}
+		return value;
+	}
+
 	/** A stat sheet with only what this kind of thing has: the other kinds' numbers are all nought. */
 	private static JsonElement nonZero(JsonElement sheet) {
 		if (!(sheet instanceof JsonObject object)) {
@@ -548,7 +572,9 @@ public class ObjetosContrato {
 	/** Every static final number, text, flag, enum or array of them a class declares, private ones too. */
 	private static JsonObject constants(Class<?> c) {
 		JsonObject out = new JsonObject();
-		for (Field field : c.getDeclaredFields()) {
+		Field[] declared = c.getDeclaredFields();
+		java.util.Arrays.sort(declared, java.util.Comparator.comparing(Field::getName));
+		for (Field field : declared) {
 			int mods = field.getModifiers();
 			if (!Modifier.isStatic(mods) || !Modifier.isFinal(mods) || field.isSynthetic()) {
 				continue;

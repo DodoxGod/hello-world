@@ -42,6 +42,10 @@ abstract class MeleeAttackGoalMixin {
 	@Unique
 	private int forja$windup;
 
+	/** The whole of this warning, which weight and counters make longer or shorter than the base. */
+	@Unique
+	private int forja$windupTotal;
+
 	@Unique
 	private LivingEntity forja$target;
 
@@ -80,7 +84,7 @@ abstract class MeleeAttackGoalMixin {
 		if (forja$windup > 0) {
 			forja$holdStill(target);
 			mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
-			if (forja$feint && forja$windup <= Math.max(1, cfg.windupTicks) / 2) {
+			if (forja$feint && forja$windup <= Math.max(1, forja$windupTotal / 2)) {
 				// The fake: it wound up, the player raised the shield for it, and nothing comes.
 				forja$feint = false;
 				dev.forja.combat.CombatStats.record(mob, dev.forja.combat.CombatStats.FEINT);
@@ -104,12 +108,13 @@ abstract class MeleeAttackGoalMixin {
 		}
 		if (!canPerformAttack(target) || !AttackTokens.tryAcquire(target, mob, dev.forja.ai.Aggression.maxAttackers(mob, target))) return;
 		forja$windup = dev.forja.ai.MobDefense.windup(mob);
+		forja$windupTotal = forja$windup;
 		dev.forja.ai.MobDefense.spendCounter(mob);
 		forja$target = target;
 		forja$feint = mob.getRandom().nextDouble() < (mob instanceof dev.forja.entity.ForgeAutomaton
 			? dev.forja.ai.Aggression.adaptiveFeintChance(target) : dev.forja.ai.Aggression.feintChance(mob, target));
 		forja$holdStill(target);
-		CombatFeedback.telegraph(mob);
+		CombatFeedback.telegraph(mob, forja$windup);
 	}
 
 	/**

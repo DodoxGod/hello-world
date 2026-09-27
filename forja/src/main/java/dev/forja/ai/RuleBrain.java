@@ -40,6 +40,16 @@ public final class RuleBrain {
 	 * carries them out outranks their shooting: given them, a pillager walked round you and never fired.
 	 * A drowned is the exception: it throws its trident, but it is a body that fights up close.
 	 */
+	/** Whether the mob charges with vanilla's spear goal (zombies and the like in 26.2). */
+	static boolean hasSpearGoal(Mob mob) {
+		for (var wrapped : ((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals().getAvailableGoals()) {
+			if (wrapped.getGoal() instanceof net.minecraft.world.entity.ai.goal.SpearUseGoal) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	static boolean shootsOrCasts(Mob mob, MobFamily family) {
 		return mob instanceof net.minecraft.world.entity.monster.RangedAttackMob && family != MobFamily.CUERPO
 			|| mob instanceof net.minecraft.world.entity.monster.illager.SpellcasterIllager
@@ -120,8 +130,10 @@ public final class RuleBrain {
 		}
 		// A spear keeps its distance: too close for its point, it steps back (idea 57). A spear, not everything
 		// that thrusts: a dagger is at its best right up against you, and backing off with one made no sense.
+		// Not for a mob with vanilla's spear goal: that one falls back and charges again by itself, and this rule
+		// pulled it back out of every charge it started.
 		if (SwingStyle.of(mob.getMainHandItem()) == SwingStyle.THRUST && mob.getMainHandItem().has(net.minecraft.core.component.DataComponents.KINETIC_WEAPON)
-			&& distance < 1.8 && mind.windup == 0) {
+			&& distance < 1.8 && mind.windup == 0 && !hasSpearGoal(mob)) {
 			return new Decision(5, false, false, Tactic.LIBRE, 0, 0, false);
 		}
 		// An ally lies staggered by the player: close round it (its slot is set to the ally's side).

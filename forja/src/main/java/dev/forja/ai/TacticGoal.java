@@ -246,7 +246,7 @@ public final class TacticGoal extends Goal {
 		this.mind.windup = this.mind.windupTotal;
 		this.struck = target;
 		this.mob.getNavigation().stop();
-		CombatFeedback.telegraph(this.mob);
+		CombatFeedback.telegraph(this.mob, this.mind.windupTotal);
 	}
 
 	/**
