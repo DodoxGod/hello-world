@@ -1319,6 +1319,8 @@ public class GuideBookScreen extends Screen {
 			Math.round(dev.forja.world.Elites.HEALTH)), INK));
 		body.add(new Text(Component.translatable("gui.forja.libro.ataques.elite",
 			Math.round(dev.forja.world.Elites.WIND_MEND * 100)), INK_SOFT));
+		// The badges over their heads (ThreatBadge), so the book says what the three metals mean.
+		body.add(new Text(Component.translatable("gui.forja.libro.insignias"), INK));
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.automata.titulo")));
 		body.add(new IconRow(List.of(
 			Assembler.createPart(PartType.CABEZA_MARTILLO, ForgeMaterial.HIERRO),

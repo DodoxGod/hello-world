@@ -20,6 +20,7 @@
 		"SmithPerfMixin",
 		"SpecialGoalPerfMixin",
 		"SquadPerfMixin",
+		"SunburnMixin",
 		"TraitCountMixin"
 	],
 	"injectors": {

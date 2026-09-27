@@ -620,6 +620,46 @@ public class AiGameTests {
 		helper.succeed();
 	}
 
+	/**
+	 * The badge over a veteran's head (client.ThreatBadge) reads a synced copy of the threat, so the copy
+	 * has to follow the tag: nothing on a normal mob, the veteran's once it survives its third fight, the
+	 * elite's when it is promoted, the champion's from Elites, and back again, unprompted, on a mob that
+	 * loads with the tag already on it (a reloaded world or chunk: the copy itself is never saved).
+	 */
+	@GameTest
+	public void threatIsSyncedForTheBadge(GameTestHelper helper) {
+		Zombie zombie = zombie(helper, new BlockPos(1, 1, 1));
+		zombie.setNoAi(true);
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 1));
+		helper.assertTrue(zombie.getAttached(dev.forja.difficulty.Threat.SHOWN) == null, "un zombi normal no lleva insignia");
+		for (int i = 0; i < dev.forja.ai.Personality.VETERAN_FIGHTS - 1; i++) {
+			dev.forja.ai.Personality.survived(zombie, player);
+		}
+		helper.assertTrue(dev.forja.difficulty.Threat.shown(zombie) == dev.forja.difficulty.Threat.NORMAL, "dos peleas: todavía normal");
+		dev.forja.ai.Personality.survived(zombie, player);
+		helper.assertTrue(dev.forja.difficulty.Threat.shown(zombie) == dev.forja.difficulty.Threat.VETERANO,
+			"tres peleas: la insignia de veterano, tiene " + dev.forja.difficulty.Threat.shown(zombie));
+		dev.forja.difficulty.Threat.ELITE.mark(zombie);
+		helper.assertTrue(dev.forja.difficulty.Threat.shown(zombie) == dev.forja.difficulty.Threat.ELITE, "ascendido: la de élite");
+
+		Zombie champion = zombie(helper, new BlockPos(1, 1, 4));
+		champion.setNoAi(true);
+		dev.forja.world.Elites.makeElite(champion, champion.getRandom());
+		helper.assertTrue(dev.forja.difficulty.Threat.shown(champion) == dev.forja.difficulty.Threat.CAMPEON, "un campeón lleva la suya");
+
+		// A skeleton that comes in already tagged, the way one does from disk.
+		var skeleton = EntityTypes.SKELETON.create(helper.getLevel(), net.minecraft.world.entity.EntitySpawnReason.LOAD);
+		helper.assertTrue(skeleton != null, "un esqueleto debería poder crearse");
+		skeleton.addTag("forja_veterano");
+		var at = helper.absoluteVec(net.minecraft.world.phys.Vec3.atBottomCenterOf(new BlockPos(4, 1, 4)));
+		skeleton.snapTo(at.x, at.y, at.z, 0.0F, 0.0F);
+		skeleton.setNoAi(true);
+		helper.getLevel().addFreshEntity(skeleton);
+		helper.assertTrue(dev.forja.difficulty.Threat.shown(skeleton) == dev.forja.difficulty.Threat.VETERANO,
+			"al cargar, la copia sale de la etiqueta, tiene " + dev.forja.difficulty.Threat.shown(skeleton));
+		helper.succeed();
+	}
+
 	/** Three kills in quick succession scatter the rest, but never an elite. */
 	@GameTest
 	public void killingSpreeScatters(GameTestHelper helper) {

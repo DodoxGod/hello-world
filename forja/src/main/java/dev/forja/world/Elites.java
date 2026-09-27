@@ -86,7 +86,8 @@ public final class Elites {
 	 * enough health and reach that it reads as the thing that killed you.
 	 */
 	public static void makeElite(Mob mob, RandomSource random) {
-		mob.addTag("forja_elite");
+		// The champion's tag, through Threat so the badge over its head is synced along with it.
+		dev.forja.difficulty.Threat.CAMPEON.mark(mob);
 		ItemStack weapon = Legends.createWeaponFor(mob, random);
 		Mastery.setLevel(weapon, Mastery.MAX_LEVEL, mob.registryAccess());
 		mob.setItemSlot(EquipmentSlot.MAINHAND, weapon);

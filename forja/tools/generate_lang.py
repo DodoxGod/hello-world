@@ -1042,6 +1042,8 @@ GUI = {
     "gui.forja.libro.elites.titulo": ("Élites", "Elites"),
     "gui.forja.libro.elites": ("Uno de cada cien monstruos sale de élite: con nombre, brillando a través de las paredes, x%2$s de vida y una leyenda en la mano. Mata a uno y suelta una sola pieza de lo que llevaba, elegida al azar.",
                                "One monster in a hundred comes up an elite: named, glowing through walls, x%2$s health and a legend in hand. Kill one and it gives up a single piece of what it carried, chosen at random."),
+    "gui.forja.libro.insignias": ("Los que vienen más duros llevan su rango sobre la cabeza: un galón de bronce el veterano (sobrevivió a tres peleas, o ya nació curtido), dos de plata la élite, dos de oro bajo una estrella el campeón.",
+                                  "The ones that come tougher wear their rank over their heads: one bronze chevron for a veteran (it survived three fights, or came seasoned), two silver for an elite, two gold under a star for a champion."),
     "gui.forja.libro.automata.titulo": ("Autómata de forja", "Forge automaton"),
     "gui.forja.libro.automata": ("Piedra, hierro y un horno encendido en la barriga, cuidando lo que quedó de los talleres viejos. %s de vida, no se le empuja y no le hacen nada el fuego ni el veneno. Cuando cae se deshace en las piezas de las que está hecho. Hay uno en cada forja abandonada y dos en la fragua del Nether.",
                                  "Stone, iron and a furnace still lit in its belly, minding what is left of the old workshops. %s health, nothing pushes it around and fire and poison do nothing to it. When it falls it comes apart into the parts it was made of. There is one in every abandoned forge and two in the forge in the Nether."),

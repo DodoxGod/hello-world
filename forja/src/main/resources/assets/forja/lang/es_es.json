@@ -427,6 +427,7 @@
   "gui.forja.libro.encargos_como": "Agáchate y usa sobre él con la mano vacía para oír el encargo, y otra vez llevando la pieza para entregarla. Cambia cada día y cada Forjador pide lo suyo.",
   "gui.forja.libro.elites.titulo": "Élites",
   "gui.forja.libro.elites": "Uno de cada cien monstruos sale de élite: con nombre, brillando a través de las paredes, x%2$s de vida y una leyenda en la mano. Mata a uno y suelta una sola pieza de lo que llevaba, elegida al azar.",
+  "gui.forja.libro.insignias": "Los que vienen más duros llevan su rango sobre la cabeza: un galón de bronce el veterano (sobrevivió a tres peleas, o ya nació curtido), dos de plata la élite, dos de oro bajo una estrella el campeón.",
   "gui.forja.libro.automata.titulo": "Autómata de forja",
   "gui.forja.libro.automata": "Piedra, hierro y un horno encendido en la barriga, cuidando lo que quedó de los talleres viejos. %s de vida, no se le empuja y no le hacen nada el fuego ni el veneno. Cuando cae se deshace en las piezas de las que está hecho. Hay uno en cada forja abandonada y dos en la fragua del Nether.",
   "gui.forja.libro.mundo.taller.titulo": "Taller de montaña",

@@ -185,6 +185,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			if ("veteranos".equals(solo)) {
+				shotThreatBadges(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("molde".equals(solo)) {
 				shotMouldCopy(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
@@ -229,6 +234,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			checkBalanceLimits(server, connection);
 			checkPartsCabinet(context, server, connection, x, y, z);
 			checkMobPortraits(context, server, connection, x, y, z);
+			shotThreatBadges(context, server, connection, x, y, z);
 			checkNewCombatUpgrades(context, server, connection, x, y, z);
 			checkTechniqueEffects(context, server, connection, x, y, z);
 			checkNewAttacks(context, server, connection, x, y, z);
@@ -5852,6 +5858,179 @@ public class ForjaClientTest implements FabricClientGameTest {
 		victim.setPersistenceRequired();
 		level.addFreshEntity(victim);
 		return victim;
+	}
+
+	/**
+	 * The rank badges over veterans, elites and champions (client.ThreatBadge): "la única forma para
+	 * identificar un veterano es viendo el nametag que tiene". The same four zombies, one of each threat,
+	 * up close and from fifteen blocks, by day and by night; a veteran of every kind that can become one;
+	 * a crowd at fifteen blocks with a few ranked mobs in it, which is the case the badge is for; the name
+	 * sitting over the badge when the veteran is looked at; and a veteran killed, whose badge must go with
+	 * it. The client's own copy of every mob's threat is checked against what was spawned, which is the
+	 * sync working. FORJA_SOLO=veteranos runs it alone.
+	 */
+	private static void shotThreatBadges(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		int px = x + 40;
+		int pz = z + 40;
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d grass_block", px - 16, y - 1, pz - 22, px + 16, y - 1, pz + 12));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", px - 16, y, pz - 22, px + 16, y + 8, pz + 12));
+		server.runCommand("weather clear");
+		server.runCommand("gamemode spectator @a");
+		// A monster cannot even be created on peaceful.
+		server.runCommand("difficulty easy");
+		// Noon without the undead catching fire: the flames stand as high as the badge.
+		dev.forja.test.Sunburn.off = true;
+		dev.forja.difficulty.Threat normal = dev.forja.difficulty.Threat.NORMAL;
+		dev.forja.difficulty.Threat veteran = dev.forja.difficulty.Threat.VETERANO;
+		dev.forja.difficulty.Threat elite = dev.forja.difficulty.Threat.ELITE;
+		dev.forja.difficulty.Threat champion = dev.forja.difficulty.Threat.CAMPEON;
+		var zombie = net.minecraft.world.entity.EntityTypes.ZOMBIE;
+
+		// The ladder: normal, veteran, elite, champion, left to right.
+		badgeScene(server, connection, px, y, pz, new Object[][] {
+			{zombie, normal, -3.0, 0.0}, {zombie, veteran, -1.0, 0.0}, {zombie, elite, 1.0, 0.0}, {zombie, champion, 3.0, 0.0},
+		});
+		context.waitTicks(20);
+		checkClientThreats(context, px, y, pz, 1, 1, 1);
+		for (String time : new String[] {"noon", "midnight"}) {
+			server.runCommand("time set " + time);
+			String when = time.equals("noon") ? "dia" : "noche";
+			tp(server, px + 0.5, y + 0.4, pz + 0.5 - 6.0, 0.0F, 6.0F);
+			badgeShot(context, "forja_38_veteranos_escalera_cerca_" + when);
+			tp(server, px + 0.5, y + 1.6, pz + 0.5 - 15.0, 0.0F, 4.0F);
+			badgeShot(context, "forja_38_veteranos_escalera_15_" + when);
+		}
+		clearBadgeScene(context, server, connection, px, y, pz);
+
+		// Every kind that comes as a veteran, and one of Forja's own (a GeckoLib model, drawn another way).
+		server.runCommand("time set noon");
+		badgeScene(server, connection, px, y, pz, new Object[][] {
+			{zombie, veteran, -8.0, 0.0}, {net.minecraft.world.entity.EntityTypes.HUSK, veteran, -6.0, 0.0},
+			{net.minecraft.world.entity.EntityTypes.DROWNED, veteran, -4.0, 0.0}, {net.minecraft.world.entity.EntityTypes.SKELETON, veteran, -2.0, 0.0},
+			{net.minecraft.world.entity.EntityTypes.STRAY, veteran, 0.0, 0.0}, {net.minecraft.world.entity.EntityTypes.SPIDER, veteran, 2.2, 0.0},
+			{net.minecraft.world.entity.EntityTypes.CREEPER, veteran, 4.4, 0.0}, {net.minecraft.world.entity.EntityTypes.PIGLIN, veteran, 6.2, 0.0},
+			{dev.forja.registry.ModEntities.CORAZA, veteran, 8.2, 0.0},
+		});
+		context.waitTicks(20);
+		checkClientThreats(context, px, y, pz, 9, 0, 0);
+		tp(server, px + 0.5, y + 1.2, pz + 0.5 - 10.0, 0.0F, 4.0F);
+		badgeShot(context, "forja_38_veteranos_bestiario");
+		clearBadgeScene(context, server, connection, px, y, pz);
+
+		// A crowd fifteen blocks off: which ones matter should be plain without reading a single name.
+		badgeScene(server, connection, px, y, pz, new Object[][] {
+			{zombie, normal, -5.0, 0.0}, {net.minecraft.world.entity.EntityTypes.SKELETON, veteran, -3.5, 1.5},
+			{zombie, normal, -2.0, -0.5}, {net.minecraft.world.entity.EntityTypes.SPIDER, normal, 0.0, 2.0},
+			{net.minecraft.world.entity.EntityTypes.HUSK, elite, 1.0, -0.5}, {zombie, veteran, 2.5, 1.0},
+			{net.minecraft.world.entity.EntityTypes.CREEPER, normal, 4.0, -0.5}, {net.minecraft.world.entity.EntityTypes.SKELETON, champion, 5.5, 1.5},
+			{zombie, normal, -1.0, 3.5}, {net.minecraft.world.entity.EntityTypes.CREEPER, veteran, 3.5, 3.5},
+			{net.minecraft.world.entity.EntityTypes.SKELETON, normal, -4.0, 4.0}, {zombie, veteran, 0.5, 5.0},
+		});
+		context.waitTicks(20);
+		checkClientThreats(context, px, y, pz, 4, 1, 1);
+		for (String time : new String[] {"noon", "midnight"}) {
+			server.runCommand("time set " + time);
+			tp(server, px + 0.5, y + 2.2, pz + 0.5 - 15.0, 0.0F, 6.0F);
+			badgeShot(context, "forja_38_veteranos_grupo_15_" + (time.equals("noon") ? "dia" : "noche"));
+		}
+		server.runCommand("time set noon");
+		clearBadgeScene(context, server, connection, px, y, pz);
+
+		// Looked at, the name comes up over the badge rather than through it; the champion's always shows.
+		badgeScene(server, connection, px, y, pz, new Object[][] {
+			{zombie, veteran, 0.0, 0.0}, {zombie, champion, 2.5, 1.0},
+		});
+		context.waitTicks(20);
+		tp(server, px + 0.5, y + 0.1, pz + 0.5 - 2.4, 0.0F, 0.0F);
+		context.waitTicks(3);
+		boolean named = context.computeOnClient(mc -> mc.crosshairPickEntity != null
+			&& dev.forja.difficulty.Threat.shown(mc.crosshairPickEntity) == dev.forja.difficulty.Threat.VETERANO);
+		check(named, "the crosshair should be on the veteran, so its name shows");
+		badgeShot(context, "forja_38_veteranos_nombre");
+
+		// And killed, the badge goes at once: none over the body as it falls.
+		server.runOnServer(s -> connection.getServerLevel().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,
+			new net.minecraft.world.phys.AABB(new BlockPos(px, y, pz)).inflate(1.0),
+			m -> dev.forja.difficulty.Threat.of(m) == dev.forja.difficulty.Threat.VETERANO
+		).forEach(m -> m.hurtServer(connection.getServerLevel(), connection.getServerLevel().damageSources().genericKill(), 10000.0F)));
+		tp(server, px + 0.5, y + 0.4, pz + 0.5 - 3.5, 0.0F, 6.0F);
+		context.waitTicks(4);
+		boolean badgeGone = context.computeOnClient(mc -> mc.level.getEntitiesOfClass(net.minecraft.world.entity.Mob.class,
+			new net.minecraft.world.phys.AABB(new BlockPos(px, y, pz)).inflate(1.0)).stream()
+			.allMatch(m -> dev.forja.client.ThreatBadge.of(m) == dev.forja.difficulty.Threat.NORMAL));
+		check(badgeGone, "a dying veteran should not carry its badge");
+		context.takeScreenshot("forja_38_veteranos_muerto");
+		clearBadgeScene(context, server, connection, px, y, pz);
+
+		dev.forja.test.Sunburn.off = false;
+		server.runCommand("gamemode survival @a");
+		server.runCommand("difficulty peaceful");
+	}
+
+	/**
+	 * Spawns a row of mobs facing the camera (which stands to the north): each entry is a type, a threat,
+	 * and an offset to the camera's right (west) and away from it (south) of (px, pz). Marked the way the game marks them, named the same.
+	 */
+	private static void badgeScene(TestServerContext server, TestServerConnection connection, int px, int y, int pz, Object[][] mobs) {
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			for (Object[] entry : mobs) {
+				var type = (net.minecraft.world.entity.EntityType<?>) entry[0];
+				var threat = (dev.forja.difficulty.Threat) entry[1];
+				var created = type.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				check(created instanceof net.minecraft.world.entity.Mob, "a " + type + " should be creatable");
+				var mob = (net.minecraft.world.entity.Mob) created;
+				// Facing the camera, a little turned so the faces are not all the same flat square.
+				float yaw = 180.0F + (float) ((double) entry[2] * 4.0);
+				mob.snapTo(px + 0.5 - (double) entry[2], y, pz + 0.5 + (double) entry[3], yaw, 0.0F);
+				mob.setYHeadRot(yaw);
+				mob.setYBodyRot(yaw);
+				mob.setNoAi(true);
+				mob.setPersistenceRequired();
+				switch (threat) {
+					case NORMAL -> { }
+					case CAMPEON -> dev.forja.world.Elites.makeElite(mob, level.getRandom());
+					default -> {
+						threat.mark(mob);
+						mob.setCustomName(Component.translatable("entity.forja.amenaza." + threat.name().toLowerCase(Locale.ROOT),
+							mob.getType().getDescription()));
+					}
+				}
+				level.addFreshEntity(mob);
+			}
+		});
+	}
+
+	private static void clearBadgeScene(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int px, int y, int pz) {
+		server.runOnServer(s -> connection.getServerLevel().getEntitiesOfClass(
+			net.minecraft.world.entity.Mob.class, new net.minecraft.world.phys.AABB(new BlockPos(px, y, pz)).inflate(14.0)
+		).forEach(net.minecraft.world.entity.Entity::discard));
+		context.waitTicks(5);
+	}
+
+	/** What the client knows matches what was spawned: the sync is what the badges are drawn from. */
+	private static void checkClientThreats(ClientGameTestContext context, int px, int y, int pz, int veterans, int elites, int champions) {
+		int[] counts = context.computeOnClient(mc -> {
+			int[] c = new int[4];
+			for (var mob : mc.level.getEntitiesOfClass(net.minecraft.world.entity.Mob.class,
+				new net.minecraft.world.phys.AABB(new BlockPos(px, y, pz)).inflate(14.0))) {
+				c[dev.forja.difficulty.Threat.shown(mob).ordinal()]++;
+			}
+			return c;
+		});
+		check(counts[1] == veterans && counts[2] == elites && counts[3] == champions,
+			"the client should see " + veterans + "/" + elites + "/" + champions + " ranked mobs, sees "
+				+ counts[1] + "/" + counts[2] + "/" + counts[3]);
+	}
+
+	private static void badgeShot(ClientGameTestContext context, String name) {
+		context.waitTicks(10);
+		context.runOnClient(mc -> {
+			mc.gui.hud.getChat().clearMessages(false);
+			mc.gui.toastManager().clear();
+		});
+		context.waitTicks(3);
+		context.takeScreenshot(name);
 	}
 
 	private static void checkMobPortraits(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {

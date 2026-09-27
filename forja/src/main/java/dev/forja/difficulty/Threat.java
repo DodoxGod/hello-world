@@ -1,12 +1,26 @@
 package dev.forja.difficulty;
 
+import dev.forja.Forja;
 import dev.forja.combat.CombatConfig;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
  * How dangerous one monster is, beyond its kind: normal, veteran, elite or champion. The champion is
  * Forja's old elite (a legend in its hands, see {@link dev.forja.world.Elites}); veterans and elites are
  * ordinary monsters that simply came stronger. Kept as an entity tag, so it survives a reload.
+ *
+ * <p>The tag stays on the server, and "la única forma para identificar un veterano es viendo el nametag
+ * que tiene": so the threat is also mirrored into {@link #SHOWN}, an attachment synced to every player
+ * tracking the mob, which is what the badge over its head ({@code client.ThreatBadge}) reads. The tag is
+ * the truth and the attachment only a copy: it is not saved, it is written again from the tags every
+ * time the mob loads (a world or a chunk coming back), and every change of threat goes through
+ * {@link #mark}, which writes it too.
  */
 public enum Threat {
 	//        health armor posture damage tag
@@ -24,6 +38,16 @@ public enum Threat {
 	/** Multiplier on the damage it deals. */
 	public final double damage;
 	private final String tag;
+
+	/**
+	 * The threat as the clients see it: the ordinal, absent for a normal mob. Synced to everyone who can
+	 * see the mob (the badge is for anybody looking), never saved (the tags are).
+	 */
+	public static final AttachmentType<Byte> SHOWN = AttachmentRegistry.<Byte>builder()
+		.syncWith(ByteBufCodecs.BYTE.cast(), AttachmentSyncPredicate.all())
+		.buildAndRegister(Forja.id("amenaza"));
+
+	private static final Threat[] VALUES = values();
 
 	Threat(double health, double armor, double posture, double damage, String tag) {
 		this.health = health;
@@ -45,6 +69,38 @@ public enum Threat {
 		if (this.tag != null) {
 			entity.addTag(this.tag);
 		}
+		sync(entity);
+	}
+
+	/** Every mob that loads gets its synced copy back from its tags: a reloaded world, a chunk come back. */
+	public static void register() {
+		ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
+			if (entity instanceof LivingEntity living) {
+				sync(living);
+			}
+		});
+	}
+
+	/** Writes the synced copy from the tags, and only when it changed, so a sync packet goes out only then. */
+	public static void sync(LivingEntity entity) {
+		if (entity.level().isClientSide()) {
+			return;
+		}
+		Threat threat = of(entity);
+		Byte now = entity.getAttached(SHOWN);
+		if (threat == NORMAL) {
+			if (now != null) {
+				entity.removeAttached(SHOWN);
+			}
+		} else if (now == null || now != threat.ordinal()) {
+			entity.setAttached(SHOWN, (byte) threat.ordinal());
+		}
+	}
+
+	/** The threat as this side knows it: the synced copy on a client, the same on the server. */
+	public static Threat shown(Entity entity) {
+		Byte value = entity.getAttached(SHOWN);
+		return value == null || value < 0 || value >= VALUES.length ? NORMAL : VALUES[value];
 	}
 
 	/** Elites, champions and bosses keep a guard that has to break before their health really suffers. */

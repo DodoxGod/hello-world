@@ -1191,6 +1191,75 @@ def generate_boss_bar():
     frame.save(folder / "barra_herrero.png")
 
 
+def generate_threat_badges():
+    """The badges over a veteran's, an elite's and a champion's head (client/ThreatBadge draws them).
+
+    "La única forma para identificar un veterano es viendo el nametag que tiene": now it wears its rank.
+    One sheet of three insignia, read left to right as one ladder: a single bronze chevron for the
+    veteran, two silver ones for the elite, two gold ones under a star for the champion. Rank
+    chevrons because everybody already reads them as "this one has seen fights", and they stay
+    readable at twenty pixels across, which is all a badge gets fifteen blocks away. Each is ringed in
+    a near-black line so it holds against a bright sky, sand or snow as well as against the night, and
+    lit from above (a light top edge, a dark lower one) so it looks struck in metal rather than
+    painted. The veteran's is the worn one, with a chip out of its edge.
+
+    Every cell is 16 pixels wide and 20 tall, the insignia sitting on the bottom row: the veteran's and
+    the elite's only use the lower 16, the champion's star takes the rest. ThreatBadge.HEIGHT_PX has to
+    match.
+    """
+    width, height = 16, 20
+    sheet = Image.new("RGBA", (width * 3, height), (0, 0, 0, 0))
+    metals = (
+        # outline, shadow, base, light, glint
+        ((38, 20, 8), (122, 66, 30), (182, 110, 54), (226, 160, 96), (250, 206, 150)),       # bronze
+        ((22, 24, 30), (110, 118, 134), (180, 188, 200), (228, 234, 242), (255, 255, 255)),  # silver
+        ((46, 26, 4), (170, 104, 14), (236, 182, 44), (255, 224, 112), (255, 250, 208)),     # gold
+    )
+
+    def chevron(top, thick, half=6):
+        """One chevron pointing up, its peak at row `top`, its arms `half` pixels out to each side."""
+        cells = set()
+        for x in range(8 - half - 1, 8 + half + 1):
+            dx = abs(x - 7.5) - 0.5
+            y0 = top + int(dx)
+            for y in range(y0, y0 + thick):
+                cells.add((x, y))
+        return cells
+
+    def star(top):
+        rows = ("..#..", ".###.", "#####", ".###.", ".#.#.")
+        return {(5 + c + 1, top + r) for r, row in enumerate(rows) for c, ch in enumerate(row) if ch == "#"}
+
+    def paint(ox, shapes, metal, chips=()):
+        outline, shadow, base, light, glint = metal
+        fill = set().union(*shapes)
+        for (x, y) in fill:
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    p = (x + dx, y + dy)
+                    if p not in fill and 0 <= p[0] < width and 0 <= p[1] < height:
+                        sheet.putpixel((ox + p[0], p[1]), outline + (255,))
+        for shape in shapes:
+            for (x, y) in shape:
+                above = (x, y - 1) in shape
+                below = (x, y + 1) in shape
+                tone = light if not above else shadow if not below else base
+                sheet.putpixel((ox + x, y), tone + (255,))
+            peak = min(shape, key=lambda p: (p[1], abs(p[0] - 7.5)))
+            sheet.putpixel((ox + peak[0], peak[1]), glint + (255,))
+        for (x, y) in chips:
+            sheet.putpixel((ox + x, y), outline + (255,))
+
+    # Veteran: one broad chevron, with a chip knocked out of its right arm.
+    paint(0, [chevron(8, 4)], metals[0], chips=((11, 11), (12, 12)))
+    # Elite: two, a line of dark between them.
+    paint(width, [chevron(5, 3), chevron(9, 3)], metals[1])
+    # Champion: two, under a star.
+    paint(width * 2, [star(0), chevron(6, 3), chevron(10, 3)], metals[2])
+    folder = ASSETS / "textures/misc"
+    folder.mkdir(parents=True, exist_ok=True)
+    sheet.save(folder / "insignias_amenaza.png")
+
 def generate_station_gui():
     """The crucible's and the casting box's panels, and the fire that runs round the forge table's star.
 
@@ -10121,6 +10190,7 @@ if __name__ == "__main__":
     generate_sky_textures()
     generate_book_gui()
     generate_boss_bar()
+    generate_threat_badges()
     generate_boss_assets()
     generate_automaton_assets()
     generate_rustbug_assets()

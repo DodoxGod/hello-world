@@ -8,6 +8,7 @@
 		"BossHealthOverlayMixin",
 		"ClientAdvancementsMixin",
 		"CameraMixin",
+		"EntityRendererMixin",
 		"FogRendererMixin",
 		"HumanoidModelMixin",
 		"ItemInHandLayerMixin",

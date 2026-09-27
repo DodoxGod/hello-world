@@ -10,6 +10,8 @@ public final class DifficultyRules {
 		java.util.Objects.requireNonNull(Nights.COUNT);
 		java.util.Objects.requireNonNull(Nights.LAST_DAY);
 		Scaling.register();
+		// After Scaling: a mob loaded for the first time has its threat rolled by then.
+		Threat.register();
 		Adaptive.register();
 		Nights.register();
 		Rewards.register();
