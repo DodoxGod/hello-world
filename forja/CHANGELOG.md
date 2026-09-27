@@ -45,6 +45,14 @@ Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (120).
   girando sobre la cabeza, estocadas de daga y tridente, directos alternos de los guanteletes...
 - **Los enemigos avisan con la pose de su arma** (martillo en alto, lanza recogida, espadón abierto) durante
   todo su aviso, y la sueltan en el golpe; si amagan, la bajan.
+- **El mangual se agarra por el mango** (la bola cuelga debajo) y **la daga por la empuñadura**, en tercera
+  y primera persona, en jugadores, mobs y soportes de armadura.
+- **Los guanteletes se llevan puestos** en las dos manos: placas en 3D sobre el puño y la muñeca, con los
+  colores de sus materiales, que siguen cada golpe; en primera persona se ven los puños enguantados.
+- **El grimorio es un libro de verdad** (el de la mesa de encantamientos, con las tapas de su material, la
+  gema y las esquinas): cerrado en la mano, agarrado por el lomo; se abre y pasa las páginas al golpear, al
+  lanzar un hechizo, al cargar y mientras un enemigo lo lee, y luego se cierra.
+- En el inventario los cuatro se ven como siempre.
 
 ### Pactos y sinergias
 

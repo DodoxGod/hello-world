@@ -10,6 +10,7 @@
 		"CameraMixin",
 		"FogRendererMixin",
 		"HumanoidModelMixin",
+		"ItemInHandLayerMixin",
 		"ItemInHandRendererMixin",
 		"LivingEntityHitstopMixin",
 		"LivingEntityRendererMixin",

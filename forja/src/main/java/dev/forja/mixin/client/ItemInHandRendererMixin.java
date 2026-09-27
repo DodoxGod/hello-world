@@ -4,13 +4,18 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.forja.client.CombatPoses;
+import dev.forja.client.HeldTome;
+import dev.forja.client.WornGauntlets;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,7 +31,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * <p>It also swings each weapon its own way (see {@link CombatPoses#firstPersonSwing}), throws the other
  * fist when the gauntlets punch with it, and moves the hands for the player's parries, broken guards and
- * dodges.
+ * dodges. The gauntlets show as the gauntleted hand rather than as a held item, and the tome as a book.
  */
 @Mixin(ItemInHandRenderer.class)
 abstract class ItemInHandRendererMixin {
@@ -64,13 +69,14 @@ abstract class ItemInHandRendererMixin {
 		ItemStack itemStack, float inverseArmHeight, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords,
 		CallbackInfo ci) {
 		this.forja$drawing = itemStack;
-		// The gauntlets' second punch in a row is thrown with the other fist, which first person never
-		// draws while that hand is empty: bring the bare arm up for it, and down again after.
+		// With the gauntlets on, the other hand shows too while it is empty (first person never draws an
+		// empty off hand): at its rest, on guard, and thrown forward for the gauntlets' second punch in a row.
+		// An off hand holding something (a shield, a torch) keeps showing that instead.
 		if (hand == InteractionHand.OFF_HAND && itemStack.isEmpty() && !player.isInvisible() && !player.isScoping()) {
 			HumanoidArm arm = player.getMainArm().getOpposite();
 			poseStack.pushPose();
 			if (CombatPoses.firstPersonOtherFist(player, frameInterp, poseStack, arm == HumanoidArm.RIGHT ? 1 : -1)) {
-				this.renderPlayerArm(poseStack, submitNodeCollector, lightCoords, 0.0F, 0.0F, arm);
+				this.renderPlayerArm(poseStack, submitNodeCollector, lightCoords, inverseArmHeight, 0.0F, arm);
 			}
 			poseStack.popPose();
 		}
@@ -92,5 +98,33 @@ abstract class ItemInHandRendererMixin {
 		CallbackInfo ci) {
 		HumanoidArm arm = hand == InteractionHand.MAIN_HAND ? player.getMainArm() : player.getMainArm().getOpposite();
 		CombatPoses.firstPersonExtras(poseStack, player, itemStack, arm == HumanoidArm.RIGHT ? 1 : -1, frameInterp);
+	}
+
+	/**
+	 * The gauntlets and the tome in first person. The pose here is the held item's, already moved by the
+	 * arm and the blow; the gauntlets draw the hand itself there instead (with the gauntlet over it, see
+	 * AvatarRendererMixin), and the tome draws the book.
+	 */
+	@WrapOperation(
+		method = "submitArmWithItem",
+		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/ItemInHandRenderer;renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V")
+	)
+	private void forja$gearInHand(ItemInHandRenderer self, LivingEntity entity, ItemStack stack, ItemDisplayContext context, PoseStack poseStack,
+		SubmitNodeCollector submitNodeCollector, int lightCoords, Operation<Void> original) {
+		boolean left = context == ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
+		if (WornGauntlets.is(stack) && context.firstPerson()) {
+			// From where the item is held back to where the bare hand starts, so the fist is where the
+			// item would be and moves as it would: vanilla puts the two 0.08 apart.
+			int invert = left ? -1 : 1;
+			poseStack.pushPose();
+			poseStack.translate(invert * -0.56F, 0.52F, 0.72F);
+			this.renderPlayerArm(poseStack, submitNodeCollector, lightCoords, 0.0F, 0.0F, left ? HumanoidArm.LEFT : HumanoidArm.RIGHT);
+			poseStack.popPose();
+		} else if (HeldTome.is(stack) && context.firstPerson()) {
+			float partial = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false);
+			HeldTome.submitFirstPerson(poseStack, submitNodeCollector, lightCoords, stack, left, HeldTome.reading(entity, partial));
+		} else {
+			original.call(self, entity, stack, context, poseStack, submitNodeCollector, lightCoords);
+		}
 	}
 }

@@ -586,15 +586,17 @@ public final class CombatPoses {
 	}
 
 	/**
-	 * The fists' second blow in a row is thrown with the other fist, which first person never draws while
-	 * that hand is empty. When it is being thrown this moves the pose to where that fist is (the same
-	 * straight punch as the gauntlet's, mirrored, coming up from below the screen and going back down)
-	 * and returns true, and the caller draws the bare arm there, at its rest.
+	 * With the gauntlets on, first person shows both fists, the other one too, which first person never
+	 * draws while that hand is empty. Returns true when that fist is to be drawn (the caller draws the arm
+	 * at its rest, gauntlet and all): always, while the gauntlets are in the main hand and the player is
+	 * not digging. The fists' second blow in a row is thrown with it, and while that one is being thrown
+	 * this also moves the pose to where the fist is (the same straight punch as the gauntlet's, mirrored);
+	 * the rest of the time it waits at its rest, on guard.
 	 *
 	 * @param invert 1 for an arm on the right, -1 on the left
 	 */
 	public static boolean firstPersonOtherFist(AbstractClientPlayer player, float partialTick, PoseStack poseStack, int invert) {
-		if (player.swingingArm == InteractionHand.OFF_HAND || mining(player)) {
+		if (mining(player)) {
 			return false;
 		}
 		Motion motion = WeaponMotions.of(player.getMainHandItem());
@@ -602,8 +604,9 @@ public final class CombatPoses {
 			return false;
 		}
 		float attack = player.getAttackAnim(partialTick);
-		if (attack <= 0.0F || CombatAnims.comboFinishing(player.getId(), partialTick) || !motion.alternates(CombatAnims.swings(player))) {
-			return false;
+		if (player.swingingArm == InteractionHand.OFF_HAND || attack <= 0.0F || CombatAnims.comboFinishing(player.getId(), partialTick)
+			|| !motion.alternates(CombatAnims.swings(player))) {
+			return true;
 		}
 		Span span = span(motion, false, attack, false);
 		Hand from = hand(motion.plain(), span.from());
@@ -611,7 +614,7 @@ public final class CombatPoses {
 		float t = span.t();
 		poseStack.translate(
 			invert * Mth.lerp(t, from.x(), to.x()),
-			Mth.lerp(t, from.y(), to.y()) - 0.6F * (1.0F - span.hold()),
+			Mth.lerp(t, from.y(), to.y()),
 			Mth.lerp(t, from.z(), to.z())
 		);
 		return true;

@@ -2192,6 +2192,96 @@ def generate_gauntlet_skins(item_dir):
         skin.save(folder / f"piel_{slot}.png")
 
 
+def generate_worn_gear_textures():
+    """The skins of the two forged things drawn in the hand as models rather than as the item.
+
+    guanteletes_puestos.png is what client/WornGauntlets wraps round each hand: leather for the mitt and
+    the cuff, brushed plate for the back of the hand and the knuckles, bright rivet heads. Grey, like
+    every forged part, so the material tints it; each part's boxes take their faces from its own corner.
+
+    grimorio.png is the tome client/HeldTome draws, laid out like the enchanting table's book (the same
+    boxes at the same places), plus the gem in the front cover and the corner caps. The covers, the gem
+    and the caps are grey for their material to tint; the pages and the leather of the spine keep their
+    own colour, as the item's untinted layer does.
+    """
+    folder = ASSETS / "textures/entity"
+    folder.mkdir(parents=True, exist_ok=True)
+
+    gauntlet = Image.new("RGBA", (64, 32), (0, 0, 0, 0))
+    for y in range(16):
+        for x in range(32):
+            # leather: a soft grain, a shade darker along the lower rows the undersides take
+            value = 200 - 8 + ((x * 7 + y * 13) % 5) * 4 - (10 if y >= 11 else 0)
+            gauntlet.putpixel((x, y), (value, value, value, 255))
+            # plate: brushed along its length, with a bright edge and the odd nick
+            value = 222 - (y % 2) * 10 - (18 if (x * 5 + y * 3) % 13 == 0 else 0) + (18 if y in (0, 5) else 0)
+            value = max(0, min(255, value))
+            gauntlet.putpixel((32 + x, y), (value, value, value, 255))
+    for y in range(16, 32):
+        for x in range(16):
+            value = 242 - ((x + y) % 2) * 8
+            gauntlet.putpixel((x, y), (value, value, value, 255))
+    gauntlet.save(folder / "guanteletes_puestos.png")
+
+    tome = Image.new("RGBA", (64, 32), (0, 0, 0, 0))
+
+    def put(x, y, value):
+        if isinstance(value, int):
+            value = (value, value, value)
+        tome.putpixel((x, y), (*value, 255))
+
+    # The covers, 6 by 10, inside (plain, darker) and outside (a bright rim, a tooled groove inside it).
+    for left, outside in ((0, False), (6, True), (16, False), (22, True)):
+        for y in range(10):
+            for x in range(6):
+                grain = ((x * 5 + y * 3) % 4) * 3
+                if not outside:
+                    put(left + x, y, 150 + grain)
+                elif x in (0, 5) or y in (0, 9):
+                    put(left + x, y, 226)
+                elif x in (1, 4) or y in (1, 8):
+                    put(left + x, y, 148)
+                else:
+                    put(left + x, y, 188 + grain)
+    # The spine, outside then inside: dark leather with two raised bands.
+    for y in range(10):
+        for x in range(2):
+            put(12 + x, y, (120, 80, 48) if y in (2, 7) else (92, 58, 34))
+            put(14 + x, y, (70, 45, 28))
+    # The two blocks of pages and the two loose pages: printed faces, and edges striped by the leaves.
+    cream, leaf, ink = (236, 226, 200), (214, 202, 172), (96, 84, 72)
+
+    def printed(x0, y0):
+        for y in range(8):
+            for x in range(5):
+                line = y in (1, 3, 5) and x != 2 and not (y == 5 and x > 2)
+                put(x0 + x, y0 + y, ink if line else cream)
+
+    def edge(x0, y0, width, height):
+        for y in range(height):
+            for x in range(width):
+                put(x0 + x, y0 + y, leaf if (x + y) % 2 else cream)
+
+    for base in (0, 12):
+        edge(base + 1, 10, 10, 1)       # the top and bottom of the block
+        edge(base, 11, 1, 8)            # its two long edges
+        edge(base + 6, 11, 1, 8)
+        printed(base + 1, 11)
+        printed(base + 7, 11)
+    printed(24, 10)
+    printed(29, 10)
+    # The gem, lit from the top left.
+    for y in range(20, 24):
+        for x in range(40, 47):
+            value = 238 if y == 20 else 214 if y == 21 else 188 if y == 22 else 160
+            put(x, y, 255 if (x, y) in ((44, 21), (41, 21)) else value)
+    # The corner caps.
+    for y in range(20, 23):
+        for x in range(48, 53):
+            put(x, y, 250 if y == 20 else 226)
+    tome.save(folder / "grimorio.png")
+
+
 def generate_shield_textures(item_dir):
     folder = item_dir / "escudo"
     folder.mkdir(parents=True, exist_ok=True)
@@ -4086,38 +4176,57 @@ MODEL_PARENTS = {"mazo": "minecraft:item/handheld_mace", "alas": "minecraft:item
 # numbers are not guessable: the transform turns the item edge-on to the camera and then tilts it, so a
 # shift **up the sprite** comes out as a shift sideways and down in the hand's own axes, and a shift
 # **across the sprite** comes out as depth. Work it through instead.
+#
+# Worked through, it goes like this. The translation is applied first, in the hand's own frame, and the
+# turn and scale after it, about the middle of the sprite. In third person that frame has +y pointing out
+# of the fist (the way a blade sticks out) and +z back up the arm, and the middle of the fist sits at
+# (0, -2, 2) pixels in it; vanilla's [0, -90, 55] with [0, 4, 0.5] puts the sprite's pixel (3.2, 2.5),
+# counted from the bottom-left corner, exactly there, which is where a sword's grip is. In first person
+# the same pixel lands at (1.13, -1.57, -0.25). So to hold a sprite by another pixel, turn it however
+# it should hang and solve for the translation that brings that pixel to the same point:
+#
+#     translation = hand - turn(scale * (pixel - 8))
+#
+# The second attempt only slid the flail along its own length (the old grip_display), which cannot
+# work: its haft is not on the sprite's diagonal but eight pixels above it, and that offset comes out
+# as a shift down the arm, so the fist closed on the top of the ball with the haft sticking out below.
 
 
-def grip_display(dx, dy):
-    """Handheld transforms for an item whose grip is not at the sprite's bottom-left corner.
+def held_display(third_rotation, third_translation, first_rotation, first_translation):
+    """Handheld transforms, right hand as given and left hand by vanilla's rule.
 
-    `dy` is how far **up from the bottom of the sprite** the grip sits, `dx` how far across.
-
-    Only the vertical part is corrected in third person, and that is the whole lesson here. The
-    sideways part of the correction looked right on paper — the grip really is a few pixels in from the
-    edge — and in the game it **detached the weapon from the hand**: it floated beside the player with
-    a gap you could see through. Translation here is not in the hand's frame, so moving the item
-    sideways moves it away from the fist rather than along it. Sliding it down its own length keeps it
-    in the grip, which is the only thing that had to happen.
+    Vanilla writes the left hand with the Y and Z turns negated and the same translation, and the game
+    negates the turns and the sideways shift again for a left hand, so a left-hand item ends up turned
+    the same way as a right-hand one, on the other side.
     """
+    def entry(rotation, translation, scale):
+        return {"rotation": rotation, "translation": translation, "scale": [scale, scale, scale]}
+
+    def left(rotation):
+        return [rotation[0], -rotation[1] or 0, -rotation[2] or 0]
+
     return {
-        "thirdperson_righthand": {"rotation": [0, -90, 55], "translation": [0, round(4.0 - dy, 2), 0.5],
-                                  "scale": [0.85, 0.85, 0.85]},
-        "thirdperson_lefthand": {"rotation": [0, 90, -55], "translation": [0, round(4.0 - dy, 2), 0.5],
-                                 "scale": [0.85, 0.85, 0.85]},
-        # First person is the other way round: there is no hand worth speaking of, only an item held up
-        # in the corner, so the drop is what throws it out of frame and the sideways and depth shifts
-        # are what bring it in. Without them the hook hung off the right-hand edge and never appeared.
-        "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [round(1.13 + dy * 0.423, 2), 3.2, round(1.13 - dx, 2)],
-                                  "scale": [0.68, 0.68, 0.68]},
-        "firstperson_lefthand": {"rotation": [0, 90, -25], "translation": [round(1.13 - dy * 0.423, 2), 3.2, round(1.13 - dx, 2)],
-                                 "scale": [0.68, 0.68, 0.68]},
+        "thirdperson_righthand": entry(third_rotation, third_translation, 0.85),
+        "thirdperson_lefthand": entry(left(third_rotation), third_translation, 0.85),
+        "firstperson_righthand": entry(first_rotation, first_translation, 0.68),
+        "firstperson_lefthand": entry(left(first_rotation), first_translation, 0.68),
     }
 
 
 GRIPS = {
-    # The haft's butt sits nine pixels up from the bottom of the sprite.
-    "mangual": grip_display(0, 9),
+    # Held by the haft, two pixels up from its butt (pixel (2.5, 10.5)), with the ball hanging below it.
+    # Vanilla's turn would put the ball on the side of the sprite that faces up the arm; [0, 90, 35] is
+    # the same turn flipped over about the haft, so the haft still points out of the fist like any other
+    # weapon (the blows are written for that) and the chain and the ball hang down under it. In first
+    # person the flip puts the ball beyond the haft, where the view can see it, rather than below the hand,
+    # and it is held a pixel higher than a sword is, so the haft shows above the bottom of the screen.
+    "mangual": held_display([0, 90, 35], [0, -1.06, -3.05], [0, 90, 65], [1.13, 2.3, -3.37]),
+    # The dagger is the sword's sprite cut short and moved three pixels up and to the right, and vanilla
+    # grips it where a sword's grip would be: the fist closed on nothing a pixel behind the pommel, the
+    # whole short weapon sticking out ahead of it, and the long dark grip and guard read as a blade held
+    # at its point. Held by the grip (pixel (6.2, 5.5)), the pommel shows behind the fist. In first person
+    # it sits a little higher than that, or the short blade would barely clear the bottom of the screen.
+    "daga": held_display([0, -90, 55], [0, 0.47, 1.14], [0, -90, 25], [1.13, 1.9, 0.6]),
     # No entry for the hook any more: its sprite now puts the handle in the corner the hand already
     # grips, so the vanilla transform is right for it and anything added here would only move it off.
 }
@@ -10004,6 +10113,7 @@ if __name__ == "__main__":
     # minutes after being made and the items rendered as missing models in game.
     shutil.rmtree(ASSETS / "models/item", ignore_errors=True)
     generate_item_textures()
+    generate_worn_gear_textures()
     generate_armor_textures()
     generate_wings_textures()
     generate_effect_textures()

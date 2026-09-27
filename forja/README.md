@@ -16,6 +16,8 @@ Forja incluye el sistema de combate de Filo: armadura por tipo de daño y zona d
 
 - **Animaciones de golpe** según el arma, en primera y tercera persona: tajo horizontal (espadas, espadón,
   guadaña), golpe desde arriba (hachas, martillo, mazo, mangual, maza) y estocada (lanza, tridente, daga).
+- **Guanteletes puestos** en las dos manos (en primera persona se ven los dos puños) y **grimorio en 3D**, un
+  libro que se abre y pasa páginas al golpear o lanzar un hechizo.
 - **Reacciones de los cuerpos**: retroceso al recibir un golpe, el mob se echa atrás al avisar y se lanza al
   golpear, se agacha antes de la embestida, se tambalea aturdido, se inclina al esquivar y el escudo sale
   hacia delante en una parada.

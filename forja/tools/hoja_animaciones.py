@@ -4,10 +4,13 @@ Run after `FORJA_SOLO=animaciones ./gradlew runClientGameTest`:
 
     python tools/hoja_animaciones.py
 
-One row per weapon: in third person the blow wound up, landing, the second blow of a pair (dagger,
-gauntlets) and the combo finisher; in first person wound up, landing and the second blow. A last row
-has the zombies warning, striking, warning three times as long and lowering after a feint. The sheet
-is written next to the shots as hoja_animaciones.png.
+One row per weapon: in third person just held, the blow wound up, landing, the second blow of a pair
+(dagger, gauntlets), the combo finisher and a full charge held; in first person the same without the
+finisher. Then a row of zombies warning, striking, warning three times as long and lowering after a
+feint, and a row for the flail, the dagger, the gauntlets and the tome on armour stands, in zombies'
+hands (standing, reading the tome open while they warn, striking) and the tome cast by the player, and
+last the gauntlets in first person, both fists: at rest and punching with each hand.
+The sheet is written next to the shots as hoja_animaciones.png.
 """
 
 from pathlib import Path
@@ -20,16 +23,25 @@ WEAPONS = [
     "tridente", "lanza", "guanteletes", "baculo", "grimorio", "pico", "pala", "azada",
 ]
 COLUMNS = [
-    ("3a_carga", "3ª carga"), ("3b_golpe", "3ª golpe"), ("3c_segundo", "3ª segundo"), ("3d_remate", "3ª remate"),
-    ("1a_carga", "1ª carga"), ("1b_golpe", "1ª golpe"), ("1c_segundo", "1ª segundo"),
+    ("3q_quieto", "3ª quieto"), ("3a_carga", "3ª preparación"), ("3b_golpe", "3ª golpe"), ("3c_segundo", "3ª segundo"),
+    ("3d_remate", "3ª remate"), ("3k_cargando", "3ª cargando"),
+    ("1q_quieto", "1ª quieto"), ("1a_carga", "1ª preparación"), ("1b_golpe", "1ª golpe"), ("1c_segundo", "1ª segundo"),
+    ("1k_cargando", "1ª cargando"),
 ]
 ZOMBIES = [("z_0_quietos", "quietos"), ("z_1_aviso", "aviso 75%"), ("z_2_golpe", "golpe"),
            ("z_3_aviso_largo", "aviso x3, 75%"), ("z_4_amago", "amago")]
+EXTRAS = [("x_1_soportes", "soportes"), ("x_2_zombis_quietos", "zombis quietos"), ("x_3_zombis_aviso", "zombis avisando"),
+          ("x_4_zombis_golpe", "zombis golpe"), ("x_5_grimorio_1_cerrado", "grimorio 1ª cerrado"),
+          ("x_6_grimorio_1_lanzando", "grimorio 1ª lanzando"), ("x_7_grimorio_3_lanzando", "grimorio 3ª lanzando"),
+          ("x_8_guanteletes_1_escudo", "guanteletes 1ª + escudo")]
+# The gauntlets in first person, both fists: at rest, the right one punching, the left one punching.
+FISTS = [("guanteletes_1q_quieto", "guanteletes 1ª reposo"), ("guanteletes_1b_golpe", "golpe derecha"),
+         ("guanteletes_1c_segundo", "golpe izquierda"), ("guanteletes_1k_cargando", "cargando")]
 
 # Third-person shots are cropped to the two mannequins (the zombies stand wider apart); first-person
 # ones keep the whole frame.
 THIRD_CROP = (0.16, 0.12, 0.84, 0.92)
-ZOMBIE_CROP = (0.02, 0.1, 0.98, 0.9)
+WIDE_CROP = (0.02, 0.1, 0.98, 0.9)
 CELL_W, CELL_H = 340, 200
 LABEL_W, HEADER_H, GAP = 130, 34, 4
 BACKGROUND, INK, MISSING = (24, 24, 28), (235, 235, 235), (48, 48, 54)
@@ -55,14 +67,29 @@ def cell(path, crop):
     return framed
 
 
+def strip(sheet, draw, y, title, shots, crop_of, fonts):
+    """A labelled row of shots with a heading over each; returns where the next one starts."""
+    heading, label = fonts
+    draw.text((10, y + 8), title, fill=INK, font=label)
+    for i, (_, text) in enumerate(shots):
+        draw.text((LABEL_W + i * (CELL_W + GAP) + 8, y + 8), text, fill=INK, font=heading)
+    y += HEADER_H
+    for i, (column, _) in enumerate(shots):
+        path = SHOTS / f"anim_{column}.png"
+        if path.exists():
+            sheet.paste(cell(path, crop_of(column)), (LABEL_W + i * (CELL_W + GAP), y))
+    return y + CELL_H + GAP
+
+
 def main():
     rows = [w for w in WEAPONS if any((SHOTS / f"anim_{w}_{c}.png").exists() for c, _ in COLUMNS)]
     has_zombies = any((SHOTS / f"anim_{c}.png").exists() for c, _ in ZOMBIES)
-    count = len(rows) + (2 if has_zombies else 0)
-    if count == 0:
+    has_extras = any((SHOTS / f"anim_{c}.png").exists() for c, _ in EXTRAS)
+    has_fists = any((SHOTS / f"anim_{c}.png").exists() for c, _ in FISTS)
+    if not rows and not has_zombies and not has_extras:
         raise SystemExit(f"no anim_*.png shots in {SHOTS}")
     width = LABEL_W + len(COLUMNS) * (CELL_W + GAP)
-    height = HEADER_H + count * (CELL_H + GAP)
+    height = HEADER_H + len(rows) * (CELL_H + GAP) + (has_zombies + has_extras + has_fists) * (HEADER_H + CELL_H + GAP)
     sheet = Image.new("RGB", (width, height), BACKGROUND)
     draw = ImageDraw.Draw(sheet)
     title, label = font(20), font(18)
@@ -83,15 +110,13 @@ def main():
         y += CELL_H + GAP
 
     if has_zombies:
-        draw.text((10, y + 8), "zombis", fill=INK, font=label)
-        for i, (_, heading) in enumerate(ZOMBIES):
-            draw.text((LABEL_W + i * (CELL_W + GAP) + 8, y + 8), heading, fill=INK, font=title)
-        y += HEADER_H
-        for i, (column, _) in enumerate(ZOMBIES):
-            path = SHOTS / f"anim_{column}.png"
-            if path.exists():
-                sheet.paste(cell(path, ZOMBIE_CROP), (LABEL_W + i * (CELL_W + GAP), y))
-        sheet = sheet.crop((0, 0, width, y + CELL_H))
+        y = strip(sheet, draw, y, "zombis", ZOMBIES, lambda column: WIDE_CROP, (title, label))
+    if has_extras:
+        # First-person shots of the cast keep the whole frame; the rest are the wide scenes.
+        y = strip(sheet, draw, y, "en mano", EXTRAS, lambda column: None if "_1_" in column[4:] else WIDE_CROP, (title, label))
+    if has_fists:
+        y = strip(sheet, draw, y, "puños", FISTS, lambda column: None, (title, label))
+    sheet = sheet.crop((0, 0, width, y))
 
     out = SHOTS / "hoja_animaciones.png"
     sheet.save(out, optimize=True)

@@ -10854,16 +10854,19 @@ public class ForjaClientTest implements FabricClientGameTest {
 		for (ForgeType type : filmed) {
 			String name = type.id();
 			server.runOnServer(s -> {
-				ItemStack weapon = Assembler.create(type, Assembler.defaultMaterials(type), connection.getServerLevel().registryAccess());
+				ItemStack weapon = Assembler.create(type, filmMaterials(type), connection.getServerLevel().registryAccess());
 				for (int id : dolls) {
 					((net.minecraft.world.entity.LivingEntity) connection.getServerLevel().getEntity(id)).setItemSlot(EquipmentSlot.MAINHAND, weapon.copy());
 				}
 			});
 			context.waitTicks(3);
-			float[] moments = dev.forja.client.CombatPoses.keyMoments(Assembler.create(type, Assembler.defaultMaterials(type)));
+			float[] moments = dev.forja.client.CombatPoses.keyMoments(Assembler.create(type, filmMaterials(type)));
 			check(moments != null, name + " should have a blow of its own");
 			int first = start;
 			start += 100;
+			// Just held: where the hand grips it (the tome shut, the gauntlets on both hands).
+			holdSwing(context, dolls, 0.0F, 0);
+			shot(context, "anim_" + name + "_3q_quieto");
 			holdSwing(context, dolls, moments[0], -first);
 			shot(context, "anim_" + name + "_3a_carga");
 			holdSwing(context, dolls, moments[1], -first);
@@ -10884,6 +10887,22 @@ public class ForjaClientTest implements FabricClientGameTest {
 			holdSwing(context, dolls, 0.0F, 0);
 			// Past the finisher's window, so the next weapon starts with a plain blow.
 			context.waitTicks(9);
+			// A charged blow held full, the way the server announces a charge: drawn back and trembling.
+			server.runOnServer(s -> {
+				for (int id : dolls) {
+					dev.forja.combat.CombatAnim.broadcast(connection.getServerLevel().getEntity(id), dev.forja.combat.CombatAnim.Kind.CHARGE,
+						CHARGE_TICKS, 1.0F, 0.0F);
+				}
+			});
+			context.waitTicks(CHARGE_TICKS + 3);
+			shot(context, "anim_" + name + "_3k_cargando");
+			server.runOnServer(s -> {
+				for (int id : dolls) {
+					dev.forja.combat.CombatAnim.broadcast(connection.getServerLevel().getEntity(id), dev.forja.combat.CombatAnim.Kind.CHARGE, 0, 0.0F, 0.0F);
+				}
+			});
+			// Long enough for a tome opened by the charge to shut again.
+			context.waitTicks(16);
 		}
 
 		// First person, turned away from the mannequins and with the hand back on screen.
@@ -10893,14 +10912,16 @@ public class ForjaClientTest implements FabricClientGameTest {
 		for (ForgeType type : filmed) {
 			String name = type.id();
 			server.runOnServer(s -> connection.getServerPlayer().setItemInHand(InteractionHand.MAIN_HAND,
-				Assembler.create(type, Assembler.defaultMaterials(type), connection.getServerLevel().registryAccess())));
+				Assembler.create(type, filmMaterials(type), connection.getServerLevel().registryAccess())));
 			// Long enough for the new weapon to come up into the hand: a slow one stays lowered until the
 			// attack strength has recovered, a second and a half for the hammer.
 			context.waitTicks(45);
 			quiet(context);
-			float[] moments = dev.forja.client.CombatPoses.keyMoments(Assembler.create(type, Assembler.defaultMaterials(type)));
+			float[] moments = dev.forja.client.CombatPoses.keyMoments(Assembler.create(type, filmMaterials(type)));
 			int first = start;
 			start += 100;
+			holdSwing(context, self, 0.0F, 0);
+			handShot(context, "anim_" + name + "_1q_quieto");
 			holdSwing(context, self, moments[0], -first);
 			handShot(context, "anim_" + name + "_1a_carga");
 			holdSwing(context, self, moments[1], -first);
@@ -10910,6 +10931,10 @@ public class ForjaClientTest implements FabricClientGameTest {
 				handShot(context, "anim_" + name + "_1c_segundo");
 			}
 			holdSwing(context, self, 0.0F, 0);
+			holdLocalCharge(context, true);
+			handShot(context, "anim_" + name + "_1k_cargando");
+			holdLocalCharge(context, false);
+			context.waitTicks(16);
 		}
 		server.runOnServer(s -> {
 			connection.getServerPlayer().getInventory().clearContent();
@@ -10998,6 +11023,9 @@ public class ForjaClientTest implements FabricClientGameTest {
 				connection.getServerLevel().getEntity(id).discard();
 			}
 		});
+		if (only == null || only.isBlank() || filmed.stream().anyMatch(HELD_GEAR::contains)) {
+			filmHeldGear(context, server, connection, sx, y, sz);
+		}
 		hideHud(context, false);
 		context.runOnClient(mc -> {
 			mc.options.fov().set(70);
@@ -11006,6 +11034,166 @@ public class ForjaClientTest implements FabricClientGameTest {
 		server.runCommand("effect clear @a night_vision");
 		server.runCommand("gamemode survival @a");
 		server.runCommand("time set noon");
+	}
+
+	/** The four weapons whose grip or whose look in hand is not the flat item's: filmed on stands, zombies and in a cast. */
+	private static final List<ForgeType> HELD_GEAR = List.of(ForgeType.MANGUAL, ForgeType.DAGA, ForgeType.GUANTELETES, ForgeType.GRIMORIO);
+	/** How long a charge the shots announce, in ticks. */
+	private static final int CHARGE_TICKS = 10;
+
+	/**
+	 * What each weapon is made of in the shots: the plain default, except the ones whose parts are worth
+	 * telling apart (leather gauntlets with iron knuckles and gold rivets; a leather-bound tome with an
+	 * amethyst in the cover and gold corners; an iron flail on a wooden haft).
+	 */
+	private static List<dev.forja.material.ForgeMaterial> filmMaterials(ForgeType type) {
+		return switch (type) {
+			case GUANTELETES -> List.of(CUERO, HIERRO, ORO);
+			case GRIMORIO -> List.of(AMATISTA, CUERO, ORO);
+			case MANGUAL -> List.of(HIERRO, HIERRO, MADERA);
+			default -> Assembler.defaultMaterials(type);
+		};
+	}
+
+	/**
+	 * The flail, the dagger, the gauntlets and the tome where the weapon rows do not show them: on four
+	 * armour stands; in the hands of zombies standing, warning (the tome read open) and striking; and the
+	 * tome cast by the player, in first person and seen from the front, open while the spell goes.
+	 */
+	private static void filmHeldGear(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int sx, int y, int sz) {
+		tp(server, sx + 0.5, y, sz + 0.5, 180.0F, 8.0F);
+		hideHud(context, true);
+		int[] stands = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			int[] made = new int[HELD_GEAR.size()];
+			for (int i = 0; i < made.length; i++) {
+				var stand = net.minecraft.world.entity.EntityTypes.ARMOR_STAND.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				check(stand != null, "an armour stand should be creatable");
+				stand.snapTo(sx - 2.0 + i * 1.6, y, sz - 4.2, -55.0F, 0.0F);
+				stand.setYBodyRot(-55.0F);
+				stand.setShowArms(true);
+				stand.setNoBasePlate(true);
+				ForgeType type = HELD_GEAR.get(i);
+				stand.setItemSlot(EquipmentSlot.MAINHAND, Assembler.create(type, filmMaterials(type), level.registryAccess()));
+				level.addFreshEntity(stand);
+				made[i] = stand.getId();
+			}
+			return made;
+		});
+		context.waitTicks(10);
+		shot(context, "anim_x_1_soportes");
+		server.runOnServer(s -> {
+			for (int id : stands) {
+				connection.getServerLevel().getEntity(id).discard();
+			}
+		});
+
+		// Zombies side-on, one with each: standing, warning (the tome read open, the fists up) and striking.
+		int[] zombies = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			int[] made = new int[HELD_GEAR.size()];
+			for (int i = 0; i < made.length; i++) {
+				var mob = net.minecraft.world.entity.EntityTypes.ZOMBIE.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				check(mob != null, "a zombie should be creatable");
+				mob.snapTo(sx - 3.3 + i * 2.2, y, sz - 4.5, -90.0F, 0.0F);
+				mob.setYBodyRot(-90.0F);
+				mob.setYHeadRot(-90.0F);
+				mob.setNoAi(true);
+				mob.setPersistenceRequired();
+				ForgeType type = HELD_GEAR.get(i);
+				mob.setItemSlot(EquipmentSlot.MAINHAND, Assembler.create(type, filmMaterials(type), level.registryAccess()));
+				level.addFreshEntity(mob);
+				mob.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
+				made[i] = mob.getId();
+			}
+			return made;
+		});
+		context.waitTicks(10);
+		shot(context, "anim_x_2_zombis_quietos");
+		int windup = server.computeOnServer(s -> dev.forja.combat.CombatConfig.get().windupTicks);
+		server.runOnServer(s -> {
+			for (int id : zombies) {
+				dev.forja.combat.CombatAnim.broadcast(connection.getServerLevel().getEntity(id), dev.forja.combat.CombatAnim.Kind.TELEGRAPH, windup * 2);
+			}
+		});
+		context.waitTicks(windup * 3 / 2);
+		int tome = zombies[HELD_GEAR.indexOf(ForgeType.GRIMORIO)];
+		float open = context.computeOnClient(mc -> dev.forja.client.HeldTome.reading((net.minecraft.world.entity.LivingEntity) mc.level.getEntity(tome), 0.0F).open());
+		check(open > 0.9F, "a zombie reading a spell should hold its tome open, is at " + open);
+		shot(context, "anim_x_3_zombis_aviso");
+		context.waitTicks(windup / 2);
+		server.runOnServer(s -> {
+			for (int id : zombies) {
+				((net.minecraft.world.entity.LivingEntity) connection.getServerLevel().getEntity(id)).swing(InteractionHand.MAIN_HAND);
+			}
+		});
+		context.waitFor(mc -> mc.level.getEntity(zombies[0]) instanceof net.minecraft.world.entity.LivingEntity living && living.swinging, 20);
+		holdAttack(context, zombies, 0.3F);
+		shot(context, "anim_x_4_zombis_golpe");
+		context.waitTicks(40);
+		float shut = context.computeOnClient(mc -> dev.forja.client.HeldTome.reading((net.minecraft.world.entity.LivingEntity) mc.level.getEntity(tome), 0.0F).open());
+		check(shut <= 0.0F, "the tome should shut again after the blow, is at " + shut);
+		server.runOnServer(s -> {
+			for (int id : zombies) {
+				connection.getServerLevel().getEntity(id).discard();
+			}
+		});
+
+		// The gauntlets with a shield in the other hand: that hand shows the shield, as it would anyway.
+		tp(server, sx + 0.5, y, sz + 0.5, 0.0F, 4.0F);
+		server.runOnServer(s -> {
+			ServerPlayer player = connection.getServerPlayer();
+			player.setItemInHand(InteractionHand.MAIN_HAND,
+				Assembler.create(ForgeType.GUANTELETES, filmMaterials(ForgeType.GUANTELETES), connection.getServerLevel().registryAccess()));
+			player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.SHIELD));
+		});
+		hideHud(context, false);
+		context.waitTicks(45);
+		quiet(context);
+		handShot(context, "anim_x_8_guanteletes_1_escudo");
+		server.runOnServer(s -> connection.getServerPlayer().getInventory().clearContent());
+
+		// The player casting from the tome: it falls open for the spell and shuts after.
+		server.runOnServer(s -> connection.getServerPlayer().setItemInHand(InteractionHand.MAIN_HAND,
+			Assembler.create(ForgeType.GRIMORIO, filmMaterials(ForgeType.GRIMORIO), connection.getServerLevel().registryAccess())));
+		hideHud(context, false);
+		context.waitTicks(45);
+		quiet(context);
+		handShot(context, "anim_x_5_grimorio_1_cerrado");
+		context.runOnClient(mc -> mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND));
+		context.waitTicks(4);
+		check(context.computeOnClient(mc -> dev.forja.client.HeldTome.reading(mc.player, 0.0F).open()) > 0.9F, "casting should open the tome");
+		handShot(context, "anim_x_6_grimorio_1_lanzando");
+		context.waitTicks(80);
+		context.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+		hideHud(context, true);
+		context.waitTicks(10);
+		context.runOnClient(mc -> mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND));
+		context.waitTicks(4);
+		shot(context, "anim_x_7_grimorio_3_lanzando");
+		context.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
+		server.runOnServer(s -> connection.getServerPlayer().getInventory().clearContent());
+		context.waitTicks(20);
+	}
+
+	/**
+	 * Holds the local player's charge full for the next screenshot, or lets it go. The charge is the
+	 * client's own (the attack button held); set here directly so the pose can be filmed for any weapon,
+	 * charged by the server's rules or not yet.
+	 */
+	private static void holdLocalCharge(ClientGameTestContext context, boolean held) {
+		context.runOnClient(mc -> {
+			try {
+				java.lang.reflect.Field charging = dev.forja.client.CombatClient.class.getDeclaredField("charging");
+				java.lang.reflect.Field since = dev.forja.client.CombatClient.class.getDeclaredField("chargeStart");
+				charging.setAccessible(true);
+				since.setAccessible(true);
+				charging.setBoolean(null, held);
+				since.setLong(null, mc.level.getGameTime() - 40L);
+			} catch (ReflectiveOperationException e) {
+				throw new AssertionError("the client's charge should be settable for the shot", e);
+			}
+		});
 	}
 
 	/**
