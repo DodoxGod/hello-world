@@ -516,12 +516,14 @@ GUI = {
     ),
     "gui.forja.libro.paso2.titulo": ("2. Corta las piezas", "2. Cut the parts"),
     "gui.forja.libro.paso2": (
-        "Pon la plantilla grabada y el material en la mesa de piezas. Cada pieza cuesta una cantidad "
-        "distinta de material y cada material lleva su rasgo: madera es barata, hierro aguanta, cuarzo "
-        "corta. La pieza sale con sus números ya escritos.",
-        "Put the engraved template and the material on the parts table. Each part costs a different amount "
-        "and every material carries its own trait: wood is cheap, iron holds, quartz cuts. The part comes "
-        "out with its numbers already on it.",
+        "Pon la plantilla grabada y el material en la mesa de piezas: corta lo que se talla (madera, "
+        "piedra, hueso, cuero, amatista, cuarzo, prismarina...). El metal no se corta, se funde en el "
+        "crisol y se cuela en la caja de moldeo (capítulo Fundición). Cada pieza cuesta una cantidad "
+        "distinta y cada material lleva su rasgo; la pieza sale con sus números ya escritos.",
+        "Put the engraved template and the material on the parts table: it cuts what can be carved "
+        "(wood, stone, bone, leather, amethyst, quartz, prismarine...). Metal is not cut but melted in the "
+        "crucible and poured into the casting box (Foundry chapter). Each part costs a different amount "
+        "and every material carries its own trait; the part comes out with its numbers already on it.",
     ),
     "gui.forja.libro.paso3.titulo": ("3. Fórjalo en la estrella", "3. Forge it on the star"),
     "gui.forja.libro.paso3": (
@@ -535,9 +537,9 @@ GUI = {
     "gui.forja.libro.paso4.titulo": ("4. Mejóralo", "4. Upgrade it"),
     "gui.forja.libro.paso4": (
         "Con el objeto en el centro, los materiales en las puntas suben sus mejoras por porcentaje: "
-        "diamante da Filo, azúcar da Eficiencia, lapislázuli da Fortuna. También valen los libros "
+        "amatista da Filo, azúcar da Eficiencia, lapislázuli da Fortuna. También valen los libros "
         "encantados y los orbes de mejora, y dos mejoras al 50% pueden despertar una sinergia.",
-        "With the item in the middle, materials on the points raise its upgrades by percentage: diamond "
+        "With the item in the middle, materials on the points raise its upgrades by percentage: amethyst "
         "gives Filo, sugar gives Eficiencia, lapis gives Fortuna. Enchanted books and upgrade orbs work "
         "too, and two upgrades at 50% can wake a synergy.",
     ),
