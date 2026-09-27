@@ -166,7 +166,7 @@ public final class Personality {
 		WorldFights.remember(mob, player);
 		if (before + 1 >= VETERAN_FIGHTS && dev.forja.difficulty.Threat.of(mob) == dev.forja.difficulty.Threat.NORMAL) {
 			dev.forja.difficulty.Threat.VETERANO.mark(mob);
-			mob.setCustomName(Component.translatable("entity.forja.amenaza.veterano", mob.getType().getDescription()));
+			dev.forja.difficulty.Names.give(mob, dev.forja.difficulty.Threat.VETERANO);
 		}
 	}
 

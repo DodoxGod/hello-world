@@ -95,7 +95,7 @@ public final class Elites {
 		for (EquipmentSlot slot : EquipmentSlot.values()) {
 			mob.setDropChance(slot, 0.0F);
 		}
-		mob.setCustomName(Component.translatable("entity.forja.elite", weapon.getHoverName(), mob.getType().getDescription()));
+		mob.setCustomName(dev.forja.difficulty.Names.of(mob, dev.forja.difficulty.Threat.CAMPEON));
 		mob.setCustomNameVisible(true);
 		mob.setGlowingTag(true);
 		mob.setPersistenceRequired();

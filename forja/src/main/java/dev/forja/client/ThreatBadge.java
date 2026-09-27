@@ -39,8 +39,8 @@ import net.minecraft.world.phys.Vec3;
  * <li>It is lit by itself and drawn like a name, without the shading of a body, so its metal is the
  *     same at midnight and at noon, and it is ringed in near-black
  *     so it holds against a bright sky or sand.</li>
- * <li>It grows with distance (twice as big by twenty blocks), so at fifteen, where the choice to fight is
- *     made, it is still some twenty pixels across on a 1080p screen rather than a speck, and fades out between 36 and 44 blocks, so a horde far off
+ * <li>It grows with distance (1.6 times by seventeen blocks, Andy's numbers), so at fifteen, where the choice to fight is
+ *     made, it is still a clear mark on a 1080p screen rather than a speck, and fades out between 21 and 25 blocks, so a horde far off
  *     is not a field of stars.</li>
  * <li>When the mob's name shows (looked at, or a champion's), the name moves up over the badge instead
  *     of the two crossing.</li>
@@ -66,11 +66,11 @@ public final class ThreatBadge {
 	private static final float GAP = 0.14F;
 	/** Growth with distance: from GROW_FROM blocks, up to GROW_MAX times the size GROW_SPAN blocks later. */
 	private static final float GROW_FROM = 4.0F;
-	private static final float GROW_SPAN = 16.0F;
-	private static final float GROW_MAX = 2.0F;
+	private static final float GROW_SPAN = 13.0F;
+	private static final float GROW_MAX = 1.6F;
 	/** Full until FADE_FROM blocks, gone at FADE_TO. */
-	private static final float FADE_FROM = 36.0F;
-	private static final float FADE_TO = 44.0F;
+	private static final float FADE_FROM = 21.0F;
+	private static final float FADE_TO = 25.0F;
 	private static final int FADE_STEPS = 8;
 
 	/** Where the name's lowest pixel sits over its attachment point (EntityRenderer: +0.5, 9 px at 0.025 down). */

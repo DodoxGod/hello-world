@@ -64,10 +64,7 @@ public final class Scaling {
 		if (threat == Threat.NORMAL && !Bosses.isBoss(mob)) {
 			threat = roll(mob, level, random, difficulty, gear, near);
 			threat.mark(mob);
-			if (threat != Threat.NORMAL) {
-				mob.setCustomName(Component.translatable("entity.forja.amenaza." + threat.name().toLowerCase(java.util.Locale.ROOT),
-					mob.getType().getDescription()));
-			}
+			Names.give(mob, threat);
 		}
 
 		double health = difficulty.health * threat.health * (1.0 + CombatConfig.get().gearHealthPerTier * tier);
