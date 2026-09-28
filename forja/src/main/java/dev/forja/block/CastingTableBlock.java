@@ -3,7 +3,6 @@ package dev.forja.block;
 import com.mojang.serialization.MapCodec;
 import dev.forja.block.entity.CastingTableBlockEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -127,13 +126,8 @@ public class CastingTableBlock extends BaseEntityBlock {
 		return InteractionResult.CONSUME;
 	}
 
-	@Override
-	protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean moved) {
-		if (level.getBlockEntity(pos) instanceof CastingTableBlockEntity table) {
-			Containers.dropContents(level, pos, table);
-		}
-		super.affectNeighborsAfterRemoval(state, level, pos, moved);
-	}
+	// What it holds is dropped by the block entity (preRemoveSideEffects): by the time
+	// affectNeighborsAfterRemoval runs the block entity is already gone, and breaking one lost it all.
 
 	@Override
 	public void animateTick(BlockState state, Level level, BlockPos pos, net.minecraft.util.RandomSource random) {

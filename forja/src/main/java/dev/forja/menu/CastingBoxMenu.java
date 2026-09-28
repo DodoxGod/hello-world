@@ -1,8 +1,6 @@
 package dev.forja.menu;
 
 import dev.forja.block.entity.CastingBoxBlockEntity;
-import dev.forja.item.CastingMouldItem;
-import dev.forja.registry.ModComponents;
 import dev.forja.registry.ModItems;
 import dev.forja.registry.ModMenus;
 import net.minecraft.world.Container;
@@ -20,7 +18,9 @@ public class CastingBoxMenu extends AbstractContainerMenu {
 	public static final int DATA_PROGRESS = 0;
 	public static final int DATA_COOK = 1;
 	public static final int DATA_HOLDS = 2;
-	public static final int DATA_SIZE = 3;
+	public static final int DATA_JOB = 3;
+	public static final int DATA_METAL = 4;
+	public static final int DATA_SIZE = 5;
 
 	public static final int PATTERN_X = 34;
 	public static final int PATTERN_Y = 34;
@@ -48,22 +48,25 @@ public class CastingBoxMenu extends AbstractContainerMenu {
 		this.box = box;
 		this.data = data;
 
+		// The same rule as the hoppers get (CastingBoxBlockEntity.allowed): the pattern slot here used to
+		// take only moulds and parts, so a finished tool could not be cut into its frame from the screen,
+		// nor a strainer infused.
 		this.addSlot(new Slot(box, CastingBoxBlockEntity.SLOT_PATTERN, PATTERN_X, PATTERN_Y) {
 			@Override
 			public boolean mayPlace(ItemStack stack) {
-				return CastingMouldItem.partOf(stack) != null || stack.getItem() instanceof dev.forja.item.PartItem;
+				return CastingBoxBlockEntity.allowed(CastingBoxBlockEntity.SLOT_PATTERN, stack);
 			}
 		});
 		this.addSlot(new Slot(box, CastingBoxBlockEntity.SLOT_STEEL, STEEL_X, STEEL_Y) {
 			@Override
 			public boolean mayPlace(ItemStack stack) {
-				return stack.is(ModItems.alloy("acero_refractario"));
+				return CastingBoxBlockEntity.allowed(CastingBoxBlockEntity.SLOT_STEEL, stack);
 			}
 		});
 		this.addSlot(new Slot(box, CastingBoxBlockEntity.SLOT_STRAINER, STRAINER_X, STRAINER_Y) {
 			@Override
 			public boolean mayPlace(ItemStack stack) {
-				return stack.getItem() instanceof dev.forja.item.StrainerItem;
+				return CastingBoxBlockEntity.allowed(CastingBoxBlockEntity.SLOT_STRAINER, stack);
 			}
 		});
 		this.addSlot(new Slot(box, CastingBoxBlockEntity.SLOT_OUTPUT, OUTPUT_X, OUTPUT_Y) {
@@ -88,9 +91,20 @@ public class CastingBoxMenu extends AbstractContainerMenu {
 		return cook <= 0 ? 0.0F : Math.min(1.0F, (float) this.data.get(DATA_PROGRESS) / cook);
 	}
 
-	/** The hardest material this box will pour, as a durability. */
+	/** The hardest material this box will pour, as a durability; Integer.MAX_VALUE for anything. */
 	public int holds() {
-		return this.data.get(DATA_HOLDS);
+		int holds = this.data.get(DATA_HOLDS);
+		return holds >= Short.MAX_VALUE ? Integer.MAX_VALUE : holds;
+	}
+
+	/** What the box is doing, as CastingBoxBlockEntity.JOB_*. */
+	public int job() {
+		return this.data.get(DATA_JOB);
+	}
+
+	/** The metal it is pouring, as a material ordinal, or -1. */
+	public int jobMetal() {
+		return this.data.get(DATA_METAL);
 	}
 
 	public ItemStack pattern() {
@@ -118,17 +132,20 @@ public class CastingBoxMenu extends AbstractContainerMenu {
 			if (!this.moveItemStackTo(stack, CastingBoxBlockEntity.SLOT_STEEL, CastingBoxBlockEntity.SLOT_STEEL + 1, false)) {
 				return ItemStack.EMPTY;
 			}
-		} else if (stack.getItem() instanceof dev.forja.item.StrainerItem
-			&& this.box.getItem(CastingBoxBlockEntity.SLOT_PATTERN).isEmpty()) {
-			// A strainer goes to the gate unless the pattern slot is free, where it would be infused.
-			if (!this.moveItemStackTo(stack, CastingBoxBlockEntity.SLOT_PATTERN, CastingBoxBlockEntity.SLOT_PATTERN + 1, false)) {
-				return ItemStack.EMPTY;
-			}
 		} else if (stack.getItem() instanceof dev.forja.item.StrainerItem) {
-			if (!this.moveItemStackTo(stack, CastingBoxBlockEntity.SLOT_STRAINER, CastingBoxBlockEntity.SLOT_STRAINER + 1, false)) {
+			// A strainer goes to its gate; only a second one, with the gate taken, goes to the pattern slot
+			// to be infused. It asked the pattern slot first, which would not take a strainer at all, so a
+			// strainer shift-clicked into an empty box went nowhere; and had it gone, the one strainer a
+			// smith owned would have been bathed instead of guarding the pour.
+			if (!this.moveItemStackTo(stack, CastingBoxBlockEntity.SLOT_STRAINER, CastingBoxBlockEntity.SLOT_STRAINER + 1, false)
+				&& !this.moveItemStackTo(stack, CastingBoxBlockEntity.SLOT_PATTERN, CastingBoxBlockEntity.SLOT_PATTERN + 1, false)) {
 				return ItemStack.EMPTY;
 			}
 		} else if (!this.moveItemStackTo(stack, CastingBoxBlockEntity.SLOT_PATTERN, CastingBoxBlockEntity.SLOT_PATTERN + 1, false)) {
+			return ItemStack.EMPTY;
+		}
+		// Nothing actually moved: say so, or the click keeps asking for the same move for ever.
+		if (stack.getCount() == original.getCount()) {
 			return ItemStack.EMPTY;
 		}
 		if (stack.isEmpty()) {

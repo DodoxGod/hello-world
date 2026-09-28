@@ -82,6 +82,20 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 	private NonNullList<ItemStack> items = NonNullList.withSize(SIZE, ItemStack.EMPTY);
 	private int progress;
 
+	/**
+	 * What the box is doing, for the screen, which cannot see the tanks and so used to promise a casting
+	 * ("Molde de cabeza de pico · 3 de metal") over a box with no metal to pour.
+	 */
+	public static final int JOB_NONE = 0;
+	public static final int JOB_MOULD = 1;
+	public static final int JOB_FRAME = 2;
+	public static final int JOB_CAST = 3;
+	public static final int JOB_ROUGH = 4;
+	public static final int JOB_INFUSE = 5;
+	private int job;
+	/** The metal being poured, as a material ordinal, or -1. */
+	private int jobMetal = -1;
+
 	public CastingBoxBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.CAJA, pos, state);
 	}
@@ -95,6 +109,11 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 	public static void serverTick(Level level, BlockPos pos, BlockState state, CastingBoxBlockEntity box) {
 		Job job = box.pending();
 		boolean working = job != null;
+		box.job = job == null ? JOB_NONE
+			: job.cutting() != null ? (dev.forja.item.CastingFrameItem.typeOf(job.result()) != null ? JOB_FRAME : JOB_MOULD)
+			: job.result().getItem() instanceof dev.forja.item.StrainerItem ? JOB_INFUSE
+			: job.rough() ? JOB_ROUGH : JOB_CAST;
+		box.jobMetal = job == null || job.metal() == null ? -1 : job.metal().ordinal();
 		if (!working) {
 			box.progress = 0;
 		} else {
@@ -136,9 +155,17 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 				part.set(ModComponents.ROUGH, true);
 			} else {
 				// Poured, and poured well: whatever is built with it has more room for upgrades than the
-				// same thing cut at the bench (forge/Potential).
+				// same thing cut at the bench (forge/Potential). Its upgrade is only drawn when the pour
+				// finishes (see finish): drawn here it was a new one every tick.
 				part.set(ModComponents.COLADA, true);
-				bless(part, mould);
+			}
+			// The output has to take the part as it will really come out. It was asked whether it would
+			// take a plain part, which nothing that comes out of here is: after the first casting the
+			// slot held a rough or a blessed part, the plain one never matched it, and the box stood
+			// there with a full tank and a mould until someone emptied it by hand. A rough part stacks
+			// with the rough ones before it; a blessed one carries its own upgrade and waits for room.
+			if (rough ? !this.fits(part) : !this.items.get(SLOT_OUTPUT).isEmpty()) {
+				return null;
 			}
 			return new Job(part, null, 0, metal, rough);
 		}
@@ -216,9 +243,7 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 			if (material == null || !part.accepts(material) || material.durability > this.tier().holds) {
 				continue;
 			}
-			if (this.fits(Assembler.createPart(part, material))) {
-				return material;
-			}
+			return material;
 		}
 		return null;
 	}
@@ -258,6 +283,7 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 	}
 
 	private void finish(Level level, BlockPos pos, Job job) {
+		ItemStack result = job.result().copy();
 		if (job.cutting() != null) {
 			// Cutting a mould or a frame: what it was taken from is poured over and does not come back.
 			this.items.get(SLOT_PATTERN).shrink(1);
@@ -278,6 +304,8 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 			if (infusing) {
 				// The old strainer goes into the bath and does not come back out as itself.
 				pattern.shrink(1);
+			} else if (!job.rough() && part != null) {
+				bless(result, part);
 			}
 			if (job.rough()) {
 				// The strainer could not take it and went with the pour.
@@ -289,9 +317,9 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 		}
 		ItemStack out = this.items.get(SLOT_OUTPUT);
 		if (out.isEmpty()) {
-			this.items.set(SLOT_OUTPUT, job.result().copy());
+			this.items.set(SLOT_OUTPUT, result);
 		} else {
-			out.grow(job.result().getCount());
+			out.grow(result.getCount());
 		}
 		if (level instanceof ServerLevel server) {
 			server.playSound(null, pos, job.cutting() != null ? SoundEvents.ANVIL_USE : SoundEvents.LAVA_EXTINGUISH,
@@ -344,7 +372,11 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 			return switch (index) {
 				case dev.forja.menu.CastingBoxMenu.DATA_PROGRESS -> CastingBoxBlockEntity.this.progress;
 				case dev.forja.menu.CastingBoxMenu.DATA_COOK -> CastingBoxBlockEntity.this.tier().cook;
-				case dev.forja.menu.CastingBoxMenu.DATA_HOLDS -> CastingBoxBlockEntity.this.tier().holds;
+				// A container's numbers go to the client as shorts: "holds anything" was Integer.MAX_VALUE
+				// and arrived on a server as -1, "holds up to -1 hardness". Capped, and read back as anything.
+				case dev.forja.menu.CastingBoxMenu.DATA_HOLDS -> Math.min(Short.MAX_VALUE, CastingBoxBlockEntity.this.tier().holds);
+				case dev.forja.menu.CastingBoxMenu.DATA_JOB -> CastingBoxBlockEntity.this.job;
+				case dev.forja.menu.CastingBoxMenu.DATA_METAL -> CastingBoxBlockEntity.this.jobMetal;
 				default -> 0;
 			};
 		}
@@ -419,6 +451,14 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 		this.setChanged();
 	}
 
+	/** Breaking the box spills what is in it (see CrucibleBlockEntity#preRemoveSideEffects for why here). */
+	@Override
+	public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+		if (this.level != null) {
+			net.minecraft.world.Containers.dropContents(this.level, pos, this);
+		}
+	}
+
 	@Override
 	public int[] getSlotsForFace(Direction side) {
 		return switch (side) {
@@ -440,6 +480,17 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 
 	@Override
 	public boolean canPlaceItem(int slot, ItemStack stack) {
+		return allowed(slot, stack);
+	}
+
+	/**
+	 * What each slot will take, for hoppers and for the screen alike.
+	 *
+	 * <p>One rule in one place because there were two: the screen's pattern slot only took moulds and
+	 * parts, so the two other jobs the box has — cutting a finished tool into a frame (the guide's step 7)
+	 * and infusing a strainer — could only ever be done with a hopper.
+	 */
+	public static boolean allowed(int slot, ItemStack stack) {
 		return switch (slot) {
 			case SLOT_PATTERN -> CastingMouldItem.partOf(stack) != null
 				|| stack.getItem() instanceof dev.forja.item.PartItem

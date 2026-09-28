@@ -3,6 +3,7 @@ package dev.forja.client;
 import java.util.List;
 
 import dev.forja.Forja;
+import dev.forja.block.entity.CrucibleBlockEntity;
 import dev.forja.forge.Alloys;
 import dev.forja.material.ForgeMaterial;
 import dev.forja.menu.CrucibleMenu;
@@ -200,7 +201,13 @@ public class CrucibleScreen extends AbstractContainerScreen<CrucibleMenu> {
 
 		// What it is doing goes under the pot, where there is the width for it and room for a second line;
 		// the two facts about the pot itself go under the slot it pours into.
-		int colour = this.menu.pourProgress() > 0.0F || this.menu.isLit() ? GOOD : MUTED;
+		// Green only while it is actually working: a lit pot that is waiting for a tank or for more heat
+		// was green too, and read as though all was well.
+		int job = this.menu.job();
+		boolean stuck = job == CrucibleBlockEntity.JOB_NEEDS_TANK || job == CrucibleBlockEntity.JOB_TOO_COLD;
+		boolean working = job == CrucibleBlockEntity.JOB_ALLOY || job == CrucibleBlockEntity.JOB_RECOVER
+			|| job == CrucibleBlockEntity.JOB_MELT || job == CrucibleBlockEntity.JOB_REMELT;
+		int colour = stuck || (working && !this.menu.isLit()) ? BAD : working ? GOOD : MUTED;
 		lines(g, this.font, this.doing(), STATUS_X, STATUS_Y, STATUS_W, 2, colour);
 		Alloys.Heat heat = Alloys.Heat.values()[Math.min(this.menu.heat(), Alloys.Heat.values().length - 1)];
 		centred(g, this.font, Component.translatable("gui.forja.crisol.calor", heat.displayName()), SIDE_X, SIDE_Y, MUTED);
@@ -209,27 +216,59 @@ public class CrucibleScreen extends AbstractContainerScreen<CrucibleMenu> {
 			SIDE_X, SIDE_Y + 8, inside >= this.menu.capacity() ? BAD : MUTED);
 	}
 
-	/** What the crucible would make out of what is in it, in words. */
+	/**
+	 * What the crucible is doing, in words — as the server says, not as the two slots suggest.
+	 *
+	 * <p>It used to be worked out here from the two slots alone, and the slots are not the pot: a pour
+	 * fed out of a tank read "nothing to pour" while it poured, and a pot with no ember in it read
+	 * "pouring steel" while nothing happened. The server tells the menu what it is doing (JOB_*).
+	 */
 	private Component doing() {
+		Component doing = this.job();
+		// Work waiting on the fire is the one thing the words used to hide: say so.
+		int job = this.menu.job();
+		boolean working = job == CrucibleBlockEntity.JOB_ALLOY || job == CrucibleBlockEntity.JOB_RECOVER
+			|| job == CrucibleBlockEntity.JOB_MELT || job == CrucibleBlockEntity.JOB_REMELT;
+		if (working && !this.menu.isLit()) {
+			return doing.copy().append(" · ").append(Component.translatable("gui.forja.crisol.sin_ascua"));
+		}
+		return doing;
+	}
+
+	private Component job() {
+		int what = this.menu.jobWhat();
+		switch (this.menu.job()) {
+			case CrucibleBlockEntity.JOB_ALLOY:
+				if (what >= 0 && what < Alloys.POURABLE.size()) {
+					return Component.translatable("gui.forja.crisol.cuela", Alloys.POURABLE.get(what).displayName());
+				}
+				break;
+			case CrucibleBlockEntity.JOB_RECOVER:
+			case CrucibleBlockEntity.JOB_MELT:
+				return Component.translatable("gui.forja.crisol.funde", material(what).displayName());
+			case CrucibleBlockEntity.JOB_REMELT:
+				return Component.translatable("gui.forja.crisol.refunde");
+			case CrucibleBlockEntity.JOB_NEEDS_TANK:
+				return Component.translatable("gui.forja.crisol.sin_cuba", material(what).displayName());
+			case CrucibleBlockEntity.JOB_TOO_COLD:
+				return Component.translatable("gui.forja.crisol.frio_metal", material(what).displayName(),
+					CrucibleBlockEntity.meltHeat(material(what)).displayName());
+			default:
+				break;
+		}
+		// Nothing to do. It may simply be too cold for what is in it, which is worth saying out loud.
 		List<ItemStack> inputs = List.of(this.menu.first(), this.menu.second());
-		Alloys.Heat heat = Alloys.Heat.values()[Math.min(this.menu.heat(), Alloys.Heat.values().length - 1)];
-		Alloys.Recipe recipe = Alloys.match(inputs, heat);
-		if (recipe != null) {
-			return Component.translatable("gui.forja.crisol.cuela", recipe.displayName());
-		}
-		// Nothing to alloy. If it holds something a smith made, it is going back to its material.
-		for (ItemStack stack : inputs) {
-			ForgedParts parts = stack.get(ModComponents.PARTS);
-			if (parts != null && !parts.materials().isEmpty()) {
-				return Component.translatable("gui.forja.crisol.funde", parts.materials().getFirst().displayName());
-			}
-		}
-		// It may simply be too cold for what is in it, which is worth saying out loud.
 		Alloys.Recipe hotter = Alloys.match(inputs, Alloys.Heat.FORJA_BLANCA);
-		if (hotter != null) {
+		Alloys.Heat heat = Alloys.Heat.values()[Math.min(this.menu.heat(), Alloys.Heat.values().length - 1)];
+		if (hotter != null && !heat.reaches(hotter.heat())) {
 			return Component.translatable("gui.forja.crisol.frio", hotter.displayName(), hotter.heat().displayName());
 		}
 		return Component.translatable("gui.forja.crisol.nada");
+	}
+
+	private static ForgeMaterial material(int ordinal) {
+		ForgeMaterial[] all = ForgeMaterial.values();
+		return all[Math.max(0, Math.min(all.length - 1, ordinal))];
 	}
 
 	/**
@@ -241,13 +280,17 @@ public class CrucibleScreen extends AbstractContainerScreen<CrucibleMenu> {
 	 */
 	private int meltColour() {
 		List<ItemStack> inputs = List.of(this.menu.first(), this.menu.second());
-		Alloys.Heat heat = Alloys.Heat.values()[Math.min(this.menu.heat(), Alloys.Heat.values().length - 1)];
-		Alloys.Recipe recipe = Alloys.match(inputs, heat);
-		if (recipe != null) {
-			ForgeMaterial made = ForgeMaterial.fromInput(recipe.result());
+		int job = this.menu.job();
+		int what = this.menu.jobWhat();
+		if (job == CrucibleBlockEntity.JOB_ALLOY && what >= 0 && what < Alloys.POURABLE.size()) {
+			ForgeMaterial made = ForgeMaterial.fromInput(Alloys.POURABLE.get(what).result());
 			if (made != null) {
 				return molten(made.color);
 			}
+		}
+		if (job == CrucibleBlockEntity.JOB_RECOVER || job == CrucibleBlockEntity.JOB_MELT
+			|| job == CrucibleBlockEntity.JOB_NEEDS_TANK || job == CrucibleBlockEntity.JOB_TOO_COLD) {
+			return molten(material(what).color);
 		}
 		for (ItemStack stack : inputs) {
 			if (stack.isEmpty()) {

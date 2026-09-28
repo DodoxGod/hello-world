@@ -211,6 +211,21 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			if ("fundicion".equals(solo)) {
+				// The survival flow with real clicks, then every older foundry check, so a change to the
+				// foundry is looked at whole in one run.
+				checkFoundrySurvival(context, server, connection, x, y, z);
+				checkCrucibles(context, server, connection, x, y, z);
+				checkFoundryAlloys(context, server, connection, x, y, z);
+				checkCastingTables(context, server, connection, x, y, z);
+				checkSpout(context, server, connection, x, y, z);
+				checkFlow(context, server, connection, x, y, z);
+				checkCastOnly(context, server, connection, x, y, z);
+				shotFoundry(context, server, connection, x, y, z);
+				shotStationScreens(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 
 			checkStats(server);
 			checkEverythingForges(context, server, connection);
@@ -256,6 +271,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			checkNewAttacks(context, server, connection, x, y, z);
 			checkShockwave(context, server, connection, x, y, z);
 			shotHudAndPools(context, server, connection, x, y, z);
+			checkFoundrySurvival(context, server, connection, x, y, z);
 			checkCrucibles(context, server, connection, x, y, z);
 			shotStationScreens(context, server, connection, x, y, z);
 			filmParticles(context, server, connection, x, y, z);
@@ -5339,6 +5355,397 @@ public class ForjaClientTest implements FabricClientGameTest {
 	 * takes the colour of the metal actually going past, and that the band spreads along a run and
 	 * drains back out of it when the tank runs dry.
 	 */
+	/**
+	 * The foundry the way a smith in survival meets it, with real clicks in the real screens
+	 * (FORJA_SOLO=fundicion). Andy, 2026-09-28: "se puede poner cualquier objeto en los contenedores",
+	 * and the furnace, the ores and the rest of the main mechanic did not work as they should.
+	 *
+	 * <p>Raw iron goes into an iron crucible by a drag across both slots (the capacity holds), a stick, a
+	 * sword and dirt are refused by shift-click and by hand, the ore melts into the tank beside it, the
+	 * tank feeds a casting box down a channel where a pick head is cut into a mould and the mould casts a
+	 * new head, a finished pickaxe is cut into a frame, and the frame goes on a hot casting table that
+	 * pours the whole pickaxe. A second, clay crucible is run by hoppers alone, and junk in the hoppers
+	 * stays in the hoppers. The screens are asked what they say against what the server is doing.
+	 */
+	private static void checkFoundrySurvival(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		int px = x + 130;
+		int pz = z + 30;
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d stone", px - 8, y - 1, pz - 4, px + 6, y - 1, pz + 6));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", px - 8, y, pz - 4, px + 6, y + 4, pz + 6));
+		server.runCommand("time set noon");
+		server.runCommand("weather clear 1000000");
+		server.runCommand("gamemode survival @a");
+
+		// The line: crucible, tank on a wisp lantern, channel, casting box; and a casting table on a lantern
+		// against the tank's other side.
+		BlockPos potAt = new BlockPos(px, y, pz);
+		BlockPos tankAt = potAt.east();
+		BlockPos channelAt = tankAt.east();
+		BlockPos boxAt = channelAt.east();
+		BlockPos tableAt = tankAt.south();
+		// And a clay crucible fed and emptied by hoppers only.
+		BlockPos hopperPotAt = new BlockPos(px - 5, y + 1, pz + 3);
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			level.setBlockAndUpdate(potAt, dev.forja.registry.ModBlocks.CRISOL_DE_HIERRO.defaultBlockState());
+			level.setBlockAndUpdate(tankAt.below(), dev.forja.registry.ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+			level.setBlockAndUpdate(tankAt, dev.forja.registry.ModBlocks.CUBA_DE_COLADA.defaultBlockState());
+			level.setBlockAndUpdate(channelAt, dev.forja.registry.ModBlocks.CONDUCTO_DE_COLADA.defaultBlockState());
+			level.setBlockAndUpdate(boxAt, dev.forja.registry.ModBlocks.CAJA_DE_MOLDEO.defaultBlockState());
+			level.setBlockAndUpdate(tableAt.below(), dev.forja.registry.ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+			level.setBlockAndUpdate(tableAt, dev.forja.registry.ModBlocks.MESA_DE_LOSA.defaultBlockState());
+
+			level.setBlockAndUpdate(hopperPotAt, dev.forja.registry.ModBlocks.CRISOL_DE_BARRO.defaultBlockState());
+			level.setBlockAndUpdate(hopperPotAt.above(), Blocks.HOPPER.defaultBlockState()
+				.setValue(net.minecraft.world.level.block.HopperBlock.FACING, net.minecraft.core.Direction.DOWN));
+			level.setBlockAndUpdate(hopperPotAt.west(), Blocks.HOPPER.defaultBlockState()
+				.setValue(net.minecraft.world.level.block.HopperBlock.FACING, net.minecraft.core.Direction.EAST));
+			level.setBlockAndUpdate(hopperPotAt.below(), Blocks.HOPPER.defaultBlockState()
+				.setValue(net.minecraft.world.level.block.HopperBlock.FACING, net.minecraft.core.Direction.DOWN));
+			level.setBlockAndUpdate(hopperPotAt.below().below(), Blocks.CHEST.defaultBlockState());
+			var top = (net.minecraft.world.Container) level.getBlockEntity(hopperPotAt.above());
+			top.setItem(0, new ItemStack(Items.STICK, 2));
+			top.setItem(1, new ItemStack(Items.RAW_GOLD, 3));
+			var side = (net.minecraft.world.Container) level.getBlockEntity(hopperPotAt.west());
+			side.setItem(0, new ItemStack(Items.COAL, 2));
+			side.setItem(1, new ItemStack(ModItems.ASCUA, 2));
+
+			ServerPlayer player = connection.getServerPlayer();
+			player.getInventory().clearContent();
+			player.getInventory().setItem(0, new ItemStack(Items.RAW_IRON, 32));
+			player.getInventory().setItem(1, new ItemStack(ModItems.ASCUA, 8));
+			player.getInventory().setItem(2, new ItemStack(Items.STICK, 16));
+			player.getInventory().setItem(3, new ItemStack(Items.DIAMOND_SWORD));
+			player.getInventory().setItem(4, new ItemStack(Items.DIRT, 16));
+			player.getInventory().setItem(5, Assembler.createPart(PartType.CABEZA_PICO, HIERRO));
+			player.getInventory().setItem(6, new ItemStack(ModItems.alloy("acero_refractario"),
+				dev.forja.block.entity.CastingBoxBlockEntity.MOULD_COST + dev.forja.block.entity.CastingBoxBlockEntity.FRAME_COST));
+			player.getInventory().setItem(7, dev.forja.item.StrainerItem.of(null));
+			player.getInventory().setItem(8, Assembler.create(ForgeType.PICO, List.of(HIERRO, HIERRO, HIERRO), level.registryAccess()));
+			player.getInventory().setItem(9, new ItemStack(Items.GOLD_INGOT, 4));
+			player.getInventory().setItem(10, new ItemStack(Items.DIAMOND, 2));
+			player.getInventory().setSelectedSlot(0);
+		});
+		// The whole of it from above first (as a spectator, or the camera falls), then down to where a
+		// smith stands to use the pot.
+		server.runCommand("gamemode spectator @a");
+		tp(server, px - 1.0, y + 5.0, pz - 5.0, 0.0F, 45.0F);
+		context.waitTicks(20);
+		context.runOnClient(mc -> {
+			mc.gui.hud.getChat().clearMessages(false);
+			mc.gui.toastManager().clear();
+		});
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_00_taller").disableCounterPrefix());
+		server.runCommand("gamemode survival @a");
+		tp(server, px + 1.5, y, pz - 2.5, 0.0F, 30.0F);
+		context.waitTicks(5);
+
+		// ---- the crucible: open it with a right click.
+		openByHand(context, potAt);
+		check(context.computeOnClient(mc -> mc.gui.screen() instanceof dev.forja.client.CrucibleScreen), "a right click should open the crucible");
+		// Shift-click the junk: none of it may go in.
+		for (int column : new int[] {2, 3, 4}) {
+			shiftClickSlot(context, foundryHotbar(column));
+		}
+		// And by hand: dirt picked up and put down on the first slot stays on the cursor.
+		clickSlot(context, foundryHotbar(4));
+		clickSlot(context, dev.forja.block.entity.CrucibleBlockEntity.SLOT_FIRST);
+		clickSlot(context, foundryHotbar(4));
+		int[] junk = server.computeOnServer(s -> {
+			var pot = (dev.forja.block.entity.CrucibleBlockEntity) connection.getServerLevel().getBlockEntity(potAt);
+			var inventory = connection.getServerPlayer().getInventory();
+			return new int[] {pot.getItem(0).getCount() + pot.getItem(1).getCount() + pot.getItem(2).getCount(),
+				inventory.getItem(2).getCount(), inventory.getItem(3).getCount(), inventory.getItem(4).getCount()};
+		});
+		log("fundicion: el crisol rechaza palo, espada y tierra " + (junk[0] == 0) + " (le quedan al jugador "
+			+ junk[1] + ", " + junk[2] + ", " + junk[3] + ")");
+		check(junk[0] == 0 && junk[1] == 16 && junk[2] == 1 && junk[3] == 16,
+			"a stick, a sword and dirt must not go into the crucible, and must stay with the player");
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(2);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_01_crisol_rechaza").disableCounterPrefix());
+
+		// Drag 32 raw iron across both input slots: an iron crucible holds 16 between them.
+		clickSlot(context, foundryHotbar(0));
+		onSlot(context, dev.forja.block.entity.CrucibleBlockEntity.SLOT_FIRST);
+		context.getInput().holdMouse(0);
+		context.waitTicks(1);
+		context.getInput().moveCursor(2, 1);
+		context.waitTicks(1);
+		onSlot(context, dev.forja.block.entity.CrucibleBlockEntity.SLOT_SECOND);
+		context.waitTicks(1);
+		context.getInput().moveCursor(2, 1);
+		context.waitTicks(1);
+		context.getInput().releaseMouse(0);
+		context.waitTicks(2);
+		clickSlot(context, foundryHotbar(0));
+		// And the embers, by shift-click, into the fuel slot and nowhere else.
+		shiftClickSlot(context, foundryHotbar(1));
+		int capacity = dev.forja.block.CrucibleBlock.Tier.HIERRO.capacity;
+		int[] loaded = server.computeOnServer(s -> {
+			var pot = (dev.forja.block.entity.CrucibleBlockEntity) connection.getServerLevel().getBlockEntity(potAt);
+			var inventory = connection.getServerPlayer().getInventory();
+			return new int[] {pot.getItem(0).getCount() + pot.getItem(1).getCount(), inventory.getItem(0).getCount(),
+				pot.getItem(2).is(ModItems.ASCUA) ? pot.getItem(2).getCount() + (pot.isLit() ? 1 : 0) : 0};
+		});
+		log("fundicion: arrastrar 32 de mena mete " + loaded[0] + " (cabida " + capacity + "), vuelven a la mano "
+			+ loaded[1] + ", ascuas en su hueco " + loaded[2]);
+		check(loaded[0] > 0 && loaded[0] <= capacity, "a drag must not fill the pot past its capacity, got " + loaded[0]);
+		check(loaded[0] + loaded[1] == 32, "and nothing may be lost on the way, got " + loaded[0] + " + " + loaded[1]);
+		check(loaded[2] == 8, "the embers should all be in the fuel slot, got " + loaded[2]);
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(20);
+		// What the screen says it is doing is what the server is doing.
+		int[] saying = context.computeOnClient(mc -> mc.player.containerMenu instanceof dev.forja.menu.CrucibleMenu menu
+			? new int[] {menu.job(), menu.jobWhat()} : new int[] {-1, -1});
+		check(saying[0] == dev.forja.block.entity.CrucibleBlockEntity.JOB_MELT && saying[1] == HIERRO.ordinal(),
+			"the crucible's screen should say it is melting iron, it says job " + saying[0] + " / " + saying[1]);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_02_crisol_fundiendo").disableCounterPrefix());
+
+		// Let the pour finish, then the rest of the ore, which now goes in by shift-click up to the brim.
+		context.waitTicks(dev.forja.block.CrucibleBlock.Tier.HIERRO.cook + 20);
+		shiftClickSlot(context, foundryHotbar(0));
+		context.waitTicks(dev.forja.block.CrucibleBlock.Tier.HIERRO.cook + 30);
+		int[] tank = server.computeOnServer(s -> {
+			var bank = (dev.forja.block.entity.MeltTankBlockEntity) connection.getServerLevel().getBlockEntity(tankAt);
+			var pot = (dev.forja.block.entity.CrucibleBlockEntity) connection.getServerLevel().getBlockEntity(potAt);
+			return new int[] {bank.bankMetal() == Items.IRON_INGOT ? bank.bankAmount() : -1,
+				pot.getItem(0).getCount() + pot.getItem(1).getCount(), pot.getItem(3).getCount()};
+		});
+		log("fundicion: 32 de mena de hierro en la cuba: " + tank[0] + ", queda en el crisol " + tank[1] + ", en su salida " + tank[2]);
+		check(tank[0] == 32 && tank[1] == 0 && tank[2] == 0, "all 32 raw iron should be molten iron in the tank, got " + tank[0]);
+
+		// Gold into a pot whose only tank holds iron: the screen says so rather than "nothing to pour".
+		shiftClickSlot(context, foundryInventory(9));
+		context.waitTicks(15);
+		context.getInput().setCursorPos(0, 0);
+		int[] goldSays = context.computeOnClient(mc -> mc.player.containerMenu instanceof dev.forja.menu.CrucibleMenu menu
+			? new int[] {menu.job(), menu.jobWhat()} : new int[] {-1, -1});
+		check(goldSays[0] == dev.forja.block.entity.CrucibleBlockEntity.JOB_NEEDS_TANK,
+			"gold with only an iron tank should say it needs a tank, says " + goldSays[0]);
+		context.waitTicks(2);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_03_crisol_sin_cuba").disableCounterPrefix());
+		shiftClickSlot(context, dev.forja.block.entity.CrucibleBlockEntity.SLOT_FIRST);
+		// Diamond in an iron pot: too hard for it.
+		shiftClickSlot(context, foundryInventory(10));
+		context.waitTicks(15);
+		context.getInput().setCursorPos(0, 0);
+		int diamondSays = context.computeOnClient(mc -> mc.player.containerMenu instanceof dev.forja.menu.CrucibleMenu menu ? menu.job() : -1);
+		check(diamondSays == dev.forja.block.entity.CrucibleBlockEntity.JOB_TOO_COLD, "diamond in an iron pot should say it is too cold, says " + diamondSays);
+		context.waitTicks(2);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_04_crisol_frio").disableCounterPrefix());
+		shiftClickSlot(context, dev.forja.block.entity.CrucibleBlockEntity.SLOT_FIRST);
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+
+		// ---- the casting box, down the channel from the tank.
+		openByHand(context, boxAt);
+		check(context.computeOnClient(mc -> mc.gui.screen() instanceof dev.forja.client.CastingBoxScreen), "a right click should open the casting box");
+		shiftClickSlot(context, foundryHotbar(2));
+		shiftClickSlot(context, foundryHotbar(5));
+		shiftClickSlot(context, foundryHotbar(6));
+		int[] boxLoad = server.computeOnServer(s -> {
+			var box = (dev.forja.block.entity.CastingBoxBlockEntity) connection.getServerLevel().getBlockEntity(boxAt);
+			return new int[] {box.getItem(0).getItem() instanceof PartItem ? 1 : 0, box.getItem(1).getCount(),
+				connection.getServerPlayer().getInventory().getItem(2).getCount()};
+		});
+		check(boxLoad[0] == 1 && boxLoad[1] > 0 && boxLoad[2] == 16,
+			"the box should take the part and the steel and refuse the stick, got " + java.util.Arrays.toString(boxLoad));
+		int boxCook = dev.forja.block.CastingBoxBlock.Tier.BARRO.cook;
+		context.waitTicks(boxCook + 10);
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(2);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_05_caja_molde").disableCounterPrefix());
+		// The mould comes out by shift-click, goes back into the pattern slot, and the strainer to its gate.
+		shiftClickSlot(context, dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT);
+		int mouldAt = server.computeOnServer(s -> findInInventory(connection, stack -> dev.forja.item.CastingMouldItem.partOf(stack) == PartType.CABEZA_PICO));
+		check(mouldAt >= 0, "the mould should be in the player's inventory");
+		shiftClickSlot(context, mouldAt < 9 ? foundryHotbar(mouldAt) : foundryInventory(mouldAt));
+		shiftClickSlot(context, foundryHotbar(7));
+		context.waitTicks(boxCook / 2);
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(2);
+		int[] boxSays = context.computeOnClient(mc -> mc.player.containerMenu instanceof dev.forja.menu.CastingBoxMenu menu
+			? new int[] {menu.job(), menu.jobMetal()} : new int[] {-1, -1});
+		check(boxSays[0] == dev.forja.block.entity.CastingBoxBlockEntity.JOB_CAST && boxSays[1] == HIERRO.ordinal(),
+			"the box's screen should say it is casting iron cleanly, says " + java.util.Arrays.toString(boxSays));
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_06_caja_colando").disableCounterPrefix());
+		context.waitTicks(boxCook / 2 + 10);
+		// Take the head out by hand: pick it up and put it down in an empty slot.
+		clickSlot(context, dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT);
+		int empty = server.computeOnServer(s -> findInInventory(connection, ItemStack::isEmpty));
+		clickSlot(context, empty < 9 ? foundryHotbar(empty) : foundryInventory(empty));
+		// And the mould out, so the box stops drawing on the tank.
+		shiftClickSlot(context, dev.forja.block.entity.CastingBoxBlockEntity.SLOT_PATTERN);
+		int[] head = server.computeOnServer(s -> {
+			int at = findInInventory(connection, stack -> stack.getItem() == ModItems.part(PartType.CABEZA_PICO));
+			ItemStack cast = at < 0 ? ItemStack.EMPTY : connection.getServerPlayer().getInventory().getItem(at);
+			return new int[] {at, cast.get(ModComponents.MATERIAL) == HIERRO ? 1 : 0, cast.getOrDefault(ModComponents.COLADA, false) ? 1 : 0};
+		});
+		log("fundicion: la caja cuela una cabeza de pico de hierro " + (head[1] > 0) + ", limpia " + (head[2] > 0));
+		check(head[0] >= 0 && head[1] > 0 && head[2] > 0, "the box should have cast a clean iron pick head into the player's hands");
+
+		// A finished pickaxe into the box, by shift-click: out comes its frame.
+		shiftClickSlot(context, foundryHotbar(8));
+		context.waitTicks(boxCook + 10);
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(2);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_07_caja_marco").disableCounterPrefix());
+		shiftClickSlot(context, dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT);
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+		int frameAt = server.computeOnServer(s -> findInInventory(connection, stack -> dev.forja.item.CastingFrameItem.typeOf(stack) == ForgeType.PICO));
+		check(frameAt >= 0 && frameAt < 9, "the pickaxe's frame should be on the hotbar, at " + frameAt);
+
+		// ---- the casting table: the frame goes down with a right click, the pickaxe comes up with another.
+		// From the table's own side: from where the smith stood for the pot, the tank is in the way.
+		tp(server, px + 1.5, y, pz + 3.5, 180.0F, 30.0F);
+		context.waitTicks(5);
+		int tankBefore = server.computeOnServer(s -> ((dev.forja.block.entity.MeltTankBlockEntity) connection.getServerLevel().getBlockEntity(tankAt)).bankAmount());
+		context.getInput().pressKey(options -> options.keyHotbarSlots[frameAt]);
+		context.waitTicks(2);
+		openByHand(context, tableAt);
+		context.waitTicks(60);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_08_mesa_colando").disableCounterPrefix());
+		context.waitTicks(dev.forja.block.entity.CastingTableBlockEntity.COOK + 20);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_09_mesa_hecha").disableCounterPrefix());
+		// Measured while the pickaxe is still lying on the table: once it is taken the frame, which stays,
+		// starts the next one.
+		int tankPoured = server.computeOnServer(s -> ((dev.forja.block.entity.MeltTankBlockEntity) connection.getServerLevel().getBlockEntity(tankAt)).bankAmount());
+		int handAt = server.computeOnServer(s -> findInInventory(connection, ItemStack::isEmpty));
+		check(handAt >= 0 && handAt < 9, "there should be an empty hotbar slot to take the pickaxe with");
+		context.getInput().pressKey(options -> options.keyHotbarSlots[handAt]);
+		context.waitTicks(2);
+		openByHand(context, tableAt);
+		context.waitTicks(5);
+		int[] pick = server.computeOnServer(s -> {
+			int at = findInInventory(connection, stack -> {
+				var parts = stack.get(ModComponents.PARTS);
+				return parts != null && parts.type() == ForgeType.PICO && parts.materials().stream().allMatch(m -> m == HIERRO);
+			});
+			var table = (dev.forja.block.entity.CastingTableBlockEntity) connection.getServerLevel().getBlockEntity(tableAt);
+			return new int[] {at, tankPoured, table.frame().isEmpty() ? 0 : 1};
+		});
+		log("fundicion: la mesa cuela un pico de hierro " + (pick[0] >= 0) + ", gastando " + (tankBefore - pick[1])
+			+ " de la cuba, y el marco se queda en la mesa " + (pick[2] > 0));
+		check(pick[0] >= 0, "the casting table should have poured an iron pickaxe into the player's hands");
+		check(tankBefore - pick[1] == dev.forja.item.CastingFrameItem.cost(ForgeType.PICO),
+			"and taken exactly the pickaxe's worth out of the tank, took " + (tankBefore - pick[1]));
+
+		// ---- the hopper-fed pot: gold went in, came out as bars into the chest; the stick and the coal did not move.
+		int[] hoppers = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var top = (net.minecraft.world.Container) level.getBlockEntity(hopperPotAt.above());
+			var side = (net.minecraft.world.Container) level.getBlockEntity(hopperPotAt.west());
+			var chest = (net.minecraft.world.Container) level.getBlockEntity(hopperPotAt.below().below());
+			var pot = (dev.forja.block.entity.CrucibleBlockEntity) level.getBlockEntity(hopperPotAt);
+			int sticks = 0;
+			int coal = 0;
+			int gold = 0;
+			for (int i = 0; i < top.getContainerSize(); i++) {
+				sticks += top.getItem(i).is(Items.STICK) ? top.getItem(i).getCount() : 0;
+			}
+			for (int i = 0; i < side.getContainerSize(); i++) {
+				coal += side.getItem(i).is(Items.COAL) ? side.getItem(i).getCount() : 0;
+			}
+			for (int i = 0; i < chest.getContainerSize(); i++) {
+				gold += chest.getItem(i).is(Items.GOLD_INGOT) ? chest.getItem(i).getCount() : 0;
+			}
+			boolean potClean = !pot.getItem(0).is(Items.STICK) && !pot.getItem(1).is(Items.STICK) && !pot.getItem(2).is(Items.COAL);
+			return new int[] {sticks, coal, gold, potClean ? 1 : 0};
+		});
+		log("fundicion: tolvas, palos que no entraron " + hoppers[0] + ", carbón que no entró " + hoppers[1]
+			+ ", lingotes de oro en el cofre " + hoppers[2]);
+		check(hoppers[0] == 2 && hoppers[1] == 2 && hoppers[3] == 1, "hoppers must not put a stick or coal into the crucible");
+		check(hoppers[2] == 3, "the hopper-fed pot should have melted three raw gold into bars for the chest, got " + hoppers[2]);
+		server.runCommand("gamemode spectator @a");
+		tp(server, px - 1.0, y + 5.0, pz - 5.0, 0.0F, 45.0F);
+		context.waitTicks(20);
+		context.runOnClient(mc -> {
+			mc.gui.hud.getChat().clearMessages(false);
+			mc.gui.toastManager().clear();
+		});
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_10_taller_despues").disableCounterPrefix());
+		server.runCommand("gamemode survival @a");
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			for (BlockPos at : List.of(potAt, tankAt, tankAt.below(), channelAt, boxAt, tableAt, tableAt.below(), hopperPotAt,
+				hopperPotAt.above(), hopperPotAt.west(), hopperPotAt.below(), hopperPotAt.below().below())) {
+				level.removeBlock(at, false);
+			}
+			level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+				new net.minecraft.world.phys.AABB(potAt).inflate(12.0)).forEach(net.minecraft.world.entity.Entity::discard);
+			connection.getServerPlayer().getInventory().clearContent();
+		});
+	}
+
+	/** Right-clicks a block for real: look at it and press use. */
+	private static void openByHand(ClientGameTestContext context, BlockPos at) {
+		context.getInput().lookAt(at);
+		context.waitTicks(2);
+		context.getInput().pressKey(options -> options.keyUse);
+		context.waitTicks(6);
+	}
+
+	/** The menu slot a hotbar slot is shown in on the foundry's two screens (four slots of their own first). */
+	private static int foundryHotbar(int column) {
+		return 4 + 27 + column;
+	}
+
+	/** And the menu slot of a main-inventory slot (9..35). */
+	private static int foundryInventory(int slot) {
+		return 4 + slot - 9;
+	}
+
+	/** Puts the real cursor on a slot of the open container screen; the foundry's panels are 206 by 196. */
+	private static void onSlot(ClientGameTestContext context, int slot) {
+		double[] point = context.computeOnClient(mc -> {
+			var screen = (net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>) mc.gui.screen();
+			var at = screen.getMenu().getSlot(slot);
+			int left = (mc.getWindow().getGuiScaledWidth() - 206) / 2;
+			int top = (mc.getWindow().getGuiScaledHeight() - 196) / 2;
+			double scale = mc.getWindow().getGuiScale();
+			return new double[] {(left + at.x + 8) * scale, (top + at.y + 8) * scale};
+		});
+		context.getInput().setCursorPos(point[0], point[1]);
+	}
+
+	private static void clickSlot(ClientGameTestContext context, int slot) {
+		onSlot(context, slot);
+		context.getInput().pressMouse(0);
+		context.waitTicks(3);
+	}
+
+	/**
+	 * A shift-click on a slot. The cursor goes there for real, but the click is handed to the screen
+	 * by hand with shift in its modifiers: the test harness presses the mouse with no modifiers at all,
+	 * and a screen reads shift off the click itself, so a held shift key never made a shift-click.
+	 */
+	private static void shiftClickSlot(ClientGameTestContext context, int slot) {
+		onSlot(context, slot);
+		context.waitTicks(1);
+		context.runOnClient(mc -> {
+			var screen = (net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>) mc.gui.screen();
+			double scale = mc.getWindow().getGuiScale();
+			var event = new net.minecraft.client.input.MouseButtonEvent(mc.mouseHandler.xpos() / scale, mc.mouseHandler.ypos() / scale,
+				new net.minecraft.client.input.MouseButtonInfo(0, org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT));
+			screen.mouseClicked(event, false);
+			screen.mouseReleased(event);
+		});
+		context.waitTicks(3);
+	}
+
+	/** The first slot of the player's inventory holding something like this, or -1. */
+	private static int findInInventory(TestServerConnection connection, java.util.function.Predicate<ItemStack> wanted) {
+		var inventory = connection.getServerPlayer().getInventory();
+		for (int i = 0; i < 36; i++) {
+			if (wanted.test(inventory.getItem(i))) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
 	private static void checkFlow(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
 		int px = x + 44;
 		int pz = z + 74;

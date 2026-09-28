@@ -1,6 +1,7 @@
 package dev.forja.client;
 
 import dev.forja.Forja;
+import dev.forja.block.entity.CastingBoxBlockEntity;
 import dev.forja.item.CastingMouldItem;
 import dev.forja.menu.CastingBoxMenu;
 import dev.forja.part.PartType;
@@ -76,7 +77,8 @@ public class CastingBoxScreen extends AbstractContainerScreen<CastingBoxMenu> {
 		ItemStack pattern = this.menu.pattern();
 		PartType mould = CastingMouldItem.partOf(pattern);
 		ItemStack shape = mould != null ? dev.forja.forge.Assembler.createPart(mould, dev.forja.material.ForgeMaterial.HIERRO)
-			: pattern.getItem() instanceof dev.forja.item.PartItem ? pattern : ItemStack.EMPTY;
+			// A part, or a finished tool about to be cut into its frame.
+			: pattern.getItem() instanceof dev.forja.item.PartItem || pattern.has(ModComponents.PARTS) ? pattern : ItemStack.EMPTY;
 		if (shape.isEmpty()) {
 			return;
 		}
@@ -123,20 +125,58 @@ public class CastingBoxScreen extends AbstractContainerScreen<CastingBoxMenu> {
 			: Component.translatable("gui.forja.caja.aguanta", holds), 148, 70, 92, MUTED);
 	}
 
-	/** What the box is about to do with what is in it, said before it costs you the part. */
+	/**
+	 * What the box is about to do with what is in it, said before it costs you the part.
+	 *
+	 * <p>What it is actually doing comes from the server (CastingBoxMenu.job), because the screen cannot
+	 * see the tanks: a mould over an empty tank read as ready to cast, and a finished tool or a strainer
+	 * in the pattern slot read "put a part in" while the box was busy cutting or bathing it.
+	 */
 	private Component doing() {
 		ItemStack pattern = this.menu.pattern();
 		if (pattern.isEmpty()) {
 			return Component.translatable("gui.forja.caja.pon_pieza");
 		}
 		PartType mould = CastingMouldItem.partOf(pattern);
+		int metal = this.menu.jobMetal();
+		dev.forja.material.ForgeMaterial[] materials = dev.forja.material.ForgeMaterial.values();
+		dev.forja.material.ForgeMaterial poured = metal >= 0 && metal < materials.length ? materials[metal] : null;
+		switch (this.menu.job()) {
+			case CastingBoxBlockEntity.JOB_MOULD:
+				return Component.translatable("gui.forja.caja.gastara");
+			case CastingBoxBlockEntity.JOB_FRAME:
+				return Component.translatable("gui.forja.caja.gastara_marco");
+			case CastingBoxBlockEntity.JOB_CAST:
+			case CastingBoxBlockEntity.JOB_ROUGH:
+				if (mould != null && poured != null) {
+					Component part = dev.forja.forge.Assembler.createPart(mould, poured).getHoverName();
+					return this.menu.job() == CastingBoxBlockEntity.JOB_ROUGH
+						? Component.translatable("gui.forja.caja.basta", part)
+						: Component.translatable("gui.forja.caja.colando", part);
+				}
+				break;
+			case CastingBoxBlockEntity.JOB_INFUSE:
+				if (poured != null) {
+					return Component.translatable("gui.forja.caja.infundiendo", poured.displayName());
+				}
+				break;
+			default:
+				break;
+		}
 		if (mould != null) {
-			return Component.translatable("gui.forja.caja.lista", mould.displayName(), mould.cost);
+			// Idle with a mould in it: either the last casting is still sitting in the output, or no
+			// tank it reaches has metal this box will stand.
+			return this.menu.result().isEmpty()
+				? Component.translatable("gui.forja.caja.sin_metal")
+				: Component.translatable("gui.forja.caja.llena");
 		}
-		if (pattern.getItem() instanceof dev.forja.item.PartItem) {
-			return Component.translatable("gui.forja.caja.gastara");
+		if (pattern.getItem() instanceof dev.forja.item.StrainerItem) {
+			return Component.translatable("gui.forja.caja.colador_nada");
 		}
-		return Component.translatable("gui.forja.caja.pon_pieza");
+		if (pattern.has(ModComponents.PARTS) && !(pattern.getItem() instanceof dev.forja.item.PartItem)) {
+			return Component.translatable("gui.forja.caja.gastara_marco");
+		}
+		return Component.translatable("gui.forja.caja.gastara");
 	}
 
 }

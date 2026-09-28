@@ -27,7 +27,10 @@ public class CrucibleMenu extends AbstractContainerMenu {
 	public static final int DATA_BURN_LENGTH = 3;
 	public static final int DATA_HEAT = 4;
 	public static final int DATA_CAPACITY = 5;
-	public static final int DATA_SIZE = 6;
+	/** What the pot is doing (CrucibleBlockEntity.JOB_*), and with what. */
+	public static final int DATA_JOB = 6;
+	public static final int DATA_WHAT = 7;
+	public static final int DATA_SIZE = 8;
 
 	/** Where the four slots sit, and where the screen draws its basin, matching textures/gui/crisol.png. */
 	public static final int FIRST_X = 30;
@@ -56,8 +59,11 @@ public class CrucibleMenu extends AbstractContainerMenu {
 		this.crucible = crucible;
 		this.data = data;
 
-		this.addSlot(new Slot(crucible, CrucibleBlockEntity.SLOT_FIRST, FIRST_X, FIRST_Y));
-		this.addSlot(new Slot(crucible, CrucibleBlockEntity.SLOT_SECOND, SECOND_X, SECOND_Y));
+		// The two input slots take only what the pot can use, and never more between them than the pot
+		// holds: both rules were only ever written for hoppers, and a click, a shift-click or a drag put a
+		// stick, a sword or a whole stack in a clay pot that holds eight.
+		this.addSlot(new InputSlot(crucible, CrucibleBlockEntity.SLOT_FIRST, FIRST_X, FIRST_Y, CrucibleBlockEntity.SLOT_SECOND));
+		this.addSlot(new InputSlot(crucible, CrucibleBlockEntity.SLOT_SECOND, SECOND_X, SECOND_Y, CrucibleBlockEntity.SLOT_FIRST));
 		this.addSlot(new Slot(crucible, CrucibleBlockEntity.SLOT_FUEL, FUEL_X, FUEL_Y) {
 			@Override
 			public boolean mayPlace(ItemStack stack) {
@@ -79,6 +85,38 @@ public class CrucibleMenu extends AbstractContainerMenu {
 			this.addSlot(new Slot(inventory, column, INVENTORY_X + column * 18, INVENTORY_Y + 58));
 		}
 		this.addDataSlots(data);
+	}
+
+	/** One of the two slots the pot is filled through. */
+	private final class InputSlot extends Slot {
+		private final int other;
+
+		InputSlot(Container container, int slot, int x, int y, int other) {
+			super(container, slot, x, y);
+			this.other = other;
+		}
+
+		@Override
+		public boolean mayPlace(ItemStack stack) {
+			return CrucibleBlockEntity.takes(stack) && this.getMaxStackSize(stack) > 0;
+		}
+
+		/** What is left of the pot's capacity once the other slot has had its share. */
+		@Override
+		public int getMaxStackSize(ItemStack stack) {
+			int left = CrucibleMenu.this.capacity() - CrucibleMenu.this.crucible.getItem(this.other).getCount();
+			return Math.max(0, Math.min(super.getMaxStackSize(stack), left));
+		}
+	}
+
+	/** What the pot is doing, as CrucibleBlockEntity.JOB_*. */
+	public int job() {
+		return this.data.get(DATA_JOB);
+	}
+
+	/** And with what: an index into Alloys.POURABLE for an alloy, a material's ordinal otherwise. */
+	public int jobWhat() {
+		return this.data.get(DATA_WHAT);
 	}
 
 	/** How far along the pour is, 0..1. */
@@ -143,6 +181,10 @@ public class CrucibleMenu extends AbstractContainerMenu {
 				return ItemStack.EMPTY;
 			}
 		} else if (!this.moveItemStackTo(stack, CrucibleBlockEntity.SLOT_FIRST, CrucibleBlockEntity.SLOT_FUEL, false)) {
+			return ItemStack.EMPTY;
+		}
+		// Nothing actually moved: say so, or the click keeps asking for the same move for ever.
+		if (stack.getCount() == original.getCount()) {
 			return ItemStack.EMPTY;
 		}
 		if (stack.isEmpty()) {

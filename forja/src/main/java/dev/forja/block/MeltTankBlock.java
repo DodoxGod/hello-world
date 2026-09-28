@@ -97,25 +97,8 @@ public class MeltTankBlock extends BaseEntityBlock {
 		return InteractionResult.CONSUME;
 	}
 
-	/**
-	 * Breaking one spills what was in that tank, not what was in the bank.
-	 *
-	 * <p>The rest of the wall keeps its metal, which is what makes taking a tank out of the middle of a
-	 * bank a cheap mistake instead of an expensive one.
-	 */
-	@Override
-	protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean moved) {
-		if (level.getBlockEntity(pos) instanceof MeltTankBlockEntity tank && tank.metal() != null && tank.amount() > 0) {
-			ItemStack spilled = new ItemStack(tank.metal(), tank.amount());
-			while (!spilled.isEmpty()) {
-				int moving = Math.min(spilled.getCount(), spilled.getMaxStackSize());
-				net.minecraft.world.Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-					spilled.copyWithCount(moving));
-				spilled.shrink(moving);
-			}
-		}
-		super.affectNeighborsAfterRemoval(state, level, pos, moved);
-	}
+	// What it holds is dropped by the block entity (preRemoveSideEffects): by the time
+	// affectNeighborsAfterRemoval runs the block entity is already gone, and breaking one lost it all.
 
 	// Glass: the faces between two tanks are not drawn, so a bank reads as one body of metal.
 	@Override

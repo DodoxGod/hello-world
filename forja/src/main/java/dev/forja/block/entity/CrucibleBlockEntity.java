@@ -87,7 +87,8 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		for (int slot : new int[] {SLOT_FIRST, SLOT_SECOND}) {
 			ItemStack stack = this.items.get(slot);
 			ForgedParts parts = stack.get(ModComponents.PARTS);
-			ForgeMaterial material = parts != null && !parts.materials().isEmpty() ? parts.materials().getFirst() : ForgeMaterial.fromInput(stack);
+			ForgeMaterial material = parts != null && !parts.materials().isEmpty() ? parts.materials().getFirst()
+				: stack.has(ModComponents.MATERIAL) ? stack.get(ModComponents.MATERIAL) : ForgeMaterial.fromInput(stack);
 			if (material != null) {
 				return material.color;
 			}
@@ -137,6 +138,8 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		// because a smith who walked away and came back to a cold wall should not also have to be told
 		// which button melts it.
 		MeltTankBlockEntity frozen = pour != null ? null : crucible.setTank();
+		crucible.job = pour != null ? pour.job() : frozen != null ? JOB_REMELT : crucible.idleReason;
+		crucible.jobWhat = pour != null ? pour.what() : frozen != null ? 0 : crucible.idleWhat;
 		if (pour == null && frozen == null) {
 			crucible.progress = 0;
 		} else {
@@ -209,38 +212,294 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 	 * <p>Only the channels ask, and only so they can be drawn the colour of what is coming out of it.
 	 */
 	public net.minecraft.world.item.@Nullable Item pouring() {
+		// Only while it is actually burning: a pot with ore in it and no ember is not pouring anything,
+		// and the channels out of it used to run bright with a metal that was never coming.
+		if (this.burning <= 0) {
+			return null;
+		}
 		Pour pour = this.pending();
 		return pour == null ? null : pour.result().getItem();
 	}
 
-	/** What this crucible would pour right now, or null if it has nothing to do. */
-	private @Nullable Pour pending() {
-		List<ItemStack> inputs = new java.util.ArrayList<>(List.of(this.items.get(SLOT_FIRST), this.items.get(SLOT_SECOND)));
-		// Whatever the tanks beside it are holding counts as being in the pot already.
-		for (MeltTankBlockEntity tank : this.tanks()) {
-			if (tank.bankMetal() != null && tank.bankAmount() > 0 && !tank.isSet()) {
-				inputs.add(new ItemStack(tank.bankMetal(), Math.min(64, tank.bankAmount())));
+	// ------------------------------------------------------------------ what it is doing, for the screen
+
+	/** Nothing to do, or nothing the screen needs telling beyond what is in the slots. */
+	public static final int JOB_NONE = 0;
+	/** Pouring an alloy; the detail is its index in {@link Alloys#POURABLE}. */
+	public static final int JOB_ALLOY = 1;
+	/** Melting something a smith made back down; the detail is the material's ordinal. */
+	public static final int JOB_RECOVER = 2;
+	/** Melting ore or a metal into the tanks; the detail is the material's ordinal. */
+	public static final int JOB_MELT = 3;
+	/** Melting a bank that has set. */
+	public static final int JOB_REMELT = 4;
+	/** A metal that can only go into a tank, and no tank it reaches will take it; the detail is the material. */
+	public static final int JOB_NEEDS_TANK = 5;
+	/** A metal this pot does not burn hot enough to melt; the detail is the material. */
+	public static final int JOB_TOO_COLD = 6;
+
+	/** What it is doing, worked out every tick, and a number that says with what. */
+	private int job;
+	private int jobWhat;
+	/** Why the last look found nothing to do, when the reason is worth telling the smith. */
+	private int idleReason;
+	private int idleWhat;
+
+	/**
+	 * What one of this melts into, or empty if the crucible has no use for it as a metal.
+	 *
+	 * <p>"Mena al crisol, colada a las cubas" is how the guide has always put the foundry, and the pot
+	 * never melted either: a smith who followed the book and dropped raw iron or a stack of ingots in it
+	 * watched it sit there. Ore melts to its metal, and a metal that has to be poured — anything the parts
+	 * table will not cut — melts to itself, which in a tank is the molten metal the casting box pours.
+	 */
+	public static ItemStack meltsTo(ItemStack stack) {
+		if (stack.isEmpty() || stack.has(ModComponents.PARTS) || stack.getItem() instanceof dev.forja.item.PartItem) {
+			return ItemStack.EMPTY;
+		}
+		if (stack.is(net.minecraft.world.item.Items.RAW_IRON) || stack.is(net.minecraft.tags.ItemTags.IRON_ORES)) {
+			return new ItemStack(net.minecraft.world.item.Items.IRON_INGOT);
+		}
+		if (stack.is(net.minecraft.world.item.Items.RAW_COPPER) || stack.is(net.minecraft.tags.ItemTags.COPPER_ORES)) {
+			return new ItemStack(net.minecraft.world.item.Items.COPPER_INGOT);
+		}
+		if (stack.is(net.minecraft.world.item.Items.RAW_GOLD) || stack.is(net.minecraft.tags.ItemTags.GOLD_ORES)) {
+			return new ItemStack(net.minecraft.world.item.Items.GOLD_INGOT);
+		}
+		if (stack.is(net.minecraft.world.item.Items.RAW_IRON_BLOCK)) {
+			return new ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 9);
+		}
+		if (stack.is(net.minecraft.world.item.Items.RAW_COPPER_BLOCK)) {
+			return new ItemStack(net.minecraft.world.item.Items.COPPER_INGOT, 9);
+		}
+		if (stack.is(net.minecraft.world.item.Items.RAW_GOLD_BLOCK)) {
+			return new ItemStack(net.minecraft.world.item.Items.GOLD_INGOT, 9);
+		}
+		ForgeMaterial material = ForgeMaterial.fromInput(stack);
+		if (material != null && !material.isBasic()) {
+			return new ItemStack(stack.getItem());
+		}
+		return ItemStack.EMPTY;
+	}
+
+	/**
+	 * How hot a pot has to burn to melt this metal, read off its hardness on the casting box's own
+	 * scale, so "the clay one will never touch netherite" holds for melting as it does for alloys.
+	 */
+	public static Alloys.Heat meltHeat(ForgeMaterial material) {
+		if (material.durability <= dev.forja.block.CastingBoxBlock.Tier.BARRO.holds) {
+			return Alloys.Heat.TEMPLADA;
+		}
+		return material.durability <= dev.forja.block.CastingBoxBlock.Tier.ACERO.holds ? Alloys.Heat.CALIENTE : Alloys.Heat.FUNDIDA;
+	}
+
+	/**
+	 * Whether the pot has any use for this at all: an alloy's ingredient, something a smith made, or a
+	 * metal to melt. Andy: "se puede poner cualquier objeto en los contenedores" — a stick, a sword, a
+	 * block of dirt all went into the two slots and sat there, and a hopper would fill them with anything.
+	 */
+	public static boolean takes(ItemStack stack) {
+		if (stack.isEmpty()) {
+			return false;
+		}
+		ForgedParts parts = stack.get(ModComponents.PARTS);
+		if (parts != null) {
+			return !parts.materials().isEmpty();
+		}
+		if (stack.getItem() instanceof dev.forja.item.PartItem) {
+			return stack.has(ModComponents.MATERIAL);
+		}
+		if (!meltsTo(stack).isEmpty()) {
+			return true;
+		}
+		for (Alloys.Recipe recipe : Alloys.POURABLE) {
+			for (Alloys.Part part : recipe.inputs()) {
+				if (stack.is(part.item().get())) {
+					return true;
+				}
 			}
 		}
-		Alloys.Recipe recipe = Alloys.match(inputs, this.tier().heat);
-		if (recipe != null) {
-			ItemStack result = recipe.result();
-			result.setCount(result.getCount() + this.tier().bonus);
-			return this.fits(result) ? new Pour(result, recipe, null) : null;
+		return false;
+	}
+
+	/** What this crucible would pour right now, or null if it has nothing to do. */
+	private @Nullable Pour pending() {
+		this.idleReason = JOB_NONE;
+		this.idleWhat = 0;
+		List<MeltTankBlockEntity> banks = this.banks();
+		Pour alloy = this.alloy(banks);
+		if (alloy != null) {
+			return alloy;
 		}
 		// Nothing to alloy: see whether one of the two is something a smith made.
 		for (int slot : TOP) {
 			ItemStack scrap = this.items.get(slot);
 			ItemStack back = this.recovered(scrap);
-			if (!back.isEmpty() && this.fits(back)) {
-				return new Pour(back, null, slot);
+			if (!back.isEmpty() && this.room(banks, back.getItem(), true) >= back.getCount()) {
+				ForgeMaterial material = ForgeMaterial.fromInput(back);
+				return new Pour(back, null, slot, 1, null, List.of(), JOB_RECOVER, material == null ? 0 : material.ordinal());
 			}
+		}
+		// Or ore, or a metal, to melt into the tanks.
+		for (int slot : TOP) {
+			ItemStack stack = this.items.get(slot);
+			ItemStack one = meltsTo(stack);
+			if (one.isEmpty()) {
+				continue;
+			}
+			ForgeMaterial material = ForgeMaterial.fromInput(one);
+			int what = material == null ? 0 : material.ordinal();
+			if (material != null && !this.tier().heat.reaches(meltHeat(material))) {
+				this.idleReason = JOB_TOO_COLD;
+				this.idleWhat = what;
+				continue;
+			}
+			// Ore comes out as bars if there is no tank to take it; a bar that is already a bar only
+			// melts to go into one, or the pot would burn embers turning iron into the same iron.
+			boolean ore = !one.is(stack.getItem());
+			int room = this.room(banks, one.getItem(), ore);
+			int count = Math.min(stack.getCount(), room / one.getCount());
+			if (count <= 0) {
+				if (!ore && this.idleReason == JOB_NONE) {
+					this.idleReason = JOB_NEEDS_TANK;
+					this.idleWhat = what;
+				}
+				continue;
+			}
+			return new Pour(one.copyWithCount(one.getCount() * count), null, slot, count, null, List.of(), JOB_MELT, what);
 		}
 		return null;
 	}
 
+	/**
+	 * The alloy the two slots and the reachable tanks make together, or null.
+	 *
+	 * <p>Both slots must be spent by the recipe; the tanks only make up what the slots are missing. The
+	 * tanks used to count as though every one of them were in the pot, and a recipe has to use every
+	 * input it is given — so the first bar poured into a tank beside the pot was an extra ingredient
+	 * that no recipe used, and the crucible stopped after one pour. A foundry with a bank of iron and a
+	 * bank of gold on the same pipe could not pour bronze at all.
+	 */
+	private @Nullable Pour alloy(List<MeltTankBlockEntity> banks) {
+		Alloys.Heat heat = this.tier().heat;
+		Pour best = null;
+		for (int index = 0; index < Alloys.POURABLE.size(); index++) {
+			Alloys.Recipe recipe = Alloys.POURABLE.get(index);
+			if (!heat.reaches(recipe.heat()) || (best != null && recipe.heat().ordinal() <= best.recipe().heat().ordinal())) {
+				continue;
+			}
+			List<Alloys.Part> needed = new java.util.ArrayList<>(recipe.inputs());
+			int[] fromSlots = new int[2];
+			boolean ok = true;
+			for (int slot : TOP) {
+				ItemStack stack = this.items.get(slot);
+				if (stack.isEmpty()) {
+					continue;
+				}
+				Alloys.Part paid = null;
+				for (Alloys.Part part : needed) {
+					if (part.test(stack)) {
+						paid = part;
+						break;
+					}
+				}
+				if (paid == null) {
+					ok = false;
+					break;
+				}
+				needed.remove(paid);
+				fromSlots[slot] = paid.count();
+			}
+			if (!ok) {
+				continue;
+			}
+			List<Draw> draws = new java.util.ArrayList<>();
+			for (Alloys.Part part : needed) {
+				MeltTankBlockEntity from = null;
+				for (MeltTankBlockEntity bank : banks) {
+					if (bank.bankMetal() == part.item().get() && bank.bankAmount() >= part.count()
+						&& draws.stream().noneMatch(draw -> draw.tank() == bank)) {
+						from = bank;
+						break;
+					}
+				}
+				if (from == null) {
+					ok = false;
+					break;
+				}
+				draws.add(new Draw(from, part.count()));
+			}
+			if (!ok) {
+				continue;
+			}
+			ItemStack result = recipe.result();
+			result.setCount(result.getCount() + this.tier().bonus);
+			if (this.room(banks, result.getItem(), true) < result.getCount()) {
+				continue;
+			}
+			best = new Pour(result, recipe, null, 0, fromSlots, draws, JOB_ALLOY, index);
+		}
+		return best;
+	}
+
+	/**
+	 * One tank out of every bank the pot reaches whose metal is still liquid, so a bank of four tanks
+	 * touching the pot is counted once and not four times.
+	 */
+	private List<MeltTankBlockEntity> banks() {
+		List<MeltTankBlockEntity> found = new java.util.ArrayList<>();
+		java.util.Set<BlockPos> seen = new java.util.HashSet<>();
+		for (MeltTankBlockEntity tank : this.tanks()) {
+			if (seen.contains(tank.getBlockPos())) {
+				continue;
+			}
+			for (MeltTankBlockEntity member : tank.bank()) {
+				seen.add(member.getBlockPos());
+			}
+			if (!tank.isSet()) {
+				found.add(tank);
+			}
+		}
+		return found;
+	}
+
+	/**
+	 * How much of this could go somewhere right now: into banks holding it or holding nothing, and, if
+	 * the output slot is allowed, into that.
+	 */
+	private int room(List<MeltTankBlockEntity> banks, Item item, boolean slotToo) {
+		int room = 0;
+		for (MeltTankBlockEntity bank : MeltTankBlockEntity.holds(item) ? banks : List.<MeltTankBlockEntity>of()) {
+			Item held = bank.bankMetal();
+			if (held == null || held == item) {
+				room += bank.bankCapacity() - bank.bankAmount();
+			}
+		}
+		if (slotToo) {
+			ItemStack out = this.items.get(SLOT_OUTPUT);
+			if (out.isEmpty()) {
+				room += new ItemStack(item).getMaxStackSize();
+			} else if (out.is(item) && out.getComponentsPatch().isEmpty()) {
+				room += out.getMaxStackSize() - out.getCount();
+			}
+		}
+		return room;
+	}
+
 	/** What melting one forged part or one finished piece of gear gives back at this tier. */
 	private ItemStack recovered(ItemStack stack) {
+		// A loose part keeps its material in a component of its own, not in forja:parts, so the pot
+		// looked at a pick head, saw nothing a smith made, and left it there: only finished gear melted.
+		ForgeMaterial single = stack.getItem() instanceof dev.forja.item.PartItem part ? stack.get(ModComponents.MATERIAL) : null;
+		if (single != null) {
+			int back = Math.round(((dev.forja.item.PartItem) stack.getItem()).type.cost * this.tier().recovery);
+			if (back <= 0) {
+				return ItemStack.EMPTY;
+			}
+			ItemStack ingot = single.displayStack();
+			ingot.setCount(Math.min(back, ingot.getMaxStackSize()));
+			return ingot;
+		}
 		ForgedParts parts = stack.get(ModComponents.PARTS);
 		if (parts == null || parts.materials().isEmpty()) {
 			return ItemStack.EMPTY;
@@ -263,37 +522,18 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		return ingot;
 	}
 
-	private boolean fits(ItemStack result) {
-		ItemStack out = this.items.get(SLOT_OUTPUT);
-		if (out.isEmpty()) {
-			return true;
-		}
-		return ItemStack.isSameItemSameComponents(out, result)
-			&& out.getCount() + result.getCount() <= out.getMaxStackSize();
-	}
-
 	private void finish(net.minecraft.world.level.Level level, BlockPos pos, Pour pour) {
 		if (pour.recipe() != null) {
-			// An alloy eats exactly what the recipe asked for out of both slots.
-			for (Alloys.Part part : pour.recipe().inputs()) {
-				boolean paid = false;
-				for (int slot : TOP) {
-					ItemStack stack = this.items.get(slot);
-					if (part.test(stack)) {
-						stack.shrink(part.count());
-						paid = true;
-						break;
-					}
-				}
-				if (!paid) {
-					MeltTankBlockEntity tank = this.tankHolding(part.item().get());
-					if (tank != null) {
-						tank.drain(part.count());
-					}
-				}
+			// An alloy eats exactly what the recipe asked for: the slots what they were matched to, and
+			// the tanks the rest.
+			for (int slot : TOP) {
+				this.items.get(slot).shrink(pour.fromSlots()[slot]);
+			}
+			for (Draw draw : pour.draws()) {
+				draw.tank().drain(draw.count());
 			}
 		} else if (pour.slot() != null) {
-			this.items.get(pour.slot()).shrink(1);
+			this.items.get(pour.slot()).shrink(pour.used());
 		}
 		// A tank against the pot takes the pour: a foundry is crucibles emptying into glass, not
 		// crucibles filling their own little output slot and stopping when it is full.
@@ -306,8 +546,9 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 				out.grow(left);
 			}
 		}
-		// What is left in the bottom of the pot after a tool goes in: enough fire for the next one.
-		if (pour.recipe() == null) {
+		// What is left in the bottom of the pot after a tool goes in: enough fire for the next one. Only
+		// a tool: ore melting paid for itself this way and a pot of raw iron never needed an ember.
+		if (pour.job() == JOB_RECOVER) {
 			ItemStack fuel = this.items.get(SLOT_FUEL);
 			if (fuel.isEmpty()) {
 				this.items.set(SLOT_FUEL, new ItemStack(dev.forja.registry.ModItems.ASCUA));
@@ -323,21 +564,29 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		this.setChanged();
 	}
 
-	/** Pours into the first tank the crucible can reach, and says how much would not go. */
+	/**
+	 * Pours into the banks the crucible can reach, and says how much would not go.
+	 *
+	 * <p>Every bank that will take it, not just the first: a pour bigger than what the first bank had
+	 * room for used to drop the rest into the pot's own slot even with an empty bank beside it. A bank
+	 * that has set takes nothing — hot metal into a cold wall was a wall that half-woke — and nor does a
+	 * tank take what is not a metal.
+	 */
 	private int pourIntoTank(ItemStack result) {
-		if (this.level == null) {
+		if (this.level == null || !MeltTankBlockEntity.holds(result.getItem())) {
 			return result.getCount();
 		}
-		for (MeltTankBlockEntity tank : this.tanks()) {
+		int left = result.getCount();
+		for (MeltTankBlockEntity tank : this.banks()) {
+			if (left <= 0) {
+				break;
+			}
 			// What the run of pipe between here and there took out of it, which is nothing when the
 			// glass is built against the pot and a great deal at the end of a long bronze tendril.
 			int bled = dev.forja.block.MeltPipeBlock.bleedBetween(this.level, this.worldPosition, tank.getBlockPos());
-			int left = tank.fill(result.getItem(), result.getCount(), bled);
-			if (left < result.getCount()) {
-				return left;
-			}
+			left = tank.fill(result.getItem(), left, bled);
 		}
-		return result.getCount();
+		return left;
 	}
 
 	/**
@@ -370,21 +619,6 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		return found;
 	}
 
-	/**
-	 * A tank touching the crucible that is holding what it needs.
-	 *
-	 * <p>This is what a bank of tanks is for: the crucible eats out of the glass instead of out of its
-	 * own slots, so a line of them runs off one wall of metal and nobody carries anything.
-	 */
-	private @Nullable MeltTankBlockEntity tankHolding(Item wanted) {
-		for (MeltTankBlockEntity tank : this.tanks()) {
-			if (tank.bankMetal() == wanted && tank.bankAmount() > 0 && !tank.isSet()) {
-				return tank;
-			}
-		}
-		return null;
-	}
-
 	/** The first tank it can reach whose metal has set, if any. */
 	private @Nullable MeltTankBlockEntity setTank() {
 		for (MeltTankBlockEntity tank : this.tanks()) {
@@ -397,26 +631,27 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 
 	/** Whether any tank is feeding this pour, which is what halves the time it takes. */
 	private boolean fedByTank(Pour pour) {
-		if (pour.recipe() == null) {
-			return false;
-		}
-		for (Alloys.Part part : pour.recipe().inputs()) {
-			if (this.tankHolding(part.item().get()) != null) {
-				return true;
-			}
-		}
-		return false;
+		return !pour.draws().isEmpty();
 	}
 
-	/** One thing the crucible is about to pour: what comes out, and what it came from. */
-	private record Pour(ItemStack result, Alloys.@Nullable Recipe recipe, @Nullable Integer slot) {
+	/**
+	 * One thing the crucible is about to pour: what comes out, and what it came from — how many out of
+	 * which slot, or for an alloy how many out of each slot and which banks make up the rest — and what
+	 * to tell the screen about it.
+	 */
+	private record Pour(ItemStack result, Alloys.@Nullable Recipe recipe, @Nullable Integer slot, int used,
+		int @Nullable [] fromSlots, List<Draw> draws, int job, int what) {
+	}
+
+	/** What an alloy takes out of one bank. */
+	private record Draw(MeltTankBlockEntity tank, int count) {
 	}
 
 	// ------------------------------------------------------------------ hands
 
 	/** A full hand: the item goes into the first slot that will take it. */
 	public boolean handIn(Player player, ItemStack held) {
-		if (held.isEmpty()) {
+		if (held.isEmpty() || !takes(held)) {
 			return false;
 		}
 		int room = this.tier().capacity;
@@ -504,6 +739,10 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 				case dev.forja.menu.CrucibleMenu.DATA_BURN_LENGTH -> CrucibleBlockEntity.this.burnLength;
 				case dev.forja.menu.CrucibleMenu.DATA_HEAT -> CrucibleBlockEntity.this.tier().heat.ordinal();
 				case dev.forja.menu.CrucibleMenu.DATA_CAPACITY -> CrucibleBlockEntity.this.tier().capacity;
+				// What it is doing, as the server sees it: the screen only has the two slots to go on, and
+				// it could not see the tanks, the ore or the reason a pot was standing idle.
+				case dev.forja.menu.CrucibleMenu.DATA_JOB -> CrucibleBlockEntity.this.job;
+				case dev.forja.menu.CrucibleMenu.DATA_WHAT -> CrucibleBlockEntity.this.jobWhat;
 				default -> 0;
 			};
 		}
@@ -578,6 +817,18 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		this.setChanged();
 	}
 
+	/**
+	 * Breaking the pot spills what is in it. The block used to do this in affectNeighborsAfterRemoval,
+	 * which the game only calls once this block entity is gone, so a broken crucible took its ore, its
+	 * embers and its pour with it.
+	 */
+	@Override
+	public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+		if (this.level != null) {
+			net.minecraft.world.Containers.dropContents(this.level, pos, this);
+		}
+	}
+
 	@Override
 	public int[] getSlotsForFace(Direction side) {
 		return switch (side) {
@@ -605,9 +856,10 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		if (slot == SLOT_FUEL) {
 			return stack.is(dev.forja.registry.ModItems.ASCUA);
 		}
-		// The capacity is the point of the tiers, so a hopper cannot walk around it.
+		// The capacity is the point of the tiers, so a hopper cannot walk around it; and what goes in has
+		// to be something the pot can do anything with.
 		int inside = this.items.get(SLOT_FIRST).getCount() + this.items.get(SLOT_SECOND).getCount();
-		return inside < this.tier().capacity;
+		return inside < this.tier().capacity && takes(stack);
 	}
 
 	@Override

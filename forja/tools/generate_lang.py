@@ -786,13 +786,15 @@ GUI = {
     "gui.forja.libro.crisol.titulo": ("El crisol", "The Crucible"),
     "gui.forja.libro.crisol": (
         "La mesa de forja alea sosteniendo los ingredientes sobre el calor que haya debajo: bien para un "
-        "lingote, inútil para cien. El **crisol** es la otra mitad. No tiene pantalla: entra por arriba, "
-        "el combustible por el lado y sale por abajo, así que se automatiza con tolvas como un horno. "
-        "Clic derecho con algo en la mano lo mete, con la mano vacía saca la colada.",
+        "lingote, inútil para cien. El **crisol** es la otra mitad: **funde mena y metal** hacia las "
+        "cubas, alea y devuelve el material de lo que un herrero hizo. Entra por arriba, el combustible "
+        "por el lado y sale por abajo, así que se automatiza con tolvas como un horno. Clic derecho abre "
+        "su pantalla, que sólo admite lo que el crisol sabe usar.",
         "The forge table alloys by holding the ingredients over whatever heat is under it: fine for one "
-        "bar, hopeless for a hundred. The **crucible** is the other half. It has no screen: in from the "
-        "top, fuel from the sides, out from the bottom, so it automates with hoppers like a furnace. "
-        "Right-click with something in hand to feed it, with an empty hand to take the pour.",
+        "bar, hopeless for a hundred. The **crucible** is the other half: it **melts ore and metal** into "
+        "the tanks, alloys, and gives back the material of whatever a smith made. In from the top, fuel "
+        "from the sides, out from the bottom, so it automates with hoppers like a furnace. Right-click "
+        "opens its screen, which only takes what the crucible can use.",
     ),
     "gui.forja.libro.crisol.niveles": (
         "Hay tres, y lo que puede hacer cada uno lo decide de qué está hecho: **barro** (%s de calor, %s "
@@ -904,8 +906,8 @@ GUI = {
         "The star melts one bar at a time. A foundry melts by the shovelful: a pot that does not need you standing over it, tanks to hold the molten metal and pipes to move it. Build it in this order."),
     "gui.forja.libro.fundicion.paso1": ("1. El crisol", "1. The crucible"),
     "gui.forja.libro.fundicion.paso1.desc": (
-        "Lo primero. Come ascuas (%s segundos cada una), le metes material por arriba con una tolva y saca lingotes por abajo. Nadie tiene que mirarlo.",
-        "First of all. It eats embers (%s seconds apiece), takes material in from above with a hopper and gives ingots out below. Nobody has to watch it."),
+        "Lo primero. Come ascuas (%s segundos cada una) y le metes mena o lingotes por arriba, con una tolva o en su pantalla. Con una cuba pegada lo funde todo dentro de ella; sin cuba, la mena sale en lingotes por abajo. Lo duro pide un crisol más caliente. Nadie tiene que mirarlo.",
+        "First of all. It eats embers (%s seconds apiece) and takes ore or ingots in from above, by hopper or in its screen. With a tank against it everything melts into the tank; with none, ore comes out below as ingots. The hard metals want a hotter crucible. Nobody has to watch it."),
     "gui.forja.libro.fundicion.crisol_linea": ("· %s: calor %s, cabida %s, %ss por colada", "· %s: %s heat, holds %s, %ss per pour"),
     "gui.forja.libro.fundicion.paso1.farol": (
         "Un farol de pavesa justo debajo lo mantiene encendido sin gastar ascuas.",
@@ -1738,6 +1740,16 @@ GUI = {
     "gui.forja.crisol.dos": ("%s y %s", "%s and %s"),
     "gui.forja.crisol.lleno": ("El crisol no admite más de %s de una vez",
                                 "The crucible will not hold more than %s at a time"),
+    "gui.forja.crisol.sin_ascua": ("falta ascua", "needs embers"),
+    "gui.forja.crisol.refunde": ("Refundiendo una cuba cuajada", "Melting a set tank back down"),
+    "gui.forja.crisol.sin_cuba": ("No hay cuba con sitio para fundir %s", "No tank with room to melt %s into"),
+    "gui.forja.crisol.frio_metal": ("Fundir %s pide calor %s", "Melting %s needs %s heat"),
+    "gui.forja.cuba.no_metal": ("%s no cabe en una cuba: sólo metal fundido", "%s does not go in a tank: molten metal only"),
+    "gui.forja.caja.gastara_marco": ("Se gastará la herramienta y saldrá su marco", "The tool will be spent and its frame comes out"),
+    "gui.forja.caja.infundiendo": ("Bañando el colador en %s", "Bathing the strainer in %s"),
+    "gui.forja.caja.colador_nada": ("Ninguna cuba tiene un metal más duro que este colador",
+                                    "No tank holds a metal harder than this strainer"),
+    "gui.forja.caja.llena": ("Saca lo colado para seguir", "Take the casting out to go on"),
     "gui.forja.jade.avivada": ("Avivada: pega más y quema el doble", "Fed: hits harder and burns twice as long"),
     "gui.forja.jade.apagada": ("Apagada", "Cold"),
     "gui.forja.obra_maestra": ("%s es una obra maestra: nada más puede darle un herrero.",

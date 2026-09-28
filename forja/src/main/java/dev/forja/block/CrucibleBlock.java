@@ -6,7 +6,6 @@ import dev.forja.forge.Alloys;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -27,8 +26,8 @@ import org.jspecify.annotations.Nullable;
  * The crucible: where a smith actually melts things.
  *
  * <p>The forge table alloys by holding ingredients over whatever heat happens to be under it, which is
- * fine for one bar and hopeless for a hundred. The crucible is the other half of that: it has no screen
- * at all, it takes what a hopper puts in and gives back what a hopper takes out, and the only thing that
+ * fine for one bar and hopeless for a hundred. The crucible is the other half of that: it has a screen
+ * for a smith, it takes what a hopper puts in and gives back what a hopper takes out, and the only thing that
  * decides what it can do is which of the three you built. A clay one will make bronze all day and will
  * never touch netherite; an obsidian one melts anything, pays back a broken tool whole, and throws in a
  * bar for the trouble.
@@ -122,13 +121,8 @@ public class CrucibleBlock extends BaseEntityBlock {
 		return InteractionResult.CONSUME;
 	}
 
-	@Override
-	protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean moved) {
-		if (level.getBlockEntity(pos) instanceof CrucibleBlockEntity crucible) {
-			Containers.dropContents(level, pos, crucible);
-		}
-		super.affectNeighborsAfterRemoval(state, level, pos, moved);
-	}
+	// What it holds is dropped by the block entity (preRemoveSideEffects): by the time
+	// affectNeighborsAfterRemoval runs the block entity is already gone, and breaking one lost it all.
 
 	@Override
 	public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {

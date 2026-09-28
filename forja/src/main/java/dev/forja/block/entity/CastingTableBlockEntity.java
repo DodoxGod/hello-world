@@ -85,6 +85,8 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 	 */
 	private long startedAt;
 	private int settleIn = -1;
+	/** Whether the last second of heat was a warming one, so a pour is not started on heat still coming in. */
+	private boolean warming = true;
 
 	public CastingTableBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.MESA_DE_COLADA, pos, state);
@@ -185,6 +187,7 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 			}
 		}
 		int was = this.heat;
+		this.warming = warmed;
 		this.heat = Math.max(0, Math.min(HOT, this.heat + (warmed ? WARMS : -this.tier().cools)));
 		if (was != this.heat) {
 			this.setChanged();
@@ -194,6 +197,13 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 	/** Pulls exactly what the tool is worth out of the tanks, if everything is ready for it. */
 	private void start(Level level) {
 		if (this.heat <= 0) {
+			return;
+		}
+		// A table that is being warmed waits until it has a whole pour's worth of heat. "The last of the
+		// heat" is a table going cold; but a table set down on a wisp lantern — the guide's own cure for
+		// rough pours — started pouring the moment its first 25 heat came in, under the 40 a pour costs,
+		// and turned out every first tool of the day rough.
+		if (this.warming && this.heat < SPEND) {
 			return;
 		}
 		ForgeType type = CastingFrameItem.typeOf(this.frame());
@@ -398,6 +408,26 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 	@Override
 	public void clearContent() {
 		this.items.clear();
+	}
+
+	/**
+	 * Breaking the table spills the frame, the finished tool, and the metal that was setting in the frame
+	 * — which the tank it came out of no longer has. None of it dropped: the block did this in
+	 * affectNeighborsAfterRemoval, which only runs once this block entity is gone.
+	 */
+	@Override
+	public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+		if (this.level == null) {
+			return;
+		}
+		net.minecraft.world.Containers.dropContents(this.level, pos, this);
+		if (this.metal != null && this.amount > 0) {
+			ItemStack spilled = new ItemStack(this.metal, this.amount);
+			while (!spilled.isEmpty()) {
+				net.minecraft.world.Containers.dropItemStack(this.level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+					spilled.split(spilled.getMaxStackSize()));
+			}
+		}
 	}
 
 	// ------------------------------------------------------------------ saving and syncing

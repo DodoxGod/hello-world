@@ -119,6 +119,30 @@ public class MeltTankBlockEntity extends BlockEntity {
 		return CAPACITY - this.amount;
 	}
 
+	/**
+	 * Whether this is something a tank holds at all: a metal that has to be poured, or something an
+	 * alloy is made of (the foundry alloys want a bank of redstone or quartz behind the pot).
+	 *
+	 * <p>It took anything. A right click with a stick, a block of dirt or an enchanted sword poured it in
+	 * as "metal", kept the item and threw away everything that made it that sword, and the casting box
+	 * would then happily look for a material in a bank of sticks.
+	 */
+	public static boolean holds(Item item) {
+		ItemStack stack = new ItemStack(item);
+		dev.forja.material.ForgeMaterial material = dev.forja.material.ForgeMaterial.fromInput(stack);
+		if (material != null && !material.isBasic()) {
+			return true;
+		}
+		for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.POURABLE) {
+			for (dev.forja.forge.Alloys.Part part : recipe.inputs()) {
+				if (item == part.item().get()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	/** Whether this tank would take that metal: either it is empty or it is already holding it. */
 	public boolean accepts(Item item) {
 		return this.amount <= 0 || this.metal == item;
@@ -281,7 +305,11 @@ public class MeltTankBlockEntity extends BlockEntity {
 		// walked, because in a wall of two hundred tanks only the bottom row has anything underneath and
 		// the other hundred and ninety should not be paying for a search every second.
 		List<Container> outs = new ArrayList<>();
-		if (level.getBlockEntity(pos.below()) instanceof Container below) {
+		// Not into a crucible, for the same reason the pipes leave it out (MeltPipeBlock.containersFrom):
+		// a tank over a pot filled the pot's slots with the metal the pot then melted straight back into
+		// the tank, burning embers to go round in a circle.
+		BlockEntity under = level.getBlockEntity(pos.below());
+		if (under instanceof Container below && !(under instanceof CrucibleBlockEntity)) {
 			outs.add(below);
 		}
 		// And down a pipe, if one is attached. The pipe check comes first so a tank with neither a
@@ -441,12 +469,38 @@ public class MeltTankBlockEntity extends BlockEntity {
 		return found;
 	}
 
+	/**
+	 * Breaking one spills what was in that tank, not what was in the bank.
+	 *
+	 * <p>The rest of the wall keeps its metal, which is what makes taking a tank out of the middle of a
+	 * bank a cheap mistake instead of an expensive one. It is done here and not in the block, whose
+	 * affectNeighborsAfterRemoval only runs once this block entity is gone: every broken tank lost its
+	 * metal outright.
+	 */
+	@Override
+	public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+		if (this.level == null || this.metal == null || this.amount <= 0) {
+			return;
+		}
+		ItemStack spilled = new ItemStack(this.metal, this.amount);
+		while (!spilled.isEmpty()) {
+			net.minecraft.world.Containers.dropItemStack(this.level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+				spilled.split(spilled.getMaxStackSize()));
+		}
+	}
+
 	/** A full hand pours in, an empty hand draws out, and either way it says where it is at. */
 	public boolean hand(Player player, ItemStack held) {
 		if (this.level == null) {
 			return false;
 		}
 		if (!held.isEmpty()) {
+			// Only a plain metal goes in: a stack with anything on it (a name, an enchantment, the parts
+			// of a forged piece) would come back out as the bare item.
+			if (!holds(held.getItem()) || !held.getComponentsPatch().isEmpty()) {
+				this.say(player, Component.translatable("gui.forja.cuba.no_metal", held.getHoverName()));
+				return false;
+			}
 			Item metal = this.bankMetal();
 			if (metal != null && metal != held.getItem()) {
 				this.say(player, Component.translatable("gui.forja.cuba.otro", new ItemStack(metal).getHoverName()));

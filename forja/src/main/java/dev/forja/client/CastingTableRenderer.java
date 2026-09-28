@@ -50,6 +50,8 @@ public class CastingTableRenderer implements BlockEntityRenderer<CastingTableBlo
 	public static class TableState extends BlockEntityRenderState {
 		public final ItemStackRenderState lying = new ItemStackRenderState();
 		public boolean hasItem;
+		/** The light over the table, which is where the frame and the tool lie. */
+		public int itemLight;
 		public float fill;
 		public float falling;
 		public int colour;
@@ -68,6 +70,11 @@ public class CastingTableRenderer implements BlockEntityRenderer<CastingTableBlo
 		// The finished tool takes the frame's place on the table, which is how a full table reads as done.
 		ItemStack lying = table.result().isEmpty() ? table.frame() : table.result();
 		state.hasItem = !lying.isEmpty();
+		// Lit by the air over the table, not by the table: a solid block has no light of its own inside it,
+		// so a finished pickaxe lying there drew pitch black the moment the pour stopped and the table's
+		// glow went out, which is exactly when a smith comes to pick it up.
+		state.itemLight = table.getLevel() == null ? state.lightCoords
+			: net.minecraft.util.LightCoordsUtil.getLightCoords(table.getLevel(), table.getBlockPos().above());
 		state.lying.clear();
 		if (state.hasItem) {
 			this.items.updateForTopItem(state.lying, lying, ItemDisplayContext.FIXED, table.getLevel(), null, 0);
@@ -96,7 +103,7 @@ public class CastingTableRenderer implements BlockEntityRenderer<CastingTableBlo
 			pose.translate(0.5F, 1.004F, 0.5F);
 			pose.mulPose(com.mojang.math.Axis.XP.rotationDegrees(90.0F));
 			pose.scale(0.75F, 0.75F, 0.75F);
-			state.lying.submit(pose, collector, state.lightCoords, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 0);
+			state.lying.submit(pose, collector, state.itemLight, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 0);
 			pose.popPose();
 		}
 		if (state.fill <= 0.0F) {
