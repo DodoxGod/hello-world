@@ -9631,7 +9631,8 @@ def write_barrow():
             put(x, y, z, "minecraft:polished_deepslate")
         put(x, 5, z, "minecraft:chiseled_deepslate")
     for x in range(3, 10):
-        put(x, 5, 6, "minecraft:polished_deepslate_bricks" if x % 2 else "minecraft:chiseled_deepslate")
+        # There is no "polished_deepslate_bricks": the game read it as air and the vault had four holes.
+        put(x, 5, 6, "minecraft:polished_deepslate" if x % 2 else "minecraft:chiseled_deepslate")
 
     # The coffin: a slab of stone with a smith's things laid on it.
     for x in range(5, 8):

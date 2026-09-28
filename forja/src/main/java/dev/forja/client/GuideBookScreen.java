@@ -905,7 +905,9 @@ public class GuideBookScreen extends Screen {
 	/** Alloys: the ingredients, and the heat the table needs under it. */
 	private List<Element> alloysChapter() {
 		List<Element> body = new ArrayList<>();
-		body.add(new Text(Component.translatable("gui.forja.libro.aleaciones_intro"), INK));
+		// Counted, not written in: it said "eight alloys, the best three only off lava" long after there
+		// were sixteen and the best three had moved to the obsidian crucible.
+		body.add(new Text(Component.translatable("gui.forja.libro.aleaciones_intro", dev.forja.forge.Alloys.ALL.size()), INK));
 		// Four to a row, however many alloys there happen to be.
 		List<ItemStack> ingots = dev.forja.forge.Alloys.ALL.stream().map(dev.forja.forge.Alloys.Recipe::result).toList();
 		for (int from = 0; from < ingots.size(); from += 4) {

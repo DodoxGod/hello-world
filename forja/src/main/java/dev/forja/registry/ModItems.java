@@ -121,7 +121,10 @@ public final class ModItems {
 			ALLOYS.put(recipe.id(), register(recipe.id(), Item::new, new Item.Properties()));
 		}
 		JARRA = register("jarra", dev.forja.item.EssenceJarItem::new, new Item.Properties().stacksTo(16));
-		CORAZON_DE_FORJA = register("corazon_de_forja", Item::new, new Item.Properties().stacksTo(4).rarity(net.minecraft.world.item.Rarity.EPIC));
+		// Fire-resistant, like netherite: there is one per fallen smith, he dies next to his own forge with
+		// fire lit round him, and a heart that burned up in it was two alloys and a crucible gone for good.
+		CORAZON_DE_FORJA = register("corazon_de_forja", Item::new, new Item.Properties().stacksTo(4).rarity(net.minecraft.world.item.Rarity.EPIC)
+			.fireResistant());
 
 		for (PartType type : PartType.values()) {
 			Item.Properties properties = new Item.Properties();
@@ -161,8 +164,11 @@ public final class ModItems {
 			new Item.Properties().useBlockDescriptionPrefix().rarity(net.minecraft.world.item.Rarity.EPIC));
 		FAROL_DE_PAVESA = register("farol_de_pavesa", p -> new BlockItem(ModBlocks.FAROL_DE_PAVESA, p),
 			new Item.Properties().useBlockDescriptionPrefix().rarity(net.minecraft.world.item.Rarity.RARE));
-		ASCUA = register("ascua", Item::new, new Item.Properties());
-		ESCORIA = register("escoria", Item::new, new Item.Properties());
+		// Both come off things made of fire that live beside it — wisps come to lava and campfires, slag gets
+		// up out of lava pools — so they drop where there is fire. An ember or a lump of slag that burned
+		// up the moment it touched lava read as a mob that "drops nothing"; they stand heat, like netherite.
+		ASCUA = register("ascua", Item::new, new Item.Properties().fireResistant());
+		ESCORIA = register("escoria", Item::new, new Item.Properties().fireResistant());
 		MOLDE_DE_FUNDICION = register("molde_de_fundicion", dev.forja.item.CastingMouldItem::new,
 			new Item.Properties().stacksTo(1));
 		COLADOR = register("colador", dev.forja.item.StrainerItem::new, new Item.Properties().stacksTo(1));

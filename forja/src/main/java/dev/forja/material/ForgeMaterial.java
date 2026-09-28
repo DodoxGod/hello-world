@@ -310,6 +310,12 @@ public enum ForgeMaterial implements StringRepresentable {
 	 * used to be a netherite ingot for everything left over, which meant <b>every alloy, star iron, the
 	 * hollow plate and the forge heart all drew the same grey bar</b> — sixteen different metals that
 	 * the guide showed as one. They have their own ingots; this hands them over.
+	 *
+	 * <p>It is not only a picture: the crucible melts gear back into this item and the forge table breaks
+	 * a loose part down into it. Escoria was added after the list and fell through to the netherite
+	 * ingot, so a slag pickaxe melted down into <b>netherite</b>, and a slag part taken apart at the table
+	 * gave netherite ingots for a lump of slag. Every material is named here now, netherite included, and
+	 * a test checks that the item handed back is one the same material takes as input.
 	 */
 	public ItemStack displayStack() {
 		if (this.inputItem != null) {
@@ -327,10 +333,14 @@ public enum ForgeMaterial implements StringRepresentable {
 			case HIERRO -> Items.IRON_INGOT;
 			case ORO -> Items.GOLD_INGOT;
 			case DIAMANTE -> Items.DIAMOND;
+			case NETHERITA -> Items.NETHERITE_INGOT;
 			case ESTELAR -> dev.forja.registry.ModItems.HIERRO_ESTELAR;
 			case HUECO -> dev.forja.registry.ModItems.PLACA_HUECA;
 			case CORAZON -> dev.forja.registry.ModItems.CORAZON_DE_FORJA;
-			default -> Items.NETHERITE_INGOT;
+			case ESCORIA -> dev.forja.registry.ModItems.ESCORIA;
+			// Anything that reaches this was added without an item of its own. Nothing is safer to hand
+			// back than netherite was, and MaterialesGameTests fails on it.
+			default -> Items.AIR;
 		});
 	}
 

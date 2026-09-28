@@ -91,6 +91,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 			log("ALL CHECKS PASSED (solo mundo)");
 			return;
 		}
+		// Materials and ores need a real world with real ores in it, not the superflat below.
+		if ("materiales".equals(System.getenv("FORJA_SOLO"))) {
+			checkMaterials(context);
+			log("ALL CHECKS PASSED (solo materiales)");
+			return;
+		}
 		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
 			TestServerConnection connection = singleplayer.getConnection();
 			TestServerContext server = singleplayer.getServer();
@@ -9701,6 +9707,487 @@ public class ForjaClientTest implements FabricClientGameTest {
 				quiet(context);
 				context.takeScreenshot(TestScreenshotOptions.of("forja_53_mundo_" + shot[0]).disableCounterPrefix());
 			}
+		}
+	}
+
+	/**
+	 * Materials and ores, in a real world (FORJA_SOLO=materiales).
+	 *
+	 * <p>Forja adds no ores of its own: every material is vanilla, an alloy of vanilla, or a drop from
+	 * one of its creatures. So this walks the whole bottom of the ladder the way a player would: the
+	 * ores are there at the depths the guide promises, a forged pickaxe gets from each ore exactly what
+	 * a vanilla pickaxe of its tier would, the furnace turns them into what the materials take, every
+	 * creature-only material falls out of its creature (and survives landing in lava), gear of a
+	 * material melts back into that material, and the guide says where each one comes from.
+	 * MaterialesGameTests checks the data half on the server.
+	 */
+	private static void checkMaterials(ClientGameTestContext context) {
+		try (TestSingleplayerContext singleplayer = context.worldBuilder().setUseConsistentSettings(false).create()) {
+			TestServerConnection connection = singleplayer.getConnection();
+			TestServerContext server = singleplayer.getServer();
+			server.runOnServer(s -> {
+				dev.forja.combat.CombatConfig.get().veteranChance = 0.0;
+				dev.forja.combat.CombatConfig.get().eliteChance = 0.0;
+			});
+			connection.waitForChunksRender();
+			server.runCommand("time set noon");
+			server.runCommand("weather clear 1000000");
+			server.runCommand("gamerule spawn_mobs false");
+			// Not peaceful: the slag, the suits and the wisps are monsters, and peaceful would take them away.
+			server.runCommand("difficulty easy");
+			server.runCommand("gamemode survival @a");
+
+			// ------------------------------------------------ 1. the ores are where they should be
+			String survey = server.computeOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				BlockPos at = connection.getServerPlayer().blockPosition();
+				Object[][] ores = {
+					{"carbon", List.of(Blocks.COAL_ORE, Blocks.DEEPSLATE_COAL_ORE), 0, 320},
+					{"cobre", List.of(Blocks.COPPER_ORE, Blocks.DEEPSLATE_COPPER_ORE), -16, 112},
+					{"hierro", List.of(Blocks.IRON_ORE, Blocks.DEEPSLATE_IRON_ORE), -64, 320},
+					{"oro", List.of(Blocks.GOLD_ORE, Blocks.DEEPSLATE_GOLD_ORE), -64, 256},
+					{"redstone", List.of(Blocks.REDSTONE_ORE, Blocks.DEEPSLATE_REDSTONE_ORE), -64, 16},
+					{"lapislazuli", List.of(Blocks.LAPIS_ORE, Blocks.DEEPSLATE_LAPIS_ORE), -64, 64},
+					{"diamante", List.of(Blocks.DIAMOND_ORE, Blocks.DEEPSLATE_DIAMOND_ORE), -64, 16},
+					{"esmeralda", List.of(Blocks.EMERALD_ORE, Blocks.DEEPSLATE_EMERALD_ORE), -16, 320},
+					// A geode is placed up to y 30 and is a dozen blocks across.
+					{"amatista", List.of(Blocks.BUDDING_AMETHYST), -64, 42},
+				};
+				StringBuilder out = new StringBuilder();
+				scanOres(level, at.getX() >> 4, at.getZ() >> 4, 3, ores, out);
+				// The Nether half: quartz, its gold, and the debris netherite starts as.
+				Object[][] nether = {
+					{"cuarzo", List.of(Blocks.NETHER_QUARTZ_ORE), 10, 118},
+					{"oro_del_nether", List.of(Blocks.NETHER_GOLD_ORE), 10, 118},
+					{"restos_antiguos", List.of(Blocks.ANCIENT_DEBRIS), 8, 119},
+				};
+				scanOres(s.getLevel(net.minecraft.world.level.Level.NETHER), 0, 0, 2, nether, out);
+				return out.toString();
+			});
+			log("materiales: menas " + survey);
+			for (String line : survey.split(";")) {
+				if (line.isBlank()) {
+					continue;
+				}
+				String[] parts = line.trim().split(" ");
+				String ore = parts[0];
+				int count = Integer.parseInt(parts[1]);
+				boolean inRange = "dentro".equals(parts[2]);
+				// Emeralds are mountains only and geodes are one chunk in two dozen: they are counted, not required.
+				if (!ore.equals("esmeralda") && !ore.equals("amatista")) {
+					check(count > 0, "no " + ore + " ore in the chunks around spawn");
+				}
+				check(inRange, ore + " generated outside its range: " + line);
+			}
+
+			// ------------------------------------------------ 2. a bench in the air to work on
+			int[] bench = server.computeOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				BlockPos at = connection.getServerPlayer().blockPosition();
+				int top = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, at.getX(), at.getZ());
+				int floor = Math.max(top, level.getSeaLevel()) + 12;
+				for (BlockPos pos : BlockPos.betweenClosed(at.getX() - 4, floor - 1, at.getZ() - 4, at.getX() + 44, floor + 8, at.getZ() + 14)) {
+					level.setBlock(pos, pos.getY() < floor + 1 ? Blocks.SMOOTH_STONE.defaultBlockState() : Blocks.AIR.defaultBlockState(), 2);
+				}
+				return new int[] {at.getX(), floor + 1, at.getZ()};
+			});
+			int bx = bench[0];
+			int by = bench[1];
+			int bz = bench[2];
+			tp(server, bx + 0.5, by, bz + 0.5, 0.0F, 20.0F);
+			context.waitTicks(20);
+
+			// ------------------------------------------------ 3. forged pickaxes against the ores
+			String tiers = server.computeOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				var registries = level.registryAccess();
+				java.util.Map<net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block>, Item> vanilla = java.util.Map.of(
+					net.minecraft.tags.BlockTags.INCORRECT_FOR_WOODEN_TOOL, Items.WOODEN_PICKAXE,
+					net.minecraft.tags.BlockTags.INCORRECT_FOR_STONE_TOOL, Items.STONE_PICKAXE,
+					net.minecraft.tags.BlockTags.INCORRECT_FOR_COPPER_TOOL, Items.COPPER_PICKAXE,
+					net.minecraft.tags.BlockTags.INCORRECT_FOR_IRON_TOOL, Items.IRON_PICKAXE,
+					net.minecraft.tags.BlockTags.INCORRECT_FOR_GOLD_TOOL, Items.GOLDEN_PICKAXE,
+					net.minecraft.tags.BlockTags.INCORRECT_FOR_DIAMOND_TOOL, Items.DIAMOND_PICKAXE,
+					net.minecraft.tags.BlockTags.INCORRECT_FOR_NETHERITE_TOOL, Items.NETHERITE_PICKAXE);
+				List<net.minecraft.world.level.block.Block> blocks = List.of(Blocks.COAL_ORE, Blocks.DEEPSLATE_COAL_ORE, Blocks.IRON_ORE,
+					Blocks.DEEPSLATE_IRON_ORE, Blocks.COPPER_ORE, Blocks.DEEPSLATE_COPPER_ORE, Blocks.GOLD_ORE, Blocks.DEEPSLATE_GOLD_ORE,
+					Blocks.REDSTONE_ORE, Blocks.DEEPSLATE_REDSTONE_ORE, Blocks.LAPIS_ORE, Blocks.DEEPSLATE_LAPIS_ORE, Blocks.DIAMOND_ORE,
+					Blocks.DEEPSLATE_DIAMOND_ORE, Blocks.EMERALD_ORE, Blocks.DEEPSLATE_EMERALD_ORE, Blocks.NETHER_QUARTZ_ORE,
+					Blocks.NETHER_GOLD_ORE, Blocks.ANCIENT_DEBRIS, Blocks.OBSIDIAN, Blocks.CRYING_OBSIDIAN, Blocks.AMETHYST_CLUSTER,
+					Blocks.RAW_IRON_BLOCK, Blocks.STONE, Blocks.DEEPSLATE);
+				List<String> wrong = new ArrayList<>();
+				int heads = 0;
+				for (dev.forja.material.ForgeMaterial material : dev.forja.material.ForgeMaterial.values()) {
+					if (!material.canBeHead) {
+						continue;
+					}
+					heads++;
+					List<dev.forja.material.ForgeMaterial> materials = new ArrayList<>(Assembler.defaultMaterials(ForgeType.PICO));
+					materials.set(0, material);
+					ItemStack forged = Assembler.create(ForgeType.PICO, materials, registries);
+					ItemStack same = new ItemStack(vanilla.get(material.incorrectBlocksForDrops));
+					for (var block : blocks) {
+						var state = block.defaultBlockState();
+						if (forged.isCorrectToolForDrops(state) != same.isCorrectToolForDrops(state)) {
+							wrong.add(material + " on " + block.getDescriptionId() + ": forged " + forged.isCorrectToolForDrops(state)
+								+ ", vanilla " + same.isCorrectToolForDrops(state));
+						}
+						if (forged.getDestroySpeed(state) <= 1.0F) {
+							wrong.add(material + " does not mine " + block.getDescriptionId() + " any faster than a hand");
+						}
+					}
+				}
+				return heads + " cabezas; " + wrong;
+			});
+			log("materiales: picos forjados contra las menas: " + tiers);
+			check(tiers.endsWith("[]"), "a forged pickaxe should get from every ore what a vanilla pickaxe of its tier gets: " + tiers);
+
+			// The real thing, through the player: break it and see what lands.
+			Object[][] breaks = {
+				{MADERA, Blocks.COAL_ORE, Items.COAL},
+				{MADERA, Blocks.IRON_ORE, null},
+				{PIEDRA, Blocks.IRON_ORE, Items.RAW_IRON},
+				{PIEDRA, Blocks.DEEPSLATE_COPPER_ORE, Items.RAW_COPPER},
+				{PIEDRA, Blocks.DIAMOND_ORE, null},
+				{dev.forja.material.ForgeMaterial.ESCORIA, Blocks.COPPER_ORE, Items.RAW_COPPER},
+				{HIERRO, Blocks.DEEPSLATE_DIAMOND_ORE, Items.DIAMOND},
+				{HIERRO, Blocks.GOLD_ORE, Items.RAW_GOLD},
+				{HIERRO, Blocks.OBSIDIAN, null},
+				{DIAMANTE, Blocks.OBSIDIAN, Items.OBSIDIAN},
+				{DIAMANTE, Blocks.CRYING_OBSIDIAN, Items.CRYING_OBSIDIAN},
+				{HIERRO, Blocks.ANCIENT_DEBRIS, null},
+				{DIAMANTE, Blocks.ANCIENT_DEBRIS, Items.ANCIENT_DEBRIS},
+				{ORO, Blocks.NETHER_QUARTZ_ORE, Items.QUARTZ},
+				{PIEDRA, dev.forja.registry.ModBlocks.CRISOL_DE_BARRO, dev.forja.registry.ModItems.CRISOL_DE_BARRO},
+				{null, dev.forja.registry.ModBlocks.CRISOL_DE_BARRO, null},
+				{HIERRO, dev.forja.registry.ModBlocks.FRAGUA_APAGADA, null},
+				{DIAMANTE, dev.forja.registry.ModBlocks.FRAGUA_APAGADA, dev.forja.registry.ModItems.FRAGUA_APAGADA},
+			};
+			String broken = server.computeOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				ServerPlayer player = connection.getServerPlayer();
+				var registries = level.registryAccess();
+				List<String> wrong = new ArrayList<>();
+				StringBuilder seen = new StringBuilder();
+				for (int i = 0; i < breaks.length; i++) {
+					BlockPos pos = new BlockPos(bx - 2 + i * 2, by, bz + 8);
+					level.setBlockAndUpdate(pos, ((net.minecraft.world.level.block.Block) breaks[i][1]).defaultBlockState());
+					ItemStack tool = ItemStack.EMPTY;
+					if (breaks[i][0] != null) {
+						List<dev.forja.material.ForgeMaterial> materials = new ArrayList<>(Assembler.defaultMaterials(ForgeType.PICO));
+						materials.set(0, (dev.forja.material.ForgeMaterial) breaks[i][0]);
+						tool = Assembler.create(ForgeType.PICO, materials, registries);
+					}
+					player.setItemInHand(InteractionHand.MAIN_HAND, tool);
+					player.gameMode.destroyBlock(pos);
+					List<net.minecraft.world.entity.item.ItemEntity> drops = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+						new net.minecraft.world.phys.AABB(pos).inflate(1.5));
+					Item expected = (Item) breaks[i][2];
+					boolean got = expected == null ? drops.isEmpty() : drops.stream().anyMatch(drop -> drop.getItem().is(expected));
+					String what = drops.isEmpty() ? "nada" : drops.stream().map(drop -> drop.getItem().getItem().getDescriptionId()).toList().toString();
+					seen.append(breaks[i][0]).append(" -> ").append(((net.minecraft.world.level.block.Block) breaks[i][1]).getDescriptionId())
+						.append(": ").append(what).append("; ");
+					if (!got || !level.getBlockState(pos).isAir()) {
+						wrong.add(breaks[i][0] + " on " + ((net.minecraft.world.level.block.Block) breaks[i][1]).getDescriptionId() + " gave " + what);
+					}
+					drops.forEach(net.minecraft.world.entity.Entity::discard);
+				}
+				player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+				log("materiales: picando " + seen);
+				return wrong.toString();
+			});
+			check("[]".equals(broken), "forged pickaxes broke ores wrong: " + broken);
+
+			// A row of everything a smith digs for, to look at.
+			server.runOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				List<net.minecraft.world.level.block.Block> row = List.of(Blocks.COAL_ORE, Blocks.COPPER_ORE, Blocks.IRON_ORE, Blocks.GOLD_ORE,
+					Blocks.REDSTONE_ORE, Blocks.LAPIS_ORE, Blocks.DIAMOND_ORE, Blocks.EMERALD_ORE, Blocks.NETHER_QUARTZ_ORE,
+					Blocks.ANCIENT_DEBRIS, Blocks.OBSIDIAN, Blocks.CRYING_OBSIDIAN, Blocks.AMETHYST_CLUSTER);
+				for (int i = 0; i < row.size(); i++) {
+					level.setBlockAndUpdate(new BlockPos(bx - 6 + i, by, bz + 5), Blocks.SMOOTH_STONE.defaultBlockState());
+					level.setBlockAndUpdate(new BlockPos(bx - 6 + i, by + 1, bz + 5), row.get(i).defaultBlockState());
+				}
+			});
+
+			// ------------------------------------------------ 4. the furnace turns them into materials
+			Object[][] ovens = {
+				{Blocks.FURNACE, Items.RAW_IRON, HIERRO},
+				{Blocks.FURNACE, Items.RAW_COPPER, COBRE},
+				{Blocks.FURNACE, Items.RESIN_CLUMP, dev.forja.material.ForgeMaterial.RESINA},
+				{Blocks.BLAST_FURNACE, Items.RAW_GOLD, ORO},
+				{Blocks.BLAST_FURNACE, Items.ANCIENT_DEBRIS, null},
+			};
+			server.runOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				for (int i = 0; i < ovens.length; i++) {
+					BlockPos pos = new BlockPos(bx + 12 + i, by, bz - 2);
+					level.setBlockAndUpdate(pos, ((net.minecraft.world.level.block.Block) ovens[i][0]).defaultBlockState());
+					var furnace = (net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity) level.getBlockEntity(pos);
+					check(furnace != null, "the furnace should have its block entity");
+					furnace.setItem(0, new ItemStack((Item) ovens[i][1]));
+					furnace.setItem(1, new ItemStack(Items.COAL));
+				}
+			});
+
+			// ------------------------------------------------ 5. what only a creature gives
+			// Each one killed where the fire it lives by is: over a pool of lava.
+			server.runOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				for (BlockPos pos : BlockPos.betweenClosed(bx + 3, by - 1, bz + 1, bx + 5, by - 1, bz + 3)) {
+					level.setBlockAndUpdate(pos, Blocks.LAVA.defaultBlockState());
+				}
+				dev.forja.entity.LivingSlag slag = dev.forja.registry.ModEntities.ESCORIA.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				check(slag != null, "no living slag");
+				slag.setSize(dev.forja.entity.LivingSlag.SMALLEST);
+				slag.snapTo(bx + 4.5, by - 0.8, bz + 2.5, 0.0F, 0.0F);
+				level.addFreshEntity(slag);
+				slag.hurtServer(level, level.damageSources().genericKill(), 1000.0F);
+				dev.forja.entity.EmberWisp wisp = dev.forja.registry.ModEntities.PAVESA.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				check(wisp != null, "no ember wisp");
+				wisp.snapTo(bx + 3.5, by - 0.5, bz + 1.5, 0.0F, 0.0F);
+				level.addFreshEntity(wisp);
+				wisp.hurtServer(level, level.damageSources().genericKill(), 1000.0F);
+			});
+			context.waitTicks(60);
+			int[] fromFire = server.computeOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				int escoria = 0;
+				int ascua = 0;
+				for (var drop : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+					new net.minecraft.world.phys.AABB(bx + 2, by - 2, bz, bx + 7, by + 4, bz + 5))) {
+					escoria += drop.getItem().is(dev.forja.registry.ModItems.ESCORIA) ? drop.getItem().getCount() : 0;
+					ascua += drop.getItem().is(dev.forja.registry.ModItems.ASCUA) ? drop.getItem().getCount() : 0;
+				}
+				return new int[] {escoria, ascua};
+			});
+			log("materiales: sobre la lava, 3 s despues: escoria " + fromFire[0] + ", ascuas " + fromFire[1]);
+			quiet(context);
+			tp(server, bx + 4.5, by + 1.5, bz - 2.5, 0.0F, 38.0F);
+			context.waitTicks(10);
+			context.takeScreenshot(TestScreenshotOptions.of("forja_mat_02_lava").disableCounterPrefix());
+			check(fromFire[0] > 0, "slag killed over lava should leave escoria that does not burn in it");
+			check(fromFire[1] > 0, "a wisp killed over lava should leave embers that do not burn in it");
+
+			String others = server.computeOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				StringBuilder out = new StringBuilder();
+				// The suits: the plate is a two-in-five chance, so up to twenty of them.
+				int plates = 0;
+				int suits = 0;
+				while (plates == 0 && suits < 20) {
+					dev.forja.entity.HollowArmor suit = dev.forja.registry.ModEntities.CORAZA.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+					suit.snapTo(bx + 9.5, by, bz + 2.5, 0.0F, 0.0F);
+					level.addFreshEntity(suit);
+					suit.hurtServer(level, level.damageSources().genericKill(), 1000.0F);
+					suits++;
+					for (var drop : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+						new net.minecraft.world.phys.AABB(bx + 7, by - 1, bz, bx + 12, by + 4, bz + 5))) {
+						plates += drop.getItem().is(dev.forja.registry.ModItems.PLACA_HUECA) ? drop.getItem().getCount() : 0;
+						drop.discard();
+					}
+				}
+				out.append("placa hueca ").append(plates).append(" en ").append(suits).append(" corazas; ");
+				// The smith: his heart, and nobody else's.
+				dev.forja.entity.FallenSmith smith = dev.forja.registry.ModEntities.HERRERO_CAIDO.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				smith.snapTo(bx + 15.5, by, bz + 6.5, 0.0F, 0.0F);
+				level.addFreshEntity(smith);
+				for (int hit = 0; hit < 20 && smith.isAlive(); hit++) {
+					smith.invulnerableTime = 0;
+					smith.hurtServer(level, level.damageSources().genericKill(), 100000.0F);
+				}
+				int hearts = 0;
+				for (var drop : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+					new net.minecraft.world.phys.AABB(bx + 12, by - 1, bz + 3, bx + 19, by + 5, bz + 10))) {
+					hearts += drop.getItem().is(dev.forja.registry.ModItems.CORAZON_DE_FORJA) ? drop.getItem().getCount() : 0;
+					drop.discard();
+				}
+				out.append("corazon ").append(hearts).append(" (herrero vivo: ").append(smith.isAlive()).append(")");
+				smith.discard();
+				return out + "|" + plates + "|" + hearts;
+			});
+			String[] got = others.split("\\|");
+			log("materiales: " + got[0]);
+			check(Integer.parseInt(got[1]) > 0, "twenty hollow suits and not one plate");
+			check(Integer.parseInt(got[2]) == 1, "the fallen smith should leave exactly one heart");
+
+			// A meteorite, a way off, and what it leaves in its crater.
+			BlockPos crater = new BlockPos(bx + 34, by, bz + 6);
+			server.runOnServer(s -> dev.forja.world.WorldEvents.meteorForTest(connection.getServerLevel(), crater));
+			context.waitTicks(60);
+			int starIron = server.computeOnServer(s -> {
+				int found = 0;
+				for (var drop : connection.getServerLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+					new net.minecraft.world.phys.AABB(crater).inflate(6.0))) {
+					found += drop.getItem().is(ModItems.HIERRO_ESTELAR) ? drop.getItem().getCount() : 0;
+				}
+				return found;
+			});
+			log("materiales: el meteorito dejo " + starIron + " de hierro estelar");
+			quiet(context);
+			tp(server, crater.getX() + 0.5, by + 3.0, crater.getZ() - 6.5, 0.0F, 30.0F);
+			context.waitTicks(10);
+			context.takeScreenshot(TestScreenshotOptions.of("forja_mat_03_meteorito").disableCounterPrefix());
+			check(starIron >= 3, "a meteorite should leave its star iron in the crater, found " + starIron);
+
+			// ------------------------------------------------ 6. gear melts back into its own material
+			String melted = server.computeOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				BlockPos pot = new BlockPos(bx + 20, by, bz - 2);
+				level.setBlockAndUpdate(pot, dev.forja.registry.ModBlocks.CRISOL_DE_HIERRO.defaultBlockState());
+				var crucible = (dev.forja.block.entity.CrucibleBlockEntity) level.getBlockEntity(pot);
+				check(crucible != null, "the crucible should have its block entity");
+				List<dev.forja.material.ForgeMaterial> materials = new ArrayList<>(Assembler.defaultMaterials(ForgeType.PICO));
+				materials.set(0, dev.forja.material.ForgeMaterial.ESCORIA);
+				crucible.setItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_FIRST, Assembler.create(ForgeType.PICO, materials, level.registryAccess()));
+				crucible.setItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_FUEL, new ItemStack(ModItems.ASCUA, 4));
+				for (int tick = 0; tick < 400; tick++) {
+					dev.forja.block.entity.CrucibleBlockEntity.serverTick(level, pot, level.getBlockState(pot), crucible);
+				}
+				ItemStack out = crucible.getItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_OUTPUT);
+				// And a loose slag part taken apart at the table.
+				List<ItemStack> back = Assembler.disassemble(Assembler.createPart(PartType.CABEZA_PICO, dev.forja.material.ForgeMaterial.ESCORIA)).returned();
+				return out.getCount() + " " + out.getItem().getDescriptionId() + " | "
+					+ back.stream().map(stack -> stack.getCount() + " " + stack.getItem().getDescriptionId()).toList();
+			});
+			log("materiales: un pico de escoria fundido en el crisol da " + melted);
+			check(melted.contains("item.forja.escoria") && !melted.contains("netherite"),
+				"slag gear should melt back into slag, never into netherite: " + melted);
+			// Only looked at, not judged (the crucible is the foundry's): does a pot with a tank of its
+			// own last pour against it still alloy the next batch?
+			String second = server.computeOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				BlockPos pot = new BlockPos(bx + 24, by, bz - 2);
+				level.setBlockAndUpdate(pot, dev.forja.registry.ModBlocks.CRISOL_DE_BARRO.defaultBlockState());
+				level.setBlockAndUpdate(pot.east(), dev.forja.registry.ModBlocks.CUBA_DE_COLADA.defaultBlockState());
+				var crucible = (dev.forja.block.entity.CrucibleBlockEntity) level.getBlockEntity(pot);
+				crucible.setItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_FIRST, new ItemStack(Items.COPPER_INGOT, 4));
+				crucible.setItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_SECOND, new ItemStack(Items.IRON_INGOT, 2));
+				crucible.setItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_FUEL, new ItemStack(ModItems.ASCUA, 8));
+				for (int tick = 0; tick < 600; tick++) {
+					dev.forja.block.entity.CrucibleBlockEntity.serverTick(level, pot, level.getBlockState(pot), crucible);
+				}
+				var tank = (dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(pot.east());
+				return "cobre " + crucible.getItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_FIRST).getCount()
+					+ ", hierro " + crucible.getItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_SECOND).getCount()
+					+ ", en la cuba " + (tank == null ? "?" : tank.amount() + " " + tank.metal());
+			});
+			log("materiales: observacion - crisol de barro con cuba, dos tandas de bronce: queda " + second);
+
+			// The furnaces were lit about a hundred and fifty ticks ago; an ore takes two hundred.
+			context.waitTicks(120);
+			String smelted = server.computeOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				List<String> wrong = new ArrayList<>();
+				StringBuilder seen = new StringBuilder();
+				for (int i = 0; i < ovens.length; i++) {
+					var furnace = (net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity) level.getBlockEntity(new BlockPos(bx + 12 + i, by, bz - 2));
+					ItemStack out = furnace.getItem(2);
+					seen.append(((Item) ovens[i][1]).getDescriptionId()).append(" -> ").append(out.isEmpty() ? "nada" : out.getItem().getDescriptionId()).append("; ");
+					boolean right = ovens[i][2] == null ? out.is(Items.NETHERITE_SCRAP) : dev.forja.material.ForgeMaterial.fromInput(out) == ovens[i][2];
+					if (!right) {
+						wrong.add(((Item) ovens[i][1]).getDescriptionId() + " -> " + out);
+					}
+				}
+				log("materiales: hornos " + seen);
+				return wrong.toString();
+			});
+			check("[]".equals(smelted), "the furnaces should turn ores into what the materials take: " + smelted);
+
+			// The ores, lined up.
+			server.runOnServer(s -> connection.getServerPlayer().getInventory().clearContent());
+			server.runCommand("gamemode spectator @a");
+			tp(server, bx + 0.5, by + 0.4, bz - 3.5, 0.0F, 10.0F);
+			context.waitTicks(20);
+			quiet(context);
+			context.waitTicks(2);
+			context.takeScreenshot(TestScreenshotOptions.of("forja_mat_01_menas").disableCounterPrefix());
+
+			// ------------------------------------------------ 7. the guide says where each one comes from
+			String guide = context.computeOnClient(mc -> {
+				List<String> wrong = new ArrayList<>();
+				for (dev.forja.material.ForgeMaterial material : dev.forja.material.ForgeMaterial.values()) {
+					List<Component> lines = dev.forja.client.GuideText.materialTooltip(material);
+					String origin = lines.get(1).getString();
+					if (!(origin.startsWith("Se obtiene: ") || origin.startsWith("Aleación: ")) || origin.length() < 20) {
+						wrong.add(material + ": " + origin);
+					}
+					for (Component line : lines) {
+						String text = line.getString();
+						if (text.matches("(?s).*\\b[a-z]+\\.forja\\.[a-z_]+.*") || text.contains("%s")) {
+							wrong.add(material + " prints a key: " + text);
+						}
+					}
+				}
+				return wrong.toString() + " | " + dev.forja.client.GuideText.materialTooltip(dev.forja.material.ForgeMaterial.ESCORIA).get(1).getString()
+					+ " | " + dev.forja.client.GuideText.materialTooltip(dev.forja.material.ForgeMaterial.ACERO_VIVO).get(1).getString();
+			});
+			log("materiales: guia " + guide);
+			check(guide.startsWith("[]"), "the guide should say where every material comes from: " + guide);
+
+			server.runCommand("gamemode spectator @a");
+			context.runOnClient(mc -> mc.gui.setScreen(new GuideBookScreen()));
+			context.waitForScreen(GuideBookScreen.class);
+			int[] chapters = context.computeOnClient(mc -> {
+				GuideBookScreen book = (GuideBookScreen) mc.gui.screen();
+				return new int[] {book.chapterPage("materiales"), book.chapterPage("rasgos"), book.chapterPage("aleaciones")};
+			});
+			context.runOnClient(mc -> ((GuideBookScreen) mc.gui.screen()).goToPage(chapters[0]));
+			bookHover(context, chapters[0] % 2, 40, 58);
+			context.waitTicks(5);
+			context.takeScreenshot(TestScreenshotOptions.of("forja_mat_04_libro_origen").disableCounterPrefix());
+			// The last page of materials, where slag is: its own lump now, not a netherite ingot.
+			context.runOnClient(mc -> ((GuideBookScreen) mc.gui.screen()).goToPage(chapters[1] - 1));
+			bookHover(context, (chapters[1] - 1) % 2, 30, 90);
+			context.waitTicks(5);
+			context.takeScreenshot(TestScreenshotOptions.of("forja_mat_05_libro_escoria").disableCounterPrefix());
+			context.getInput().setCursorPos(0, 0);
+			context.runOnClient(mc -> ((GuideBookScreen) mc.gui.screen()).goToPage(chapters[2]));
+			context.waitTicks(5);
+			context.takeScreenshot(TestScreenshotOptions.of("forja_mat_06_libro_aleaciones").disableCounterPrefix());
+			String intro = context.computeOnClient(mc -> net.minecraft.network.chat.Component.translatable("gui.forja.libro.aleaciones_intro",
+				dev.forja.forge.Alloys.ALL.size()).getString());
+			check(intro.contains(String.valueOf(dev.forja.forge.Alloys.ALL.size())) && !intro.contains("Ocho"),
+				"the alloys chapter should count its alloys: " + intro);
+			context.runOnClient(mc -> mc.gui.setScreen(null));
+		}
+	}
+
+	/**
+	 * Counts ores in a square of chunks around a chunk, and whether every one of them sat inside the
+	 * height range given for it. Appends "name count dentro|fuera min..max;" per ore.
+	 */
+	private static void scanOres(ServerLevel level, int centreX, int centreZ, int radius, Object[][] ores, StringBuilder out) {
+		int[] count = new int[ores.length];
+		int[] low = new int[ores.length];
+		int[] high = new int[ores.length];
+		java.util.Arrays.fill(low, Integer.MAX_VALUE);
+		java.util.Arrays.fill(high, Integer.MIN_VALUE);
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		for (int cx = centreX - radius; cx <= centreX + radius; cx++) {
+			for (int cz = centreZ - radius; cz <= centreZ + radius; cz++) {
+				var chunk = level.getChunk(cx, cz);
+				for (int x = 0; x < 16; x++) {
+					for (int z = 0; z < 16; z++) {
+						for (int y = level.getMinY(); y < Math.min(level.getMaxY(), 200); y++) {
+							var state = chunk.getBlockState(pos.set(cx * 16 + x, y, cz * 16 + z));
+							for (int i = 0; i < ores.length; i++) {
+								if (((List<?>) ores[i][1]).contains(state.getBlock())) {
+									count[i]++;
+									low[i] = Math.min(low[i], y);
+									high[i] = Math.max(high[i], y);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		for (int i = 0; i < ores.length; i++) {
+			// A vein spreads a few blocks past the height it was placed at, so the range gets that much slack.
+			boolean inside = count[i] == 0 || (low[i] >= (int) ores[i][2] - 6 && high[i] <= (int) ores[i][3] + 6);
+			out.append(ores[i][0]).append(' ').append(count[i]).append(' ').append(inside ? "dentro" : "fuera")
+				.append(' ').append(count[i] == 0 ? "-" : low[i] + ".." + high[i]).append("; ");
 		}
 	}
 

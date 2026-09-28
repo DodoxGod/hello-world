@@ -80,6 +80,8 @@ public final class GuideText {
 	public static List<Component> materialTooltip(ForgeMaterial material) {
 		List<Component> tooltip = new ArrayList<>();
 		tooltip.add(material.displayName().copy().withColor(material.color));
+		tooltip.add(origin(material).withColor(0xB5E07A));
+		tooltip.add(Component.translatable(material.isBasic() ? "gui.forja.guia.se_corta" : "gui.forja.guia.se_cuela").withColor(0xAAAAAA));
 		if (material.canBeHead) {
 			tooltip.add(materialRole(PartType.CABEZA_PICO, material));
 		} else {
@@ -93,6 +95,36 @@ public final class GuideText {
 			tooltip.add(Component.translatable("trait.forja." + material.trait.id() + ".largo"));
 		}
 		return tooltip;
+	}
+
+	/**
+	 * Where a material comes from, in one line.
+	 *
+	 * <p>The materials chapter listed thirty-odd materials with what each does and never once said how
+	 * to get one: star iron, hollow plate, slag and the forge heart come from nowhere a player would
+	 * guess, and a guide that shows you the best metal in the mod without saying where it is only makes
+	 * you want it. An alloy is written out from its recipe, so it cannot drift from what the star and
+	 * the crucible actually take; everything else has a line of its own.
+	 */
+	public static MutableComponent origin(ForgeMaterial material) {
+		for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.ALL) {
+			if (!recipe.id().equals(material.getSerializedName())) {
+				continue;
+			}
+			MutableComponent inputs = Component.empty();
+			for (int i = 0; i < recipe.inputs().size(); i++) {
+				dev.forja.forge.Alloys.Part part = recipe.inputs().get(i);
+				if (i > 0) {
+					inputs.append(" + ");
+				}
+				inputs.append(part.count() + " ").append(new net.minecraft.world.item.ItemStack(part.item().get()).getHoverName());
+			}
+			// No table ever reaches white heat, so those three are the obsidian crucible's and nobody else's.
+			return recipe.heat() == dev.forja.forge.Alloys.Heat.FORJA_BLANCA
+				? Component.translatable("gui.forja.guia.origen.aleacion_blanca", inputs)
+				: Component.translatable("gui.forja.guia.origen.aleacion", inputs, recipe.heat().displayName());
+		}
+		return Component.translatable("gui.forja.guia.origen", Component.translatable("material.forja." + material.getSerializedName() + ".origen"));
 	}
 
 	public static List<Component> upgradeTooltip(Upgrade upgrade) {

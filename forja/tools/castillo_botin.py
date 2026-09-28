@@ -57,11 +57,12 @@ TABLES = {
         pool(1, 2, counted("forja:plantilla", 8, 1, 3), one("forja:lingote_de_temple", 6), one("forja:sello", 4),
              one("forja:orbe_de_mejora", 3), one("forja:talisman", 2)),
     ],
-    # the gaolers' table
+    # the gaolers' table. The chain is "iron_chain" since 1.21.9: the old "chain" did not just drop
+    # out, it made the game throw the whole table away, and every guard-room chest came up empty.
     "bastion_guardia": [
         pool(3, 5,
              counted("minecraft:bread", 8, 1, 4), counted("minecraft:cooked_beef", 5, 1, 3), counted("minecraft:arrow", 8, 4, 12),
-             counted("minecraft:iron_nugget", 8, 3, 10), counted("minecraft:chain", 5, 1, 4), counted("minecraft:leather", 5, 1, 3),
+             counted("minecraft:iron_nugget", 8, 3, 10), counted("minecraft:iron_chain", 5, 1, 4), counted("minecraft:leather", 5, 1, 3),
              counted("forja:acero", 5, 1, 2), counted("minecraft:emerald", 4, 1, 4)),
         chance(0.25, one("forja:plantilla", 5), one("minecraft:crossbow", 3)),
     ],
