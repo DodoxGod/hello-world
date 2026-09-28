@@ -206,6 +206,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			if ("mesa".equals(solo)) {
+				playTheTables(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 
 			checkStats(server);
 			checkEverythingForges(context, server, connection);
@@ -11270,6 +11275,563 @@ public class ForjaClientTest implements FabricClientGameTest {
 		// again would break fifteen unrelated checks every time a price moved.
 		dev.forja.part.ForgedParts parts = stack.get(ModComponents.PARTS);
 		return UpgradeRecipes.upgraded(stack, parts.type(), application.upgrade(), 100, connection.getServerLevel().registryAccess());
+	}
+
+	// ------------------------------------------------------------------ the tables, by hand (FORJA_SOLO=mesa)
+
+	/**
+	 * The survival loop at the tables, played with the mouse: right-click a table to open it, click a
+	 * blank template into its slot and a pattern to engrave it, cut every part of a pickaxe, a sword and a
+	 * helmet, forge them on the star with the hammer, upgrade, repair and swap, build a flail at the
+	 * greater table, take a helmet apart, and on the way try to put in each container what does not belong
+	 * there — dirt, a stick, a vanilla sword, iron at the parts table, arrows at the salvage — by click, by
+	 * shift-click and by dragging. Andy: "se puede poner cualquier objeto en los contenedores" and
+	 * "hacer herramientas llega a ser extraño". FORJA_SOLO=mesa runs it alone.
+	 */
+	private static void playTheTables(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		// A clean floor and room to stand, then the five of them in a row.
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d minecraft:stone", x - 8, y - 1, z - 3, x + 8, y - 1, z + 4));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d minecraft:air", x - 8, y, z - 3, x + 8, y + 3, z + 4));
+		BlockPos partsTable = new BlockPos(x - 4, y, z + 2);
+		BlockPos forgeTable = new BlockPos(x - 1, y, z + 2);
+		BlockPos greaterTable = new BlockPos(x + 2, y, z + 2);
+		BlockPos extractionTable = new BlockPos(x + 5, y, z + 2);
+		BlockPos cabinet = new BlockPos(x - 7, y, z + 2);
+		for (var entry : java.util.Map.of(partsTable, "mesa_de_piezas", forgeTable, "mesa_de_forja", greaterTable, "mesa_de_forja_mayor",
+			extractionTable, "mesa_de_extraccion", cabinet, "armario_de_piezas").entrySet()) {
+			BlockPos at = entry.getKey();
+			server.runCommand(String.format(Locale.ROOT, "setblock %d %d %d forja:%s", at.getX(), at.getY(), at.getZ(), entry.getValue()));
+		}
+		server.runOnServer(s -> {
+			var inventory = connection.getServerPlayer().getInventory();
+			inventory.clearContent();
+			inventory.setItem(0, new ItemStack(ModItems.PLANTILLA, 2));
+			inventory.setItem(1, new ItemStack(Items.OAK_PLANKS, 3));
+			inventory.setItem(2, new ItemStack(Items.AMETHYST_SHARD, 24));
+			inventory.setItem(3, new ItemStack(Items.LEATHER, 10));
+			inventory.setItem(4, new ItemStack(Items.IRON_INGOT, 4));
+			inventory.setItem(5, new ItemStack(Items.DIRT, 8));
+			inventory.setItem(6, new ItemStack(Items.STICK, 4));
+			inventory.setItem(7, new ItemStack(Items.IRON_SWORD));
+			inventory.setItem(8, new ItemStack(Items.SUGAR, 8));
+			// The rest of the patterns come engraved: engraving is clicked once below, and it is the same click.
+			PartType[] patterns = {PartType.MANGO, PartType.ATADURA, PartType.HOJA, PartType.GUARDA, PartType.PLACA_CASCO, PartType.FORRO};
+			for (int i = 0; i < patterns.length; i++) {
+				ItemStack template = new ItemStack(ModItems.PLANTILLA);
+				TemplateItem.engrave(template, patterns[i]);
+				inventory.setItem(10 + i, template);
+			}
+			inventory.setSelectedSlot(0);
+		});
+		context.waitTicks(5);
+
+		// ---- the parts table: engrave, refuse metal, cut six parts
+		openByHand(context, server, partsTable, ForgeScreen.class);
+		check(server.computeOnServer(s -> menu(connection).station() == Station.PIEZAS), "right-clicking the parts table should open it");
+		clickInv(context, 0);
+		click(context, ForgeMenu.TEMPLATE_SLOT);
+		check(serverSlot(server, connection, ForgeMenu.TEMPLATE_SLOT).is(ModItems.PLANTILLA) && carried(server, connection).getCount() == 1,
+			"one blank template goes in the slot, the other stays in the hand");
+		clickInv(context, 0);
+		shotMesa(context, "mesa_01_plantilla_en_blanco");
+		clickPanel(context, 7 + 8, 24 + 8);
+		check(TemplateItem.pattern(serverSlot(server, connection, ForgeMenu.TEMPLATE_SLOT)) == PartType.CABEZA_PICO,
+			"clicking the first pattern should engrave a pickaxe head");
+
+		// Iron: poured, never cut. The slot turns it away and the line under the grid says why.
+		clickInv(context, 4);
+		int[] materialAt = slotCentre(context, ForgeMenu.MATERIAL_SLOT);
+		cursorAt(context, materialAt[0], materialAt[1]);
+		context.waitTicks(3);
+		shotMesa(context, "mesa_02_metal_no_se_corta");
+		click(context, ForgeMenu.MATERIAL_SLOT);
+		check(serverSlot(server, connection, ForgeMenu.MATERIAL_SLOT).isEmpty() && carried(server, connection).is(Items.IRON_INGOT),
+			"the parts table must not take iron: it is cast, and nothing ever came out of it");
+		clickInv(context, 4);
+
+		shiftInv(context, 2);
+		check(serverSlot(server, connection, ForgeMenu.MATERIAL_SLOT).getCount() == 24, "shift-click puts the amethyst in the material slot, got "
+			+ serverSlot(server, connection, ForgeMenu.MATERIAL_SLOT) + ", in hand " + carried(server, connection) + ", slot 2 " + inventoryItem(server, connection, 2)
+			+ ", slot 4 " + inventoryItem(server, connection, 4));
+		shotMesa(context, "mesa_03_cabeza_lista");
+		cutInto(context, 20);
+		check(serverSlot(server, connection, ForgeMenu.MATERIAL_SLOT).getCount() == 21, "a pickaxe head costs three amethyst, once");
+		check(inventoryItem(server, connection, 20).getItem() == ModItems.part(PartType.CABEZA_PICO), "and the head is in the inventory");
+
+		// Handles, from the three planks, shift-clicked out: the result slot keeps cutting while there is material.
+		useTemplate(context, 10, 30);
+		click(context, ForgeMenu.MATERIAL_SLOT);
+		clickInv(context, 2);
+		clickInv(context, 1);
+		click(context, ForgeMenu.MATERIAL_SLOT);
+		shiftClick(context, ForgeMenu.PART_RESULT_SLOT);
+		check(countOf(server, connection, ModItems.part(PartType.MANGO)) == 3 && serverSlot(server, connection, ForgeMenu.MATERIAL_SLOT).isEmpty(),
+			"three planks, shift-clicked, are three handles and nothing more");
+		useTemplate(context, 11, 10);
+		clickInv(context, 3);
+		click(context, ForgeMenu.MATERIAL_SLOT);
+		cutInto(context, 21);
+		useTemplate(context, 15, 11);
+		cutInto(context, 22);
+		useTemplate(context, 13, 15);
+		cutInto(context, 23);
+		useTemplate(context, 14, 13);
+		cutInto(context, 24);
+		useTemplate(context, 12, 14);
+		click(context, ForgeMenu.MATERIAL_SLOT);
+		clickInv(context, 3);
+		clickInv(context, 2);
+		click(context, ForgeMenu.MATERIAL_SLOT);
+		cutInto(context, 25);
+		PartType[] cut = {PartType.ATADURA, PartType.FORRO, PartType.GUARDA, PartType.PLACA_CASCO, PartType.HOJA};
+		for (int i = 0; i < cut.length; i++) {
+			check(inventoryItem(server, connection, 21 + i).getItem() == ModItems.part(cut[i]), "the " + cut[i].id() + " should have been cut, got "
+				+ inventoryItem(server, connection, 21 + i));
+		}
+		check(countOf(server, connection, Items.LEATHER) == 1, "binding, lining, guard and helmet plate: nine of the ten leather");
+		// Walking away with the template and the amethyst still on the table hands both back.
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+		check(countOf(server, connection, Items.AMETHYST_SHARD) == 19 && countOf(server, connection, ModItems.PLANTILLA) == 8,
+			"closing the table gives back the material and the template, got " + countOf(server, connection, Items.AMETHYST_SHARD)
+				+ " amethyst and " + countOf(server, connection, ModItems.PLANTILLA) + " templates");
+
+		// ---- the forge table: refuse dirt every way there is, then a pickaxe, a sword and a helmet
+		openByHand(context, server, forgeTable, ForgeScreen.class);
+		clickInv(context, 5);
+		int[] point = slotCentre(context, ForgeMenu.STAR_FIRST);
+		cursorAt(context, point[0], point[1]);
+		context.waitTicks(3);
+		shotMesa(context, "mesa_04_estrella_rechaza_tierra");
+		click(context, ForgeMenu.STAR_FIRST);
+		// And dragged across all five points.
+		context.getInput().holdMouse(0);
+		for (int i = 0; i < ForgeMenu.STAR_COUNT; i++) {
+			int[] at = slotCentre(context, ForgeMenu.STAR_FIRST + i);
+			cursorAt(context, at[0], at[1]);
+			context.waitTicks(2);
+		}
+		context.getInput().releaseMouse(0);
+		context.waitTicks(3);
+		check(starEmpty(server, connection) && carried(server, connection).getCount() == 8, "dirt, clicked or dragged, stays off the star");
+		clickInv(context, 5);
+		shiftInv(context, 5);
+		shiftInv(context, 6);
+		shiftInv(context, 7);
+		check(starEmpty(server, connection) && countOf(server, connection, Items.DIRT) == 8 && countOf(server, connection, Items.STICK) == 4
+			&& countOf(server, connection, Items.IRON_SWORD) == 1, "shift-clicked dirt, a stick or a vanilla sword stay in the inventory");
+
+		shiftInv(context, 20);
+		shiftInv(context, find(server, connection, ModItems.part(PartType.MANGO)));
+		shiftInv(context, 21);
+		shotMesa(context, "mesa_05_pico_en_la_estrella");
+		check(server.computeOnServer(s -> menu(connection).action() == ForgeMenu.Action.FORGE
+			&& menu(connection).forgePreview().get(ModComponents.PARTS).type() == ForgeType.PICO), "head, handle and binding make a pickaxe, the star has "
+			+ server.computeOnServer(s -> java.util.stream.IntStream.range(0, ForgeMenu.STAR_COUNT)
+				.mapToObj(i -> menu(connection).getSlot(ForgeMenu.STAR_FIRST + i).getItem().toString()).toList() + " / " + menu(connection).action()));
+		check(countOf(server, connection, ModItems.part(PartType.MANGO)) == 2, "shift-click puts one handle on the star, not the pile");
+		strike(context);
+		check(serverSlot(server, connection, ForgeMenu.CENTER_SLOT).get(ModComponents.PARTS).type() == ForgeType.PICO && starEmpty(server, connection),
+			"the hammer should leave a pickaxe in the middle and nothing on the points");
+		shotMesa(context, "mesa_06_pico_forjado");
+		click(context, ForgeMenu.CENTER_SLOT);
+		clickInv(context, 26);
+
+		shiftInv(context, 25);
+		shiftInv(context, find(server, connection, ModItems.part(PartType.MANGO)));
+		shiftInv(context, 23);
+		strike(context);
+		check(serverSlot(server, connection, ForgeMenu.CENTER_SLOT).get(ModComponents.PARTS).type() == ForgeType.ESPADA, "blade, handle and guard make a sword");
+		click(context, ForgeMenu.CENTER_SLOT);
+		clickInv(context, 27);
+		shiftInv(context, 24);
+		shiftInv(context, 22);
+		strike(context);
+		check(serverSlot(server, connection, ForgeMenu.CENTER_SLOT).get(ModComponents.PARTS).type() == ForgeType.CASCO, "plate and lining make a helmet");
+		click(context, ForgeMenu.CENTER_SLOT);
+		clickInv(context, 28);
+
+		// Parts that make nothing: the panel says so, instead of "those items do not upgrade this piece".
+		server.runOnServer(s -> {
+			var inventory = connection.getServerPlayer().getInventory();
+			inventory.setItem(31, Assembler.createPart(PartType.CABEZA_HACHA, AMATISTA));
+			inventory.setItem(32, Assembler.createPart(PartType.FORRO, CUERO));
+			inventory.setItem(33, Assembler.createPart(PartType.BOLA, AMATISTA));
+			inventory.setItem(34, Assembler.createPart(PartType.CADENA, CUERO));
+			inventory.setItem(35, Assembler.createPart(PartType.HOJA, PIEDRA));
+		});
+		context.waitTicks(3);
+		shiftInv(context, 31);
+		shiftInv(context, 32);
+		check(server.computeOnServer(s -> menu(connection).action() == ForgeMenu.Action.NONE), "an axe head and a lining make nothing");
+		shotMesa(context, "mesa_07_no_forman_nada");
+		clearStar(context, server, connection);
+		// A flail at the plain bench: it names the table that would.
+		shiftInv(context, 33);
+		shiftInv(context, 34);
+		shiftInv(context, find(server, connection, ModItems.part(PartType.MANGO)));
+		check(server.computeOnServer(s -> menu(connection).beyondBench() == ForgeType.MANGUAL), "the bench should say a flail is the greater table's");
+		shotMesa(context, "mesa_08_mangual_en_el_banco");
+		clearStar(context, server, connection);
+
+		// Upgrade: the pickaxe in the middle, sugar on a point, one press.
+		shiftInv(context, 26);
+		shiftInv(context, 8);
+		check(server.computeOnServer(s -> menu(connection).action() == ForgeMenu.Action.UPGRADE), "sugar on a pickaxe is Eficiencia");
+		shotMesa(context, "mesa_09_mejora");
+		clickPanel(context, 155, 95);
+		ItemStack upgraded = serverSlot(server, connection, ForgeMenu.CENTER_SLOT);
+		int efficiency = upgraded.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY).percent(Upgrade.EFICIENCIA);
+		log("mesa: eficiencia " + efficiency + "%, azucar que queda " + countStar(server, connection, Items.SUGAR));
+		check(efficiency > 0 && countStar(server, connection, Items.SUGAR) < 8, "the press should raise Eficiencia and spend sugar");
+		clearStar(context, server, connection);
+
+		// Repair: worn pickaxe, amethyst on the star.
+		server.runOnServer(s -> {
+			ItemStack pick = menu(connection).getSlot(ForgeMenu.CENTER_SLOT).getItem().copy();
+			pick.setDamageValue(pick.getMaxDamage() * 6 / 10);
+			menu(connection).getSlot(ForgeMenu.CENTER_SLOT).set(pick);
+		});
+		context.waitTicks(3);
+		shiftInv(context, find(server, connection, Items.AMETHYST_SHARD));
+		check(server.computeOnServer(s -> menu(connection).action() == ForgeMenu.Action.REPAIR), "amethyst on a worn amethyst pickaxe repairs it");
+		shotMesa(context, "mesa_10_reparar");
+		clickPanel(context, 155, 95);
+		check(serverSlot(server, connection, ForgeMenu.CENTER_SLOT).getDamageValue() == 0, "the repair should mend it whole");
+		check(countStar(server, connection, Items.AMETHYST_SHARD) == 19 - 3, "60% wear at a quarter an ingot is three shards, got "
+			+ countStar(server, connection, Items.AMETHYST_SHARD));
+		clearStar(context, server, connection);
+		// A seal on a piece that has not reached Maestria 10 says what it is waiting for.
+		server.runOnServer(s -> connection.getServerPlayer().getInventory().add(dev.forja.item.SealItem.create(dev.forja.forge.Perk.MINERO)));
+		context.waitTicks(3);
+		shiftInv(context, find(server, connection, ModItems.SELLO));
+		check(server.computeOnServer(s -> menu(connection).action() == ForgeMenu.Action.NONE), "a seal does nothing to a new pickaxe");
+		context.getInput().setCursorPos(0, 0);
+		shotMesa(context, "mesa_10b_sello_espera");
+		clearStar(context, server, connection);
+		shiftClick(context, ForgeMenu.CENTER_SLOT);
+
+		// Swap: the sword gets a stone blade.
+		shiftInv(context, 27);
+		shiftInv(context, 35);
+		check(server.computeOnServer(s -> menu(connection).action() == ForgeMenu.Action.SWAP), "a blade on a sword swaps it");
+		shotMesa(context, "mesa_11_cambio");
+		clickPanel(context, 155, 95);
+		check(serverSlot(server, connection, ForgeMenu.CENTER_SLOT).get(ModComponents.PARTS).material(0) == PIEDRA && starEmpty(server, connection),
+			"the sword should come out with the stone blade and the blade should be spent");
+		shiftClick(context, ForgeMenu.CENTER_SLOT);
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+
+		// ---- the greater table: the flail
+		openByHand(context, server, greaterTable, ForgeScreen.class);
+		shiftInv(context, find(server, connection, ModItems.part(PartType.BOLA)));
+		shiftInv(context, find(server, connection, ModItems.part(PartType.CADENA)));
+		shiftInv(context, find(server, connection, ModItems.part(PartType.MANGO)));
+		check(server.computeOnServer(s -> menu(connection).action() == ForgeMenu.Action.FORGE), "the greater table forges the flail");
+		shotMesa(context, "mesa_12_mangual_en_la_mayor");
+		strike(context);
+		check(serverSlot(server, connection, ForgeMenu.CENTER_SLOT).get(ModComponents.PARTS).type() == ForgeType.MANGUAL, "a flail in the middle");
+		shiftClick(context, ForgeMenu.CENTER_SLOT);
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+
+		// ---- salvage: a helmet apart, arrows refused, a pile one at a time
+		openByHand(context, server, partsTable, ForgeScreen.class);
+		clickPanel(context, 5 + 60 + 29, 4 + 8);
+		check(server.computeOnServer(s -> menu(connection).getMode() == ForgeMenu.MODE_DISASSEMBLE), "the second tab is salvage");
+		shiftInv(context, find(server, connection, ModItems.forged(ForgeType.CASCO)));
+		shotMesa(context, "mesa_13_desarmar_casco");
+		int platesBefore = countOf(server, connection, ModItems.part(PartType.PLACA_CASCO));
+		clickPanel(context, 64 + 44, 68 + 8);
+		check(countOf(server, connection, ModItems.forged(ForgeType.CASCO)) == 0
+			&& countOf(server, connection, ModItems.part(PartType.PLACA_CASCO)) == platesBefore + 1
+			&& serverSlot(server, connection, ForgeMenu.DISASSEMBLE_SLOT).isEmpty(), "the helmet should come apart into its plate and lining");
+		server.runOnServer(s -> {
+			var inventory = connection.getServerPlayer().getInventory();
+			inventory.add(Assembler.create(ForgeType.FLECHA, Assembler.defaultMaterials(ForgeType.FLECHA)).copyWithCount(8));
+			ItemStack guards = Assembler.createPart(PartType.GUARDA, MADERA);
+			guards.setCount(5);
+			inventory.add(guards);
+		});
+		context.waitTicks(3);
+		int arrows = find(server, connection, ModItems.forged(ForgeType.FLECHA));
+		clickInv(context, arrows);
+		click(context, ForgeMenu.DISASSEMBLE_SLOT);
+		check(serverSlot(server, connection, ForgeMenu.DISASSEMBLE_SLOT).isEmpty() && carried(server, connection).getCount() == 8,
+			"arrows do not go on the salvage slot: four come from one set of parts");
+		clickInv(context, arrows);
+		clickInv(context, find(server, connection, ModItems.part(PartType.GUARDA)));
+		click(context, ForgeMenu.DISASSEMBLE_SLOT);
+		int planks = countOf(server, connection, Items.OAK_PLANKS);
+		clickPanel(context, 64 + 44, 68 + 8);
+		check(serverSlot(server, connection, ForgeMenu.DISASSEMBLE_SLOT).getCount() == 4 && countOf(server, connection, Items.OAK_PLANKS) == planks + 1,
+			"one guard of the five is recycled per press, got " + serverSlot(server, connection, ForgeMenu.DISASSEMBLE_SLOT).getCount());
+		shotMesa(context, "mesa_14_desarmar_pila");
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+		check(countOf(server, connection, ModItems.part(PartType.GUARDA)) >= 4, "the four left on the slot come back on close");
+
+		// ---- the extraction table's tray and the cabinet's drawers turn dirt away too
+		openByHand(context, server, extractionTable, dev.forja.client.ExtractionScreen.class);
+		clickInv(context, find(server, connection, Items.DIRT));
+		click(context, dev.forja.menu.ExtractionMenu.PAYMENT_FIRST);
+		check(server.computeOnServer(s -> connection.getServerPlayer().containerMenu.getSlot(dev.forja.menu.ExtractionMenu.PAYMENT_FIRST).getItem().isEmpty()),
+			"the extraction tray must not take dirt");
+		putBack(context, server, connection);
+		clickInv(context, find(server, connection, Items.AMETHYST_SHARD));
+		click(context, dev.forja.menu.ExtractionMenu.PAYMENT_FIRST);
+		check(server.computeOnServer(s -> connection.getServerPlayer().containerMenu.getSlot(dev.forja.menu.ExtractionMenu.PAYMENT_FIRST).getItem().is(Items.AMETHYST_SHARD)),
+			"amethyst pays for Filo, so the tray takes it");
+		context.getInput().setCursorPos(0, 0);
+		shotMesa(context, "mesa_15_extraccion_bandeja");
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+		check(countOf(server, connection, Items.AMETHYST_SHARD) == 16, "and gives it back on close");
+
+		openByHand(context, server, cabinet, dev.forja.client.CabinetScreen.class);
+		clickInv(context, find(server, connection, Items.DIRT));
+		click(context, 0);
+		check(server.computeOnServer(s -> connection.getServerPlayer().containerMenu.getSlot(0).getItem().isEmpty()), "the cabinet refuses dirt by hand");
+		shotMesa(context, "mesa_16_armario_rechaza");
+		putBack(context, server, connection);
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+
+		// ---- the portable anvil: no block behind it, and it still hands back what was left on it
+		server.runOnServer(s -> {
+			var inventory = connection.getServerPlayer().getInventory();
+			ItemStack held = inventory.getItem(0).copy();
+			inventory.setItem(0, new ItemStack(ModItems.YUNQUE_PORTATIL));
+			inventory.add(held);
+			inventory.setSelectedSlot(0);
+		});
+		context.waitTicks(3);
+		context.getInput().lookAt(0.0F, -80.0F);
+		context.waitTicks(2);
+		context.getInput().pressKey(options -> options.keyUse);
+		context.waitForScreen(ForgeScreen.class);
+		context.waitTicks(3);
+		int templates = countOf(server, connection, ModItems.PLANTILLA);
+		clickInv(context, find(server, connection, ModItems.PLANTILLA));
+		click(context, ForgeMenu.TEMPLATE_SLOT);
+		putBack(context, server, connection);
+		clickInv(context, find(server, connection, Items.AMETHYST_SHARD));
+		click(context, ForgeMenu.MATERIAL_SLOT);
+		context.getInput().setCursorPos(0, 0);
+		shotMesa(context, "mesa_17_yunque_de_viaje");
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+		check(countOf(server, connection, ModItems.PLANTILLA) == templates && countOf(server, connection, Items.AMETHYST_SHARD) == 16,
+			"closing the portable anvil gives back the template and the amethyst (it used to keep them), got "
+				+ countOf(server, connection, ModItems.PLANTILLA) + " templates and " + countOf(server, connection, Items.AMETHYST_SHARD) + " amethyst");
+		log("mesa: todo el ciclo jugado a mano");
+	}
+
+	/** Right-clicks a table from a step in front of it and waits for its screen. */
+	private static void openByHand(ClientGameTestContext context, TestServerContext server, BlockPos table,
+		Class<? extends net.minecraft.client.gui.screens.Screen> screen) {
+		tp(server, table.getX() + 0.5, table.getY(), table.getZ() - 1.3, 0.0F, 30.0F);
+		context.waitTicks(5);
+		context.getInput().lookAt(table);
+		context.waitTicks(2);
+		context.getInput().pressKey(options -> options.keyUse);
+		context.waitForScreen(screen);
+		context.waitTicks(3);
+	}
+
+	/** Where the open container screen's panel starts, in GUI pixels. */
+	private static int[] panelOrigin(net.minecraft.client.gui.screens.Screen screen) {
+		if (screen instanceof ForgeScreen forge) {
+			double[] corner = forge.guiPoint(0, 0);
+			return new int[] {(int) corner[0], (int) corner[1]};
+		}
+		boolean extraction = screen instanceof dev.forja.client.ExtractionScreen;
+		return new int[] {(screen.width - (extraction ? 236 : 206)) / 2, (screen.height - (extraction ? 204 : 196)) / 2};
+	}
+
+	/** Moves the real cursor over a point of the open panel. */
+	private static void cursorAt(ClientGameTestContext context, int panelX, int panelY) {
+		double[] at = context.computeOnClient(mc -> {
+			int[] origin = panelOrigin(mc.gui.screen());
+			double scale = mc.getWindow().getGuiScale();
+			return new double[] {(origin[0] + panelX) * scale, (origin[1] + panelY) * scale};
+		});
+		context.getInput().setCursorPos(at[0], at[1]);
+	}
+
+	/** The middle of a slot of the open screen, relative to its panel. */
+	private static int[] slotCentre(ClientGameTestContext context, int slot) {
+		return context.computeOnClient(mc -> {
+			var menu = ((net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>) mc.gui.screen()).getMenu();
+			var at = menu.getSlot(slot);
+			return new int[] {at.x + 8, at.y + 8};
+		});
+	}
+
+	/** The slot of the open screen that shows this slot of the player's inventory. */
+	private static int invSlot(ClientGameTestContext context, int index) {
+		return context.computeOnClient(mc -> {
+			var menu = ((net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>) mc.gui.screen()).getMenu();
+			for (var slot : menu.slots) {
+				if (slot.container instanceof net.minecraft.world.entity.player.Inventory && slot.getContainerSlot() == index) {
+					return slot.index;
+				}
+			}
+			throw new AssertionError("the open screen shows no inventory slot " + index);
+		});
+	}
+
+	/**
+	 * A real click of the left button on a slot, with shift held or not. Fabric's test input sends every
+	 * mouse button with no modifiers, whatever keys it is holding, so a shift-click goes in through the
+	 * same mouse handler a real one does, with the shift bit set on it.
+	 */
+	private static void clickSlot(ClientGameTestContext context, int slot, boolean shift) {
+		int[] at = slotCentre(context, slot);
+		cursorAt(context, at[0], at[1]);
+		context.waitTicks(1);
+		if (shift) {
+			context.runOnClient(mc -> {
+				var mouse = (net.fabricmc.fabric.mixin.client.gametest.input.MouseHandlerAccessor) mc.mouseHandler;
+				var button = new net.minecraft.client.input.MouseButtonInfo(0, org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT);
+				mouse.invokeOnButton(mc.getWindow().handle(), button, org.lwjgl.glfw.GLFW.GLFW_PRESS);
+				mouse.invokeOnButton(mc.getWindow().handle(), button, org.lwjgl.glfw.GLFW.GLFW_RELEASE);
+			});
+		} else {
+			context.getInput().pressMouse(0);
+		}
+		// Long enough that the next click on the same spot is not taken for a double click.
+		context.waitTicks(6);
+	}
+
+	private static void click(ClientGameTestContext context, int slot) {
+		clickSlot(context, slot, false);
+	}
+
+	private static void shiftClick(ClientGameTestContext context, int slot) {
+		clickSlot(context, slot, true);
+	}
+
+	private static void clickInv(ClientGameTestContext context, int index) {
+		click(context, invSlot(context, index));
+	}
+
+	private static void shiftInv(ClientGameTestContext context, int index) {
+		shiftClick(context, invSlot(context, index));
+	}
+
+	/** A real click on a point of the panel: a pattern, a tab, a button. */
+	private static void clickPanel(ClientGameTestContext context, int panelX, int panelY) {
+		cursorAt(context, panelX, panelY);
+		context.waitTicks(1);
+		context.getInput().pressMouse(0);
+		context.waitTicks(4);
+	}
+
+	/** The forge button pressed twice, as a smith does it: once to swing, once to strike. */
+	private static void strike(ClientGameTestContext context) {
+		clickPanel(context, 155, 95);
+		context.waitTicks(8);
+		clickPanel(context, 155, 95);
+		context.waitTicks(3);
+	}
+
+	/** Takes the cut part out of the result slot into an empty inventory slot. */
+	private static void cutInto(ClientGameTestContext context, int index) {
+		click(context, ForgeMenu.PART_RESULT_SLOT);
+		clickInv(context, index);
+	}
+
+	/** Swaps the template on the table for another: the old one to an empty slot, the new one in. */
+	private static void useTemplate(ClientGameTestContext context, int from, int back) {
+		click(context, ForgeMenu.TEMPLATE_SLOT);
+		clickInv(context, back);
+		clickInv(context, from);
+		click(context, ForgeMenu.TEMPLATE_SLOT);
+	}
+
+	/** Whatever is on the cursor goes back to the first empty inventory slot. */
+	private static void putBack(ClientGameTestContext context, TestServerContext server, TestServerConnection connection) {
+		if (!carried(server, connection).isEmpty()) {
+			clickInv(context, find(server, connection, Items.AIR));
+		}
+	}
+
+	/** Shift-clicks every point of the star back into the inventory. */
+	private static void clearStar(ClientGameTestContext context, TestServerContext server, TestServerConnection connection) {
+		for (int i = 0; i < ForgeMenu.STAR_COUNT; i++) {
+			if (!serverSlot(server, connection, ForgeMenu.STAR_FIRST + i).isEmpty()) {
+				shiftClick(context, ForgeMenu.STAR_FIRST + i);
+			}
+		}
+		check(starEmpty(server, connection), "the star should be clear");
+	}
+
+	private static void shotMesa(ClientGameTestContext context, String name) {
+		quiet(context);
+		context.waitTicks(3);
+		context.takeScreenshot(TestScreenshotOptions.of(name).disableCounterPrefix());
+	}
+
+	private static ItemStack carried(TestServerContext server, TestServerConnection connection) {
+		return server.computeOnServer(s -> connection.getServerPlayer().containerMenu.getCarried().copy());
+	}
+
+	private static ItemStack serverSlot(TestServerContext server, TestServerConnection connection, int slot) {
+		return server.computeOnServer(s -> connection.getServerPlayer().containerMenu.getSlot(slot).getItem().copy());
+	}
+
+	private static ItemStack inventoryItem(TestServerContext server, TestServerConnection connection, int index) {
+		return server.computeOnServer(s -> connection.getServerPlayer().getInventory().getItem(index).copy());
+	}
+
+	private static boolean starEmpty(TestServerContext server, TestServerConnection connection) {
+		return server.computeOnServer(s -> {
+			for (int i = 0; i < ForgeMenu.STAR_COUNT; i++) {
+				if (menu(connection).getSlot(ForgeMenu.STAR_FIRST + i).hasItem()) {
+					return false;
+				}
+			}
+			return true;
+		});
+	}
+
+	/** How many of an item lie on the star. */
+	private static int countStar(TestServerContext server, TestServerConnection connection, Item item) {
+		return server.computeOnServer(s -> {
+			int total = 0;
+			for (int i = 0; i < ForgeMenu.STAR_COUNT; i++) {
+				ItemStack stack = menu(connection).getSlot(ForgeMenu.STAR_FIRST + i).getItem();
+				total += stack.is(item) ? stack.getCount() : 0;
+			}
+			return total;
+		});
+	}
+
+	/** How many of an item the player carries in the inventory (not the cursor). */
+	private static int countOf(TestServerContext server, TestServerConnection connection, Item item) {
+		return server.computeOnServer(s -> {
+			var inventory = connection.getServerPlayer().getInventory();
+			int total = 0;
+			for (int i = 0; i < 36; i++) {
+				total += inventory.getItem(i).is(item) ? inventory.getItem(i).getCount() : 0;
+			}
+			return total;
+		});
+	}
+
+	/** The first inventory slot holding this item (air: the first empty one). */
+	private static int find(TestServerContext server, TestServerConnection connection, Item item) {
+		return server.computeOnServer(s -> {
+			var inventory = connection.getServerPlayer().getInventory();
+			for (int i = 0; i < 36; i++) {
+				if (item == Items.AIR ? inventory.getItem(i).isEmpty() : inventory.getItem(i).is(item)) {
+					return i;
+				}
+			}
+			throw new AssertionError("nothing like " + item + " in the inventory");
+		});
 	}
 
 	private static ForgeMenu menu(TestServerConnection connection) {

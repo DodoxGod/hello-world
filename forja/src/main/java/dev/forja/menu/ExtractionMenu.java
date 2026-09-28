@@ -110,7 +110,12 @@ public class ExtractionMenu extends AbstractContainerMenu {
 			}
 		});
 		for (int i = 0; i < PAYMENT_COUNT; i++) {
-			this.addSlot(new Slot(this.payment, i, PAYMENT_X + i * 20, PAYMENT_Y));
+			this.addSlot(new Slot(this.payment, i, PAYMENT_X + i * 20, PAYMENT_Y) {
+				@Override
+				public boolean mayPlace(ItemStack stack) {
+					return pays(stack);
+				}
+			});
 		}
 		this.addSlot(new Slot(this.payment, PAYMENT_COUNT, ORB_X, ORB_Y) {
 			@Override
@@ -135,14 +140,43 @@ public class ExtractionMenu extends AbstractContainerMenu {
 		this.addDataSlot(this.selected);
 	}
 
+	/**
+	 * What the tray takes: something one of the upgrades is made of, or the glass bottles the sky's upgrades
+	 * are paid in. It used to take anything, and anything that is not part of the price blocks the button.
+	 */
+	public static boolean pays(ItemStack stack) {
+		if (stack.is(Items.GLASS_BOTTLE)) {
+			return true;
+		}
+		for (Upgrade upgrade : Upgrade.values()) {
+			for (Upgrade.Option option : upgrade.options) {
+				for (Upgrade.Requirement requirement : option.requirements()) {
+					if (requirement.test(stack)) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public void slotsChanged(Container container) {
 		super.slotsChanged(container);
-		// Another piece, or none: what was pointed at belonged to the last one.
-		if (container == this.gear && this.selected.get() >= this.upgrades().size()) {
-			this.selected.set(-1);
+		// Another piece, or none: what was pointed at belonged to the last one. Checked against the piece
+		// itself, not the number of its upgrades: a second sword with as many upgrades as the first kept the
+		// first one's choice, and a different upgrade than the one picked was the one about to come off.
+		if (container == this.gear) {
+			ItemStack now = this.gear.getItem(0);
+			if (!ItemStack.isSameItemSameComponents(now, this.pointedOn) || this.selected.get() >= this.upgrades().size()) {
+				this.selected.set(-1);
+			}
+			this.pointedOn = now.copy();
 		}
 	}
+
+	/** The piece the current choice was made on. */
+	private ItemStack pointedOn = ItemStack.EMPTY;
 
 	/** The upgrades on the piece in the slot, in the order the screen lists them. */
 	public List<Upgrade> upgrades() {
@@ -344,7 +378,13 @@ public class ExtractionMenu extends AbstractContainerMenu {
 			if (!this.moveItemStackTo(stack, ORB_SLOT, ORB_SLOT + 1, false)) {
 				return ItemStack.EMPTY;
 			}
-		} else if (!this.moveItemStackTo(stack, PAYMENT_FIRST, PAYMENT_FIRST + PAYMENT_COUNT, false)) {
+		} else if (pays(stack) && this.moveItemStackTo(stack, PAYMENT_FIRST, PAYMENT_FIRST + PAYMENT_COUNT, false)) {
+			// Paid in; what the tray will not take hops between the inventory and the hotbar instead.
+		} else if (index < OWN_SLOTS + 27) {
+			if (!this.moveItemStackTo(stack, OWN_SLOTS + 27, this.slots.size(), false)) {
+				return ItemStack.EMPTY;
+			}
+		} else if (!this.moveItemStackTo(stack, OWN_SLOTS, OWN_SLOTS + 27, false)) {
 			return ItemStack.EMPTY;
 		}
 		if (stack.isEmpty()) {

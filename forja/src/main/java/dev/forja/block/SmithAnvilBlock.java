@@ -115,12 +115,7 @@ public class SmithAnvilBlock extends HorizontalDirectionalBlock {
 			return net.minecraft.world.InteractionResult.SUCCESS;
 		}
 		int range = dev.forja.menu.ForgeMenu.WORKSHOP_RANGE;
-		int tables = 0;
-		for (BlockPos at : BlockPos.betweenClosed(pos.offset(-range, -2, -range), pos.offset(range, 2, range))) {
-			if (level.getBlockState(at).getBlock() instanceof ForgeTableBlock) {
-				tables++;
-			}
-		}
+		int tables = tablesServed(level, pos);
 		if (player instanceof net.minecraft.server.level.ServerPlayer smith) {
 			smith.sendOverlayMessage(tables > 0
 				? net.minecraft.network.chat.Component.translatable("gui.forja.yunque.taller", tables)
@@ -129,5 +124,21 @@ public class SmithAnvilBlock extends HorizontalDirectionalBlock {
 		level.playSound(null, pos, net.minecraft.sounds.SoundEvents.ANVIL_LAND,
 			net.minecraft.sounds.SoundSource.BLOCKS, 0.3F, 1.8F);
 		return net.minecraft.world.InteractionResult.SUCCESS;
+	}
+
+	/** How many tables with a star are close enough for this anvil to complete their workshop. */
+	public static int tablesServed(net.minecraft.world.level.Level level, BlockPos pos) {
+		int range = dev.forja.menu.ForgeMenu.WORKSHOP_RANGE;
+		int tables = 0;
+		for (BlockPos at : BlockPos.betweenClosed(pos.offset(-range, -2, -range), pos.offset(range, 2, range))) {
+			// Only a table with a star: the anvil stands in for the parts table and the saddlery, so a parts
+			// table next to it is not a table it is working with, and counting it said the anvil was busy
+			// when there was no forge anywhere near.
+			if (level.getBlockState(at).getBlock() instanceof ForgeTableBlock table
+				&& table.station.modes.contains(dev.forja.menu.ForgeMenu.MODE_FORGE)) {
+				tables++;
+			}
+		}
+		return tables;
 	}
 }

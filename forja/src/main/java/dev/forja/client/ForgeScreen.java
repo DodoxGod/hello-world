@@ -524,7 +524,13 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 		int color = TEXT;
 		ItemStack material = this.menu.getSlot(ForgeMenu.MATERIAL_SLOT).getItem();
 		ForgeMaterial chosenMaterial = ForgeMaterial.fromInput(material);
-		if (!template) {
+		ForgeMaterial carried = ForgeMaterial.fromInput(this.menu.getCarried());
+		if (carried != null && !carried.isBasic()) {
+			// The slot turns metal away now; this says why while it is still in the hand, the way the parts
+			// cabinet says it, rather than leaving a slot that simply will not take it.
+			status = Component.translatable("gui.forja.material_colado", carried.displayName());
+			color = BAD_ON_STONE;
+		} else if (!template) {
 			status = Component.translatable("gui.forja.plantilla.falta");
 		} else if (selected == null) {
 			status = Component.translatable("gui.forja.plantilla.grabar");
@@ -540,7 +546,8 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 		} else {
 			status = Component.translatable("gui.forja.coste", selected.displayName(), selected.cost);
 		}
-		this.smallCentered(g, status, x + this.imageWidth / 2, y + PARTS_LABEL_Y, color);
+		// Squeezed to the panel: "pick a shape: the template keeps it for good" ran off both edges of it.
+		this.fittedCentered(g, status, x + this.imageWidth / 2, y + PARTS_LABEL_Y, color, this.imageWidth - 14);
 	}
 
 	private void drawForge(GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
@@ -563,7 +570,22 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 			pointsUsed |= this.menu.getSlot(ForgeMenu.STAR_FIRST + i).hasItem();
 		}
 		UpgradeRecipes.Application application = this.menu.application();
-		switch (action) {
+		ItemStack carried = this.menu.getCarried();
+		boolean onlyParts = pointsUsed;
+		for (int i = 0; i < ForgeMenu.STAR_COUNT; i++) {
+			ItemStack point = this.menu.getSlot(ForgeMenu.STAR_FIRST + i).getItem();
+			onlyParts &= point.isEmpty() || point.getItem() instanceof dev.forja.item.PartItem;
+		}
+		if (action != ForgeMenu.Action.FORGE) {
+			// A hammer left swinging over a star that no longer forges would strike the next piece at once,
+			// with whatever quality the rail happened to be at.
+			this.swingStart = 0L;
+		}
+		if (!carried.isEmpty() && !carried.has(ModComponents.PARTS) && !ForgeMenu.belongsOnStar(carried)) {
+			// The star turns it away; say so while it is in the hand instead of leaving a slot that will not take it.
+			lines.wrap(this.font, Component.translatable("gui.forja.estrella.rechaza", carried.getHoverName()), BAD);
+			lines.wrap(this.font, Component.translatable("gui.forja.estrella.acepta"), MUTED);
+		} else switch (action) {
 			case FORGE -> this.statLines(preview, lines);
 			case SWAP -> {
 				lines.add(Component.translatable("gui.forja.estrella.cambio"), 0xFFFFB347);
@@ -618,8 +640,11 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 				if (application != null) {
 					this.upgradeLines(application, gear, lines);
 				} else if (this.menu.beyondBench() != null) {
-					lines.add(Component.translatable("gui.forja.mesa_mayor.1", this.menu.beyondBench().displayName()), 0xFFFFB347);
-					lines.add(Component.translatable("gui.forja.mesa_mayor.2"), MUTED);
+					dev.forja.forge.ForgeType refused = this.menu.beyondBench();
+					boolean greater = this.menu.station().needsGreater(refused);
+					lines.wrap(this.font, Component.translatable(greater ? "gui.forja.mesa_mayor.1" : "gui.forja.mesa.no_monta", refused.displayName()), 0xFFFFB347);
+					lines.wrap(this.font, Component.translatable(greater ? "gui.forja.mesa_mayor.2"
+						: refused.kind == dev.forja.forge.ForgeType.Kind.MONTURA ? "gui.forja.mesa.solo_talabarteria" : "gui.forja.mesa.talabarteria_solo_monturas"), MUTED);
 				} else if (gear.isEmpty() && this.menu.missingParts() != null) {
 					lines.add(Component.translatable("gui.forja.faltan_piezas"), 0xFFFFB347);
 					for (PartType part : this.menu.missingParts()) {
@@ -627,6 +652,21 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 					}
 				} else if (pointsUsed && this.menu.refusal() != null) {
 					this.refusalLines(gear, lines);
+				} else if (pointsUsed && !gear.isEmpty() && !gear.has(ModComponents.PARTS)) {
+					// What an alloy, a melt or a fusion left in the middle blocks the star until it is taken out.
+					lines.wrap(this.font, Component.translatable("gui.forja.centro.ocupado", gear.getHoverName()), 0xFFFFB347);
+				} else if (onlyParts) {
+					// Loose parts that make nothing, or that have no place on the piece in the middle: this used to
+					// say the items "do not upgrade this piece", with no piece there to upgrade.
+					lines.wrap(this.font, Component.translatable(gear.isEmpty() ? "gui.forja.piezas.no_forman" : "gui.forja.piezas.no_encajan"), BAD);
+					lines.wrap(this.font, Component.translatable(gear.isEmpty() ? "gui.forja.piezas.no_forman.pista" : "gui.forja.piezas.no_encajan.pista"), MUTED);
+				} else if (pointsUsed && gear.has(ModComponents.PARTS) && this.starHolds(stack -> stack.is(dev.forja.registry.ModItems.SELLO))) {
+					// A seal that does nothing says what it waits for, rather than "those items do not upgrade it".
+					lines.wrap(this.font, Component.translatable("gui.forja.don.falta", dev.forja.forge.Perk.LEVEL), BAD);
+				} else if (pointsUsed && gear.has(ModComponents.PARTS) && this.starHolds(stack -> stack.has(ModComponents.PARTS)
+					&& stack.get(ModComponents.PARTS).type() == gear.get(ModComponents.PARTS).type())) {
+					// The old piece of an inheritance that is not old enough yet.
+					lines.wrap(this.font, Component.translatable("gui.forja.herencia.falta", ForgeMenu.INHERIT_LEVEL), BAD);
 				} else if (pointsUsed) {
 					lines.add(Component.translatable("gui.forja.mejora.no_sirve.1"), BAD);
 					lines.add(Component.translatable("gui.forja.mejora.no_sirve.2"), BAD);
@@ -693,6 +733,17 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 		this.drawSwing(g, x, y);
 		this.drawHeat(g, x, y, mouseX, mouseY);
 		this.drawBurst(g, x, y);
+	}
+
+	/** Whether any point of the star holds something like that. */
+	private boolean starHolds(java.util.function.Predicate<ItemStack> test) {
+		for (int i = 0; i < ForgeMenu.STAR_COUNT; i++) {
+			ItemStack point = this.menu.getSlot(ForgeMenu.STAR_FIRST + i).getItem();
+			if (!point.isEmpty() && test.test(point)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -1035,6 +1086,17 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 	private void smallCentered(GuiGraphicsExtractor g, Component text, int centerX, int y, int color) {
 		int width = Math.round(this.font.width(text) * 0.75F);
 		this.small(g, text, centerX - width / 2, y, color);
+	}
+
+	/** Like {@link #smallCentered}, but smaller still when the line would not fit in {@code room} pixels. */
+	private void fittedCentered(GuiGraphicsExtractor g, Component text, int centerX, int y, int color, int room) {
+		float scale = Math.min(0.75F, room / (float) Math.max(1, this.font.width(text)));
+		float width = this.font.width(text) * scale;
+		g.pose().pushMatrix();
+		g.pose().translate(centerX - width / 2.0F, y + (0.75F - scale) * 4.0F);
+		g.pose().scale(scale, scale);
+		g.text(this.font, text, 0, 0, color, false);
+		g.pose().popMatrix();
 	}
 
 	private static void bevel(GuiGraphicsExtractor g, int x, int y, int w, int h, int fill, int topLeft, int bottomRight) {

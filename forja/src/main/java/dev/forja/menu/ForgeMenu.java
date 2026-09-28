@@ -151,6 +151,8 @@ public class ForgeMenu extends AbstractContainerMenu {
 	private int inheritSlot = -1;
 	private dev.forja.forge.Alloys.@Nullable Recipe alloy;
 	private int[] alloyUse = new int[STAR_COUNT];
+	/** How many parts of each point a melt takes: the whole pile, as far as one stack of metal holds. */
+	private final int[] meltUse = new int[STAR_COUNT];
 	private final List<BookTransfer> bookTransfers = new ArrayList<>();
 	/**
 	 * What each point of the star is left holding once the books and orbs on it have been read: nothing,
@@ -175,7 +177,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 		this.addSlot(new ModeSlot(this.material, 0, 64, 85, MODE_PARTS) {
 			@Override
 			public boolean mayPlace(ItemStack stack) {
-				return ForgeMaterial.fromInput(stack) != null;
+				return cuttable(stack);
 			}
 		});
 		this.addSlot(new ModeSlot(this.partResult, 0, 136, 85, MODE_PARTS) {
@@ -209,7 +211,12 @@ public class ForgeMenu extends AbstractContainerMenu {
 		});
 
 		for (int i = 0; i < STAR_COUNT; i++) {
-			this.addSlot(new ModeSlot(this.star, i, STAR_POINTS[i][0], STAR_POINTS[i][1], MODE_FORGE));
+			this.addSlot(new ModeSlot(this.star, i, STAR_POINTS[i][0], STAR_POINTS[i][1], MODE_FORGE) {
+				@Override
+				public boolean mayPlace(ItemStack stack) {
+					return belongsOnStar(stack);
+				}
+			});
 		}
 		this.addSlot(new ModeSlot(this.center, 0, CENTER_X, CENTER_Y, MODE_FORGE) {
 			@Override
@@ -226,7 +233,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 		this.addSlot(new ModeSlot(this.disassembly, 0, 20, 45, MODE_DISASSEMBLE) {
 			@Override
 			public boolean mayPlace(ItemStack stack) {
-				return stack.has(ModComponents.PARTS) || stack.getItem() instanceof PartItem;
+				return salvageable(stack);
 			}
 		});
 
@@ -243,6 +250,72 @@ public class ForgeMenu extends AbstractContainerMenu {
 		this.addDataSlot(this.heat);
 		this.addDataSlot(this.workshop);
 		this.mode.set(station.modes.getFirst());
+		// Read now, not on the first thing laid on the star: the heat bar showed a table over lava as cold
+		// until something was put down on it.
+		this.readSurroundings();
+	}
+
+	/**
+	 * What the material slot takes: only what this table actually cuts. Iron and diamond used to go in,
+	 * the line under the patterns said what the part would cost, and nothing ever came out, because metal
+	 * is poured at the foundry and never cut here (Andy: "se puede poner cualquier objeto en los
+	 * contenedores").
+	 */
+	public static boolean cuttable(ItemStack stack) {
+		ForgeMaterial material = ForgeMaterial.fromInput(stack);
+		return material != null && material.isBasic();
+	}
+
+	/**
+	 * What the salvage slot takes: a finished piece, or a loose part to recycle. Not arrows: four of them
+	 * come out of one set of parts, so taking a single arrow apart for a whole set was more arrows for
+	 * nothing, round and round.
+	 */
+	public static boolean salvageable(ItemStack stack) {
+		ForgedParts parts = stack.get(ModComponents.PARTS);
+		if (parts != null) {
+			return parts.type().kind != dev.forja.forge.ForgeType.Kind.MUNICION;
+		}
+		return stack.getItem() instanceof PartItem && stack.has(ModComponents.MATERIAL);
+	}
+
+	/**
+	 * Whether anything the star does could use this: parts, a finished piece (to swap, or as the old piece
+	 * of an inheritance), orbs, enchanted books, seals, the flux, a pact's offering, the heart, what an
+	 * upgrade or an alloy is made of, and the materials gear is repaired with. The star used to take
+	 * anything at all — a stick, a vanilla sword, a block of dirt — and then simply do nothing with it.
+	 */
+	public static boolean belongsOnStar(ItemStack stack) {
+		if (stack.isEmpty() || stack.getItem() instanceof PartItem || UpgradeOrbItem.orb(stack) != null
+			|| stack.is(Items.ENCHANTED_BOOK) || dev.forja.forge.Potential.isFlux(stack)
+			|| stack.is(dev.forja.registry.ModItems.SELLO) || stack.is(dev.forja.registry.ModItems.CORAZON_DE_FORJA)
+			|| ForgeMaterial.fromInput(stack) != null) {
+			return true;
+		}
+		// A piece of gear, but not a handful of arrows: nothing on the star reads those.
+		if (stack.has(ModComponents.PARTS)) {
+			return stack.getMaxStackSize() == 1;
+		}
+		for (Upgrade upgrade : Upgrade.values()) {
+			if (upgrade.isPact() && dev.forja.upgrade.Pacts.offering(upgrade) != null && stack.is(dev.forja.upgrade.Pacts.offering(upgrade))) {
+				return true;
+			}
+			for (Upgrade.Option option : upgrade.options) {
+				for (Upgrade.Requirement requirement : option.requirements()) {
+					if (requirement.test(stack)) {
+						return true;
+					}
+				}
+			}
+		}
+		for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.POURABLE) {
+			for (dev.forja.forge.Alloys.Part part : recipe.inputs()) {
+				if (stack.is(part.item().get())) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private SimpleContainer watched(int size) {
@@ -318,7 +391,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 		return this.missingParts;
 	}
 
-	/** The thing this table will not build, when a greater one would. */
+	/** The thing the parts on the star make and this table will not build; the screen says which table would. */
 	public dev.forja.forge.@Nullable ForgeType beyondBench() {
 		return this.beyondBench;
 	}
@@ -377,7 +450,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 		}
 		if (buttonId == BUTTON_DISASSEMBLE && this.station.modes.contains(MODE_DISASSEMBLE)) {
 			ItemStack forged = this.disassembly.getItem(0);
-			if (forged.isEmpty()) {
+			if (forged.isEmpty() || !salvageable(forged)) {
 				return false;
 			}
 			if (player instanceof ServerPlayer) {
@@ -391,7 +464,9 @@ public class ForgeMenu extends AbstractContainerMenu {
 				if (!salvage.orbs().isEmpty()) {
 					ForjaAdvancements.award(player, "orbe");
 				}
-				this.disassembly.setItem(0, ItemStack.EMPTY);
+				// One at a time. Parts stack, and this used to empty the whole slot for what one of them gives:
+				// sixteen handles in, the material of one handle out.
+				this.disassembly.removeItem(0, 1);
 				this.playSound(SoundEvents.GRINDSTONE_USE);
 				this.particles(ParticleTypes.SMOKE, 12);
 				ForjaAdvancements.award(player, "desarmar");
@@ -442,6 +517,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 		Upgrade opened = this.offeredPact;
 		int[] repairUse = this.repairUse.clone();
 		int[] alloyUse = this.alloyUse.clone();
+		int[] meltUse = this.meltUse.clone();
 		switch (performed) {
 			case FORGE, SWAP -> {
 				for (int i = 0; i < STAR_COUNT; i++) {
@@ -591,7 +667,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 			}
 			case FUNDIR -> {
 				for (int i = 0; i < STAR_COUNT; i++) {
-					this.star.removeItem(i, 1);
+					this.star.removeItem(i, meltUse[i]);
 				}
 				this.center.setItem(0, result);
 				this.playSound(SoundEvents.LAVA_EXTINGUISH);
@@ -661,16 +737,16 @@ public class ForgeMenu extends AbstractContainerMenu {
 	 * of a drawer full of wrong parts rather than a way to make material.
 	 */
 	private boolean planMelt(List<ItemStack> points) {
+		java.util.Arrays.fill(this.meltUse, 0);
 		if (!this.heat().reaches(dev.forja.forge.Alloys.Heat.FUNDIDA)) {
 			return false;
 		}
 		ForgeMaterial melted = null;
-		int total = 0;
 		for (ItemStack point : points) {
 			if (point.isEmpty()) {
 				continue;
 			}
-			if (!(point.getItem() instanceof PartItem part)) {
+			if (!(point.getItem() instanceof PartItem)) {
 				return false;
 			}
 			ForgeMaterial material = point.get(ModComponents.MATERIAL);
@@ -678,18 +754,49 @@ public class ForgeMenu extends AbstractContainerMenu {
 				return false;
 			}
 			melted = material;
-			total += Math.max(1, part.type.cost / 2) * point.getCount();
 		}
-		if (melted == null || total <= 0) {
+		if (melted == null) {
 			return false;
 		}
 		ItemStack ingots = this.ingotOf(melted);
 		if (ingots.isEmpty()) {
 			return false;
 		}
-		ingots.setCount(Math.min(ingots.getMaxStackSize(), total));
+		// Every part of every pile, as far as one stack of metal goes; what does not fit stays on the star.
+		// The preview used to count the whole pile and the press took one part off each point, so a pile of
+		// sixty-four heads melted into a stack of iron and came back for more.
+		int room = ingots.getMaxStackSize();
+		int total = 0;
+		for (int i = 0; i < points.size(); i++) {
+			ItemStack point = points.get(i);
+			if (point.isEmpty()) {
+				continue;
+			}
+			int each = Math.max(1, ((PartItem) point.getItem()).type.cost / 2);
+			int taken = Math.min(point.getCount(), (room - total) / each);
+			this.meltUse[i] = taken;
+			total += taken * each;
+		}
+		if (total <= 0) {
+			return false;
+		}
+		ingots.setCount(total);
 		this.forgePreview = ingots;
 		return true;
+	}
+
+	/**
+	 * Whether the parts on the star make something, here or at another table. A set this bench will not
+	 * build is still a set: the star says which table would, rather than offering to melt it.
+	 */
+	private boolean assembles(List<ItemStack> points) {
+		List<ItemStack> inputs = new ArrayList<>();
+		for (ItemStack point : points) {
+			if (!point.isEmpty()) {
+				inputs.add(point.copyWithCount(1));
+			}
+		}
+		return Assembler.evaluate(inputs, this.level.registryAccess()).stack().has(ModComponents.PARTS);
 	}
 
 	/** What one unit of a material looks like as an item, alloys and tagged materials included. */
@@ -868,6 +975,9 @@ public class ForgeMenu extends AbstractContainerMenu {
 		this.bookTransfers.clear();
 		this.perk = null;
 		this.missingParts = null;
+		// Forgotten here until now: take a greatsword's parts off a bench and it went on saying it would not
+		// build a greatsword, over an empty star or over the stats of the pickaxe put down after.
+		this.beyondBench = null;
 		this.application = null;
 		this.refusal = null;
 		this.sealedPact = null;
@@ -877,10 +987,27 @@ public class ForgeMenu extends AbstractContainerMenu {
 		boolean anyPoint = points.stream().anyMatch(stack -> !stack.isEmpty());
 		boolean onlyParts = points.stream().allMatch(stack -> stack.isEmpty() || stack.getItem() instanceof PartItem);
 		ItemStack gear = this.center.getItem(0);
+		this.readSurroundings();
 		if (!anyPoint && gear.isEmpty()) {
 			return;
 		}
+		if (!anyPoint) {
+			if (this.planReheat(gear, points)) {
+				this.action = Action.RECALENTAR;
+			}
+			return;
+		}
+		this.updateStar(points, onlyParts, gear);
+	}
 
+	/**
+	 * The heat under the table and whether the rest of the workshop is near. Only the tables with a star
+	 * care, and only the server can look; the client is told through the data slots.
+	 */
+	private void readSurroundings() {
+		if (!this.station.modes.contains(MODE_FORGE)) {
+			return;
+		}
 		// What the table is standing on decides what it can melt; the server reads it, the client is told.
 		this.access.execute((level, pos) -> {
 			this.heat.set(dev.forja.forge.Alloys.heatUnder(level, pos).ordinal());
@@ -901,13 +1028,10 @@ public class ForgeMenu extends AbstractContainerMenu {
 			}
 			this.workshop.set(parts && saddlery ? 1 : 0);
 		});
-		if (!anyPoint) {
-			if (this.planReheat(gear, points)) {
-				this.action = Action.RECALENTAR;
-			}
-			return;
-		}
+	}
 
+	/** What the star does with something on its points: the whole ladder, first match wins. */
+	private void updateStar(List<ItemStack> points, boolean onlyParts, ItemStack gear) {
 		if (gear.isEmpty() && !onlyParts) {
 			// Fuelle largo: the smith works the fire well enough to melt one step colder than the sheet says.
 			dev.forja.forge.Alloys.Heat read = dev.forja.forge.Techniques.has(this.smith, dev.forja.forge.Technique.FUELLE_LARGO)
@@ -926,7 +1050,10 @@ public class ForgeMenu extends AbstractContainerMenu {
 			}
 		}
 
-		if (onlyParts && gear.isEmpty() && this.planMelt(points)) {
+		// A whole set is forged, not melted: a table over lava took the three iron parts of a pickaxe and
+		// offered to melt them, and the smith who pressed the button without reading lost half the metal
+		// and got no pickaxe. Melting is for parts that make nothing here.
+		if (onlyParts && gear.isEmpty() && !this.assembles(points) && this.planMelt(points)) {
 			this.action = Action.FUNDIR;
 			return;
 		}
@@ -947,9 +1074,10 @@ public class ForgeMenu extends AbstractContainerMenu {
 			// is beyond a plain bench.
 			ForgedParts preview = this.forgePreview.get(ModComponents.PARTS);
 			if (preview != null && !this.station.canForge(preview.type())) {
-				// Say so when a greater table would manage it, or the smith is left staring at a star
-				// that simply does nothing.
-				this.beyondBench = this.station.needsGreater(preview.type()) ? preview.type() : null;
+				// Say so, or the smith is left staring at a star that simply does nothing. Not only when a
+				// greater table would manage it: barding at a forge, or a pickaxe at the saddlery, got the
+				// "those items do not upgrade this piece" of a star with no piece on it.
+				this.beyondBench = preview.type();
 				this.forgePreview = ItemStack.EMPTY;
 				this.missingParts = null;
 				return;
@@ -1269,7 +1397,8 @@ public class ForgeMenu extends AbstractContainerMenu {
 
 	@Override
 	public boolean canTakeItemForPickAll(ItemStack carried, Slot target) {
-		return !(target.container instanceof ResultContainer) && super.canTakeItemForPickAll(carried, target);
+		// Nor from the slots of another tab, which are hidden but still hold whatever was left on them.
+		return !(target.container instanceof ResultContainer) && target.isActive() && super.canTakeItemForPickAll(carried, target);
 	}
 
 	@Override
@@ -1282,6 +1411,9 @@ public class ForgeMenu extends AbstractContainerMenu {
 		ItemStack stack = slot.getItem();
 		ItemStack original = stack.copy();
 		int mode = this.mode.get();
+		// Set when one item of the pile went to a slot that holds one: the star's points, the center, the
+		// template, the salvage slot.
+		boolean single = false;
 		if (slotIndex == PART_RESULT_SLOT) {
 			if (!this.moveItemStackTo(stack, INVENTORY_START, INVENTORY_END, true)) {
 				return ItemStack.EMPTY;
@@ -1293,22 +1425,29 @@ public class ForgeMenu extends AbstractContainerMenu {
 			}
 		} else if (mode == MODE_PARTS && stack.getItem() instanceof TemplateItem && this.template.isEmpty()) {
 			this.template.setItem(0, stack.split(1));
-		} else if (mode == MODE_PARTS && ForgeMaterial.fromInput(stack) != null) {
+			single = true;
+		} else if (mode == MODE_PARTS && cuttable(stack)
+			&& (this.material.isEmpty() || ItemStack.isSameItemSameComponents(stack, this.material.getItem(0)))) {
 			if (!this.moveItemStackTo(stack, MATERIAL_SLOT, MATERIAL_SLOT + 1, false)) {
 				return ItemStack.EMPTY;
 			}
 		} else if (mode == MODE_FORGE && stack.has(ModComponents.PARTS) && this.center.isEmpty()) {
 			this.center.setItem(0, stack.split(1));
-		} else if (mode == MODE_FORGE && (stack.getItem() instanceof PartItem || UpgradeOrbItem.orb(stack) != null || stack.is(Items.ENCHANTED_BOOK))) {
+			single = true;
+		} else if (mode == MODE_FORGE && (stack.getItem() instanceof PartItem || UpgradeOrbItem.orb(stack) != null || stack.is(Items.ENCHANTED_BOOK)
+			|| (stack.has(ModComponents.PARTS) && belongsOnStar(stack)))) {
+			// A piece of gear with the center taken is the old piece of an inheritance: it goes on a point,
+			// where it used to be sent to the hotbar instead.
 			if (!this.moveOneInto(stack, this.star)) {
 				return ItemStack.EMPTY;
 			}
-		} else if (mode == MODE_FORGE && !stack.has(ModComponents.PARTS)) {
-			if (!this.moveItemStackTo(stack, STAR_FIRST, STAR_FIRST + STAR_COUNT, false)) {
-				return ItemStack.EMPTY;
-			}
-		} else if (mode == MODE_DISASSEMBLE && (stack.has(ModComponents.PARTS) || stack.getItem() instanceof PartItem) && this.disassembly.isEmpty()) {
+			single = true;
+		} else if (mode == MODE_FORGE && !stack.has(ModComponents.PARTS) && belongsOnStar(stack)
+			&& this.moveItemStackTo(stack, STAR_FIRST, STAR_FIRST + STAR_COUNT, false)) {
+			// Moved; anything the star will not take falls through to the usual hop between inventory rows.
+		} else if (mode == MODE_DISASSEMBLE && salvageable(stack) && this.disassembly.isEmpty()) {
 			this.disassembly.setItem(0, stack.split(1));
+			single = true;
 		} else if (slotIndex < INVENTORY_START + 27) {
 			if (!this.moveItemStackTo(stack, INVENTORY_START + 27, INVENTORY_END, false)) {
 				return ItemStack.EMPTY;
@@ -1326,7 +1465,11 @@ public class ForgeMenu extends AbstractContainerMenu {
 			return ItemStack.EMPTY;
 		}
 		slot.onTake(player, stack);
-		return original;
+		// Vanilla shift-clicks again for as long as this returns the same item and some is left. Returning
+		// it after one part went onto a point had a pile of three handles spread over three points, and the
+		// pickaxe that should have been on the star became three handles, a head and a binding that make
+		// nothing. One is one.
+		return single ? ItemStack.EMPTY : original;
 	}
 
 	/** Shift-clicking a part, orb or book puts one onto the first empty star point, since the star uses one of each. */
@@ -1344,12 +1487,15 @@ public class ForgeMenu extends AbstractContainerMenu {
 	public void removed(Player player) {
 		super.removed(player);
 		this.partResult.removeItemNoUpdate(0);
-		this.access.execute((level, pos) -> {
+		// On the server, whether or not there is a block behind the menu. The portable anvil opens this
+		// menu with no block at all, and asking the block's access to hand things back meant asking no one:
+		// the template and the material left on it were gone when it was closed.
+		if (player instanceof ServerPlayer) {
 			this.clearContainer(player, this.material);
 			this.clearContainer(player, this.template);
 			this.clearContainer(player, this.star);
 			this.clearContainer(player, this.center);
 			this.clearContainer(player, this.disassembly);
-		});
+		}
 	}
 }

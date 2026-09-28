@@ -885,11 +885,13 @@ GUI = {
     "gui.forja.libro.aleaciones_comparar": ("Durabilidad de una espada entera", "Durability of a whole sword"),
     "gui.forja.libro.fundir_piezas": (
         "Con la mesa sobre lava, piezas sueltas del mismo material vuelven a ser material: cada una "
-        "devuelve la mitad de lo que costó cortarla, redondeando hacia abajo. No es una forma de hacer "
-        "material, es la salida para las piezas que cortaste mal.",
+        "devuelve la mitad de lo que costó cortarla, redondeando hacia abajo, y la pila entera de una vez. "
+        "No es una forma de hacer material, es la salida para las piezas que cortaste mal; un juego que "
+        "forma un objeto se forja, no se derrite.",
         "With the table over lava, loose parts of one material go back to being material: each gives "
-        "back half of what it cost to cut, rounded down. It is not a way to make material, it is the way "
-        "out of the parts you cut wrong.",
+        "back half of what it cost to cut, rounded down, and the whole pile at once. It is not a way to "
+        "make material, it is the way out of the parts you cut wrong; a set that makes an item is forged, "
+        "not melted.",
     ),
     "gui.forja.libro.calor.templada": ("Mesa templada", "Warm table"),
     "gui.forja.libro.calor.templada.desc": ("Una fogata o un fuego debajo", "A campfire or a fire underneath"),
@@ -1863,6 +1865,23 @@ GUI = {
     "gui.forja.mesa_mayor.1": ("Este banco no monta %s", "This bench will not assemble %s"),
     "gui.forja.mesa_mayor.2": ("Hace falta la mesa de forja mayor", "It needs the greater forge table"),
     "gui.forja.faltan_piezas": ("Faltan piezas:", "Missing parts:"),
+    # What the tables say when they turn something away or when what is on them makes nothing.
+    "gui.forja.material_colado": ("%s no se corta: se cuela en la fundición", "%s is not cut: it is cast at the foundry"),
+    "gui.forja.estrella.rechaza": ("%s no sirve en la estrella", "%s is no use on the star"),
+    "gui.forja.estrella.acepta": ("Van piezas, objetos forjados, ingredientes, orbes y libros",
+                                  "It takes parts, forged gear, ingredients, orbs and books"),
+    "gui.forja.centro.ocupado": ("Saca %s del centro para seguir", "Take %s out of the center to go on"),
+    "gui.forja.piezas.no_forman": ("Estas piezas no forman ningún objeto", "These parts make no item"),
+    "gui.forja.piezas.no_forman.pista": ("Cada objeto lleva sus piezas exactas: míralas en la guía",
+                                         "Every item takes its exact parts: see them in the guide"),
+    "gui.forja.piezas.no_encajan": ("Esas piezas no son de este objeto", "Those parts do not belong to this gear"),
+    "gui.forja.piezas.no_encajan.pista": ("Para cambiar una pieza, pon otra del mismo tipo", "To swap a part, put down one of the same kind"),
+    "gui.forja.don.falta": ("Un sello graba su don en un objeto de maestría %s que aún no tenga uno, si el don es para él",
+                            "A seal engraves its gift on Mastery %s gear that has none yet, if the gift is meant for it"),
+    "gui.forja.herencia.falta": ("Para heredar, la pieza vieja necesita maestría %s", "To inherit, the old piece needs Mastery %s"),
+    "gui.forja.mesa.no_monta": ("Esta mesa no monta %s", "This table will not assemble %s"),
+    "gui.forja.mesa.solo_talabarteria": ("Solo la talabartería monta bardas y arneses", "Only the saddlery assembles barding and harnesses"),
+    "gui.forja.mesa.talabarteria_solo_monturas": ("La talabartería solo hace bardas y arneses", "The saddlery only makes barding and harnesses"),
     "gui.forja.stat.durabilidad": ("Durabilidad: %s", "Durability: %s"),
     "gui.forja.stat.armadura": ("Armadura: %s", "Armor: %s"),
     "gui.forja.stat.dureza": ("Dureza: %s", "Toughness: %s"),
@@ -1880,7 +1899,7 @@ GUI = {
     "gui.forja.mejora.progreso": ("%s%% → %s%%", "%s%% → %s%%"),
     "gui.forja.mejora.no_sirve.1": ("Esos objetos no", "Those items don't"),
     "gui.forja.mejora.no_sirve.2": ("mejoran esta pieza.", "upgrade this gear."),
-    "gui.forja.mejora.no_sirve.3": ("Mira la pestaña Guía.", "Check the Guide tab."),
+    "gui.forja.mejora.no_sirve.3": ("Mira la guía de forja.", "See the forge guide."),
     "gui.forja.mejora.actuales": ("Mejoras actuales:", "Current upgrades:"),
     "gui.forja.mejora.ninguna": ("Ninguna todavía", "None yet"),
     "gui.forja.mejora.linea": ("%s %s%%", "%s %s%%"),

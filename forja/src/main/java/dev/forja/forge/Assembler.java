@@ -637,7 +637,9 @@ public final class Assembler {
 			returned.add(forged.get(ModComponents.MATERIAL).displayStack().copyWithCount(Math.max(1, part.type.cost / 2)));
 			return new Disassembly(returned, lost, orbs);
 		}
-		if (parts == null) {
+		// Arrows do not come apart: one set of parts makes four of them, and a set back for every arrow was
+		// arrows out of nothing.
+		if (parts == null || parts.type().kind == ForgeType.Kind.MUNICION) {
 			return new Disassembly(returned, lost, orbs);
 		}
 		float remaining = forged.getMaxDamage() > 0 ? 1.0F - (float) forged.getDamageValue() / forged.getMaxDamage() : 1.0F;
