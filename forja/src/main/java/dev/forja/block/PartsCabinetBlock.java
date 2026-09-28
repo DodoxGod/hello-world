@@ -4,7 +4,6 @@ import com.mojang.serialization.MapCodec;
 import dev.forja.block.entity.PartsCabinetBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.Containers;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
@@ -51,11 +50,9 @@ public class PartsCabinetBlock extends BaseEntityBlock {
 
 	@Override
 	protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean moved) {
-		// Whatever was inside falls out, the same as a chest that is broken.
-		if (level.getBlockEntity(pos) instanceof PartsCabinetBlockEntity cabinet) {
-			Containers.dropContents(level, pos, cabinet);
-			level.updateNeighbourForOutputSignal(pos, this);
-		}
+		// What was inside has already fallen out (PartsCabinetBlockEntity#preRemoveSideEffects): here the block
+		// entity is gone, which is why the cabinet used to lose everything it held when broken.
+		level.updateNeighbourForOutputSignal(pos, this);
 		super.affectNeighborsAfterRemoval(state, level, pos, moved);
 	}
 }

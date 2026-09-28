@@ -1,5 +1,32 @@
 # Novedades
 
+## 2026-09-28 — la forja funciona de verdad
+
+Revisión a fondo de fundición, mesas y materiales, jugando el camino de supervivencia con clics reales.
+
+### Fundición
+- Cada hueco acepta solo lo suyo (crisol, cuba, caja de moldeo), también con mayúsculas, arrastre y tolvas; el
+  crisol respeta su cabida en la pantalla.
+- El crisol funde mena y lingotes a la cuba (con calor según la dureza), y piezas sueltas de vuelta.
+- Con una cuba pegada ya no se para tras la primera tanda de aleación; varias cubas se reparten el vertido.
+- Romper crisol, cuba, caja, mesa de colada o armario de piezas suelta lo que tenían (antes se perdía).
+- La caja de moldeo ya no se para tras una colada y su pantalla acepta herramientas (el marco) y coladores.
+- Las pantallas dicen lo que pasa de verdad ("Fundiendo a hierro", "falta ascua", "no hay cuba con sitio"...).
+- La mesa de colada sobre un farol ya no saca basta la primera herramienta, y la herramienta sobre la mesa no se ve negra.
+
+### Mesas
+- Mayús+clic sobre una pila de piezas ya no la reparte por todas las puntas de la estrella.
+- La estrella, la mesa de piezas, la bandeja de extracción y el yunque de viaje solo aceptan lo que usan, y dicen
+  por qué rechazan algo (el metal no se corta: se cuela en la fundición).
+- Arregladas dos duplicaciones (derretir pilas de piezas sobre lava y desarmar flechas) y desarmar ya no borra la pila.
+- Un juego de piezas que forma un objeto se forja en vez de derretirse; el yunque de viaje devuelve lo que tenía.
+- Avisos más claros: centro ocupado, maestría que hace falta, qué mesa monta cada objeto.
+
+### Materiales
+- Fundir o desarmar escoria ya no da netherita; la escoria, la ascua y el corazón de forja no se queman en la lava.
+- Los cofres de la sala de guardia del Bastión ya no salen vacíos y el Túmulo del herrero no tiene huecos.
+- La guía dice de dónde sale cada material, si se corta o se cuela, y la receta de cada aleación (hay 16).
+
 ## 2026-09-26
 
 Todo en la rama `forja-ia-armas`; las pruebas de servidor pasan (120).

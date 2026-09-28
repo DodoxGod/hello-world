@@ -78,6 +78,17 @@ public class PartsCabinetBlockEntity extends BaseContainerBlockEntity {
 		ContainerHelper.loadAllItems(input, this.items);
 	}
 
+	/**
+	 * Breaking the cabinet spills what is in it, the same as a chest. Here and not in the block's
+	 * affectNeighborsAfterRemoval: in 26.2 that runs once this block entity is already gone.
+	 */
+	@Override
+	public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+		if (this.level != null) {
+			net.minecraft.world.Containers.dropContents(this.level, pos, this);
+		}
+	}
+
 	@Override
 	protected void saveAdditional(ValueOutput output) {
 		super.saveAdditional(output);

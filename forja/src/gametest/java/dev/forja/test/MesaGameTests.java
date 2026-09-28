@@ -359,4 +359,20 @@ public class MesaGameTests {
 		helper.assertTrue(SmithAnvilBlock.tablesServed(helper.getLevel(), anvil) == before + 1, "una mesa de forja sí");
 		helper.succeed();
 	}
+
+	/** Breaking the parts cabinet spills what it held, like a chest (it used to lose everything: the drop ran after the block entity was gone). */
+	@net.fabricmc.fabric.api.gametest.v1.GameTest
+	public void aBrokenCabinetSpillsWhatItHeld(net.minecraft.gametest.framework.GameTestHelper helper) {
+		net.minecraft.core.BlockPos at = new net.minecraft.core.BlockPos(2, 1, 2);
+		helper.setBlock(at, dev.forja.registry.ModBlocks.ARMARIO_DE_PIEZAS.defaultBlockState());
+		dev.forja.block.entity.PartsCabinetBlockEntity cabinet = helper.getBlockEntity(at, dev.forja.block.entity.PartsCabinetBlockEntity.class);
+		cabinet.setItem(0, dev.forja.forge.Assembler.createPart(dev.forja.part.PartType.MANGO, dev.forja.material.ForgeMaterial.MADERA));
+		cabinet.setItem(1, dev.forja.forge.Assembler.createPart(dev.forja.part.PartType.HOJA, dev.forja.material.ForgeMaterial.HIERRO));
+		helper.getLevel().destroyBlock(helper.absolutePos(at), true);
+		java.util.List<net.minecraft.world.entity.item.ItemEntity> dropped = helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+			new net.minecraft.world.phys.AABB(helper.absolutePos(at)).inflate(3.0));
+		long parts = dropped.stream().filter(e -> e.getItem().getItem() instanceof dev.forja.item.PartItem).count();
+		helper.assertTrue(parts == 2, "el armario roto suelta sus 2 piezas, soltó " + parts);
+		helper.succeed();
+	}
 }
