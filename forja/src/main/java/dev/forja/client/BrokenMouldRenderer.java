@@ -107,7 +107,7 @@ public class BrokenMouldRenderer extends GeoEntityRenderer<BrokenMould, LivingEn
 			LivingEntityRenderState state, SubmitNodeCollector collector, int packedLight) {
 			ItemStack stack = state instanceof ArmedEntityRenderState armed ? armed.rightHandItemStack : ItemStack.EMPTY;
 			poseStack.pushPose();
-			// A spear or a trident is couched, its point leaning out in front; everything else stands up.
+			// A spear, a trident or a dagger is held point forward, ready to stab; everything else stands up.
 			poseStack.mulPose(Axis.XP.rotationDegrees(-lean(stack)));
 			// Its face turned a little to the mould's right, round its own handle, so the flat of it shows
 			// from the front and from either side.
@@ -139,8 +139,7 @@ public class BrokenMouldRenderer extends GeoEntityRenderer<BrokenMould, LivingEn
 
 		/** How far forward the weapon leans out of the upright, in degrees, by the kind of weapon it is. */
 		private static float lean(ItemStack stack) {
-			WeaponMotions.Motion motion = WeaponMotions.of(stack);
-			return motion == WeaponMotions.LANZA || motion == WeaponMotions.TRIDENTE ? 45.0F : 0.0F;
+			return BrokenMould.thrusts(stack) ? 45.0F : 0.0F;
 		}
 	}
 }

@@ -74,6 +74,8 @@ public class BrokenMould extends Monster implements GeoEntity {
 	private static final RawAnimation BLANK_GONE = RawAnimation.begin().thenLoop("blank_gone");
 	private static final RawAnimation RAISE_ANIM = RawAnimation.begin().thenPlayAndHold("raise");
 	private static final RawAnimation STRIKE = RawAnimation.begin().thenPlay("strike");
+	private static final RawAnimation DRAW = RawAnimation.begin().thenPlayAndHold("draw");
+	private static final RawAnimation STAB = RawAnimation.begin().thenPlay("stab");
 	private static final RawAnimation GUARD = RawAnimation.begin().thenLoop("guard");
 
 	/**
@@ -323,12 +325,29 @@ public class BrokenMould extends Monster implements GeoEntity {
 		// Its blows, over the walk: the weapon raised over its head through the warning, and brought down in
 		// front of it when the blow is struck (see swing).
 		controllers.add(new AnimationController<BrokenMould>("golpe", 2, test -> {
-			if (playing(test, STRIKE)) {
+			if (playing(test, STRIKE) || playing(test, STAB)) {
 				return PlayState.CONTINUE;
 			}
 			// "guard" animates nothing, and leaves the arms to the walk.
-			return test.setAndContinue(test.getDataOrDefault(RAISE, -1.0F) >= 0.0F ? RAISE_ANIM : GUARD);
-		}).receiveTriggeredAnimations().triggerableAnim("strike", STRIKE));
+			if (test.getDataOrDefault(RAISE, -1.0F) < 0.0F) {
+				return test.setAndContinue(GUARD);
+			}
+			// A pointed weapon is drawn back to the hip for a stab; anything else goes up for a chop.
+			return test.setAndContinue(thrusts(test.animatable().getMainHandItem()) ? DRAW : RAISE_ANIM);
+		}).receiveTriggeredAnimations().triggerableAnim("strike", STRIKE).triggerableAnim("stab", STAB));
+	}
+
+	/**
+	 * Whether it strikes with this by stabbing: a lance, a trident or a dagger, which it holds point forward
+	 * (client.BrokenMouldRenderer) and drives straight out along the shaft instead of chopping down.
+	 */
+	public static boolean thrusts(ItemStack weapon) {
+		ForgedParts parts = weapon.get(ModComponents.PARTS);
+		if (parts != null) {
+			return parts.type() == dev.forja.forge.ForgeType.LANZA || parts.type() == dev.forja.forge.ForgeType.TRIDENTE
+				|| parts.type() == dev.forja.forge.ForgeType.DAGA;
+		}
+		return weapon.is(net.minecraft.world.item.Items.TRIDENT);
 	}
 
 	/** Whether the controller is still part way through this (triggered) animation. */
@@ -342,7 +361,7 @@ public class BrokenMould extends Monster implements GeoEntity {
 		super.swing(hand, sendToSwingingEntity);
 		// -1 only when this call started a swing, not when one already under way was left alone.
 		if (!this.level().isClientSide() && this.swingTime == -1) {
-			this.triggerAnim("golpe", "strike");
+			this.triggerAnim("golpe", thrusts(this.getMainHandItem()) ? "stab" : "strike");
 		}
 	}
 

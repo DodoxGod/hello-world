@@ -1,5 +1,12 @@
 # Novedades
 
+## 2026-09-28 — el Molde Roto da estocadas
+
+- Con una lanza, un tridente o una daga copiados ya no los alza sobre la cabeza: durante el aviso los recoge a la
+  altura de la cadera con la punta por delante y, al golpear, los lanza rectos hacia delante a lo largo del asta,
+  con un paso y el cuerpo detrás; luego vuelve a la guardia. La daga también la lleva ahora con la punta al frente.
+  Las demás armas siguen con el tajo de arriba abajo.
+
 ## 2026-09-28 — el cielo de los eventos deja de parpadear
 
 - **El parpadeo**: la luz del suelo de los eventos se aplicaba una vez por fotograma sobre la del fotograma

@@ -8991,10 +8991,10 @@ public class ForjaClientTest implements FabricClientGameTest {
 			new Shape("mazo", ForgeType.MAZO, List.of(HIERRO, MADERA, HIERRO), false),
 			new Shape("lanza", ForgeType.LANZA, List.of(HIERRO, MADERA, CUERO), true),
 			new Shape("mangual", ForgeType.MANGUAL, List.of(HIERRO, HIERRO, MADERA), true),
-			new Shape("daga", ForgeType.DAGA, List.of(HIERRO, MADERA), false),
+			new Shape("daga", ForgeType.DAGA, List.of(HIERRO, MADERA), true),
 			new Shape("espadon", ForgeType.ESPADON, List.of(DIAMANTE, DIAMANTE, MADERA, HIERRO), false),
 			new Shape("guadana", ForgeType.GUADANA, List.of(HIERRO, MADERA, CUERO), false),
-			new Shape("tridente", ForgeType.TRIDENTE, List.of(HIERRO, MADERA, CUERO), false),
+			new Shape("tridente", ForgeType.TRIDENTE, List.of(HIERRO, MADERA, CUERO), true),
 			new Shape("baculo", ForgeType.BACULO, List.of(AMATISTA, HIERRO, MADERA), false),
 			new Shape("grimorio", ForgeType.GRIMORIO, List.of(VARA_DE_BLAZE, NETHERITA, ORO), false),
 			new Shape("guanteletes", ForgeType.GUANTELETES, List.of(CUERO, HIERRO, ORO), false));
