@@ -48,8 +48,12 @@ public final class BossArena {
 		if (level.isClientSide() || player.isCreative() || player.isSpectator()) {
 			return false;
 		}
-		return !level.getEntitiesOfClass(FallenSmith.class, new AABB(player.blockPosition()).inflate(RADIUS),
-			FallenSmith::isAlive).isEmpty();
+		return !lockers(level, player).isEmpty();
+	}
+
+	/** The live Fallen Smiths within reach of this player, whose ground it stands on. */
+	public static java.util.List<FallenSmith> lockers(Level level, Player player) {
+		return level.getEntitiesOfClass(FallenSmith.class, new AABB(player.blockPosition()).inflate(RADIUS), FallenSmith::isAlive);
 	}
 
 	private static void refuse(Player player) {

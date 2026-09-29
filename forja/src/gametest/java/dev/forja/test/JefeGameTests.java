@@ -264,8 +264,9 @@ public class JefeGameTests {
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(2, 1, 6));
 		var level = helper.getLevel();
 		helper.assertTrue(dev.forja.world.BossArena.locked(level, player), "con el herrero vivo, la arena debería estar cerrada");
+		// Other tests' smiths may stand within reach of this one: only this smith's hold is checked once he is gone.
 		smith.discard();
-		helper.assertFalse(dev.forja.world.BossArena.locked(level, player), "sin el herrero, se debería poder construir");
+		helper.assertFalse(dev.forja.world.BossArena.lockers(level, player).contains(smith), "sin el herrero, se debería poder construir");
 		helper.succeed();
 	}
 }
