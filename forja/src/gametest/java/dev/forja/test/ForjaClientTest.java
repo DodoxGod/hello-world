@@ -10027,6 +10027,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 				int sides = 0;
 				int past = 0;
 				int running = 0;
+				StringBuilder detail = new StringBuilder();
 				for (int id : pack) {
 					var mob = connection.getServerLevel().getEntity(id);
 					if (!(mob instanceof net.minecraft.world.entity.Mob zombie) || !zombie.isAlive()) {
@@ -10042,10 +10043,14 @@ public class ForjaClientTest implements FabricClientGameTest {
 					}
 					dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(zombie);
 					running += mind != null && mind.rodeo ? 1 : 0;
+					detail.append(String.format(Locale.ROOT, " [%.1f bl, %s, aguante %.0f, corre %s, sin camino %d, nav %s, hueco %s]",
+						zombie.distanceTo(player), mind == null ? "-" : mind.decision.tactic(), mind == null ? 0.0F : mind.stamina,
+						mind != null && mind.running, mind == null ? 0 : mind.pathless, zombie.getNavigation().isDone() ? "parada" : "en marcha",
+						mind == null || Double.isNaN(mind.ringAngle) ? "no" : "sí"));
 				}
 				round[0] = sides + past;
 				return String.format(Locale.ROOT, "delante %d, a los lados %d, por detrás de él %d, en modo rodeo %d (jugador en z=%.1f)",
-					front, sides, past, running, player.getZ() - sz);
+					front, sides, past, running, player.getZ() - sz) + detail;
 			});
 			log("cerco retroceso " + shots[shot] + ": " + count);
 			shot++;
