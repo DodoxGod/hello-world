@@ -220,3 +220,37 @@ Lo que el simulador necesita (en el motor de Rust, carpeta `combate/forja/`), cu
 - Donde sí ganaría: el mob **no debería perder la pista del jugador** por pelearse con un lobo o un gólem. Eso se puede arreglar en el `Squad` sin red nueva: el lobo y el gólem son estorbos, y el objetivo sigue siendo el jugador.
 - Si más adelante se quiere, se haría así: escenarios en el simulador con un gólem (mucha vida, golpe que lanza hacia arriba, lento) y 1-3 lobos (rápidos, poca vida) como "enemigos no jugadores". La observación del objetivo (la misma que la del jugador) pasa a ser "el enemigo más cercano", con un indicador de 1 bit de si es jugador. Eso sería un contrato v4 (ya hay hueco en `red_mob_v4_contrato.propuesta`).
 - **Recomendación**: primero el blaze y los voladores. Mob contra mob, después de v4.
+
+## 8. Alcance real de los mobs por tipo de arma (Andy, 29-09)
+
+**Tabla** (hueco entre las cajas, igual que `ObsM1.reaches`): cuerpo 0,83 más el extra del arma.
+
+| Arma | Extra | Hueco máximo |
+|---|---|---|
+| Puño | 0 | 0,83 |
+| Daga | +0,2 | 1,03 |
+| Espada | +0,6 | 1,43 |
+| Hacha / martillo / maza / pico | +0,5 | 1,33 |
+| Mandoble | +0,9 | 1,73 |
+| Guadaña | +0,75 | 1,58 |
+| Tridente | +0,5 | 1,33 |
+| Lanza | — | 2,33 en total, con mínimo 1 (no golpea más cerca) |
+| Mangual | +3 | 3,83 |
+
+### 8.1 Simulador
+Hoy el simulador usa el mismo hueco de 0,83 para el golpe de todos los mobs (`ejecutor::alcanza`), sea cual sea el arma. Lo cambiamos para que el golpe use esta tabla, tanto para **empezar** el golpe como para **acertarlo** al final del aviso: si el jugador se aleja más que ese hueco durante el aviso, falla. La lanza, además, no puede golpear a menos de 1. Las tácticas que dependen de la distancia (relevo, pinza, "fuera del alcance") usan el alcance real del mob.
+
+### 8.2 ¿Se puede entrenar ya en v3 o hace falta v4?
+**Se puede en v3, sin cambiar tamaños ni orden**, con una condición.
+- `yo_arma_alcance/6` ya significa, según el contrato v3, "alcance de su golpe". Si le damos el valor real (0,83 + extra del tipo + atributos), el significado no cambia, solo cambian los números en la espada, el hacha, el mandoble, la daga y la lanza. La guadaña, el tridente y el mangual ya coincidían.
+- **Condición:** la red entrenada con los valores nuevos tiene que recibir los valores nuevos en el mod. Si el mod sigue con la fórmula vieja, la red cree que su espada alcanza 0,83 cuando en realidad llega a 1,43, y se acerca de más.
+- **Propuesta:** en el JSON exportado de cada red, un campo `"alcance_v": 2`.
+  - El mod usa la fórmula nueva para `yo_arma_alcance` solo si la red lo trae.
+  - Las redes actuales (sin el campo) siguen con la vieja.
+  - Así no se rompe `red_mob_v3_contrato.json`: se documenta como una revisión v3.1, compatible.
+- Lo mismo se aplica al motor del simulador: la opción `alcance_real` (activada por defecto en las ramas nuevas) cambia a la vez el golpe y la entrada.
+
+### 8.3 Contrato v4
+- `yo_arma_alcance` lleva el alcance completo: cuerpo + extra del tipo + atributos. Para la lanza, el máximo.
+- Se añade `yo_arma_alcance_min/6`, que es 1 con la lanza y 0 con el resto, para que la red sepa que pegada al jugador no puede golpear.
+- **Alcance del jugador:** `jug_alcance/6` de v3 ya lo cubre: el atributo `entity_interaction_range` (3 + guadaña, tridente, mangual...) o el máximo de la lanza. La tabla nueva es solo para los mobs, así que no hace falta otra entrada. Solo haría falta añadir `jug_alcance_min/6` (la lanza del jugador tampoco golpea de cerca). Eso ya es de v4, y sirve para que el mob sepa que pegado a un jugador con lanza está a salvo.
