@@ -37,6 +37,8 @@ public final class TacticGoal extends Goal {
 	public static final double WAIT_MIN = 4.0;
 	/** How much of the ring a mob going round to its slot covers at a time, in radians (50 degrees). */
 	public static final double ARC_STEP = Math.toRadians(50.0);
+	/** How far ahead the waypoint to a distant ring slot is set (toRing). */
+	public static final double WAYPOINT = 12.0;
 	public static final double WAIT_MAX = 6.0;
 	public static final double RETREAT_DISTANCE = 6.0;
 	public static final double DUEL_WATCH_MIN = 7.0;
@@ -485,6 +487,15 @@ public final class TacticGoal extends Goal {
 		if (this.mob.distanceToSqr(x, this.mob.getY(), z) < 0.5) {
 			this.mob.getNavigation().stop();
 			return;
+		}
+		// A point far off is gone to by a waypoint 12 blocks along the way: a long path to a spot beside a player
+		// on the move comes back empty or too late.
+		double dx = x - this.mob.getX();
+		double dz = z - this.mob.getZ();
+		double far = Math.sqrt(dx * dx + dz * dz);
+		if (far > WAYPOINT) {
+			x = this.mob.getX() + dx / far * WAYPOINT;
+			z = this.mob.getZ() + dz / far * WAYPOINT;
 		}
 		if (!this.pathTo(x, target.getY(), z, speed) || this.mob.getNavigation().isDone()) {
 			// No path to a point beside a player on the move (it is gone before the path is): straight at it,
