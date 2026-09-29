@@ -1,0 +1,32 @@
+{
+ "formato": "red_mob_v4 (PROPUESTA, 29-09-2026, sesión del simulador; NO es un contrato: red_mob_v3_contrato.json sigue siendo el bueno)",
+ "motivo": "Ver PROPUESTAS_IA_SIMULADOR.md §4. Solo hace falta si, además de los cambios de reglas/ejecutor (§2), se quiere que la red decida sectores y tiro libre.",
+ "n_obs": 296,
+ "n_obs_v3": 280,
+ "entradas_nuevas_al_final": [
+  {"i": 280, "nombre": "sector_delante", "def": "1 si su hueco del Squad está en el sector de delante (|hueco − frente| < 45°); frente = dirección de llegada del grupo o media lenta (1 s) de la mirada del jugador"},
+  {"i": 281, "nombre": "sector_izquierda", "def": "45°..135° a la izquierda del frente"},
+  {"i": 282, "nombre": "sector_derecha", "def": "45°..135° a la derecha del frente"},
+  {"i": 283, "nombre": "sector_detras", "def": "> 135° del frente"},
+  {"i": 284, "nombre": "hueco_error/pi", "def": "wrap(hueco − mi ángulo visto desde el jugador)/π, con signo (+ = girar a la izquierda); 0 sin hueco"},
+  {"i": 285, "nombre": "hueco_estable/100", "def": "ticks desde que el Squad le dio este hueco /100, tope 2"},
+  {"i": 286, "nombre": "aliados_a_1.5/3", "def": "otros mobs vivos (Enemy) a < 1,5 bloques de mí /3, tope 2"},
+  {"i": 287, "nombre": "aliados_mi_sector/4", "def": "miembros del Squad con hueco en mi sector (sin contarme) /4, tope 2"},
+  {"i": 288, "nombre": "jug_cuadrantes/4", "def": "cuadrantes (90°, absolutos) alrededor del jugador con algún aliado a < 6 /4"},
+  {"i": 289, "nombre": "jug_enzarzado/4", "def": "aliados a < 3,5 del jugador /4, tope 2"},
+  {"i": 290, "nombre": "creeper_encendido_cerca/7", "def": "distancia al creeper aliado con la mecha encendida más cercano /7 (2 si no hay ninguno a < 7)"},
+  {"i": 291, "nombre": "tiro_lado_libre", "def": "arqueros: −1 / +1 si a 2 bloques a la izquierda / derecha (perpendicular a la línea al jugador) no hay aliado en la línea (Squad.allyInLineOf) y lo ve; 0 si la línea ya está libre o ninguno sirve"},
+  {"i": 292, "nombre": "tiro_punto_dist/4", "def": "arqueros: distancia al punto de tiro libre más cercano (probando ±2, ±4 de lado y 2 atrás) /4; 2 si ninguno"},
+  {"i": 293, "nombre": "grupo_n/13", "def": "miembros del Squad /13, tope 2"},
+  {"i": 294, "nombre": "turno_espera/40", "def": "ticks que lleva sin turno con otros esperando /40, tope 2"},
+  {"i": 295, "nombre": "soy_primero_sector", "def": "1 si soy el más cercano al jugador de los de mi sector (el siguiente en atacar desde él)"}
+ ],
+ "n_salidas": 36,
+ "salidas_nuevas_al_final": [
+  {"i": 34, "nombre": "tactica_sector", "def": "SECTOR: a su hueco del Squad por el anillo de fuera (radio r + 3 mientras esté a > 90°, luego r), velocidad 1,0 y quiere correr (MobSprint) mientras esté a > 50°. Máscara: tiene hueco."},
+  {"i": 35, "nombre": "tactica_tiro_libre", "def": "TIRO_LIBRE (arqueros): al punto de tiro libre más cercano (entrada 292) a 1,0 sin destensar; sin punto = retrocede a 10-12 del jugador. Máscara: familia arquero y aliado en la línea."}
+ ],
+ "cabeza_tactica": "una sola softmax de 15: 11..19 (v2), 29..32 (v3) y 34..35 (v4); índice de Tactic: 13 SECTOR, 14 TIRO_LIBRE",
+ "compatibilidad": "Una red v3/v3b (280 entradas) funciona igual: recibe sus 280 y nunca elige SECTOR ni TIRO_LIBRE. Migración en el simulador: ceros en la 1.ª capa para las 16 entradas nuevas, sesgo −3 en los 2 logits nuevos (como v2 → v3).",
+ "ticks_por_decision": 2
+}
