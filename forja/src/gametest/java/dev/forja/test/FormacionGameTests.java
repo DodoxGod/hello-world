@@ -115,6 +115,8 @@ public class FormacionGameTests {
 		}
 		var skeleton = helper.spawn(EntityTypes.SKELETON, new BlockPos(3, 1, 6));
 		var creeper = helper.spawn(EntityTypes.CREEPER, new BlockPos(3, 1, 2));
+		// A skeleton is an archer by its bow: spawned bare, it would fight up close and rightly take a slot.
+		skeleton.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BOW));
 		skeleton.setNoAi(true);
 		creeper.setNoAi(true);
 		group.add(skeleton);
