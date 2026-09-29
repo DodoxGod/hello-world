@@ -9812,6 +9812,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 		server.runCommand("gamemode survival @a");
 		server.runCommand("effect give @a resistance infinite 4 true");
 		server.runCommand("effect give @a saturation infinite 0 true");
+		// Knocked about, the player would leave the middle of the shot and the ring would chase them out of it.
+		server.runCommand("attribute @a minecraft:knockback_resistance base set 1");
 		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d smooth_stone", sx - 30, y - 1, sz - 30, sx + 30, y - 1, sz + 30));
 		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", sx - 30, y, sz - 30, sx + 30, y + 20, sz + 30));
 		tp(server, sx + 0.5, y, sz + 0.5, 0.0F, 0.0F);
@@ -9819,10 +9821,10 @@ public class ForjaClientTest implements FabricClientGameTest {
 		// The eye in the sky: a marker stand high over the player, looking straight down.
 		int eye = server.computeOnServer(s -> {
 			ServerLevel level = connection.getServerLevel();
-			var stand = new net.minecraft.world.entity.decoration.ArmorStand(level, sx + 0.5, y + 22.0, sz + 0.5);
+			var stand = new net.minecraft.world.entity.decoration.ArmorStand(level, sx + 0.5, y + 14.0, sz + 0.5);
 			stand.setInvisible(true);
 			stand.setNoGravity(true);
-			stand.snapTo(sx + 0.5, y + 22.0, sz + 0.5, 0.0F, 90.0F);
+			stand.snapTo(sx + 0.5, y + 14.0, sz + 0.5, 0.0F, 90.0F);
 			level.addFreshEntity(stand);
 			return stand.getId();
 		});
@@ -9837,8 +9839,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 			for (int i = 0; i < made.length; i++) {
 				var type = i < 13 ? net.minecraft.world.entity.EntityTypes.ZOMBIE : net.minecraft.world.entity.EntityTypes.SKELETON;
 				var mob = (net.minecraft.world.entity.Mob) type.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
-				// All from the south, in a clump eighteen blocks off.
-				mob.snapTo(sx + 0.5 + (i % 5) - 2, y, sz + 18.5 + i / 5, 180.0F, 0.0F);
+				// All from the south, in a clump twelve blocks off: the edge of the shot.
+				mob.snapTo(sx + 0.5 + (i % 5) - 2, y, sz + 12.5 + i / 5, 180.0F, 0.0F);
 				mob.setPersistenceRequired();
 				if (i >= 13) {
 					mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
@@ -9914,6 +9916,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 		});
 		server.runCommand("kill @e[type=!player]");
 		server.runCommand("effect clear @a");
+		server.runCommand("attribute @a minecraft:knockback_resistance base set 0");
 		dev.forja.combat.CombatConfig.get().packChance = new dev.forja.combat.CombatConfig().packChance;
 	}
 

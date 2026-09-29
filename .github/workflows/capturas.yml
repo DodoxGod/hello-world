@@ -43,7 +43,7 @@ jobs:
         run: |
           chmod +x gradlew
           xvfb-run -a -s "-screen 0 1920x1080x24" ./gradlew runClientGameTest --stacktrace > client.log 2>&1 || STATUS=$?
-          grep -E "ALL CHECKS PASSED|AssertionError|GameTestAssert|FAILED|Exception:|Caused by|ERROR" client.log | grep -v "^\s*at " | head -60
+          grep -E "forja-test\]|ALL CHECKS PASSED|AssertionError|GameTestAssert|FAILED|Exception:|Caused by|ERROR" client.log | grep -v "^\s*at " | head -120
           tail -15 client.log
           exit ${STATUS:-0}
       - name: Hojas de contactos en el registro
