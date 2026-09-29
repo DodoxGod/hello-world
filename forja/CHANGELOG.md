@@ -1,5 +1,14 @@
 # Novedades
 
+## 2026-09-29 — /locate del castillo, más barato
+
+- `/locate structure forja:bastion_del_gremio` tardaba 20 s en encontrar un castillo a 45.000 bloques: solo valía uno
+  de cada dos mil sitios y cada uno costaba dos columnas de ruido por muestra. Ahora se miran primero los biomas del
+  centro y de las cuatro esquinas (ni mar, ni río, ni montaña), cada columna solo pregunta por el agua si su superficie
+  está a nivel del mar, y los límites son algo más anchos: desnivel 24 (antes 18), el centro a 6 de la mediana (antes
+  4) y 3 muestras con agua (antes 2).
+- El registro de la prueba del cliente dice cuántos sitios se miraron y por qué se descartaron (`BastionGround.report`).
+
 ## 2026-09-29 — alcance de los monstruos según su arma
 
 - Un monstruo con espada ya pega desde más lejos que uno con los puños (Andy: "un zombie con espada debería poder

@@ -10,12 +10,12 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * candidates on the server thread, and the first version froze the game (Andy, 2026-09-29).
  */
 public class SitioGameTests {
-	/** Over the sea every sample is wet: turned down after three columns' worth, not the whole grid. */
+	/** Over the sea every sample is wet: turned down at the fourth sample (two columns' worth each), not the whole grid. */
 	@GameTest
 	public void aSeaIsTurnedDownAtOnce(GameTestHelper helper) {
 		boolean ok = BastionGround.suitable((x, z, floor) -> floor ? 40 : 63, 0, 0);
 		helper.assertFalse(ok, "sobre el mar no");
-		helper.assertTrue(BastionGround.lastCost() <= 6, "lo descarta en seguida, preguntó " + BastionGround.lastCost() + " columnas");
+		helper.assertTrue(BastionGround.lastCost() <= 8, "lo descarta en seguida, preguntó " + BastionGround.lastCost() + " columnas");
 		helper.succeed();
 	}
 
