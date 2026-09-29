@@ -50,10 +50,20 @@ public final class Pressure {
 
 	/** A blow reached the player. */
 	public static void onHit(Player player) {
+		add(player, CombatConfig.get().pressurePerHit);
+	}
+
+	/** A blow caught on a shield or parried: no time lost to it, but still some (Andy, 2026-09-29). */
+	public static void onBlocked(Player player) {
+		CombatConfig cfg = CombatConfig.get();
+		add(player, cfg.pressurePerHit * cfg.pressureBlockedShare);
+	}
+
+	private static void add(Player player, double amount) {
 		CombatConfig cfg = CombatConfig.get();
 		double now = of(player);
 		State state = STATES.computeIfAbsent(player, p -> new State());
-		state.value = Math.min(cfg.pressureMax, now + cfg.pressurePerHit);
+		state.value = Math.min(cfg.pressureMax, now + amount);
 		state.lastHit = player.level().getGameTime();
 		if (player instanceof ServerPlayer serverPlayer) {
 			CombatAnim.sendTo(serverPlayer, serverPlayer, CombatAnim.Kind.PRESSURE, cfg.pressureDelayTicks,

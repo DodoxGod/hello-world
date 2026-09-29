@@ -139,6 +139,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			// The squad AI (docs/red_mob_v4_propuesta.md): thirteen zombies and two skeletons on the player, seen from above.
 			if ("cerco".equals(solo)) {
 				filmSurround(context, server, connection, x, y, z);
+				filmBackingAway(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
@@ -9921,6 +9922,132 @@ public class ForjaClientTest implements FabricClientGameTest {
 			});
 			log("cerco " + shots[shot] + ": " + count);
 		}
+		context.runOnClient(mc -> {
+			mc.setCameraEntity(mc.player);
+			if (mc.gui.hud.isHidden()) {
+				mc.gui.hud.toggle();
+			}
+		});
+		server.runCommand("kill @e[type=!player]");
+		server.runCommand("effect clear @a");
+		server.runCommand("attribute @a minecraft:knockback_resistance base set 0");
+		dev.forja.combat.CombatConfig.get().packChance = new dev.forja.combat.CombatConfig().packChance;
+	}
+
+	/**
+	 * The surround mode (Andy, 2026-09-29: "when I back away they never get the time to surround me"). Six zombies
+	 * come at the player from the south; the player walks straight back, as fast as a sprint (Speed II), and the
+	 * camera hangs over them, following. Four shots, and a line in the log at each: how many are still in front,
+	 * how many have come round to the sides, and how many are past the player, where they are backing into.
+	 */
+	private static void filmBackingAway(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		int sx = x + 420;
+		int sz = z + 300;
+		server.runCommand("time set noon");
+		server.runCommand("difficulty normal");
+		server.runCommand("gamemode survival @a");
+		server.runCommand("effect give @a resistance infinite 4 true");
+		server.runCommand("effect give @a saturation infinite 0 true");
+		server.runCommand("effect give @a speed infinite 1 true");
+		server.runCommand("attribute @a minecraft:knockback_resistance base set 1");
+		tp(server, sx + 0.5, y, sz + 0.5, 0.0F, 0.0F);
+		context.waitTicks(20);
+		// a long strip to back down: the player goes north (-Z), facing south, where the zombies come from
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d smooth_stone", sx - 16, y - 1, sz - 30, sx + 16, y - 1, sz + 16));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", sx - 16, y, sz - 30, sx + 16, y + 20, sz + 16));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d smooth_stone", sx - 16, y - 1, sz - 62, sx + 16, y - 1, sz - 31));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", sx - 16, y, sz - 62, sx + 16, y + 20, sz - 31));
+		tp(server, sx + 0.5, y, sz + 0.5, 0.0F, 0.0F);
+		context.waitTicks(10);
+		int eye = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var stand = new net.minecraft.world.entity.decoration.ArmorStand(level, sx + 0.5, y + 16.0, sz + 0.5);
+			stand.setInvisible(true);
+			stand.setNoGravity(true);
+			stand.snapTo(sx + 0.5, y + 16.0, sz + 0.5, 0.0F, 90.0F);
+			level.addFreshEntity(stand);
+			return stand.getId();
+		});
+		int[] pack = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			net.minecraft.server.level.ServerPlayer player = connection.getServerPlayer();
+			dev.forja.combat.CombatConfig.get().veteranChance = 0.0;
+			dev.forja.combat.CombatConfig.get().eliteChance = 0.0;
+			dev.forja.combat.CombatConfig.get().packChance = 0.0;
+			int[] made = new int[6];
+			for (int i = 0; i < made.length; i++) {
+				var mob = net.minecraft.world.entity.EntityTypes.ZOMBIE.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				mob.snapTo(sx + 0.5 + (i % 3) - 1, y, sz + 7.5 + i / 3, 180.0F, 0.0F);
+				mob.setPersistenceRequired();
+				mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
+				level.addFreshEntity(mob);
+				mob.setTarget(player);
+				made[i] = mob.getId();
+			}
+			return made;
+		});
+		context.runOnClient(mc -> {
+			mc.gui.hud.getChat().clearMessages(false);
+			if (!mc.gui.hud.isHidden()) {
+				mc.gui.hud.toggle();
+			}
+		});
+		context.waitFor(mc -> mc.level.getEntity(eye) != null, 100);
+		context.runOnClient(mc -> mc.setCameraEntity(mc.level.getEntity(eye)));
+		context.waitTicks(2);
+		check(context.computeOnClient(mc -> mc.getCameraEntity() != null && mc.getCameraEntity().getId() == eye),
+			"the camera should look down from the stand");
+		context.getInput().holdKey(options -> options.keyDown);
+		String[] shots = {"cerco_retroceso_01", "cerco_retroceso_02", "cerco_retroceso_03", "cerco_retroceso_04"};
+		int shot = 0;
+		for (int tick = 1; tick <= 100 && shot < shots.length; tick++) {
+			// the eye follows the player, straight above
+			server.runOnServer(s -> {
+				var stand = connection.getServerLevel().getEntity(eye);
+				net.minecraft.server.level.ServerPlayer player = connection.getServerPlayer();
+				if (stand != null) {
+					stand.snapTo(player.getX(), y + 16.0, player.getZ(), 0.0F, 90.0F);
+				}
+			});
+			context.waitTicks(1);
+			if (tick % 25 != 0) {
+				continue;
+			}
+			context.runOnClient(mc -> {
+				if (mc.level.getEntity(eye) != null && mc.getCameraEntity() != mc.level.getEntity(eye)) {
+					mc.setCameraEntity(mc.level.getEntity(eye));
+				}
+			});
+			context.takeScreenshot(shots[shot]);
+			String count = server.computeOnServer(s -> {
+				net.minecraft.server.level.ServerPlayer player = connection.getServerPlayer();
+				int front = 0;
+				int sides = 0;
+				int past = 0;
+				int running = 0;
+				for (int id : pack) {
+					var mob = connection.getServerLevel().getEntity(id);
+					if (!(mob instanceof net.minecraft.world.entity.Mob zombie) || !zombie.isAlive()) {
+						continue;
+					}
+					double ahead = zombie.getZ() - player.getZ();
+					if (ahead < -0.5) {
+						past++;
+					} else if (Math.abs(zombie.getX() - player.getX()) > 1.5 && ahead < 2.5) {
+						sides++;
+					} else {
+						front++;
+					}
+					dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(zombie);
+					running += mind != null && mind.rodeo ? 1 : 0;
+				}
+				return String.format(Locale.ROOT, "delante %d, a los lados %d, por detrás de él %d, en modo rodeo %d (jugador en z=%.1f)",
+					front, sides, past, running, player.getZ() - sz);
+			});
+			log("cerco retroceso " + shots[shot] + ": " + count);
+			shot++;
+		}
+		context.getInput().releaseKey(options -> options.keyDown);
 		context.runOnClient(mc -> {
 			mc.setCameraEntity(mc.player);
 			if (mc.gui.hud.isHidden()) {

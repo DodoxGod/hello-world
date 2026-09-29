@@ -102,6 +102,13 @@ public final class ForjaConfig {
 				if (current.combate != null && current.combate.jefeDanoAjeno == 0.5) {
 					current.combate.jefeDanoAjeno = 0.333;
 				}
+				// The same for pressure (Andy, 2026-09-29): faster to build, slower to drain.
+				if (current.combate != null && current.combate.pressurePerHit == 0.07) {
+					current.combate.pressurePerHit = 0.10;
+				}
+				if (current.combate != null && current.combate.pressureDelayTicks == 40) {
+					current.combate.pressureDelayTicks = 60;
+				}
 				// Written back so keys added in a newer version show up in an older file.
 				Files.writeString(path, GSON.toJson(current));
 				return;

@@ -60,6 +60,10 @@ public final class CombatHooks {
 			if (struck) {
 				dev.forja.ai.PlayerHabits.onBlow(player, parry ? dev.forja.ai.PlayerHabits.Outcome.PARRIED : dev.forja.ai.PlayerHabits.Outcome.BLOCKED);
 			}
+			if (struck) {
+				// Caught or parried, a blow still leaves less time to set the next guard (Andy, 2026-09-29).
+				dev.forja.difficulty.Pressure.onBlocked(player);
+			}
 			if (parry && guard) {
 				// A weapon only turns part of a blow aside, but a parry with it catches all of it.
 				return false;
@@ -192,7 +196,8 @@ public final class CombatHooks {
 			&& target instanceof Player victim) {
 			scaled *= (float) (dev.forja.difficulty.ForjaDifficulty.current().damage
 				* dev.forja.difficulty.Threat.of(mob).damage * dev.forja.difficulty.Adaptive.damageMultiplier(victim)
-				* dev.forja.ai.Personality.damage(mob, victim));
+				* dev.forja.ai.Personality.damage(mob, victim)
+				* dev.forja.difficulty.GearScore.damageFactor(dev.forja.difficulty.GearScore.tier(victim)));
 		}
 		if (source.getEntity() != null) {
 			Posture.onHit(target, attack.kind(), (float) (scaled * postureScale), now);
@@ -204,9 +209,14 @@ public final class CombatHooks {
 		if (!staggered && (dev.forja.difficulty.Threat.of(target).guarded() || dev.forja.difficulty.Bosses.isBoss(target))) {
 			scaled *= (float) cfg.guardHealthShare;
 		}
-		// A player under pressure has no time to set their armor.
+		// A player under pressure has no time to set their armor; a veteran, an elite or a champion finds the gaps
+		// in it anyway (Andy, 2026-09-29), and the larger of the two counts.
 		if (target instanceof Player victim) {
-			attack = new AttackProfile(attack.kind(), dev.forja.difficulty.Pressure.penetration(victim, attack.penetration()),
+			double own = attack.penetration();
+			if (source.getEntity() instanceof net.minecraft.world.entity.Mob mob) {
+				own = Math.max(own, dev.forja.difficulty.Threat.of(mob).penetration());
+			}
+			attack = new AttackProfile(attack.kind(), dev.forja.difficulty.Pressure.penetration(victim, own),
 				attack.zone(), attack.precise());
 		}
 

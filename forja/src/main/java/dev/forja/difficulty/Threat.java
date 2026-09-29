@@ -57,6 +57,17 @@ public enum Threat {
 		this.tag = tag;
 	}
 
+	/** The armor penetration its blows carry (Andy, 2026-09-29): veteran 10 %, elite 20 %, champion 35 %. */
+	public double penetration() {
+		dev.forja.combat.CombatConfig cfg = dev.forja.combat.CombatConfig.get();
+		return switch (this) {
+			case NORMAL -> 0.0;
+			case VETERANO -> cfg.penetrationVeteran;
+			case ELITE -> cfg.penetrationElite;
+			case CAMPEON -> cfg.penetrationChampion;
+		};
+	}
+
 	public static Threat of(LivingEntity entity) {
 		var tags = entity.entityTags();
 		if (tags.contains(CAMPEON.tag)) return CAMPEON;

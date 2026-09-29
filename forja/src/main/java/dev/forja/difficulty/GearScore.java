@@ -61,4 +61,26 @@ public final class GearScore {
 	public static int tier(double score) {
 		return Math.min(3, (int) Math.floor(score * 4.0));
 	}
+
+	/** The player's tier, worked out at most once a tick: every monster near them asks for it. */
+	public static int tier(Player player) {
+		if (player == null) {
+			return 0;
+		}
+		long now = player.level().getGameTime();
+		long[] known = TIERS.get(player);
+		if (known != null && known[0] == now) {
+			return (int) known[1];
+		}
+		int tier = tier(of(player));
+		TIERS.put(player, new long[] {now, tier});
+		return tier;
+	}
+
+	private static final java.util.Map<Player, long[]> TIERS = new java.util.WeakHashMap<>();
+
+	/** What a monster's blow on a player of this tier is multiplied by (Andy, 2026-09-29: +15 % a tier). */
+	public static double damageFactor(int tier) {
+		return 1.0 + dev.forja.combat.CombatConfig.get().mobDamagePerGearTier * tier;
+	}
 }

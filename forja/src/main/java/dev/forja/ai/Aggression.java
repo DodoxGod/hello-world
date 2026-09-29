@@ -16,7 +16,8 @@ import net.minecraft.world.entity.player.Player;
  * <pre>
  * turnos = base (2) − 1 si nivel &lt; 0,2 + 1 si nivel &gt; 0,7
  *        + 1 si estamina &lt; 25 + 1 si su esquiva está en enfriamiento + 1 si come o bebe + 1 si vida &lt; 30 %
- * recortado a [1, base + 2]
+ *        + extra (1 por tramo de equipo 0-3, +1 en MAESTRO, +2 en LEYENDA)
+ * recortado a [1, base + 2 + extra]
  * </pre>
  */
 public final class Aggression {
@@ -37,7 +38,22 @@ public final class Aggression {
 		if (Stamina.dodgeCooldown(player) > 0) turns++;
 		if (player.isUsingItem() && (player.getUseItem().has(DataComponents.FOOD) || player.getUseItem().has(DataComponents.CONSUMABLE))) turns++;
 		if (player.getHealth() < player.getMaxHealth() * 0.3F) turns++;
-		return Math.max(1, Math.min(base + 2, turns));
+		int extra = gearTurns(player);
+		return Math.max(1, Math.min(base + 2 + extra, turns + extra));
+	}
+
+	/**
+	 * Turns added for a well-equipped player and on the harder difficulties (Andy, 2026-09-29): one per gear
+	 * tier (0 to 3), one more on MAESTRO and two on LEYENDA.
+	 */
+	public static int gearTurns(Player player) {
+		CombatConfig cfg = CombatConfig.get();
+		int extra = dev.forja.difficulty.GearScore.tier(player) * cfg.attackersPerGearTier;
+		return extra + switch (dev.forja.difficulty.ForjaDifficulty.current()) {
+			case MAESTRO -> cfg.attackersMaestro;
+			case LEYENDA -> cfg.attackersLeyenda;
+			default -> 0;
+		};
 	}
 
 	/** For a given mob: an enraged one (a duel refused or cheated) counts one more turn (idea 96). */

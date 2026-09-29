@@ -1,5 +1,41 @@
 # Novedades
 
+## 2026-09-29 — el buen equipo ya no vuelve inofensivas a las multitudes
+
+Andy: "con diamante y Protección IV, y más con la armadura del mod, las multitudes no hacen nada". Cambios:
+
+- **Daño según tu equipo:** los monstruos te pegan un **15 % más por cada tramo de equipo** (`GearScore`, del 0 al
+  3): un 45 % más en el tramo 3. Se suma a los multiplicadores de dificultad y adaptativo. Valor:
+  `mobDamagePerGearTier`.
+- **Más atacantes a la vez:**
+  - **+1 por tramo de equipo** (`attackersPerGearTier`);
+  - **+1 en MAESTRO y +2 en LEYENDA** (`attackersMaestro`, `attackersLeyenda`).
+
+  El tope sube lo mismo: antes eran 2 de base y como mucho 4; ahora, con tramo 3 en LEYENDA, hasta 9.
+- **Penetración de armadura por amenaza:** veterano 10 %, élite 20 % y campeón 35 % (`penetrationVeteran`,
+  `penetrationElite`, `penetrationChampion`). Cuenta la mayor entre esta, la del arma y la de la presión.
+- **Presión más rápida:**
+  - sube 0,10 por golpe (antes 0,07);
+  - espera 60 ticks antes de bajar (antes 40);
+  - un golpe **parado con escudo o desviado** también suma, la mitad (`pressureBlockedShare` = 0,5).
+
+  Una `config/forja.json` con los valores viejos pasa sola a los nuevos.
+- **Modo rodeo:**
+  - **Cuándo:** Andy dijo que al retroceder nunca le daban tiempo a rodearle. Ahora, un monstruo que va a su hueco
+    del anillo mientras el jugador se aleja (se aparta de él, o el hueco queda delante o a un lado de hacia donde
+    va) corre a **×2,3** en vez de ×1,35.
+  - **Coste:** 1,4 de su aguante por tick (de 100), así que le dura unos 3,5 s. Después tiene que recuperarse,
+    como con la carrera normal.
+  - **Quién:** vale para las reglas y para la salida de correr de la red cuando el monstruo tiene hueco.
+  - **Ajuste:** `rodeoSpeed` y `rodeoCostPerTick`, para probarlo y ajustarlo.
+- **Pruebas:** `DificultadGameTests`:
+  - el daño sube con el tramo;
+  - más atacantes con más tramo;
+  - la élite atraviesa el diamante;
+  - un golpe parado suma la mitad de presión;
+  - 4 zombis adelantan en menos de 6 s a un jugador que retrocede a velocidad de carrera.
+- **Capturas:** `FORJA_SOLO=cerco` añade las del retroceso (`cerco_retroceso_*`).
+
 ## 2026-09-29 — los monstruos ya no construyen ni rompen bloques
 
 - Por decisión de Andy, ningún monstruo pone ni rompe bloques:

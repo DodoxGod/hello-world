@@ -186,11 +186,37 @@ public final class CombatConfig {
 	public double hitCapBoss = 0.08;
 	/** Elites, champions and bosses: share of a blow that reaches their health while their guard holds. */
 	public double guardHealthShare = 0.5;
-	/** Pressure: armor penetration each blow a player takes adds to the next ones, up to a total cap. */
-	public double pressurePerHit = 0.07;
+	/**
+	 * Pressure: armor penetration each blow a player takes adds to the next ones, up to a total cap. Andy,
+	 * 2026-09-29: it builds faster (0.07 -> 0.10 a blow), waits longer before draining (40 -> 60 ticks), and a
+	 * blow caught on a shield or parried adds {@link #pressureBlockedShare} of it too.
+	 */
+	public double pressurePerHit = 0.10;
 	public double pressureMax = 0.70;
-	public int pressureDelayTicks = 40;
+	public int pressureDelayTicks = 60;
 	public double pressureDrainPerTick = 0.02;
+	public double pressureBlockedShare = 0.5;
+	/**
+	 * Gear against crowds (Andy, 2026-09-29: diamond with Protection IV made crowds harmless). By the player's
+	 * gear tier (difficulty/GearScore, 0 to 3): monsters hit this much harder per tier (+45 % at tier 3, on top
+	 * of the difficulty and adaptive multipliers), and this many more of them may swing at once per tier.
+	 */
+	public double mobDamagePerGearTier = 0.15;
+	public int attackersPerGearTier = 1;
+	/** More simultaneous attackers on the harder difficulties. */
+	public int attackersMaestro = 1;
+	public int attackersLeyenda = 2;
+	/** Armor penetration of a monster's blows by its threat, combined with Pressure's (the larger counts). */
+	public double penetrationVeteran = 0.10;
+	public double penetrationElite = 0.20;
+	public double penetrationChampion = 0.35;
+	/**
+	 * Surround mode, "modo rodeo" (Andy, 2026-09-29: backing away, the mobs never got the time to surround him).
+	 * A monster going round to its ring slot while the player backs off runs at this multiple of its walking
+	 * speed, and pays {@link #rodeoCostPerTick} of its run stamina (100) a tick for it: about 3.5 s from full.
+	 */
+	public double rodeoSpeed = 2.3;
+	public float rodeoCostPerTick = 1.4F;
 	/** Stagger resistance: each stagger in a row is shorter and raises max posture; it fades with time. */
 	public double staggerRepeatDuration = 0.7;
 	public int staggerMinTicks = 12;

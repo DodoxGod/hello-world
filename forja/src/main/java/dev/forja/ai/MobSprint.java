@@ -44,6 +44,13 @@ public final class MobSprint {
 	 */
 	public static final double SLOT_FAR = 5.0;
 
+	/** The player moving at least this fast (blocks a tick, across the ground) counts as backing away. */
+	public static final double RODEO_PLAYER_SPEED = 0.08;
+	/** Still this far from its slot, it is still going round to it. */
+	public static final double RODEO_SLOT_NEAR = 2.0;
+	/** How far behind the player's retreat the slot may be (cosine) and still count as ahead or beside it. */
+	public static final double RODEO_BESIDE = -0.3;
+
 	private static final Identifier EXTRA = Forja.id("carrera");
 	/** On top of vanilla's sprint (×1.3) to make ×1.35. */
 	private static final double EXTRA_AMOUNT = (1.0 + BOOST) / 1.3 - 1.0;
@@ -75,6 +82,9 @@ public final class MobSprint {
 				target.getZ() + Math.sin(mind.ringAngle) * mind.ringRadius) > SLOT_FAR * SLOT_FAR) {
 			return true;
 		}
+		if ((decision.tactic() == Tactic.RODEAR || decision.tactic() == Tactic.FLANQUEAR || decision.tactic() == Tactic.ESPERAR) && rodeo(mind)) {
+			return true;
+		}
 		double distance = mob.distanceTo(target);
 		if (distance >= CHASE_MIN && distance <= CHASE_MAX) {
 			Vec3 line = target.position().subtract(mob.position());
@@ -85,6 +95,44 @@ public final class MobSprint {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Surround mode (Andy, 2026-09-29): a player who backs away never gave the mobs time to go round. A monster
+	 * running to its ring slot, still away from it, while the player moves off (away from it, or with the slot
+	 * ahead of or beside the way they are going) runs at {@code rodeoSpeed} (x2.3) instead of x1.35, and pays
+	 * {@code rodeoCostPerTick} for it: about 3.5 s of it from full breath. The same for a network's run when its
+	 * mob has a slot, since the slot is where the run takes it.
+	 */
+	public static boolean rodeo(MobMind mind) {
+		Mob mob = mind.mob;
+		Player target = mind.target;
+		if (target == null || Double.isNaN(mind.ringAngle)) {
+			return false;
+		}
+		double slotX = target.getX() + Math.cos(mind.ringAngle) * mind.ringRadius;
+		double slotZ = target.getZ() + Math.sin(mind.ringAngle) * mind.ringRadius;
+		if (mob.distanceToSqr(slotX, mob.getY(), slotZ) <= RODEO_SLOT_NEAR * RODEO_SLOT_NEAR) {
+			return false;
+		}
+		Vec3 moving = target.getKnownMovement();
+		double speed = Math.hypot(moving.x, moving.z);
+		if (speed < RODEO_PLAYER_SPEED) {
+			return false;
+		}
+		double mx = moving.x / speed;
+		double mz = moving.z / speed;
+		// away from this mob
+		double ax = target.getX() - mob.getX();
+		double az = target.getZ() - mob.getZ();
+		double away = Math.hypot(ax, az);
+		if (away > 1.0E-6 && (mx * ax + mz * az) / away > 0.0) {
+			return true;
+		}
+		// or the slot ahead of or beside the retreat
+		double sx = Math.cos(mind.ringAngle);
+		double sz = Math.sin(mind.ringAngle);
+		return mx * sx + mz * sz >= RODEO_BESIDE;
 	}
 
 	/** Whether it may run right now, wish aside: breath, feet and balance. */
@@ -98,12 +146,14 @@ public final class MobSprint {
 	public static void tick(MobMind mind, long now) {
 		Mob mob = mind.mob;
 		boolean run = mind.target != null && mind.wantsRun && able(mind, now);
+		boolean rodeo = run && rodeo(mind);
 		if (run) {
-			mind.stamina = Math.max(0.0F, mind.stamina - COST);
+			mind.stamina = Math.max(0.0F, mind.stamina - (rodeo ? dev.forja.combat.CombatConfig.get().rodeoCostPerTick : COST));
 			mind.lastRun = now;
 			if (mind.stamina <= 0.0F) {
 				mind.winded = true;
 				run = false;
+				rodeo = false;
 			}
 		} else if (now - mind.lastRun >= REST_TICKS && mind.stamina < MAX) {
 			mind.stamina = Math.min(MAX, mind.stamina + REGEN);
@@ -111,14 +161,17 @@ public final class MobSprint {
 		if (mind.winded && mind.stamina >= RESUME) {
 			mind.winded = false;
 		}
-		if (run != mind.running) {
+		if (run != mind.running || rodeo != mind.rodeo) {
 			mind.running = run;
+			mind.rodeo = rodeo;
 			mob.setSprinting(run);
 			AttributeInstance speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
 			if (speed != null) {
 				speed.removeModifier(EXTRA);
 				if (run) {
-					speed.addTransientModifier(new AttributeModifier(EXTRA, EXTRA_AMOUNT, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+					// on top of vanilla's sprint (x1.3), to make x1.35, or the surround mode's x2.3
+					double amount = rodeo ? dev.forja.combat.CombatConfig.get().rodeoSpeed / 1.3 - 1.0 : EXTRA_AMOUNT;
+					speed.addTransientModifier(new AttributeModifier(EXTRA, amount, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
 				}
 			}
 		}

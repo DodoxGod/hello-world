@@ -55,6 +55,8 @@ public final class MobMind {
 	public float stamina = MobSprint.MAX;
 	public boolean wantsRun;
 	public boolean running;
+	/** Running in surround mode (MobSprint.rodeo): going round to its slot while the player backs away. */
+	public boolean rodeo;
 	/** Ran itself out: it runs again only once its breath is partly back. */
 	public boolean winded;
 	public long lastRun = Long.MIN_VALUE / 2;
