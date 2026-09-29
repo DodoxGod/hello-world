@@ -65,6 +65,10 @@ public final class ModItems {
 	public static Item MESA_DE_LOSA;
 	public static Item MESA_DE_BRASA;
 	public static Item MESA_DE_ALMAS;
+	/** The heat line: pipes, the boiler and the heat depot (docs/FUNDICION_V2.md, part B). */
+	public static Item TUBO_DE_CALOR;
+	public static Item CALDERA;
+	public static Item DEPOSITO_DE_CALOR;
 	public static Item MARCO;
 	public static Item MESA_DE_PIEZAS;
 	public static Item MESA_DE_FORJA_MAYOR;
@@ -179,6 +183,9 @@ public final class ModItems {
 		MESA_DE_BRASA = register("mesa_de_brasa", p -> new BlockItem(ModBlocks.MESA_DE_BRASA, p), new Item.Properties().useBlockDescriptionPrefix());
 		MESA_DE_ALMAS = register("mesa_de_almas", p -> new BlockItem(ModBlocks.MESA_DE_ALMAS, p),
 			new Item.Properties().useBlockDescriptionPrefix().rarity(net.minecraft.world.item.Rarity.UNCOMMON));
+		TUBO_DE_CALOR = register("tubo_de_calor", p -> new BlockItem(ModBlocks.TUBO_DE_CALOR, p), new Item.Properties().useBlockDescriptionPrefix());
+		CALDERA = register("caldera", p -> new BlockItem(ModBlocks.CALDERA, p), new Item.Properties().useBlockDescriptionPrefix());
+		DEPOSITO_DE_CALOR = register("deposito_de_calor", p -> new BlockItem(ModBlocks.DEPOSITO_DE_CALOR, p), new Item.Properties().useBlockDescriptionPrefix());
 		CONDUCTO_DE_COLADA = register("conducto_de_colada", p -> new BlockItem(ModBlocks.CONDUCTO_DE_COLADA, p), new Item.Properties().useBlockDescriptionPrefix());
 		CONDUCTO_DE_ACERO = register("conducto_de_acero", p -> new BlockItem(ModBlocks.CONDUCTO_DE_ACERO, p), new Item.Properties().useBlockDescriptionPrefix());
 		CONDUCTO_DE_DAMASCO = register("conducto_de_damasco", p -> new BlockItem(ModBlocks.CONDUCTO_DE_DAMASCO, p),
@@ -377,6 +384,9 @@ public final class ModItems {
 		stacks.add(new ItemStack(MESA_DE_BRASA));
 		stacks.add(new ItemStack(MESA_DE_ALMAS));
 		stacks.add(new ItemStack(MONTADORA));
+		stacks.add(new ItemStack(TUBO_DE_CALOR));
+		stacks.add(new ItemStack(CALDERA));
+		stacks.add(new ItemStack(DEPOSITO_DE_CALOR));
 		stacks.addAll(dev.forja.item.CastingFrameItem.all());
 		for (dev.forja.item.Talisman talisman : dev.forja.item.Talisman.values()) {
 			stacks.add(talisman.create());

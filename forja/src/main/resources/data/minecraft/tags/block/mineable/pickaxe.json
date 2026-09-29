@@ -23,6 +23,9 @@
     "forja:mesa_de_brasa",
     "forja:mesa_de_almas",
     "forja:montadora",
-    "forja:colador"
+    "forja:colador",
+    "forja:tubo_de_calor",
+    "forja:caldera",
+    "forja:deposito_de_calor"
   ]
 }

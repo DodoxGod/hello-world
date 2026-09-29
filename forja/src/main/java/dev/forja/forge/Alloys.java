@@ -41,6 +41,9 @@ public final class Alloys {
 		 * reads its way up to it. The only thing in the mod that burns this hot is the obsidian crucible,
 		 * which is the point: the last three alloys are not something you can reach by carrying a bucket
 		 * of lava into the workshop. You build the dear crucible or you do without them.
+		 *
+		 * <p>Or you pay for it by the tick: forge breath (HeatFluid.ALIENTO_DE_FORJA), boiled out of slag or a
+		 * forge heart and piped in, burns this hot too, and HeatSources hands it to whatever it touches.
 		 */
 		FORJA_BLANCA;
 

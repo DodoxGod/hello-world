@@ -1,0 +1,12 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "forja:block/deposito_de_calor_inventory",
+    "tints": [
+      {
+        "type": "minecraft:constant",
+        "value": 16738834
+      }
+    ]
+  }
+}

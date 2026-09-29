@@ -269,6 +269,11 @@ public class AssemblerMachineBlockEntity extends BlockEntity implements WorldlyC
 		machine.job = job;
 		if (job == JOB_WORKING) {
 			if (++machine.progress >= work(machine.heat)) {
+				// Like a press at the forge table: heat that came down a heat pipe is paid for, per piece.
+				dev.forja.forge.HeatSources.Supply supply = dev.forja.forge.HeatSources.at(level, pos);
+				if (supply.piped()) {
+					supply.draw(level, supply.fluid().draw * dev.forja.forge.HeatFluid.FORGE_ACTION_TICKS);
+				}
 				machine.finish(level, pos);
 			}
 		} else if (job == JOB_COLD) {

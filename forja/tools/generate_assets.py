@@ -3370,6 +3370,8 @@ PICKAXE_BLOCKS = [
     "forja:montadora",
     # The strainer stood on a table: it drops by hand too, the tag only makes a pickaxe quicker at it.
     "forja:colador",
+    # The heat line.
+    "forja:tubo_de_calor", "forja:caldera", "forja:deposito_de_calor",
 ]
 
 
@@ -8836,6 +8838,325 @@ CRUCIBLES = {
 }
 
 
+# ---------------------------------------------------------------------------- the heat line
+# Part B of docs/FUNDICION_V2.md: heat pipes, the boiler and the heat depot. The fluid inside all three is
+# painted grey and tinted at runtime by the block's own FLUIDO state (client/ForjaClient), so one set of
+# textures serves steam, lava, blaze blood, forge breath and ice brine.
+HEAT_PIPE_IRON = (70, 64, 62)
+HEAT_PIPE_IRON_L = (104, 96, 92)
+HEAT_PIPE_IRON_D = (44, 40, 40)
+HEAT_PIPE_BRASS = (196, 152, 70)
+HEAT_PIPE_BRASS_D = (132, 96, 40)
+# The empty inside, as a tint: what a dry pipe shows through its slit. Kept in step with ForjaClient.
+HEAT_EMPTY = 0x3A302A
+# The colours the items are shown with, from HeatFluid: steam for the boiler, lava for the depot.
+HEAT_VAPOR = 0xC9D6DE
+HEAT_LAVA = 0xFF6A12
+
+
+def heat_faces(box, texture, tint=None, skip=(), cull=False):
+    """One element, UVs taken from where the box is (see the metal pipes), optionally tinted and culled."""
+    (x0, y0, z0), (x1, y1, z1) = box
+    uv = {
+        "north": [x0, 16 - y1, x1, 16 - y0],
+        "south": [x0, 16 - y1, x1, 16 - y0],
+        "east": [z0, 16 - y1, z1, 16 - y0],
+        "west": [z0, 16 - y1, z1, 16 - y0],
+        "up": [x0, z0, x1, z1],
+        "down": [x0, z0, x1, z1],
+    }
+    faces = {}
+    for side in ("north", "south", "east", "west", "up", "down"):
+        if side in skip:
+            continue
+        face = {"uv": uv[side], "texture": texture}
+        if tint is not None:
+            face["tintindex"] = tint
+        if cull:
+            face["cullface"] = side
+        faces[side] = face
+    return {"from": list(box[0]), "to": list(box[1]), "faces": faces}
+
+
+def generate_heat_line_assets():
+    """The heat pipe, the boiler and the heat depot: textures, models, blockstates, loot and recipes."""
+    rng = __import__("random").Random(20260928)
+    folder = ASSETS / "textures/block"
+    folder.mkdir(parents=True, exist_ok=True)
+
+    # ---- the fluid: grey, bright, with slow streaks so it reads as moving through a slit.
+    fluid = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    for y in range(16):
+        for x in range(16):
+            streak = math.sin((x + y * 0.35) / 16.0 * math.tau * 2) * 0.5 + 0.5
+            level = 0.74 + 0.20 * streak + rng.random() * 0.06
+            v = int(255 * min(1.0, level))
+            fluid.putpixel((x, y), (v, v, v, 255))
+    fluid.save(folder / "fluido_de_calor.png")
+
+    # ---- the pipe casing. Blackened iron with a brass collar at every joint, and a slit down the middle
+    # of each face through which the fluid (a tinted element inside) is seen. The slit runs ALONG the
+    # pipe: rows 7-8 on the side faces of an arm (columns 0-3), columns 7-8 on its top and bottom (rows
+    # 0-3), and a cross in the middle square, which is what every face of the core shows.
+    casing = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    for y in range(16):
+        for x in range(16):
+            g = rng.randint(-7, 7)
+            base = HEAT_PIPE_IRON
+            # The edges of each face a little darker, the middle a little lighter: a round-ish tube.
+            if x in (4, 11) or y in (4, 11):
+                base = HEAT_PIPE_IRON_D
+            elif x in (5, 10) or y in (5, 10):
+                base = HEAT_PIPE_IRON_L
+            casing.putpixel((x, y), tuple(max(0, min(255, c + g)) for c in base) + (255,))
+    # The collar at the outer end of an arm: column 0 of the side faces, row 0 of the top faces.
+    # (Mirrored at column 15 and row 15, for the far end of the straight length drawn in the hand.)
+    for i in range(4, 12):
+        brass = (HEAT_PIPE_BRASS if i < 8 else HEAT_PIPE_BRASS_D) + (255,)
+        for edge in (0, 15):
+            casing.putpixel((edge, i), brass)
+            casing.putpixel((i, edge), brass)
+    # The slits.
+    for x in list(range(1, 4)) + list(range(12, 15)):
+        for y in (7, 8):
+            casing.putpixel((x, y), (0, 0, 0, 0))
+            casing.putpixel((y, x), (0, 0, 0, 0))
+    for i in range(6, 10):
+        for j in (7, 8):
+            casing.putpixel((i, j), (0, 0, 0, 0))
+            casing.putpixel((j, i), (0, 0, 0, 0))
+    # And a rivet at each corner of the core's face, in brass.
+    for x, y in ((5, 5), (10, 5), (5, 10), (10, 10)):
+        casing.putpixel((x, y), HEAT_PIPE_BRASS + (255,))
+    casing.save(folder / "tubo_de_calor.png")
+
+    pipe_textures = {"casing": "forja:block/tubo_de_calor", "fluido": "forja:block/fluido_de_calor",
+                     "particle": "forja:block/tubo_de_calor"}
+    write_json(ASSETS / "models/block/tubo_de_calor_core.json", {
+        "parent": "minecraft:block/block",
+        "render_type": "minecraft:cutout",
+        "textures": pipe_textures,
+        "elements": [
+            heat_faces(((4, 4, 4), (12, 12, 12)), "#casing"),
+            heat_faces(((5, 5, 5), (11, 11, 11)), "#fluido", tint=0),
+        ],
+    })
+    # One arm, pointing north; the blockstate turns it to the other five sides. No end faces: the end
+    # meets the next pipe's arm or the face of whatever it feeds.
+    write_json(ASSETS / "models/block/tubo_de_calor_arm.json", {
+        "parent": "minecraft:block/block",
+        "render_type": "minecraft:cutout",
+        "textures": pipe_textures,
+        "elements": [
+            heat_faces(((4, 4, 0), (12, 12, 4)), "#casing", skip=("north", "south")),
+            heat_faces(((5, 5, 0), (11, 11, 5)), "#fluido", tint=0, skip=("north", "south")),
+        ],
+    })
+    write_json(ASSETS / "blockstates/tubo_de_calor.json", {"multipart": [
+        {"apply": {"model": "forja:block/tubo_de_calor_core"}},
+        {"when": {"north": "true"}, "apply": {"model": "forja:block/tubo_de_calor_arm"}},
+        {"when": {"south": "true"}, "apply": {"model": "forja:block/tubo_de_calor_arm", "y": 180}},
+        {"when": {"east": "true"}, "apply": {"model": "forja:block/tubo_de_calor_arm", "y": 90}},
+        {"when": {"west": "true"}, "apply": {"model": "forja:block/tubo_de_calor_arm", "y": 270}},
+        {"when": {"up": "true"}, "apply": {"model": "forja:block/tubo_de_calor_arm", "x": 270}},
+        {"when": {"down": "true"}, "apply": {"model": "forja:block/tubo_de_calor_arm", "x": 90}},
+    ]})
+    # In the hand: a straight length, east to west, with a collar at each end and lava in the slit.
+    write_json(ASSETS / "models/block/tubo_de_calor_inventory.json", {
+        "parent": "minecraft:block/block",
+        "render_type": "minecraft:cutout",
+        "textures": pipe_textures,
+        "elements": [
+            heat_faces(((0, 4, 4), (4, 12, 12)), "#casing", skip=("east",)),
+            heat_faces(((4, 4, 4), (12, 12, 12)), "#casing", skip=("east", "west")),
+            heat_faces(((12, 4, 4), (16, 12, 12)), "#casing", skip=("west",)),
+            heat_faces(((0, 5, 5), (16, 11, 11)), "#fluido", tint=0),
+        ],
+        "display": {
+            "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625]},
+        },
+    })
+    write_json(ASSETS / "items/tubo_de_calor.json", {"model": {
+        "type": "minecraft:model", "model": "forja:block/tubo_de_calor_inventory",
+        "tints": [{"type": "minecraft:constant", "value": HEAT_LAVA}]}})
+
+    # ---- the insides of the two vessels: the fluid up to how full it is, and the dark shell above it.
+    hollow = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    for y in range(16):
+        for x in range(16):
+            g = rng.randint(-6, 6)
+            hollow.putpixel((x, y), (34 + g, 29 + g, 27 + g, 255))
+    hollow.save(folder / "calor_hueco.png")
+    for level in range(5):
+        top = 1 + 14 * level / 4
+        # The floor, so an empty depot seen through its grate is dark inside rather than see-through.
+        elements = [heat_faces(((1, 0.5, 1), (15, 1, 15)), "#hueco", skip=("north", "south", "east", "west", "down"))]
+        if level > 0:
+            elements.append(heat_faces(((1, 1, 1), (15, top, 15)), "#fluido", tint=0, skip=("down",)))
+        if top < 15:
+            elements.append(heat_faces(((1, top, 1), (15, 15, 15)), "#hueco", skip=("up", "down")))
+        write_json(ASSETS / f"models/block/calor_interior_{level}.json", {
+            "parent": "minecraft:block/block",
+            "textures": {"fluido": "forja:block/fluido_de_calor", "hueco": "forja:block/calor_hueco",
+                         "particle": "forja:block/calor_hueco"},
+            "elements": elements,
+        })
+
+    # ---- the boiler: riveted iron plate, a gauge glass up the middle of each side, the firebox under it.
+    def boiler_side(lit):
+        side = forge_grain(Image.new("RGBA", (16, 16)), (92, 88, 90), rng, 7)
+        forge_lip(side, (150, 146, 150), (112, 108, 112), (58, 56, 60))
+        forge_rivets(side, 3, (168, 164, 168), (52, 50, 54), step=5, start=1)
+        # The seams down each side of the glass, and the glass itself, which is a hole in the plate.
+        for y in range(3, 11):
+            side.putpixel((5, y), HEAT_PIPE_BRASS_D + (255,))
+            side.putpixel((10, y), HEAT_PIPE_BRASS_D + (255,))
+            for x in range(6, 10):
+                side.putpixel((x, y), (0, 0, 0, 0))
+        for x in range(5, 11):
+            side.putpixel((x, 3), HEAT_PIPE_BRASS + (255,))
+            side.putpixel((x, 10), HEAT_PIPE_BRASS_D + (255,))
+        # A band over the firebox.
+        for x in range(16):
+            side.putpixel((x, 11), (58, 56, 60, 255))
+        forge_mouth(side, lit, rng, top=12, bars=(5, 8, 11))
+        return side
+
+    boiler_side(False).save(folder / "caldera_side.png")
+    boiler_side(True).save(folder / "caldera_side_lit.png")
+    lid = forge_grain(Image.new("RGBA", (16, 16)), (96, 92, 94), rng, 6)
+    for i in range(16):
+        for edge in (0, 15):
+            lid.putpixel((i, edge), (58, 56, 60, 255))
+            lid.putpixel((edge, i), (58, 56, 60, 255))
+    # The valve on the lid, in brass, and the rivets round it.
+    for x in range(6, 10):
+        for y in range(6, 10):
+            lid.putpixel((x, y), (HEAT_PIPE_BRASS if (x + y) % 3 else HEAT_PIPE_BRASS_D) + (255,))
+    for x, y in ((3, 3), (12, 3), (3, 12), (12, 12)):
+        lid.putpixel((x, y), (168, 164, 168, 255))
+    lid.save(folder / "caldera_top.png")
+    base = forge_grain(Image.new("RGBA", (16, 16)), (60, 58, 60), rng, 6)
+    base.save(folder / "caldera_bottom.png")
+
+    # ---- the heat depot: firebrick in an iron frame, with a wide window of fireglass.
+    def depot_side():
+        side = Image.new("RGBA", (16, 16))
+        for y in range(16):
+            for x in range(16):
+                row = y // 4
+                joint = y % 4 == 3 or (x + (2 if row % 2 else 0)) % 8 == 7
+                g = rng.randint(-10, 10)
+                c = (70, 58, 54) if joint else (150 + g, 64 + g // 2, 44 + g // 2)
+                side.putpixel((x, y), c + (255,))
+        for i in range(16):
+            for edge in (0, 15):
+                side.putpixel((i, edge), (66, 62, 64, 255))
+                side.putpixel((edge, i), (66, 62, 64, 255))
+        for y in range(4, 12):
+            for x in range(4, 12):
+                side.putpixel((x, y), (0, 0, 0, 0))
+        for i in range(3, 13):
+            side.putpixel((i, 3), (110, 106, 110, 255))
+            side.putpixel((i, 12), (58, 56, 60, 255))
+            side.putpixel((3, i), (110, 106, 110, 255))
+            side.putpixel((12, i), (58, 56, 60, 255))
+        return side
+
+    depot_side().save(folder / "deposito_de_calor_side.png")
+    grate = Image.new("RGBA", (16, 16))
+    for y in range(16):
+        for x in range(16):
+            frame = x in (0, 15) or y in (0, 15)
+            bar = x % 3 == 1
+            g = rng.randint(-6, 6)
+            if frame:
+                grate.putpixel((x, y), (66 + g, 62 + g, 64 + g, 255))
+            elif bar:
+                grate.putpixel((x, y), (96 + g, 92 + g, 94 + g, 255))
+            else:
+                grate.putpixel((x, y), (0, 0, 0, 0))
+    grate.save(folder / "deposito_de_calor_top.png")
+
+    def casing_model(name, side, top, bottom):
+        write_json(ASSETS / f"models/block/{name}.json", {
+            "parent": "minecraft:block/block",
+            "render_type": "minecraft:cutout",
+            "textures": {"side": side, "top": top, "bottom": bottom, "particle": side},
+            "elements": [{
+                "from": [0, 0, 0], "to": [16, 16, 16],
+                "faces": {
+                    "north": {"uv": [0, 0, 16, 16], "texture": "#side", "cullface": "north"},
+                    "south": {"uv": [0, 0, 16, 16], "texture": "#side", "cullface": "south"},
+                    "east": {"uv": [0, 0, 16, 16], "texture": "#side", "cullface": "east"},
+                    "west": {"uv": [0, 0, 16, 16], "texture": "#side", "cullface": "west"},
+                    "up": {"uv": [0, 0, 16, 16], "texture": "#top", "cullface": "up"},
+                    "down": {"uv": [0, 0, 16, 16], "texture": "#bottom", "cullface": "down"},
+                },
+            }],
+        })
+
+    casing_model("caldera", "forja:block/caldera_side", "forja:block/caldera_top", "forja:block/caldera_bottom")
+    casing_model("caldera_lit", "forja:block/caldera_side_lit", "forja:block/caldera_top", "forja:block/caldera_bottom")
+    casing_model("deposito_de_calor", "forja:block/deposito_de_calor_side", "forja:block/deposito_de_calor_top",
+                 "forja:block/caldera_bottom")
+    interiors = [{"when": {"nivel": str(level)}, "apply": {"model": f"forja:block/calor_interior_{level}"}} for level in range(5)]
+    write_json(ASSETS / "blockstates/caldera.json", {"multipart": [
+        {"when": {"lit": "false"}, "apply": {"model": "forja:block/caldera"}},
+        {"when": {"lit": "true"}, "apply": {"model": "forja:block/caldera_lit"}},
+    ] + interiors})
+    write_json(ASSETS / "blockstates/deposito_de_calor.json", {"multipart": [
+        {"apply": {"model": "forja:block/deposito_de_calor"}},
+    ] + interiors})
+
+    # In the hand: the vessel half full, the boiler of steam and the depot of lava.
+    for name, colour in (("caldera", HEAT_VAPOR), ("deposito_de_calor", HEAT_LAVA)):
+        casing = json.loads((ASSETS / f"models/block/{name}.json").read_text(encoding="utf-8"))
+        inside = json.loads((ASSETS / "models/block/calor_interior_2.json").read_text(encoding="utf-8"))
+        write_json(ASSETS / f"models/block/{name}_inventory.json", {
+            "parent": "minecraft:block/block",
+            "render_type": "minecraft:cutout",
+            "textures": {**casing["textures"], **{k: v for k, v in inside["textures"].items() if k != "particle"}},
+            "elements": casing["elements"] + inside["elements"],
+        })
+        write_json(ASSETS / f"items/{name}.json", {"model": {
+            "type": "minecraft:model", "model": f"forja:block/{name}_inventory",
+            "tints": [{"type": "minecraft:constant", "value": colour}]}})
+
+    for name in ("tubo_de_calor", "caldera", "deposito_de_calor"):
+        write_json(DATA / f"loot_table/blocks/{name}.json", {
+            "type": "minecraft:block",
+            "pools": [{"rolls": 1.0, "bonus_rolls": 0.0, "entries": [{"type": "minecraft:item", "name": f"forja:{name}"}],
+                       "conditions": [{"condition": "minecraft:survives_explosion"}]}],
+            "random_sequence": f"forja:blocks/{name}",
+        })
+
+    # Copper carries the heat and glass lets you see what it carries: the first thing on the line is the
+    # cheapest, because steam is where it starts. The boiler is bronze round a bucket over a furnace; the
+    # depot is firebrick round a bucket, with glass to see the lava by.
+    write_json(DATA / "recipe/tubo_de_calor.json", {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "pattern": ["CCC", "GGG", "CCC"],
+        "key": {"C": "minecraft:copper_ingot", "G": "minecraft:glass"},
+        "result": {"id": "forja:tubo_de_calor", "count": 8},
+    })
+    write_json(DATA / "recipe/caldera.json", {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "pattern": ["BBB", "BUB", "BFB"],
+        "key": {"B": "forja:bronce", "U": "minecraft:bucket", "F": "minecraft:furnace"},
+        "result": {"id": "forja:caldera", "count": 1},
+    })
+    write_json(DATA / "recipe/deposito_de_calor.json", {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "pattern": ["BGB", "BUB", "BBB"],
+        "key": {"B": "minecraft:bricks", "G": "minecraft:glass", "U": "minecraft:bucket"},
+        "result": {"id": "forja:deposito_de_calor", "count": 1},
+    })
+
+
 def generate_crucible_assets():
     """Three pots, lit and unlit, with the melt showing in the mouth of the lit ones."""
     rng = __import__("random").Random(771118)
@@ -10436,6 +10757,7 @@ if __name__ == "__main__":
     generate_talisman_textures()
     generate_alloy_textures()
     generate_casting_tables()
+    generate_heat_line_assets()
     generate_star_iron_texture()
     generate_jar_textures()
     generate_belt_texture()

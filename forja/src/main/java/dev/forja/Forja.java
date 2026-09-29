@@ -59,6 +59,8 @@ public final class Forja implements ModInitializer {
 		dev.forja.forge.Flight.register();
 		dev.forja.upgrade.Frenzy.register();
 		dev.forja.forge.Temple.register();
+		// The heat pipes (FUNDICION_V2, part B) join the fire under a forge as a source of heat.
+		dev.forja.forge.HeatSources.register();
 		dev.forja.forge.SmithLevel.register();
 		dev.forja.forge.Techniques.register();
 		dev.forja.upgrade.Pacts.register();

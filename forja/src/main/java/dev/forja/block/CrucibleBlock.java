@@ -32,7 +32,7 @@ import org.jspecify.annotations.Nullable;
  * never touch netherite; an obsidian one melts anything, pays back a broken tool whole, and throws in a
  * bar for the trouble.
  */
-public class CrucibleBlock extends BaseEntityBlock {
+public class CrucibleBlock extends BaseEntityBlock implements dev.forja.forge.HeatConsumer {
 	public static final MapCodec<CrucibleBlock> CODEC = simpleCodec(properties -> new CrucibleBlock(properties, Tier.BARRO));
 	public static final BooleanProperty LIT = BlockStateProperties.LIT;
 

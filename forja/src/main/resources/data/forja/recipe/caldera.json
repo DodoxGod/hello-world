@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BBB",
+    "BUB",
+    "BFB"
+  ],
+  "key": {
+    "B": "forja:bronce",
+    "U": "minecraft:bucket",
+    "F": "minecraft:furnace"
+  },
+  "result": {
+    "id": "forja:caldera",
+    "count": 1
+  }
+}

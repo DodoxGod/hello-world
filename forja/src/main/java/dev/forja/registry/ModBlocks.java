@@ -238,6 +238,44 @@ public final class ModBlocks {
 		)
 	);
 
+	// ---- the heat line (docs/FUNDICION_V2.md, part B): pipes, and the two vessels that fill them.
+
+	/** A heat pipe: carries a heat fluid to what needs heat, never metal. See block/HeatPipeBlock. */
+	public static final Block TUBO_DE_CALOR = register(
+		"tubo_de_calor",
+		new dev.forja.block.HeatPipeBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.COLOR_ORANGE)
+				.strength(2.0F, 6.0F)
+				.sound(SoundType.COPPER)
+				.requiresCorrectToolForDrops()
+				.noOcclusion()
+				// The hot fluids glow through the slit in the casing; steam and brine do not.
+				.lightLevel(state -> state.getValue(dev.forja.block.HeatPipeBlock.FLUIDO).light())
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("tubo_de_calor")))
+		)
+	);
+
+	/** The boiler: boils water, blaze rods, slag or ice into a heat fluid. See block/BoilerBlock. */
+	public static final Block CALDERA = vessel("caldera", dev.forja.forge.HeatFluid.Vessel.CALDERA, MapColor.METAL, 3.5F);
+	/** The heat depot: holds lava poured in by the bucket. See block/BoilerBlock. */
+	public static final Block DEPOSITO_DE_CALOR = vessel("deposito_de_calor", dev.forja.forge.HeatFluid.Vessel.DEPOSITO,
+		MapColor.TERRACOTTA_RED, 4.0F);
+
+	private static Block vessel(String name, dev.forja.forge.HeatFluid.Vessel vessel, MapColor color, float strength) {
+		return register(name, new dev.forja.block.BoilerBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(color)
+				.strength(strength, strength * 3.0F)
+				.sound(SoundType.METAL)
+				.requiresCorrectToolForDrops()
+				.noOcclusion()
+				.lightLevel(state -> state.getValue(dev.forja.block.BoilerBlock.LIT) ? 11
+					: state.getValue(dev.forja.block.BoilerBlock.LEVEL) > 0 ? state.getValue(dev.forja.block.BoilerBlock.FLUIDO).light() : 0)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id(name))),
+			vessel));
+	}
+
 	private ModBlocks() {
 	}
 

@@ -555,11 +555,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 						&& this.level.getRandom().nextFloat() < dev.forja.forge.Technique.SOUL_CHANCE) {
 						this.soul(player, result);
 					}
-					this.access.execute((level, pos) -> {
-						if (level instanceof ServerLevel serverLevel) {
-							dev.forja.forge.Temple.markHot(result, serverLevel);
-						}
-					});
+					this.hotOrQuenched(result, player);
 					dev.forja.forge.SmithLevel.award(player, dev.forja.forge.SmithLevel.XP_FORGE);
 				}
 				this.center.setItem(0, result);
@@ -649,6 +645,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 				for (int i = 0; i < STAR_COUNT; i++) {
 					this.star.removeItem(i, alloyUse[i]);
 				}
+				this.payForHeat();
 				this.center.setItem(0, result);
 				this.playSound(SoundEvents.LAVA_EXTINGUISH);
 				this.particles(ParticleTypes.LAVA, 20);
@@ -669,6 +666,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 				for (int i = 0; i < STAR_COUNT; i++) {
 					this.star.removeItem(i, meltUse[i]);
 				}
+				this.payForHeat();
 				this.center.setItem(0, result);
 				this.playSound(SoundEvents.LAVA_EXTINGUISH);
 				this.particles(ParticleTypes.LAVA, 24);
@@ -676,11 +674,8 @@ public class ForgeMenu extends AbstractContainerMenu {
 				ForjaAdvancements.award(player, "fundir");
 			}
 			case RECALENTAR -> {
-				this.access.execute((level, pos) -> {
-					if (level instanceof ServerLevel serverLevel) {
-						dev.forja.forge.Temple.markHot(result, serverLevel);
-					}
-				});
+				this.payForHeat();
+				this.hotOrQuenched(result, player);
 				this.center.setItem(0, result);
 				this.playSound(SoundEvents.FIRE_AMBIENT);
 				this.particles(ParticleTypes.FLAME, 20);
@@ -1029,6 +1024,46 @@ public class ForgeMenu extends AbstractContainerMenu {
 				}
 			}
 			this.workshop.set(parts && saddlery ? 1 : 0);
+		});
+	}
+
+	/**
+	 * A press that used the table's heat pays for it when the heat came down a heat pipe: the fluid's draw
+	 * for {@link dev.forja.forge.HeatFluid#FORGE_ACTION_TICKS} ticks. Heat from the block under is free.
+	 */
+	private void payForHeat() {
+		this.access.execute((level, pos) -> {
+			dev.forja.forge.HeatSources.Supply supply = dev.forja.forge.HeatSources.at(level, pos);
+			if (supply.piped()) {
+				supply.draw(level, supply.fluid().draw * dev.forja.forge.HeatFluid.FORGE_ACTION_TICKS);
+			}
+			this.readSurroundings();
+		});
+	}
+
+	/**
+	 * A piece off the star is hot, for a quench in the next minute; with ice brine piped against the table
+	 * it is quenched in water on the spot instead ({@link dev.forja.forge.Temple#AGUA}), and the brine pays.
+	 */
+	private void hotOrQuenched(ItemStack result, Player player) {
+		this.access.execute((level, pos) -> {
+			if (!(level instanceof ServerLevel serverLevel)) {
+				return;
+			}
+			dev.forja.forge.HeatSources.Supply supply = dev.forja.forge.HeatSources.piped(level, pos);
+			if (result.has(ModComponents.PARTS) && !result.has(ModComponents.TEMPLE) && supply.spendQuench(level)) {
+				result.set(ModComponents.TEMPLE, dev.forja.forge.Temple.AGUA.id());
+				result.remove(ModComponents.CALIENTE);
+				serverLevel.playSound(null, pos, SoundEvents.FIRE_EXTINGUISH, net.minecraft.sounds.SoundSource.BLOCKS, 0.8F, 1.0F);
+				serverLevel.sendParticles(dev.forja.registry.ModParticles.VAPOR, pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5,
+					20, 0.3, 0.2, 0.3, 0.05);
+				if (player instanceof ServerPlayer smith) {
+					smith.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("gui.forja.temple", dev.forja.forge.Temple.AGUA.displayName()));
+					ForjaAdvancements.award(smith, "temple");
+				}
+				return;
+			}
+			dev.forja.forge.Temple.markHot(result, serverLevel);
 		});
 	}
 

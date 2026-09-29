@@ -912,8 +912,8 @@ GUI = {
         "First of all. It eats embers (%s seconds apiece) and takes ore or ingots in from above, by hopper or in its screen. With a tank against it everything melts into the tank; with none, ore comes out below as ingots. The hard metals want a hotter crucible. Nobody has to watch it."),
     "gui.forja.libro.fundicion.crisol_linea": ("· %s: calor %s, cabida %s, %ss por colada", "· %s: %s heat, holds %s, %ss per pour"),
     "gui.forja.libro.fundicion.paso1.farol": (
-        "Un farol de pavesa justo debajo lo mantiene encendido sin gastar ascuas.",
-        "A wisp lantern directly underneath keeps it lit without spending embers."),
+        "Un farol de pavesa justo debajo lo mantiene encendido sin gastar ascuas. Y mientras arde, arde tan caliente como lo que tenga debajo, si es más que su propio calor: sobre magma, caliente; sobre lava o un farol, fundido.",
+        "A wisp lantern directly underneath keeps it lit without spending embers. And while it burns, it burns as hot as what it stands on, if that is hotter than its own heat: on magma, hot; on lava or a lantern, molten."),
     "gui.forja.libro.fundicion.paso2": ("2. Las cubas", "2. The tanks"),
     "gui.forja.libro.fundicion.paso2.desc": (
         "Pega cubas unas a otras y son un solo depósito: %s por cuba, hasta %s cubas. Se llenan por abajo y se vacían por arriba, y una cuba sólo guarda un metal.",
@@ -950,11 +950,34 @@ GUI = {
     "gui.forja.libro.fundicion.paso7.frio": (
         "Las tres cuelan igual: cambian en qué metal aguantan y, sobre todo, en guardar el calor. Cada colada gasta %s de calor y una mesa fría no empieza ninguna; la que empieza con las últimas brasas cuaja antes de tiempo y sale BASTA (-%s%% en todo). Ponle un farol de pavesa debajo y se acabó el problema.",
         "All three pour the same: they differ in the metal they will take and, above all, in holding heat. Each pour spends %s heat and a cold table starts none; one started on the last of it sets early and comes out ROUGH (-%s%% on everything). Put a wisp lantern under it and the problem goes away."),
-    "gui.forja.libro.fundicion.paso8": ("8. La fundición sin manos", "8. A foundry that runs itself"),
+    "gui.forja.libro.fundicion.calor": ("8. Calor por tubos", "8. Heat down a pipe"),
+    "gui.forja.libro.fundicion.calor.desc": (
+        "Un segundo sistema de tubos que nunca se junta con el del metal. La caldera (%s mB) o el depósito de calor (%s mB) llenan de un fluido los tubos de calor que tocan, y todo lo que pide calor y toca un tubo (crisol, mesa de colada, mesa de forja) recibe el calor de ese fluido: se usa el mejor entre ese y lo que tenga debajo. Un crisol con un tubo caliente no gasta ascuas. Se llenan a mano o con tolva (los cubos vacíos salen por abajo) y un comparador lee lo llenos que están.",
+        "A second pipe system that never meets the metal one. The boiler (%s mB) or the heat depot (%s mB) fill the heat pipes they touch with a fluid, and anything that wants heat and touches a pipe (crucible, casting table, forge table) gets that fluid's heat: whichever is better, the pipe or what it stands on. A crucible with a hot pipe burns no embers. Fill them by hand or by hopper (the empty buckets come out below); a comparator reads how full they are."),
+    "gui.forja.libro.fundicion.fluido_titulo": ("%s · calor %s", "%s · %s heat"),
+    "gui.forja.libro.fundicion.fluido.vapor": (
+        "Un cubo de agua (%s mB) en la caldera, con cualquier fuego debajo. Gasta %s mB por tick. Barato, pero sólo funde lo blando (dureza hasta %s: oro, cobre, peltre, latón; el hierro no) y la mesa de colada no pasa del %s%% de calor.",
+        "A bucket of water (%s mB) in the boiler, with any fire under it. Spends %s mB a tick. Cheap, but it only melts the soft metals (hardness up to %s: gold, copper, pewter, brass; not iron) and a casting table never gets past %s%% heat."),
+    "gui.forja.libro.fundicion.fluido.lava": (
+        "Cubos de lava (%s mB) o bloques de magma (%s mB) en el depósito de calor. Gasta %s mB por tick. Lo mismo que la lava debajo de la mesa, pero llevado por tubos a donde haga falta.",
+        "Buckets of lava (%s mB) or magma blocks (%s mB) in the heat depot. Spends %s mB a tick. Just what lava under the table gives, but carried by pipe to wherever it is wanted."),
+    "gui.forja.libro.fundicion.fluido.sangre_de_blaze": (
+        "Varas de blaze (%s mB) o polvo de blaze (%s mB) en la caldera, sin fuego. Gasta %s mB por tick. El crisol funde al %s%% de velocidad y la mesa de colada gana %s de calor por segundo, el doble que con fuego.",
+        "Blaze rods (%s mB) or blaze powder (%s mB) in the boiler, no fire needed. Spends %s mB a tick. A crucible melts at %s%% speed and a casting table gains %s heat a second, twice what a fire gives."),
+    "gui.forja.libro.fundicion.fluido.aliento_de_forja": (
+        "Escoria (%s mB) o un corazón de forja (%s mB) en la caldera, sobre un fuego fuerte (magma, fuego de almas, lava o un farol). Gasta %s mB por tick. Forja blanca sin crisol de obsidiana, y en la mesa de colada una herramienta tiene un %s%% más de salir perfecta.",
+        "Slag (%s mB) or a forge heart (%s mB) in the boiler, over a hot fire (magma, soul fire, lava or a lantern). Spends %s mB a tick. White heat without the obsidian crucible, and a tool on a casting table has %s%% more chance of coming out perfect."),
+    "gui.forja.libro.fundicion.fluido.salmuera_helada": (
+        "Hielo compacto (%s mB) o hielo azul (%s mB) en la caldera. No calienta, enfría: la mesa de colada templa en agua cada herramienta que cuela y la mesa de forja lo recién forjado (gasta %s mB por temple), una mesa sin fuego se enfría el doble de rápido, y un crisol que la toca se apaga.",
+        "Packed ice (%s mB) or blue ice (%s mB) in the boiler. It does not heat, it cools: a casting table quenches every tool it pours in water, and a forge table what it has just forged (%s mB a quench); a table with no fire cools twice as fast, and a crucible it touches goes out."),
+    "gui.forja.libro.fundicion.calor.uno": (
+        "Un tubo lleva un solo fluido, el que más haya en sus calderas: para salmuera y lava a la vez, dos tramos distintos que toquen la misma mesa.",
+        "A pipe carries one fluid, whichever its vessels hold most of: for brine and lava at once, lay two runs that touch the same table."),
+    "gui.forja.libro.fundicion.paso8": ("9. La fundición sin manos", "9. A foundry that runs itself"),
     "gui.forja.libro.fundicion.paso8.desc": (
         "Nada de esto necesita que estés delante. Una tolva encima del crisol le mete la mena y otra al lado las ascuas; la cuba, con un farol debajo, no cuaja nunca; el caño cuela a través del colador sobre el molde, la mesa se calienta con un farol AL LADO y una tolva debajo se lleva cada pieza a un cofre. Mientras haya metal y calor, la mesa vuelve a colar sola.",
         "None of this needs you standing there. A hopper on top of the crucible feeds it ore and one beside it embers; the tank, on a lantern, never sets; the spout pours through the strainer onto the mould, the table is kept hot by a lantern BESIDE it and a hopper underneath takes every part to a chest. As long as there is metal and heat, the table pours again by itself."),
-    "gui.forja.libro.fundicion.paso9": ("9. La montadora", "9. The assembler"),
+    "gui.forja.libro.fundicion.paso9": ("10. La montadora", "10. The assembler"),
     "gui.forja.libro.fundicion.paso9.desc": (
         "La estrella de la mesa de forja sin el herrero. Las piezas le entran por tolva, por arriba o por los lados, y monta lo mismo que la mesa, con la misma regla; la pieza sale por abajo. Calidad normal siempre: nunca perfecta, sin firma, con el potencial de un golpe decente. Mejoras, reparaciones, cambios de piezas y técnicas siguen siendo cosa tuya, en la mesa.",
         "The forge table's star without the smith. Parts go in by hopper, from the top or the sides, and it builds what the table builds, by the same rule; the piece comes out underneath. Always a plain press: never perfect, unsigned, with the potential of a decent strike. Upgrades, repairs, swaps and techniques are still yours, at the table."),
@@ -966,12 +989,12 @@ GUI = {
         "With no frame each point of the star takes one kind of part, as at the table. With a FRAME in the centre it knows what to build: it only takes that piece's parts, finds them wherever they lie and never jams; that is also how it makes greatswords, which take two blades."),
     "gui.forja.libro.fundicion.blanca": ("Y para qué todo esto", "And what all this is for"),
     "gui.forja.libro.fundicion.blanca.desc": (
-        "El crisol de obsidiana es lo único del mod que llega a forja blanca. No hay bloque que dé ese calor a una mesa, ni técnica que lo lea. Estas tres aleaciones se hacen ahí o no se hacen.",
-        "The obsidian crucible is the only thing in the mod that reaches white heat. No block gives a table that heat and no technique reads its way up to it. These three alloys are made there or not at all."),
+        "El crisol de obsidiana es lo único del mod que arde a forja blanca por sí mismo. No hay bloque que dé ese calor a una mesa, ni técnica que lo lea: sólo el aliento de forja por un tubo, y se paga caro. Estas tres aleaciones se hacen así o no se hacen.",
+        "The obsidian crucible is the only thing in the mod that burns at white heat by itself. No block gives a table that heat and no technique reads its way up to it: only forge breath down a pipe, and that is dear. These three alloys are made that way or not at all."),
     "gui.forja.libro.calor.forja_blanca": ("Forja blanca", "White heat"),
     "gui.forja.libro.calor.forja_blanca.desc": (
-        "No hay bloque que dé este calor: sólo el crisol de obsidiana llega, y sólo ahí se hacen estas tres",
-        "No block gives this heat: only the obsidian crucible reaches it, and only there are these three made"),
+        "No hay bloque que dé este calor: sólo el crisol de obsidiana o el aliento de forja por un tubo, y sólo así se hacen estas tres",
+        "No block gives this heat: only the obsidian crucible or forge breath down a pipe, and only so are these three made"),
 
     "gui.forja.libro.temple_intro": ("Una pieza recién forjada sale caliente y lo sigue estando %s segundos. Si en ese rato la apagas en algo, ese algo se queda en el acero para siempre: un temple por pieza y no hay manera de cambiarlo. Métete al agua, a la lava, a la nieve polvo o ponte sobre un bloque de miel llevándola encima.",
                                       "A freshly forged piece comes out hot and stays that way for %s seconds. Put that heat out in something in that time and it stays in the steel for good: one quench per piece, and there is no changing it. Step into water, into lava, into powder snow, or stand on a honey block while carrying it."),
@@ -1696,6 +1719,21 @@ GUI = {
     "item.forja.molde_de_fundicion.vacio": ("Molde de fundición", "Casting Mould"),
     "block.forja.cuba_de_colada": ("Cuba de colada", "Melt Tank"),
     "block.forja.conducto_de_colada": ("Conducto de colada", "Melt Pipe"),
+    # The heat line (docs/FUNDICION_V2.md, part B).
+    "block.forja.tubo_de_calor": ("Tubo de calor", "Heat Pipe"),
+    "block.forja.caldera": ("Caldera", "Boiler"),
+    "block.forja.deposito_de_calor": ("Depósito de calor", "Heat Depot"),
+    "fluido.forja.vapor": ("Vapor", "Steam"),
+    "fluido.forja.lava": ("Lava", "Lava"),
+    "fluido.forja.sangre_de_blaze": ("Sangre de blaze", "Blaze Blood"),
+    "fluido.forja.aliento_de_forja": ("Aliento de forja", "Forge Breath"),
+    "fluido.forja.salmuera_helada": ("Salmuera helada", "Ice Brine"),
+    "gui.forja.caldera.vacia": ("%s vacía · caben %s mB", "%s empty · holds %s mB"),
+    "gui.forja.caldera.tiene": ("%s · %s: %s / %s mB", "%s · %s: %s / %s mB"),
+    "gui.forja.caldera.sin_fuego": ("le falta fuego debajo (calor %s o más)", "it needs a fire under it (%s heat or more)"),
+    "gui.forja.crisol.vapor_blando": ("El vapor sólo funde lo blando: %s pide fuego o un fluido más caliente",
+                                      "Steam only melts the soft metals: %s wants a fire or a hotter fluid"),
+    "gui.forja.caldera.espera": ("llena, o con otro fluido: espera a que se vacíe", "full, or holding another fluid: it waits until it runs dry"),
     "gui.forja.cuba.vacia": ("Cuba vacía · %s cubas conectadas, cabida %s", "Tank empty · %s tanks joined, holds %s"),
     "gui.forja.cuba.dentro": ("%s · %s/%s en %s cubas", "%s · %s/%s across %s tanks"),
     "gui.forja.cuba.otro": ("Esta cuba lleva %s: un depósito, un metal", "This tank is holding %s: one bank, one metal"),

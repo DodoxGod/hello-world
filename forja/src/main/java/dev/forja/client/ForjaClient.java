@@ -74,6 +74,23 @@ public final class ForjaClient implements ClientModInitializer {
 				}
 			}),
 			dev.forja.registry.ModBlocks.COLADOR);
+		// The heat line: the fluid seen through the slit of a pipe and the window of a boiler or a depot is
+		// drawn in grey and tinted by what the block says it carries.
+		net.fabricmc.fabric.api.client.rendering.v1.BlockColorRegistry.register(
+			List.of(new net.minecraft.client.color.block.BlockTintSource() {
+				@Override
+				public int color(net.minecraft.world.level.block.state.BlockState state) {
+					var fluid = state.getValue(dev.forja.block.HeatPipeBlock.FLUIDO).fluid;
+					return 0xFF000000 | (fluid == null ? 0x3A302A : fluid.colour);
+				}
+
+				@Override
+				public java.util.Set<net.minecraft.world.level.block.state.properties.Property<?>> relevantProperties() {
+					return java.util.Set.of(dev.forja.block.HeatPipeBlock.FLUIDO);
+				}
+			}),
+			dev.forja.registry.ModBlocks.TUBO_DE_CALOR, dev.forja.registry.ModBlocks.CALDERA,
+			dev.forja.registry.ModBlocks.DEPOSITO_DE_CALOR);
 		GuideBookItem.opener = () -> Minecraft.getInstance().gui.setScreen(new GuideBookScreen());
 		// The mod's own three. A particle needs its behaviour registered on the client and its sprites
 		// listed in assets/forja/particles; the registry hands over the loaded sprite set here.

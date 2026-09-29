@@ -36,7 +36,7 @@ import org.jspecify.annotations.Nullable;
  * same +5% a smith gets for stopping the hammer dead centre, and the chance is what you are really
  * paying for when you build the third one.
  */
-public class CastingTableBlock extends BaseEntityBlock {
+public class CastingTableBlock extends BaseEntityBlock implements dev.forja.forge.HeatConsumer {
 	public static final MapCodec<CastingTableBlock> CODEC =
 		simpleCodec(properties -> new CastingTableBlock(properties, Tier.LOSA));
 

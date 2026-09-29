@@ -124,6 +124,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// The heat line of the second foundry (docs/FUNDICION_V2.md, part B), played with real clicks.
+			if ("calor".equals(solo)) {
+				playHeatLine(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("meteorito".equals(solo)) {
 				filmMeteor(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
@@ -14055,6 +14061,288 @@ public class ForjaClientTest implements FabricClientGameTest {
 				}
 			}
 		});
+	}
+
+	/**
+	 * The heat line played in survival with real clicks (FORJA_SOLO=calor; docs/FUNDICION_V2.md, part B).
+	 *
+	 * <p>Five rows, one per fluid, each a vessel, two heat pipes and something that wants heat. The first
+	 * run of pipe is laid by hand; every vessel is filled by a right click with what it takes (a bucket of
+	 * water on a boiler over a campfire, a bucket of lava on the depot, blaze rods, slag over magma, packed
+	 * ice); the crucibles and the forge table are opened and worked in their own screens; the frame goes on
+	 * the casting table by hand and the quenched pickaxe comes off it by hand. What the screens say is checked
+	 * against what the server is doing, and the pipes are checked on the client for the colour they show.
+	 */
+	private static void playHeatLine(ClientGameTestContext context, TestServerContext server, TestServerConnection connection,
+		int x, int y, int z) {
+		int px = x + 60;
+		int pz = z - 60;
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d stone", px - 9, y - 1, pz - 4, px + 4, y - 1, pz + 15));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", px - 9, y, pz - 4, px + 4, y + 6, pz + 15));
+		server.runCommand("time set noon");
+		server.runCommand("weather clear 1000000");
+
+		// Row by row: vessel at px-5, the pipes at px-4 and px-3, the consumer at px-2.
+		dev.forja.forge.HeatFluid[] fluids = dev.forja.forge.HeatFluid.values();
+		BlockPos[] vessels = new BlockPos[fluids.length];
+		BlockPos[] consumers = new BlockPos[fluids.length];
+		for (int row = 0; row < fluids.length; row++) {
+			vessels[row] = new BlockPos(px - 5, y, pz + 3 * row);
+			consumers[row] = new BlockPos(px - 2, y, pz + 3 * row);
+		}
+		BlockPos tableAt = consumers[4];
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			// Steam: a boiler over a campfire let into the floor, an iron crucible with a tank beside it. Its
+			// pipes are left for the player to lay.
+			level.setBlockAndUpdate(vessels[0].below(), Blocks.CAMPFIRE.defaultBlockState());
+			level.setBlockAndUpdate(vessels[0], dev.forja.registry.ModBlocks.CALDERA.defaultBlockState());
+			level.setBlockAndUpdate(consumers[0], dev.forja.registry.ModBlocks.CRISOL_DE_HIERRO.defaultBlockState());
+			level.setBlockAndUpdate(consumers[0].east(), dev.forja.registry.ModBlocks.CUBA_DE_COLADA.defaultBlockState());
+			// Lava: the depot, and a forge table standing on plain stone.
+			level.setBlockAndUpdate(vessels[1], dev.forja.registry.ModBlocks.DEPOSITO_DE_CALOR.defaultBlockState());
+			level.setBlockAndUpdate(consumers[1], dev.forja.registry.ModBlocks.MESA_DE_FORJA.defaultBlockState());
+			// Blaze blood: a boiler over stone, an iron crucible.
+			level.setBlockAndUpdate(vessels[2], dev.forja.registry.ModBlocks.CALDERA.defaultBlockState());
+			level.setBlockAndUpdate(consumers[2], dev.forja.registry.ModBlocks.CRISOL_DE_HIERRO.defaultBlockState());
+			// Forge breath: a boiler over magma, a CLAY crucible.
+			level.setBlockAndUpdate(vessels[3].below(), Blocks.MAGMA_BLOCK.defaultBlockState());
+			level.setBlockAndUpdate(vessels[3], dev.forja.registry.ModBlocks.CALDERA.defaultBlockState());
+			level.setBlockAndUpdate(consumers[3], dev.forja.registry.ModBlocks.CRISOL_DE_BARRO.defaultBlockState());
+			// Brine: a boiler, and a casting table on a wisp lantern with a steel strainer on it and iron beside it.
+			level.setBlockAndUpdate(vessels[4], dev.forja.registry.ModBlocks.CALDERA.defaultBlockState());
+			level.setBlockAndUpdate(tableAt.below(), dev.forja.registry.ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+			level.setBlockAndUpdate(tableAt, dev.forja.registry.ModBlocks.MESA_DE_LOSA.defaultBlockState());
+			level.setBlockAndUpdate(tableAt.above(), dev.forja.registry.ModBlocks.COLADOR.defaultBlockState());
+			((dev.forja.block.entity.StrainerBlockEntity) level.getBlockEntity(tableAt.above())).setMaterial(dev.forja.material.ForgeMaterial.ACERO);
+			level.setBlockAndUpdate(tableAt.east(), dev.forja.registry.ModBlocks.CUBA_DE_COLADA.defaultBlockState());
+			((dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(tableAt.east())).fill(Items.IRON_INGOT, 120);
+			// The pipes of rows 1 to 4, laid the way a hand would lay them (shaped by their neighbours).
+			for (int row = 1; row < fluids.length; row++) {
+				for (int dx = 1; dx <= 2; dx++) {
+					BlockPos at = vessels[row].east(dx);
+					level.setBlockAndUpdate(at, net.minecraft.world.level.block.Block.updateFromNeighbourShapes(
+						dev.forja.registry.ModBlocks.TUBO_DE_CALOR.defaultBlockState(), level, at));
+				}
+			}
+
+			ServerPlayer player = connection.getServerPlayer();
+			player.getInventory().clearContent();
+			player.getInventory().setItem(0, new ItemStack(ModItems.TUBO_DE_CALOR, 16));
+			player.getInventory().setItem(1, new ItemStack(Items.WATER_BUCKET));
+			player.getInventory().setItem(2, new ItemStack(Items.RAW_IRON, 4));
+			player.getInventory().setItem(3, new ItemStack(Items.RAW_COPPER, 4));
+			player.getInventory().setItem(4, new ItemStack(Items.LAVA_BUCKET));
+			player.getInventory().setItem(5, new ItemStack(Items.BLAZE_ROD, 4));
+			player.getInventory().setItem(6, new ItemStack(ModItems.ESCORIA, 8));
+			player.getInventory().setItem(7, new ItemStack(Items.PACKED_ICE, 4));
+			player.getInventory().setItem(9, new ItemStack(ModItems.alloy("damasco"), 1));
+			player.getInventory().setItem(10, new ItemStack(Items.BLAZE_ROD, 3));
+			player.getInventory().setSelectedSlot(0);
+		});
+		server.runCommand("gamemode survival @a");
+
+		// ---- steam: lay the two pipes by hand on the floor between the boiler and the crucible.
+		tp(server, px - 3.5, y, pz - 2.0, 0.0F, 45.0F);
+		context.waitTicks(5);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[0]);
+		context.waitTicks(2);
+		for (int dx = 1; dx <= 2; dx++) {
+			BlockPos floor = vessels[0].east(dx).below();
+			lookAtPoint(context, new Vec3(floor.getX() + 0.5, floor.getY() + 1.0, floor.getZ() + 0.5));
+			context.waitTicks(2);
+			context.getInput().pressKey(options -> options.keyUse);
+			context.waitTicks(4);
+		}
+		// Water on the boiler, by hand: over the campfire it boils into steam at once.
+		context.getInput().pressKey(options -> options.keyHotbarSlots[1]);
+		context.waitTicks(2);
+		openByHand(context, vessels[0]);
+		context.waitTicks(10);
+		int[] laid = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var boiler = (dev.forja.block.entity.BoilerBlockEntity) level.getBlockEntity(vessels[0]);
+			int pipes = 0;
+			for (int dx = 1; dx <= 2; dx++) {
+				pipes += level.getBlockState(vessels[0].east(dx)).getBlock() instanceof dev.forja.block.HeatPipeBlock ? 1 : 0;
+			}
+			return new int[] {pipes, boiler.fluid() == dev.forja.forge.HeatFluid.VAPOR ? boiler.amount() : -1,
+				findInInventory(connection, stack -> stack.is(Items.BUCKET)) >= 0 ? 1 : 0};
+		});
+		String steamSeen = context.computeOnClient(mc -> mc.level.getBlockState(vessels[0].east(2)).getBlock() instanceof dev.forja.block.HeatPipeBlock
+			? mc.level.getBlockState(vessels[0].east(2)).getValue(dev.forja.block.HeatPipeBlock.FLUIDO).getSerializedName() : "none");
+		log("calor: tubos puestos a mano " + laid[0] + ", vapor en la caldera " + laid[1] + " mB, cubo vacío de vuelta " + (laid[2] > 0)
+			+ ", el tubo se ve de " + steamSeen);
+		check(laid[0] == 2, "both heat pipes should have been laid by hand, got " + laid[0]);
+		check(laid[1] == dev.forja.forge.HeatFluid.BUCKET, "a bucket of water on a boiler over a campfire should be a bucket of steam, got " + laid[1]);
+		check(laid[2] > 0, "and the empty bucket should come back to the hand");
+		check("vapor".equals(steamSeen), "the pipe should show steam on the client, shows " + steamSeen);
+
+		// The iron crucible, on steam alone: raw iron and raw copper by shift-click, and only the copper goes.
+		context.getInput().pressKey(options -> options.keyHotbarSlots[8]);
+		context.waitTicks(2);
+		openByHand(context, consumers[0]);
+		check(context.computeOnClient(mc -> mc.gui.screen() instanceof dev.forja.client.CrucibleScreen), "a right click should open the crucible");
+		shiftClickSlot(context, foundryHotbar(2));
+		shiftClickSlot(context, foundryHotbar(3));
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(dev.forja.block.CrucibleBlock.Tier.HIERRO.cook + 30);
+		int[] steamPot = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var pot = (dev.forja.block.entity.CrucibleBlockEntity) level.getBlockEntity(consumers[0]);
+			var tank = (dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(consumers[0].east());
+			int iron = 0;
+			for (int slot = 0; slot < 2; slot++) {
+				iron += pot.getItem(slot).is(Items.RAW_IRON) ? pot.getItem(slot).getCount() : 0;
+			}
+			return new int[] {tank.bankMetal() == Items.COPPER_INGOT ? tank.bankAmount() : -1, iron, pot.heat().ordinal()};
+		});
+		int[] steamSays = context.computeOnClient(mc -> mc.player.containerMenu instanceof dev.forja.menu.CrucibleMenu menu
+			? new int[] {menu.job(), menu.heat()} : new int[] {-1, -1});
+		log("calor: crisol de hierro con vapor: cobre fundido " + steamPot[0] + ", hierro que queda " + steamPot[1]
+			+ ", calor " + dev.forja.forge.Alloys.Heat.values()[steamPot[2]] + ", la pantalla dice trabajo " + steamSays[0]);
+		check(steamPot[0] == 4, "steam should melt the copper into the tank, got " + steamPot[0]);
+		check(steamPot[1] == 4, "and leave the iron alone, left " + steamPot[1]);
+		check(steamSays[0] == dev.forja.block.entity.CrucibleBlockEntity.JOB_TOO_COLD
+			&& steamSays[1] == dev.forja.forge.Alloys.Heat.TEMPLADA.ordinal(), "the screen should say it is warm and the iron too hard for steam");
+		context.waitTicks(2);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("calor_01_crisol_con_vapor").disableCounterPrefix());
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+
+		// ---- lava: a bucket on the depot by hand, and the forge table on plain stone reads molten.
+		tp(server, px - 3.5, y, pz + 1.0, 0.0F, 30.0F);
+		context.waitTicks(5);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[4]);
+		context.waitTicks(2);
+		openByHand(context, vessels[1]);
+		context.waitTicks(10);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[8]);
+		context.waitTicks(2);
+		openByHand(context, consumers[1]);
+		context.waitTicks(10);
+		String forgeHeat = context.computeOnClient(mc -> mc.player.containerMenu instanceof ForgeMenu menu ? menu.heat().name() : "no screen");
+		int depot = server.computeOnServer(s -> ((dev.forja.block.entity.BoilerBlockEntity) connection.getServerLevel().getBlockEntity(vessels[1])).amount());
+		log("calor: depósito con " + depot + " mB de lava; la mesa de forja sobre piedra dice calor " + forgeHeat);
+		check(depot == dev.forja.forge.HeatFluid.BUCKET, "the bucket of lava should be in the depot, got " + depot);
+		check("FUNDIDA".equals(forgeHeat), "the forge table on stone, piped lava, should read molten heat, reads " + forgeHeat);
+		// The heat bar is under the forge button: put the cursor on it for its tooltip.
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(2);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("calor_02_mesa_de_forja_con_lava").disableCounterPrefix());
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+
+		// ---- blaze blood: four rods on the boiler by hand; the iron crucible down the line goes molten.
+		tp(server, px - 3.5, y, pz + 4.0, 0.0F, 30.0F);
+		context.waitTicks(5);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[5]);
+		context.waitTicks(2);
+		openByHand(context, vessels[2]);
+		context.waitTicks(dev.forja.block.entity.BoilerBlockEntity.BOIL_TICKS + 20);
+		int[] blaze = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var boiler = (dev.forja.block.entity.BoilerBlockEntity) level.getBlockEntity(vessels[2]);
+			var pot = (dev.forja.block.entity.CrucibleBlockEntity) level.getBlockEntity(consumers[2]);
+			return new int[] {boiler.fluid() == dev.forja.forge.HeatFluid.SANGRE_DE_BLAZE ? boiler.amount() : -1, pot.heat().ordinal()};
+		});
+		log("calor: caldera con " + blaze[0] + " mB de sangre de blaze; el crisol de hierro está a " + dev.forja.forge.Alloys.Heat.values()[blaze[1]]);
+		check(blaze[0] > 0, "blaze rods should boil into blaze blood, got " + blaze[0]);
+		check(blaze[1] == dev.forja.forge.Alloys.Heat.FUNDIDA.ordinal(), "and the iron crucible on it should be molten");
+
+		// ---- forge breath: slag on the boiler over magma; damascus and blaze rods into a CLAY crucible.
+		tp(server, px - 3.5, y, pz + 7.0, 0.0F, 30.0F);
+		context.waitTicks(5);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[6]);
+		context.waitTicks(2);
+		openByHand(context, vessels[3]);
+		context.waitTicks(dev.forja.block.entity.BoilerBlockEntity.BOIL_TICKS + 10);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[8]);
+		context.waitTicks(2);
+		openByHand(context, consumers[3]);
+		check(context.computeOnClient(mc -> mc.gui.screen() instanceof dev.forja.client.CrucibleScreen), "a right click should open the clay crucible");
+		shiftClickSlot(context, foundryInventory(9));
+		shiftClickSlot(context, foundryInventory(10));
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(40);
+		int[] breathSays = context.computeOnClient(mc -> mc.player.containerMenu instanceof dev.forja.menu.CrucibleMenu menu
+			? new int[] {menu.job(), menu.heat()} : new int[] {-1, -1});
+		log("calor: crisol de barro con aliento de forja: trabajo " + breathSays[0] + ", calor " + dev.forja.forge.Alloys.Heat.values()[Math.max(0, breathSays[1])]);
+		check(breathSays[1] == dev.forja.forge.Alloys.Heat.FORJA_BLANCA.ordinal(), "the clay crucible on forge breath should read white heat");
+		check(breathSays[0] == dev.forja.block.entity.CrucibleBlockEntity.JOB_ALLOY, "and be pouring an alloy");
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("calor_03_crisol_de_barro_forja_blanca").disableCounterPrefix());
+		context.waitTicks(dev.forja.block.CrucibleBlock.Tier.BARRO.cook);
+		String sun = server.computeOnServer(s -> ((dev.forja.block.entity.CrucibleBlockEntity) connection.getServerLevel()
+			.getBlockEntity(consumers[3])).getItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_OUTPUT).toString());
+		log("calor: el crisol de barro coló " + sun);
+		check(sun.contains("solacero"), "a clay crucible on forge breath should pour sun steel, poured " + sun);
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+
+		// ---- ice brine: packed ice on the boiler; the frame on the casting table by hand; the pickaxe off it quenched.
+		tp(server, px - 3.5, y, pz + 10.0, 0.0F, 30.0F);
+		context.waitTicks(5);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[7]);
+		context.waitTicks(2);
+		openByHand(context, vessels[4]);
+		// The frame is handed over, as the table was in the foundry's own run: it is cut in the casting box.
+		server.runOnServer(s -> connection.getServerPlayer().getInventory().setItem(2, dev.forja.item.CastingFrameItem.of(ForgeType.PICO)));
+		context.waitTicks(dev.forja.block.entity.BoilerBlockEntity.BOIL_TICKS + 10);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[2]);
+		context.waitTicks(2);
+		openByHand(context, tableAt.above());
+		context.waitTicks(60 + dev.forja.block.entity.CastingTableBlockEntity.COOK + 20);
+		int brineBefore = server.computeOnServer(s -> ((dev.forja.block.entity.BoilerBlockEntity) connection.getServerLevel().getBlockEntity(vessels[4])).amount());
+		context.getInput().pressKey(options -> options.keyHotbarSlots[8]);
+		context.waitTicks(2);
+		openByHand(context, tableAt.above());
+		context.waitTicks(5);
+		String[] quench = server.computeOnServer(s -> {
+			int at = findInInventory(connection, stack -> {
+				var parts = stack.get(ModComponents.PARTS);
+				return parts != null && parts.type() == ForgeType.PICO;
+			});
+			ItemStack tool = at < 0 ? ItemStack.EMPTY : connection.getServerPlayer().getInventory().getItem(at);
+			return new String[] {String.valueOf(at), String.valueOf(tool.get(ModComponents.TEMPLE))};
+		});
+		log("calor: la mesa de colada con salmuera saca un pico (hueco " + quench[0] + ") templado en " + quench[1]
+			+ "; la caldera tenía " + brineBefore + " mB de salmuera al sacarlo");
+		check(!"-1".equals(quench[0]), "the pickaxe should have come off the casting table into the hand");
+		check(dev.forja.forge.Temple.AGUA.id().equals(quench[1]), "and be quenched in water by the brine, is " + quench[1]);
+		check(brineBefore == dev.forja.forge.HeatFluid.BUCKET - dev.forja.forge.HeatFluid.QUENCH_COST,
+			"the quench should have cost " + dev.forja.forge.HeatFluid.QUENCH_COST + " mB of brine, the boiler holds " + brineBefore);
+
+		// ---- and all five, looked at: every pipe on the client showing its own fluid.
+		String[] shown = context.computeOnClient(mc -> {
+			String[] seen = new String[fluids.length];
+			for (int row = 0; row < fluids.length; row++) {
+				var state = mc.level.getBlockState(vessels[row].east(2));
+				seen[row] = state.getBlock() instanceof dev.forja.block.HeatPipeBlock
+					? state.getValue(dev.forja.block.HeatPipeBlock.FLUIDO).getSerializedName() : "none";
+			}
+			return seen;
+		});
+		log("calor: los tubos se ven de " + String.join(", ", shown));
+		for (int row = 0; row < fluids.length; row++) {
+			check(fluids[row].id().equals(shown[row]), "row " + row + " should show " + fluids[row].id() + ", shows " + shown[row]);
+		}
+		server.runCommand("gamemode spectator @a");
+		tp(server, px - 1.0, y + 5.5, pz - 3.5, 30.0F, 42.0F);
+		context.waitTicks(20);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("calor_04_cinco_fluidos").disableCounterPrefix());
+		// Close on each run from the side, where the slits in the pipes show the fluid.
+		for (int row = 0; row < fluids.length; row++) {
+			tp(server, px - 3.5, y + 1.1, vessels[row].getZ() - 1.6, 0.0F, 32.0F);
+			context.waitTicks(8);
+			quiet(context);
+			context.takeScreenshot(TestScreenshotOptions.of("calor_05_" + (row + 1) + "_" + fluids[row].id()).disableCounterPrefix());
+		}
+		server.runCommand("gamemode survival @a");
+		server.runOnServer(s -> connection.getServerPlayer().getInventory().clearContent());
 	}
 
 	/**

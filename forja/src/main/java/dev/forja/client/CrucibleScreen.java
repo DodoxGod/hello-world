@@ -251,6 +251,11 @@ public class CrucibleScreen extends AbstractContainerScreen<CrucibleMenu> {
 			case CrucibleBlockEntity.JOB_NEEDS_TANK:
 				return Component.translatable("gui.forja.crisol.sin_cuba", material(what).displayName());
 			case CrucibleBlockEntity.JOB_TOO_COLD:
+				// Hot enough on paper and still refused: the heat is steam, which only melts the soft metals.
+				if (Alloys.Heat.values()[Math.min(this.menu.heat(), Alloys.Heat.values().length - 1)]
+					.reaches(CrucibleBlockEntity.meltHeat(material(what)))) {
+					return Component.translatable("gui.forja.crisol.vapor_blando", material(what).displayName());
+				}
 				return Component.translatable("gui.forja.crisol.frio_metal", material(what).displayName(),
 					CrucibleBlockEntity.meltHeat(material(what)).displayName());
 			default:

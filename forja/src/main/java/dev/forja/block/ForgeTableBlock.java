@@ -22,7 +22,7 @@ import net.minecraft.world.phys.BlockHitResult;
  * The parts table and the forge table. Like the crafting table they keep nothing: whatever is left
  * inside goes back to the player on close.
  */
-public class ForgeTableBlock extends Block {
+public class ForgeTableBlock extends Block implements dev.forja.forge.HeatConsumer {
 	public static final MapCodec<ForgeTableBlock> CODEC = RecordCodecBuilder.mapCodec(
 		i -> i.group(Station.CODEC.fieldOf("station").forGetter(block -> block.station), propertiesCodec()).apply(i, ForgeTableBlock::new)
 	);
@@ -37,6 +37,12 @@ public class ForgeTableBlock extends Block {
 	@Override
 	public MapCodec<? extends ForgeTableBlock> codec() {
 		return CODEC;
+	}
+
+	/** Only the tables with a star read heat (the forge, the greater forge, the saddlery); the parts table does not. */
+	@Override
+	public boolean takesHeat(BlockState state) {
+		return this.station.modes.contains(ForgeMenu.MODE_FORGE);
 	}
 
 	@Override

@@ -95,6 +95,16 @@ public final class ModBlockEntities {
 		new BlockEntityType<>(AssemblerMachineBlockEntity::new, java.util.Set.of(ModBlocks.MONTADORA))
 	);
 
+	private static final ResourceKey<BlockEntityType<?>> CALDERA_KEY =
+		ResourceKey.create(Registries.BLOCK_ENTITY_TYPE, Forja.id("caldera"));
+
+	/** The boiler and the heat depot share one: the same vessel, fed different things. */
+	public static final BlockEntityType<BoilerBlockEntity> CALDERA = Registry.register(
+		BuiltInRegistries.BLOCK_ENTITY_TYPE,
+		CALDERA_KEY,
+		new BlockEntityType<>(BoilerBlockEntity::new, java.util.Set.of(ModBlocks.CALDERA, ModBlocks.DEPOSITO_DE_CALOR))
+	);
+
 	private ModBlockEntities() {
 	}
 

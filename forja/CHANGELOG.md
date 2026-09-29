@@ -17,6 +17,32 @@
   un farol, caño por el colador a la mesa con molde, tolva debajo y montadora hasta el cofre.
 - La guía (capítulo de fundición) explica la fundición sin manos y la montadora.
 
+## 2026-09-28 — fundición 2: calor por tubos
+
+- **Tubos de calor**: un segundo sistema de tubos, que nunca se junta con los conductos de metal. Llevan un fluido
+  de calor desde una **caldera** o un **depósito de calor** hasta lo que pide calor: crisoles, mesas de colada y
+  mesas de forja. Lo que toca un tubo recibe el calor de su fluido (el mejor entre ese y lo que tenga debajo). Se
+  ve el fluido por la rendija del tubo y la ventana de la caldera, cada uno con su color.
+- **Caldera** (4 cubos): hierve lo que le echas, a mano o con tolva (los cubos vacíos salen por abajo). El
+  **depósito de calor** (8 cubos) guarda lava. Un comparador lee lo llenos que están.
+- Cinco fluidos:
+  - **Vapor** (agua en la caldera con cualquier fuego debajo): calor templado, barato; sólo funde lo blando (oro,
+    cobre, peltre, latón; el hierro no) y la mesa de colada no pasa del 50 % de calor. 1 mB por tick.
+  - **Lava** (cubos de lava o bloques de magma en el depósito): calor fundido, como la lava debajo pero por tubos.
+    1 mB por tick.
+  - **Sangre de blaze** (varas o polvo de blaze en la caldera): calor fundido, el crisol funde un 50 % más rápido
+    y la mesa de colada se calienta el doble. 2 mB por tick.
+  - **Aliento de forja** (escoria o corazón de forja en la caldera, sobre fuego fuerte): forja blanca sin crisol de
+    obsidiana, y +20 % de que una herramienta colada salga perfecta. 4 mB por tick.
+  - **Salmuera helada** (hielo compacto o azul): enfría. La mesa de colada templa en agua cada herramienta que
+    cuela, la mesa de forja templa lo recién forjado (100 mB por temple), una mesa sin fuego se enfría el doble y
+    un crisol que la toca se apaga.
+- Un crisol con un tubo caliente no gasta ascuas. Todo el calor del mod se lee ahora en un solo sitio
+  (`Alloys.heatAt`: lo de debajo o un tubo, lo más caliente), también en el crisol y la mesa de colada: un
+  crisol que arde sobre lava o magma arde así de caliente, y una fogata debajo de una mesa de colada la calienta.
+  Las redes de tubos se guardan en caché: no se recorren cada tick.
+- Capítulo de fundición de la guía: paso 8, con la tabla de los cinco fluidos.
+
 ## 2026-09-28 — la colada cae por el colador
 
 - Las piezas ya no se cuelan dentro de la caja de moldeo: el molde se pone encima de una mesa de colada, igual

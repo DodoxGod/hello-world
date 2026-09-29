@@ -133,6 +133,8 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		if (crucible.burning > 0) {
 			crucible.burning--;
 		}
+		// The heat line first: it decides how hot the pot is before the pot decides what it can do.
+		dev.forja.forge.HeatSources.Supply piped = crucible.readHeat(level);
 		Pour pour = crucible.pending();
 		// A bank that has set beside the pot is work too: it fires up by itself to save your metal,
 		// because a smith who walked away and came back to a cold wall should not also have to be told
@@ -143,16 +145,33 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		if (pour == null && frozen == null) {
 			crucible.progress = 0;
 		} else {
-			if (crucible.burning == 0 && crucible.light(level)) {
+			if (crucible.doused) {
+				// Ice brine against the pot: the fire goes out, and no ember will light while it is there.
+				crucible.burning = 0;
+			} else if (crucible.pipeFire) {
+				// A heat pipe is a fire of its own: it keeps the pot lit and no ember is burnt.
+				if (crucible.burning <= PIPE_BURN) {
+					crucible.burning = PIPE_BURN;
+					crucible.burnLength = PIPE_BURN;
+					crucible.pipeLit = true;
+				}
+			} else if (crucible.burning == 0 && crucible.light(level)) {
 				// Fresh fuel: the pour keeps its place in the queue rather than starting over.
 				crucible.setChanged();
+			}
+			if (crucible.burning > 0 && crucible.pipeFire) {
+				// What the fire costs when it comes down a pipe: the fluid's own draw, every tick it works.
+				piped.draw(level, piped.fluid().draw);
 			}
 			if (crucible.burning > 0 && frozen != null) {
 				if (crucible.tickCount() % 20 == 0) {
 					crucible.remelted += frozen.remelt();
 				}
 			} else if (crucible.burning > 0) {
-				crucible.progress++;
+				// Blaze blood works half again as fast as an ember; everything else at the ember's pace.
+				crucible.speedCarry += crucible.pipeFire ? piped.meltPercent() : 100;
+				crucible.progress += crucible.speedCarry / 100;
+				crucible.speedCarry %= 100;
 				int cook = crucible.fedByTank(pour) ? Math.max(1, crucible.tier().cook / 2) : crucible.tier().cook;
 				if (crucible.progress >= cook) {
 					crucible.progress = 0;
@@ -182,6 +201,71 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 	/** How long one ember keeps a crucible going. */
 	public static final int EMBER_TICKS = 400;
 
+	// ------------------------------------------------------------------ the heat line (FUNDICION_V2, part B)
+
+	/**
+	 * How long the fire a heat pipe lights lasts without the pipe: a few ticks, so the pot goes out almost
+	 * as soon as the vessel behind the pipe runs dry.
+	 */
+	public static final int PIPE_BURN = 4;
+
+	/** The heat the pot works at this tick: its own tier's, or a heat pipe's. Null until the first tick. */
+	private Alloys.@Nullable Heat heatNow;
+	/** Whether a heat pipe is the pot's fire this tick (no ember is burnt, the fluid is). */
+	private boolean pipeFire;
+	/** Whether what is burning now was lit by the pipe rather than by an ember or a lantern. */
+	private boolean pipeLit;
+	/** Whether ice brine is against the pot with nothing hot: it will not burn. */
+	private boolean doused;
+	/** The fraction of a step a faster fluid has carried over, in hundredths. */
+	private int speedCarry;
+	/** The hardest metal the pot melts this tick: no limit on its own fire, the fluid's on a pipe's. */
+	private int meltCap = Integer.MAX_VALUE;
+
+	/** The heat the crucible works at: its tier's own, or what the heat line brings it. */
+	public Alloys.Heat heat() {
+		return this.heatNow != null ? this.heatNow : this.tier().heat;
+	}
+
+	/**
+	 * Decides how hot the pot is this tick, from {@link Alloys#heatAt} (the one place heat is read: the
+	 * block under it or a heat pipe against it, the hotter) and the heat line's own qualities.
+	 *
+	 * <ul>
+	 * <li>With nothing under it and no pipe it is exactly what it always was: its tier's heat, fed by embers.</li>
+	 * <li>A hot <b>pipe</b> is a fire of its own: it is the pot's fire whenever it burns at least as hot as
+	 * the pot's tier, or when the pot has nothing of its own to burn — so steam into an iron pot with no
+	 * ember in it only melts what steam melts, and forge breath takes a clay pot to white heat. No ember is
+	 * burnt while it is; the fluid is.</li>
+	 * <li>What the pot <b>stands on</b> (lava, magma, a lantern...) is not a fire by itself — an ember or the
+	 * lantern still has to be burning, as always — but while the pot burns it burns as hot as that.</li>
+	 * <li>Ice brine with nothing hot against it puts the pot out.</li>
+	 * </ul>
+	 */
+	private dev.forja.forge.HeatSources.Supply readHeat(net.minecraft.world.level.Level level) {
+		dev.forja.forge.HeatSources.Supply piped = dev.forja.forge.HeatSources.piped(level, this.worldPosition);
+		Alloys.Heat own = this.tier().heat;
+		Alloys.Heat around = Alloys.heatAt(level, this.worldPosition);
+		Alloys.Heat under = Alloys.heatUnder(level, this.worldPosition);
+		boolean ownFire = (this.burning > 0 && !this.pipeLit) || this.items.get(SLOT_FUEL).is(dev.forja.registry.ModItems.ASCUA)
+			|| level.getBlockState(this.worldPosition.below()).is(dev.forja.registry.ModBlocks.FAROL_DE_PAVESA);
+		this.doused = piped.quench() && !piped.piped();
+		this.pipeFire = !this.doused && piped.piped() && (piped.heat().reaches(own) || !ownFire);
+		this.meltCap = Integer.MAX_VALUE;
+		if (this.doused) {
+			this.heatNow = Alloys.Heat.FRIA;
+		} else if (this.pipeFire) {
+			this.heatNow = around;
+			// Steam's limit holds only while steam is what is hottest about the pot.
+			if (under.ordinal() < piped.heat().ordinal()) {
+				this.meltCap = piped.fluid().meltsUpTo;
+			}
+		} else {
+			this.heatNow = ownFire && around.ordinal() > own.ordinal() ? around : own;
+		}
+		return piped;
+	}
+
 	/**
 	 * Burns one ember, or nothing at all if there is a wisp lantern underneath.
 	 *
@@ -191,6 +275,7 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 	 * the lantern under the pot skips the fuel entirely, which is the point of catching one.
 	 */
 	private boolean light(net.minecraft.world.level.Level level) {
+		this.pipeLit = false;
 		if (level.getBlockState(this.worldPosition.below()).is(dev.forja.registry.ModBlocks.FAROL_DE_PAVESA)) {
 			this.burning = EMBER_TICKS;
 			this.burnLength = EMBER_TICKS;
@@ -335,6 +420,13 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		for (int slot : TOP) {
 			ItemStack scrap = this.items.get(slot);
 			ItemStack back = this.recovered(scrap);
+			ForgeMaterial backMaterial = back.isEmpty() ? null : ForgeMaterial.fromInput(back);
+			if (backMaterial != null && backMaterial.durability > this.meltCap) {
+				// Steam will not take an iron tool back down, any more than it melts iron ore.
+				this.idleReason = JOB_TOO_COLD;
+				this.idleWhat = backMaterial.ordinal();
+				continue;
+			}
 			if (!back.isEmpty() && this.room(banks, back.getItem(), true) >= back.getCount()) {
 				ForgeMaterial material = ForgeMaterial.fromInput(back);
 				return new Pour(back, null, slot, 1, null, List.of(), JOB_RECOVER, material == null ? 0 : material.ordinal());
@@ -349,7 +441,7 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 			}
 			ForgeMaterial material = ForgeMaterial.fromInput(one);
 			int what = material == null ? 0 : material.ordinal();
-			if (material != null && !this.tier().heat.reaches(meltHeat(material))) {
+			if (material != null && (!this.heat().reaches(meltHeat(material)) || material.durability > this.meltCap)) {
 				this.idleReason = JOB_TOO_COLD;
 				this.idleWhat = what;
 				continue;
@@ -381,7 +473,7 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 	 * bank of gold on the same pipe could not pour bronze at all.
 	 */
 	private @Nullable Pour alloy(List<MeltTankBlockEntity> banks) {
-		Alloys.Heat heat = this.tier().heat;
+		Alloys.Heat heat = this.heat();
 		Pour best = null;
 		for (int index = 0; index < Alloys.POURABLE.size(); index++) {
 			Alloys.Recipe recipe = Alloys.POURABLE.get(index);
@@ -695,7 +787,7 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		ItemStack first = this.items.get(SLOT_FIRST);
 		ItemStack second = this.items.get(SLOT_SECOND);
 		if (first.isEmpty() && second.isEmpty()) {
-			return Component.translatable("gui.forja.crisol.vacio", this.tier().heat.displayName());
+			return Component.translatable("gui.forja.crisol.vacio", this.heat().displayName());
 		}
 		Component load = first.isEmpty() ? second.getHoverName()
 			: second.isEmpty() ? first.getHoverName()
@@ -737,7 +829,7 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 				case dev.forja.menu.CrucibleMenu.DATA_COOK -> CrucibleBlockEntity.this.tier().cook;
 				case dev.forja.menu.CrucibleMenu.DATA_BURNING -> CrucibleBlockEntity.this.burning;
 				case dev.forja.menu.CrucibleMenu.DATA_BURN_LENGTH -> CrucibleBlockEntity.this.burnLength;
-				case dev.forja.menu.CrucibleMenu.DATA_HEAT -> CrucibleBlockEntity.this.tier().heat.ordinal();
+				case dev.forja.menu.CrucibleMenu.DATA_HEAT -> CrucibleBlockEntity.this.heat().ordinal();
 				case dev.forja.menu.CrucibleMenu.DATA_CAPACITY -> CrucibleBlockEntity.this.tier().capacity;
 				// What it is doing, as the server sees it: the screen only has the two slots to go on, and
 				// it could not see the tanks, the ore or the reason a pot was standing idle.

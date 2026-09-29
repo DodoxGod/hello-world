@@ -30,7 +30,7 @@ import org.jspecify.annotations.Nullable;
  * parts from the top and the sides and take the finished piece from underneath; a comparator reads
  * whether it is working and whether something is waiting in it. It lights up while it works.
  */
-public class AssemblerMachineBlock extends BaseEntityBlock {
+public class AssemblerMachineBlock extends BaseEntityBlock implements dev.forja.forge.HeatConsumer {
 	public static final MapCodec<AssemblerMachineBlock> CODEC = simpleCodec(AssemblerMachineBlock::new);
 
 	/** Set while it is assembling: the model glows and the sparks fly. */

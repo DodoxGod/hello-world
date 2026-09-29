@@ -1125,7 +1125,23 @@ public class GuideBookScreen extends Screen {
 			dev.forja.block.entity.CastingTableBlockEntity.SPEND,
 			Math.round(-dev.forja.forge.Quality.ROUGH_PENALTY * 100)), 0xFF9A3412));
 
-		// 8. The whole line with nobody at it (docs/FUNDICION_V2.md, part C): hoppers in, hoppers out.
+		// 8. Heat down a pipe (FUNDICION_V2, part B): the boiler, the depot, and the five fluids.
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.fundicion.calor")));
+		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.calor.desc",
+			dev.forja.block.entity.BoilerBlockEntity.CALDERA_CAPACITY,
+			dev.forja.block.entity.BoilerBlockEntity.DEPOSITO_CAPACITY), INK));
+		body.add(new IconRow(List.of(
+			new ItemStack(ModItems.TUBO_DE_CALOR), new ItemStack(ModItems.CALDERA), new ItemStack(ModItems.DEPOSITO_DE_CALOR)
+		)));
+		for (dev.forja.forge.HeatFluid fluid : dev.forja.forge.HeatFluid.values()) {
+			body.add(new FluidSwatch(fluid));
+			body.add(new Text(this.fluidLine(fluid), INK_SOFT));
+			body.add(new IconRow(this.fluidInputs(fluid)));
+		}
+		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.calor.uno"), 0xFF9A3412));
+
+		// 9. And what the whole thing is for at the top end.
+		// 9. The whole line with nobody at it (docs/FUNDICION_V2.md, part C): hoppers in, hoppers out.
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.fundicion.paso8")));
 		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.paso8.desc"), INK));
 		body.add(new IconRow(List.of(
@@ -1133,7 +1149,7 @@ public class GuideBookScreen extends Screen {
 			new ItemStack(ModItems.FAROL_DE_PAVESA), new ItemStack(Items.CHEST)
 		)));
 
-		// 9. The assembler: the forge star without the smith, and always a plain press.
+		// 10. The assembler: the forge star without the smith, and always a plain press.
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.fundicion.paso9")));
 		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.paso9.desc"), INK));
 		body.add(new IconRow(List.of(
@@ -1157,6 +1173,54 @@ public class GuideBookScreen extends Screen {
 			.filter(recipe -> dev.forja.forge.Alloys.WHITE_HEAT_ONLY.contains(recipe.id()))
 			.map(dev.forja.forge.Alloys.Recipe::result).toList()));
 		return body;
+	}
+
+	/** What makes each heat fluid: the items a boiler or a depot turns into it. */
+	private static final java.util.Map<dev.forja.forge.HeatFluid, List<net.minecraft.world.item.Item>> FLUID_INPUTS = java.util.Map.of(
+		dev.forja.forge.HeatFluid.VAPOR, List.of(Items.WATER_BUCKET),
+		dev.forja.forge.HeatFluid.LAVA, List.of(Items.LAVA_BUCKET, Items.MAGMA_BLOCK),
+		dev.forja.forge.HeatFluid.SANGRE_DE_BLAZE, List.of(Items.BLAZE_ROD, Items.BLAZE_POWDER),
+		dev.forja.forge.HeatFluid.ALIENTO_DE_FORJA, List.of(),
+		dev.forja.forge.HeatFluid.SALMUERA_HELADA, List.of(Items.PACKED_ICE, Items.BLUE_ICE));
+
+	private List<ItemStack> fluidInputs(dev.forja.forge.HeatFluid fluid) {
+		List<ItemStack> stacks = new ArrayList<>();
+		if (fluid == dev.forja.forge.HeatFluid.ALIENTO_DE_FORJA) {
+			// The mod's own two, which do not exist yet when the map above is built.
+			stacks.add(new ItemStack(ModItems.ESCORIA));
+			stacks.add(new ItemStack(ModItems.CORAZON_DE_FORJA));
+		}
+		for (net.minecraft.world.item.Item item : FLUID_INPUTS.get(fluid)) {
+			stacks.add(new ItemStack(item));
+		}
+		return stacks;
+	}
+
+	/** How much of the fluid one of this item makes, read off the code, in mB. */
+	private static int yieldOf(net.minecraft.world.item.Item item) {
+		for (dev.forja.forge.HeatFluid.Vessel vessel : dev.forja.forge.HeatFluid.Vessel.values()) {
+			dev.forja.forge.HeatFluid.Yield yield = dev.forja.forge.HeatFluid.yield(new ItemStack(item), vessel);
+			if (yield != null) {
+				return yield.amount();
+			}
+		}
+		return 0;
+	}
+
+	/** One fluid's line in the table: where it comes from, what it costs and what it does, every number from the code. */
+	private Component fluidLine(dev.forja.forge.HeatFluid fluid) {
+		String key = "gui.forja.libro.fundicion.fluido." + fluid.id();
+		int hot = dev.forja.block.entity.CastingTableBlockEntity.HOT;
+		return switch (fluid) {
+			case VAPOR -> Component.translatable(key, yieldOf(Items.WATER_BUCKET), fluid.draw, fluid.meltsUpTo, fluid.tableCap * 100 / hot);
+			case LAVA -> Component.translatable(key, yieldOf(Items.LAVA_BUCKET), yieldOf(Items.MAGMA_BLOCK), fluid.draw);
+			case SANGRE_DE_BLAZE -> Component.translatable(key, yieldOf(Items.BLAZE_ROD), yieldOf(Items.BLAZE_POWDER), fluid.draw,
+				fluid.meltPercent, fluid.tableWarms);
+			case ALIENTO_DE_FORJA -> Component.translatable(key, yieldOf(ModItems.ESCORIA), yieldOf(ModItems.CORAZON_DE_FORJA),
+				fluid.draw, Math.round(fluid.steadyBonus * 100));
+			case SALMUERA_HELADA -> Component.translatable(key, yieldOf(Items.PACKED_ICE), yieldOf(Items.BLUE_ICE),
+				dev.forja.forge.HeatFluid.QUENCH_COST);
+		};
 	}
 
 	/** What the smith learns, as opposed to what a piece learns. */
@@ -2228,6 +2292,29 @@ public class GuideBookScreen extends Screen {
 					row += 13;
 				}
 			}
+		}
+	}
+
+	/** One heat fluid's name and heat, on a square of its own colour: the head of its line in the table. */
+	private static final class FluidSwatch extends Element {
+		private final dev.forja.forge.HeatFluid fluid;
+
+		FluidSwatch(dev.forja.forge.HeatFluid fluid) {
+			this.fluid = fluid;
+		}
+
+		@Override
+		int height() {
+			return 12;
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			g.fill(x, y + 1, x + 9, y + 10, 0xFF3A302A);
+			g.fill(x + 1, y + 2, x + 8, y + 9, 0xFF000000 | this.fluid.colour);
+			Component line = Component.translatable("gui.forja.libro.fundicion.fluido_titulo",
+				this.fluid.displayName(), this.fluid.heat.displayName());
+			g.text(screen.font, line, x + 13, y + 2, INK, false);
 		}
 	}
 

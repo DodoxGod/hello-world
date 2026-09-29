@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BGB",
+    "BUB",
+    "BBB"
+  ],
+  "key": {
+    "B": "minecraft:bricks",
+    "G": "minecraft:glass",
+    "U": "minecraft:bucket"
+  },
+  "result": {
+    "id": "forja:deposito_de_calor",
+    "count": 1
+  }
+}

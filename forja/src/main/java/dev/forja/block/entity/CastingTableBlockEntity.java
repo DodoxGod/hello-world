@@ -251,22 +251,40 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 	 * wisp lantern is still the tidiest way to do it.
 	 */
 	private void settle(Level level, BlockPos pos) {
-		boolean warmed = false;
+		boolean beside = false;
 		for (Direction side : Direction.values()) {
-			BlockState beside = level.getBlockState(pos.relative(side));
-			if (beside.is(dev.forja.registry.ModBlocks.FAROL_DE_PAVESA)
-				|| beside.is(net.minecraft.world.level.block.Blocks.LAVA)
-				|| beside.is(net.minecraft.world.level.block.Blocks.MAGMA_BLOCK)
-				|| beside.is(net.minecraft.world.level.block.Blocks.FIRE)
-				|| (beside.getBlock() instanceof dev.forja.block.CrucibleBlock
-					&& beside.getValue(dev.forja.block.CrucibleBlock.LIT))) {
-				warmed = true;
+			if (dev.forja.forge.HeatSources.warmsBeside(level.getBlockState(pos.relative(side)))) {
+				beside = true;
 				break;
 			}
 		}
+		// And the heat every forge reads (Alloys.heatAt): a fire under the table warms it like one beside it,
+		// and a hot fluid in a pipe against it (FUNDICION_V2, part B) at the fluid's own rate, up to the
+		// fluid's own ceiling — steam never past tepid, blaze blood twice as fast as a fire — paid for only
+		// while it is what does the warming.
+		dev.forja.forge.HeatSources.Supply line = dev.forja.forge.HeatSources.at(level, pos);
+		boolean fire = beside || (!line.piped() && line.heat() != dev.forja.forge.Alloys.Heat.FRIA);
+		int rate = fire ? WARMS : 0;
+		int cap = fire ? HOT : 0;
+		boolean fromPipe = false;
+		if (line.piped() && (line.fluid().tableWarms > rate || line.fluid().tableCap > cap)) {
+			rate = Math.max(rate, line.fluid().tableWarms);
+			cap = Math.max(cap, line.fluid().tableCap);
+			fromPipe = true;
+		}
 		int was = this.heat;
-		this.warming = warmed;
-		this.heat = Math.max(0, Math.min(HOT, this.heat + (warmed ? WARMS : -this.tier().cools)));
+		this.warming = rate > 0;
+		if (this.warming) {
+			if (this.heat < cap) {
+				this.heat = Math.min(cap, this.heat + rate);
+				if (fromPipe) {
+					line.draw(level, line.fluid().draw * dev.forja.forge.HeatFluid.TABLE_DRAW_TICKS);
+				}
+			}
+		} else {
+			// Ice brine against a table with nothing warming it takes the heat out twice as fast.
+			this.heat = Math.max(0, this.heat - this.tier().cools * (line.quench() ? 2 : 1));
+		}
 		if (was != this.heat) {
 			this.setChanged();
 		}
@@ -365,10 +383,20 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 		PartType part = CastingMouldItem.partOf(pattern);
 		ItemStack cast;
 		boolean steady = false;
+		boolean quenched = false;
 		if (type != null) {
+			// Forge breath against the table steadies the hand further, and it is paid for per tool.
+			dev.forja.forge.HeatSources.Supply line = dev.forja.forge.HeatSources.at(level, pos);
+			float breath = !wasRough && line.steadyBonus() > 0.0F
+				&& line.draw(level, line.fluid().draw * dev.forja.forge.HeatFluid.TABLE_DRAW_TICKS) > 0 ? line.steadyBonus() : 0.0F;
 			// The steady hand of good stone, which only a whole tool can show: see castTool.
-			steady = !wasRough && level.getRandom().nextFloat() < this.tier().luck;
+			steady = !wasRough && level.getRandom().nextFloat() < this.tier().luck + breath;
 			cast = castTool(level, type, material, wasRough, steady);
+			// Ice brine against the table: the tool is quenched in water the moment it sets, for good.
+			if (line.quench() && !cast.has(ModComponents.TEMPLE) && line.spendQuench(level)) {
+				cast.set(ModComponents.TEMPLE, dev.forja.forge.Temple.AGUA.id());
+				quenched = true;
+			}
 		} else if (part != null) {
 			cast = castPart(level, part, material, wasRough);
 		} else {
@@ -386,6 +414,11 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 				server.playSound(null, pos, SoundEvents.PLAYER_LEVELUP, SoundSource.BLOCKS, 0.4F, 1.8F);
 				server.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
 					pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5, 12, 0.25, 0.1, 0.25, 0.02);
+			}
+			if (quenched) {
+				server.playSound(null, pos, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.7F, 1.0F);
+				server.sendParticles(dev.forja.registry.ModParticles.VAPOR,
+					pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5, 20, 0.25, 0.15, 0.25, 0.05);
 			}
 		}
 		this.setChanged();
