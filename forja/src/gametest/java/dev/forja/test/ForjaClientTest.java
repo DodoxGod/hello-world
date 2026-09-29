@@ -198,6 +198,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 				return;
 			}
 			if ("cielo".equals(solo)) {
+				filmSkyFlicker(context, server, connection, x, y, z);
 				shotSkies(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
@@ -9317,6 +9318,195 @@ public class ForjaClientTest implements FabricClientGameTest {
 			case LLUVIA_DE_PAVESAS -> new float[] {18000.0F, 180.0F, -10.0F};
 			case NIEBLA_DE_ALMAS, VENTISCA -> new float[] {18000.0F, 180.0F, -8.0F};
 		};
+	}
+
+	/** Where a flicker shot looks: at the moon, at the sun, or a fixed way. */
+	private enum SkyAim { MOON, SUN, FIXED }
+
+	/**
+	 * One flicker shot: the hour, what it looks at, and how far off that the camera is turned, so the body
+	 * sits in the middle of the frame, near its top edge or near its side.
+	 */
+	private record SkyShot(String name, int time, SkyAim aim, float yaw, float pitch) {
+	}
+
+	/** The events whose bodies hold still: any change from one frame to the next on them is a fault. */
+	private static final java.util.Set<dev.forja.world.WorldEvents> STILL_SKIES = java.util.EnumSet.of(
+		dev.forja.world.WorldEvents.LUNA_DE_SANGRE, dev.forja.world.WorldEvents.MAREA_VIVA, dev.forja.world.WorldEvents.ECLIPSE);
+
+	private static List<SkyShot> flickerShots(dev.forja.world.WorldEvents event) {
+		return switch (event) {
+			// The moon a third of the way up, in the middle, then near the top and the side of a wide lens,
+			// straight overhead at midnight, and just risen at dusk, when the night is only half there.
+			case LUNA_DE_SANGRE, MAREA_VIVA -> List.of(
+				new SkyShot("centro", 14200, SkyAim.MOON, 0.0F, 0.0F),
+				new SkyShot("arriba", 14200, SkyAim.MOON, 0.0F, 32.0F),
+				new SkyShot("lado", 14200, SkyAim.MOON, 45.0F, 0.0F),
+				new SkyShot("cenit", 18000, SkyAim.FIXED, -90.0F, -90.0F),
+				new SkyShot("anochecer", 12700, SkyAim.MOON, 0.0F, 0.0F));
+			case ECLIPSE -> List.of(
+				new SkyShot("dia_centro", 3000, SkyAim.SUN, 0.0F, 0.0F),
+				new SkyShot("dia_arriba", 3000, SkyAim.SUN, 0.0F, 32.0F),
+				new SkyShot("mediodia", 6000, SkyAim.FIXED, -90.0F, -90.0F),
+				new SkyShot("noche", 14200, SkyAim.MOON, 0.0F, 0.0F));
+			case TORMENTA_ARCANA -> List.of(
+				new SkyShot("noche", 18000, SkyAim.FIXED, 180.0F, -58.0F),
+				new SkyShot("encima", 18000, SkyAim.FIXED, 180.0F, -90.0F));
+			case AURORA -> List.of(
+				new SkyShot("noche", 18000, SkyAim.FIXED, 180.0F, -26.0F),
+				new SkyShot("anochecer", 12700, SkyAim.FIXED, 180.0F, -26.0F));
+			case METEORITOS -> List.of(new SkyShot("noche", 18000, SkyAim.FIXED, 180.0F, -36.0F));
+			case LLUVIA_DE_PAVESAS -> List.of(
+				new SkyShot("noche", 18000, SkyAim.FIXED, 180.0F, -10.0F),
+				new SkyShot("dia", 6000, SkyAim.FIXED, 180.0F, -10.0F));
+			case NIEBLA_DE_ALMAS, VENTISCA -> List.of(
+				new SkyShot("noche", 18000, SkyAim.FIXED, 180.0F, -8.0F),
+				new SkyShot("dia", 6000, SkyAim.FIXED, 180.0F, -8.0F));
+		};
+	}
+
+	/**
+	 * FORJA_SOLO=cielo, first half: every event's sky held still and photographed several frames running.
+	 *
+	 * <p>Andy, 2026-09-28: "los eventos llegan a parpadear, algunas cosas se ven mal, como la luna; en
+	 * captura no se ve el parpadeo pero ahí está". One frame cannot show a flicker, so each view is taken
+	 * six times, some a tick apart and some back to back, with the camera nailed down and the particles
+	 * off, and consecutive frames are compared: on a moon or an eclipse, which do not move in a tenth of
+	 * a second, a pixel that changes a lot from one frame to the next is the flicker. The wide lens is
+	 * Andy's own (fov 0.8 in his options, 102 degrees), which is where a moon that is not round shows.
+	 */
+	private static void filmSkyFlicker(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		server.runCommand("gamemode spectator @a");
+		server.runCommand("weather clear");
+		double cx = x + 90.5, cy = y + 40.0, cz = z + 90.5;
+		tp(server, cx, cy, cz, 140.0F, -12.0F);
+		context.runOnClient(mc -> {
+			mc.options.fov().set(102);
+			mc.options.fovEffectScale().set(0.0);
+			// Nothing in the air around the camera: snow and ash going past are a change from frame to frame too.
+			mc.options.particles().set(net.minecraft.server.level.ParticleStatus.MINIMAL);
+			mc.gui.hud.getChat().clearMessages(false);
+		});
+		String renderer = context.computeOnClient(mc -> {
+			var loader = net.fabricmc.loader.api.FabricLoader.getInstance();
+			return (loader.isModLoaded("sodium") ? "sodium " : "") + (loader.isModLoaded("iris") ? "iris " : "")
+				+ com.mojang.blaze3d.systems.RenderSystem.getDevice().getDeviceInfo().backendName();
+		});
+		log("cielo parpadeo: motor " + renderer);
+		server.runOnServer(s -> dev.forja.world.WorldEvents.stop(connection.getServerLevel()));
+		boolean first = true;
+		List<String> faults = new ArrayList<>();
+		for (dev.forja.world.WorldEvents event : dev.forja.world.WorldEvents.values()) {
+			server.runOnServer(s -> dev.forja.world.WorldEvents.start(connection.getServerLevel(), event));
+			context.waitTicks(first ? 100 : 20);
+			first = false;
+			context.runOnClient(mc -> dev.forja.client.EventBannerHud.dismiss());
+			for (SkyShot shot : flickerShots(event)) {
+				server.runCommand("time set " + shot.time());
+				context.waitTicks(4);
+				float[] look = context.computeOnClient(mc -> {
+					if (shot.aim() == SkyAim.FIXED) {
+						return new float[] {shot.yaw(), shot.pitch()};
+					}
+					float angle = shot.aim() == SkyAim.SUN ? dev.forja.client.SkyMood.sunAngle : dev.forja.client.SkyMood.moonAngle;
+					// The same direction the sky renderer turns the body to: (-sin, cos, 0).
+					double dx = -Math.sin(angle);
+					double dy = Math.cos(angle);
+					float yaw = (float) Math.toDegrees(Math.atan2(-dx, 0.0));
+					float pitch = (float) -Math.toDegrees(Math.asin(Math.max(-1.0, Math.min(1.0, dy))));
+					return new float[] {yaw + shot.yaw(), Math.max(-90.0F, Math.min(90.0F, pitch + shot.pitch()))};
+				});
+				for (int tick = 0; tick < 6; tick++) {
+					tp(server, cx, cy, cz, look[0], look[1]);
+					context.waitTicks(1);
+				}
+				context.runOnClient(mc -> mc.gui.hud.getChat().clearMessages(false));
+				context.waitTicks(2);
+				String state = context.computeOnClient(mc -> String.format(Locale.ROOT,
+					"luna %.3f sol %.3f radio %.1f mezcla %.2f peso %.2f",
+					dev.forja.client.SkyMood.moonAngle, dev.forja.client.SkyMood.sunAngle, dev.forja.client.SkyMood.skyRadius(),
+					dev.forja.client.SkyMood.blend(), dev.forja.client.SkyMood.weight(mc.level.getOverworldClockTime())));
+				String base = "cielo_" + event.id() + "_" + shot.name();
+				List<java.nio.file.Path> frames = new ArrayList<>();
+				for (int frame = 0; frame < 6; frame++) {
+					// Half a tick apart and half back to back: a flicker that follows the frame and one that
+					// follows the tick both get caught between some pair.
+					if (frame % 2 == 1) {
+						context.waitTicks(1);
+					}
+					frames.add(context.takeScreenshot(TestScreenshotOptions.of(String.format(Locale.ROOT, "%s_f%d", base, frame)).disableCounterPrefix()));
+				}
+				int worst = 0;
+				double ground = 0.0;
+				for (int frame = 1; frame < frames.size(); frame++) {
+					worst = Math.max(worst, jumpyPixels(frames.get(frame - 1), frames.get(frame)));
+					ground = Math.max(ground, Math.abs(lowerThirdBrightness(frames.get(frame)) - lowerThirdBrightness(frames.get(frame - 1))));
+				}
+				log(String.format(Locale.ROOT, "cielo parpadeo %s (%s, mira %.0f/%.0f): %d pixeles saltan entre fotogramas, el suelo cambia %.2f [%s]",
+					base, renderer, look[0], look[1], worst, ground, state));
+				if (STILL_SKIES.contains(event) && worst > 400) {
+					faults.add(base + " " + worst + " pixeles");
+				}
+				// The light on the ground. Between two frames a tick apart it moves with the hour, a
+				// fraction of a level; the lightmap bent twice over within one tick moved it by ten. The
+				// arcane storm is left out: its lightning does light the ground, on purpose.
+				if (event != dev.forja.world.WorldEvents.TORMENTA_ARCANA && ground > 1.5) {
+					faults.add(base + String.format(Locale.ROOT, " suelo %.2f", ground));
+				}
+			}
+		}
+		server.runOnServer(s -> dev.forja.world.WorldEvents.stop(connection.getServerLevel()));
+		context.runOnClient(mc -> {
+			mc.options.fov().set(70);
+			mc.options.particles().set(net.minecraft.server.level.ParticleStatus.ALL);
+		});
+		server.runCommand("time set midnight");
+		context.waitTicks(20);
+		check(faults.isEmpty(), "the still skies should not flicker from one frame to the next: " + faults);
+	}
+
+	/** The mean brightness of the bottom third of a screenshot, 0 to 255: the ground, in every flicker shot. */
+	private static double lowerThirdBrightness(java.nio.file.Path shot) {
+		try (var image = com.mojang.blaze3d.platform.NativeImage.read(java.nio.file.Files.newInputStream(shot))) {
+			long sum = 0L;
+			int from = image.getHeight() * 2 / 3;
+			for (int py = from; py < image.getHeight(); py++) {
+				for (int px = 0; px < image.getWidth(); px++) {
+					int p = image.getPixel(px, py);
+					sum += (p >> 16 & 255) + (p >> 8 & 255) + (p & 255);
+				}
+			}
+			return sum / 3.0 / ((double) (image.getHeight() - from) * image.getWidth());
+		} catch (java.io.IOException e) {
+			throw new AssertionError("could not read " + shot, e);
+		}
+	}
+
+	/** How many pixels change by more than a sixth of their range between two screenshots of the same view. */
+	private static int jumpyPixels(java.nio.file.Path before, java.nio.file.Path after) {
+		try (var a = com.mojang.blaze3d.platform.NativeImage.read(java.nio.file.Files.newInputStream(before));
+			var b = com.mojang.blaze3d.platform.NativeImage.read(java.nio.file.Files.newInputStream(after))) {
+			if (a.getWidth() != b.getWidth() || a.getHeight() != b.getHeight()) {
+				return Integer.MAX_VALUE;
+			}
+			int jumpy = 0;
+			for (int py = 0; py < a.getHeight(); py++) {
+				for (int px = 0; px < a.getWidth(); px++) {
+					int p = a.getPixel(px, py);
+					int q = b.getPixel(px, py);
+					int most = 0;
+					for (int shift = 0; shift <= 16; shift += 8) {
+						most = Math.max(most, Math.abs((p >> shift & 255) - (q >> shift & 255)));
+					}
+					if (most > 42) {
+						jumpy++;
+					}
+				}
+			}
+			return jumpy;
+		} catch (java.io.IOException e) {
+			throw new AssertionError("could not read " + before + " / " + after, e);
+		}
 	}
 
 	private static void shotSkies(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {

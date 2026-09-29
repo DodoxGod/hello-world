@@ -11,6 +11,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import com.llamalad7.mixinextras.sugar.Local;
+
 /**
  * And the same colour into the fog, weaker.
  *
@@ -18,13 +20,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * and the join between the two is a hard line across the world. The fog takes a smaller share than
  * the sky on purpose: it sits right in front of the eye, so the same amount of colour there is
  * exhausting to look at for the hundred seconds an event lasts.
+ *
+ * <p>It bends the fog just <i>before</i> the method returns, once the last field is set, and not at the
+ * return itself. Sodium copies the fog out for its own terrain shader at the return, and whichever of
+ * the two ran first there decided whether Sodium's terrain got the event's fog or the plain one: under
+ * Sodium the blizzard could close in on the sky and the mobs while the ground stayed clear to the
+ * horizon.
  */
 @Mixin(FogRenderer.class)
 abstract class FogRendererMixin {
-	@Inject(method = "setupFog", at = @At("RETURN"))
+	@Inject(method = "setupFog", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/fog/FogData;renderDistanceEnd:F",
+		opcode = org.objectweb.asm.Opcodes.PUTFIELD, shift = At.Shift.AFTER))
 	private void forja$eventFog(Camera camera, int renderDistance, DeltaTracker delta, float rain,
-		ClientLevel level, CallbackInfoReturnable<FogData> info) {
-		FogData data = info.getReturnValue();
+		ClientLevel level, CallbackInfoReturnable<FogData> info, @Local FogData data) {
 		if (data == null || data.color == null) {
 			return;
 		}

@@ -7,6 +7,7 @@ import dev.forja.world.WorldEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -32,6 +33,14 @@ import net.minecraft.world.phys.Vec3;
  * anything further out would simply be taken by it.
  *
  * <p>The one exception is the soul fog's lights, which belong to the ground and are anchored to it.
+ *
+ * <p>Two things about how it is layered, both learnt from a sky that flickered. The game does not draw
+ * translucent geometry in the order it was handed over: it groups it by render type in a hash map, so
+ * a moon and its halo came out in whichever order the map's buckets fell, and that order changed with
+ * whatever else was being drawn that frame. And inside one render type it sorts the quads by distance,
+ * which for two layers hung on the same sphere is a coin toss per quad that the smallest movement
+ * turns over. So every layer here goes in its own slot of the frame's submit order ({@link #layer}),
+ * before anything else translucent, and nothing that overlaps shares a draw.
  */
 public final class EventSkyRenderer {
 	private static final Identifier AURORA = Forja.id("textures/environment/aurora.png");
@@ -42,7 +51,25 @@ public final class EventSkyRenderer {
 	private static final Identifier RUNES = Forja.id("textures/environment/runas.png");
 	private static final Identifier FLAT = Forja.id("textures/environment/plano.png");
 
+	/** The first slot of the frame's submit order the sky takes: well before the world's own, which is 0. */
+	private static final int FIRST_LAYER = -64;
+
+	/**
+	 * The axis the sun and the moon turn about, as a direction in the world: they rise in the east and
+	 * set in the west in the plane across it. A body's "sideways" is taken from this and not from
+	 * "up", which is undefined overhead and turned the moon half round as it crossed the zenith.
+	 */
+	private static final Vec3 SKY_AXIS = new Vec3(0.0, 0.0, 1.0);
+
+	/** Which way the camera looks this frame, for the bodies that are drawn round on the screen. */
+	private static Vec3 view = new Vec3(0.0, 0.0, 1.0);
+
 	private EventSkyRenderer() {
+	}
+
+	/** One layer of the sky: drawn after every layer with a lower number and before every higher one. */
+	private static OrderedSubmitNodeCollector layer(SubmitNodeCollector collector, int layer) {
+		return collector.order(FIRST_LAYER + layer);
 	}
 
 	public static void register() {
@@ -67,6 +94,8 @@ public final class EventSkyRenderer {
 		// Seconds, wrapped well before a float starts dropping the part of a tick.
 		float time = (client.level.getGameTime() % 72000L + partial) / 20.0F;
 		float radius = SkyMood.skyRadius();
+		org.joml.Vector3fc forward = client.gameRenderer.mainCamera().forwardVector();
+		view = new Vec3(forward.x(), forward.y(), forward.z());
 		PoseStack pose = context.poseStack();
 		SubmitNodeCollector collector = context.submitNodeCollector();
 		switch (showing) {
@@ -75,10 +104,10 @@ public final class EventSkyRenderer {
 			case MAREA_VIVA -> springTide(pose, collector, radius, time, weight, solid);
 			case ECLIPSE -> eclipse(pose, collector, radius, time, weight, solid);
 			case TORMENTA_ARCANA -> sigil(pose, collector, radius, time, weight, SkyMood.flash(partial));
-			case METEORITOS -> streaks(pose, collector, radius, partial, weight);
+			case METEORITOS -> streaks(pose, collector, 0, radius, partial, weight);
 			case LLUVIA_DE_PAVESAS -> {
 				burningHorizon(pose, collector, radius, time, weight);
-				streaks(pose, collector, radius, partial, weight);
+				streaks(pose, collector, 1, radius, partial, weight);
 			}
 			case NIEBLA_DE_ALMAS -> wisps(pose, collector, client, time, weight);
 			case VENTISCA -> {
@@ -99,11 +128,14 @@ public final class EventSkyRenderer {
 		int steps = 44;
 		float half = radius * 1.55F;
 		// Its light on the horizon underneath it, which is what ties the curtains to the ground.
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) ->
+		layer(collector, 0).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) ->
 			facing(p, buffer, new Vec3(0.0, 0.16, -1.0).normalize(), radius, radius * 1.5F, radius * 0.5F, 0.0F, 0x2FE0A0,
 				0.2F * weight * (0.85F + 0.15F * Mth.sin(time * 0.4F))));
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(AURORA), (p, buffer) -> {
-			for (int band = 0; band < 4; band++) {
+		// A layer to each curtain, the furthest first: they cross each other as they wander, and in one
+		// draw the quads of two curtains swapped places in the sort wherever they crossed.
+		for (int each = 0; each < 4; each++) {
+			int band = each;
+			layer(collector, 1 + band).submitCustomGeometry(pose, RenderTypes.eyes(AURORA), (p, buffer) -> {
 				int foot = band == 2 ? 0x7CFFD6 : 0x4DFFA6;
 				int waist = band == 1 ? 0x58D8FF : 0x46E6C0;
 				int crown = band == 2 ? 0xFF7AD0 : 0x9C6BFF;
@@ -140,38 +172,46 @@ public final class EventSkyRenderer {
 					pTall = tall;
 					pAlpha = alpha;
 				}
-			}
-		});
+			});
+		}
 	}
 
-	/** A full red moon, twice the size the real one looks so that it covers it, in a wide dull halo. */
+	/**
+	 * A full red moon, a little larger than the real one, in a wide dull halo. The real one is put out
+	 * underneath it ({@link SkyMood#hidesMoon}) rather than covered, so no edge of it can show.
+	 */
 	private static void bloodMoon(PoseStack pose, SubmitNodeCollector collector, float radius, float time, float weight, float solid) {
 		Vec3 moon = heavenly(SkyMood.moonAngle);
 		if (moon.y < -0.2) {
 			return;
 		}
 		float breath = 0.9F + 0.1F * Mth.sin(time * 0.7F);
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) ->
-			facing(p, buffer, moon, radius, radius * 0.62F, 0.0F, 0xC8261E, 0.6F * weight * breath));
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(MOON), (p, buffer) ->
-			facing(p, buffer, moon, radius * 0.98F, radius * 0.2F, 0.0F, 0xF04A32, solid));
+		layer(collector, 0).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) ->
+			body(p, buffer, moon, radius, radius * 0.62F, 0.0F, 0xC8261E, 0.6F * weight * breath));
+		layer(collector, 1).submitCustomGeometry(pose, RenderTypes.eyes(MOON), (p, buffer) ->
+			body(p, buffer, moon, radius * 0.98F, radius * 0.2F, 0.0F, 0xF04A32, solid));
 	}
 
-	/** The moon come close: huge, pale and blue-white, with its light spilling down towards the water. */
+	/**
+	 * The moon come close: huge, pale and blue-white, with its light spilling down towards the water.
+	 *
+	 * <p>Only the halo breathes. The moon itself used to swell with it, and a pixel-drawn moon that
+	 * changes size by a hair every frame has the edges of its craters crawling across the screen.
+	 */
 	private static void springTide(PoseStack pose, SubmitNodeCollector collector, float radius, float time, float weight, float solid) {
 		Vec3 moon = heavenly(SkyMood.moonAngle);
 		if (moon.y < -0.2) {
 			return;
 		}
 		float swell = 1.0F + 0.04F * Mth.sin(time * 0.5F);
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
-			facing(p, buffer, moon, radius, radius * 0.8F * swell, 0.0F, 0x3FA8E0, 0.45F * weight);
-			// The light coming down off it: a second, taller glow hung below.
-			Vec3 below = new Vec3(moon.x, moon.y - 0.32, moon.z).normalize();
-			facing(p, buffer, below, radius, radius * 0.34F, radius * 0.8F, 0.0F, 0x7FD4FF, 0.24F * weight);
-		});
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(MOON), (p, buffer) ->
-			facing(p, buffer, moon, radius * 0.98F, radius * 0.3F * swell, 0.0F, 0xD6F2FF, solid));
+		// The light coming down off it: a taller glow hung below, then the halo, then the moon.
+		Vec3 below = new Vec3(moon.x, moon.y - 0.32, moon.z).normalize();
+		layer(collector, 0).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) ->
+			facing(p, buffer, below, radius, radius * 0.34F, radius * 0.8F, 0.0F, 0x7FD4FF, 0.24F * weight));
+		layer(collector, 1).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) ->
+			body(p, buffer, moon, radius, radius * 0.8F * swell, 0.0F, 0x3FA8E0, 0.45F * weight));
+		layer(collector, 2).submitCustomGeometry(pose, RenderTypes.eyes(MOON), (p, buffer) ->
+			body(p, buffer, moon, radius * 0.98F, radius * 0.3F, 0.0F, 0xD6F2FF, solid));
 	}
 
 	/**
@@ -181,19 +221,21 @@ public final class EventSkyRenderer {
 	 * the real thing manages totality.
 	 */
 	private static void eclipse(PoseStack pose, SubmitNodeCollector collector, float radius, float time, float weight, float solid) {
-		Vec3 sun = heavenly(SkyMood.sunAngle);
-		boolean day = sun.y > -0.12;
-		Vec3 body = day ? sun : heavenly(SkyMood.moonAngle);
+		// The same test the sky renderer's mixin puts the real body out by.
+		boolean day = SkyMood.eclipseByDay();
+		Vec3 body = heavenly(day ? SkyMood.sunAngle : SkyMood.moonAngle);
 		// The sun's sprite is thirty across at a hundred out, and the sun in it is about half of that.
 		float size = radius * (day ? 0.17F : 0.115F);
 		float turn = time * 0.02F;
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(CORONA), (p, buffer) -> {
-			// 3.75: the hard ring in the texture is 0.27 of the way out, and it has to sit on the disc's edge.
-			facing(p, buffer, body, radius, size * 3.75F, turn, day ? 0xFFF4FF : 0xFF5A40, weight);
-			facing(p, buffer, body, radius, size * 5.2F, -turn * 1.7F, day ? 0xC9B8FF : 0xB02A20, 0.55F * weight);
-		});
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(DISC), (p, buffer) ->
-			facing(p, buffer, body, radius * 0.97F, size, 0.0F, 0x05030A, solid));
+		// The wide faint corona, then the bright one over it, then the disc: three layers, because the two
+		// coronas turn against each other and in one draw their quads kept trading places.
+		layer(collector, 0).submitCustomGeometry(pose, RenderTypes.eyes(CORONA), (p, buffer) ->
+			body(p, buffer, body, radius, size * 5.2F, -turn * 1.7F, day ? 0xC9B8FF : 0xB02A20, 0.55F * weight));
+		// 3.75: the hard ring in the texture is 0.27 of the way out, and it has to sit on the disc's edge.
+		layer(collector, 1).submitCustomGeometry(pose, RenderTypes.eyes(CORONA), (p, buffer) ->
+			body(p, buffer, body, radius, size * 3.75F, turn, day ? 0xFFF4FF : 0xFF5A40, weight));
+		layer(collector, 2).submitCustomGeometry(pose, RenderTypes.eyes(DISC), (p, buffer) ->
+			body(p, buffer, body, radius * 0.97F, size, 0.0F, 0x05030A, solid));
 	}
 
 	/**
@@ -203,21 +245,21 @@ public final class EventSkyRenderer {
 	private static void sigil(PoseStack pose, SubmitNodeCollector collector, float radius, float time, float weight, float flash) {
 		float height = radius * 0.5F;
 		float pulse = 0.85F + 0.15F * Mth.sin(time * 1.3F);
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) ->
+		layer(collector, 0).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) ->
 			level(p, buffer, height * 1.02F, radius * 0.72F, 0.0F, 0x6A4BD0, (0.22F + 0.5F * flash) * weight));
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(RUNES), (p, buffer) -> {
-			level(p, buffer, height, radius * 0.58F, time * 0.035F, 0xFFE45C, Math.min(1.0F, (0.5F * pulse + 0.5F * flash) * weight));
-			level(p, buffer, height * 0.96F, radius * 0.26F, -time * 0.09F, 0xB48CFF, Math.min(1.0F, (0.42F + 0.5F * flash) * weight));
-		});
+		layer(collector, 1).submitCustomGeometry(pose, RenderTypes.eyes(RUNES), (p, buffer) ->
+			level(p, buffer, height, radius * 0.58F, time * 0.035F, 0xFFE45C, Math.min(1.0F, (0.5F * pulse + 0.5F * flash) * weight)));
+		layer(collector, 2).submitCustomGeometry(pose, RenderTypes.eyes(RUNES), (p, buffer) ->
+			level(p, buffer, height * 0.96F, radius * 0.26F, -time * 0.09F, 0xB48CFF, Math.min(1.0F, (0.42F + 0.5F * flash) * weight)));
 	}
 
 	/** Shooting stars and falling fire: a thin bright line with its tail fading out behind it. */
-	private static void streaks(PoseStack pose, SubmitNodeCollector collector, float radius, float partial, float weight) {
+	private static void streaks(PoseStack pose, SubmitNodeCollector collector, int base, float radius, float partial, float weight) {
 		if (SkyMood.STREAKS.isEmpty()) {
 			return;
 		}
 		java.util.List<SkyMood.Streak> all = java.util.List.copyOf(SkyMood.STREAKS);
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> {
+		layer(collector, base).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> {
 			for (SkyMood.Streak streak : all) {
 				float through = Mth.clamp((streak.age + partial) / streak.life, 0.0F, 1.0F);
 				// In quickly, out slowly: it is brightest just after it appears.
@@ -235,7 +277,7 @@ public final class EventSkyRenderer {
 					(float) (tail.x + across.x * 0.2), (float) (tail.y + across.y * 0.2), (float) (tail.z + across.z * 0.2), 0.0F, 1.0F, streak.colour, 0.0F);
 			}
 		});
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
+		layer(collector, base + 1).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
 			for (SkyMood.Streak streak : all) {
 				if (!streak.fireball) {
 					continue;
@@ -260,7 +302,7 @@ public final class EventSkyRenderer {
 	 */
 	private static void burningHorizon(PoseStack pose, SubmitNodeCollector collector, float radius, float time, float weight) {
 		int steps = 48;
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> {
+		layer(collector, 0).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> {
 			for (int i = 0; i < steps; i++) {
 				float a0 = i * Mth.TWO_PI / steps;
 				float a1 = (i + 1) * Mth.TWO_PI / steps;
@@ -295,7 +337,7 @@ public final class EventSkyRenderer {
 		int reach = 4;
 		int baseX = Mth.floor(camera.x / cell);
 		int baseZ = Mth.floor(camera.z / cell);
-		collector.submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
+		layer(collector, 0).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
 			for (int cx = baseX - reach; cx <= baseX + reach; cx++) {
 				for (int cz = baseZ - reach; cz <= baseZ + reach; cz++) {
 					long seed = Mth.getSeed(cx, 17, cz);
@@ -333,30 +375,80 @@ public final class EventSkyRenderer {
 
 	private static void facing(PoseStack.Pose pose, VertexConsumer buffer, Vec3 towards, float distance, float size,
 		float roll, int colour, float alpha) {
-		facing(pose, buffer, towards, distance, size, size, roll, colour, alpha);
+		sprite(pose, buffer, towards, distance, size, size, roll, colour, alpha, false);
+	}
+
+	private static void facing(PoseStack.Pose pose, VertexConsumer buffer, Vec3 towards, float distance, float width, float height,
+		float roll, int colour, float alpha) {
+		sprite(pose, buffer, towards, distance, width, height, roll, colour, alpha, false);
 	}
 
 	/**
-	 * A sprite out along a direction, square to whoever is looking along it, turned by {@code roll}
-	 * about that line — and <b>bent onto the sphere</b> it hangs on, in a four by four grid.
+	 * A sun, a moon or something hung on one: round on the screen wherever it is on it, upright the way
+	 * the sky turns, and {@code size} across as seen from the middle of the screen.
+	 *
+	 * <p>Andy, 2026-09-28, with his lens at 102 degrees: the close moon came out a tall oval. A patch of
+	 * the sphere this size is what a flat picture of the sky makes of it — anything big near the edge
+	 * of a wide lens is drawn stretched away from the middle, a third longer one way than the other
+	 * near the top of his screen — but a moon is a thing the eye sees as round, and the vanilla moon is
+	 * small enough for nobody to notice it happening to it. So a body is laid out flat to the screen
+	 * instead, and only then bent back onto the sphere: every point of it is moved straight out along
+	 * its own line of sight, which changes how far away it is (so the fog still sees one distance) and
+	 * not where on the screen it falls.
+	 */
+	private static void body(PoseStack.Pose pose, VertexConsumer buffer, Vec3 towards, float distance, float size,
+		float roll, int colour, float alpha) {
+		sprite(pose, buffer, towards, distance, size, size, roll, colour, alpha, true);
+	}
+
+	/**
+	 * A sprite out along a direction, turned by {@code roll} about that line — and <b>bent onto the
+	 * sphere</b> it hangs on, in a four by four grid.
 	 *
 	 * <p>It was a flat card at first, and the big ones came out nearly black. The pipeline fogs by the
 	 * distance of each <i>vertex</i>, and the corners of a flat card a hundred blocks across are a good
 	 * deal further away than its middle: the corona's corners were past the end of the fog, so the fog
 	 * was blended across the whole of it. Every vertex of a patch of sphere is the same distance away.
+	 *
+	 * <p>{@code round}: laid out square to the camera rather than to the line to it; see {@link #body}.
 	 */
-	private static void facing(PoseStack.Pose pose, VertexConsumer buffer, Vec3 towards, float distance, float width, float height,
-		float roll, int colour, float alpha) {
+	private static void sprite(PoseStack.Pose pose, VertexConsumer buffer, Vec3 towards, float distance, float width, float height,
+		float roll, int colour, float alpha, boolean round) {
 		if (alpha <= 0.003F) {
 			return;
 		}
-		Vec3 up = Math.abs(towards.y) > 0.98 ? new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
-		Vec3 right = towards.cross(up).normalize();
-		Vec3 above = right.cross(towards).normalize();
+		Vec3 right;
+		Vec3 above;
+		float spread = 1.0F;
+		if (round) {
+			// How far along the camera's own line the body is. Behind it, or so far to the side that it
+			// could not be on screen, there is nothing to draw — and a card square to the camera through
+			// a point beside it would come out enormous.
+			double along = towards.dot(view);
+			if (along < 0.05) {
+				return;
+			}
+			// Upright the way the sky turns: sideways is the axis the sun and moon go round, which is
+			// defined all the way over, overhead included. Then that "up" laid flat to the screen.
+			Vec3 skyUp = SKY_AXIS.cross(towards);
+			Vec3 flatUp = skyUp.subtract(view.scale(skyUp.dot(view)));
+			if (flatUp.lengthSqr() < 1.0E-6) {
+				return;
+			}
+			above = flatUp.normalize();
+			right = view.cross(above);
+			// Out at the body the screen's scale is its distance along the camera's line: this is what
+			// keeps it the same size on the screen wherever on the screen it is.
+			spread = (float) along;
+		} else {
+			Vec3 up = Math.abs(towards.y) > 0.98 ? new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
+			right = towards.cross(up).normalize();
+			above = right.cross(towards).normalize();
+		}
 		float cos = Mth.cos(roll);
 		float sin = Mth.sin(roll);
-		Vec3 r = right.scale(cos).add(above.scale(sin)).scale(width / distance);
-		Vec3 a = above.scale(cos).subtract(right.scale(sin)).scale(height / distance);
+		Vec3 r = right.scale(cos).add(above.scale(sin)).scale(width / distance * spread);
+		Vec3 a = above.scale(cos).subtract(right.scale(sin)).scale(height / distance * spread);
 		int cells = width / distance > 0.12F ? 4 : 1;
 		float[][][] at = new float[cells + 1][cells + 1][];
 		for (int i = 0; i <= cells; i++) {

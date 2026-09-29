@@ -39,6 +39,14 @@ dependencies {
 	compileOnly "maven.modrinth:jei:${project.jei_version}"
 	// Jade is compile-only too: the tooltip provider is registered through its own entrypoint.
 	compileOnly "maven.modrinth:jade:${project.jade_version}"
+
+	// Sodium and Iris, to look at the sky the way Andy's own instance draws it. Only on request
+	// (FORJA_SODIUM=1 ./gradlew runClientGameTest): every other run keeps the vanilla renderer, and
+	// localRuntime never reaches the published mod. Both are client-only, so a server run skips them.
+	if (System.getenv("FORJA_SODIUM") != null) {
+		localRuntime "maven.modrinth:sodium:${project.sodium_version}"
+		localRuntime "maven.modrinth:iris:${project.iris_version}"
+	}
 }
 
 processResources {

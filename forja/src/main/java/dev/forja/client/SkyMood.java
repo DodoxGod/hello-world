@@ -385,6 +385,29 @@ public final class SkyMood {
 		}
 	}
 
+	/**
+	 * How much of the game's own moon to put out, zero to one: as much as the event's moon has come in
+	 * over it. A blood moon or a close moon laid over the real one only covers it where it is bigger,
+	 * and near the edge of a wide lens the real one is drawn stretched and its corner showed past the
+	 * new one's rim; by night the eclipse's disc goes across the moon the same way.
+	 */
+	public static float hidesMoon(long dayTime) {
+		WorldEvents showing = showing();
+		boolean drawn = showing == WorldEvents.LUNA_DE_SANGRE || showing == WorldEvents.MAREA_VIVA
+			|| showing == WorldEvents.ECLIPSE && !eclipseByDay();
+		return drawn && weight(dayTime) > 0.01F ? blend : 0.0F;
+	}
+
+	/** And the sun, which only the eclipse puts out: by day its disc is across the sun and not the moon. */
+	public static float hidesSun(long dayTime) {
+		return showing() == WorldEvents.ECLIPSE && eclipseByDay() && weight(dayTime) > 0.01F ? blend : 0.0F;
+	}
+
+	/** Whether the eclipse is across the sun rather than the moon: while the sun is up, or only just down. */
+	public static boolean eclipseByDay() {
+		return Mth.cos(sunAngle) > -0.12F;
+	}
+
 	/** The event whose colour is on screen, which outlives the event itself while it fades out. */
 	public static @Nullable WorldEvents showing() {
 		return blend > 0.0F ? fading : null;
@@ -558,8 +581,18 @@ public final class SkyMood {
 	 * night. The light the sky gives is the sky's, so it takes the event's cast — and under an eclipse
 	 * most of it simply goes. Lightning is the other half of this: the flash is on the land as well as
 	 * behind the clouds, for the frame or two it lasts.
+	 *
+	 * <p>Only on a frame where the game worked the light out afresh, which it does once a tick. On the
+	 * frames in between it hands back last frame's state untouched — already bent by this — and bending
+	 * it again multiplied the change in once a frame: at two hundred frames a second an eclipse took the
+	 * ground from dusk to black ten times over within each tick and then snapped it back, twenty times a
+	 * second. That was the events' flicker, and no screenshot showed it, because the test's screenshots
+	 * are taken on the frame right after a tick, which is the one frame that was right.
 	 */
 	public static void light(net.minecraft.client.renderer.state.LightmapRenderState state, float partialTick) {
+		if (!state.needsUpdate) {
+			return;
+		}
 		WorldEvents showing = showing();
 		net.minecraft.client.multiplayer.ClientLevel level = net.minecraft.client.Minecraft.getInstance().level;
 		if (showing == null || level == null || level.dimension() != net.minecraft.world.level.Level.OVERWORLD) {
@@ -598,7 +631,6 @@ public final class SkyMood {
 		if (lit > 0.0F) {
 			state.skyFactor = Math.max(state.skyFactor, lit * 0.95F);
 		}
-		state.needsUpdate = true;
 	}
 
 	/** Mixes the event's backdrop into the sky colour the game was going to use, and the lightning over that. */

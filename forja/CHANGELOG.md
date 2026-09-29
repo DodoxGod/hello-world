@@ -1,5 +1,29 @@
 # Novedades
 
+## 2026-09-28 — el cielo de los eventos deja de parpadear
+
+- **El parpadeo**: la luz del suelo de los eventos se aplicaba una vez por fotograma sobre la del fotograma
+  anterior, y el juego solo la recalcula una vez por tick. Entre tick y tick se iba acumulando (a 240 fps, una
+  docena de veces) y volvía de golpe en el siguiente: el mundo entero parpadeaba 20 veces por segundo. Se veía en
+  todos los eventos que tocan la luz (marea viva, luna de sangre, eclipse, niebla de almas, ventisca, aurora,
+  lluvia de pavesas, tormenta arcana), con y sin Sodium, en OpenGL y en Vulkan. Ahora se aplica solo cuando el
+  juego la recalcula. La noche de la marea viva queda algo más oscura que antes: antes brillaba de más porque
+  el efecto se sumaba varias veces.
+- **La luna ovalada**: con un FOV amplio (Andy juega a 102), la luna de la marea viva y la de sangre, y el
+  disco del eclipse, salían estirados como óvalos cerca del borde de la pantalla. Ahora se dibujan redondos
+  en cualquier parte de la pantalla, y la luna ya no da media vuelta de golpe al pasar por encima.
+- La luna, el sol y el eclipse del juego se apagan debajo de los del evento en lugar de quedarse detrás: en el
+  eclipse asomaban trozos del sol cerca del borde de la pantalla.
+- El borde de la luna de la marea viva ya no tiembla: solo respira el halo, no la luna pixelada.
+- Las capas del cielo (halos, coronas, cortinas de la aurora, runas) se dibujan siempre en el mismo orden;
+  antes el orden dependía de qué más se dibujaba en ese fotograma y podía cambiar de uno a otro.
+- **Con Sodium**, el terreno ya recibe la niebla del evento (ventisca, niebla de almas): antes Sodium copiaba
+  la niebla antes de que el evento la cambiara, y el suelo se veía oscuro y nítido dentro de la ventisca.
+- Pruebas: `FORJA_SOLO=cielo` fotografía cada evento de noche, al anochecer y de día, mirando al cuerpo de
+  frente, arriba, al lado y en el cénit, seis fotogramas seguidos, y falla si la luna o el suelo saltan de un
+  fotograma al siguiente. Con `FORJA_SODIUM=1` la prueba de cliente carga Sodium e Iris (solo en desarrollo; Iris
+  necesita OpenGL, así que sin el script de Vulkan).
+
 ## 2026-09-28 — el Molde Roto agarra el arma
 
 - Antes los puños flotaban delante de la barriga, sueltos de los brazos (que colgaban a los lados y un poco hacia
