@@ -361,8 +361,8 @@ public class FormacionGameTests {
 		CombatConfig cfg = CombatConfig.get();
 		double feint = cfg.creeperFeintChance;
 		cfg.creeperFeintChance = 0.0;
-		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
-		var creeper = helper.spawn(EntityTypes.CREEPER, new BlockPos(3, 1, 1));
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(2, 1, 2));
+		var creeper = helper.spawn(EntityTypes.CREEPER, new BlockPos(1, 1, 1));
 		creeper.setTarget(player);
 		long[] steppedBack = {-1};
 		helper.onEachTick(() -> {
@@ -371,13 +371,17 @@ public class FormacionGameTests {
 			}
 			long now = helper.getLevel().getGameTime();
 			if (steppedBack[0] < 0 && ((dev.forja.mixin.CreeperAiAccess) creeper).forja$swell() >= 16) {
-				player.setPos(creeper.getX() - 8.0, player.getY(), creeper.getZ());
+				// diagonally, inside the test's floor: behind the creeper's side of it there may be no clear sight
+				double step = 8.0 / Math.sqrt(2.0);
+				player.setPos(creeper.getX() + step, player.getY(), creeper.getZ() + step);
 				steppedBack[0] = now;
 			} else if (steppedBack[0] >= 0 && now >= steppedBack[0] + 2) {
 				boolean lit = creeper.getSwellDir() > 0;
+				String seen = String.format(java.util.Locale.ROOT, " (a %.1f, lo ve: %s, mecha %d)", creeper.distanceTo(player),
+					creeper.getSensing().hasLineOfSight(player), ((dev.forja.mixin.CreeperAiAccess) creeper).forja$swell());
 				cfg.creeperFeintChance = feint;
 				creeper.discard();
-				helper.assertTrue(lit, "a 8 bloques con la mecha a medias, sigue encendida");
+				helper.assertTrue(lit, "a 8 bloques con la mecha a medias, sigue encendida" + seen);
 				helper.succeed();
 			}
 		});
