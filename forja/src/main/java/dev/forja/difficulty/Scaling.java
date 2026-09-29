@@ -36,6 +36,10 @@ public final class Scaling {
 	public static final String SIZED = "forja_nivelado";
 	/** Put on a mob by its natural spawn (see MobSpawnMixin) and taken off when it is sized up. */
 	public static final String NATURAL = "forja_natural";
+	/** The mob a pack formed round. Other natural spawns close by come without a pack of their own. */
+	public static final String LEADER = "forja_lider_grupo";
+	/** A companion: always an ordinary one, never a veteran, an elite or a champion of its own. */
+	public static final String COMPANION = "forja_acompanante";
 	private static final Identifier MODIFIER = Forja.id("dificultad");
 	/** How far away the player whose gear counts may be. */
 	private static final double GEAR_RANGE = 128.0;
@@ -61,7 +65,9 @@ public final class Scaling {
 		int tier = GearScore.tier(gear);
 
 		Threat threat = Threat.of(mob);
-		if (threat == Threat.NORMAL && !Bosses.isBoss(mob)) {
+		// A companion stays what it is: a pack with a second veteran or elite in it was twelve zombies and
+		// two champions (Andy, 2026-09-29).
+		if (threat == Threat.NORMAL && !Bosses.isBoss(mob) && !mob.entityTags().contains(COMPANION)) {
 			threat = roll(mob, level, random, difficulty, gear, near);
 			threat.mark(mob);
 			Names.give(mob, threat);
@@ -92,10 +98,17 @@ public final class Scaling {
 	/**
 	 * The companions a natural spawn brings: a veteran or an elite never comes alone (three to six in all),
 	 * an ordinary one rarely (two or three, most of the time), and the nights survived add one more now and
-	 * then, as they always did. Same kind, beside it, and never past the crowd.
+	 * then, as they always did. Beside it, of its kind or another common one, and never past the crowd.
+	 * Vanilla spawns its own groups of up to four at once; only the first of them leads a pack, or four packs
+	 * would pile up on the same spot.
 	 */
 	static void pack(Mob mob, ServerLevel level, Threat threat, RandomSource random) {
 		CombatConfig cfg = CombatConfig.get();
+		if (!level.getEntitiesOfClass(Mob.class, mob.getBoundingBox().inflate(cfg.packLeaderSpacing),
+			other -> other != mob && other.isAlive() && other.entityTags().contains(LEADER)).isEmpty()) {
+			return;
+		}
+		mob.addTag(LEADER);
 		int group = 1;
 		if (threat == Threat.VETERANO || threat == Threat.ELITE) {
 			group = cfg.packVeteranMin + random.nextInt(Math.max(1, cfg.packVeteranMax - cfg.packVeteranMin + 1));
@@ -106,9 +119,40 @@ public final class Scaling {
 			group++;
 		}
 		int room = room(mob, level, cfg);
+		boolean creeper = mob.getType() == net.minecraft.world.entity.EntityTypes.CREEPER;
 		for (int i = 1; i < group && i <= room; i++) {
-			companion(mob, level);
+			net.minecraft.world.entity.EntityType<?> kind = companionKind(mob, level, random, cfg, creeper);
+			creeper |= kind == net.minecraft.world.entity.EntityTypes.CREEPER;
+			companion(mob, level, kind);
 		}
+	}
+
+	/**
+	 * The leader's kind, or another of the common night monsters with {@link CombatConfig#packMixChance}.
+	 * A husk's pack draws on the desert's kinds and a stray's on the snow's; anything uncommon (a witch, an
+	 * enderman, anything of the Nether's or the mod's own) brings only its own kind.
+	 */
+	static net.minecraft.world.entity.EntityType<?> companionKind(Mob leader, ServerLevel level, RandomSource random, CombatConfig cfg, boolean creeperTaken) {
+		net.minecraft.world.entity.EntityType<?> own = leader.getType();
+		net.minecraft.world.entity.EntityType<?> zombie = net.minecraft.world.entity.EntityTypes.ZOMBIE;
+		net.minecraft.world.entity.EntityType<?> skeleton = net.minecraft.world.entity.EntityTypes.SKELETON;
+		if (own == net.minecraft.world.entity.EntityTypes.HUSK) {
+			zombie = own;
+		} else if (own == net.minecraft.world.entity.EntityTypes.STRAY) {
+			skeleton = own;
+		}
+		boolean common = own == zombie || own == skeleton || own == net.minecraft.world.entity.EntityTypes.SPIDER
+			|| own == net.minecraft.world.entity.EntityTypes.CREEPER;
+		if (!common || level.dimension() != Level.OVERWORLD || random.nextDouble() >= cfg.packMixChance) {
+			return own;
+		}
+		java.util.List<net.minecraft.world.entity.EntityType<?>> pool = new java.util.ArrayList<>(java.util.List.of(
+			zombie, skeleton, net.minecraft.world.entity.EntityTypes.SPIDER));
+		if (!creeperTaken) {
+			pool.add(net.minecraft.world.entity.EntityTypes.CREEPER);
+		}
+		pool.remove(own);
+		return pool.get(random.nextInt(pool.size()));
 	}
 
 	/**
@@ -143,12 +187,13 @@ public final class Scaling {
 		return Threat.NORMAL;
 	}
 
-	/** One more of the same kind, beside it. Not natural itself, so it never brings one of its own. */
-	private static void companion(Mob mob, ServerLevel level) {
-		var other = mob.getType().create(level, EntitySpawnReason.EVENT);
+	/** One more, beside it. Not natural itself, so it never brings one of its own, and never more than ordinary. */
+	private static void companion(Mob mob, ServerLevel level, net.minecraft.world.entity.EntityType<?> kind) {
+		var other = kind.create(level, EntitySpawnReason.EVENT);
 		if (!(other instanceof Mob friend)) {
 			return;
 		}
+		friend.addTag(COMPANION);
 		// A few tries round it, one to three blocks off, on something to stand on and with room to stand.
 		boolean placed = false;
 		for (int attempt = 0; attempt < 6 && !placed; attempt++) {

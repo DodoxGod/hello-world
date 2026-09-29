@@ -233,6 +233,14 @@ public final class CombatConfig {
 	public int packVeteranMin = 3;
 	public int packVeteranMax = 6;
 	public int packCrowd = 12;
+	/**
+	 * Mixed packs (Andy, 2026-09-29: "siempre salen del mismo tipo"): each companion is of another common
+	 * kind with this chance (zombie, skeleton, spider, creeper; the desert and snow ones where the leader is),
+	 * never more than one creeper to a pack. 0 keeps every pack one kind.
+	 */
+	public double packMixChance = 0.5;
+	/** A natural spawn only brings a pack if no other pack leader is this close: vanilla's own groups no longer multiply. */
+	public double packLeaderSpacing = 24.0;
 	public double nightThreatMax = 1.5;
 	/** Rewards for beating a stronger foe: an extra loot roll, and mastery. */
 	public double rewardVeteranLoot = 0.35;

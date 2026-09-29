@@ -193,7 +193,9 @@ public final class ForjaMobs {
 		}
 		// One in a hundred is not a monster with gear but an elite carrying a legend. They keep away from
 		// the first days and from spawn, so nobody meets one before they have anything to fight it with.
-		if (Elites.canAppear(mob) && random.nextFloat() < dev.forja.ForjaConfig.get().elites) {
+		// A pack's companion never turns into a second champion beside the first.
+		if (Elites.canAppear(mob) && !mob.entityTags().contains(dev.forja.difficulty.Scaling.COMPANION)
+			&& random.nextFloat() < dev.forja.ForjaConfig.get().elites) {
 			Elites.makeElite(mob, random);
 			return;
 		}

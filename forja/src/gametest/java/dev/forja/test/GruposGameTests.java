@@ -48,10 +48,14 @@ public class GruposGameTests {
 		double night = cfg.nightCompanionMax;
 		double chance = cfg.packChance;
 		int crowd = cfg.packCrowd;
-		// Other tests run beside this one; their mobs are not this spawn's crowd.
+		double mix = cfg.packMixChance;
+		double spacing = cfg.packLeaderSpacing;
+		// Other tests run beside this one; their mobs are not this spawn's crowd. One kind, to count zombies.
 		cfg.nightCompanionMax = 0.0;
 		cfg.packChance = 1.0;
 		cfg.packCrowd = 1000;
+		cfg.packMixChance = 0.0;
+		cfg.packLeaderSpacing = 0.0;
 		// The empty test structure has no floor, and a companion needs something to stand on.
 		for (int x = 0; x < 8; x++) {
 			for (int z = 0; z < 8; z++) {
@@ -70,6 +74,8 @@ public class GruposGameTests {
 			cfg.nightCompanionMax = night;
 			cfg.packChance = chance;
 			cfg.packCrowd = crowd;
+			cfg.packMixChance = mix;
+			cfg.packLeaderSpacing = spacing;
 			helper.assertTrue(withVeteran >= cfg.packVeteranMin && withVeteran <= cfg.packVeteranMax,
 				"un veterano viene en grupo de " + cfg.packVeteranMin + " a " + cfg.packVeteranMax + ", vinieron " + withVeteran);
 			helper.assertTrue(withPlain >= cfg.packMin && withPlain <= cfg.packMax,
@@ -286,6 +292,50 @@ public class GruposGameTests {
 			.filter(g -> g.getGoal() instanceof dev.forja.entity.ai.SecondWindGoal).count();
 		helper.assertTrue(again == 1, "los movimientos se duplicaron: " + again);
 		zombie.discard();
+		helper.succeed();
+	}
+
+	/**
+	 * With every companion mixed, a pack is not all one kind, holds at most one creeper, and its companions
+	 * are all ordinary: no second veteran, elite or champion beside the leader (Andy, 2026-09-29).
+	 */
+	@GameTest
+	public void packsMixKindsAndHaveOneLeader(GameTestHelper helper) {
+		CombatConfig cfg = CombatConfig.get();
+		double night = cfg.nightCompanionMax;
+		double chance = cfg.packChance;
+		int crowd = cfg.packCrowd;
+		double mix = cfg.packMixChance;
+		double spacing = cfg.packLeaderSpacing;
+		cfg.nightCompanionMax = 0.0;
+		cfg.packChance = 1.0;
+		cfg.packCrowd = 1000;
+		cfg.packMixChance = 1.0;
+		cfg.packLeaderSpacing = 0.0;
+		for (int x = 0; x < 8; x++) {
+			for (int z = 0; z < 8; z++) {
+				helper.setBlock(new BlockPos(x, 0, z), net.minecraft.world.level.block.Blocks.STONE);
+			}
+		}
+		Zombie veteran = natural(helper, new BlockPos(4, 1, 4), Threat.VETERANO);
+		cfg.nightCompanionMax = night;
+		cfg.packChance = chance;
+		cfg.packCrowd = crowd;
+		cfg.packMixChance = mix;
+		cfg.packLeaderSpacing = spacing;
+		List<net.minecraft.world.entity.Mob> pack = helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,
+			new AABB(veteran.blockPosition()).inflate(4.0, 2.0, 4.0),
+			m -> m != veteran && m.entityTags().contains(Scaling.COMPANION));
+		helper.assertTrue(pack.size() >= cfg.packVeteranMin - 1, "el veterano vino con " + pack.size() + " compañeros");
+		helper.assertTrue(pack.stream().anyMatch(m -> !(m instanceof Zombie)), "un grupo mezclado salió todo de zombis");
+		long creepers = pack.stream().filter(m -> m instanceof net.minecraft.world.entity.monster.Creeper).count();
+		helper.assertTrue(creepers <= 1, "creepers en un grupo: " + creepers);
+		for (net.minecraft.world.entity.Mob m : pack) {
+			helper.assertTrue(Threat.of(m) == Threat.NORMAL && !dev.forja.world.Elites.isElite(m),
+				"un compañero salió " + Threat.of(m));
+			m.discard();
+		}
+		veteran.discard();
 		helper.succeed();
 	}
 }
