@@ -77,6 +77,14 @@ public final class Squad {
 		return n < 2 ? TacticGoal.RING_RADIUS : Math.max(TacticGoal.RING_RADIUS, MIN_GAP / (2.0 * Math.sin(Math.PI / n)));
 	}
 
+	/** Forgets the fights against this player: no losses counted, no rout under way (a fresh start, for the tests). */
+	public static void forget(Player player) {
+		LOSSES.remove(player);
+		PEAK.remove(player);
+		ROUTED_UNTIL.remove(player);
+		LEADER.remove(player);
+	}
+
 	public static boolean routed(Player player, long now) {
 		return ROUTED_UNTIL.getOrDefault(player, Long.MIN_VALUE) > now;
 	}

@@ -5,9 +5,11 @@ import java.util.List;
 
 import dev.forja.Forja;
 import dev.forja.ai.Aggression;
+import dev.forja.ai.Decision;
 import dev.forja.ai.MobAi;
 import dev.forja.ai.MobMind;
 import dev.forja.ai.MobSprint;
+import dev.forja.ai.Tactic;
 import dev.forja.combat.CombatConfig;
 import dev.forja.difficulty.GearScore;
 import dev.forja.difficulty.Pressure;
@@ -151,6 +153,12 @@ public class DificultadGameTests {
 			mind.stamina = MobSprint.MAX;
 			mind.winded = false;
 			mind.wantsRun = true;
+			// running away, it runs at the ordinary x1.35: the surround mode is for the way to its slot
+			mind.decision = Decision.tactic(Tactic.RETIRARSE);
+			MobSprint.tick(mind, helper.getLevel().getGameTime());
+			helper.assertTrue(mind.running && !mind.rodeo, "huyendo corre, pero no en modo rodeo");
+			mind.stamina = MobSprint.MAX;
+			mind.decision = Decision.tactic(Tactic.RODEAR);
 			helper.assertTrue(MobSprint.rodeo(mind), "retrocediendo, con el hueco por delante: modo rodeo (se mueve a "
 				+ MobSprint.motion(player) + ")");
 			MobSprint.tick(mind, helper.getLevel().getGameTime());

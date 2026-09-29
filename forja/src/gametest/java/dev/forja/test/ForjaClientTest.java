@@ -9973,6 +9973,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 			dev.forja.combat.CombatConfig.get().veteranChance = 0.0;
 			dev.forja.combat.CombatConfig.get().eliteChance = 0.0;
 			dev.forja.combat.CombatConfig.get().packChance = 0.0;
+			// the thirteen killed off after the last scene count as a group routed: this pack starts afresh
+			dev.forja.ai.Squad.forget(player);
 			int[] made = new int[6];
 			for (int i = 0; i < made.length; i++) {
 				var mob = net.minecraft.world.entity.EntityTypes.ZOMBIE.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);

@@ -187,7 +187,9 @@ public final class MobSprint {
 	public static void tick(MobMind mind, long now) {
 		Mob mob = mind.mob;
 		boolean run = mind.target != null && mind.wantsRun && able(mind, now);
-		boolean rodeo = run && rodeo(mind);
+		// only on the way to its slot: a mob running away (routed, hurt) runs at the ordinary x1.35
+		Tactic tactic = mind.decision.tactic();
+		boolean rodeo = run && (tactic == Tactic.RODEAR || tactic == Tactic.FLANQUEAR || tactic == Tactic.ESPERAR) && rodeo(mind);
 		if (run) {
 			mind.stamina = Math.max(0.0F, mind.stamina - (rodeo ? dev.forja.combat.CombatConfig.get().rodeoCostPerTick : COST));
 			mind.lastRun = now;
