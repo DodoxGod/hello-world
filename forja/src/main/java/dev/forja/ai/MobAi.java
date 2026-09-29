@@ -162,10 +162,14 @@ public final class MobAi {
 		return all;
 	}
 
-	/** The family file name a mob's network would come from. */
+	/** The family file name a mob's network would come from ("otro", which is never loaded, for the rules only). */
 	public static String familyOf(Mob mob) {
 		ForjaFamily forja = ForjaFamily.of(mob);
-		return forja != null ? forja.file : MobFamily.of(mob).file;
+		if (forja != null) {
+			return forja.file;
+		}
+		String net = MobFamily.network(mob);
+		return net != null ? net : MobFamily.OTRO.file;
 	}
 
 	public static NetBrain net(String family) {

@@ -246,4 +246,138 @@ public class FormacionGameTests {
 			creeper.discard();
 		});
 	}
+
+	/** Andy's mapping (2026-09-29): which network each vanilla mob borrows, the blaze its own, the rest the rules. */
+	@GameTest
+	public void vanillaMobsBorrowTheRightNetwork(GameTestHelper helper) {
+		var wither = helper.spawn(EntityTypes.WITHER_SKELETON, new BlockPos(1, 1, 1));
+		var pillager = helper.spawn(EntityTypes.PILLAGER, new BlockPos(2, 1, 1));
+		pillager.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.CROSSBOW));
+		var hoglin = helper.spawn(EntityTypes.HOGLIN, new BlockPos(3, 1, 1));
+		var silverfish = helper.spawn(EntityTypes.SILVERFISH, new BlockPos(4, 1, 1));
+		var blaze = helper.spawn(EntityTypes.BLAZE, new BlockPos(5, 1, 1));
+		var witch = helper.spawn(EntityTypes.WITCH, new BlockPos(6, 1, 1));
+		List<Mob> all = List.of(wither, pillager, hoglin, silverfish, blaze, witch);
+		all.forEach(m -> m.setNoAi(true));
+		helper.assertTrue("cuerpo".equals(dev.forja.ai.MobFamily.network(wither)), "esqueleto wither: red del zombi");
+		helper.assertTrue("arquero".equals(dev.forja.ai.MobFamily.network(pillager)), "saqueador con ballesta: red del arquero");
+		helper.assertTrue(dev.forja.ai.MobFamily.executor(pillager) == dev.forja.ai.MobFamily.ARQUERO, "y dispara como arquero");
+		helper.assertTrue("forja_tanque".equals(dev.forja.ai.MobFamily.network(hoglin)), "hoglin: red del tanque");
+		helper.assertTrue("forja_enjambre".equals(dev.forja.ai.MobFamily.network(silverfish)), "lepisma: red del enjambre");
+		helper.assertTrue("blaze".equals(dev.forja.ai.MobFamily.network(blaze)) && "blaze".equals(MobAi.familyOf(blaze)), "blaze: red propia");
+		helper.assertTrue(dev.forja.ai.MobFamily.of(blaze).slot() == dev.forja.ai.MobFamily.OTRO.ordinal(), "un blaze aliado se ve como «otro» en la observación");
+		helper.assertTrue(dev.forja.ai.MobFamily.network(witch) == null, "bruja: solo reglas");
+		all.forEach(Mob::discard);
+		helper.succeed();
+	}
+
+	/**
+	 * Against a mob, the rules (Andy, 2026-09-29): the warning and the turns hold for a villager too - never more on
+	 * it at once than the cap, and some turn is taken - and the ones waiting get slots round it.
+	 */
+	@GameTest(maxTicks = 200)
+	public void theRulesHoldAgainstAMobToo(GameTestHelper helper) {
+		CombatConfig.get().veteranChance = 0.0;
+		CombatConfig.get().eliteChance = 0.0;
+		var villager = helper.spawn(EntityTypes.VILLAGER, new BlockPos(4, 1, 4));
+		villager.setNoAi(true);
+		villager.setInvulnerable(true);
+		List<Zombie> crowd = new ArrayList<>();
+		for (BlockPos pos : List.of(new BlockPos(1, 1, 1), new BlockPos(7, 1, 1), new BlockPos(1, 1, 7), new BlockPos(7, 1, 7))) {
+			Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, pos);
+			zombie.setTarget(villager);
+			crowd.add(zombie);
+		}
+		// one turn at a time, so the rest are plainly waiting
+		int previousCap = CombatConfig.get().maxSimultaneousAttackers;
+		CombatConfig.get().maxSimultaneousAttackers = 1;
+		int cap = dev.forja.ai.Aggression.maxAttackers(villager);
+		boolean[] tookATurn = {false};
+		helper.onEachTick(() -> {
+			int held = AttackTokens.held(villager);
+			helper.assertTrue(held <= cap, "turnos sobre el aldeano: " + held + " de " + cap);
+			tookATurn[0] |= held > 0;
+		});
+		helper.succeedWhen(() -> {
+			helper.assertTrue(tookATurn[0], "algún zombi debería coger turno (el aviso contra un mob)");
+			List<Double> waiting = new ArrayList<>();
+			for (Zombie zombie : crowd) {
+				if (dev.forja.ai.MobRing.waits(zombie, villager)) {
+					Vec3 slot = dev.forja.ai.MobRing.place(zombie, villager);
+					waiting.add(Math.atan2(slot.z - villager.getZ(), slot.x - villager.getX()));
+				}
+			}
+			helper.assertTrue(waiting.size() >= 2, "con el turno cogido, los demás esperan en el anillo");
+			for (int i = 0; i < waiting.size(); i++) {
+				for (int j = i + 1; j < waiting.size(); j++) {
+					helper.assertTrue(Math.abs(wrap(waiting.get(i) - waiting.get(j))) > 0.5, "cada uno en su hueco");
+				}
+			}
+			CombatConfig.get().maxSimultaneousAttackers = previousCap;
+			crowd.forEach(Mob::discard);
+		});
+	}
+
+	/** One more joins the ring: the ones already on it move only to the nearest new slot, not round the player. */
+	@GameTest(maxTicks = 60)
+	public void aNewcomerDoesNotShuffleTheRing(GameTestHelper helper) {
+		CombatConfig.get().iaRepartirObjetivos = false;
+		TwoPlayerGameTests.Listener player = new TwoPlayerGameTests.Listener(helper.getLevel());
+		Vec3 at = helper.absoluteVec(Vec3.atBottomCenterOf(new BlockPos(4, 1, 4)));
+		player.setPos(at.x, at.y, at.z);
+		List<Zombie> crowd = new ArrayList<>();
+		for (BlockPos pos : List.of(new BlockPos(7, 1, 4), new BlockPos(2, 1, 6), new BlockPos(2, 1, 2))) {
+			Zombie zombie = zombie(helper, pos);
+			zombie.setTarget(player);
+			crowd.add(zombie);
+		}
+		// spawned now so its mind exists; it joins the fight (takes the player as target) only later
+		Zombie late = zombie(helper, new BlockPos(4, 1, 7));
+		helper.runAfterDelay(2, () -> {
+			List<MobMind> minds = new ArrayList<>();
+			crowd.forEach(z -> minds.add(MobAi.mind(z)));
+			long now = helper.getLevel().getGameTime();
+			squad(helper, minds, now);
+			List<Double> before = new ArrayList<>();
+			minds.forEach(m -> before.add(m.ringAngle));
+			late.setTarget(player);
+			minds.add(MobAi.mind(late));
+			squad(helper, minds, now + Squad.PERIOD);
+			for (int k = 0; k < before.size(); k++) {
+				double moved = Math.abs(wrap(minds.get(k).ringAngle - before.get(k)));
+				helper.assertTrue(moved <= Math.PI / 4.0 + 1.0E-6, "uno que ya estaba se movió " + Math.toDegrees(moved) + "°");
+			}
+			crowd.forEach(Mob::discard);
+			late.discard();
+			helper.succeed();
+		});
+	}
+
+	/** Lit and well under way, a creeper keeps its fuse when the player steps back to 8: vanilla let it go at 7. */
+	@GameTest(maxTicks = 100)
+	public void aBurningFuseIsNotGivenUpForAStepBack(GameTestHelper helper) {
+		CombatConfig cfg = CombatConfig.get();
+		double feint = cfg.creeperFeintChance;
+		cfg.creeperFeintChance = 0.0;
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
+		var creeper = helper.spawn(EntityTypes.CREEPER, new BlockPos(3, 1, 1));
+		creeper.setTarget(player);
+		long[] steppedBack = {-1};
+		helper.onEachTick(() -> {
+			if (!creeper.isAlive()) {
+				return;
+			}
+			long now = helper.getLevel().getGameTime();
+			if (steppedBack[0] < 0 && ((dev.forja.mixin.CreeperAiAccess) creeper).forja$swell() >= 16) {
+				player.setPos(creeper.getX() - 8.0, player.getY(), creeper.getZ());
+				steppedBack[0] = now;
+			} else if (steppedBack[0] >= 0 && now >= steppedBack[0] + 2) {
+				boolean lit = creeper.getSwellDir() > 0;
+				cfg.creeperFeintChance = feint;
+				creeper.discard();
+				helper.assertTrue(lit, "a 8 bloques con la mecha a medias, sigue encendida");
+				helper.succeed();
+			}
+		});
+	}
 }

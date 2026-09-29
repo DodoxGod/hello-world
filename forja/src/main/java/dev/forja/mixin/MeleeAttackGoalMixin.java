@@ -11,7 +11,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
-import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -24,8 +23,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Melee monsters warn a player before they strike: they stop, flash and wait a few ticks, and a player
  * who steps back, dodges or raises a shield in time is not hit. Only a few of them swing at the same
  * player at once. That covers vanilla's monsters and Forja's own (see {@link AttackTokens#warns}):
- * Forja's keep their Windup telegraphs for their special moves on top of this. Against anything that
- * is not a player, mobs fight as they always have (a villager running away would never be caught).
+ * Forja's keep their Windup telegraphs for their special moves on top of this. Since 2026-09-29 (Andy) the
+ * same holds against anything, not only players: the warning, the turns and, for the ones waiting, the ring
+ * (ai.MobRing).
  */
 @Mixin(MeleeAttackGoal.class)
 abstract class MeleeAttackGoalMixin {
@@ -67,8 +67,9 @@ abstract class MeleeAttackGoalMixin {
 			ci.cancel();
 			return;
 		}
-		if (!cfg.enabled || !cfg.telegraph || forja$windup == 0 && !(target instanceof Player)
-			|| !AttackTokens.warns(mob)) {
+		// Against anything, not only players (Andy, 2026-09-29): a golem or another monster gets the same warning
+		// and the same turns. Only the networks stay for players; this is the rules' path.
+		if (!cfg.enabled || !cfg.telegraph || !AttackTokens.warns(mob)) {
 			return;
 		}
 		ci.cancel();
@@ -150,6 +151,28 @@ abstract class MeleeAttackGoalMixin {
 		if (target != null && forja$windup == 0 && CombatConfig.get().enabled && !(mob instanceof net.minecraft.world.entity.monster.Creeper) && dev.forja.ai.Reach.closeEnough(mob, target)
 			&& mob.getSensing().hasLineOfSight(target)) {
 			forja$holdStill(target);
+		}
+	}
+
+	/**
+	 * The ring against what is not a player (ai.MobRing): with every turn on the target taken, it waits round it
+	 * at its own slot instead of pushing in behind the ones striking. Every few ticks, not every tick: vanilla
+	 * re-paths to the target on its own clock, and a path a tick is what a crowd cannot afford.
+	 */
+	@Inject(method = "tick", at = @At("TAIL"))
+	private void forja$waitOnTheRing(CallbackInfo ci) {
+		LivingEntity target = mob.getTarget();
+		if (forja$windup > 0 || !dev.forja.ai.MobRing.applies(mob, target) || !dev.forja.ai.MobRing.waits(mob, target)) {
+			return;
+		}
+		mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
+		if ((mob.tickCount + mob.getId()) % 4 == 0) {
+			net.minecraft.world.phys.Vec3 slot = dev.forja.ai.MobRing.place(mob, target);
+			if (mob.distanceToSqr(slot.x, mob.getY(), slot.z) > 1.0) {
+				mob.getNavigation().moveTo(slot.x, slot.y, slot.z, 1.0);
+			} else {
+				mob.getNavigation().stop();
+			}
 		}
 	}
 

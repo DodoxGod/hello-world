@@ -32,6 +32,8 @@ public final class TacticGoal extends Goal {
 	public static final double FLANK_RADIUS = 2.5;
 	/** Closer than this a creeper lights its fuse whether or not its brain asked. */
 	static final double FUSE_ANYWAY = 2.0;
+	/** Once the fuse has burnt this long, it only goes out beyond 9 blocks, not 7. */
+	static final int FUSE_COMMIT = 15;
 	public static final double WAIT_MIN = 4.0;
 	/** How much of the ring a mob going round to its slot covers at a time, in radians (50 degrees). */
 	public static final double ARC_STEP = Math.toRadians(50.0);
@@ -42,6 +44,12 @@ public final class TacticGoal extends Goal {
 	public static final int MELEE_COOLDOWN = 20;
 	public static final int BOW_DRAW = 20;
 	public static final int BOW_COOLDOWN = 20;
+	/** A crossbow's full charge (vanilla's is 25 ticks without Quick Charge), with a little to spare. */
+	public static final int CROSSBOW_DRAW = 27;
+	/** The blaze's burst: three fireballs, six ticks apart, then 60 ticks before the next (vanilla's rhythm). */
+	public static final int BLAZE_BURST = 3;
+	public static final int BLAZE_BURST_GAP = 6;
+	public static final int BLAZE_COOLDOWN = 60;
 	/** red_mob_v3. CEBO: how far past the ally it runs. RELEVO: how far off, how far round (radians) it steps. */
 	public static final double BAIT_PAST = 2.5;
 	public static final double RELAY_RADIUS = 5.0;
@@ -181,7 +189,7 @@ public final class TacticGoal extends Goal {
 	 */
 	private int reachMove(Decision decision, Player target) {
 		int move = decision.move();
-		MobFamily family = MobFamily.of(this.mob);
+		MobFamily family = MobFamily.executor(this.mob);
 		if (!decision.use() || family == MobFamily.ARQUERO || family == MobFamily.CREEPER) {
 			return move;
 		}
@@ -198,7 +206,16 @@ public final class TacticGoal extends Goal {
 		double d = Math.max(1.0E-6, Math.hypot(dx, dz));
 		double ux = dx / d;
 		double uz = dz / d;
-		if (move == 0 || this.mob instanceof Creeper creeper && creeper.getSwellDir() > 0) {
+		if (this.mob instanceof Creeper creeper && creeper.getSwellDir() > 0) {
+			// lit: on at the player at half speed, whatever the network asked (it is masked from moving anyway)
+			if (d > 1.5) {
+				this.pathTo(target.getX(), target.getY(), target.getZ(), 0.5);
+			} else {
+				this.mob.getNavigation().stop();
+			}
+			return;
+		}
+		if (move == 0) {
 			this.mob.getNavigation().stop();
 			return;
 		}
@@ -229,7 +246,7 @@ public final class TacticGoal extends Goal {
 			return;
 		}
 		double d = this.mob.distanceTo(target);
-		if (MobFamily.of(this.mob) == MobFamily.ARANA && d >= 2.0 && d <= 4.0 && this.mob.onGround()) {
+		if (MobFamily.executor(this.mob) == MobFamily.ARANA && d >= 2.0 && d <= 4.0 && this.mob.onGround()) {
 			// The spider's leap, as vanilla's LeapAtTargetGoal throws it.
 			Vec3 motion = this.mob.getDeltaMovement();
 			Vec3 flat = new Vec3(target.getX() - this.mob.getX(), 0.0, target.getZ() - this.mob.getZ());
@@ -244,9 +261,10 @@ public final class TacticGoal extends Goal {
 
 	/** usar: the family's basic attack. */
 	private void use(Player target, boolean use) {
-		switch (MobFamily.of(this.mob)) {
+		switch (MobFamily.executor(this.mob)) {
 			case ARQUERO -> this.bow(target, use);
 			case CREEPER -> this.fuse(target, use);
+			case BLAZE -> this.fireballs(target, use);
 			default -> {
 				if (use) {
 					this.strike(target);
@@ -328,6 +346,8 @@ public final class TacticGoal extends Goal {
 		InteractionHand hand = this.mob.getMainHandItem().getItem() instanceof BowItem ? InteractionHand.MAIN_HAND
 			: this.mob.getOffhandItem().getItem() instanceof BowItem ? InteractionHand.OFF_HAND : null;
 		if (hand == null) {
+			// On the archer's network with a crossbow (a pillager, a piglin): loaded as vanilla loads it, then fired.
+			this.crossbow(target);
 			return;
 		}
 		if (!this.mob.isUsingItem()) {
@@ -349,6 +369,66 @@ public final class TacticGoal extends Goal {
 	}
 
 	/**
+	 * The archer's "usar" with a crossbow in the hand instead of a bow: draw it until it is loaded (the item loads
+	 * itself when let go at full charge, as in vanilla's RangedCrossbowAttackGoal), then fire it the way the mob
+	 * fires it by the rules. A friend in the line holds the loaded bolt, as the bow holds the arrow.
+	 */
+	private void crossbow(Player target) {
+		InteractionHand hand = this.mob.getMainHandItem().getItem() instanceof net.minecraft.world.item.CrossbowItem ? InteractionHand.MAIN_HAND
+			: this.mob.getOffhandItem().getItem() instanceof net.minecraft.world.item.CrossbowItem ? InteractionHand.OFF_HAND : null;
+		if (hand == null) {
+			return;
+		}
+		net.minecraft.world.item.ItemStack held = this.mob.getItemInHand(hand);
+		if (!net.minecraft.world.item.CrossbowItem.isCharged(held)) {
+			if (!this.mob.isUsingItem()) {
+				this.mob.startUsingItem(hand);
+			}
+			if (++this.mind.draw >= CROSSBOW_DRAW) {
+				this.mob.releaseUsingItem();
+				this.mind.draw = 0;
+			}
+			return;
+		}
+		if (Squad.allyInLine(this.mob, target)) {
+			Squad.stepToClearLine(this.mob, target);
+			return;
+		}
+		((RangedAttackMob) this.mob).performRangedAttack(target, 1.0F);
+		this.mind.cooldown = BOW_COOLDOWN;
+	}
+
+	/**
+	 * The blaze's "usar", for when a red_blaze.json exists (docs/red_mob_blaze.md): a burst of three small
+	 * fireballs a few ticks apart, as vanilla's blaze throws them, then a long wait. Within 16 and in sight.
+	 */
+	private void fireballs(Player target, boolean use) {
+		if (!(this.mob.level() instanceof ServerLevel level)) {
+			return;
+		}
+		boolean inBurst = this.mind.draw > 0;
+		if (!inBurst && (!use || this.mind.cooldown > 0 || this.mob.distanceTo(target) >= 16.0
+			|| !ObsM1.sees(this.mob, target.getX(), target.getEyeY(), target.getZ()))) {
+			return;
+		}
+		// draw counts the burst's ticks: a shot on 1, 1 + GAP and 1 + 2 GAP, then the cooldown
+		int tick = ++this.mind.draw;
+		if ((tick - 1) % BLAZE_BURST_GAP == 0) {
+			Vec3 from = new Vec3(this.mob.getX(), this.mob.getY(0.5) + 0.5, this.mob.getZ());
+			Vec3 aim = new Vec3(target.getX(), target.getY(0.5), target.getZ()).subtract(from).normalize();
+			var ball = new net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball(level, this.mob, aim);
+			ball.snapTo(from.x, from.y, from.z, this.mob.getYRot(), this.mob.getXRot());
+			level.addFreshEntity(ball);
+			level.playSound(null, this.mob.getX(), this.mob.getY(), this.mob.getZ(), net.minecraft.sounds.SoundEvents.BLAZE_SHOOT,
+				net.minecraft.sounds.SoundSource.HOSTILE, 1.0F, 1.0F);
+		}
+		if (tick >= 1 + (BLAZE_BURST - 1) * BLAZE_BURST_GAP) {
+			this.mind.draw = 0;
+			this.mind.cooldown = BLAZE_COOLDOWN;
+		}
+	}
+
+	/**
 	 * Light the fuse within 3 blocks and in sight when asked; lit, it burns on while within 7 and in sight.
 	 * Right up against the player it lights whatever was asked: a creeper that hugs you and waits is no threat
 	 * (Andy, 2026-09-29).
@@ -360,7 +440,9 @@ public final class TacticGoal extends Goal {
 		double d = this.mob.distanceTo(target);
 		boolean sees = ObsM1.sees(this.mob, target.getX(), target.getY() + 1.5, target.getZ());
 		if (creeper.getSwellDir() > 0) {
-			if (d >= 7.0 || !sees) {
+			// a fuse well under way is not given up for a step back (as the rules' SwellGoalMixin)
+			double reach = ((dev.forja.mixin.CreeperAiAccess) creeper).forja$swell() >= FUSE_COMMIT ? 9.0 : 7.0;
+			if (d >= reach || !sees) {
 				creeper.setSwellDir(-1);
 			}
 		} else if ((use && d < 3.0 || d < FUSE_ANYWAY) && sees) {

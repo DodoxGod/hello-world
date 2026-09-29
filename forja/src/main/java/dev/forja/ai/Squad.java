@@ -147,30 +147,58 @@ public final class Squad {
 		}
 		int n = ring.size();
 		double radius = ringRadius(n);
-		double[] kept = START.get(player);
-		double start = n == 0 ? 0.0 : kept != null && now - (long) kept[1] <= START_MEMORY ? kept[0] : angle(ring.get(0).mob, player);
-		START.put(player, new double[] {start, now});
-		boolean[] taken = new boolean[n];
+		// The same ring as last time (same player, same number on it): every slot stays where it was. Recut every
+		// pass, the slots jumped about half the time and the group chased them (the simulator measured it: a
+		// slot moved more than 45 degrees 4 to 5 times every 100 ticks; PROPUESTAS_IA_SIMULADOR.md 2.1).
+		boolean same = n > 0;
 		for (MobMind mind : ring) {
-			double own = angle(mind.mob, player);
-			int slot = -1;
-			for (int step = 0; step <= n / 2 && slot < 0; step++) {
-				int left = Math.floorMod(step, n);
-				int right = Math.floorMod(-step, n);
-				boolean leftFree = !taken[left];
-				boolean rightFree = right != left && !taken[right];
-				if (leftFree && rightFree) {
-					slot = Math.abs(wrap(start + left * 2.0 * Math.PI / n - own)) <= Math.abs(wrap(start + right * 2.0 * Math.PI / n - own)) ? left : right;
-				} else if (leftFree) {
-					slot = left;
-				} else if (rightFree) {
-					slot = right;
+			same &= mind.slotOf == player && mind.slotN == n && !Double.isNaN(mind.slotAngle);
+		}
+		if (same) {
+			for (MobMind mind : ring) {
+				mind.ringAngle = mind.slotAngle;
+				mind.ringRadius = radius;
+			}
+			START.put(player, new double[] {START.containsKey(player) ? START.get(player)[0] : ring.get(0).slotAngle, now});
+		} else {
+			// A new cut: anchored where the nearest one's slot was, if it had one on this ring, else where the ring
+			// last started, else on the side the group comes from.
+			MobMind first = n == 0 ? null : ring.get(0);
+			double[] kept = START.get(player);
+			double start = first == null ? 0.0
+				: first.slotOf == player && !Double.isNaN(first.slotAngle) ? first.slotAngle
+				: kept != null && now - (long) kept[1] <= START_MEMORY ? kept[0] : angle(first.mob, player);
+			START.put(player, new double[] {start, now});
+			boolean[] taken = new boolean[n];
+			// the ones that had a slot take the free one nearest it, nearest the player first
+			for (MobMind mind : ring) {
+				if (mind.slotOf == player && !Double.isNaN(mind.slotAngle)) {
+					int slot = nearestFree(taken, start, n, mind.slotAngle);
+					take(mind, taken, slot, start, n, radius, player);
 				}
 			}
-			slot = Math.max(0, slot);
-			taken[slot] = true;
-			mind.ringAngle = start + slot * 2.0 * Math.PI / n;
-			mind.ringRadius = radius;
+			// the newcomers fill outwards from the anchor, each on its own side
+			for (MobMind mind : ring) {
+				if (mind.slotOf == player && mind.slotN == n) {
+					continue;
+				}
+				double own = angle(mind.mob, player);
+				int slot = -1;
+				for (int step = 0; step <= n / 2 && slot < 0; step++) {
+					int left = Math.floorMod(step, n);
+					int right = Math.floorMod(-step, n);
+					boolean leftFree = !taken[left];
+					boolean rightFree = right != left && !taken[right];
+					if (leftFree && rightFree) {
+						slot = Math.abs(wrap(start + left * 2.0 * Math.PI / n - own)) <= Math.abs(wrap(start + right * 2.0 * Math.PI / n - own)) ? left : right;
+					} else if (leftFree) {
+						slot = left;
+					} else if (rightFree) {
+						slot = right;
+					}
+				}
+				take(mind, taken, Math.max(0, slot), start, n, radius, player);
+			}
 		}
 
 		// A staggered ally near the player: the others close round it, between it and the player.
@@ -216,6 +244,27 @@ public final class Squad {
 				mind.role = SquadRole.RESERVA;
 			}
 		}
+	}
+
+	/** The free slot of an n-slot ring started at {@code start} nearest {@code angle}. */
+	private static int nearestFree(boolean[] taken, double start, int n, double angle) {
+		int best = -1;
+		for (int k = 0; k < n; k++) {
+			if (!taken[k] && (best < 0
+				|| Math.abs(wrap(start + k * 2.0 * Math.PI / n - angle)) < Math.abs(wrap(start + best * 2.0 * Math.PI / n - angle)))) {
+				best = k;
+			}
+		}
+		return Math.max(0, best);
+	}
+
+	private static void take(MobMind mind, boolean[] taken, int slot, double start, int n, double radius, Player player) {
+		taken[slot] = true;
+		mind.slotAngle = start + slot * 2.0 * Math.PI / n;
+		mind.slotN = n;
+		mind.slotOf = player;
+		mind.ringAngle = mind.slotAngle;
+		mind.ringRadius = radius;
 	}
 
 	/** Whether it takes a slot on the ring: everything but the ones that fight from off it. */
@@ -288,15 +337,29 @@ public final class Squad {
 		double dx = target.getX() - archer.getX();
 		double dz = target.getZ() - archer.getZ();
 		double d = Math.max(1.0E-6, Math.hypot(dx, dz));
-		// The side the friend leans to, from the archer's line: the step goes the other way.
+		// The side the friend leans to, from the archer's line: the step goes the other way first.
 		double cross = dx * (ally.getZ() - archer.getZ()) - dz * (ally.getX() - archer.getX());
 		double side = cross >= 0.0 ? -1.0 : 1.0;
-		double x = archer.getX() - dz / d * side * 2.0;
-		double z = archer.getZ() + dx / d * side * 2.0;
-		if (Terrain.danger(archer.level(), x, z, archer.getY())) {
-			return null;
+		// Tried in order: two blocks away from the friend, two blocks the other side, two blocks back. The first
+		// with a clear line (and nothing dangerous underfoot) wins; with none clear, the step away from the friend
+		// all the same (PROPUESTAS_IA_SIMULADOR.md 2.4: with thirteen about, the line was blocked 70 % of the time).
+		Vec3[] tries = {
+			new Vec3(archer.getX() - dz / d * side * 2.0, archer.getY(), archer.getZ() + dx / d * side * 2.0),
+			new Vec3(archer.getX() + dz / d * side * 2.0, archer.getY(), archer.getZ() - dx / d * side * 2.0),
+			new Vec3(archer.getX() - dx / d * 2.0, archer.getY(), archer.getZ() - dz / d * 2.0)};
+		Vec3 fallback = null;
+		for (Vec3 at : tries) {
+			if (Terrain.danger(archer.level(), at.x, at.z, archer.getY())) {
+				continue;
+			}
+			if (fallback == null) {
+				fallback = at;
+			}
+			if (allyInLineFrom(archer, at.add(0.0, archer.getEyeHeight(), 0.0), target) == null) {
+				return at;
+			}
 		}
-		return new Vec3(x, archer.getY(), z);
+		return fallback;
 	}
 
 	/** Whether any of the squad's other hostiles stands in the way of a shot from the archer at the target. */
@@ -306,13 +369,17 @@ public final class Squad {
 
 	/** The nearest of its own side standing in its line of fire at the target, or null (red_mob_v3's aliado_en_linea). */
 	public static Mob allyInLineOf(Mob archer, Player target) {
-		var from = archer.getEyePosition();
-		var to = target.getEyePosition();
+		return allyInLineFrom(archer, archer.getEyePosition(), target);
+	}
+
+	/** The same, as if the archer shot from {@code from} (its eyes, somewhere it might step to). */
+	public static Mob allyInLineFrom(Mob archer, Vec3 from, Player target) {
+		Vec3 to = target.getEyePosition();
 		Mob nearest = null;
-		for (Mob other : archer.level().getEntitiesOfClass(Mob.class, archer.getBoundingBox().expandTowards(to.subtract(from)).inflate(1.0),
+		for (Mob other : archer.level().getEntitiesOfClass(Mob.class, new net.minecraft.world.phys.AABB(from, to).inflate(1.0),
 			m -> m != archer && m.isAlive() && m instanceof Enemy)) {
 			if (other.getBoundingBox().inflate(0.3).clip(from, to).isPresent()
-				&& (nearest == null || archer.distanceToSqr(other) < archer.distanceToSqr(nearest))) {
+				&& (nearest == null || other.distanceToSqr(from) < nearest.distanceToSqr(from))) {
 				nearest = other;
 			}
 		}

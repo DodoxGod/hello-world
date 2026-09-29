@@ -139,7 +139,7 @@ public final class ObsM1 {
 			o[base + 2] = clip((ax * rx + az * rz) / 16.0, -2.0, 2.0);
 			o[base + 3] = clip((ally.getY() - mob.getY()) / 4.0, -2.0, 2.0);
 			o[base + 4] = clip(Math.hypot(target.getX() - ally.getX(), target.getZ() - ally.getZ()) / 16.0, 0.0, 2.0);
-			o[base + 5 + MobFamily.of(ally).ordinal()] = 1.0;
+			o[base + 5 + MobFamily.of(ally).slot()] = 1.0;
 			o[base + 10] = ally.getHealth() / ally.getMaxHealth();
 		}
 		o[101] = Math.min(allies.size() / 5.0, 2.0);

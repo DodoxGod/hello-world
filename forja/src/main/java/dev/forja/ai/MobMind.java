@@ -62,6 +62,13 @@ public final class MobMind {
 	public double ringAngle = Double.NaN;
 	/** How far out that slot is: the ring widens when a crowd would stand too close together on it. */
 	public double ringRadius = TacticGoal.RING_RADIUS;
+	/**
+	 * The slot as the Squad last handed it out, before any tactic moves ringAngle (closing round a staggered ally):
+	 * its angle, the size of the ring it was cut for, and whose ring. A ring of the same size keeps its slots.
+	 */
+	public double slotAngle = Double.NaN;
+	public int slotN;
+	public net.minecraft.world.entity.player.Player slotOf;
 
 	MobMind(Mob mob) {
 		this.mob = mob;
