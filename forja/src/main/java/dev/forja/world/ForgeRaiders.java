@@ -74,6 +74,10 @@ public final class ForgeRaiders {
 		// first time one of them loads in, it is given the same forged iron a roaming band carries, and
 		// the tag is dropped so this only ever happens once.
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
+			// A captain back from disk has lost his horn and his charge: goals are not saved.
+			if (entity instanceof Mob loaded && loaded.entityTags().contains("forja_capitan")) {
+				captainMoves(loaded);
+			}
 			if (!(entity instanceof Mob mob) || !mob.entityTags().contains("forja_campamento")) {
 				return;
 			}
@@ -170,15 +174,22 @@ public final class ForgeRaiders {
 		ItemStack legend = Legends.createWeaponFor(captain, level.getRandom());
 		Mastery.setLevel(legend, Mastery.MAX_LEVEL, level.registryAccess());
 		captain.setItemSlot(EquipmentSlot.MAINHAND, legend);
-		// What makes him a captain rather than the biggest raider: he winds the horn, and he charges.
+		captainMoves(captain);
+		for (EquipmentSlot slot : EquipmentSlot.values()) {
+			captain.setDropChance(slot, 0.0F);
+		}
+	}
+
+	/** What makes him a captain rather than the biggest raider: he winds the horn, and he charges. Idempotent. */
+	private static void captainMoves(Mob captain) {
 		var goals = ((dev.forja.mixin.MobGoalsAccess) captain).forjaGoals();
+		if (goals.getAvailableGoals().stream().anyMatch(wrapped -> wrapped.getGoal() instanceof dev.forja.entity.ai.RallyGoal)) {
+			return;
+		}
 		goals.addGoal(1, new dev.forja.entity.ai.RallyGoal(captain, RALLY_REACH, RALLY_COOLDOWN, RALLY_TICKS));
 		goals.addGoal(2, new dev.forja.entity.ai.LeapStrikeGoal(
 			captain, CHARGE_MIN, CHARGE_MAX, CHARGE_COOLDOWN, CHARGE_DAMAGE, CHARGE_REACH,
 			net.minecraft.core.particles.ParticleTypes.CRIT, SoundEvents.RAVAGER_ROAR));
-		for (EquipmentSlot slot : EquipmentSlot.values()) {
-			captain.setDropChance(slot, 0.0F);
-		}
 	}
 
 	private static Mob raider(ServerLevel level, net.minecraft.resources.ResourceKey<EntityType<?>> type) {

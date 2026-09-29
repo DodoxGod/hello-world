@@ -20,7 +20,9 @@ public class SecondWindGoal extends Goal {
 	private final float share;
 	private final float mend;
 	private final int ticks;
-	private boolean spent;
+
+	/** Kept as a tag, so a second wind already used is not handed back when the chunk reloads. */
+	private static final String SPENT = "forja_aliento_gastado";
 
 	public SecondWindGoal(Mob mob, float share, float mend, int ticks) {
 		this.mob = mob;
@@ -31,7 +33,7 @@ public class SecondWindGoal extends Goal {
 
 	@Override
 	public boolean canUse() {
-		return !this.spent && this.mob.getTarget() != null
+		return !this.mob.entityTags().contains(SPENT) && this.mob.getTarget() != null
 			&& this.mob.getHealth() / this.mob.getMaxHealth() <= this.share;
 	}
 
@@ -42,7 +44,7 @@ public class SecondWindGoal extends Goal {
 
 	@Override
 	public void start() {
-		this.spent = true;
+		this.mob.addTag(SPENT);
 		this.mob.heal(this.mob.getMaxHealth() * this.mend);
 		this.mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, this.ticks, 0));
 		this.mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, this.ticks, 0));

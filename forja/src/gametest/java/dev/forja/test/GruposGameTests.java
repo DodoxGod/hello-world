@@ -263,4 +263,29 @@ public class GruposGameTests {
 			helper.succeed();
 		});
 	}
+
+	/** An elite loaded back from disk gets its leap and second wind again, and a used second wind stays used. */
+	@GameTest
+	public void anEliteKeepsItsMovesAfterAReload(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		Zombie zombie = EntityTypes.ZOMBIE.create(level, EntitySpawnReason.EVENT);
+		helper.assertTrue(zombie != null, "no se pudo crear el zombi");
+		// What a reload looks like from the mob's side: the champion's tag is there, its goals are not.
+		zombie.addTag("forja_elite");
+		Vec3 at = helper.absoluteVec(new Vec3(2.5, 1, 2.5));
+		zombie.setPos(at.x, at.y, at.z);
+		level.addFreshEntity(zombie);
+		var goals = ((dev.forja.mixin.MobGoalsAccess) zombie).forjaGoals().getAvailableGoals();
+		helper.assertTrue(goals.stream().anyMatch(g -> g.getGoal() instanceof dev.forja.entity.ai.LeapStrikeGoal),
+			"el élite recargado no recuperó el salto");
+		long winds = goals.stream().filter(g -> g.getGoal() instanceof dev.forja.entity.ai.SecondWindGoal).count();
+		helper.assertTrue(winds == 1, "segundos alientos tras recargar: " + winds);
+		// Loading it again must not stack a second copy of each move.
+		dev.forja.world.Elites.giveMoves(zombie);
+		long again = ((dev.forja.mixin.MobGoalsAccess) zombie).forjaGoals().getAvailableGoals().stream()
+			.filter(g -> g.getGoal() instanceof dev.forja.entity.ai.SecondWindGoal).count();
+		helper.assertTrue(again == 1, "los movimientos se duplicaron: " + again);
+		zombie.discard();
+		helper.succeed();
+	}
 }

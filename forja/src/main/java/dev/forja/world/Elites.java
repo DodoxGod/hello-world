@@ -49,6 +49,13 @@ public final class Elites {
 	}
 
 	public static void register() {
+		// Goals are not saved with a mob: an elite that comes back from disk would be an ordinary monster
+		// with a champion's health bar. Its two moves are handed back every time it loads.
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
+			if (entity instanceof Mob mob && isElite(mob)) {
+				giveMoves(mob);
+			}
+		});
 		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
 			if (entity.level() instanceof ServerLevel level && isElite(entity)) {
 				drop(level, entity);
@@ -105,17 +112,29 @@ public final class Elites {
 		raise(mob, Attributes.KNOCKBACK_RESISTANCE, 0.6, AttributeModifier.Operation.ADD_VALUE);
 		raise(mob, Attributes.MOVEMENT_SPEED, 0.15F, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
 		mob.setHealth(mob.getMaxHealth());
-		// Two moves of its own. They are goals rather than a class of ours because an elite is an
-		// ordinary vanilla monster underneath, and a goal is the only way to hand one a move.
-		var goals = ((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals();
-		goals.addGoal(2, new dev.forja.entity.ai.LeapStrikeGoal(
-			mob, CHARGE_MIN, CHARGE_MAX, CHARGE_COOLDOWN, CHARGE_DAMAGE, CHARGE_REACH,
-			ParticleTypes.SOUL_FIRE_FLAME, SoundEvents.RAVAGER_ROAR));
-		goals.addGoal(0, new dev.forja.entity.ai.SecondWindGoal(mob, WIND_SHARE, WIND_MEND, WIND_TICKS));
+		giveMoves(mob);
 		if (mob.level() instanceof ServerLevel level) {
 			level.playSound(null, mob.getX(), mob.getY(), mob.getZ(), SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 4.0F, 0.6F);
 			level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, mob.getX(), mob.getY(1.0), mob.getZ(), 30, 0.5, 0.8, 0.5, 0.02);
 		}
+	}
+
+	/**
+	 * Its two moves. They are goals rather than a class of ours because an elite is an ordinary vanilla
+	 * monster underneath, and a goal is the only way to hand one a move. Safe to call again: a mob that
+	 * already has them is left alone.
+	 */
+	public static void giveMoves(Mob mob) {
+		var goals = ((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals();
+		boolean has = goals.getAvailableGoals().stream()
+			.anyMatch(wrapped -> wrapped.getGoal() instanceof dev.forja.entity.ai.SecondWindGoal);
+		if (has) {
+			return;
+		}
+		goals.addGoal(2, new dev.forja.entity.ai.LeapStrikeGoal(
+			mob, CHARGE_MIN, CHARGE_MAX, CHARGE_COOLDOWN, CHARGE_DAMAGE, CHARGE_REACH,
+			ParticleTypes.SOUL_FIRE_FLAME, SoundEvents.RAVAGER_ROAR));
+		goals.addGoal(0, new dev.forja.entity.ai.SecondWindGoal(mob, WIND_SHARE, WIND_MEND, WIND_TICKS));
 	}
 
 	private static void raise(Mob mob, net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> attribute, double amount, AttributeModifier.Operation operation) {
