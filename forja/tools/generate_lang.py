@@ -2270,11 +2270,13 @@ GUI.update({
         "Cualquiera puede usar el farol, pero en manos de un **Curandero** cura un 50%% más, y sus talentos "
         "(Manos cálidas, Milagro) lo suben más aún; Renuevo, Bendición, Purificar y Vínculo también van en "
         "sus curas. Además, mientras eres Curandero, el proyectil del báculo y el área y la runa del grimorio "
-        "**curan** a los aliados que tocan una décima parte del daño que harían, y no dañan a los monstruos.",
+        "**curan** a los aliados que tocan una décima parte del daño que harían, y al Curandero un tercio de "
+        "lo que curan a los demás; no dañan a los monstruos.",
         "Anyone can use the lantern, but in a **Healer's** hands it heals 50%% more, and their talents (Warm "
         "Hands, Miracle) raise it further; Renewal, Blessing, Cleanse and Bond ride on their heals too. What's "
         "more, while you are a Healer the staff's bolt and the tome's area and rune **heal** the allies they "
-        "touch for a tenth of the damage they would deal, and do not hurt monsters.",
+        "touch for a tenth of the damage they would deal, and the Healer for a third of what they heal others; "
+        "they do not hurt monsters.",
     ),
     # Not read yet: "gui.forja.libro.farol" is the caged ember wisp's text in the bestiary, and the classes
     # chapter asks for the same key with four numbers. This is the lantern's text for when it gets its own key.
@@ -2311,8 +2313,8 @@ CLASSES = {
               "Magic, harder and sooner: more spell damage, shorter cooldowns, more mana that refills faster. Paid for in health, stamina and melee damage."),
              (("Arcano", "Arcane"), ("Flujo", "Flow"), ("Égida", "Aegis"))),
     "curandero": (("Curandero", "Healer"), ("Su magia cura, no hiere", "Their magic heals, not harms"),
-                  ("Las armas mágicas cambian el daño por curación: el báculo y el grimorio curan a los aliados 1/10 del daño que harían y no dañan a los monstruos. Cura un 50 % más con todo, y su arma es el farol.",
-                   "Magic weapons trade damage for healing: the staff and the tome heal allies for 1/10 of the damage they would deal and do not hurt monsters. Heals 50 % more with everything, and the lantern is their weapon."),
+                  ("Las armas mágicas cambian el daño por curación: el báculo y el grimorio curan a los aliados 1/10 del daño que harían (y al curandero, un tercio de eso) y no dañan a los monstruos. Cura un 50 % más con todo, y su arma es el farol.",
+                   "Magic weapons trade damage for healing: the staff and the tome heal allies for 1/10 of the damage they would deal (and the healer for a third of that) and do not hurt monsters. Heals 50 % more with everything, and the lantern is their weapon."),
                   (("Sanación", "Healing"), ("Amparo", "Shelter"), ("Fe", "Faith"))),
     "arquero": (("Arquero", "Archer"), ("Arco, ballesta y buenas piernas", "Bow, crossbow and quick feet"),
                 ("Cazador a distancia: más daño de proyectiles, tensado más rápido, más velocidad y mejor esquiva, y cae mejor. Un poco menos de vida.",

@@ -47,6 +47,8 @@ public final class Healing {
 	 * class's healing talents say — and do not hurt monsters at all.
 	 */
 	public static final float MAGIC_HEAL_SHARE = 0.1F;
+	/** What a Curandero's staff or tome mends the Curandero, as a share of what it mended an ally. */
+	public static final float SELF_FROM_OTHERS = 1.0F / 3.0F;
 
 	public static final int COOLDOWN = 30;
 	/** What a tap of the lantern costs in mana (magic/Mana); a full charge costs more, as a staff's does. */
@@ -240,7 +242,11 @@ public final class Healing {
 
 	/** A Curandero's spell lands on an ally: a tenth of its damage, as health. */
 	public static void spellHeal(ServerLevel level, LivingEntity caster, LivingEntity ally, float damage) {
-		mend(level, caster, ally, damage * MAGIC_HEAL_SHARE);
+		float mended = mend(level, caster, ally, damage * MAGIC_HEAL_SHARE);
+		// Andy (2026-09-29): "sí, pero 1/3 de lo que cura a otros". The healer gets a third of what reached the ally.
+		if (ally != caster && mended > 0.0F && caster.isAlive()) {
+			caster.heal(mended * SELF_FROM_OTHERS);
+		}
 	}
 
 	/** A Curandero's area or rune: every ally on it but the reader is mended a tenth of what it would bite. */

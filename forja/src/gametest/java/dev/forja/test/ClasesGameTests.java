@@ -96,6 +96,26 @@ public class ClasesGameTests {
 		helper.succeed();
 	}
 
+	/** Andy: a Curandero's staff or tome mends the Curandero too, a third of what it mended the ally. */
+	@GameTest
+	public void theHealerGetsAThirdOfWhatAnAllyGets(GameTestHelper helper) {
+		CombatGameTests.TestPlayer healer = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
+		ClassProgress.choose(healer, PlayerClass.CURANDERO);
+		var wolf = helper.spawn(net.minecraft.world.entity.EntityTypes.WOLF, new BlockPos(2, 1, 1));
+		wolf.setNoAi(true);
+		wolf.tame(healer);
+		wolf.setHealth(2.0F);
+		healer.setHealth(10.0F);
+		// A bite of 30 is a mend of 3.
+		Healing.spellHeal(helper.getLevel(), healer, wolf, 30.0F);
+		float toWolf = wolf.getHealth() - 2.0F;
+		float toSelf = healer.getHealth() - 10.0F;
+		helper.assertTrue(toWolf > 0.0F, "el lobo debería curarse");
+		helper.assertTrue(Math.abs(toSelf - toWolf / 3.0F) < 1.0E-3F, "el curandero se cura un tercio: " + toSelf + " de " + toWolf);
+		ClassProgress.clear(healer);
+		helper.succeed();
+	}
+
 	/** Mana's bar grows with the Mago's class. */
 	@GameTest
 	public void aMageHasADeeperManaBar(GameTestHelper helper) {

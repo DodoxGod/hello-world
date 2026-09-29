@@ -259,8 +259,9 @@ Integración con el maná (hecha al unir la rama, 2026-09-29):
 
 ## Decisiones que Andy debería confirmar
 
-1. **¿La conversión del Curandero cura también al que lanza?** Hoy **no**: el proyectil y la runa curan a otros.
-   El farol sí cura al que lo usa, pero solo con la carga y a la mitad.
+1. ~~¿La conversión del Curandero cura también al que lanza?~~ **Decidido por Andy (2026-09-29):** sí, un tercio
+   de lo que cura a los demás (`Healing.SELF_FROM_OTHERS`). El farol sigue curando al que lo usa a la mitad con la
+   carga. **Coste del farol:** 12 de maná por toque, confirmado.
 2. Al cambiar de clase **se conserva el nivel** y vuelven todos los puntos. La alternativa es empezar de nuevo
    en el nivel 1.
 3. El Curandero **no puede dañar con magia** (ni báculo ni grimorio). Sí puede pegar cuerpo a cuerpo (−15 %).
