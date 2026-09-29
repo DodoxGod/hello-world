@@ -10000,6 +10000,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 		// takes no keys for the player, so the steps are teleports; the mobs read the movement off the positions.
 		String[] shots = {"cerco_retroceso_01", "cerco_retroceso_02", "cerco_retroceso_03", "cerco_retroceso_04"};
 		int shot = 0;
+		int[] round = {0};
 		for (int tick = 1; tick <= 100 && shot < shots.length; tick++) {
 			// one step back, and the eye follows the player, straight above
 			server.runOnServer(s -> {
@@ -10042,6 +10043,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 					dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(zombie);
 					running += mind != null && mind.rodeo ? 1 : 0;
 				}
+				round[0] = sides + past;
 				return String.format(Locale.ROOT, "delante %d, a los lados %d, por detrás de él %d, en modo rodeo %d (jugador en z=%.1f)",
 					front, sides, past, running, player.getZ() - sz);
 			});
@@ -10058,6 +10060,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 		server.runCommand("effect clear @a");
 		server.runCommand("attribute @a minecraft:knockback_resistance base set 0");
 		dev.forja.combat.CombatConfig.get().packChance = new dev.forja.combat.CombatConfig().packChance;
+		// The whole point (Andy, 2026-09-29): by the last shot, some of them have come round to the sides or past.
+		check(round[0] >= 2, "backing away, at least two zombies should have come round the player, and " + round[0] + " did");
 	}
 
 	/**

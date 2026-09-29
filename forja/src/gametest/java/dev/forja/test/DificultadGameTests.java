@@ -15,7 +15,6 @@ import dev.forja.difficulty.Threat;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -25,7 +24,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.Vec3;
 
 /**
  * Andy's difficulty decisions of 2026-09-29: good gear no longer makes a crowd harmless. Monsters hit harder and
@@ -167,78 +165,5 @@ public class DificultadGameTests {
 			zombie.discard();
 			helper.succeed();
 		});
-	}
-
-	/**
-	 * The surround mode: four zombies after a player who backs away at a sprint (0.28 blocks a tick, straight
-	 * back). Before, they trailed behind him in a line; now one of them gets round past him within six seconds.
-	 */
-	@GameTest(maxTicks = 160)
-	public void aPackSurroundsAPlayerBackingAway(GameTestHelper helper) {
-		CombatConfig.get().veteranChance = 0.0;
-		CombatConfig.get().eliteChance = 0.0;
-		double packs = CombatConfig.get().packChance;
-		CombatConfig.get().packChance = 0.0;
-		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(2, 1, 4));
-		player.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0);
-		List<Zombie> pack = new ArrayList<>();
-		for (int i = 0; i < 4; i++) {
-			Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(6, 1, 2 + i));
-			zombie.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
-			zombie.setTarget(player);
-			pack.add(zombie);
-		}
-		double step = 0.28;
-		Vec3 back = new Vec3(-step, 0.0, 0.0);
-		int[] ticks = {0};
-		helper.onEachTick(() -> {
-			if (!player.isAlive()) {
-				return;
-			}
-			ticks[0]++;
-			player.setHealth(player.getMaxHealth());
-			player.setPos(player.getX() + back.x, player.getY(), player.getZ());
-			known(player, back);
-			for (Zombie zombie : pack) {
-				if (zombie.getTarget() != player) {
-					zombie.setTarget(player);
-				}
-				// past him along the way he is backing: he is walking into it
-				if (zombie.getX() < player.getX() - 0.5) {
-					CombatConfig.get().packChance = packs;
-					pack.forEach(Mob::discard);
-					helper.succeed();
-					return;
-				}
-			}
-			if (ticks[0] >= 120) {
-				StringBuilder where = new StringBuilder();
-				pack.forEach(z -> where.append(String.format(java.util.Locale.ROOT, " %.1f", z.getX() - player.getX())));
-				Zombie first = pack.get(0);
-				MobMind mind = MobAi.mind(first);
-				where.append("; primero: ").append(mind == null ? "sin mente" : "táctica " + mind.decision.tactic() + ", quiere correr "
-					+ mind.wantsRun + ", corre " + mind.running + ", rodeo " + mind.rodeo + ", aguante " + mind.stamina + ", hueco "
-					+ mind.ringAngle + ", objetivo de la mente " + (mind.target == player) + ", ticks sin camino " + mind.pathless);
-				where.append(", objetivo ").append(first.getTarget() == player).append(", navegación hecha ").append(first.getNavigation().isDone())
-					.append(", velocidad ").append(first.getAttributeValue(Attributes.MOVEMENT_SPEED)).append(", movimiento del jugador ")
-					.append(MobSprint.motion(player)).append(", metas ").append(((dev.forja.mixin.MobGoalsAccess) first).forjaGoals().getAvailableGoals().stream()
-						.filter(net.minecraft.world.entity.ai.goal.WrappedGoal::isRunning).map(g -> g.getGoal().getClass().getSimpleName()).toList());
-				CombatConfig.get().packChance = packs;
-				pack.forEach(Mob::discard);
-				helper.fail("en 6 s ningún zombi le adelantó (distancias en x:" + where + ")");
-			}
-		});
-	}
-
-	/**
-	 * The movement a player is known to make, as the server takes it from their client. A fake player has no
-	 * client, so it is set here; where the method is missing, its own motion stands in.
-	 */
-	private static void known(ServerPlayer player, Vec3 movement) {
-		try {
-			ServerPlayer.class.getMethod("setKnownMovement", Vec3.class).invoke(player, movement);
-		} catch (ReflectiveOperationException missing) {
-			player.setDeltaMovement(movement);
-		}
 	}
 }

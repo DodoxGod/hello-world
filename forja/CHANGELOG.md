@@ -51,7 +51,10 @@ Andy: "con diamante y Protección IV, y más con la armadura del mod, las multit
   - más atacantes con más tramo;
   - la élite atraviesa el diamante;
   - un golpe parado suma la mitad de presión;
-  - 4 zombis adelantan en menos de 6 s a un jugador que retrocede a velocidad de carrera.
+  - el modo rodeo corre a ×2,3 y paga 1,4 por tick (`theSurroundModeRunsAtTwoPointThree`).
+
+  La escena entera (6 zombis y un jugador que retrocede a velocidad de carrera) se comprueba en la prueba del
+  cliente, sección `cerco`: el área de una prueba de servidor mide 8 bloques y los zombis chocaban con su borde.
 - **Capturas:** `FORJA_SOLO=cerco` añade las del retroceso (`cerco_retroceso_*`).
 
 ## 2026-09-29 — acciones preparadas para la red v4
