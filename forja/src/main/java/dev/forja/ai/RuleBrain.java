@@ -172,6 +172,11 @@ public final class RuleBrain {
 		// from further off still in company (see SPREAD_RANGE), and never inside a ring wider than the range
 		// (a big group's): there it walked in from its slot, was told to circle, and walked back out.
 		boolean squad = !Double.isNaN(mind.ringAngle) && ObsM1.allies(mob).size() >= 1;
+		// The surround mode (MobSprint.rodeo): the player backing away, a pack member goes round to its slot,
+		// running, instead of trailing after them in a line (Andy, 2026-09-29).
+		if (squad && distance < MobSprint.RODEO_RANGE && MobSprint.rodeo(mind)) {
+			return Decision.tactic(Tactic.RODEAR);
+		}
 		double circle = Math.max(CIRCLE_RANGE, squad ? Math.max(SPREAD_RANGE, mind.ringRadius + 2.0) : 0.0);
 		if (!hasTurn && distance < Reach.outside(target, circle)) {
 			// Waiting for a turn: against heavy plate, round the side; against a head-heavy weapon, out of its

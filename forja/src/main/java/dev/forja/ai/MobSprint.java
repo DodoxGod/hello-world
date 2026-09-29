@@ -51,7 +51,12 @@ public final class MobSprint {
 	/** How far behind the player's retreat the slot may be (cosine) and still count as ahead or beside it. */
 	public static final double RODEO_BESIDE = -0.3;
 
+	/** Up to this far off, a pack member with a slot goes round to it while the player backs away (RuleBrain). */
+	public static final double RODEO_RANGE = 32.0;
+
 	private static final Identifier EXTRA = Forja.id("carrera");
+	/** Where each player was the last time anyone asked, and the speed worked out from it: tick, x, z, vx, vz. */
+	private static final java.util.Map<Player, double[]> MOTION = new java.util.WeakHashMap<>();
 	/** On top of vanilla's sprint (×1.3) to make ×1.35. */
 	private static final double EXTRA_AMOUNT = (1.0 + BOOST) / 1.3 - 1.0;
 
@@ -82,7 +87,7 @@ public final class MobSprint {
 				target.getZ() + Math.sin(mind.ringAngle) * mind.ringRadius) > SLOT_FAR * SLOT_FAR) {
 			return true;
 		}
-		if ((decision.tactic() == Tactic.RODEAR || decision.tactic() == Tactic.FLANQUEAR || decision.tactic() == Tactic.ESPERAR) && rodeo(mind)) {
+		if (rodeo(mind)) {
 			return true;
 		}
 		double distance = mob.distanceTo(target);
@@ -90,7 +95,7 @@ public final class MobSprint {
 			Vec3 line = target.position().subtract(mob.position());
 			Vec3 flat = new Vec3(line.x, 0.0, line.z);
 			if (flat.lengthSqr() > 1.0E-6) {
-				Vec3 moving = target.getKnownMovement();
+				Vec3 moving = motion(target);
 				return moving.x * flat.x / flat.length() + moving.z * flat.z / flat.length() > AWAY_SPEED;
 			}
 		}
@@ -115,7 +120,7 @@ public final class MobSprint {
 		if (mob.distanceToSqr(slotX, mob.getY(), slotZ) <= RODEO_SLOT_NEAR * RODEO_SLOT_NEAR) {
 			return false;
 		}
-		Vec3 moving = target.getKnownMovement();
+		Vec3 moving = motion(target);
 		double speed = Math.hypot(moving.x, moving.z);
 		if (speed < RODEO_PLAYER_SPEED) {
 			return false;
@@ -133,6 +138,42 @@ public final class MobSprint {
 		double sx = Math.cos(mind.ringAngle);
 		double sz = Math.sin(mind.ringAngle);
 		return mx * sx + mz * sz >= RODEO_BESIDE;
+	}
+
+	/**
+	 * How the player is moving across the ground, blocks a tick. What their client reports when it reports
+	 * something; otherwise worked out from where they were a tick or a few ago. The client's figure is zero after
+	 * a teleport and for a player with no client at all, and a mob that believed it stood still while it backed
+	 * away never ran (Andy, 2026-09-29: the surround test failed on his PC, the zombies 32 blocks behind).
+	 */
+	public static Vec3 motion(Player player) {
+		long now = player.level().getGameTime();
+		double[] seen = MOTION.get(player);
+		if (seen == null) {
+			MOTION.put(player, new double[] {now, player.getX(), player.getZ(), 0.0, 0.0});
+		} else if (seen[0] != now) {
+			double dt = now - seen[0];
+			double vx = 0.0;
+			double vz = 0.0;
+			if (dt > 0.0 && dt <= 10.0) {
+				vx = (player.getX() - seen[1]) / dt;
+				vz = (player.getZ() - seen[2]) / dt;
+				// a little smoothing: one odd tick is not a change of mind
+				vx = 0.5 * vx + 0.5 * seen[3];
+				vz = 0.5 * vz + 0.5 * seen[4];
+			}
+			seen[0] = now;
+			seen[1] = player.getX();
+			seen[2] = player.getZ();
+			seen[3] = vx;
+			seen[4] = vz;
+		}
+		Vec3 known = player.getKnownMovement();
+		if (known.x * known.x + known.z * known.z > 1.0E-6) {
+			return known;
+		}
+		double[] estimate = MOTION.get(player);
+		return new Vec3(estimate[3], 0.0, estimate[4]);
 	}
 
 	/** Whether it may run right now, wish aside: breath, feet and balance. */

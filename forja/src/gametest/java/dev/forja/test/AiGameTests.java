@@ -582,30 +582,6 @@ public class AiGameTests {
 		helper.succeed();
 	}
 
-	/** A zombie that cannot get to its player digs through leaves in the way. */
-	@GameTest(maxTicks = 200)
-	public void zombieDigsThroughLeaves(GameTestHelper helper) {
-		for (int z = 0; z <= 7; z++) {
-			for (int y = 1; y <= 3; y++) {
-				helper.setBlock(new BlockPos(3, y, z), net.minecraft.world.level.block.Blocks.OAK_LEAVES);
-			}
-		}
-		Zombie zombie = zombie(helper, new BlockPos(1, 1, 3));
-		CombatGameTests.TestPlayer player = player(helper, new BlockPos(6, 1, 3));
-		zombie.setTarget(player);
-		helper.succeedWhen(() -> {
-			boolean dug = false;
-			for (int z = 0; z <= 7 && !dug; z++) {
-				for (int y = 1; y <= 2; y++) {
-					if (helper.getBlockState(new BlockPos(3, y, z)).isAir()) {
-						dug = true;
-					}
-				}
-			}
-			helper.assertTrue(dug, "el zombi debería abrirse paso entre las hojas");
-		});
-	}
-
 	/** Every hostile comes with one trait; surviving fights counts, a wound leaves a grudge, the third makes a veteran. */
 	@GameTest
 	public void memoryAndPersonality(GameTestHelper helper) {

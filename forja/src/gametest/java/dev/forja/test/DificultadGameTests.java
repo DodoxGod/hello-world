@@ -5,6 +5,9 @@ import java.util.List;
 
 import dev.forja.Forja;
 import dev.forja.ai.Aggression;
+import dev.forja.ai.MobAi;
+import dev.forja.ai.MobMind;
+import dev.forja.ai.MobSprint;
 import dev.forja.combat.CombatConfig;
 import dev.forja.difficulty.GearScore;
 import dev.forja.difficulty.Pressure;
@@ -124,6 +127,46 @@ public class DificultadGameTests {
 		helper.assertTrue(Math.abs(Pressure.of(taken) - 0.10) < 1.0E-9, "un golpe recibido, 0,10: " + Pressure.of(taken));
 		helper.assertTrue(Math.abs(Pressure.of(blocked) - 0.05) < 1.0E-9, "un golpe parado, 0,05: " + Pressure.of(blocked));
 		helper.succeed();
+	}
+
+	/**
+	 * The surround mode itself: a zombie with its slot ahead of a player who is backing away runs at x2.3 its
+	 * walking speed and pays 1.4 of its breath a tick for it (about 3.5 s from full). The player's movement is
+	 * read off their positions: a fake player's client reports nothing.
+	 */
+	@GameTest
+	public void theSurroundModeRunsAtTwoPointThree(GameTestHelper helper) {
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(3, 1, 3));
+		Zombie zombie = zombie(helper, new BlockPos(7, 1, 3));
+		zombie.setTarget(player);
+		helper.runAfterDelay(1, () -> {
+			MobSprint.motion(player);
+			player.setPos(player.getX() - 0.28, player.getY(), player.getZ());
+		});
+		helper.runAfterDelay(2, () -> {
+			MobMind mind = MobAi.mind(zombie);
+			helper.assertTrue(mind != null, "el zombi tiene mente");
+			mind.target = player;
+			// its slot straight ahead of the way the player is going (-X), well away from the zombie
+			mind.ringAngle = Math.PI;
+			mind.ringRadius = 3.5;
+			mind.stamina = MobSprint.MAX;
+			mind.winded = false;
+			mind.wantsRun = true;
+			helper.assertTrue(MobSprint.rodeo(mind), "retrocediendo, con el hueco por delante: modo rodeo (se mueve a "
+				+ MobSprint.motion(player) + ")");
+			MobSprint.tick(mind, helper.getLevel().getGameTime());
+			helper.assertTrue(mind.rodeo && mind.running && zombie.isSprinting(), "corre en modo rodeo");
+			// vanilla's sprint (x1.3) and the mod's modifier on top of it make x2.3
+			var extra = zombie.getAttribute(Attributes.MOVEMENT_SPEED).getModifier(Forja.id("carrera"));
+			double total = 1.3 * (1.0 + (extra == null ? 0.0 : extra.amount()));
+			helper.assertTrue(Math.abs(total - CombatConfig.get().rodeoSpeed) < 0.01,
+				"a x" + CombatConfig.get().rodeoSpeed + " de su paso: x" + total);
+			helper.assertTrue(Math.abs(mind.stamina - (MobSprint.MAX - CombatConfig.get().rodeoCostPerTick)) < 1.0E-4,
+				"paga " + CombatConfig.get().rodeoCostPerTick + " por tick: le queda " + mind.stamina);
+			zombie.discard();
+			helper.succeed();
+		});
 	}
 
 	/**

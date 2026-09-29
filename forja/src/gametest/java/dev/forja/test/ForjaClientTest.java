@@ -9948,7 +9948,6 @@ public class ForjaClientTest implements FabricClientGameTest {
 		server.runCommand("gamemode survival @a");
 		server.runCommand("effect give @a resistance infinite 4 true");
 		server.runCommand("effect give @a saturation infinite 0 true");
-		server.runCommand("effect give @a speed infinite 1 true");
 		server.runCommand("attribute @a minecraft:knockback_resistance base set 1");
 		tp(server, sx + 0.5, y, sz + 0.5, 0.0F, 0.0F);
 		context.waitTicks(20);
@@ -9997,14 +9996,16 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.waitTicks(2);
 		check(context.computeOnClient(mc -> mc.getCameraEntity() != null && mc.getCameraEntity().getId() == eye),
 			"the camera should look down from the stand");
-		context.getInput().holdKey(options -> options.keyDown);
+		// Backing away at a sprint's pace, 0.28 blocks a tick, facing them. With the camera on the stand the game
+		// takes no keys for the player, so the steps are teleports; the mobs read the movement off the positions.
 		String[] shots = {"cerco_retroceso_01", "cerco_retroceso_02", "cerco_retroceso_03", "cerco_retroceso_04"};
 		int shot = 0;
 		for (int tick = 1; tick <= 100 && shot < shots.length; tick++) {
-			// the eye follows the player, straight above
+			// one step back, and the eye follows the player, straight above
 			server.runOnServer(s -> {
 				var stand = connection.getServerLevel().getEntity(eye);
 				net.minecraft.server.level.ServerPlayer player = connection.getServerPlayer();
+				player.teleportTo(player.getX(), player.getY(), player.getZ() - 0.28);
 				if (stand != null) {
 					stand.snapTo(player.getX(), y + 16.0, player.getZ(), 0.0F, 90.0F);
 				}
@@ -10047,7 +10048,6 @@ public class ForjaClientTest implements FabricClientGameTest {
 			log("cerco retroceso " + shots[shot] + ": " + count);
 			shot++;
 		}
-		context.getInput().releaseKey(options -> options.keyDown);
 		context.runOnClient(mc -> {
 			mc.setCameraEntity(mc.player);
 			if (mc.gui.hud.isHidden()) {
