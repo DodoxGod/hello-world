@@ -28,3 +28,16 @@ Andy (2026-09-29): el blaze es demasiado distinto para compartir red, así que t
 
 La red se carga desde `config/forja/redes/red_blaze.json`, como las demás. `MobAi.check` la rechaza si sus entradas
 no coinciden con las del mod.
+
+## Nota tras la sección 7.1 de PROPUESTAS_IA_SIMULADOR.md
+
+El simulador propone para el blaze un contrato propio (`red_blaze_contrato.json`, v1). Tendría más entradas que
+`red_mob_v3` (altura sobre el suelo, carga de la ráfaga, bolas en vuelo) y salidas en 3D (subir, bajar, cargar,
+disparar). Por ahora el mod queda así:
+- si llega una `red_blaze.json` con ese contrato, `MobAi.check` la rechaza (sus entradas no coinciden) y el blaze
+  sigue con las reglas;
+- cuando el contrato esté escrito, el mod necesitará sus observaciones (`ObsBlaze`) y un ejecutor en 3D (mover en
+  vertical, cargar y disparar con adelanto). La ráfaga de `TacticGoal.fireballs` es el punto de partida.
+
+El simulador está bloqueado por el Control inteligente de aplicaciones de Windows (no deja compilar Rust). Lo tiene
+que resolver Andy en su PC.
