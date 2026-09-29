@@ -414,16 +414,31 @@ Una config con los valores viejos de presión pasa sola a los nuevos.
 - **Responder a la sesión "Mod Forja":** desde aquí no puedo mandar mensajes a otra sesión. Todo lo que le habría
   dicho está en este resumen.
 
+## Tus respuestas (y lo que he hecho)
+
+1. **Protección IV:** se queda.
+2. **Baluarte:** sigue dando +1 de armadura y 4 ticks de parada, pero ahora:
+   - la pieza pesa un 30 % más, así que andas, golpeas y recuperas estamina más despacio;
+   - con escudo, cada bloqueo cuesta un 20 % más de estamina.
+
+   Prueba: `baluarteIsHeavier`.
+3. **Separación del castillo:** se queda en 110 chunks.
+4. **Más llano:** el desnivel máximo pasa de 24 a 14 y el centro tiene que quedar a 4 de la mediana.
+   - Medido en un mundo nuevo: `/locate` tarda **6,7 s** la primera vez (antes de todo esto eran 20 s) y 0,2 s
+     la segunda.
+   - Se miraron 2.390 sitios: 2.199 descartados por bioma, 188 por el terreno y 3 válidos.
+   - El castillo salió en terreno abierto y suave, sin agua debajo. Vistas: `docs/capturas_2026-09-29/mundo_llano.jpg`.
+5. **Modo rodeo:** lo dejo como está hasta que lo pruebes.
+6. **Contrato del blaze:** hecho (`f4c1a00`, compiló a la primera y con todas las pruebas en verde).
+   - `docs/red_blaze_contrato.json` v1, con 65 entradas y 22 salidas. Las cabezas son: mover, vertical
+     (mantener/subir/bajar), fuego (esperar/cargar/disparar), distancia y táctica (acosar, rodear alto, retirarse,
+     esperar).
+   - En el mod: `ObsBlaze`, la máscara y un ejecutor en 3D. Solo dispara si ve al jugador y apunta con adelanto.
+   - Se carga `red_blaze.json` con formato `red_blaze_v1`; si no hay red, el blaze sigue con sus reglas.
+   - La explicación está en `docs/red_blaze_contrato.md`. Falta que el simulador lo implemente.
+
 ## Preguntas para ti
 
-1. **Castillo menos raro de encontrar.** El conjunto está a 110 chunks de separación (unos 1.760 bloques). ¿Lo bajo
-   a 80 para que haya más?
-2. **Sitio del castillo.** ¿Te parecen bien los límites nuevos (desnivel 24, 3 muestras con agua), o prefieres
-   más llano aunque salgan menos?
-3. **Protección IV.** Es lo que de verdad vuelve inofensivas a las multitudes. ¿Limito la mejora de Protección de
-   la forja a III, o activo `soloMejorasForja`?
-4. **Baluarte.** Con él, el obsidiacero pasa de +5 sobre la netherita P4. ¿Hago que dé dureza en vez de armadura?
-5. **Modo rodeo.** ¿Te vale que te sigan y te flanqueen, o quieres que te adelanten? Si es lo segundo, subo
-   `rodeoSpeed` o bajo el coste.
-6. **Contrato del blaze.** El simulador propone un contrato propio para el blaze. ¿Lo escribimos como
-   `red_blaze_contrato.json` v1?
+1. **Modo rodeo:** cuando lo pruebes, dime si subo `rodeoSpeed` o lo dejo.
+2. **`/locate`:** la primera búsqueda en un mundo nuevo para el juego unos 7 s. ¿Te vale, o prefieres que el
+   castillo sea algo menos exigente con el terreno para que tarde menos?
