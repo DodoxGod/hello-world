@@ -3,7 +3,6 @@ package dev.forja.ai;
 import java.util.EnumSet;
 
 import dev.forja.combat.AttackTokens;
-import dev.forja.combat.CombatConfig;
 import dev.forja.combat.CombatFeedback;
 import dev.forja.combat.Posture;
 import net.minecraft.server.level.ServerLevel;
@@ -143,7 +142,8 @@ public final class TacticGoal extends Goal {
 		}
 		switch (decision.tactic()) {
 			case LIBRE, ACERCARSE -> this.free(decision, target);
-			case RODEAR -> this.toRing(target, Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle, this.mind.ringRadius, 1.0);
+			case RODEAR -> this.toRing(target, Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle,
+				Reach.outside(target, this.mind.ringRadius), 1.0);
 			case FLANQUEAR -> this.toRing(target, this.behindAngle(target), FLANK_RADIUS, 1.15);
 			case ESPERAR -> this.waitOnRing(target);
 			case RETIRARSE -> this.retreat(target);
@@ -151,7 +151,7 @@ public final class TacticGoal extends Goal {
 			case CUBRIRSE -> this.cover(target);
 			case PARAPETARSE -> this.parapet(target);
 			case CEBO -> this.bait(target);
-			case RELEVO -> this.toRing(target, this.currentAngle(target) + this.side() * RELAY_SWING, RELAY_RADIUS, 1.0);
+			case RELEVO -> this.toRing(target, this.currentAngle(target) + this.side() * RELAY_SWING, Reach.outside(target, RELAY_RADIUS), 1.0);
 			case OCULTARSE -> this.hide(target);
 			case EMPUJAR -> this.pushTowardsDanger(decision, target);
 		}
@@ -164,11 +164,29 @@ public final class TacticGoal extends Goal {
 
 	private void free(Decision decision, Player target) {
 		double speed = this.mind.draw > 0 ? 0.5 : 1.0;
-		this.move(decision.move(), target, speed);
+		this.move(this.reachMove(decision, target), target, speed);
 		if (decision.jump()) {
 			this.jump(target);
 		}
 		this.use(target, decision.use());
+	}
+
+	/**
+	 * Where the weapon puts a mob that means to strike (usar): one whose weapon reaches further than its
+	 * body stops walking in once the player is within that reach, and holds there to strike, instead of
+	 * walking up into their face; a spear or a lance inside the shortest reach of its point backs off
+	 * to get it. Anything else goes where it was told: with a vanilla weapon, always.
+	 */
+	private int reachMove(Decision decision, Player target) {
+		int move = decision.move();
+		MobFamily family = MobFamily.of(this.mob);
+		if (!decision.use() || family == MobFamily.ARQUERO || family == MobFamily.CREEPER) {
+			return move;
+		}
+		if (Reach.min(this.mob) > 0.0 && Reach.tooClose(this.mob, target)) {
+			return 5;
+		}
+		return move == 1 && Reach.closeEnough(this.mob, target) ? 0 : move;
 	}
 
 	/** mover: 0 still, 1 towards, 5 away, the others fixed directions around "towards". */
@@ -237,7 +255,9 @@ public final class TacticGoal extends Goal {
 
 	/** A melee blow, always with its warning: the same telegraph as vanilla's mobs get from Forja. */
 	private void strike(Player target) {
-		if (this.mind.cooldown > 0 || !ObsM1.reaches(this.mob, target)) {
+		// Within the weapon's reach, not the body's: a flail or a lance strikes from further off, a fist or a
+		// sword from where it always did.
+		if (this.mind.cooldown > 0 || !Reach.reaches(this.mob, target)) {
 			return;
 		}
 		if (!AttackTokens.tryAcquire(target, this.mob, Aggression.maxAttackers(this.mob, target))) {
@@ -281,8 +301,7 @@ public final class TacticGoal extends Goal {
 			return;
 		}
 		this.mob.swing(InteractionHand.MAIN_HAND);
-		double allowed = this.mob.getBbWidth() * 2.0 + target.getBbWidth() * 0.5 + CombatConfig.get().strikeReachBonus;
-		if (this.mob.distanceTo(target) <= allowed && ObsM1.sees(this.mob, target.getX(), target.getEyeY(), target.getZ())
+		if (this.mob.distanceTo(target) <= Reach.landing(this.mob, target) && ObsM1.sees(this.mob, target.getX(), target.getEyeY(), target.getZ())
 			&& this.mob.level() instanceof ServerLevel level && this.mob.doHurtTarget(level, target)) {
 			HopBack.afterHit(this.mob, target);
 		}
@@ -384,21 +403,22 @@ public final class TacticGoal extends Goal {
 	/**
 	 * Waiting for a turn: out of reach as before, but at its own slot of the ring rather than straight in
 	 * front, so the ones waiting stand round the player's sides and back and not in a queue before them.
+	 * Out of this player's reach: a flail or a lance in their hand pushes the ring out by what it adds.
 	 */
 	private void waitOnRing(Player target) {
 		if (Duels.watching(this.mob) || Double.isNaN(this.mind.ringAngle)) {
 			this.hold(target);
 			return;
 		}
-		this.toRing(target, this.mind.ringAngle, Math.max(this.mind.ringRadius, (WAIT_MIN + WAIT_MAX) / 2.0), 0.8);
+		this.toRing(target, this.mind.ringAngle, Reach.outside(target, Math.max(this.mind.ringRadius, (WAIT_MIN + WAIT_MAX) / 2.0)), 0.8);
 	}
 
 	private void hold(Player target) {
 		double d = this.mob.distanceTo(target);
 		// A duel's watchers stand round the ring, outside it.
 		boolean watching = Duels.watching(this.mob);
-		double min = watching ? DUEL_WATCH_MIN : WAIT_MIN;
-		double max = watching ? DUEL_WATCH_MAX : WAIT_MAX;
+		double min = Reach.outside(target, watching ? DUEL_WATCH_MIN : WAIT_MIN);
+		double max = Reach.outside(target, watching ? DUEL_WATCH_MAX : WAIT_MAX);
 		if (d < min) {
 			this.move(5, target, 0.8);
 		} else if (d > max) {

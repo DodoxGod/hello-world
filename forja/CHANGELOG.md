@@ -1,5 +1,20 @@
 # Novedades
 
+## 2026-09-28 — los monstruos cuentan con el alcance del arma
+
+- Un monstruo golpea desde donde llega **su arma**, no desde donde llega su brazo: el golpe empieza y acierta a
+  su alcance (el del cuerpo, 0,83 entre cajas, más lo que añada el arma). Mangual 3,83 (antes 0,83), lanza 2,33
+  (y su punta no sirve a menos de 1), guadaña 1,58, tridente forjado 1,33, y la mejora Alcance suma lo suyo. Con
+  espada, hacha, daga, mazo, martillo o la mano vacía todo sigue igual.
+- Con un arma larga ya no se mete en la cara del jugador: se para a su alcance y golpea desde ahí. Con lanza,
+  si está demasiado pegado, retrocede hasta tener sitio para la punta. La embestida del zombi empieza más lejos
+  con un arma larga (mangual: desde 6,5 en vez de 3,5), para no saltarle encima a quien ya alcanza.
+- Esperando su turno, se quedan fuera del alcance **del arma del jugador**: el anillo, la espera y el relevo se
+  abren tanto como el arma alarga su brazo (mangual +3: el anillo pasa de 3,5 a 6,5 y la espera de 5 a 8; lanza
+  +1,5). También se apartan antes de un golpe cargado y rodean desde más lejos.
+- Vale igual para los monstruos que lleva una red y para los de las reglas. Las redes entrenadas cargan igual:
+  sus entradas no cambian (obj_en_alcance sigue siendo el alcance del cuerpo, como en el simulador).
+
 ## 2026-09-28 — el Herrero Caído se defiende
 
 - El Herrero Caído ya pelea contra lo que le pegue, no solo contra jugadores: un warden, un gólem, lobos, otro

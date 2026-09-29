@@ -13,9 +13,7 @@ import dev.forja.magic.Spellcasting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.AreaEffectCloud;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
@@ -159,7 +157,8 @@ public final class ObsV3 {
 		Map<String, String> out = new LinkedHashMap<>();
 		out.put("tactica_cebo", "corre al aliado más cercano que pelea con el mismo jugador y " + TacticGoal.BAIT_PAST
 			+ " bloques más allá (lejos del jugador), velocidad 1.2; sin aliado = RETIRARSE. Máscara: hace falta un aliado.");
-		out.put("tactica_relevo", "fuera del alcance del jugador: a " + TacticGoal.RELAY_RADIUS + " bloques, girando " + TacticGoal.RELAY_SWING
+		out.put("tactica_relevo", "fuera del alcance del jugador: a " + TacticGoal.RELAY_RADIUS + " bloques más lo que jug_alcance pase de "
+			+ Reach.PLAYER_BASE + " (mangual +3, lanza +1.5), girando " + TacticGoal.RELAY_SWING
 			+ " rad hacia su lado fijo (id par = +, impar = -), velocidad 1.0. Siempre permitida.");
 		out.put("tactica_ocultarse", "tras un bloque que corte la vista del jugador a <=4 (Terrain.cover), si no a " + TacticGoal.SHADOW_BEHIND
 			+ " bloques detrás del aliado más cercano (el aliado entre él y el jugador), si no RETIRARSE; velocidad 1.2/1.1. "
@@ -300,13 +299,7 @@ public final class ObsV3 {
 		o[i++] = ObsM1.clip(drawn / 20.0, 0.0, 2.0);
 
 		// --- W: the player's weapon and what it reaches
-		double playerReach = target.getAttributes().hasAttribute(Attributes.ENTITY_INTERACTION_RANGE)
-			? target.getAttributeValue(Attributes.ENTITY_INTERACTION_RANGE) : 3.0;
-		var attackRange = main.get(DataComponents.ATTACK_RANGE);
-		if (attackRange != null) {
-			playerReach = Math.max(playerReach, attackRange.maxReach());
-		}
-		o[i++] = ObsM1.clip(playerReach / 6.0, 0.0, 2.0);
+		o[i++] = ObsM1.clip(Reach.player(target) / 6.0, 0.0, 2.0);
 		double area = areaRadius(main);
 		o[i++] = area / 6.0;
 		boolean quake = forgedOf(main, ForgeType.MARTILLO) || forgedOf(main, ForgeType.MAZO);
@@ -495,23 +488,9 @@ public final class ObsV3 {
 
 	// ---------------------------------------------------------------- the rest
 
-	/** How far its blow reaches: the body's reach and whatever the weapon adds. */
+	/** How far its blow reaches: the body's reach and whatever the weapon adds (the executor strikes by the same, {@link Reach}). */
 	static double reach(ItemStack held) {
-		double extra = 0.0;
-		var modifiers = held.get(DataComponents.ATTRIBUTE_MODIFIERS);
-		if (modifiers != null) {
-			for (var entry : modifiers.modifiers()) {
-				if (entry.attribute().equals(Attributes.ENTITY_INTERACTION_RANGE) && entry.modifier().operation() == AttributeModifier.Operation.ADD_VALUE
-					&& entry.slot().test(EquipmentSlot.MAINHAND)) {
-					extra += entry.modifier().amount();
-				}
-			}
-		}
-		var range = held.get(DataComponents.ATTACK_RANGE);
-		if (range != null) {
-			extra += Math.max(0.0, range.maxReach() - 3.0);
-		}
-		return ObsM1.REACH + extra;
+		return Reach.of(held);
 	}
 
 	/** How far off the middle of the player's view a point is, flat (radians, 0..pi). */

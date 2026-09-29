@@ -383,6 +383,18 @@ One-hot de tipo (entradas 33–39): zombie, husk, drowned, skeleton, stray, cree
 
 Con cualquier táctica que no sea LIBRE ni ACERCARSE, `usar` sigue funcionando: el mob golpea si alcanza.
 
+### Alcance del arma (2026-09-28, `ai/Reach`)
+- "Alcanza" es con el arma: hueco plano entre cajas ≤ 0,83 + extra del arma (el mismo número que `yo_arma_alcance`:
+  modificadores de entity_interaction_range + (attack_range.max_reach − 3)), hueco vertical ≤ 0,83; y, con
+  attack_range, hueco > min_reach·mob_factor (lanza: 1). El golpe avisado acierta a ≤ 2·ancho + 0,5·ancho_jugador +
+  0,5 **+ extra**. Mangual +3, lanza +1,5, guadaña +0,75, tridente +0,5, Alcance +1,5·f; lo demás, +0.
+  `obj_en_alcance` NO cambia: sigue siendo el alcance del cuerpo (0,83).
+- Con `usar` pedido: un arma con extra > 0 no sigue avanzando (mover 1 → 0) si ya alcanza con 0,3 de margen; una
+  lanza a < min + 0,2 retrocede (mover 5). Las reglas hacen lo mismo con la meta vanilla de atacar. La embestida
+  del zombi pide ≥ 3,5 + extra.
+- Contra un jugador con más alcance que 3 (`jug_alcance`), RODEAR, ESPERAR (anillo y 4–6), RELEVO, apartarse de un
+  golpe cargado (4) y el radio de espera de turno (6) se amplían en (alcance del jugador − 3).
+
 ### Reglas (fase 1)
 - Arqueros y creepers: ACERCARSE (su IA vanilla).
 - Los demás:

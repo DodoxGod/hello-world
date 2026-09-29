@@ -94,8 +94,8 @@ abstract class MeleeAttackGoalMixin {
 			}
 			if (--forja$windup > 0) return;
 			mob.swing(InteractionHand.MAIN_HAND);
-			double allowed = mob.getBbWidth() * 2.0 + target.getBbWidth() * 0.5 + cfg.strikeReachBonus;
-			if (mob.distanceTo(target) <= allowed && mob.getSensing().hasLineOfSight(target) && mob.level() instanceof ServerLevel level
+			// Lands as far off as the weapon reaches (Reach): a flail's or a lance's blow further than a fist's.
+			if (mob.distanceTo(target) <= dev.forja.ai.Reach.landing(mob, target) && mob.getSensing().hasLineOfSight(target) && mob.level() instanceof ServerLevel level
 				&& mob.doHurtTarget(level, target)) {
 				dev.forja.ai.HopBack.afterHit(mob, target);
 			}
@@ -131,6 +131,21 @@ abstract class MeleeAttackGoalMixin {
 
 	@Shadow
 	private int ticksUntilNextAttack;
+
+	/**
+	 * A mob whose weapon reaches further than its body (a flail, a lance, a scythe...) stops walking in once
+	 * its target is within that reach, and strikes from there, instead of walking up into the player's face.
+	 * The path is kept, only its speed is taken away, as during a warning; a mob holding anything that adds
+	 * no reach walks in as it always did.
+	 */
+	@Inject(method = "tick", at = @At("TAIL"))
+	private void forja$holdAtReach(CallbackInfo ci) {
+		LivingEntity target = mob.getTarget();
+		if (target != null && forja$windup == 0 && CombatConfig.get().enabled && dev.forja.ai.Reach.closeEnough(mob, target)
+			&& mob.getSensing().hasLineOfSight(target)) {
+			forja$holdStill(target);
+		}
+	}
 
 	/** Peso (combat/Weight): the more it carries, the longer it waits before the next blow. */
 	@Inject(method = "resetAttackCooldown", at = @At("TAIL"))

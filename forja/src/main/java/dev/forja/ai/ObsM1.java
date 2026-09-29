@@ -161,14 +161,26 @@ public final class ObsM1 {
 		return new double[] {ux * c + rx * s, uz * c + rz * s};
 	}
 
-	/** Whether the mob's blow reaches: the gap between the two boxes, flat, within {@link #REACH}. */
+	/**
+	 * Whether the mob's blow reaches: the gap between the two boxes, flat, within {@link #REACH}. This is
+	 * obj_en_alcance, the simulator's body reach, whatever the mob holds: what its weapon adds is its own
+	 * input (yo_arma_alcance), and what the executor strikes by is {@link Reach#reaches}.
+	 */
 	public static boolean reaches(LivingEntity mob, LivingEntity target) {
+		return reaches(mob, target, REACH);
+	}
+
+	/**
+	 * The same with a longer reach, a weapon's: the flat gap within {@code reach}. The gap up or down stays
+	 * within the body's {@link #REACH}: a weapon lengthens the blow, it does not lift it onto a pillar.
+	 */
+	public static boolean reaches(LivingEntity mob, LivingEntity target, double reach) {
 		AABB a = mob.getBoundingBox();
 		AABB b = target.getBoundingBox();
 		double gx = Math.max(0.0, Math.max(a.minX - b.maxX, b.minX - a.maxX));
 		double gz = Math.max(0.0, Math.max(a.minZ - b.maxZ, b.minZ - a.maxZ));
 		double gy = Math.max(0.0, Math.max(a.minY - b.maxY, b.minY - a.maxY));
-		return Math.hypot(gx, gz) <= REACH && gy <= REACH;
+		return Math.hypot(gx, gz) <= reach && gy <= REACH;
 	}
 
 	/**

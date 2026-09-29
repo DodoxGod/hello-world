@@ -121,7 +121,9 @@ public final class VanillaSpecials {
 		public boolean canStart(Mob mob, Player target) {
 			CombatConfig cfg = CombatConfig.get();
 			double d = mob.distanceTo(target);
-			return cfg.zombieLunge && mob.onGround() && d >= cfg.lungeMinDistance && d <= cfg.lungeMaxDistance && sees(mob, target)
+			// Not from where its weapon already reaches: a flail's or a lance's reach pushes the nearest leap out
+			// as far (a flail, 3.5 -> 6.5), so it strikes from its length instead of leaping into the player's face.
+			return cfg.zombieLunge && mob.onGround() && d >= cfg.lungeMinDistance + Reach.extra(mob) && d <= cfg.lungeMaxDistance && sees(mob, target)
 				&& !dev.forja.world.Elites.isElite(mob)
 				&& !Duels.watching(mob)
 				// A spear has a charge of its own (SpearUseGoal, warned in SpearUseGoalMixin): a lunge on top cut it
@@ -322,7 +324,7 @@ public final class VanillaSpecials {
 		public boolean follow(Mob mob, Player target, SpecialRunner.Run run, int tick) {
 			// After the jump, the usual warning before the blow.
 			if (tick >= CombatConfig.get().windupTicks) {
-				double reach = mob.getBbWidth() * 2.0 + target.getBbWidth() * 0.5 + CombatConfig.get().strikeReachBonus;
+				double reach = Reach.landing(mob, target);
 				if (mob.distanceTo(target) <= reach && mob.level() instanceof ServerLevel level) {
 					mob.swing(InteractionHand.MAIN_HAND);
 					mob.doHurtTarget(level, target);

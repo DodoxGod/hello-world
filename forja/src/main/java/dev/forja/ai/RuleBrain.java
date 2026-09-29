@@ -99,8 +99,9 @@ public final class RuleBrain {
 			return Decision.tactic(Tactic.RETIRARSE);
 		}
 		boolean hasTurn = AttackTokens.holds(target, mob) || AttackTokens.free(target, Aggression.maxAttackers(mob, target));
-		// A charged blow is coming: shield up if it has one, a dodge if it is right on top, else out of reach.
-		if (Aggression.charging(target) && distance < CHARGE_RANGE && mind.windup == 0 && !AttackTokens.holds(target, mob)) {
+		// A charged blow is coming: shield up if it has one, a dodge if it is right on top, else out of reach
+		// (a flail's or a lance's reach, when that is what the player holds).
+		if (Aggression.charging(target) && distance < Reach.outside(target, CHARGE_RANGE) && mind.windup == 0 && !AttackTokens.holds(target, mob)) {
 			if (MobDefense.hasShield(mob) && !MobDefense.guardBroken(mob)) {
 				return Decision.tactic(Tactic.CUBRIRSE);
 			}
@@ -135,9 +136,10 @@ public final class RuleBrain {
 		// A spear keeps its distance: too close for its point, it steps back (idea 57). A spear, not everything
 		// that thrusts: a dagger is at its best right up against you, and backing off with one made no sense.
 		// Not for a mob with vanilla's spear goal: that one falls back and charges again by itself, and this rule
-		// pulled it back out of every charge it started.
+		// pulled it back out of every charge it started. Too close is inside the point's own shortest reach
+		// (attack_range min_reach, scaled for a monster as vanilla does: 1 block between the boxes) and a little.
 		if (SwingStyle.of(mob.getMainHandItem()) == SwingStyle.THRUST && mob.getMainHandItem().has(net.minecraft.core.component.DataComponents.KINETIC_WEAPON)
-			&& distance < 1.8 && mind.windup == 0 && !hasSpearGoal(mob)) {
+			&& Reach.tooClose(mob, target) && mind.windup == 0 && !hasSpearGoal(mob)) {
 			return new Decision(5, false, false, Tactic.LIBRE, 0, 0, false);
 		}
 		// An ally lies staggered by the player: close round it (its slot is set to the ally's side).
@@ -149,7 +151,7 @@ public final class RuleBrain {
 			return Decision.tactic(Tactic.REAGRUPARSE);
 		}
 		// The relay: having just struck, make room for the next one if anyone is waiting.
-		if (now - mind.lastStrike < RELAY_TICKS && mind.othersWaiting && distance < 3.0) {
+		if (now - mind.lastStrike < RELAY_TICKS && mind.othersWaiting && distance < 3.0 + Reach.extra(mob)) {
 			return Decision.tactic(Tactic.ESPERAR);
 		}
 		// The pincer: the flanker goes round behind before it swings.
@@ -160,7 +162,8 @@ public final class RuleBrain {
 		if (!hasTurn && distance < 8.0 && hasShield(mob) && !MobDefense.guardBroken(mob) && mind.role != SquadRole.FLANCO) {
 			return Decision.tactic(Tactic.CUBRIRSE);
 		}
-		if (!hasTurn && distance < CIRCLE_RANGE) {
+		// Waiting for a turn: from further off against a player whose weapon reaches further (flail, lance...).
+		if (!hasTurn && distance < Reach.outside(target, CIRCLE_RANGE)) {
 			// Waiting for a turn: against heavy plate, round the side; against a head-heavy weapon, out of its
 			// reach; otherwise on the ring.
 			if (Aggression.heavy(target)) {
@@ -178,7 +181,9 @@ public final class RuleBrain {
 		}
 		// Going in from its own side: with others at the same player, one with a turn that is still well round
 		// the ring from its slot goes round to it first, so the blows come from all sides and not one.
-		if (distance > GO_ROUND_MIN && distance < CIRCLE_RANGE + 2.0 && !Double.isNaN(mind.ringAngle) && ObsM1.allies(mob).size() >= 1
+		// A long weapon strikes from further off, so "already this close" starts further off too.
+		if (distance > GO_ROUND_MIN + Reach.extra(mob) && distance < Reach.outside(target, CIRCLE_RANGE + 2.0) && !Double.isNaN(mind.ringAngle)
+			&& ObsM1.allies(mob).size() >= 1
 			&& Math.abs(Squad.wrap(Squad.angle(mob, target) - mind.ringAngle)) > GO_ROUND_ANGLE) {
 			return Decision.tactic(Tactic.RODEAR);
 		}

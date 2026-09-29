@@ -780,7 +780,7 @@ public class AiGameTests {
 	}
 
 	/** A v2 network with every input and head: all zeros but for its output biases. */
-	private static com.google.gson.JsonObject fakeV2(float[] outBias) {
+	static com.google.gson.JsonObject fakeV2(float[] outBias) {
 		java.util.List<String> names = new java.util.ArrayList<>(ObsNames.M1);
 		names.addAll(dev.forja.ai.ObsForja.names());
 		int n = names.size();

@@ -405,7 +405,7 @@
   "n_salidas": 34,
   "tacticas_nuevas": {
     "tactica_cebo": "corre al aliado más cercano que pelea con el mismo jugador y 2.5 bloques más allá (lejos del jugador), velocidad 1.2; sin aliado = RETIRARSE. Máscara: hace falta un aliado.",
-    "tactica_relevo": "fuera del alcance del jugador: a 5.0 bloques, girando 0.5 rad hacia su lado fijo (id par = +, impar = -), velocidad 1.0. Siempre permitida.",
+    "tactica_relevo": "fuera del alcance del jugador: a 5.0 bloques más lo que jug_alcance pase de 3.0 (mangual +3, lanza +1.5), girando 0.5 rad hacia su lado fijo (id par = +, impar = -), velocidad 1.0. Siempre permitida.",
     "tactica_ocultarse": "tras un bloque que corte la vista del jugador a <=4 (Terrain.cover), si no a 1.5 bloques detrás del aliado más cercano (el aliado entre él y el jugador), si no RETIRARSE; velocidad 1.2/1.1. Máscara: aliado o cobertura.",
     "tactica_empujar": "al lado del jugador contrario a la lava/caída más cercana (a 1.5 o 3 de él), a 1.5 bloques; una vez allí, directo al jugador (sus golpes empujan 0.35 extra hacia el peligro: MobAi.pushToDanger); sin peligro = ACERCARSE. Máscara: peligro junto al jugador."
   },
