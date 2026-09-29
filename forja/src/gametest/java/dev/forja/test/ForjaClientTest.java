@@ -10103,7 +10103,10 @@ public class ForjaClientTest implements FabricClientGameTest {
 			new Timing("molde_roto", "recast", dev.forja.entity.BrokenMould.RECAST_WINDUP),
 			new Timing("tenaza", "grab", dev.forja.entity.Tongs.GRAB_WINDUP),
 			new Timing("nucleo_estelar", "gather", dev.forja.entity.StarCore.RELEASE_WINDUP),
-			new Timing("automata_de_forja", "vent", dev.forja.entity.ForgeAutomaton.EMBER_WINDUP)
+			new Timing("automata_de_forja", "vent", dev.forja.entity.ForgeAutomaton.EMBER_WINDUP),
+			new Timing("herrero_caido", "starcall", dev.forja.entity.FallenSmith.STARFALL_WINDUP),
+			new Timing("pavesa", "dive", dev.forja.entity.EmberWisp.DIVE_WINDUP),
+			new Timing("ascua_mayor", "dive", dev.forja.entity.GreaterEmber.DIVE_WINDUP)
 		);
 		// And the warning before every plain blow: drawn on the tick the code stretches it to (entity.MobMoves).
 		timings = new ArrayList<>(timings);

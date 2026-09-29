@@ -279,6 +279,14 @@ public class StarCore extends Monster implements GeoEntity {
 		}
 	}
 
+	/**
+	 * How long it warns before the beam, at this share of its health: the warning shortens as it breaks up,
+	 * to half its length at the end (idea 50). The gather clip is played to fit it (registerControllers).
+	 */
+	public static int releaseWarning(float healthShare) {
+		return Math.max(RELEASE_WINDUP / 2, Math.round(RELEASE_WINDUP * (0.5F + 0.5F * healthShare)));
+	}
+
 	/** Lets the whole lot go at whoever put it in. */
 	public void release(ServerLevel level) {
 		LivingEntity owed = this.owedTo;
@@ -288,8 +296,7 @@ public class StarCore extends Monster implements GeoEntity {
 		float held = this.entityData.get(DATA_CHARGE);
 		this.triggerAnim("nucleo", "gather");
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.BEACON_POWER_SELECT, SoundSource.HOSTILE, 1.8F, 0.7F);
-		// The warning shortens as it breaks up: half its length at the end (idea 50).
-		int warning = Math.max(RELEASE_WINDUP / 2, Math.round(RELEASE_WINDUP * (0.5F + 0.5F * this.getHealth() / this.getMaxHealth())));
+		int warning = releaseWarning(this.getHealth() / this.getMaxHealth());
 		this.windup.start(warning, (world, left, total) -> {
 			// The line it is about to fire down, so there is something to step out of.
 			Vec3 from = this.position().add(0.0, 1.0, 0.0);
@@ -356,9 +363,12 @@ public class StarCore extends Monster implements GeoEntity {
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
 		// The second tell: past a third full the shards swing out and the whole thing speeds up. It never
-		// walks: idle is its walk too.
+		// walks: idle is its walk too. The gather is drawn full at RELEASE_WINDUP and played faster as the
+		// warning shortens, so it is full on the tick the beam leaves whatever its health.
 		controllers.add(MobMoves.controller("nucleo", MobMoves.Clips.<StarCore>of(IDLE, IDLE).stagger(STAGGER).death(DEATH)
-			.state(core -> core.spent() ? SPENT : core.charge() > 0.33F ? CHARGED : null))
+			.state(core -> core.spent() ? SPENT : core.charge() > 0.33F ? CHARGED : null)
+			.pace((core, clip) -> clip == GATHER
+				? (float) RELEASE_WINDUP / releaseWarning(core.getHealth() / core.getMaxHealth()) : 1.0F))
 			.triggerableAnim("gather", GATHER).triggerableAnim("release", RELEASE));
 	}
 

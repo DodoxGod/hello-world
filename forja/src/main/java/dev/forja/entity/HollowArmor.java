@@ -82,8 +82,12 @@ public class HollowArmor extends Monster implements GeoEntity {
 	private static final RawAnimation RUN = RawAnimation.begin().thenLoop("run");
 	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
 	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
-	/** Playing dead, as long as ai.ForjaTraits has it lie there, and getting up again behind you. */
-	private static final RawAnimation FEIGN = RawAnimation.begin().thenPlay("feign");
+	/**
+	 * Playing dead, and getting up again behind you. The heap is held for as long as ai.ForjaTraits has it lie
+	 * there, until the rise takes over (the clip is exactly HOLLOW_FEIGN_TICKS long, but a triggered clip that
+	 * runs out a frame early would stand it up in the middle of being dead).
+	 */
+	private static final RawAnimation FEIGN = RawAnimation.begin().thenPlayAndHold("feign");
 	private static final RawAnimation RISE = RawAnimation.begin().thenPlay("rise");
 	private static final RawAnimation DASH = RawAnimation.begin().thenPlay("dash");
 	private static final RawAnimation WAIL = RawAnimation.begin().thenPlay("wail");
@@ -163,7 +167,8 @@ public class HollowArmor extends Monster implements GeoEntity {
 	@Override
 	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
 		super.swing(hand, updateSelf);
-		if (this.level() instanceof ServerLevel) {
+		// Only when this call started a swing, not when one already under way was left alone (as BrokenMould).
+		if (this.level() instanceof ServerLevel && this.swingTime == -1) {
 			this.triggerAnim("coraza", "cut");
 		}
 	}

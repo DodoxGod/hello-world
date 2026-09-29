@@ -93,6 +93,12 @@ public class FallenSmith extends Monster implements GeoEntity {
 	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
 	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
 	private static final RawAnimation REFORGE = RawAnimation.begin().thenLoop("reforge");
+	/** A heavy run of his own, for when he is ever sprinting (bosses do not, today: ai.MobSprint.runs). */
+	private static final RawAnimation RUN = RawAnimation.begin().thenLoop("run");
+	/** The hammer on the floor as his apprentices come up round him. */
+	private static final RawAnimation CALL = RawAnimation.begin().thenPlay("call");
+	/** The hammer raised to the sky for STARFALL_WINDUP, and pulled down as the stars fall. */
+	private static final RawAnimation STARCALL = RawAnimation.begin().thenPlay("starcall");
 	// The fire runs on its own controller, so it can burn however it likes while he does something else.
 	private static final RawAnimation FIRE_CALM = RawAnimation.begin().thenLoop("fire_calm");
 	private static final RawAnimation FIRE_RAGE = RawAnimation.begin().thenLoop("fire_rage");
@@ -137,6 +143,14 @@ public class FallenSmith extends Monster implements GeoEntity {
 	public static final int WAVE_WINDUP = 54;
 	public static final int HOOK_WINDUP = 8;
 	public static final int STRIKE_WINDUP = 10;
+	/**
+	 * The star shower of his last quarter: he raises the hammer to the sky over the spot it will fall on,
+	 * and it comes down at twenty ticks ("starcall" in tools/generate_assets.py pulls the hammer down on
+	 * that tick). It used to hit on the tick it was announced, which is no warning at all.
+	 */
+	public static final int STARFALL_WINDUP = 20;
+	/** How far round the marked spot the shower catches you. */
+	public static final double STARFALL_RADIUS = 3.0;
 
 	/** The backhand: close range, fast, and the one he punishes you with for standing next to him. */
 	public static final int STRIKE_COOLDOWN = 90;
@@ -171,6 +185,9 @@ public class FallenSmith extends Monster implements GeoEntity {
 	private Vec3 waveOrigin = Vec3.ZERO;
 	private boolean calledHelp;
 	private boolean broughtSky;
+	/** Ticks until the stars he has called come down, and where; 0 when none are coming. */
+	private int starfall;
+	private Vec3 starfallAt = Vec3.ZERO;
 
 	public FallenSmith(EntityType<? extends FallenSmith> type, Level level) {
 		super(type, level);
@@ -430,8 +447,12 @@ public class FallenSmith extends Monster implements GeoEntity {
 			this.triggerAnim("boss", "roar");
 			this.phaseBreak(level);
 		}
-		if (this.broughtSky && this.tickCount % 60 == 0 && this.getTarget() != null) {
-			this.starfall(level, this.getTarget());
+		// Not over one of his own blows: a special under way finishes first, and the shower waits for the next time.
+		if (this.broughtSky && this.starfall == 0 && this.tickCount % 60 == 0 && this.getTarget() != null && !this.windup.charging()) {
+			this.callStars(level, this.getTarget());
+		}
+		if (this.starfall > 0) {
+			this.rollStarfall(level);
 		}
 		this.heavyMoves(level);
 	}
@@ -461,6 +482,12 @@ public class FallenSmith extends Monster implements GeoEntity {
 			this.getNavigation().stop();
 			this.setDeltaMovement(this.getDeltaMovement().multiply(0.35, 1.0, 0.35));
 			this.windup.tick(level);
+			return;
+		}
+		// The same while he holds the hammer up to the sky: nothing new starts until the stars are down.
+		if (this.starfall > 0) {
+			this.getNavigation().stop();
+			this.setDeltaMovement(this.getDeltaMovement().multiply(0.35, 1.0, 0.35));
 			return;
 		}
 		LivingEntity target = this.getTarget();
@@ -747,7 +774,8 @@ public class FallenSmith extends Monster implements GeoEntity {
 
 	/** The apprentices: four of them, in his own gear, all at once. */
 	private void callApprentices(ServerLevel level) {
-		this.triggerAnim("boss", "roar");
+		// Not the roar of his last quarter: the hammer goes down on the floor and they come up out of it.
+		this.triggerAnim("boss", "call");
 		this.lightForge(RAGE_TICKS * 2);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 4.0F, 0.7F);
 		for (int i = 0; i < 4; i++) {
@@ -814,15 +842,39 @@ public class FallenSmith extends Monster implements GeoEntity {
 		}
 	}
 
-	/** The last stage: the shower that buried the forge, aimed at whoever is fighting him. */
-	private void starfall(ServerLevel level, LivingEntity target) {
+	/**
+	 * The last stage: the shower that buried the forge, called down on whoever is fighting him. The spot is
+	 * marked when he raises the hammer, and the stars fall on it STARFALL_WINDUP ticks later: step off it.
+	 */
+	public void callStars(ServerLevel level, LivingEntity target) {
+		this.starfall = STARFALL_WINDUP;
+		this.starfallAt = target.position();
+		this.triggerAnim("boss", "starcall");
 		this.lightForge(RAGE_TICKS);
-		Vec3 at = target.position();
+		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.HOSTILE, 2.0F, 1.2F);
+	}
+
+	/** The warning: the ring on the floor where they will land, and the light gathering over it. */
+	private void rollStarfall(ServerLevel level) {
+		this.starfall--;
+		Vec3 at = this.starfallAt;
+		if (this.starfall > 0) {
+			float grown = 1.0F - (float) this.starfall / STARFALL_WINDUP;
+			for (int i = 0; i < 10; i++) {
+				double angle = i * Math.PI / 5.0 + this.starfall * 0.2;
+				level.sendParticles(ParticleTypes.END_ROD, at.x + Math.cos(angle) * STARFALL_RADIUS, at.y + 0.1,
+					at.z + Math.sin(angle) * STARFALL_RADIUS, 1, 0.0, 0.0, 0.0, 0.0);
+			}
+			level.sendParticles(ParticleTypes.END_ROD, at.x, at.y + 7.0 - grown * 3.0, at.z, 2 + (int) (grown * 6), 0.8, 0.4, 0.8, 0.01);
+			return;
+		}
 		level.sendParticles(ParticleTypes.END_ROD, at.x, at.y + 6.0, at.z, 60, 1.0, 1.0, 1.0, 0.1);
 		level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.HOSTILE, 2.0F, 0.6F);
 		// Aimed at whatever he is fighting, which is not always a player now; the apprentices crowding a
 		// golem with him are his own side and the shower passes them by (it has no attacker for the truce).
-		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, target.getBoundingBox().inflate(3.0),
+		net.minecraft.world.phys.AABB area = new net.minecraft.world.phys.AABB(at.x - STARFALL_RADIUS, at.y - 1.0, at.z - STARFALL_RADIUS,
+			at.x + STARFALL_RADIUS, at.y + 4.0, at.z + STARFALL_RADIUS);
+		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, area,
 			other -> other != this && other.isAlive() && !dev.forja.world.Truce.ours(other))) {
 			victim.invulnerableTime = 0;
 			victim.hurtServer(level, level.damageSources().magic(), 9.0F);
@@ -861,7 +913,8 @@ public class FallenSmith extends Monster implements GeoEntity {
 	@Override
 	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
 		super.swing(hand, updateSelf);
-		if (this.level() instanceof ServerLevel) {
+		// Only when this call started a swing, not when one already under way was left alone (as BrokenMould).
+		if (this.level() instanceof ServerLevel && this.swingTime == -1) {
 			this.triggerAnim("boss", "swing");
 		}
 	}
@@ -907,11 +960,11 @@ public class FallenSmith extends Monster implements GeoEntity {
 
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(MobMoves.controller("boss", MobMoves.Clips.<FallenSmith>of(IDLE, WALK)
+		controllers.add(MobMoves.controller("boss", MobMoves.Clips.<FallenSmith>of(IDLE, WALK).run(RUN)
 			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER).death(DEATH)
 			.state(smith -> smith.entityData.get(DATA_REFORGING) ? REFORGE : null))
 			.triggerableAnim("slam", SLAM).triggerableAnim("roar", ROAR).triggerableAnim("strike", STRIKE).triggerableAnim("hook", HOOK)
-			.triggerableAnim("swing", SWING));
+			.triggerableAnim("swing", SWING).triggerableAnim("call", CALL).triggerableAnim("starcall", STARCALL));
 		// The fire is its own controller: it only touches the two bones the flames hang off, so it can
 		// keep burning through a swing, a roar or a reforge without any of them fighting over a bone. It goes
 		// back to burning after a flash, too: it used to stop dead on the flash's last frame.

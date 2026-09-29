@@ -58,6 +58,7 @@ public final class MobMoves {
 		@Nullable RawAnimation stagger;
 		@Nullable RawAnimation death;
 		@Nullable Function<T, @Nullable RawAnimation> state;
+		@Nullable Pace<T> pace;
 
 		private Clips(RawAnimation idle, RawAnimation walk) {
 			this.idle = idle;
@@ -95,6 +96,18 @@ public final class MobMoves {
 			this.state = state;
 			return this;
 		}
+
+		/** How fast to play a triggered clip, for one whose wind-up in the code is not always as long. */
+		public Clips<T> pace(Pace<T> pace) {
+			this.pace = pace;
+			return this;
+		}
+	}
+
+	/** The speed a triggered clip plays at (1 as written), asked every frame it plays. */
+	@FunctionalInterface
+	public interface Pace<T> {
+		float of(T mob, RawAnimation clip);
 	}
 
 	/**
@@ -111,19 +124,32 @@ public final class MobMoves {
 			this.receiveTriggeredAnimations();
 		}
 
+		/** Frames asked about a triggered clip that has not started yet (see {@link #triggered()}). */
+		private int unstarted;
+
 		@Override
 		public boolean triggerAnimation(String animName) {
 			// Read by the next frame as it starts the clip: no blend into a blow.
 			this.setTransitionTicks(0);
+			this.unstarted = 0;
 			return super.triggerAnimation(animName);
 		}
 
 		/**
-		 * A triggered clip under way, including one just triggered that has not started yet (a clip that could
-		 * not be started at all leaves no timeline, and does not count).
+		 * A triggered clip under way (a clip that holds its last frame counts until something replaces it),
+		 * including one just triggered that the controller starts this frame. GeckoLib 5.5.5 never lets go
+		 * of a triggered clip by itself: this is what hands the controller back to the walk once it is over.
+		 * A clip that did not start on the frame it was given (not in the file) is let go too, rather than
+		 * holding the mob still for ever.
 		 */
 		boolean triggered() {
-			return this.triggeredAnimTime >= 0 && (this.animationPoint == null ? this.timeline != null : this.timelineTime >= 0);
+			if (this.triggeredAnimTime < 0) {
+				return false;
+			}
+			if (this.animationPoint != null) {
+				return this.timelineTime >= 0;
+			}
+			return this.unstarted++ == 0;
 		}
 	}
 
@@ -137,7 +163,8 @@ public final class MobMoves {
 			return test.setAndContinue(clips.death);
 		}
 		if (controller.triggered()) {
-			test.setControllerSpeed(1.0F);
+			RawAnimation clip = controller.getCurrentRawAnimation();
+			test.setControllerSpeed(clips.pace != null && clip != null ? clips.pace.of(mob, clip) : 1.0F);
 			return PlayState.CONTINUE;
 		}
 		controller.setTransitionTicks(BLEND);

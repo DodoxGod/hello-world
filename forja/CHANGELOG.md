@@ -18,6 +18,7 @@
   líder, y los élites conservan sus movimientos al recargar.
 
 ## 2026-09-28 — animaciones para los monstruos del mod
+## 2026-09-29 — animaciones para los monstruos del mod
 
 - **Arreglo de base: los monstruos se quedaban congelados.** Tras su primer golpe o su primer especial, todos los
   monstruos del mod (y el fuego del Herrero tras su primer destello) se quedaban para siempre en su pose de
@@ -34,13 +35,20 @@
 - Por monstruo:
   - **Herrero Caído**: aviso (martillo arriba) y golpe; tambaleo; muerte (de rodillas y de bruces); **reforja**:
     arrodillado martilleando en la forja mientras se cura (antes no se veía nada: el cliente no sabía que
-    reforjaba). Su fuego vuelve a arder tras cada destello.
+    reforjaba). Su fuego vuelve a arder tras cada destello. **Llamada a los aprendices**: clava el martillo en
+    el suelo cuando salen (antes reutilizaba el rugido). **Lluvia de estrellas con aviso**: antes caía en el
+    mismo tick en que la anunciaba; ahora alza el martillo al cielo sobre un círculo marcado en el suelo y las
+    estrellas caen ahí 20 ticks después (1 s, lo mismo que dura la animación), así que se puede esquivar;
+    mientras las llama no empieza otro golpe. Carrera propia (hoy los jefes no esprintan, pero ya la tiene).
   - **Autómata de Forja**: aviso y puñetazo; tambaleo; carrera; muerte (se apaga y cae de bruces). El escupitajo
     de ascua sale ahora en el empujón adelante (a los 14 ticks), no seis ticks antes.
   - **Coraza Vacía**: aviso y tajo; tambaleo; carrera; muerte (la armadura se desmonta en un montón). **Se hace la
-    muerta** de verdad (antes se quedaba de pie "muerta") y **se levanta** pieza a pieza cuando reaparece.
+    muerta** de verdad (antes se quedaba de pie "muerta"), se queda en el suelo hasta que se levanta, y **se
+    levanta** pieza a pieza cuando reaparece.
   - **Pavesa** y **Ascua Mayor**: su golpe normal no tenía animación: ahora se echan atrás y embisten; tambaleo;
-    la Pavesa se aviva y se apaga al morir (la Ascua sigue partiéndose).
+    la Pavesa se aviva y se apaga al morir (la Ascua sigue partiéndose). El **picado** sale en el tick en que
+    se lanzan: la Pavesa se encoge y se aviva durante sus 8 ticks de aviso (antes ya iba en picado a los 3), y
+    la Ascua cae a los 12 ticks (antes a los 9).
   - **Herrumbre**: aviso y mordisco; tambaleo; muere patas arriba pataleando.
   - **Escoria Viviente**: aviso y golpe (se echa atrás y se desploma encima); tambaleo.
   - **Yunque Andante**: aviso (se encabrita) y golpe; tambaleo; carrera; muerte (se le abren las patas).
@@ -49,14 +57,18 @@
     tiene (antes soltaba la pose al instante); tambaleo; carrera; muerte (se pliega).
   - **Templador**: tambaleo; carrera (huye); muerte (el depósito lo tumba de espaldas).
   - **Núcleo Estelar**: la descarga ahora **se carga** hasta el tick del rayo y **suelta** en el rayo (antes se
-    encogía a los 7 ticks, antes de que saliera nada); **agotado** se ve (fragmentos caídos, anillo parado);
-    tambaleo; muerte (estalla).
+    encogía a los 7 ticks, antes de que saliera nada), también cuando está roto y avisa menos (la carga va más
+    deprisa); **agotado** se ve (fragmentos caídos, anillo parado); tambaleo; muerte (estalla).
   - **Guardián del Cuño**: aviso y gancho; tambaleo; carrera; muerte (se le cae el troquel). Su animación de
     "desellado" movía un hueso que no existe; ahora mueve el cuerpo.
   - **Cargador de Carbón**: aviso y cabezazo; tambaleo; galope; muerte (se hincha y revienta).
 - El Molde Roto no se ha tocado aquí.
+- Un golpe solo reinicia su animación si de verdad empieza un golpe nuevo, como en el Molde Roto.
+- Herrumbre, Escoria, Pavesa, Ascua y Núcleo no tienen carrera propia: corren con su andar (o su vuelo)
+  acelerado, como antes.
 - Rendimiento: un solo controlador por monstruo, clips creados una vez, sin crear objetos por fotograma en los
   controladores.
+
 ## 2026-09-28 — un huevo para cada monstruo
 
 - Los quince monstruos del mod tienen huevo generador (antes solo cuatro): herrumbre, ascua mayor, escoria

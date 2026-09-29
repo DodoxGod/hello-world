@@ -5887,6 +5887,47 @@ SMITH_DOWN = {
     "body": R(62, 0, -8, p=(0, -20, -8)), "head": R(30, 0, -10), "arm_right": R(-120, 0, -20), "arm_left": R(-110, 0, 30),
     "leg_right": R(-80, 0, 8), "leg_left": R(-74, 0, -8), "cloak": R(20, 0, 0),
 }
+# A heavy run: long strides, the hammer dragged along behind the swing of the right arm, the frame pitched
+# forward over the legs and coming up between steps.
+_SMITH_STRIDE = {
+    "leg_right": R(-30, 0, 0), "leg_left": R(26, 0, 0), "arm_right": R(26, 0, -6), "arm_left": R(-26, 0, 8),
+    "body": R(14, -5, 0), "head": R(-8, 4, 0), "cloak": R(16, 0, -3),
+}
+_SMITH_STRIDE_OTHER = {
+    "leg_right": R(26, 0, 0), "leg_left": R(-30, 0, 0), "arm_right": R(-16, 0, -6), "arm_left": R(28, 0, 8),
+    "body": R(14, 5, 0), "head": R(-8, -4, 0), "cloak": R(10, 0, 3),
+}
+_SMITH_UP = blend(_SMITH_STRIDE, _SMITH_STRIDE_OTHER, 0.5)
+_SMITH_UP["body"]["position"] = [0, 1.8, 0]
+SMITH_RUN = [(0, _SMITH_STRIDE), (0.35, _SMITH_UP), (0.7, _SMITH_STRIDE_OTHER), (1.05, _SMITH_UP), (1.4, _SMITH_STRIDE)]
+# Calling up his apprentices: the hammer thrown up and driven head first into the floor, the dead arm flung
+# out over it, and then he straightens and looks round at what came up.
+SMITH_CALL_UP = {
+    "arm_right": R(-150, 0, -12), "body": R(-12, 0, 0), "head": R(-20, 0, 0), "arm_left": R(-60, 0, 40),
+    "cloak": R(-8, 0, 0),
+}
+SMITH_CALL_DOWN = {
+    "arm_right": R(-30, 0, -4), "body": R(24, 0, 0, p=(0, -3, -1.5)), "head": R(14, 0, 0), "arm_left": R(-100, 0, 46),
+    "leg_right": R(-16, 0, 0), "leg_left": R(14, 0, 0), "cloak": R(12, 0, 0),
+}
+SMITH_CALL_LOOK = {
+    "arm_right": R(-24, 0, -4), "body": R(-4, 14, 0), "head": R(-12, 26, 0), "arm_left": R(-70, 0, 50),
+    "cloak": R(2, 0, 6),
+}
+# Calling the stars down: the hammer held straight up at the sky, the frame leaning back under it, and on
+# the tick they fall the hammer is pulled down to point at where they land.
+SMITH_SKYWARD = {
+    "arm_right": R(-165, 0, -8), "body": R(-14, 0, 0), "head": R(-36, 0, 0), "arm_left": R(-24, 0, 22),
+    "cloak": R(-8, 0, 2), "leg_right": R(6, 0, 0), "leg_left": R(-6, 0, 0),
+}
+SMITH_SKYWARD_HIGH = {
+    "arm_right": R(-172, 0, -6), "body": R(-18, 0, 0, p=(0, 0.6, 0)), "head": R(-40, 0, 0), "arm_left": R(-30, 0, 26),
+    "cloak": R(-10, 0, 2), "leg_right": R(6, 0, 0), "leg_left": R(-6, 0, 0),
+}
+SMITH_POINTED = {
+    "arm_right": R(-78, 0, -4), "body": R(10, 0, 0, p=(0, -0.6, -0.4)), "head": R(4, 0, 0), "arm_left": R(8, 0, 8),
+    "cloak": R(6, 0, 0), "leg_right": R(6, 0, 0), "leg_left": R(-6, 0, 0),
+}
 
 
 def generate_boss_assets():
@@ -5994,6 +6035,15 @@ def generate_boss_assets():
                             loop=True),
             # The last of him: the hammer drops, the knees go, and he comes down onto his face.
             "death": death_clip(1.0, [(0, SMITH_REST), (0.3, SMITH_SAG), (0.65, SMITH_KNEEL), (1.0, SMITH_DOWN)]),
+            "run": clip(1.4, SMITH_RUN, loop=True),
+            # The apprentices: they come up on the tick he calls them (FallenSmith.callApprentices), so the
+            # hammer is in the floor three ticks in, and the rest is him looking round at them.
+            "call": clip(2.0, [(0, SMITH_REST), (0.08, SMITH_CALL_UP), (0.15, SMITH_CALL_DOWN), (0.7, SMITH_CALL_DOWN),
+                               (1.2, SMITH_CALL_LOOK), (2.0, SMITH_REST)]),
+            # The star shower: the hammer goes up at the sky over the marked spot, is held there, and comes
+            # down to point at it AT 1.0 s — FallenSmith.STARFALL_WINDUP, 20 ticks — as the stars land.
+            "starcall": clip(1.6, [(0, SMITH_REST), (0.4, SMITH_SKYWARD), (0.9, SMITH_SKYWARD_HIGH), (1.0, SMITH_SKYWARD_HIGH),
+                                   (1.1, SMITH_POINTED), (1.6, SMITH_REST)]),
             # The fire while he is still holding back: it breathes, and the violet is not there at all.
             "fire_calm": {
                 "loop": True,
@@ -8358,17 +8408,18 @@ def generate_greater_ember_assets():
                     "root": rot([(0, [10, 0, 0]), (0.4, [16, 0, 0]), (0.8, [10, 0, 0])]),
                 },
             },
-            # The dive: rears, flares, drops. Same shape as the wisp's so the two read as family.
+            # The dive: rears, flares, drops. Same shape as the wisp's so the two read as family. It drops
+            # AT 0.6 s — GreaterEmber.DIVE_WINDUP, 12 ticks; it used to drop at 0.45 s, three ticks early.
             "dive": {
                 "loop": False,
-                "animation_length": 1.3,
+                "animation_length": 1.45,
                 "bones": {
-                    "root": rot([(0, [14, 0, 0]), (0.25, [-26, 0, 0]), (0.4, [-30, 0, 0]),
-                                 (0.45, [58, 0, 0]), (0.75, [40, 0, 0]), (1.3, [14, 0, 0])]),
-                    "fire": scale([(0, [1, 1, 1]), (0.25, [1.7, 1.7, 1.7]), (0.4, [1.9, 1.9, 1.9]),
-                                   (0.45, [1.4, 1.4, 1.4]), (1.3, [1, 1, 1])]),
-                    "cage": scale([(0, [1, 1, 1]), (0.4, [1.1, 0.9, 1.1]), (0.45, [0.85, 1.15, 0.85]),
-                                   (1.3, [1, 1, 1])]),
+                    "root": rot([(0, [14, 0, 0]), (0.35, [-26, 0, 0]), (0.55, [-30, 0, 0]),
+                                 (0.6, [58, 0, 0]), (0.9, [40, 0, 0]), (1.45, [14, 0, 0])]),
+                    "fire": scale([(0, [1, 1, 1]), (0.35, [1.7, 1.7, 1.7]), (0.55, [1.9, 1.9, 1.9]),
+                                   (0.6, [1.4, 1.4, 1.4]), (1.45, [1, 1, 1])]),
+                    "cage": scale([(0, [1, 1, 1]), (0.55, [1.1, 0.9, 1.1]), (0.6, [0.85, 1.15, 0.85]),
+                                   (1.45, [1, 1, 1])]),
                 },
             },
             # Splitting: the cage comes apart and the fire goes everywhere. Played as it dies.
@@ -8657,19 +8708,25 @@ def generate_wisp_assets():
                     "fire": pos([(0, [0, 0, 0]), (0.3, [0, 0, 0.8]), (0.6, [0, 0, 0])]),
                 },
             },
-            # The dive: it tucks the cage in, the fire goes ahead of it and it drops on you.
+            # The dive: it rears back and flares while it warns, then tucks the cage in, the fire goes ahead
+            # of it and it drops on you. It GOES AT 0.4 s — EmberWisp.DIVE_WINDUP, 8 ticks; it used to be
+            # tucked in and diving at 0.15 s, a quarter of a second before it moved.
             "dive": {
                 "loop": False,
-                "animation_length": 0.9,
+                "animation_length": 1.15,
                 "bones": {
-                    "root": rot([(0, [14, 0, 0]), (0.15, [58, 0, 0]), (0.5, [40, 0, 0]), (0.9, [14, 0, 0])]),
+                    "root": rot([(0, [14, 0, 0]), (0.3, [-20, 0, 0]), (0.4, [-24, 0, 0]), (0.55, [58, 0, 0]),
+                                 (0.8, [40, 0, 0]), (1.15, [14, 0, 0])]),
                     "fire": bone(
-                        scale([(0, [1, 1, 1]), (0.15, [1.5, 1.5, 1.5]), (0.5, [1.2, 1.2, 1.2]), (0.9, [1, 1, 1])]),
-                        pos([(0, [0, 0, 0]), (0.15, [0, 0, -2.5]), (0.9, [0, 0, 0])]),
+                        scale([(0, [1, 1, 1]), (0.3, [1.6, 1.6, 1.6]), (0.4, [1.75, 1.75, 1.75]), (0.55, [1.5, 1.5, 1.5]),
+                               (0.8, [1.2, 1.2, 1.2]), (1.15, [1, 1, 1])]),
+                        pos([(0, [0, 0, 0]), (0.4, [0, 0.6, 0.8]), (0.55, [0, 0, -2.5]), (1.15, [0, 0, 0])]),
                     ),
-                    "wing_right": rot([(0, [0, 0, 20]), (0.15, [0, 0, 62]), (0.9, [0, 0, 20])]),
-                    "wing_left": rot([(0, [0, 0, -20]), (0.15, [0, 0, -62]), (0.9, [0, 0, -20])]),
-                    "cage": scale([(0, [1, 1, 1]), (0.15, [0.8, 0.8, 0.8]), (0.9, [1, 1, 1])]),
+                    "wing_right": rot([(0, [0, 0, 20]), (0.3, [0, 0, -40]), (0.4, [0, 0, -46]), (0.55, [0, 0, 62]),
+                                       (1.15, [0, 0, 20])]),
+                    "wing_left": rot([(0, [0, 0, -20]), (0.3, [0, 0, 40]), (0.4, [0, 0, 46]), (0.55, [0, 0, -62]),
+                                      (1.15, [0, 0, -20])]),
+                    "cage": scale([(0, [1, 1, 1]), (0.4, [1.1, 0.9, 1.1]), (0.55, [0.8, 0.8, 0.8]), (1.15, [1, 1, 1])]),
                 },
             },
             # Fed: near a fire it swells, and stays swollen while the heat lasts.

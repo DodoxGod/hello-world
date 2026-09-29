@@ -97,6 +97,9 @@ final class MobAnimationFilm {
 			new Move("onda", (m, t) -> ((dev.forja.entity.FallenSmith) m).anvilWave(level(m)), 30, 55).rest(40),
 			new Move("garfio", (m, t) -> ((dev.forja.entity.FallenSmith) m).hookIn(level(m), t), 6, 10).at(7.0),
 			new Move("rugido", (m, t) -> trigger(m, "boss", "roar"), 12),
+			// The call for his apprentices, without the apprentices (they would fight the dummy).
+			new Move("llamada", (m, t) -> trigger(m, "boss", "call"), 3, 22),
+			new Move("estrellas", (m, t) -> ((dev.forja.entity.FallenSmith) m).callStars(level(m), t), 12, 21).at(5.0),
 			// Back at the forge (FallenSmith.startReforge is his own to call): the slam, then the hammering.
 			new Move("reforja", (m, t) -> reforge((dev.forja.entity.FallenSmith) m), 30, 85).rest(10))));
 		all.add(new Subject(ModEntities.AUTOMATA, "automata_de_forja", true, true, List.of(

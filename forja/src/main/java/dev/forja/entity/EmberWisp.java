@@ -158,7 +158,8 @@ public class EmberWisp extends Monster implements GeoEntity {
 	@Override
 	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
 		super.swing(hand, updateSelf);
-		if (this.level() instanceof ServerLevel) {
+		// Only when this call started a swing, not when one already under way was left alone (as BrokenMould).
+		if (this.level() instanceof ServerLevel && this.swingTime == -1) {
 			this.triggerAnim("pavesa", "strike");
 		}
 	}
