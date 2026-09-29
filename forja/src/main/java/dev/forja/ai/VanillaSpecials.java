@@ -190,15 +190,7 @@ public final class VanillaSpecials {
 		}
 	};
 
-	/** How long the web tangles whoever it catches, and how far off the mark they may stand and still be caught. */
-	public static final int WEB_TICKS = 60;
-	public static final double WEB_REACH = 1.2;
-
-	/**
-	 * Spiders: a shadow under the player's feet, then a web shot there. It used to leave a cobweb block for 5 seconds;
-	 * monsters never place or break blocks now (Andy, 2026-09-29), so whoever is still on the mark is tangled
-	 * instead: Slowness III for {@link #WEB_TICKS} ticks, and the web's white threads round them.
-	 */
+	/** Spiders: a shadow under the player's feet, then a web there (gone again after 5 seconds). */
 	public static final Special WEB = new Special("telarana", 15, 160, 260, 0.02) {
 		@Override
 		public boolean canStart(Mob mob, Player target) {
@@ -221,10 +213,10 @@ public final class VanillaSpecials {
 
 		@Override
 		public void release(Mob mob, Player target, SpecialRunner.Run run) {
-			particles(mob, new net.minecraft.core.particles.BlockParticleOption(ParticleTypes.BLOCK, Blocks.COBWEB.defaultBlockState()),
-				run.mark.x, run.mark.y + 0.5, run.mark.z, 24, 0.5);
-			if (target.position().distanceToSqr(run.mark) <= WEB_REACH * WEB_REACH) {
-				target.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.SLOWNESS, WEB_TICKS, 2), mob);
+			BlockPos at = BlockPos.containing(run.mark);
+			if (mob.level() instanceof ServerLevel level && level.getBlockState(at).isAir()) {
+				level.setBlockAndUpdate(at, Blocks.COBWEB.defaultBlockState());
+				TemporaryBlocks.add(level, at, Blocks.COBWEB, 100);
 			}
 		}
 	};

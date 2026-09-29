@@ -65,6 +65,8 @@ public final class MobAi {
 			}
 		});
 		ServerTickEvents.END_LEVEL_TICK.register(MobAi::tick);
+		// the spider's web, the one block a monster puts down, and only for a moment (Andy, 2026-09-29: webs stay)
+		TemporaryBlocks.register();
 		ForjaTraits.register();
 		Personality.register();
 		WorldFights.register();

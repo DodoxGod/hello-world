@@ -23,6 +23,7 @@ import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
@@ -258,28 +259,24 @@ public final class MobActions {
 	// --- 5. Lights ------------------------------------------------------------------------------------
 
 	/**
-	 * Whether a block is a light a monster may put out: every torch (plain, wall, soul, redstone, copper) and every
-	 * lantern (plain, soul, the copper ones in all their ages), but not a sea lantern or a jack o'lantern. Read off
-	 * the block's id rather than a list, so the copper lanterns' waxed and weathered forms need no entry each.
+	 * Whether a block is a light a monster may put out: a torch, a wall torch, a soul torch or a soul wall torch,
+	 * and nothing else (Andy, 2026-09-29: no lanterns, no redstone or copper torches).
 	 */
 	public static boolean isLight(BlockState state) {
-		if (state.getLightEmission() <= 0) {
-			return false;
-		}
-		String path = BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath();
-		return path.endsWith("torch") || path.endsWith("lantern") && !path.equals("sea_lantern") && !path.equals("jack_o_lantern");
+		return state.is(Blocks.TORCH) || state.is(Blocks.WALL_TORCH) || state.is(Blocks.SOUL_TORCH) || state.is(Blocks.SOUL_WALL_TORCH);
 	}
 
 	/**
 	 * Breaks the light at {@code pos} if it is within {@link #LIGHT_REACH} of the mob's eyes, with a swing of its
 	 * arm; the light drops as if a player broke it. Only with {@link CombatConfig#mobsBreakLights} on (off by
-	 * default): Andy, 2026-09-29, monsters never break or place blocks, and lights are the one exception, planned
-	 * for the v4.
+	 * default, until the v4 network decides it) and only with the mobGriefing game rule on: Andy, 2026-09-29,
+	 * monsters break nothing else they did not break in vanilla, and torches are the one exception.
 	 *
 	 * @return true if it broke one
 	 */
 	public static boolean breakLight(Mob mob, BlockPos pos) {
-		if (!on() || !CombatConfig.get().mobsBreakLights || pos == null || !mob.isAlive() || !(mob.level() instanceof ServerLevel level)) {
+		if (!on() || !CombatConfig.get().mobsBreakLights || pos == null || !mob.isAlive() || !(mob.level() instanceof ServerLevel level)
+			|| !Terrain.griefing(level)) {
 			return false;
 		}
 		if (!isLight(level.getBlockState(pos)) || mob.getEyePosition().distanceTo(Vec3.atCenterOf(pos)) > LIGHT_REACH) {

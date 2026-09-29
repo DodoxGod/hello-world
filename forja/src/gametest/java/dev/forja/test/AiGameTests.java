@@ -321,12 +321,9 @@ public class AiGameTests {
 		});
 	}
 
-	/**
-	 * A spider marks the player's feet and its web tangles whoever is still there: slowed, and no cobweb block,
-	 * since monsters never place or break blocks (Andy, 2026-09-29).
-	 */
+	/** A spider marks the player's feet and a web appears there; five seconds later it is gone. */
 	@GameTest(maxTicks = 200)
-	public void spiderWebTanglesWithoutABlock(GameTestHelper helper) {
+	public void spiderWebComesAndGoes(GameTestHelper helper) {
 		var spider = helper.spawn(EntityTypes.SPIDER, new BlockPos(1, 1, 1));
 		spider.setNoAi(true);
 		CombatGameTests.TestPlayer player = player(helper, new BlockPos(7, 1, 1));
@@ -334,9 +331,11 @@ public class AiGameTests {
 		helper.runAfterDelay(5, () -> {
 			release(helper, specials(spider), 1, player);
 			BlockPos at = BlockPos.containing(player.position());
-			helper.assertFalse(helper.getLevel().getBlockState(at).is(net.minecraft.world.level.block.Blocks.COBWEB), "no debería haber bloque de telaraña");
-			helper.assertTrue(player.hasEffect(net.minecraft.world.effect.MobEffects.SLOWNESS), "la telaraña debería enredarlo (lentitud)");
-			helper.succeed();
+			helper.assertTrue(helper.getLevel().getBlockState(at).is(net.minecraft.world.level.block.Blocks.COBWEB), "debería haber telaraña");
+			helper.runAfterDelay(110, () -> {
+				helper.assertFalse(helper.getLevel().getBlockState(at).is(net.minecraft.world.level.block.Blocks.COBWEB), "la telaraña debería quitarse");
+				helper.succeed();
+			});
 		});
 	}
 

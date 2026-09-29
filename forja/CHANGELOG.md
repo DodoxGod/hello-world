@@ -40,10 +40,10 @@ Andy: "con diamante y Protección IV, y más con la armadura del mod, las multit
 
 - Nuevas acciones de los monstruos, listas para que las decida la red con el contrato v4 (Andy): coger un arma
   mejor del suelo, beber pociones, lanzar pociones arrojadizas, comer cuando están heridos, lanzar perlas de ender,
-  romper luces y subir el escudo cuando les apuntan. Están en `ai/MobActions.java`.
+  romper antorchas y subir el escudo cuando les apuntan. Están en `ai/MobActions.java`.
 - Nada las usa todavía: ni las reglas ni las redes actuales. Todas se apagan con `mobActionsV4` (por defecto
-  `false`) en `config/forja.json`. Romper luces necesita además `mobsBreakLights`, también apagada: los monstruos
-  siguen sin romper bloques. `mobPickupRange` (6) es la distancia a la que buscan armas.
+  `false`) en `config/forja.json`. Romper antorchas necesita además `mobsBreakLights`, también apagada, y la regla
+  `mobGriefing`: solo antorchas, nunca faroles ni otras luces. `mobPickupRange` (6) es la distancia a la que buscan armas.
 - El arma que coge un monstruo cae siempre al morir, así que si coge la tuya la recuperas.
 - Pruebas: `AccionesGameTests`, una por acción. La tabla está en `docs/red_mob_v4_propuesta.md`.
 
@@ -52,13 +52,15 @@ Andy: "con diamante y Protección IV, y más con la armadura del mod, las multit
 - Por decisión de Andy, ningún monstruo pone ni rompe bloques:
   - los zombis ya no se hacen pilares de tierra para subir hasta ti, ni excavan hojas, arena o tierra para abrirse
     paso (fuera `MovementGoals.Builder`);
-  - la telaraña de la araña ya no deja un bloque: quien siga en la marca queda enredado (Lentitud III durante 3 s).
-
-  Las puertas siguen como en vanilla. `TemporaryBlocks`, que solo servía para esto, se ha borrado.
+  - **corrección posterior de Andy:** la telaraña de la araña se queda como estaba (un bloque que se quita a los 5 s),
+    y también el fuego del Cargador de carbón y del Herrero Caído, la cabeza lanzada, las explosiones de los creepers,
+    los bloques que coge el enderman y los zombis que rompen puertas.
 - Para bajarte de un pilar, el contrato v4 de la red dará otras salidas: tiros que empujan, arañas que trepan y
   empujones. La única excepción futura será romper antorchas y otras luces, también con la v4.
-- Pruebas: `zombiesNeverBuildNorDig` (ni un bloque cambia en 5 s con un zombi bajo un jugador en un pilar) y
-  `spiderWebTanglesWithoutABlock`.
+- Lo único nuevo que podrán romper, con la v4: antorchas (normal, de pared, de almas y de almas de pared), y solo con la
+  regla `mobGriefing` activada (`MobActions.breakLight`).
+- Pruebas: `zombiesNeverBuildNorDig` (ni un bloque cambia en 5 s con un zombi bajo un jugador en un pilar); fuera
+  `zombieDigsThroughLeaves`.
 
 ## 2026-09-29 — /locate del castillo, más barato
 

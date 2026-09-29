@@ -149,8 +149,8 @@ public class AccionesGameTests {
 	}
 
 	/**
-	 * Breaking lights is off by default (Andy: monsters never break blocks); with mobsBreakLights on, a torch within
-	 * reach goes, and nearestLight finds the one nearest the player.
+	 * Breaking lights is off by default; with mobsBreakLights on, a torch within reach goes, a lantern right next
+	 * to it never does (Andy, 2026-09-29: torches only), and nearestLight finds the torch nearest the player.
 	 */
 	@GameTest
 	public void breakLightOnlyWithTheFlag(GameTestHelper helper) {
@@ -159,24 +159,26 @@ public class AccionesGameTests {
 		Zombie zombie = zombie(helper, new BlockPos(1, 1, 1));
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(6, 1, 1));
 		BlockPos torch = new BlockPos(2, 1, 1);
-		BlockPos lantern = new BlockPos(6, 1, 3);
+		BlockPos lantern = new BlockPos(1, 1, 2);
+		BlockPos soulTorch = new BlockPos(6, 1, 3);
 		helper.setBlock(torch, Blocks.TORCH);
 		helper.setBlock(lantern, Blocks.LANTERN);
+		helper.setBlock(soulTorch, Blocks.SOUL_TORCH);
 		BlockPos nearest = MobActions.nearestLight(zombie, player, 6);
 		CombatConfig.get().mobsBreakLights = false;
 		boolean brokeOff = MobActions.breakLight(zombie, helper.absolutePos(torch));
 		boolean torchStayed = helper.getBlockState(torch).is(Blocks.TORCH);
 		CombatConfig.get().mobsBreakLights = true;
 		boolean brokeOn = MobActions.breakLight(zombie, helper.absolutePos(torch));
-		boolean farLantern = MobActions.breakLight(zombie, helper.absolutePos(lantern));
+		boolean brokeLantern = MobActions.breakLight(zombie, helper.absolutePos(lantern));
 		CombatConfig.get().mobsBreakLights = lightsBefore;
 		CombatConfig.get().mobActionsV4 = before;
-		helper.assertTrue(helper.absolutePos(lantern).equals(nearest), "la luz más cercana al jugador es el farol, dio " + nearest);
+		helper.assertTrue(helper.absolutePos(soulTorch).equals(nearest), "la luz más cercana al jugador es la antorcha de almas, dio " + nearest);
 		helper.assertFalse(brokeOff, "sin la bandera no debería romper nada");
 		helper.assertTrue(torchStayed, "sin la bandera la antorcha sigue");
 		helper.assertTrue(brokeOn, "con la bandera debería romper la antorcha");
 		helper.assertTrue(helper.getBlockState(torch).isAir(), "la antorcha debería desaparecer");
-		helper.assertFalse(farLantern, "el farol está fuera de su alcance");
+		helper.assertFalse(brokeLantern, "un farol no se rompe nunca, solo antorchas");
 		helper.assertTrue(helper.getBlockState(lantern).is(Blocks.LANTERN), "el farol sigue");
 		helper.getLevel().getEntitiesOfClass(ItemEntity.class, zombie.getBoundingBox().inflate(4.0)).forEach(net.minecraft.world.entity.Entity::discard);
 		zombie.discard();
