@@ -45,7 +45,7 @@ jobs:
           distribution: temurin
           java-version: 25
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build Forja
+      - name: Build Forja (incluye las pruebas de servidor, runGameTest)
         run: |
           chmod +x gradlew
           ./gradlew build --stacktrace > build.log 2>&1 || { grep -E ": error:" -A 3 build.log | head -150; grep -E "What went wrong" -A 6 build.log | head -20; grep -E "ERROR|Caused by|GameTestAssert|required tests|combatgametests|Mixin|Injection|Exception:|failed" build.log | grep -v "^\s*at " | head -80; exit 1; }
@@ -54,9 +54,3 @@ jobs:
         with:
           name: forja-mod
           path: forja/build/libs/*.jar
-      - name: Game tests de Forja (servidor real de Minecraft 26.2)
-        run: |
-          TASK=$(./gradlew tasks --all -q 2>/dev/null | grep -oiE "^run(Game|Server)?Game?[Tt]est[A-Za-z]*" | grep -iv client | head -1)
-          echo "Tarea: ${TASK:-runGameTest}"
-          ./gradlew ${TASK:-runGameTest} > gametest.log 2>&1 || { grep -E "GameTestAssert|assert|required tests|tests failed|combatgametests|ERROR|Exception|error:" gametest.log | grep -v "^\s*at " | head -60; exit 1; }
-          grep -iE "tests? (passed|failed)|All .* tests|required tests" gametest.log || tail -20 gametest.log

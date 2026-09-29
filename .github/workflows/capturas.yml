@@ -1,0 +1,89 @@
+name: Capturas de Forja
+
+# Runs one section of the client game test (FORJA_SOLO) under a virtual display and prints the
+# screenshots as contact sheets encoded in the log, so a session without access to the game can
+# look at them. Start it by hand (workflow_dispatch) with the section name.
+on:
+  workflow_dispatch:
+    inputs:
+      solo:
+        description: "Sección de ForjaClientTest (FORJA_SOLO), p. ej. castillo, mundo, animaciones"
+        required: true
+        default: castillo
+      filtro:
+        description: "Solo las capturas cuyo nombre contenga esto (vacío = todas)"
+        required: false
+        default: ""
+
+jobs:
+  capturas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: forja
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Pantalla virtual y OpenGL por software
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb mesa-utils libgl1-mesa-dri libegl1 > /dev/null
+          pip install -q pillow
+      - name: Prueba de cliente
+        env:
+          FORJA_SOLO: ${{ inputs.solo }}
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          MESA_GL_VERSION_OVERRIDE: "4.6"
+        run: |
+          chmod +x gradlew
+          xvfb-run -a -s "-screen 0 1920x1080x24" ./gradlew runClientGameTest --stacktrace > client.log 2>&1 || STATUS=$?
+          grep -E "ALL CHECKS PASSED|AssertionError|GameTestAssert|FAILED|Exception:|Caused by|ERROR" client.log | grep -v "^\s*at " | head -60
+          tail -15 client.log
+          exit ${STATUS:-0}
+      - name: Hojas de contactos en el registro
+        if: always()
+        env:
+          FILTRO: ${{ inputs.filtro }}
+        run: |
+          python3 - <<'EOF'
+          import base64, glob, io, os
+          from PIL import Image, ImageDraw
+          shots = sorted(p for p in glob.glob('**/screenshots/**/*.png', recursive=True)
+                         if os.environ.get('FILTRO', '') in os.path.basename(p))
+          print(f"{len(shots)} capturas")
+          for p in shots:
+              print("  ", p)
+          # 6 per sheet, 2 columns, each 640 wide: small enough to read back from the log.
+          per, cols, w = 6, 2, 640
+          for n in range(0, len(shots), per):
+              group = shots[n:n + per]
+              thumbs = []
+              for p in group:
+                  im = Image.open(p).convert('RGB')
+                  h = int(im.height * w / im.width)
+                  im = im.resize((w, h))
+                  ImageDraw.Draw(im).text((6, 6), os.path.basename(p), fill=(255, 255, 0))
+                  thumbs.append(im)
+              th = max(t.height for t in thumbs)
+              rows = (len(thumbs) + cols - 1) // cols
+              sheet = Image.new('RGB', (w * cols, th * rows), (20, 20, 20))
+              for i, t in enumerate(thumbs):
+                  sheet.paste(t, ((i % cols) * w, (i // cols) * th))
+              buf = io.BytesIO()
+              sheet.save(buf, 'JPEG', quality=72)
+              data = base64.b64encode(buf.getvalue()).decode()
+              print(f"===HOJA {n // per:02d}===")
+              for i in range(0, len(data), 1000):
+                  print(data[i:i + 1000])
+              print("===FIN===")
+          EOF
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: capturas-${{ inputs.solo }}
+          path: forja/**/screenshots/**/*.png
