@@ -10087,13 +10087,19 @@ public class ForjaClientTest implements FabricClientGameTest {
 		});
 		BlockPos rod = new BlockPos(px, y + 2, pz);
 		BlockPos aim = new BlockPos(px - 6, y, pz - 2);
-		boolean drawn = server.computeOnServer(s -> {
+		String drawn = server.computeOnServer(s -> {
 			ServerLevel level = connection.getServerLevel();
-			boolean redirected = rod.equals(dev.forja.world.WorldEvents.drawnTo(level, aim));
+			// placed here as well, on a chunk asked for by name: the setblock above is only the look of it
+			level.getChunk(rod);
+			level.setBlockAndUpdate(rod, dev.forja.registry.ModBlocks.PARARRAYOS.defaultBlockState());
+			BlockPos to = dev.forja.world.WorldEvents.drawnTo(level, aim);
+			if (!rod.equals(to)) {
+				return "it went to " + to.toShortString() + ", and at the rod there is " + level.getBlockState(rod);
+			}
 			dev.forja.world.WorldEvents.meteorForTest(level, aim);
-			return redirected;
+			return "";
 		});
-		check(drawn, "a meteorite aimed six blocks from the rod should be drawn onto it");
+		check(drawn.isEmpty(), "a meteorite aimed six blocks from the rod should be drawn onto it: " + drawn);
 		String[] shots = {"pararrayos_01_aviso", "pararrayos_02_cae", "pararrayos_03_impacto", "pararrayos_04_despues"};
 		int[] waits = {8, 18, 9, 30};
 		for (int shot = 0; shot < shots.length; shot++) {
