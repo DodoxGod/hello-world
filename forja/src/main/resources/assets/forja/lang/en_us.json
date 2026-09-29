@@ -285,7 +285,7 @@
   "gui.forja.camino.aleacion": "Melt your first alloy",
   "gui.forja.camino.aleacion.desc": "A lit **campfire** under the forge table, the centre empty and **two copper ingots and one iron** on the points: out comes **bronze**. Copper and a resin brick give **pewter**. What is under the table is its heat.",
   "gui.forja.camino.colada": "Cast your first part",
-  "gui.forja.camino.colada.desc": "The clay crucible and the casting box are **pewter**; the tank is **bronze**. The crucible burns wisp **embers** and melts metal into the tank. In the box, a part and **%s refractory steel** make its mould; the mould goes on a **casting table** with a **strainer** set on top of it, and the metal falls into it from a spout.",
+  "gui.forja.camino.colada.desc": "Crucible and casting box of **pewter**; tank of **bronze**. The crucible burns **embers** and melts into the tank. A part and **%s refractory steel** in the box make its mould; it goes on a **casting table**, under a **strainer**.",
   "gui.forja.camino.mesa_mayor": "The greater forge table",
   "gui.forja.camino.mesa_mayor.desc": "The first table will not put together greatswords, shields, flails or wings. The **greater** one will: your forge table ringed with **damascus**, gold and polished blackstone. Damascus is steel and netherite scrap on a table with **lava** underneath.",
   "gui.forja.libro.mesa_mayor": "The **greater forge table**: the same star, everything the first one will not assemble (greatswords, spears, shields, wings...) and upgrades all the way to %s%%. Damascus comes off a table over lava.",

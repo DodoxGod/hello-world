@@ -637,14 +637,12 @@ GUI = {
     ),
     "gui.forja.camino.colada": ("Cuela tu primera pieza", "Cast your first part"),
     "gui.forja.camino.colada.desc": (
-        "Crisol de barro y caja de moldeo son de **peltre**; la cuba, de **bronce**. El crisol quema "
-        "**ascuas** de pavesa y funde el metal en la cuba. En la caja, una pieza y **%s de acero "
-        "refractario** dan su molde; el molde va encima de una **mesa de colada**, con un **colador** "
-        "puesto sobre ella, y el metal le cae desde un caño.",
-        "The clay crucible and the casting box are **pewter**; the tank is **bronze**. The crucible burns "
-        "wisp **embers** and melts metal into the tank. In the box, a part and **%s refractory steel** "
-        "make its mould; the mould goes on a **casting table** with a **strainer** set on top of it, and "
-        "the metal falls into it from a spout.",
+        "Crisol y caja de moldeo, de **peltre**; cuba, de **bronce**. El crisol quema **ascuas** y funde "
+        "en la cuba. Pieza y **%s de acero refractario** en la caja dan su molde; va en una **mesa de "
+        "colada**, bajo un **colador**.",
+        "Crucible and casting box of **pewter**; tank of **bronze**. The crucible burns **embers** and "
+        "melts into the tank. A part and **%s refractory steel** in the box make its mould; it goes on a "
+        "**casting table**, under a **strainer**.",
     ),
     "gui.forja.camino.mesa_mayor": ("La mesa de forja mayor", "The greater forge table"),
     "gui.forja.camino.mesa_mayor.desc": (

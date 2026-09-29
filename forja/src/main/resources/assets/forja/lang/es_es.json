@@ -285,7 +285,7 @@
   "gui.forja.camino.aleacion": "Funde tu primera aleación",
   "gui.forja.camino.aleacion.desc": "Una **fogata** encendida bajo la mesa de forja, el centro vacío y en las puntas **dos lingotes de cobre y uno de hierro**: sale **bronce**. Cobre y ladrillo de resina dan **peltre**. Lo que hay bajo la mesa es su calor.",
   "gui.forja.camino.colada": "Cuela tu primera pieza",
-  "gui.forja.camino.colada.desc": "Crisol de barro y caja de moldeo son de **peltre**; la cuba, de **bronce**. El crisol quema **ascuas** de pavesa y funde el metal en la cuba. En la caja, una pieza y **%s de acero refractario** dan su molde; el molde va encima de una **mesa de colada**, con un **colador** puesto sobre ella, y el metal le cae desde un caño.",
+  "gui.forja.camino.colada.desc": "Crisol y caja de moldeo, de **peltre**; cuba, de **bronce**. El crisol quema **ascuas** y funde en la cuba. Pieza y **%s de acero refractario** en la caja dan su molde; va en una **mesa de colada**, bajo un **colador**.",
   "gui.forja.camino.mesa_mayor": "La mesa de forja mayor",
   "gui.forja.camino.mesa_mayor.desc": "La primera mesa no monta espadones, escudos, manguales ni alas. La **mayor** sí: tu mesa de forja rodeada de **damasco**, oro y piedra negra pulida. El damasco es acero y chatarra de netherita sobre una mesa con **lava** debajo.",
   "gui.forja.libro.mesa_mayor": "La **mesa de forja mayor**: la misma estrella, todo lo que la primera no monta (espadones, lanzas, escudos, alas...) y las mejoras hasta el %s%%. El damasco sale de una mesa sobre lava.",
