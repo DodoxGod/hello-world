@@ -317,6 +317,17 @@ public final class CombatConfig {
 	/** How many mobs may swing at the same player at once; the rest wait their turn. */
 	public int maxSimultaneousAttackers = 2;
 	public double strikeReachBonus = 0.5;
+	/**
+	 * A monster's reach by what it swings (Andy, 2026-09-29: "un zombie con espada debería poder atacar de más lejos
+	 * que uno con puños"), on top of its body's: for starting and landing a blow and for where it stands. Weapons
+	 * that already reach further by their own attributes (scythe, trident, lance, flail) keep theirs and get none
+	 * of this. The networks' input yo_arma_alcance keeps the contract's number (ai.Reach.extra).
+	 */
+	public double mobReachFist = 0.0;
+	public double mobReachDagger = 0.2;
+	public double mobReachSword = 0.6;
+	public double mobReachAxe = 0.5;
+	public double mobReachGreatsword = 0.9;
 	public boolean zombieLunge = true;
 	public double lungeMinDistance = 3.5;
 	public double lungeMaxDistance = 7.0;

@@ -35,12 +35,12 @@ abstract class MobMixin {
 	@Inject(method = "isWithinMeleeAttackRange", at = @At("HEAD"), cancellable = true)
 	private void forja$weaponReach(LivingEntity target, CallbackInfoReturnable<Boolean> cir) {
 		ItemStack held = ((Mob) (Object) this).getMainHandItem();
-		if (Reach.extra(held) <= 0.0) {
+		if (Reach.actionExtra(held) <= 0.0) {
 			return;
 		}
 		AABB hitbox = ((LivingEntityAiAccess) target).forja$hitbox();
 		double min = Reach.min(held);
-		cir.setReturnValue(this.getAttackBoundingBox(Reach.of(held)).intersects(hitbox) && (min <= 0.0 || !this.getAttackBoundingBox(min).intersects(hitbox)));
+		cir.setReturnValue(this.getAttackBoundingBox(Reach.actionOf(held)).intersects(hitbox) && (min <= 0.0 || !this.getAttackBoundingBox(min).intersects(hitbox)));
 	}
 
 	@Inject(method = "populateDefaultEquipmentEnchantments", at = @At("TAIL"))

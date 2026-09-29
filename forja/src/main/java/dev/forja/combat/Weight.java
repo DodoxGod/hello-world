@@ -216,6 +216,12 @@ public final class Weight {
 
 	// ---------------------------------------------------------------- vanilla's own weapons
 
+	/** The forged kind a stack stands for: its own if forged, else the kind of vanilla weapon or tool it is (or null). */
+	public static ForgeType kindOf(ItemStack stack) {
+		ForgedParts parts = stack.get(ModComponents.PARTS);
+		return parts != null ? parts.type() : vanillaKind(stack);
+	}
+
 	private static ForgeType vanillaKind(ItemStack stack) {
 		if (stack.is(ItemTags.SWORDS)) return ForgeType.ESPADA;
 		if (stack.is(ItemTags.AXES)) return ForgeType.HACHA;

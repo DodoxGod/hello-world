@@ -1,5 +1,15 @@
 # Novedades
 
+## 2026-09-29 — alcance de los monstruos según su arma
+
+- Un monstruo con espada ya pega desde más lejos que uno con los puños (Andy: "un zombie con espada debería poder
+  atacar de más lejos que uno con puños"). Sobre el alcance de su cuerpo suma, según lo que lleve: puños +0, daga
+  +0,2, espada +0,6, hacha, martillo, maza o pico +0,5 y espadón +0,9. Vale igual para las armas vanilla. La
+  guadaña, el tridente, la lanza y el mangual se quedan con el suyo. Los valores están en `config/forja.json`
+  (`mobReachFist`, `mobReachDagger`, `mobReachSword`, `mobReachAxe`, `mobReachGreatsword`), para ajustarlos jugando.
+- Cuenta para empezar el golpe, para que llegue y para dónde se coloca. La red sigue viendo en `yo_arma_alcance`
+  el número del contrato, el mismo con el que se entrenó.
+
 ## 2026-09-29 — el jefe contra los demás, y un pararrayos para los meteoritos
 
 - **Daño ajeno al jefe: un tercio.** Lo que no viene de un jugador (un gólem, un warden, otro monstruo) le hace

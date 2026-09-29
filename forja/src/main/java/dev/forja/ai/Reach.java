@@ -16,8 +16,11 @@ import net.minecraft.world.phys.AABB;
  * How far a blow reaches, for a monster and for the player it fights. A monster's is its body's
  * ({@link ObsM1#REACH}, the gap between the two boxes) plus whatever the weapon in its hand adds: the
  * very number the network is shown as {@code yo_arma_alcance} (see {@link #of(ItemStack)}). A player's is
- * what {@code jug_alcance} shows. With nothing that adds reach in the hand, every number here is the one
- * the monsters always used, so vanilla's weapons change nothing.
+ * what {@code jug_alcance} shows.
+ *
+ * <p>Since 2026-09-29 (Andy) a monster strikes and places itself by {@link #actionExtra}: the contract's number
+ * plus a bonus by the kind of weapon (a sword +0.6, a dagger +0.2, an axe or a hammer +0.5, a greatsword +0.9;
+ * CombatConfig mobReach*). The network is still shown the contract's number alone, the one it was trained on.
  *
  * <p>It is worked out from the held stack each time it is asked: a component lookup and a walk over the
  * few attribute modifiers a weapon carries, cheaper than a cache keyed on the mob would be.
@@ -64,9 +67,49 @@ public final class Reach {
 		return extra;
 	}
 
-	/** How far a blow with this in the hand reaches: the gap between the boxes, as {@link ObsM1#reaches}. */
+	/** How far a blow with this in the hand reaches, as the network is shown it (the contract's number). */
 	public static double of(ItemStack held) {
 		return ObsM1.REACH + extra(held);
+	}
+
+	/**
+	 * What the kind of weapon adds for a monster, on top of the contract's {@link #extra} (CombatConfig mobReach*):
+	 * a sword reaches further than a fist, a dagger a little, a greatsword most. None for a weapon that already
+	 * reaches further by its own attributes; those keep theirs.
+	 */
+	public static double kindBonus(ItemStack held) {
+		CombatConfig cfg = CombatConfig.get();
+		if (held.isEmpty()) {
+			return cfg.mobReachFist;
+		}
+		if (extra(held) > 0.0) {
+			return 0.0;
+		}
+		dev.forja.forge.ForgeType kind = dev.forja.combat.Weight.kindOf(held);
+		if (kind == null) {
+			return 0.0;
+		}
+		return switch (kind) {
+			case DAGA -> cfg.mobReachDagger;
+			case ESPADA -> cfg.mobReachSword;
+			case ESPADON -> cfg.mobReachGreatsword;
+			case HACHA, MARTILLO, MAZO, PICO, PICAHACHA -> cfg.mobReachAxe;
+			default -> 0.0;
+		};
+	}
+
+	/** What a monster's weapon adds when it strikes and places itself: the contract's extra plus its kind's bonus. */
+	public static double actionExtra(ItemStack held) {
+		return extra(held) + kindBonus(held);
+	}
+
+	public static double actionExtra(LivingEntity mob) {
+		return actionExtra(mob.getMainHandItem());
+	}
+
+	/** How far a monster's blow really reaches: the body's and {@link #actionExtra}. */
+	public static double actionOf(ItemStack held) {
+		return ObsM1.REACH + actionExtra(held);
 	}
 
 	/** How far this mob's blow reaches, with what it holds. */
@@ -106,7 +149,7 @@ public final class Reach {
 	 */
 	public static boolean reaches(Mob mob, LivingEntity target) {
 		ItemStack held = mob.getMainHandItem();
-		if (!ObsM1.reaches(mob, target, of(held))) {
+		if (!ObsM1.reaches(mob, target, actionOf(held))) {
 			return false;
 		}
 		double min = min(held);
@@ -118,7 +161,7 @@ public final class Reach {
 	 * width, half the target's and strikeReachBonus) plus what the weapon adds.
 	 */
 	public static double landing(Mob mob, LivingEntity target) {
-		return mob.getBbWidth() * 2.0 + target.getBbWidth() * 0.5 + CombatConfig.get().strikeReachBonus + extra(mob);
+		return mob.getBbWidth() * 2.0 + target.getBbWidth() * 0.5 + CombatConfig.get().strikeReachBonus + actionExtra(mob);
 	}
 
 	/**
@@ -127,7 +170,7 @@ public final class Reach {
 	 */
 	public static boolean closeEnough(Mob mob, LivingEntity target) {
 		ItemStack held = mob.getMainHandItem();
-		double extra = extra(held);
+		double extra = actionExtra(held);
 		return extra > 0.0 && ObsM1.reaches(mob, target, ObsM1.REACH + extra - STOP_SHORT) && gap(mob, target) > min(held);
 	}
 

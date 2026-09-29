@@ -229,4 +229,43 @@ public class AlcanceGameTests {
 		Decision decision = mind == null ? null : mind.decision;
 		return decision != null && decision.tactic() == Tactic.LIBRE && decision.move() == 5;
 	}
+
+	/**
+	 * Andy (2026-09-29): "un zombie con espada debería poder atacar de más lejos que uno con puños". A monster's
+	 * reach grows by what it swings (CombatConfig mobReach*), while the contract's number the network sees does not.
+	 */
+	@GameTest
+	public void aSwordReachesFurtherThanAFist(GameTestHelper helper) {
+		double eps = 1.0E-4;
+		var cfg = dev.forja.combat.CombatConfig.get();
+		helper.assertTrue(Math.abs(Reach.actionExtra(ItemStack.EMPTY) - cfg.mobReachFist) < eps, "puños");
+		helper.assertTrue(Math.abs(Reach.actionExtra(new ItemStack(Items.IRON_SWORD)) - cfg.mobReachSword) < eps, "espada vanilla");
+		helper.assertTrue(Math.abs(Reach.actionExtra(forged(ForgeType.ESPADA)) - cfg.mobReachSword) < eps, "espada forjada");
+		helper.assertTrue(Math.abs(Reach.actionExtra(forged(ForgeType.DAGA)) - cfg.mobReachDagger) < eps, "daga");
+		helper.assertTrue(Math.abs(Reach.actionExtra(forged(ForgeType.ESPADON)) - cfg.mobReachGreatsword) < eps, "espadón");
+		helper.assertTrue(Math.abs(Reach.actionExtra(new ItemStack(Items.IRON_AXE)) - cfg.mobReachAxe) < eps, "hacha");
+		helper.assertTrue(Math.abs(Reach.actionExtra(new ItemStack(Items.MACE)) - cfg.mobReachAxe) < eps, "maza");
+		helper.assertTrue(Math.abs(Reach.actionExtra(forged(ForgeType.MANGUAL)) - Reach.extra(forged(ForgeType.MANGUAL))) < eps, "el mangual se queda con lo suyo");
+		// what the network is shown does not move
+		helper.assertTrue(Math.abs(Reach.of(new ItemStack(Items.IRON_SWORD)) - ObsM1.REACH) < eps, "yo_arma_alcance de la espada sigue en el del contrato");
+
+		floor(helper, 8, 8);
+		Zombie sword = armed(helper, new BlockPos(4, 1, 1), new ItemStack(Items.IRON_SWORD));
+		Zombie fist = armed(helper, new BlockPos(4, 1, 6), ItemStack.EMPTY);
+		sword.setNoAi(true);
+		fist.setNoAi(true);
+		// each 0.3 further than a bare body reaches, box to box
+		double centres = 0.6 + ObsM1.REACH + 0.3;
+		CombatGameTests.TestPlayer swordTarget = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
+		CombatGameTests.TestPlayer fistTarget = CombatGameTests.player(helper, new BlockPos(1, 1, 6));
+		swordTarget.setPos(sword.getX() - centres, sword.getY(), sword.getZ());
+		fistTarget.setPos(fist.getX() - centres, fist.getY(), fist.getZ());
+		helper.assertTrue(Reach.reaches(sword, swordTarget), "la espada llega");
+		helper.assertTrue(!Reach.reaches(fist, fistTarget), "los puños no");
+		helper.assertTrue(sword.isWithinMeleeAttackRange(swordTarget), "vanilla también lo ve al alcance de la espada");
+		helper.assertTrue(!fist.isWithinMeleeAttackRange(fistTarget), "y fuera del de los puños");
+		sword.discard();
+		fist.discard();
+		helper.succeed();
+	}
 }

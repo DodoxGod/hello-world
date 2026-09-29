@@ -123,7 +123,7 @@ public final class VanillaSpecials {
 			double d = mob.distanceTo(target);
 			// Not from where its weapon already reaches: a flail's or a lance's reach pushes the nearest leap out
 			// as far (a flail, 3.5 -> 6.5), so it strikes from its length instead of leaping into the player's face.
-			return cfg.zombieLunge && mob.onGround() && d >= cfg.lungeMinDistance + Reach.extra(mob) && d <= cfg.lungeMaxDistance && sees(mob, target)
+			return cfg.zombieLunge && mob.onGround() && d >= cfg.lungeMinDistance + Reach.actionExtra(mob) && d <= cfg.lungeMaxDistance && sees(mob, target)
 				&& !dev.forja.world.Elites.isElite(mob)
 				&& !Duels.watching(mob)
 				// A spear has a charge of its own (SpearUseGoal, warned in SpearUseGoalMixin): a lunge on top cut it

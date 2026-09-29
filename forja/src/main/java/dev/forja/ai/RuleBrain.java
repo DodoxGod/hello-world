@@ -157,7 +157,7 @@ public final class RuleBrain {
 			return Decision.tactic(Tactic.REAGRUPARSE);
 		}
 		// The relay: having just struck, make room for the next one if anyone is waiting.
-		if (now - mind.lastStrike < RELAY_TICKS && mind.othersWaiting && distance < 3.0 + Reach.extra(mob)) {
+		if (now - mind.lastStrike < RELAY_TICKS && mind.othersWaiting && distance < 3.0 + Reach.actionExtra(mob)) {
 			return Decision.tactic(Tactic.ESPERAR);
 		}
 		// The pincer: the flanker goes round behind before it swings.
@@ -192,7 +192,7 @@ public final class RuleBrain {
 		// Going in from its own side: with others at the same player, one with a turn that is still well round
 		// the ring from its slot goes round to it first, so the blows come from all sides and not one.
 		// A long weapon strikes from further off, so "already this close" starts further off too.
-		if (distance > GO_ROUND_MIN + Reach.extra(mob) && distance < Reach.outside(target, Math.max(CIRCLE_RANGE + 2.0, circle)) && !Double.isNaN(mind.ringAngle)
+		if (distance > GO_ROUND_MIN + Reach.actionExtra(mob) && distance < Reach.outside(target, Math.max(CIRCLE_RANGE + 2.0, circle)) && !Double.isNaN(mind.ringAngle)
 			&& ObsM1.allies(mob).size() >= 1
 			&& Math.abs(Squad.wrap(Squad.angle(mob, target) - mind.ringAngle)) > GO_ROUND_ANGLE) {
 			return Decision.tactic(Tactic.RODEAR);
