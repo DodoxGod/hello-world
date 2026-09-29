@@ -1,5 +1,19 @@
 # Novedades
 
+## 2026-09-28 — un huevo para cada monstruo
+
+- Los quince monstruos del mod tienen huevo generador (antes solo cuatro): herrumbre, ascua mayor, escoria
+  viviente, yunque andante, percutor, tenaza, cargador de carbón, templador, núcleo estelar, molde roto y
+  guardián de cuño se suman al Herrero Caído, el autómata, la coraza vacía y la pavesa. Están juntos en la
+  pestaña de Forja y se encuentran en la búsqueda creativa (`forja:huevo`); con el botón central sobre un
+  monstruo en creativo se coge su huevo.
+- Cada huevo es un dibujo propio de 16×16, como los de vanilla desde 26.x: la forma y la luz de un huevo
+  vanilla, los colores del propio monstruo y lo que lo distingue asomando por el huevo (los ojos de brasa del
+  Herrero y su cristal, la rejilla de horno del autómata, las alas de fuego de la pavesa, el cuerno del yunque
+  y sus chispas, las mandíbulas de la tenaza, la estrella del núcleo, la barra dorada que parte el molde…).
+  Los cuatro que ya había se han rehecho: eran el huevo zombi repintado con manchas al azar.
+- Los dibujos viven en `tools/huevos.py` (una cuadrícula de letras por monstruo); `generate_assets.py` los usa.
+
 ## 2026-09-28 — barra de maná, y mejoras de maná y de estamina
 
 - **Maná.** El báculo y el grimorio gastan maná de una barra azul y violeta encima de los corazones (enfrente de

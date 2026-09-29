@@ -10219,73 +10219,28 @@ def generate_hollow_assets():
     })
 
 
-# mob id: (shell colour, spot colour)
-SPAWN_EGGS = {
-    "herrero_caido": ((62, 60, 66), (226, 110, 40)),
-    "automata_de_forja": ((124, 122, 118), (206, 208, 216)),
-    "coraza_vacia": ((78, 76, 86), (120, 220, 226)),
-    "pavesa": ((58, 54, 56), (255, 168, 62)),
-}
+# Every mob of ours has an egg; the pictures are drawn in tools/huevos.py.
+SPAWN_EGGS = (
+    "herrero_caido", "automata_de_forja", "coraza_vacia", "pavesa", "herrumbre", "ascua_mayor",
+    "escoria_viviente", "yunque_andante", "percutor", "tenaza", "cargador_de_carbon", "templador",
+    "nucleo_estelar", "molde_roto", "guardian_de_cuno",
+)
 
 
 def generate_spawn_eggs():
-    """One egg per mob of ours, cut from the shape and the shading of a real Minecraft spawn egg.
+    """One egg per mob of ours, each its own hand-drawn picture as vanilla's are since 26.x.
 
-    The old ones were an ellipse drawn from an equation with a ring of flat outline round it and dots
-    dropped on at random, and next to a vanilla egg in the same creative tab they read as stickers.
-    The silhouette and the light of a spawn egg are hand-made things and they are already in the game,
-    so this takes them: the zombie egg is stripped down to where its pixels are and how bright each one
-    is relative to the rest, and both are repainted in the mob's two colours.
+    The first ones were an ellipse from an equation with dots dropped on at random, the second the
+    zombie egg repainted in two colours with random clumps. Neither said which mob it was. The
+    pictures now live in tools/huevos.py as grids of letters, one per mob, with the mob's colours and
+    the thing that makes it that mob (the smith's ember eyes, the tongs' jaws, the anvil's horn).
     """
-    import random
+    import huevos
 
-    source = vanilla("item/zombie_spawn_egg.png")
-
-    def solid(x, y):
-        return 0 <= x < 16 and 0 <= y < 16 and source.getpixel((x, y))[3] > 0
-
-    points = [(x, y) for y in range(16) for x in range(16) if solid(x, y)]
-    # The rim is where the egg stops, not where the artist happened to use a dark colour.
-    rim = {p for p in points
-           if any(not solid(p[0] + dx, p[1] + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))}
-    body = [p for p in points if p not in rim]
-    levels = [luminance(source.getpixel(p)) for p in body]
-    low = min(levels)
-    span = max(1.0, max(levels) - low)
-
-    folder = ASSETS / "textures/item"
-    folder.mkdir(parents=True, exist_ok=True)
-    for name, (shell, spots) in SPAWN_EGGS.items():
-        rng = random.Random(sum(shell) * 31 + sum(spots))
-        egg = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-
-        def paint(point, colour, floor, reach):
-            step = (luminance(source.getpixel(point)) - low) / span
-            egg.putpixel(point, tuple(min(255, int(c * (floor + reach * step))) for c in colour) + (255,))
-
-        for point in body:
-            paint(point, shell, 0.62, 0.78)
-        for point in rim:
-            egg.putpixel(point, tuple(int(c * 0.32) for c in shell) + (255,))
-        # The markings: small clumps rather than lone pixels, shaded with the shell so they sit in the
-        # egg instead of on top of it, and kept apart so the shell still shows between them.
-        marked = set()
-        for _ in range(260):
-            if len(marked) >= 18:
-                break
-            point = body[rng.randrange(len(body))]
-            if point in marked or (point[0] + 1, point[1]) in marked or (point[0], point[1] + 1) in marked:
-                continue
-            clump = [point]
-            if rng.random() < 0.45:
-                clump.append((point[0] + 1, point[1]))
-            if rng.random() < 0.30:
-                clump.append((point[0], point[1] + 1))
-            for part in clump:
-                if part in body:
-                    paint(part, spots, 0.70, 0.62)
-                    marked.add(part)
-        egg.save(folder / f"huevo_{name}.png")
+    written = huevos.generate(ASSETS / "textures/item")
+    missing = set(SPAWN_EGGS) - set(written)
+    if missing:
+        raise SystemExit(f"no egg drawn for {sorted(missing)}")
 
 
 # ---------------------------------------------------------------- the smith's barrow

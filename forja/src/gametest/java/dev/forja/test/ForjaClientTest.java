@@ -229,6 +229,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			if ("huevos".equals(solo)) {
+				shotSpawnEggs(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("red".equals(solo)) {
 				// Only the metal network of the foundry (FUNDICION_V2, part A), which fundicion also runs first.
 				checkFoundryNetwork(context, server, connection, x, y, z);
@@ -1799,9 +1804,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 			check(dev.forja.world.WorldEvents.active(level) == dev.forja.world.WorldEvents.AURORA, "starting an event should make it the one running");
 			log("evento: " + dev.forja.world.WorldEvents.AURORA.id() + " da " + dev.forja.world.WorldEvents.AURORA.upgrade.id());
 
-			// The three spawn eggs, so the mobs can be looked at without hunting for a ruin.
-			for (net.minecraft.world.item.Item egg : List.of(dev.forja.registry.ModItems.HUEVO_HERRERO_CAIDO,
-				dev.forja.registry.ModItems.HUEVO_AUTOMATA, dev.forja.registry.ModItems.HUEVO_CORAZA)) {
+			// The spawn eggs, one per mob, so the mobs can be looked at without hunting for a ruin.
+			for (net.minecraft.world.item.Item egg : HuevosGameTests.eggs()) {
 				ItemStack stack = new ItemStack(egg);
 				var data = stack.get(DataComponents.ENTITY_DATA);
 				check(data != null, "a spawn egg should carry the entity it spawns: " + egg);
@@ -15308,6 +15312,134 @@ public class ForjaClientTest implements FabricClientGameTest {
 	 */
 	private static void handShot(ClientGameTestContext context, String name) {
 		context.takeScreenshot(TestScreenshotOptions.of(name).disableCounterPrefix());
+	}
+
+	// ------------------------------------------------------------------ the spawn eggs (FORJA_SOLO=huevos)
+
+	/**
+	 * The spawn eggs (Andy, 2026-09-28: "vi que no hay huevos para spawnear a los mobs"). Every mob's portrait
+	 * from the front, for the sheet that puts each egg beside its mob; the fifteen eggs in the hotbar and the
+	 * inventory; and the creative search for them, which is where a player finds them. FORJA_SOLO=huevos runs
+	 * it alone.
+	 */
+	private static void shotSpawnEggs(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		List<Item> eggs = HuevosGameTests.eggs();
+		server.runCommand("gamemode spectator @a");
+		server.runCommand("time set noon");
+		server.runCommand("weather clear");
+		// A monster cannot even be created on peaceful.
+		server.runCommand("difficulty easy");
+		context.runOnClient(mc -> {
+			mc.options.fov().set(60);
+			mc.options.fovEffectScale().set(0.0);
+		});
+		double px = x + 100.5;
+		double pz = z + 70.5;
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			for (int fx = -9; fx <= 9; fx++) {
+				for (int fz = -9; fz <= 9; fz++) {
+					level.setBlockAndUpdate(new BlockPos((int) Math.floor(px) + fx, y - 1, (int) Math.floor(pz) + fz), Blocks.SMOOTH_STONE.defaultBlockState());
+					for (int fy = 0; fy <= 6; fy++) {
+						level.setBlockAndUpdate(new BlockPos((int) Math.floor(px) + fx, y + fy, (int) Math.floor(pz) + fz), Blocks.AIR.defaultBlockState());
+					}
+				}
+			}
+		});
+
+		// The stage is far from spawn: let its chunks come in before the first portrait.
+		tp(server, px, y + 2.0, pz + 6.0, 180.0F, 10.0F);
+		context.waitTicks(60);
+		connection.waitForChunksRender();
+		context.runOnClient(mc -> mc.gui.toastManager().clear());
+
+		// Each mob alone, facing the camera, framed by its own size.
+		for (Item egg : eggs) {
+			var type = net.minecraft.world.item.SpawnEggItem.getType(new ItemStack(egg));
+			String name = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type).getPath();
+			server.runOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				var entity = type.create(level, net.minecraft.world.entity.EntitySpawnReason.SPAWN_ITEM_USE);
+				check(entity != null, "the egg's mob should be creatable: " + name);
+				entity.snapTo(px, y, pz, 0.0F, 0.0F);
+				if (entity instanceof net.minecraft.world.entity.Mob mob) {
+					mob.setNoAi(true);
+					mob.setPersistenceRequired();
+					mob.setYHeadRot(0.0F);
+					mob.setYBodyRot(0.0F);
+				}
+				level.addFreshEntity(entity);
+			});
+			var size = type.getDimensions();
+			double reach = Math.max(size.height(), size.width()) * 1.6 + 1.0;
+			double middle = y + size.height() * 0.5;
+			mobShot(context, server, px + reach * 0.35, middle + reach * 0.25, pz + reach, px, middle, pz, 30, "huevos_mob_" + name);
+			clearStage(server, connection, px, y, pz);
+		}
+
+		// The fifteen in hand: nine in the hotbar, six above them (survival, so E opens the plain inventory).
+		server.runCommand("gamemode survival @a");
+		server.runOnServer(s -> {
+			ServerPlayer player = connection.getServerPlayer();
+			player.getInventory().clearContent();
+			for (int i = 0; i < eggs.size(); i++) {
+				player.getInventory().setItem(i, new ItemStack(eggs.get(i)));
+			}
+			player.getInventory().setSelectedSlot(0);
+		});
+		tp(server, px, y, pz + 4.0, 180.0F, 20.0F);
+		context.waitTicks(20);
+		context.runOnClient(mc -> {
+			mc.gui.hud.getChat().clearMessages(false);
+			mc.gui.toastManager().clear();
+		});
+		shot(context, "huevos_01_barra");
+		context.getInput().setCursorPos(0, 0);
+		context.getInput().pressKey(options -> options.keyInventory);
+		context.waitTicks(5);
+		shot(context, "huevos_02_inventario");
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+		server.runCommand("gamemode creative @a");
+		context.waitTicks(10);
+
+		// The creative search: T switches to the search tab, and an id query finds exactly the mod's eggs.
+		context.getInput().pressKey(options -> options.keyInventory);
+		context.waitTicks(5);
+		check(context.computeOnClient(mc -> mc.gui.screen() instanceof net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen),
+			"E in creative should open the creative inventory");
+		context.getInput().pressKey(options -> options.keyChat);
+		context.waitTicks(3);
+		context.getInput().typeChars("forja:huevo");
+		context.waitTicks(10);
+		List<Item> found = context.computeOnClient(mc -> {
+			var screen = (net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen) mc.gui.screen();
+			List<Item> items = new ArrayList<>();
+			for (ItemStack stack : screen.getMenu().items) {
+				if (!stack.isEmpty()) {
+					items.add(stack.getItem());
+				}
+			}
+			return items;
+		});
+		log("huevos: la busqueda creativa encuentra " + found.size() + " objetos");
+		check(found.containsAll(eggs), "the creative search should find all fifteen eggs, found " + found);
+		shot(context, "huevos_03_creativo");
+		// The first result hovered, for its name.
+		double[] slot = context.computeOnClient(mc -> {
+			double scale = mc.getWindow().getGuiScale();
+			double left = (mc.getWindow().getGuiScaledWidth() - 195) / 2.0;
+			double top = (mc.getWindow().getGuiScaledHeight() - 136) / 2.0;
+			return new double[] {(left + 9 + 8) * scale, (top + 18 + 8) * scale};
+		});
+		context.getInput().setCursorPos(slot[0], slot[1]);
+		context.waitTicks(5);
+		shot(context, "huevos_04_creativo_nombre");
+		context.getInput().setCursorPos(0, 0);
+		context.runOnClient(mc -> {
+			mc.gui.setScreen(null);
+			mc.options.fov().set(70);
+			mc.options.fovEffectScale().set(1.0);
+		});
 	}
 
 	private static void shot(ClientGameTestContext context, String name) {

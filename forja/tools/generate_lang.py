@@ -388,6 +388,17 @@ GUI = {
     "item.forja.huevo_automata_de_forja": ("Huevo de autómata de forja", "Forge Automaton Spawn Egg"),
     "item.forja.huevo_coraza_vacia": ("Huevo de coraza vacía", "Hollow Plate Spawn Egg"),
     "item.forja.huevo_pavesa": ("Huevo de pavesa", "Ember Wisp Spawn Egg"),
+    "item.forja.huevo_herrumbre": ("Huevo de herrumbre", "Rust Flake Spawn Egg"),
+    "item.forja.huevo_ascua_mayor": ("Huevo de ascua mayor", "Greater Ember Spawn Egg"),
+    "item.forja.huevo_escoria_viviente": ("Huevo de escoria viviente", "Living Slag Spawn Egg"),
+    "item.forja.huevo_yunque_andante": ("Huevo de yunque andante", "Walking Anvil Spawn Egg"),
+    "item.forja.huevo_percutor": ("Huevo de percutor", "Striker Spawn Egg"),
+    "item.forja.huevo_tenaza": ("Huevo de tenaza", "Tongs Spawn Egg"),
+    "item.forja.huevo_cargador_de_carbon": ("Huevo de cargador de carbón", "Coal Hauler Spawn Egg"),
+    "item.forja.huevo_templador": ("Huevo de templador", "Quencher Spawn Egg"),
+    "item.forja.huevo_nucleo_estelar": ("Huevo de núcleo estelar", "Star Core Spawn Egg"),
+    "item.forja.huevo_molde_roto": ("Huevo de molde roto", "Broken Mould Spawn Egg"),
+    "item.forja.huevo_guardian_de_cuno": ("Huevo de guardián de cuño", "Cune Guardian Spawn Egg"),
     "item.forja.yunque_portatil.desc": ("Corta piezas y desarma donde estés, pero se gasta", "Cuts parts and takes gear apart anywhere, but it wears out"),
     "gui.forja.libro.yunque_portatil": (
         "El yunque de viaje: abre la mesa de piezas donde estés, con su pestaña de desarmar. Se gasta un "

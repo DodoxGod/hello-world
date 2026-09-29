@@ -92,6 +92,17 @@ public final class ModItems {
 	public static Item HUEVO_AUTOMATA;
 	public static Item HUEVO_CORAZA;
 	public static Item HUEVO_PAVESA;
+	public static Item HUEVO_HERRUMBRE;
+	public static Item HUEVO_ASCUA_MAYOR;
+	public static Item HUEVO_ESCORIA;
+	public static Item HUEVO_YUNQUE_ANDANTE;
+	public static Item HUEVO_PERCUTOR;
+	public static Item HUEVO_TENAZA;
+	public static Item HUEVO_CARGADOR;
+	public static Item HUEVO_TEMPLADOR;
+	public static Item HUEVO_NUCLEO;
+	public static Item HUEVO_MOLDE_ROTO;
+	public static Item HUEVO_GUARDIAN;
 	public static Item SELLO;
 
 	private ModItems() {
@@ -220,6 +231,17 @@ public final class ModItems {
 		HUEVO_AUTOMATA = spawnEgg("automata_de_forja", ModEntities.AUTOMATA);
 		HUEVO_CORAZA = spawnEgg("coraza_vacia", ModEntities.CORAZA);
 		HUEVO_PAVESA = spawnEgg("pavesa", ModEntities.PAVESA);
+		HUEVO_HERRUMBRE = spawnEgg("herrumbre", ModEntities.HERRUMBRE);
+		HUEVO_ASCUA_MAYOR = spawnEgg("ascua_mayor", ModEntities.ASCUA_MAYOR);
+		HUEVO_ESCORIA = spawnEgg("escoria_viviente", ModEntities.ESCORIA);
+		HUEVO_YUNQUE_ANDANTE = spawnEgg("yunque_andante", ModEntities.YUNQUE_ANDANTE);
+		HUEVO_PERCUTOR = spawnEgg("percutor", ModEntities.PERCUTOR);
+		HUEVO_TENAZA = spawnEgg("tenaza", ModEntities.TENAZA);
+		HUEVO_CARGADOR = spawnEgg("cargador_de_carbon", ModEntities.CARGADOR_DE_CARBON);
+		HUEVO_TEMPLADOR = spawnEgg("templador", ModEntities.TEMPLADOR);
+		HUEVO_NUCLEO = spawnEgg("nucleo_estelar", ModEntities.NUCLEO_ESTELAR);
+		HUEVO_MOLDE_ROTO = spawnEgg("molde_roto", ModEntities.MOLDE_ROTO);
+		HUEVO_GUARDIAN = spawnEgg("guardian_de_cuno", ModEntities.GUARDIAN_DE_CUNO);
 		ARMARIO_DE_PIEZAS = register("armario_de_piezas", p -> new BlockItem(ModBlocks.ARMARIO_DE_PIEZAS, p),
 			new Item.Properties().useBlockDescriptionPrefix());
 		MESA_DE_EXTRACCION = register("mesa_de_extraccion", p -> new BlockItem(ModBlocks.MESA_DE_EXTRACCION, p),
@@ -356,6 +378,17 @@ public final class ModItems {
 		stacks.add(new ItemStack(HUEVO_AUTOMATA));
 		stacks.add(new ItemStack(HUEVO_CORAZA));
 		stacks.add(new ItemStack(HUEVO_PAVESA));
+		stacks.add(new ItemStack(HUEVO_HERRUMBRE));
+		stacks.add(new ItemStack(HUEVO_ASCUA_MAYOR));
+		stacks.add(new ItemStack(HUEVO_ESCORIA));
+		stacks.add(new ItemStack(HUEVO_YUNQUE_ANDANTE));
+		stacks.add(new ItemStack(HUEVO_PERCUTOR));
+		stacks.add(new ItemStack(HUEVO_TENAZA));
+		stacks.add(new ItemStack(HUEVO_CARGADOR));
+		stacks.add(new ItemStack(HUEVO_TEMPLADOR));
+		stacks.add(new ItemStack(HUEVO_NUCLEO));
+		stacks.add(new ItemStack(HUEVO_MOLDE_ROTO));
+		stacks.add(new ItemStack(HUEVO_GUARDIAN));
 		stacks.add(new ItemStack(CINTURON));
 		stacks.add(new ItemStack(HIERRO_ESTELAR));
 		for (Item ingot : ALLOYS.values()) {
