@@ -909,7 +909,18 @@ igual bit a bit.
 
 ## 7. Riesgos y preguntas para Andy
 
-**Preguntas (hacen falta sus respuestas antes de M0, M3 y M5):**
+## 7.0 Decisiones de Andy (29-09-2026), mandan sobre el resto del documento
+
+1. **Lo que se queda** (no cuenta como construir o romper): la telaraña de la araña, el fuego del Cargador de Carbón y del Herrero Caído, `ThrownHead`, las explosiones del creeper, el enderman que coge bloques y los zombis que rompen puertas. Solo se quitan el Builder (excavar y pilar), y eso ya está hecho en el mod (M0, 6c62cc0).
+2. **Luces:** solo **antorchas**: antorcha, antorcha de pared, antorcha de almas y antorcha de almas de pared. Nada de faroles, piedra luminosa, velas ni calabazas. Solo si `mobGriefing` está activado; si no, la máscara de `APAGAR_LUZ` va a 0. El premio de `APAGAR_LUZ` va por el **nivel de luz** (que aparezcan mobs y el sigilo: luz < 8 donde está el jugador o en el camino de los aliados), no por lo oscura que se vea la pantalla.
+3. **Furia:** +25 % de daño y +20 % de velocidad durante 10 s, luego 5 s agotado. Solo la puede usar **el 10 % de los mobs de un grupo** (al menos 1 en grupos de 5 o más; se elige al aparecer). A los demás se les enmascara.
+4. **Capitán:** solo **élites y campeones**, nunca veteranos. Un grupo sin élite ni campeón no tiene capitán (el Squad sigue con sus reglas). La **carga sincronizada da +1 turno** durante 2 s, con un grito visible.
+5. **Búnker cerrado:** está **a salvo**, como en vanilla; una base segura no se debe poder abrir. `ASEDIAR` solo espera y embosca en la salida; en el simulador, "encerrado del todo" termina el combate como empate sin castigo para los mobs.
+6. **Objetos de los mobs:** las perlas, cargas de viento y pociones que usan **no se sueltan** al morir. El arma que recogen del suelo (también la del jugador) sí se suelta, como cualquier objeto recogido.
+7. **Brillo:** el brillo del juego solo cambia lo que ve Andy en pantalla, no lo que ven los mobs. La percepción del simulador usa el nivel de luz del bloque (como el mod), no el brillo.
+
+**Preguntas originales (ya contestadas arriba):**
+
 1. **¿Qué cuenta como "romper o construir"?** Además del Builder, hoy cambian bloques:
    - la telaraña de la araña (`VanillaSpecials`, temporal, 100 ticks);
    - el fuego del Cargador de Carbón y del Herrero Caído;
@@ -958,5 +969,4 @@ igual bit a bit.
   cifras (−35 %) o con la GRU de 64 (−20 %).
 - **Dos contratos a la vez.** v3b y v4 van por carpetas separadas. Hay que tener cuidado de no copiar redes v4 a
   `config/forja/redes/`: `MobAi.check` por formato lo evita.
-- **Compilación de Rust.** Si Smart App Control sigue bloqueándola, todas las fases S están paradas. Es lo primero que hay
-  que resolver.
+- **Compilación de Rust.** Resuelto: Andy desactivó Smart App Control el 29-09.
