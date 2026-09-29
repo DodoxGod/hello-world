@@ -36,7 +36,7 @@ public final class MobAi {
 	public enum Contract { V3, V4, AUTO }
 
 	/** The "formato" of a v4 mob network, and the file name reserved for the v4 captain in redes_v4. */
-	public static final String V4_FORMAT = "red_mob_v4";
+	public static final String V4_FORMAT = ObsV4.FORMAT;
 	public static final String V4_CAPTAIN = "capitan";
 
 	private static final Map<Mob, MobMind> MINDS = new WeakHashMap<>();
@@ -45,8 +45,8 @@ public final class MobAi {
 	private static final Map<String, String> NET_PROBLEMS = new java.util.LinkedHashMap<>();
 	private static boolean loaded;
 	/**
-	 * v4 files found in redes_v4 that this mod cannot run yet, by family ("capitan" for red_capitan.json), and the
-	 * families already logged, so a reload does not say it again.
+	 * v4 files found in redes_v4 that this mod cannot run yet, by family: since M1 only the captain's
+	 * (red_capitan.json, "capitan"), which waits for M5. And what was already logged, so a reload does not say it again.
 	 */
 	private static final Map<String, Path> V4_WAITING = new java.util.LinkedHashMap<>();
 	private static final java.util.Set<String> V4_LOGGED = new java.util.HashSet<>();
@@ -109,11 +109,12 @@ public final class MobAi {
 	}
 
 	/**
-	 * Whether this mod can feed a v4 network its observation. Not yet: ObsV4 (the 468 inputs) comes with M1, once
-	 * Andy has answered the design's questions. Until then a v4 file is found, logged and left alone.
+	 * Whether this mod can feed a v4 mob network its observation: yes since M1 (ObsV4, Andy, 2026-09-29). Its heads are
+	 * carried out as far as the executor goes today (see {@link #mask(Mob, MobMind, Player, int)}). The v4 captain
+	 * (red_capitan.json) is still only noted: it comes with M5.
 	 */
 	public static boolean supportsV4() {
-		return false;
+		return true;
 	}
 
 	public static MobMind mind(Mob mob) {
@@ -148,13 +149,17 @@ public final class MobAi {
 		NET_PROBLEMS.clear();
 		V4_WAITING.clear();
 		if (contract() != Contract.V3) {
-			noteV4(V4_CAPTAIN);
+			readV4(V4_CAPTAIN);
 		}
 		for (String family : families()) {
-			// v4 first (docs/red_mob_v4_diseno.md §1.6): with "auto" or "v4", a v4 file would take the family over.
-			// None can yet (supportsV4), so the family carries on with its v3 file below, or the rules.
-			if (contract() != Contract.V3 && noteV4(family) && supportsV4()) {
-				continue;
+			// v4 first (docs/red_mob_v4_diseno.md §1.6): with "auto" or "v4", a v4 file that fits takes the family over.
+			// One that does not fit is logged and the family carries on with its v3 file below, or the rules.
+			if (contract() != Contract.V3) {
+				NetBrain four = loadV4(family);
+				if (four != null) {
+					NETS.put(family, four);
+					continue;
+				}
 			}
 			Path file = netFolder().resolve("red_" + family + ".json");
 			if (!Files.exists(file)) {
@@ -179,36 +184,93 @@ public final class MobAi {
 	}
 
 	/**
-	 * Whether redes_v4 holds a v4 file for this family; one that the mod cannot run is kept in {@link #v4Waiting()}
-	 * and logged once. A file there whose formato is not v4 is not used: it belongs in redes.
+	 * The v4 file redes_v4 holds for this family, parsed, or null: none, unreadable, or with a formato that is not v4
+	 * (that one belongs in redes, and is not used). One the mod cannot run yet (the captain's, until M5) is kept in
+	 * {@link #v4Waiting()}, logged once, and also comes back null.
 	 */
-	private static boolean noteV4(String family) {
+	private static com.google.gson.JsonObject readV4(String family) {
 		Path file = netFolderV4().resolve("red_" + family + ".json");
 		if (!Files.exists(file)) {
-			return false;
+			return null;
 		}
+		com.google.gson.JsonObject json;
 		String format;
 		try (java.io.Reader reader = Files.newBufferedReader(file)) {
-			com.google.gson.JsonObject json = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
+			json = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
 			format = json.has("formato") ? json.get("formato").getAsString() : null;
 		} catch (Exception failure) {
+			NET_PROBLEMS.put(family, "v4: " + failure.getMessage());
 			Forja.LOGGER.warn("No se pudo leer la red v4 {}", file, failure);
-			return false;
+			return null;
 		}
-		boolean v4 = V4_CAPTAIN.equals(family) ? "red_capitan_v4".equals(format) : V4_FORMAT.equals(format);
+		boolean captain = V4_CAPTAIN.equals(family);
+		boolean v4 = captain ? "red_capitan_v4".equals(format) : V4_FORMAT.equals(format);
 		if (!v4) {
 			if (V4_LOGGED.add(family + ":" + format)) {
 				Forja.LOGGER.warn("{} está en redes_v4 pero su formato es '{}', no v4: no se usa", file.getFileName(), format);
 			}
-			return false;
+			return null;
 		}
-		if (!supportsV4()) {
+		if (captain || !supportsV4()) {
 			V4_WAITING.put(family, file);
 			if (V4_LOGGED.add(family)) {
-				Forja.LOGGER.info("red v4 encontrada para {}, aún no soportada: se usa v3", family);
+				Forja.LOGGER.info(captain ? "red de capitán v4 encontrada, aún no soportada (llega en M5): los grupos siguen con sus reglas"
+					: "red v4 encontrada para {}, aún no soportada: se usa v3", family);
+			}
+			return null;
+		}
+		return json;
+	}
+
+	/**
+	 * The family's v4 network from redes_v4, if there is one and it fits ObsV4 and the v4 outputs; null otherwise, with
+	 * the reason in {@link #problems()} ("v4: ...") when there was a file that did not fit.
+	 */
+	private static NetBrain loadV4(String family) {
+		com.google.gson.JsonObject json = readV4(family);
+		if (json == null) {
+			return null;
+		}
+		Path file = netFolderV4().resolve("red_" + family + ".json");
+		try {
+			NetBrain net = NetBrain.fromJson(json);
+			String problem = checkV4(net);
+			if (problem != null) {
+				NET_PROBLEMS.put(family, "v4: " + problem);
+				Forja.LOGGER.warn("Red v4 {} descartada, se usa la v3 o las reglas: {}", file, problem);
+				return null;
+			}
+			Forja.LOGGER.info("Red v4 cargada para {}: {} ({} ticks por decisión)", family, file, net.ticksPerDecision);
+			return net;
+		} catch (Exception failure) {
+			NET_PROBLEMS.put(family, "v4: " + failure.getMessage());
+			Forja.LOGGER.warn("No se pudo leer la red v4 {}", file, failure);
+			return null;
+		}
+	}
+
+	/**
+	 * Why a v4 network cannot be used here, or null: its formato must be red_mob_v4, its inputs exactly ObsV4's 468 in
+	 * the same order, and its outputs the contract's 53. Unlike v1..v3, a shorter prefix is not accepted: the contract
+	 * is one size.
+	 */
+	public static String checkV4(NetBrain net) {
+		if (!V4_FORMAT.equals(net.format)) {
+			return "formato '" + net.format + "': no es " + V4_FORMAT;
+		}
+		List<String> ours = ObsV4.names();
+		if (net.inputs() != ours.size() || net.names.size() != ours.size()) {
+			return "espera " + net.inputs() + " entradas con " + net.names.size() + " nombres; la v4 tiene " + ours.size();
+		}
+		for (int i = 0; i < ours.size(); i++) {
+			if (!ours.get(i).equals(net.names.get(i))) {
+				return "la entrada " + i + " es '" + net.names.get(i) + "' y el mod da '" + ours.get(i) + "'";
 			}
 		}
-		return true;
+		if (net.outputs() != NetBrain.V4_OUTPUTS) {
+			return "da " + net.outputs() + " salidas y la v4 tiene " + NetBrain.V4_OUTPUTS;
+		}
+		return null;
 	}
 
 	/**
@@ -389,10 +451,16 @@ public final class MobAi {
 		if (mind.memory == null || mind.memory.length != net.memory) {
 			mind.resetMemory(net.memory);
 		}
-		mind.reachVersion = net.reachVersion;
-		float[] obs = ObsM1.of(mob, target, mind.cooldown, mind.draw);
-		if (net.inputs() > obs.length) {
-			obs = ObsForja.full(mob, target, mind, obs, net.inputs());
+		float[] obs;
+		if (V4_FORMAT.equals(net.format)) {
+			// v4: its own 468 (ObsV4 also sets reachVersion to 2, the only one the v4 contract has)
+			obs = ObsV4.build(mob, target, mind);
+		} else {
+			mind.reachVersion = net.reachVersion;
+			obs = ObsM1.of(mob, target, mind.cooldown, mind.draw);
+			if (net.inputs() > obs.length) {
+				obs = ObsForja.full(mob, target, mind, obs, net.inputs());
+			}
 		}
 		boolean[] mask = mask(mob, mind, target, net.outputs());
 		float[] logits = net.forward(obs, mind.memory);
@@ -487,6 +555,20 @@ public final class MobAi {
 		}
 		if (outputs > NetBrain.RUN_AT) {
 			mask[NetBrain.RUN_AT] = MobSprint.able(mind, mob.level().getGameTime());
+		}
+		if (outputs >= NetBrain.V4_OUTPUTS) {
+			// v4 (M1): what the executor cannot carry out yet is shut, as the simulator's step S1 shuts it (the contract's
+			// "estado_S1"): the eight new tactics (34..41), every object but "nada" (42 stays open: index 0 of a softmax
+			// is never shut), furia (51) and golpe_escudo (52). Each opens with the step that brings it (M2 to M5).
+			for (int k = NetBrain.V4_TACTICS_AT; k < NetBrain.V4_TACTICS_AT + NetBrain.V4_NEW_TACTICS; k++) {
+				mask[k] = false;
+			}
+			mask[NetBrain.OBJECT_AT] = true;
+			for (int k = 1; k < NetBrain.OBJECTS; k++) {
+				mask[NetBrain.OBJECT_AT + k] = false;
+			}
+			mask[NetBrain.FURY_AT] = false;
+			mask[NetBrain.SHIELD_BASH_AT] = false;
 		}
 		return mask;
 	}

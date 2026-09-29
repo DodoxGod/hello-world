@@ -110,8 +110,7 @@ posibles (qué lleva en la mano izquierda, armas en el suelo, luces cerca del ju
   - las v4 se leen de `config/forja/redes_v4/red_<familia>.json` (y `red_capitan.json`, reservado); las v1, v2, v3,
     v3b y v3.1 siguen en `config/forja/redes/`;
   - `MobAi.check` mira el campo `"formato"` antes que los nombres: una v4 en la carpeta de las v3 se rechaza;
-  - como aún no hay `ObsV4`, una v4 se detecta, se anota una vez en el registro ("red v4 encontrada para X, aún no
-    soportada: se usa v3") y no se usa. La familia sigue con su v3 o con las reglas. `NetBrain.format` guarda el
+  - hasta M1 una v4 solo se detectaba y no se usaba (ver **M1** abajo: ahora se carga). `NetBrain.format` guarda el
     formato de cada red.
 - **Percepción honesta (parte de M4):** opción `iaPercepcionHonesta` (por defecto activada). Un mob que lleva 20 ticks
   sin percibir a su jugador va a la última posición en la que lo percibió (`MobMind.lastSeen`), no a la real, y a menos
@@ -121,10 +120,38 @@ posibles (qué lleva en la mano izquierda, armas en el suelo, luces cerca del ju
 - **Pruebas:** `PercepcionGameTests`:
   - `lostPlayerIsSoughtWhereLastSeen`: jugador tras un muro, el zombi espera donde lo vio y nunca llega a 2 bloques de
     la posición real;
-  - `v4NetworkIsDetectedButNotUsed`: una v4 falsa en `redes_v4` se detecta y no se usa.
+  - `wrongV4NetworkIsRefusedAndV3Kept` (antes `v4NetworkIsDetectedButNotUsed`): una v4 que no encaja con `ObsV4` se
+    rechaza, se anota el motivo y la familia sigue con su v3 o con las reglas; el capitán v4 solo se anota.
+- **M1 (29-09-2026, contrato `red_mob_v4_contrato.json`):**
+  - **Carga:** `MobAi.supportsV4()` = sí. Con `iaContrato` `auto` o `v4`, una `red_<familia>.json` de `redes_v4` con
+    `"formato": "red_mob_v4"` se carga si sus 468 nombres son los de `ObsV4.names()` en el mismo orden y da 53 salidas
+    (`MobAi.checkV4`); manda sobre la v3 de esa familia. Si no encaja, se anota en `problems()` ("v4: …") y la familia
+    sigue con su v3 o con las reglas. Con `v3`, `redes_v4` ni se mira. Las v1, v2, v3, v3b y v3.1 no cambian. El
+    capitán (`red_capitan.json`) solo se anota: llega en M5.
+  - **Observación (`ObsV4`, 468):**
+    - **0–279 (v3b), reales:** las mismas que hoy (`ObsM1`, `ObsForja`, `ObsV3`), con `yo_arma_alcance/6` siempre
+      con `"alcance_v": 2`, diga lo que diga el archivo.
+    - **S (280–295), reales:** sectores con el hueco del `Squad` y un frente que es la media lenta (≈ 1 s) de la mirada
+      del jugador; `hueco_error/pi`; `hueco_estable/100` (el `Squad` apunta cuándo cambia un hueco, `slotSince`);
+      aliados a 1,5; aliados en mi sector; cuadrantes y enzarzados alrededor del jugador; creeper encendido cerca (2 si
+      no hay); `tiro_lado_libre` y `tiro_punto_dist/4` para arqueros con un aliado en la línea; `grupo_n/13`;
+      `turno_espera/40`; `soy_primero_sector`.
+    - **R (296–297), reales:** `yo_arma_alcance_min/6` (`Reach.min`: 1/6 con lanza) y `jug_alcance_min/6` (`min_reach`
+      del `attack_range` del arma del jugador).
+    - **M, Mo, P, E, A, O, C, G, L y W (298–467): 0**, como en el paso S1 del simulador. Las que quizá necesiten otro
+      neutro están en `red_mob_v4_neutros.md`, junto con las interpretaciones de S que conviene confirmar.
+  - **Salidas (53):** se ejecutan `mover`, `saltar`, `usar`, las 13 tácticas que ya existen en `Tactic` (índices 11–19 y
+    29–32), `especial`, `defensa`, `fintar` y `correr` (33), con las máscaras de siempre. **Enmascarado** (como el
+    `estado_S1` del contrato): las 8 tácticas nuevas (34–41: SECTOR, TIRO_LIBRE, FORMACION, EMBOSCAR, BUSCAR, RECOGER,
+    APAGAR_LUZ, ASEDIAR), la cabeza de objeto salvo "nada" (43–50), `furia` (51) y `golpe_escudo` (52). La cabeza de
+    táctica es una sola softmax de 21; si alguna vez sale una de las 8 nuevas sin máscara, se ejecuta como LIBRE.
+    Objeto, furia y golpe de escudo no se muestrean: con la máscara saldrían siempre "nada", 0 y 0.
+  - **Pruebas:** `RedV4GameTests`: nombres iguales al contrato (y bloques y cabezas), 468 entradas finitas en un zombi
+    y un esqueleto, la v4 de `redes_v4` se carga con `auto`/`v4` y no con `v3`, y una v4 falsa con pesos aleatorios
+    lleva a un zombi 40 ticks sin errores y sin elegir nunca SECTOR.
 
-**Pendiente de las respuestas de Andy (§7 del diseño):** `ObsV4` y las cabezas nuevas de `NetBrain` (M1), furia y
-capitán (M3 a M5), la lista exacta de luces y la etiqueta `forja:luces_rompibles` (M3), y el resto de M2 a M7.
+**Pendiente:** M2 a M7 del diseño (§6.1): los bloques que siguen a 0, las 8 tácticas, objetos, furia, golpe de escudo y
+el capitán. Cada paso abre su parte de la máscara.
 
 **Pendiente sin depender de él:** la estimación en la observación (hoy una red sigue viendo la posición real aunque no
 lo perciba), los sonidos, BUSCAR y la caza hasta 48 bloques y 600 ticks (el resto de M4).

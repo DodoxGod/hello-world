@@ -1,5 +1,27 @@
 # Novedades
 
+## 2026-09-29 — el mod ya usa las redes v4 de los monstruos (paso M1)
+
+- **Redes v4:** una `red_<familia>.json` con `"formato": "red_mob_v4"` en `config/forja/redes_v4/` se carga y manda
+  sobre la v3 de esa familia (con `iaContrato` en `auto` o `v4`). Tiene que traer las 468 entradas del contrato
+  (`docs/red_mob_v4_contrato.json`) en su orden y 53 salidas; si no, se dice en el registro y la familia sigue con su v3
+  o con las reglas. Con `iaContrato` en `v3` todo sigue como antes. Las redes v3, v3b y v3.1 no cambian.
+- **Lo que ve una red v4:**
+  - las 280 entradas de la v3b, con el alcance real del arma;
+  - los sectores del grupo: dónde está su hueco respecto a hacia dónde mira el jugador, cuántos comparten sector, si es
+    el siguiente en atacar desde él, cuánto lleva esperando turno, y para los arqueros hacia dónde apartarse para tener
+    la línea de tiro libre;
+  - el alcance mínimo de las lanzas, la suya y la del jugador;
+  - todo lo demás (capitán, moral, oído, emboscadas, pilares, objetos, pociones, escudo, luces y memoria del mundo) va
+    a 0 hasta que llegue su paso. `docs/red_mob_v4_neutros.md` apunta las entradas en las que 0 quizá no sea "nada".
+- **Lo que hace una red v4:** moverse, saltar, atacar, las 13 tácticas de siempre, especiales, defensa, fintas y correr.
+  Las 8 tácticas nuevas, los objetos, la furia y el golpe de escudo están bloqueados hasta que el mod sepa hacerlos.
+- **Pruebas:** `RedV4GameTests`:
+  - los nombres de las entradas son los del contrato;
+  - la observación v4 tiene 468 números válidos;
+  - una red v4 en `redes_v4` se carga;
+  - una red v4 falsa lleva a un zombi 40 ticks sin errores.
+
 ## 2026-09-29 — los monstruos no ven a través de las paredes, y la carga de las redes v4
 
 - **Percepción honesta:** un monstruo que lleva un segundo sin verte ya no va a donde estás de verdad (la navegación

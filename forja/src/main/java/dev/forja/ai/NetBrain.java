@@ -168,6 +168,22 @@ public final class NetBrain {
 	/** v3, widened at the end (2026-09-27): correr, a Bernoulli like fintar. A 33-output network does without it. */
 	public static final int RUN_AT = V3_OUTPUTS;
 	public static final int V3_RUN_OUTPUTS = RUN_AT + 1;
+	/** The tactics a v3 network chooses among: v2's nine and CEBO, RELEVO, OCULTARSE, EMPUJAR. */
+	public static final int V3_TACTICS = Tactic.V2_COUNT + 4;
+	/**
+	 * red_mob_v4 (docs/red_mob_v4_contrato.json, "cabezas"): after v3b's 34 come eight more tactics (SECTOR, TIRO_LIBRE,
+	 * FORMACION, EMBOSCAR, BUSCAR, RECOGER, APAGAR_LUZ, ASEDIAR: the tactic head's positions 13 to 20), the object head
+	 * (9: nada, curarse, mejorarse, comer, lanzar_pocion, perla_acercar, perla_escapar, carga_viento, cambiar_arma),
+	 * furia and golpe_escudo. No head of v3b moves.
+	 */
+	public static final int V4_TACTICS_AT = V3_RUN_OUTPUTS;
+	public static final int V4_NEW_TACTICS = 8;
+	public static final int V4_TACTICS = V3_TACTICS + V4_NEW_TACTICS;
+	public static final int OBJECT_AT = V4_TACTICS_AT + V4_NEW_TACTICS;
+	public static final int OBJECTS = 9;
+	public static final int FURY_AT = OBJECT_AT + OBJECTS;
+	public static final int SHIELD_BASH_AT = FURY_AT + 1;
+	public static final int V4_OUTPUTS = SHIELD_BASH_AT + 1;
 
 	/** The run head, sampled like the feint; false for a network that has none. */
 	public static boolean sampleRun(float[] logits, double temperature, RandomSource random, boolean[] mask) {
@@ -177,12 +193,17 @@ public final class NetBrain {
 		return random.nextDouble() < sigmoid((float) (logits[RUN_AT] / Math.max(0.05, temperature)));
 	}
 
-	/** The logits the tactic head is read from, in the order of {@link Tactic}. */
-	static int[] tacticLogits(int outputs) {
-		int n = outputs >= V3_OUTPUTS ? Tactic.values().length : Tactic.V2_COUNT;
+	/**
+	 * The logits the tactic head is read from, in the order of {@link Tactic}: v2's nine, v3's four and, for a v4
+	 * network, the contract's eight more at {@link #V4_TACTICS_AT}. Those eight have no executor yet (M2 to M5): the
+	 * mask shuts them (MobAi.mask), and one sampled without a mask is run as LIBRE ({@link Tactic#of}), as the
+	 * simulator's first v4 step does.
+	 */
+	public static int[] tacticLogits(int outputs) {
+		int n = outputs >= V4_OUTPUTS ? V4_TACTICS : outputs >= V3_OUTPUTS ? Tactic.values().length : Tactic.V2_COUNT;
 		int[] at = new int[n];
 		for (int k = 0; k < n; k++) {
-			at[k] = k < Tactic.V2_COUNT ? TACTIC_AT + k : NEW_TACTICS_AT + (k - Tactic.V2_COUNT);
+			at[k] = k < Tactic.V2_COUNT ? TACTIC_AT + k : k < V3_TACTICS ? NEW_TACTICS_AT + (k - Tactic.V2_COUNT) : V4_TACTICS_AT + (k - V3_TACTICS);
 		}
 		return at;
 	}
@@ -195,6 +216,10 @@ public final class NetBrain {
 	 * Samples a decision. A v1 network (11 outputs) gives the three heads of the simulator and LIBRE; a v2
 	 * network (29) adds tactica (9), especial (5), defensa (3) and fintar (1), each sampled on its own with
 	 * the same temperature and its part of the mask.
+	 *
+	 * <p>A v4 network (53) is sampled the same way, its tactic head over all 21. Its object head, furia and golpe_escudo
+	 * are not sampled at all: nothing in the mod carries them out yet (M2 to M5), and the mask shuts them anyway, which
+	 * leaves the object head on "nada" and both Bernoullis at 0, the contract's value for a head that is forbidden.
 	 */
 	public static Decision sample(float[] logits, double temperature, RandomSource random, boolean[] mask) {
 		Decision base = sampleV1(logits, temperature, random, mask);

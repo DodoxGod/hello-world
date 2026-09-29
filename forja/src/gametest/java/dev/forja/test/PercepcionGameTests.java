@@ -21,7 +21,8 @@ import net.minecraft.world.phys.Vec3;
 /**
  * What the monsters know and which brains they load, on the way to the v4 (docs/red_mob_v4_diseno.md §1.6 and §4.5;
  * Andy, 2026-09-29): a player they lost sight of is looked for where they were last seen, never found through a wall,
- * and a v4 network in redes_v4 is noticed but not run until the mod can feed it.
+ * and a v4 network in redes_v4 that does not fit the v4 contract is refused, the family keeping its v3 or the rules
+ * (the one that fits is RedV4GameTests').
  */
 public class PercepcionGameTests {
 	/**
@@ -81,12 +82,13 @@ public class PercepcionGameTests {
 	}
 
 	/**
-	 * A v4 network in redes_v4 is found and not run (the mod has no v4 observation yet): the family keeps its v3 file,
-	 * or the rules. A v4 file put in the v3 folder by mistake is refused by its formato, and with iaContrato "v3"
-	 * redes_v4 is not even looked at.
+	 * A file in redes_v4 that says it is a v4 but has v2's inputs is refused (since M1 a v4 is run, if it fits ObsV4):
+	 * the family keeps its v3 file, or the rules, and the reason is in problems(). The v4 captain is only noted (M5). A
+	 * v4 file put in the v3 folder by mistake is refused by its formato, and with iaContrato "v3" redes_v4 is not even
+	 * looked at.
 	 */
 	@GameTest
-	public void v4NetworkIsDetectedButNotUsed(GameTestHelper helper) throws java.io.IOException {
+	public void wrongV4NetworkIsRefusedAndV3Kept(GameTestHelper helper) throws java.io.IOException {
 		CombatConfig cfg = CombatConfig.get();
 		String savedFolder = cfg.iaCarpetaRedes;
 		String savedContract = cfg.iaContrato;
@@ -100,23 +102,30 @@ public class PercepcionGameTests {
 		Files.writeString(v4.resolve("red_cuerpo.json"), gson.toJson(four));
 		Files.writeString(v4.resolve("red_arquero.json"), gson.toJson(four));
 		Files.writeString(v3.resolve("red_arana.json"), gson.toJson(four));
+		com.google.gson.JsonObject captain = AiGameTests.fakeV2(new float[NetBrain.V2_OUTPUTS]);
+		captain.addProperty("formato", "red_capitan_v4");
+		Files.writeString(v4.resolve("red_" + MobAi.V4_CAPTAIN + ".json"), gson.toJson(captain));
 		try {
 			cfg.iaCarpetaRedes = v3.toAbsolutePath().toString();
 			cfg.iaContrato = "auto";
 			MobAi.reload();
 			helper.assertTrue(MobAi.netFolderV4().equals(v4.toAbsolutePath()), "redes_v4 va junto a redes: " + MobAi.netFolderV4());
-			helper.assertTrue(MobAi.v4Waiting().containsKey("cuerpo") && MobAi.v4Waiting().containsKey("arquero"),
-				"las redes v4 deberían detectarse: " + MobAi.v4Waiting().keySet());
+			helper.assertTrue(MobAi.v4Waiting().keySet().equals(java.util.Set.of(MobAi.V4_CAPTAIN)),
+				"solo el capitán v4 debería quedar a la espera (llega en M5): " + MobAi.v4Waiting().keySet());
 			NetBrain cuerpo = MobAi.net("cuerpo");
 			helper.assertTrue(cuerpo != null && "red_mob_v2".equals(cuerpo.format),
-				"el cuerpo debería seguir con su red v3 (aquí una v2), no la v4: " + (cuerpo == null ? null : cuerpo.format));
-			helper.assertTrue(MobAi.net("arquero") == null, "el arquero, con solo una v4, debería pelear por reglas");
+				"el cuerpo debería seguir con su red v3 (aquí una v2), no la v4 que no encaja: " + (cuerpo == null ? null : cuerpo.format));
+			helper.assertTrue(String.valueOf(MobAi.problems().get("cuerpo")).startsWith("v4:"),
+				"el motivo del rechazo de la v4 debería quedar anotado: " + MobAi.problems().get("cuerpo"));
+			helper.assertTrue(MobAi.net("arquero") == null && MobAi.problems().containsKey("arquero"),
+				"el arquero, con solo una v4 que no encaja, debería pelear por reglas");
+			helper.assertTrue(MobAi.checkV4(NetBrain.fromJson(four)) != null, "checkV4 no acepta una v4 con las entradas de la v2");
 			helper.assertTrue(MobAi.net("arana") == null && MobAi.problems().containsKey("arana"),
 				"una v4 en la carpeta de las v3 se rechaza por su formato");
 			helper.assertTrue(MobAi.check(NetBrain.fromJson(four)) != null, "check no acepta una red v4 aunque sus nombres encajen");
 			cfg.iaContrato = "v3";
 			MobAi.reload();
-			helper.assertTrue(MobAi.v4Waiting().isEmpty(), "con iaContrato v3 no se mira redes_v4");
+			helper.assertTrue(MobAi.v4Waiting().isEmpty() && !MobAi.problems().containsKey("cuerpo"), "con iaContrato v3 no se mira redes_v4");
 			helper.assertTrue(MobAi.net("cuerpo") != null, "con iaContrato v3 el cuerpo sigue con su red");
 		} finally {
 			cfg.iaCarpetaRedes = savedFolder;

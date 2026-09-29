@@ -182,7 +182,7 @@ public final class Squad {
 			for (MobMind mind : ring) {
 				if (mind.slotOf == player && !Double.isNaN(mind.slotAngle)) {
 					int slot = nearestFree(taken, start, n, mind.slotAngle);
-					take(mind, taken, slot, start, n, radius, player);
+					take(mind, taken, slot, start, n, radius, player, now);
 				}
 			}
 			// the newcomers fill outwards from the anchor, each on its own side
@@ -205,7 +205,7 @@ public final class Squad {
 						slot = right;
 					}
 				}
-				take(mind, taken, Math.max(0, slot), start, n, radius, player);
+				take(mind, taken, Math.max(0, slot), start, n, radius, player, now);
 			}
 		}
 
@@ -266,9 +266,15 @@ public final class Squad {
 		return Math.max(0, best);
 	}
 
-	private static void take(MobMind mind, boolean[] taken, int slot, double start, int n, double radius, Player player) {
+	private static void take(MobMind mind, boolean[] taken, int slot, double start, int n, double radius, Player player, long now) {
 		taken[slot] = true;
-		mind.slotAngle = start + slot * 2.0 * Math.PI / n;
+		double angle = start + slot * 2.0 * Math.PI / n;
+		// A slot handed out again where it already was is the same slot: how long it has been held (v4's hueco_estable)
+		// only starts again when it really moves, or belongs to another player's ring.
+		if (mind.slotOf != player || Double.isNaN(mind.slotAngle) || Math.abs(wrap(angle - mind.slotAngle)) > 1.0E-6) {
+			mind.slotSince = now;
+		}
+		mind.slotAngle = angle;
 		mind.slotN = n;
 		mind.slotOf = player;
 		mind.ringAngle = mind.slotAngle;

@@ -75,6 +75,13 @@ public final class MobMind {
 	public double slotAngle = Double.NaN;
 	public int slotN;
 	public net.minecraft.world.entity.player.Player slotOf;
+	/** When the Squad gave it the slot it holds (a new angle or a new player), for v4's hueco_estable/100. */
+	public long slotSince = Long.MIN_VALUE / 2;
+	/**
+	 * Since when it has gone without a turn while others wait (v4's turno_espera/40): kept up to date by each v4
+	 * observation (ObsV4), which is the only reader.
+	 */
+	public long waitingSince = Long.MIN_VALUE / 2;
 
 	MobMind(Mob mob) {
 		this.mob = mob;
