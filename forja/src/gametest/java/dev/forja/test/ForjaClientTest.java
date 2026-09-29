@@ -156,6 +156,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// El Cementerio entre Estrellas (docs/HERRERO_DIMENSION.md): in with /forja dimension, round it, and back.
+			if ("dimension".equals(solo)) {
+				DimensionFootage.film(context, server, connection);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("meteorito".equals(solo)) {
 				filmMeteor(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");

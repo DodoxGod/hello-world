@@ -145,7 +145,7 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
 - **Por debajo:** la meseta es un cono invertido de 4 a 68 bloques de grueso (más gruesa en el centro), con capas de
   ceniza (2), obsidiana (2 o 3: la "losa del Taller", que se ve como una franja negra en los cantiles), piedra negra
   y basalto, y betas de obsidiana llorona.
-- **Islotes:** 7 islotes de obsidiana flotan alrededor, entre 200 y 300 bloques del centro y a distintas alturas
+- **Islotes:** 7 islotes de obsidiana flotan alrededor, entre 205 y 262 bloques del centro y a distintas alturas
   (y 55 a 118), de 7 a 18 de radio. Algunos llevan una tumba o una forja rota. Son lo que se ve a lo lejos.
 
 ### 2.4 La arena y la llegada
@@ -172,8 +172,8 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
 - **Dispersas (radio 72 al borde):** un 5 % de las columnas, y un 16 % en los "campos de fosas" (celdas de 16 × 16
   que salen 1 de cada 5). Unas **3.500 tumbas** en total. Una de cada cinco tiene un montón de ceniza prensada
   debajo.
-- **Forjas frías:** en celdas de 30 × 30, una de cada tres tiene una forja en ruinas, lejos de los ríos y de la
-  arena (radio 80 al borde menos 24). Unas 45. Tres modelos:
+- **Forjas frías:** en celdas de 24 × 24, una de cada dos tiene una forja en ruinas, lejos de los ríos y de la
+  arena (radio 76 al borde menos 14). Salen 37. Tres modelos:
   - **Fragua fría:** suelo de 7 × 7 de ladrillo agrietado, pared del fondo rota, un alto horno apagado con su
     chimenea, un yunque dañado y un caldero vacío.
   - **Yunques rotos:** tres yunques (mellado, dañado y entero) alrededor de una piedra de afilar, y dos armas
@@ -185,7 +185,7 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
 
 ### 2.6 El metal fundido (solo decoración)
 
-- **3 ríos** de metal fundido (`forja:metal_fundido`), a 30°, 150° y 270°. Nacen en un pilón a 46 bloques del
+- **3 ríos** de metal fundido (`forja:metal_fundido`), a 30°, 150° y 270°. Nacen en un pilón a 52 bloques del
   centro (una piletita con un chorro que cae de un dintel de obsidiana) y serpentean hasta el borde.
 - **Cauce:** 3 de ancho, con el metal un bloque por debajo del suelo. Las dos orillas llevan un **muro** de
   ladrillo de piedra negra pulida (1,5 de alto: no se salta), así que no se puede caer por accidente.
@@ -197,8 +197,18 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
 
 ### 2.7 El cielo
 
-- **Vacío:** el cielo es casi negro (`#05050C`) y **también hay estrellas por debajo del horizonte**: desde el
-  borde se ven estrellas en el vacío, debajo de la meseta.
+- **Vacío:** el cielo es casi negro (`#05050C`) por arriba.
+- **El fondo del vacío arde** (Andy, 2026-09-29): por debajo del horizonte el cielo pasa del violeta oscuro a un
+  **naranja de brasa** justo abajo, como si en el fondo del vacío hubiera lava o un horno. Es un degradado:
+  - en el horizonte, violeta oscuro (`#1B1624`), sin brillo;
+  - a −30°, granate (`#5A1A12`), a media fuerza;
+  - mirando recto abajo, naranja de brasa (`#FF6A1E`), a toda fuerza, con un halo más claro en el centro que
+    respira despacio (±12 % cada 7 s).
+  - La **niebla** hace lo mismo: cuanto más miras hacia abajo, más se tiñe de brasa (hasta un 55 % mirando recto
+    abajo), y también cuanto más bajo estás (a y = 20 ya es media brasa).
+  - **Brasas que suben:** chispas que brillan solas suben despacio desde el fondo por debajo de la meseta, fuera de
+    su sombra (unas 3 por tick alrededor del jugador, de 10 a 60 bloques por debajo de él).
+- **Estrellas:** por debajo del horizonte se apagan en el resplandor: del todo a −35°.
 - **Estrellas:** las 1.500 de vanilla a brillo pleno, y 900 más del mod, de colores (blancas, azules, doradas y
   alguna roja), que titilan despacio.
 - **Una franja de nebulosa** (como una vía láctea) de violeta a ámbar, cruzando el cielo.
@@ -219,6 +229,10 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
   braseros.
 - **Partículas:** ceniza del mod que cae y deriva por toda la llanura; chispas y gotas en el metal fundido y las
   cascadas; humo en las forjas frías.
+- **Más ceniza cuanto más bajo** (Andy, 2026-09-29): la ceniza del ambiente es ligera a la altura de la arena
+  (y = 80) y se espesa al bajar: el doble a y = 60, cinco veces a y = 40 y el máximo (8 veces) a y = 20 o menos,
+  que es donde están los islotes bajos. Asomado al borde también se ve más ceniza por debajo de la meseta que por
+  encima. Todo en el cliente (`StarYardSky`): no cuesta nada al servidor.
 - **Sonido ambiente:** un bucle de viento hueco (el del valle de almas, más grave), y cada poco un sonido suelto:
   un martillo lejano, una campana que resuena, un tintineo de amatista (las estrellas) o escombros que caen.
 - **Música:** "El Cementerio entre Estrellas", una lista de pistas vanilla bajadas de tono (el End, "So Below",
@@ -390,14 +404,19 @@ recoloreada.
 
 ### Entrega 1 (esta rama)
 
-- **Servidor:**
-  - la dimensión existe y `/forja dimension` lleva a la plataforma de llegada;
-  - la arena es plana y sin obstáculos;
-  - no hay metal fundido a menos de 24 bloques de la arena;
-  - generar 400 chunks tarda menos de un tope.
-- **Cliente (`FORJA_SOLO=dimension`):** `/forja dimension` y capturas: la arena, a ras de suelo, mirando las
-  constelaciones, la colada del cielo, un río con su puente, una cascada, una forja fría, la vista de lejos desde
-  un islote, con y sin niebla. Hoja de contactos en `E:\IA\Claude\Forja_capturas_mejoras\dimension_herrero\`.
+- **Servidor (`DimensionGameTests`):** el servidor de pruebas no carga las dimensiones de los datapacks, así que
+  aquí se comprueba el generador directamente (es una función pura de la columna):
+  - el tipo de dimensión, el bioma y el generador están registrados, y existe `/forja dimension volver`;
+  - la arena es plana y sin obstáculos, y la plataforma de llegada es firme;
+  - no hay metal fundido a menos de 24 bloques de la arena (salvo los braseros, a 7 de alto);
+  - hay entre 2.500 y 6.000 tumbas (salen 4.021), entre 20 y 60 forjas frías (37) y cascadas por el borde;
+  - las columnas de 400 chunks se calculan en menos de 3 s (0,07 s medidos).
+- **Cliente (`FORJA_SOLO=dimension`):** entra con `/forja dimension` como jugador, comprueba que está en la
+  plataforma de llegada, saca 22 capturas y vuelve con `/forja dimension volver`: llegada, arena, arena desde
+  arriba, tumbas, la colada de una constelación, las constelaciones, un río con su puente, un manantial, una
+  cascada, una forja fría, **el vacío mirado desde el borde y recto abajo**, la meseta desde abajo, la vista de
+  lejos desde dos islotes y desde lo alto, y cuatro vistas sin niebla. Hoja de contactos en
+  `E:\IA\Claude\Forja_capturas_mejoras\dimension_herrero\hoja_de_contactos.jpg`.
 
 ### Entregas 2 y 3
 

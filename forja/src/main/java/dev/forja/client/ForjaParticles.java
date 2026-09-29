@@ -265,10 +265,58 @@ public final class ForjaParticles {
 		}
 	}
 
+	/**
+	 * Brasa: an ember coming up out of the void's burning floor.
+	 *
+	 * <p>It glows by itself — the only light down there is its own — and it rises slowly, wandering, and
+	 * dims from orange to a dull red as it climbs, the way a spark off a bonfire cools on the way up.
+	 */
+	public static class Ember extends SingleQuadParticle {
+		private final double sway;
+
+		protected Ember(ClientLevel level, double x, double y, double z, double dx, double dy, double dz,
+			SpriteSet sprites, RandomSource random) {
+			super(level, x, y, z, 0.0, 0.0, 0.0, sprites.get(random));
+			this.friction = 0.97F;
+			this.gravity = -0.012F;
+			this.hasPhysics = false;
+			this.xd = dx + (random.nextDouble() - 0.5) * 0.02;
+			this.yd = dy + 0.02 + random.nextDouble() * 0.03;
+			this.zd = dz + (random.nextDouble() - 0.5) * 0.02;
+			this.quadSize = 0.07F + random.nextFloat() * 0.07F;
+			this.lifetime = 80 + random.nextInt(80);
+			this.sway = random.nextDouble() * Math.PI * 2.0;
+			this.rCol = 1.0F;
+			this.gCol = 0.55F;
+			this.bCol = 0.18F;
+		}
+
+		@Override
+		protected Layer getLayer() {
+			return Layer.TRANSLUCENT;
+		}
+
+		@Override
+		protected int getLightCoords(float partial) {
+			return 0xF000F0;
+		}
+
+		@Override
+		public void tick() {
+			super.tick();
+			this.xd += 0.002 * Math.cos(this.sway + this.age * 0.11);
+			this.zd += 0.002 * Math.sin(this.sway + this.age * 0.09);
+			float through = (float) this.age / this.lifetime;
+			this.gCol = 0.55F - 0.35F * through;
+			this.bCol = 0.18F - 0.12F * through;
+			this.alpha = Math.min(1.0F, through * 5.0F) * Math.min(1.0F, (1.0F - through) * 2.5F);
+		}
+	}
+
 	/** One provider shape for all of them: pick the sprite, hand over the velocity, let the class decide. */
 	public record Maker(SpriteSet sprites, Kind kind) implements ParticleProvider<SimpleParticleType> {
 		public enum Kind {
-			SPARK, ASH, SOUL, STEAM, DRIP
+			SPARK, ASH, SOUL, STEAM, DRIP, EMBER
 		}
 
 		@Override
@@ -280,6 +328,7 @@ public final class ForjaParticles {
 				case SOUL -> new Soul(level, x, y, z, dx, dy, dz, this.sprites, random);
 				case STEAM -> new Steam(level, x, y, z, dx, dy, dz, this.sprites, random);
 				case DRIP -> new Drip(level, x, y, z, dx, dy, dz, this.sprites, random);
+				case EMBER -> new Ember(level, x, y, z, dx, dy, dz, this.sprites, random);
 			};
 		}
 	}

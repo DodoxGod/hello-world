@@ -107,6 +107,10 @@ public final class ForjaClient implements ClientModInitializer {
 			sprites -> new ForjaParticles.Maker(sprites, ForjaParticles.Maker.Kind.STEAM));
 		particles.register(dev.forja.registry.ModParticles.GOTA,
 			sprites -> new ForjaParticles.Maker(sprites, ForjaParticles.Maker.Kind.DRIP));
+		particles.register(dev.forja.registry.ModParticles.BRASA,
+			sprites -> new ForjaParticles.Maker(sprites, ForjaParticles.Maker.Kind.EMBER));
+		// El Cementerio entre Estrellas: its sky, its fog and its ash (docs/HERRERO_DIMENSION.md, 2.7 and 2.8).
+		StarYardSky.register();
 
 		EntityRenderers.register(ModEntities.THROWN_HEAD, ThrownHeadRenderer::new);
 		EntityRenderers.register(ModEntities.PROYECTIL_MAGICO, net.minecraft.client.renderer.entity.NoopRenderer::new);

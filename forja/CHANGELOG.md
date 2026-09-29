@@ -1,5 +1,38 @@
 # Novedades
 
+## 2026-09-29 — El Cementerio entre Estrellas, la dimensión del Herrero Caído (primera entrega: la dimensión)
+
+- **Diseño entero** en `docs/HERRERO_DIMENSION.md`: portal con perlas de oricalco en el Bastión, la dimensión, la
+  pelea nueva (llegada desde el cielo, fases a 2/3 y 1/3, aprendices que salen de la tierra en polígonos, eventos,
+  persistencia, estrella de vuelta) y la recompensa (la Estrella forjada). **Por orden de Andy, esta entrega solo
+  construye la dimensión y su aspecto**; lo demás espera a que la revise.
+- **La dimensión** (`forja:cementerio_estelar`): una meseta sola en el vacío, de 124 a 176 bloques de radio.
+  - En el centro, la **arena**: obsidiana plana de radio 22 con un disco de obsidiana llorona, radios y anillos de
+    piedra negra, un muro bajo con 4 entradas y 4 pilares con braseros de metal fundido.
+  - Al norte, la **plataforma de llegada** (0, 81, −30), mirando a la arena.
+  - Alrededor, la **llanura de ceniza** con unas 4.000 **armas clavadas** como tumbas (en filas alrededor de la
+    arena hasta el radio 72, sueltas y en fosas más allá) y unas 37 **forjas frías** en ruinas de tres tipos.
+  - **Tres ríos de metal fundido** entre muros, con puentes, que nacen en un pilón a 52 bloques y caen por el borde
+    al vacío. Nada de metal fundido a menos de 24 bloques de la arena. Si alguien se mete, quema como la lava.
+  - **7 islotes** flotando alrededor para la vista de lejos.
+- **El cielo:** sin sol ni luna, noche eterna. Estrellas vanilla y 900 más de colores, una franja de nebulosa y **8
+  constelaciones que dibujan moldes de armas** (espada, hacha, martillo, lanza, escudo, yunque, tenazas y guadaña).
+  Cada 40 s una se "cuela": un hilo de oro recorre sus líneas. Todo gira despacio (una vuelta cada 40 minutos).
+- **El fondo del vacío arde** (Andy): por debajo del horizonte el cielo va del violeta al naranja de brasa, la
+  niebla se tiñe de brasa cuanto más abajo miras y más bajo estás, las estrellas de abajo se apagan en el resplandor
+  y suben brasas desde el fondo.
+- **Ambiente:** bruma de ceniza violeta (de 48 a 256 bloques, que se abre en altura), luz fría de estrellas y cálida
+  junto al metal, ceniza que se espesa al bajar (hasta 8 veces a y = 20), y sonido y música propios hechos con
+  sonidos vanilla más graves (`sounds.json`). No se puede dormir ni fijar la reaparición allí.
+- **Barato:** un generador propio sin ruido (`world/StarYardGenerator`); cada columna son unas sumas de senos y un
+  hash. Sin estructuras: `/locate` no tiene nada que buscar.
+- **Para probar:** `/forja dimension` te lleva a la plataforma de llegada y `/forja dimension volver` te devuelve.
+- **Bloques nuevos** (texturas vanilla recoloreadas con `tools/dimension_assets.py`): ceniza, ceniza prensada,
+  metal fundido (sin objeto) y arma clavada (sin objeto). Partícula nueva: brasa.
+- **Pruebas:** `DimensionGameTests` (registro, comando, arena llana y despejada, sin metal cerca de la arena, tumbas,
+  forjas y cascadas, y 400 chunks de columnas en décimas de segundo) y `FORJA_SOLO=dimension` en el cliente, con
+  capturas.
+
 ## 2026-09-29 — el blaze tiene su propia red (contrato `red_blaze_v1`)
 
 - **Contrato nuevo** (Andy lo aprobó): `docs/red_blaze_contrato.json`, versión 1, explicado en

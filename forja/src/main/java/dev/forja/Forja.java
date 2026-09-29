@@ -40,6 +40,7 @@ public final class Forja implements ModInitializer {
 		dev.forja.block.entity.ModBlockEntities.init();
 		dev.forja.registry.ModEffects.init();
 		dev.forja.registry.ModParticles.init();
+		dev.forja.registry.ModSounds.init();
 		dev.forja.world.EventSky.register();
 		dev.forja.world.RuinMood.register();
 		dev.forja.world.RustWatch.register();
@@ -79,6 +80,8 @@ public final class Forja implements ModInitializer {
 		dev.forja.world.Elites.register();
 		dev.forja.world.Apprentices.register();
 		dev.forja.world.BossArena.register();
+		// El Cementerio entre Estrellas: its generator, before any world (or datapack) asks for it.
+		dev.forja.world.StarYard.register();
 		dev.forja.world.Commissions.register();
 		dev.forja.world.WorldEvents.register();
 		dev.forja.world.ForgeRaiders.register();

@@ -48,6 +48,10 @@ abstract class FogRendererMixin {
 				data.environmentalEnd = net.minecraft.util.Mth.lerp(weight, data.environmentalEnd, Math.min(data.environmentalEnd, reach));
 			}
 		}
+		// The graveyard's ash haze and the glow of the void's floor (client/StarYardSky).
+		if (level.dimension() == dev.forja.world.StarYard.LEVEL) {
+			dev.forja.client.StarYardSky.fog(data, camera);
+		}
 		// How far anything can be seen before the fog starts on it: the sky is hung inside that.
 		SkyMood.clearTo = data.renderDistanceStart;
 	}

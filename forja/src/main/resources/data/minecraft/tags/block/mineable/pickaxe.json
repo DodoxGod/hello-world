@@ -28,6 +28,8 @@
     "forja:colador",
     "forja:tubo_de_calor",
     "forja:caldera",
-    "forja:deposito_de_calor"
+    "forja:deposito_de_calor",
+    "forja:arma_clavada",
+    "forja:metal_fundido"
   ]
 }

@@ -38,6 +38,12 @@ abstract class SkyRendererMixin {
 		SkyMood.moonAngle = state.moonAngle;
 		forja$moonOut = 0.0F;
 		forja$sunOut = 0.0F;
+		// The Cementerio entre Estrellas has no sun and no moon: only stars (client/StarYardSky).
+		if (level.dimension() == dev.forja.world.StarYard.LEVEL) {
+			forja$moonOut = 1.0F;
+			forja$sunOut = 1.0F;
+			return;
+		}
 		if (SkyMood.showing() == null) {
 			return;
 		}

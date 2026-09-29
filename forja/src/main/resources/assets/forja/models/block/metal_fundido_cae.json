@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "forja:block/metal_fundido",
+    "side": "forja:block/metal_fundido_cae"
+  }
+}

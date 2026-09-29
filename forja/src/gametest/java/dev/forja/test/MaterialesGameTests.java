@@ -231,6 +231,11 @@ public class MaterialesGameTests {
 			if (!id.getNamespace().equals(Forja.MOD_ID)) {
 				continue;
 			}
+			// The Cementerio entre Estrellas' scenery has no item on purpose: the molten metal cannot be
+			// broken, and a grave's weapon is rust (docs/HERRERO_DIMENSION.md, 2.5 and 2.6).
+			if (id.getPath().equals("metal_fundido") || id.getPath().equals("arma_clavada")) {
+				continue;
+			}
 			checked++;
 			BlockState state = block.defaultBlockState();
 			var key = block.getLootTable();

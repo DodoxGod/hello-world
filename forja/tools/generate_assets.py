@@ -3404,6 +3404,9 @@ PICKAXE_BLOCKS = [
     "forja:colador",
     # The heat line.
     "forja:tubo_de_calor", "forja:caldera", "forja:deposito_de_calor",
+    # The Cementerio entre Estrellas (tools/dimension_assets.py): the graves break by hand anyway, and the
+    # molten metal not at all; both are here so no block of the mod is in no tool's list.
+    "forja:arma_clavada", "forja:metal_fundido",
 ]
 
 
@@ -11831,6 +11834,9 @@ if __name__ == "__main__":
     # The class screens' texture and the Emblema del olvido (tools/clases_assets.py), likewise.
     import clases_assets
     clases_assets.generate(_sys.modules[__name__])
+    # The Cementerio entre Estrellas' blocks, sounds and particle (tools/dimension_assets.py).
+    import dimension_assets
+    dimension_assets.generate(_sys.modules[__name__])
     generate_painting_data()
     generate_trades()
     problems = check_enums()

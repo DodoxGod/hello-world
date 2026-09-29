@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "cae=false": {
+      "model": "forja:block/metal_fundido"
+    },
+    "cae=true": {
+      "model": "forja:block/metal_fundido_cae"
+    }
+  }
+}

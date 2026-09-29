@@ -1,0 +1,51 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "arma": "forja:block/arma_clavada_espada_negra",
+    "particle": "forja:block/arma_clavada_espada_negra"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        -2,
+        8
+      ],
+      "to": [
+        16,
+        14,
+        8
+      ],
+      "rotation": {
+        "origin": [
+          8,
+          6,
+          8
+        ],
+        "axis": "z",
+        "angle": -22.5
+      },
+      "shade": false,
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            16,
+            16,
+            0
+          ],
+          "texture": "#arma"
+        },
+        "south": {
+          "uv": [
+            0,
+            16,
+            16,
+            0
+          ],
+          "texture": "#arma"
+        }
+      }
+    }
+  ]
+}

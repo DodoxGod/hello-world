@@ -40,6 +40,12 @@ public final class ModParticles {
 	 */
 	public static final SimpleParticleType GOTA = register("gota");
 
+	/**
+	 * Brasa: an ember rising out of the bottom of the void under the Cementerio entre Estrellas
+	 * (docs/HERRERO_DIMENSION.md, 2.7). Lit by itself and drifting up, where a spark is thrown and falls.
+	 */
+	public static final SimpleParticleType BRASA = register("brasa");
+
 	private ModParticles() {
 	}
 

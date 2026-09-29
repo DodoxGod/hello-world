@@ -90,6 +90,9 @@ public final class ModItems {
 	public static Item MONTADORA;
 	/** Pararrayos de estrellas: see block/StarRodBlock. */
 	public static Item PARARRAYOS;
+	/** The graveyard's ash (docs/HERRERO_DIMENSION.md). */
+	public static Item CENIZA;
+	public static Item CENIZA_PRENSADA;
 	public static Item HUEVO_HERRERO_CAIDO;
 	public static Item HUEVO_AUTOMATA;
 	public static Item HUEVO_CORAZA;
@@ -257,6 +260,8 @@ public final class ModItems {
 			new Item.Properties().useBlockDescriptionPrefix());
 		MONTADORA = register("montadora", p -> new BlockItem(ModBlocks.MONTADORA, p), new Item.Properties().useBlockDescriptionPrefix());
 		PARARRAYOS = register("pararrayos", p -> new BlockItem(ModBlocks.PARARRAYOS, p), new Item.Properties().useBlockDescriptionPrefix());
+		CENIZA = register("ceniza", p -> new BlockItem(ModBlocks.CENIZA, p), new Item.Properties().useBlockDescriptionPrefix());
+		CENIZA_PRENSADA = register("ceniza_prensada", p -> new BlockItem(ModBlocks.CENIZA_PRENSADA, p), new Item.Properties().useBlockDescriptionPrefix());
 		YUNQUE_PORTATIL = register("yunque_portatil", dev.forja.item.PortableAnvilItem::new,
 			new Item.Properties().stacksTo(1).durability(128).rarity(net.minecraft.world.item.Rarity.UNCOMMON)
 				.component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(
@@ -440,6 +445,8 @@ public final class ModItems {
 		stacks.add(new ItemStack(MESA_DE_ALMAS));
 		stacks.add(new ItemStack(MONTADORA));
 		stacks.add(new ItemStack(PARARRAYOS));
+		stacks.add(new ItemStack(CENIZA));
+		stacks.add(new ItemStack(CENIZA_PRENSADA));
 		stacks.add(new ItemStack(TUBO_DE_CALOR));
 		stacks.add(new ItemStack(CALDERA));
 		stacks.add(new ItemStack(DEPOSITO_DE_CALOR));

@@ -310,6 +310,62 @@ public final class ModBlocks {
 		)
 	);
 
+	// ------------------------------------------------------------------ El Cementerio entre Estrellas
+
+	/** Ceniza: the ash the plain of the smiths' graveyard is made of. Soft, grey, and it holds a footprint. */
+	public static final Block CENIZA = register(
+		"ceniza",
+		new Block(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.COLOR_GRAY)
+				.strength(0.5F)
+				.sound(SoundType.SAND)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("ceniza")))
+		)
+	);
+
+	/** Ceniza prensada: ash that has lain long enough to be walked hard; the mounds over the graves. */
+	public static final Block CENIZA_PRENSADA = register(
+		"ceniza_prensada",
+		new Block(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.COLOR_BLACK)
+				.strength(0.8F)
+				.sound(SoundType.SOUL_SOIL)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("ceniza_prensada")))
+		)
+	);
+
+	/** Metal fundido: the rivers and falls of the graveyard. Scenery; see block/MoltenMetalBlock. */
+	public static final Block METAL_FUNDIDO = register(
+		"metal_fundido",
+		new dev.forja.block.MoltenMetalBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.COLOR_ORANGE)
+				.strength(-1.0F, 3600000.0F)
+				.noCollision()
+				.noLootTable()
+				.lightLevel(state -> 15)
+				.pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("metal_fundido")))
+		)
+	);
+
+	/** Arma clavada: a weapon stood point first in the ash, as a grave. See block/GraveWeaponBlock. */
+	public static final Block ARMA_CLAVADA = register(
+		"arma_clavada",
+		new dev.forja.block.GraveWeaponBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.METAL)
+				.strength(0.6F)
+				.sound(SoundType.CHAIN)
+				.noCollision()
+				.noOcclusion()
+				.noLootTable()
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("arma_clavada")))
+		)
+	);
+
 	private ModBlocks() {
 	}
 
