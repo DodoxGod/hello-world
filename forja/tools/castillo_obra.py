@@ -4,8 +4,8 @@ x runs east, z runs south (the gate looks south), y = 0 is the first air over th
 """
 import math
 
-from castillo import (COPPER_ROOF, Canvas, HORIZONTAL, _hash, _smooth, blit, building, curtain_wall, disc, masonry, noise_origin, round_tower,
-                      slab, stairs)
+from castillo import (COPPER_ROOF, Canvas, HORIZONTAL, OPPOSITE, _hash, _smooth, blit, building, curtain_wall, disc, masonry, noise_origin,
+                      round_tower, slab, stairs)
 
 OUTER = (0, 0, 201, 201)            # the outer curtain, outer faces
 INNER = (42, 12, 159, 124)          # the inner curtain
@@ -252,9 +252,13 @@ def gatehouse(w, box, height, decay, keep=False):
                 w.put(x, top + 1, z, *slab("deepslate_tile_slab"))
     noise_origin()
     # the drums either side of the way in
-    for cx in (x0 + 2, x1 - 2):
+    drums = ((x0 + 2, "east"), (x1 - 2, "west"))           # and the side each one has the passage and the chamber on
+    for cx, inward in drums:
         noise_origin(cx, 0, z1)
         round_tower(w, cx, z1 - 3, 6, 0, height + 8, decay=decay, keep=keep, floors=[0, 9, height - 1], doors=[("north", height - 1)])
+        # a ladder up the back of the drum, through every floor to the top one, whose door is onto the fighting top
+        for y in range(1, height):
+            w.put(cx, y, z1 + 1, "ladder", {"facing": "north", "waterlogged": "false"})
     noise_origin()
     # the passage again, because the drums have just been stood in part of it
     for z in range(z0 - 1, z1 + 2):
@@ -262,6 +266,40 @@ def gatehouse(w, box, height, decay, keep=False):
             for y in range(0, 7):
                 if w.name(x, y, z) not in ("minecraft:iron_bars", "minecraft:lantern", "minecraft:iron_chain"):
                     w.air(x, y, z)
+    # The ways in. Nothing led into the drums, the winch chamber or the fighting top (a walk from the gate found it,
+    # 2026-09-29): now each drum has a door from the passage at its foot and one into the chamber at its first floor,
+    # and its ladder goes on up to the top.
+    for cx, inward in drums:
+        for floor in (0, 9):
+            _drum_door(w, cx, z1 - 3, inward, floor, family)
+
+
+def _drum_door(w, cx, cz, inward, floor, family):
+    """A way out of a gate drum on the gate's side: two wide (the rows cz - 1 and cz, which the chamber reaches too)
+    and three high, from the drum's floor on through its wall and whatever masonry is beyond until it meets open
+    air (the passage, or the chamber), with a step down at the far end when the floor there is a block lower (the passage's is), and a head of
+    stairs upside down at the drum's face and at the far end, as round_tower heads its doors."""
+    ux = HORIZONTAL[inward][0]
+    rows = (cz - 1, cz)
+    x = cx + ux * 4                                         # the last cell of the drum's floor
+    for _ in range(12):
+        ahead = x + ux
+        # open in either row is enough: the inner gate's east winch stands right in front of one of them
+        if any(all(w.name(ahead, y, z) == "minecraft:air" for y in (floor + 1, floor + 2)) for z in rows):
+            break
+        x = ahead
+        for z in rows:
+            for y in range(floor + 1, floor + 4):
+                w.air(x, y, z)
+    else:
+        raise AssertionError(f"the drum at {cx} {cz} has nothing to open onto on its {inward} side at {floor}")
+    for z in rows:
+        if w.name(x + ux, floor, z) == "minecraft:air":
+            w.put(x, floor, z, *stairs(f"{family}_stairs", OPPOSITE[inward]))
+    wall_face = cx + ux * 6                                 # which may be past the far end already, in the passage
+    for face in {wall_face if ux * (wall_face - x) <= 0 else x, x}:
+        w.put(face, floor + 3, rows[0], *stairs(f"{family}_stairs", "south", top=True))
+        w.put(face, floor + 3, rows[1], *stairs(f"{family}_stairs", "north", top=True))
 
 
 def bridge(w):

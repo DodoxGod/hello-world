@@ -11812,6 +11812,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 			{"int_sala_de_cunos", 100.5, 4.5, 36.5, 100.5, 1.5, 22.0, false},
 			{"int_fundicion", 135.0, 11.0, 94.0, 148.0, 1.0, 64.0, false},
 			{"int_fundicion_suelo", 148.0, 3.0, 92.0, 138.0, 1.0, 66.0, false},
+			// on the gantry, at the head of its stair: the spouts over the tables below
+			{"int_fundicion_pasarela", 138.5, 10.62, 92.5, 143.0, 1.0, 70.0, false},
 			{"int_taller", 134.5, 4.0, 110.0, 148.0, 1.0, 103.0, false},
 			{"int_biblioteca", 66.5, 4.5, 43.0, 52.0, 1.5, 28.0, false},
 			{"int_scriptorium", 67.0, 4.0, 55.5, 52.0, 1.0, 47.0, false},
@@ -11835,6 +11837,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 			{"int_encargos", 191.5, 4.0, 166.5, 156.0, 1.0, 158.0, false},
 			{"int_caballerizas", 42.5, 4.0, 174.0, 12.0, 1.0, 182.0, false},
 			{"int_guardia", 139.5, 4.0, 187.5, 122.0, 1.0, 193.0, false},
+			// the outer gate's winch chamber, across to the east drum's door and the two winches
+			{"int_tornos", 90.5, 11.62, 189.5, 106.0, 10.5, 205.5, false},
 			// inside the towers, from beside the north wall across the floor's quarter east of the stair
 			{"torre_cobre_taller", 2.5, 8.62, -3.5, 7.5, 7.5, -0.5, false},
 			{"torre_eco_escucha", 101.5, 8.62, -3.5, 106.5, 7.5, -0.5, false},

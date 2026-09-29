@@ -251,6 +251,18 @@ def foundry(w):
             w.put(138, 9, z, "iron_chain", CHAIN)
     for z in (70, 78, 86):
         w.put(137, 8, z, "forja:cano_de_colada")
+    # the way up to it, which it never had (a walk from the gate found it, 2026-09-29): a flight of stone two wide
+    # past its south end, climbing west from the floor, solid under every step; the walk goes on over its top one
+    for k in range(9):
+        x = 147 - k
+        for z in (92, 93):
+            for y in range(0, k):
+                w.put(x, y, z, "polished_blackstone_bricks")
+            w.put(x, k, z, *stairs("polished_blackstone_brick_stairs", "west"))
+            for y in range(k + 1, k + 4):
+                w.air(x, y, z)
+    for z in (92, 93):
+        w.put(138, 8, z, "waxed_oxidized_copper_grate")
     # coal against the north wall, barrels of ingots by the door, light from cages of fire
     for x in range(144, 151):
         for y in range(0, 3 - abs(x - 147) // 2):

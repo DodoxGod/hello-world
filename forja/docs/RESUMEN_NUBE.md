@@ -68,9 +68,18 @@ Dos pasadas al generador (`tools/castillo*.py`).
 
 Las capturas del juego son anteriores al último ajuste de las cadenas.
 
+**Tercera pasada (accesos):**
+- **Barbacanas (las dos):** cada torre tiene una puerta de 2 × 3 desde el paso, y otra a la sala de los tornos en
+  su primer piso. Una escala sube por el fondo de la torre, cruzando todos los pisos hasta el último, que ya tenía
+  puerta a la azotea.
+- **Pasarela de la fundición:** una escalera de piedra de 2 de ancho sube desde el suelo, pegada a su extremo
+  sur.
+- **Comprobado:** con el recorrido desde la puerta se llega a las salas de los tornos, a los tres pisos de las
+  cuatro torres, a las dos azoteas y a la pasarela. Antes no se llegaba a ninguna.
+- **Imágenes:** 10 cortes y plantas de antes y después en `docs/castillo/tercera_pasada_2026-09-29/`.
+- **Capturas nuevas en la prueba del cliente:** `int_tornos` y `int_fundicion_pasarela`.
+
 **Sin arreglar:**
-- La sala de los tornos de la entrada, las plantas altas de sus torres y la pasarela de la fundición no tienen
-  acceso.
 - Algunas uniones con bloques del mod son aproximadas.
 
 ## 2. Grupos de mobs
