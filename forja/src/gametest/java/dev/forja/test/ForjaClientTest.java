@@ -130,6 +130,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// The classes and the healing lantern (docs/CLASES.md): the choice, the tree, the lantern in hand.
+			if ("clases".equals(solo)) {
+				showClasses(context, server, connection);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("meteorito".equals(solo)) {
 				filmMeteor(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
@@ -9780,6 +9786,41 @@ public class ForjaClientTest implements FabricClientGameTest {
 	 * day and by night, over a step and a ditch — because none of the above says whether it looks
 	 * like fire, or whether it follows the floor.
 	 */
+	/** The class screens as a player meets them, and the Curandero with the lantern in hand and the mana bar up. */
+	private static void showClasses(ClientGameTestContext context, TestServerContext server, TestServerConnection connection) {
+		context.runOnClient(mc -> mc.gui.setScreen(new dev.forja.client.ClassChoiceScreen(false)));
+		context.waitTicks(10);
+		context.takeScreenshot("clases_01_elegir");
+		server.runOnServer(s -> {
+			net.minecraft.server.level.ServerPlayer player = connection.getServerPlayer();
+			dev.forja.clase.ClassProgress.choose(player, dev.forja.clase.PlayerClass.GUERRERO);
+			dev.forja.clase.ClassProgress.setLevel(player, 8);
+			dev.forja.clase.ClassProgress.unlock(player, dev.forja.clase.Talent.GUERRERO_SEGUNDO_ALIENTO);
+			dev.forja.clase.ClassProgress.unlock(player, dev.forja.clase.Talent.GUERRERO_GUARDIA_ALTA);
+		});
+		context.waitTicks(10);
+		context.runOnClient(mc -> mc.gui.setScreen(new dev.forja.client.TalentTreeScreen()));
+		context.waitTicks(10);
+		context.takeScreenshot("clases_02_arbol_guerrero");
+		context.runOnClient(mc -> mc.gui.setScreen(new dev.forja.client.ClassChoiceScreen(true)));
+		context.waitTicks(10);
+		context.takeScreenshot("clases_03_cambiar");
+		server.runOnServer(s -> {
+			net.minecraft.server.level.ServerPlayer player = connection.getServerPlayer();
+			dev.forja.clase.ClassProgress.choose(player, dev.forja.clase.PlayerClass.CURANDERO);
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, dev.forja.forge.Assembler.create(dev.forja.forge.ForgeType.FAROL,
+				java.util.List.of(dev.forja.material.ForgeMaterial.ESMERALDA, dev.forja.material.ForgeMaterial.ORO, dev.forja.material.ForgeMaterial.MADERA),
+				s.registryAccess()));
+		});
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+		context.waitTicks(20);
+		context.takeScreenshot("clases_04_farol_en_mano");
+		context.runOnClient(mc -> mc.gui.setScreen(new dev.forja.client.TalentTreeScreen()));
+		context.waitTicks(10);
+		context.takeScreenshot("clases_05_arbol_curandero");
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+	}
+
 	private static void checkShockwave(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
 		server.runCommand("difficulty easy");
 		server.runCommand("time set noon");
