@@ -373,8 +373,16 @@ Una config con los valores viejos de presión pasa sola a los nuevos.
   - las redes v3, v3b y v3.1 siguen igual.
 - **Percepción honesta** (`iaPercepcionHonesta`): un monstruo que te ha perdido de vista 20 ticks va a donde te vio
   por última vez, no a donde estás. Una base cerrada sigue siendo segura.
-- **M1** (`ObsV4` nombre por nombre con `red_mob_v4_contrato.json`, valores neutros a 0 y carga de las redes v4)
-  está en marcha. Lo cuento en el siguiente resumen.
+- **M1, hecho** (`6ca6825`, compiló a la primera y con todas las pruebas en verde):
+  - `ObsV4` da las 468 entradas del contrato, nombre por nombre y en orden. Una prueba lo compara con
+    `red_mob_v4_contrato.json`.
+  - Las 280 de v3b, el bloque S (sectores) y el R (alcance mínimo) son de verdad; el resto va a 0 como en S1.
+  - Hay entradas cuyo texto sugiere un valor neutro distinto de 0 (`bloqueo_hace`, `moral_*`, `mundo_muerte_*`...).
+    Van a 0 en el código y están apuntadas en `docs/red_mob_v4_neutros.md` para que el simulador las confirme.
+  - Una `red_mob_v4` en `config/forja/redes_v4/` que encaja (468 entradas y 53 salidas) manda sobre la v3 de su
+    familia.
+  - De las salidas, se ejecutan mover, saltar, usar, las 13 tácticas de hoy, especial, defensa, finta y correr.
+    Las 8 tácticas nuevas, el objeto, la furia y el golpe de escudo van enmascarados hasta M2-M5.
 
 ## Capturas
 
@@ -389,11 +397,15 @@ Una config con los valores viejos de presión pasa sola a los nuevos.
 
 ## Estado de las pruebas
 
-- **Commit `4aac249`:** todas las pruebas de servidor pasan salvo una:
-  `telegraphed_attack_hits_still_player`, la inestable de tu lista. Vuelvo a lanzarla.
-- **Otras intermitentes:** `flail_zombie_strikes_from_its_reach` falló una vez en tu PC y una aquí; al repetir pasa.
-- **La prueba de la mecha a 8 bloques:** fallaba porque el jugador se alejaba hacia fuera de la zona de la prueba.
-  Ahora se aleja en diagonal por dentro.
+- **`a680dd2`:** 285 de 285 en verde en el CI, y también en tu PC, según la sesión "Mod Forja".
+- **`flail_zombie_strikes_from_its_reach`**, inestable en tu PC ("se acercó a 1,91"):
+  - **Causa:** un zombi astuto que espera turno flanquea a 2,5 bloques de centro a centro, y eso deja un hueco
+    de 1,9. Con el mangual se metía dentro de su propio alcance.
+  - **Arreglo:** ahora flanquea desde su alcance (`Reach.standOff`), con la prueba `aFlailZombieFlanksFromItsReach`.
+- **`telegraphed_attack_hits_still_player`:** la inestable de tu lista.
+  - **Lo que he visto:** falla más o menos una vez de cada dos, con el husk sin ninguna meta en marcha.
+  - **Lo que he hecho:** si vuelve a fallar, el mensaje dice ya por qué (metas, camino, alcance, turnos y si te ha
+    perdido de vista). Aún no he visto un fallo con esos datos.
 
 ## Lo que no pude hacer
 
