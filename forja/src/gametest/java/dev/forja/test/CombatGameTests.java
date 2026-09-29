@@ -613,9 +613,22 @@ public class CombatGameTests {
 					+ ", decisión " + (dev.forja.ai.MobAi.mind(husk) == null ? "sin mente" : dev.forja.ai.MobAi.mind(husk).decision)
 					+ ", ticks vividos " + husk.tickCount + ", trozo activo " + helper.getLevel().isPositionEntityTicking(husk.blockPosition()) + ", etiquetas " + husk.entityTags() + ", mira un duelo " + dev.forja.ai.Duels.watching(husk)
 					+ ", metas " + ((dev.forja.mixin.MobGoalsAccess) husk).forjaGoals().getAvailableGoals().stream().filter(g -> g.isRunning())
-						.map(g -> g.getGoal().getClass().getSimpleName()).toList() + ")");
+						.map(g -> g.getGoal().getClass().getSimpleName()).toList() + ", " + whyNoSwing(husk, player) + ")");
 			helper.succeed();
 		});
+	}
+
+	/** What stands between a mob and a swing at its target: its goals, a path, its reach, its turn, its sight. */
+	private static String whyNoSwing(net.minecraft.world.entity.Mob mob, TestPlayer player) {
+		var goals = ((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals().getAvailableGoals().stream()
+			.map(g -> g.getGoal().getClass().getSimpleName() + "(" + g.getPriority() + ")").toList();
+		var mind = dev.forja.ai.MobAi.mind(mob);
+		long now = mob.level().getGameTime();
+		return "todas las metas " + goals + ", camino " + (mob.getNavigation().createPath(player, 0) != null)
+			+ ", al alcance " + mob.isWithinMeleeAttackRange(player) + ", perdido " + (mind != null && dev.forja.ai.HonestPerception.lost(mind, now))
+			+ ", visto hace " + (mind == null ? -1 : now - mind.lastSeenAt) + ", turnos libres "
+			+ dev.forja.combat.AttackTokens.free(player, dev.forja.ai.Aggression.maxAttackers(mob, player)) + " de "
+			+ dev.forja.ai.Aggression.maxAttackers(mob, player) + ", espera " + (mind == null ? -1 : mind.windup);
 	}
 
 	/**
