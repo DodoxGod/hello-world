@@ -173,14 +173,15 @@ public final class TacticGoal extends Goal {
 			case LIBRE, ACERCARSE -> this.free(decision, target);
 			case RODEAR -> this.toRing(target, Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle,
 				Reach.outside(target, this.mind.ringRadius), 1.0);
-			case FLANQUEAR -> this.toRing(target, this.behindAngle(target), FLANK_RADIUS, 1.15);
+			case FLANQUEAR -> this.toRing(target, this.behindAngle(target), Math.max(FLANK_RADIUS, Reach.standOff(this.mob, target)), 1.15);
 			case ESPERAR -> this.waitOnRing(target);
 			case RETIRARSE -> this.retreat(target);
 			case REAGRUPARSE -> this.regroup(target);
 			case CUBRIRSE -> this.cover(target);
 			case PARAPETARSE -> this.parapet(target);
 			case CEBO -> this.bait(target);
-			case RELEVO -> this.toRing(target, this.currentAngle(target) + this.side() * RELAY_SWING, Reach.outside(target, RELAY_RADIUS), 1.0);
+			case RELEVO -> this.toRing(target, this.currentAngle(target) + this.side() * RELAY_SWING,
+				Math.max(Reach.outside(target, RELAY_RADIUS), Reach.standOff(this.mob, target)), 1.0);
 			case OCULTARSE -> this.hide(target);
 			case EMPUJAR -> this.pushTowardsDanger(decision, target);
 		}

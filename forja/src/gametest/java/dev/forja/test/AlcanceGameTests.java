@@ -130,6 +130,25 @@ public class AlcanceGameTests {
 	}
 
 	/**
+	 * Going round a player (a flank, a relay), a mob with a flail stays at its own reach: flanking at 2.5 blocks, one
+	 * stepped in to a gap of 1.91 (Andy's PC, 2026-09-29). A bare-handed one has no stand-off and goes in as before.
+	 */
+	@GameTest
+	public void aFlailZombieFlanksFromItsReach(GameTestHelper helper) {
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
+		Zombie flail = armed(helper, new BlockPos(4, 1, 1), forged(ForgeType.MANGUAL));
+		Zombie bare = armed(helper, new BlockPos(4, 1, 6), ItemStack.EMPTY);
+		double standOff = Reach.standOff(flail, player);
+		double gap = standOff - (flail.getBbWidth() + player.getBbWidth()) / 2.0;
+		helper.assertTrue(gap > 2.0 && gap <= ObsM1.REACH + Reach.actionExtra(flail), "el del mangual rodea a su alcance: hueco " + gap);
+		helper.assertTrue(standOff > dev.forja.ai.TacticGoal.FLANK_RADIUS, "más lejos que el flanqueo normal: " + standOff);
+		helper.assertTrue(Reach.standOff(bare, player) == 0.0, "sin arma no guarda distancia");
+		flail.discard();
+		bare.discard();
+		helper.succeed();
+	}
+
+	/**
 	 * With a network (towards + use): the one with the flail stops at its reach and strikes from there; the
 	 * bare-handed one walks in and strikes from up close, as it always did.
 	 */

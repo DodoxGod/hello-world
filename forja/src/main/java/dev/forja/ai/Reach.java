@@ -168,6 +168,16 @@ public final class Reach {
 	 * Whether a mob with a weapon that reaches further than its body has walked in far enough: within its
 	 * reach less {@link #STOP_SHORT}. Always false for one whose weapon adds nothing, which walks in as before.
 	 */
+	/**
+	 * Centre to centre, how far off a mob whose weapon reaches further than its body strikes from (its reach, a little
+	 * short, plus the two half widths); 0 for one that walks in. Going round a player (a flank, a relay) it stays out
+	 * there: a flail zombie flanking at 2.5 stepped inside its own reach (Andy's PC, 2026-09-29: gap 1.91).
+	 */
+	public static double standOff(Mob mob, LivingEntity target) {
+		double extra = actionExtra(mob.getMainHandItem());
+		return extra > 0.0 ? ObsM1.REACH + extra - STOP_SHORT + (mob.getBbWidth() + target.getBbWidth()) / 2.0 : 0.0;
+	}
+
 	public static boolean closeEnough(Mob mob, LivingEntity target) {
 		ItemStack held = mob.getMainHandItem();
 		double extra = actionExtra(held);
