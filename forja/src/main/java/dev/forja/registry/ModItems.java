@@ -171,7 +171,8 @@ public final class ModItems {
 		ESCORIA = register("escoria", Item::new, new Item.Properties().fireResistant());
 		MOLDE_DE_FUNDICION = register("molde_de_fundicion", dev.forja.item.CastingMouldItem::new,
 			new Item.Properties().stacksTo(1));
-		COLADOR = register("colador", dev.forja.item.StrainerItem::new, new Item.Properties().stacksTo(1));
+		// The item of the strainer block: it is set down on a casting table rather than in a slot.
+		COLADOR = register("colador", p -> new dev.forja.item.StrainerItem(ModBlocks.COLADOR, p), new Item.Properties().stacksTo(1));
 		MARCO = register("marco", dev.forja.item.CastingFrameItem::new, new Item.Properties().stacksTo(1));
 		MESA_DE_LOSA = register("mesa_de_losa", p -> new BlockItem(ModBlocks.MESA_DE_LOSA, p), new Item.Properties().useBlockDescriptionPrefix());
 		MESA_DE_BRASA = register("mesa_de_brasa", p -> new BlockItem(ModBlocks.MESA_DE_BRASA, p), new Item.Properties().useBlockDescriptionPrefix());

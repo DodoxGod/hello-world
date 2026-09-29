@@ -196,8 +196,8 @@ public class MeltPipeBlock extends Block implements net.minecraft.world.level.bl
 	/**
 	 * Where the metal a spout pours lands, or null if it falls into nothing.
 	 *
-	 * <p>It falls straight down through open air until it finds something worth landing in. Anything
-	 * solid in the way stops it dead — metal does not pour through a floor, and a spout over a roof is
+	 * <p>It falls straight down through open air — and through a strainer, see fallsThrough — until it
+	 * finds something worth landing in. Anything else solid in the way stops it dead — metal does not pour through a floor, and a spout over a roof is
 	 * a spout that is doing nothing, which is exactly what it will look like.
 	 */
 	public static @org.jspecify.annotations.Nullable BlockPos landing(BlockGetter level, BlockPos spout) {
@@ -206,8 +206,34 @@ public class MeltPipeBlock extends Block implements net.minecraft.world.level.bl
 			if (joins(level, at)) {
 				return at;
 			}
-			if (!level.getBlockState(at).isAir()) {
+			if (!fallsThrough(level.getBlockState(at))) {
 				return null;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * What a falling stream goes straight through: open air, and a strainer.
+	 *
+	 * <p>The strainer is the one solid thing the metal is meant to cross. It stands on the casting table,
+	 * right in the path of the pour, and the whole point of it is that the melt goes through it on the way
+	 * down (Andy: "pasando primero por el colador antes de que llegue a la mesa con el molde"). Treated as
+	 * a roof, it made the spout above it pour into nothing.
+	 */
+	public static boolean fallsThrough(BlockState state) {
+		return state.isAir() || state.getBlock() instanceof StrainerBlock;
+	}
+
+	/** The strainer the stream from this spout falls through on its way down, if there is one. */
+	public static @org.jspecify.annotations.Nullable BlockPos strainerUnder(BlockGetter level, BlockPos spout) {
+		BlockPos lands = landing(level, spout);
+		if (lands == null) {
+			return null;
+		}
+		for (BlockPos at = spout.below(); at.getY() > lands.getY(); at = at.below()) {
+			if (level.getBlockState(at).getBlock() instanceof StrainerBlock) {
+				return at;
 			}
 		}
 		return null;
@@ -226,7 +252,7 @@ public class MeltPipeBlock extends Block implements net.minecraft.world.level.bl
 			if (level.getBlockState(at).getBlock() instanceof MeltSpoutBlock) {
 				return at;
 			}
-			if (!level.getBlockState(at).isAir()) {
+			if (!fallsThrough(level.getBlockState(at))) {
 				return null;
 			}
 		}

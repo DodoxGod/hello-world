@@ -39,7 +39,6 @@ public class CastingBoxScreen extends AbstractContainerScreen<CastingBoxMenu> {
 	private static final int SAND = 30;
 	/** The colour of that sand, for the veil that lies over the print. */
 	private static final int SAND_COLOUR = 0xCCBA8E;
-	private static final int MOLTEN_COLOUR = 0xF08A34;
 
 	public CastingBoxScreen(CastingBoxMenu menu, Inventory inventory, Component title) {
 		super(menu, inventory, title, 206, 196);
@@ -70,8 +69,8 @@ public class CastingBoxScreen extends AbstractContainerScreen<CastingBoxMenu> {
 	 * <p>It was a sword painted into the texture, whatever was in the box — a pickaxe head went in and a
 	 * sword showed in the sand. Now it is the part itself at nearly twice its size with a veil of sand
 	 * colour over it, which is what a print is: the shape, in the colour of what it was pressed into.
-	 * Taking a mould, the veil thins as the work goes and the print comes up out of the sand. Casting,
-	 * the veil turns from sand to the colour of hot metal as the print fills.
+	 * Taking a mould, the veil thins as the work goes and the print comes up out of the sand. (It used
+	 * to turn the colour of hot metal while the box cast a part; parts are poured on the tables now.)
 	 */
 	private void drawPrint(GuiGraphicsExtractor g, int x, int y, float progress) {
 		ItemStack pattern = this.menu.pattern();
@@ -89,26 +88,11 @@ public class CastingBoxScreen extends AbstractContainerScreen<CastingBoxMenu> {
 		g.item(shape, 0, 0);
 		g.pose().popMatrix();
 		g.nextStratum();
-		int veil;
-		if (mould != null) {
-			// Sand going over to metal: the more of the pour is in, the hotter and the more solid it reads.
-			int colour = blend(SAND_COLOUR, MOLTEN_COLOUR, progress);
-			veil = (int) (150 + 60 * progress) << 24 | colour;
-			if (progress > 0.0F) {
-				float flicker = (float) ((Math.sin(System.currentTimeMillis() / 120.0) + 1.0) * 0.5);
-				veil = (int) (150 + 60 * progress + 20 * flicker * progress) << 24 | colour;
-			}
-		} else {
-			veil = (int) (215 - 110 * progress) << 24 | SAND_COLOUR;
-		}
+		// Taking a mould, the veil of sand thins as the work goes and the print comes up out of it. A mould
+		// sitting in the slot is a finished print and is not being poured any more (that is the casting
+		// tables' job now), so it reads as bare sand over the shape.
+		int veil = (int) (215 - 110 * progress) << 24 | SAND_COLOUR;
 		g.fill(x + SAND_X, y + SAND_Y, x + SAND_X + SAND, y + SAND_Y + SAND, veil);
-	}
-
-	private static int blend(int from, int to, float share) {
-		int r = Math.round(((from >> 16) & 0xFF) + (((to >> 16) & 0xFF) - ((from >> 16) & 0xFF)) * share);
-		int green = Math.round(((from >> 8) & 0xFF) + (((to >> 8) & 0xFF) - ((from >> 8) & 0xFF)) * share);
-		int b = Math.round((from & 0xFF) + ((to & 0xFF) - (from & 0xFF)) * share);
-		return r << 16 | green << 8 | b;
 	}
 
 	@Override
@@ -146,15 +130,6 @@ public class CastingBoxScreen extends AbstractContainerScreen<CastingBoxMenu> {
 				return Component.translatable("gui.forja.caja.gastara");
 			case CastingBoxBlockEntity.JOB_FRAME:
 				return Component.translatable("gui.forja.caja.gastara_marco");
-			case CastingBoxBlockEntity.JOB_CAST:
-			case CastingBoxBlockEntity.JOB_ROUGH:
-				if (mould != null && poured != null) {
-					Component part = dev.forja.forge.Assembler.createPart(mould, poured).getHoverName();
-					return this.menu.job() == CastingBoxBlockEntity.JOB_ROUGH
-						? Component.translatable("gui.forja.caja.basta", part)
-						: Component.translatable("gui.forja.caja.colando", part);
-				}
-				break;
 			case CastingBoxBlockEntity.JOB_INFUSE:
 				if (poured != null) {
 					return Component.translatable("gui.forja.caja.infundiendo", poured.displayName());
@@ -164,11 +139,8 @@ public class CastingBoxScreen extends AbstractContainerScreen<CastingBoxMenu> {
 				break;
 		}
 		if (mould != null) {
-			// Idle with a mould in it: either the last casting is still sitting in the output, or no
-			// tank it reaches has metal this box will stand.
-			return this.menu.result().isEmpty()
-				? Component.translatable("gui.forja.caja.sin_metal")
-				: Component.translatable("gui.forja.caja.llena");
+			// A mould in the box is a mould waiting to be taken to a table: the box does not pour it.
+			return Component.translatable("gui.forja.caja.molde_a_mesa");
 		}
 		if (pattern.getItem() instanceof dev.forja.item.StrainerItem) {
 			return Component.translatable("gui.forja.caja.colador_nada");

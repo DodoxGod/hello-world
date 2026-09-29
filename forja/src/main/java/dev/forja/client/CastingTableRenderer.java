@@ -22,10 +22,11 @@ import org.jspecify.annotations.Nullable;
 /**
  * What is happening on top of a casting table, which is the whole of its interface.
  *
- * <p>Three things are drawn here and nowhere else: the <b>frame</b> lying in the bed, the <b>stream</b>
- * of metal falling into it while the tanks are emptying, and the <b>pour</b> rising in the bed until it
- * is full. When the casting is done the finished tool lies there in place of the frame, so a row of
- * tables can be read at a glance from across the workshop without opening anything.
+ * <p>Three things are drawn here and nowhere else: the <b>mould or frame</b> lying in the bed, the
+ * <b>stream</b> of metal falling into it while the tanks are emptying, and the <b>pour</b> rising in the
+ * bed until it is full. When the casting is done the finished part or tool lies there in place of the
+ * mould, so a row of tables can be read at a glance from across the workshop without opening anything.
+ * (The strainer standing over the bed is a block of its own, with its own model.)
  */
 public class CastingTableRenderer implements BlockEntityRenderer<CastingTableBlockEntity, CastingTableRenderer.TableState> {
 	private static final Identifier MELT = Forja.id("textures/block/colada.png");
@@ -87,8 +88,10 @@ public class CastingTableRenderer implements BlockEntityRenderer<CastingTableBlo
 		state.fill = table.metal() == null ? 0.0F : Math.min(1.0F, progress / FALLING);
 		// A spout overhead is already drawing the fall, and far better than this can: it knows how far
 		// the metal is dropping. Two streams in the same place read as one fat one.
+		// Looked for the way the spout's own stream looks down: straight up, through a strainer standing on
+		// the table. It only checked the block right on top, and a strainer there hid the spout above it.
 		boolean fed = table.getLevel() != null
-			&& table.getLevel().getBlockState(table.getBlockPos().above()).getBlock() instanceof dev.forja.block.MeltSpoutBlock;
+			&& dev.forja.block.MeltPipeBlock.spoutAbove(table.getLevel(), table.getBlockPos()) != null;
 		state.falling = table.metal() != null && progress < FALLING && !fed ? 1.0F : 0.0F;
 		state.colour = molten(colourOf(table));
 		state.time = (System.currentTimeMillis() % 100000L) / 1000.0F;

@@ -25,7 +25,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The stream is drawn here because how far it falls depends on what is standing under it, which a
  * block model cannot ask. It takes the colour of the metal actually going past — the same colour the
- * tanks and the casting tables use — so a spout pouring gold pours gold.
+ * tanks and the casting tables use — so a spout pouring gold pours gold. A strainer standing on the
+ * table is not where the stream stops: it runs on through the grate to the mould (MeltPipeBlock#landing
+ * lets it), with a small pool on the grate where it crosses, so the pour reads as going through it.
  *
  * <p>The metal <em>lying in a channel</em> was meant to be drawn here too, so a dry run could look dry
  * and a run of gold could look golden. It is still in the block model instead: see the note on submit().
@@ -50,6 +52,8 @@ public class MeltFlowRenderer implements BlockEntityRenderer<MeltFlowBlockEntity
 		public boolean spout;
 		/** How far the stream falls, in blocks; 0 for a plain length of channel. */
 		public float drop;
+		/** How far down the strainer the stream falls through is, in blocks; 0 when there is none. */
+		public float strainer;
 		public int colour;
 		public float time;
 	}
@@ -75,6 +79,7 @@ public class MeltFlowRenderer implements BlockEntityRenderer<MeltFlowBlockEntity
 		state.time = (System.currentTimeMillis() % 100000L) / 1000.0F;
 		state.spout = false;
 		state.drop = 0.0F;
+		state.strainer = 0.0F;
 		if (flow.getLevel() == null || !state.wet) {
 			return;
 		}
@@ -83,6 +88,10 @@ public class MeltFlowRenderer implements BlockEntityRenderer<MeltFlowBlockEntity
 		if (state.spout) {
 			BlockPos lands = MeltPipeBlock.landing(flow.getLevel(), flow.getBlockPos());
 			state.drop = lands == null ? 0.0F : flow.getBlockPos().getY() - lands.getY();
+			// The stream goes on through a strainer standing on the table (landing already lets it), and
+			// where it crosses the grate the metal gathers a moment before it drops through.
+			BlockPos strainer = lands == null ? null : MeltPipeBlock.strainerUnder(flow.getLevel(), flow.getBlockPos());
+			state.strainer = strainer == null ? 0.0F : flow.getBlockPos().getY() - strainer.getY();
 		}
 	}
 
@@ -100,10 +109,33 @@ public class MeltFlowRenderer implements BlockEntityRenderer<MeltFlowBlockEntity
 		float drop = state.drop;
 		float bottom = -drop + 1.0F;
 		float mid = 0.5F;
+		float strainer = state.strainer;
 		collector.submitCustomGeometry(pose, RenderTypes.entityTranslucentEmissive(MELT, false), (p, buffer) -> {
 			column(p, buffer, mid - THIN, mid, mid + THIN, mid, bottom, scroll, drop, bright);
 			column(p, buffer, mid, mid - THIN, mid, mid + THIN, bottom, scroll, drop, bright);
+			if (strainer > 0.0F) {
+				// A small pool on the grate where the stream hits it, lying across the middle bars, so the
+				// pour reads as going THROUGH the strainer rather than past it.
+				float y = -strainer + dev.forja.block.StrainerBlock.GRATE_TOP + 0.004F;
+				pool(p, buffer, mid - POOL, y, mid - POOL, mid + POOL, mid + POOL, scroll, brighter(state.colour, 1.15F));
+			}
 		});
+	}
+
+	/** Half the width of the pool the stream makes on a strainer's grate. */
+	private static final float POOL = 3.5F / 16.0F;
+
+	/** A flat square of melt facing up (and down, so it is not lost from underneath). */
+	private static void pool(PoseStack.Pose pose, com.mojang.blaze3d.vertex.VertexConsumer buffer,
+		float x0, float y, float z0, float x1, float z1, float drift, int colour) {
+		put(pose, buffer, x0, y, z0, drift, 0.0F, colour, 235);
+		put(pose, buffer, x0, y, z1, drift, 1.0F, colour, 235);
+		put(pose, buffer, x1, y, z1, drift + 1.0F, 1.0F, colour, 235);
+		put(pose, buffer, x1, y, z0, drift + 1.0F, 0.0F, colour, 235);
+		put(pose, buffer, x1, y, z0, drift + 1.0F, 0.0F, colour, 235);
+		put(pose, buffer, x1, y, z1, drift + 1.0F, 1.0F, colour, 235);
+		put(pose, buffer, x0, y, z1, drift, 1.0F, colour, 235);
+		put(pose, buffer, x0, y, z0, drift, 0.0F, colour, 235);
 	}
 
 	/** One upright ribbon of a falling stream, drawn both ways round. */

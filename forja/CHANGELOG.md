@@ -1,5 +1,18 @@
 # Novedades
 
+## 2026-09-28 — la colada cae por el colador
+
+- Las piezas ya no se cuelan dentro de la caja de moldeo: el molde se pone encima de una mesa de colada, igual
+  que un marco, y el metal le cae desde el caño.
+- El colador es ahora un bloque: se pone encima de la mesa (entre el caño y el molde), el chorro se ve pasar por
+  él, y al romperlo devuelve el mismo colador con su metal.
+- Un colador que aguanta el metal da una colada limpia (y la pieza, su mejora del 15%); si no aguanta, se rompe al
+  empezar y sale basta; sin colador, basta. Vale igual para los marcos. El calor de la mesa sigue contando.
+- Cada mesa aguanta hasta cierta dureza: losa hasta 700, brasa hasta 1600, almas todo.
+- La caja de moldeo sigue sacando moldes y marcos y bañando coladores, y avisa de que los moldes van a la mesa.
+- La mesa acepta moldes y marcos también por los lados (tolva), suelta lo hecho por debajo y, tras recoger una
+  pieza a mano, espera 2 s antes de volver a colar para poder cambiar el molde.
+
 ## 2026-09-28 — la forja funciona de verdad
 
 Revisión a fondo de fundición, mesas y materiales, jugando el camino de supervivencia con clics reales.

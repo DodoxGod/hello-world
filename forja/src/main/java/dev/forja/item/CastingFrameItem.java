@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * Un marco: the shape of a whole finished tool, cut into refractory steel by pouring it over the real
  * thing.
  *
- * <p>A {@link CastingMouldItem mould} is one part — a pick head, a handle — and the casting box fills
+ * <p>A {@link CastingMouldItem mould} is one part — a pick head, a handle — and a casting table fills
  * it. A frame is the other size of the same idea: every hollow of a finished pickaxe at once, head and
  * handle and binding, so that what comes out of it is not a part but a tool you can swing. Nothing but
  * a casting table will fill one, and filling it takes exactly the metal the tool is worth.

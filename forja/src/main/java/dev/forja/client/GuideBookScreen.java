@@ -1006,7 +1006,9 @@ public class GuideBookScreen extends Screen {
 	 *
 	 * <p>The foundry is eight blocks that only make sense together, and a smith opening the book has no
 	 * way of knowing which to build first. So this reads in the order you build it: pot, tank, pipe,
-	 * box, and what each one wants from the one before. Every number in it comes out of the code, so it
+	 * box, strainer and table, and what each one wants from the one before. (Steps 5 to 7 were rewritten
+	 * when casting left the box's menu for the tables: the box only prepares now, the strainer is a block
+	 * standing on the table, and the metal falls through it onto the mould.) Every number in it comes out of the code, so it
 	 * cannot drift away from what the blocks actually do.
 	 */
 	private List<Element> foundryChapter() {
@@ -1090,8 +1092,14 @@ public class GuideBookScreen extends Screen {
 			dev.forja.item.StrainerItem.of(ForgeMaterial.ACERO),
 			dev.forja.item.StrainerItem.of(ForgeMaterial.DAMASCO)
 		)));
+		// Where it goes now: on the table, under the spout, not in a slot.
+		body.add(new IconRow(List.of(
+			new ItemStack(ModItems.CANO_DE_COLADA), dev.forja.item.StrainerItem.of(null),
+			dev.forja.item.CastingMouldItem.of(PartType.CABEZA_PICO), new ItemStack(ModItems.MESA_DE_LOSA)
+		)));
 		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.paso6.basta",
-			Math.round(-dev.forja.forge.Quality.ROUGH_PENALTY * 100)), 0xFF9A3412));
+			Math.round(-dev.forja.forge.Quality.ROUGH_PENALTY * 100),
+			dev.forja.block.entity.CastingTableBlockEntity.CAST_PERCENT), 0xFF9A3412));
 
 		// 7. The tables: where the line stops making parts and starts making tools.
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.fundicion.paso7")));
@@ -1108,8 +1116,10 @@ public class GuideBookScreen extends Screen {
 		)));
 		for (dev.forja.block.CastingTableBlock.Tier tier : dev.forja.block.CastingTableBlock.Tier.values()) {
 			body.add(new Text(Component.translatable("gui.forja.libro.fundicion.mesa_linea",
-				Component.translatable("block.forja." + tier.id()), tier.cools,
-				Math.round(tier.luck * 100.0F)), INK_SOFT));
+				Component.translatable("block.forja." + tier.id()),
+				tier.holds == Integer.MAX_VALUE ? Component.translatable("gui.forja.caja.todo")
+					: Component.literal(String.valueOf(tier.holds)),
+				tier.cools, Math.round(tier.luck * 100.0F)), INK_SOFT));
 		}
 		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.paso7.frio",
 			dev.forja.block.entity.CastingTableBlockEntity.SPEND,

@@ -1359,7 +1359,10 @@ def generate_station_gui():
     cutout(crucible, pot_x, pot_y, pot_w, pot_h, in_pot)
     crucible.save(folder / "crisol.png")
 
-    # ---- the casting box: the shape, the steel it is cut from, the strainer, the sand and the mould.
+    # ---- the casting box: the shape, the steel it is cut from, the sand and the mould.
+    # (There was a third square beside the steel, the strainer's gate. The box does not cast any more —
+    # the strainer stands on a casting table now — so the gate is gone from the panel; the menu only
+    # shows its slot while an older world's strainer is still in it.)
     flask_x, flask_y, flask = 58, 26, 34
     sand_x, sand_y, sand = flask_x + 2, flask_y + 2, flask - 4
 
@@ -1367,7 +1370,6 @@ def generate_station_gui():
     px = box.load()
     gui_slot(px, 33, 33)
     gui_slot(px, 33, 65)
-    gui_slot(px, 57, 65)
     rng = _random.Random(4411)
     for j in range(flask):
         for i in range(flask):
@@ -3342,6 +3344,8 @@ PICKAXE_BLOCKS = [
     "forja:conducto_de_colada", "forja:conducto_de_acero", "forja:conducto_de_damasco",
     "forja:caja_de_moldeo", "forja:caja_de_moldeo_de_acero", "forja:caja_de_moldeo_de_damasco",
     "forja:mesa_de_losa", "forja:mesa_de_brasa", "forja:mesa_de_almas",
+    # The strainer stood on a table: it drops by hand too, the tag only makes a pickaxe quicker at it.
+    "forja:colador",
 ]
 
 
@@ -8709,6 +8713,60 @@ def generate_melt_tank_assets():
             "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [0, 0, 0], "scale": [0.45, 0.45, 0.45]},
         },
     })
+    # ---- and the strainer set down on a casting table (block/StrainerBlock).
+    #
+    # The same grate as the item, cut from the same sheet and tinted the same way (the block's tint comes
+    # from its block entity, see ForjaClient), lying flat eight pixels up on four short legs: high enough
+    # that the mould on the table shows underneath it and the stream from the spout is seen going through
+    # the gap in the middle, low enough that it reads as part of the table and not as a shelf over it.
+    metal.save(ASSETS / "textures/block/colador.png")
+
+    def plate(x0, z0, x1, z1, y0, y1, uv):
+        return {"from": [x0, y0, z0], "to": [x1, y1, z1],
+                "faces": {name: {"uv": uv, "texture": "#metal", "tintindex": 0}
+                          for name in ("north", "south", "east", "west", "up", "down")}}
+
+    write_json(ASSETS / "models/block/colador.json", {
+        "parent": "minecraft:block/block",
+        "textures": {"metal": "forja:block/colador", "particle": "forja:block/colador"},
+        "elements": [
+            # The frame.
+            plate(2, 2, 14, 3, 8, 10, [0, 0, 16, 2]),
+            plate(2, 13, 14, 14, 8, 10, [0, 0, 16, 2]),
+            plate(2, 3, 3, 13, 8, 10, [0, 8, 16, 10]),
+            plate(13, 3, 14, 13, 8, 10, [0, 8, 16, 10]),
+            # The bars. The ones running east-west sit a hair lower, so where they cross the others the two
+            # tops are not in the same plane and do not flicker.
+            plate(3, 6, 13, 7, 8, 9.9, [2, 2, 14, 4]),
+            plate(3, 10, 13, 11, 8, 9.9, [2, 2, 14, 4]),
+            plate(6, 3, 7, 13, 8, 10, [2, 10, 14, 12]),
+            plate(10, 3, 11, 13, 8, 10, [2, 10, 14, 12]),
+            # And the four legs it stands on.
+            plate(2, 2, 4, 4, 0, 8, [0, 8, 2, 16]),
+            plate(12, 2, 14, 4, 0, 8, [0, 8, 2, 16]),
+            plate(2, 12, 4, 14, 0, 8, [0, 8, 2, 16]),
+            plate(12, 12, 14, 14, 0, 8, [0, 8, 2, 16]),
+        ],
+    })
+    write_json(ASSETS / "blockstates/colador.json", {"variants": {"": {"model": "forja:block/colador"}}})
+    # It drops the very colador that was set down, metal and tint and all: the block entity hands both
+    # components back (StrainerBlockEntity#collectImplicitComponents).
+    write_json(DATA / "loot_table/blocks/colador.json", {
+        "type": "minecraft:block",
+        "pools": [{
+            "rolls": 1.0,
+            "bonus_rolls": 0.0,
+            "entries": [{
+                "type": "minecraft:item",
+                "name": "forja:colador",
+                "functions": [{"function": "minecraft:copy_components", "source": "block_entity",
+                               "include": ["forja:colador", "minecraft:custom_model_data"]}],
+            }],
+            "conditions": [{"condition": "minecraft:survives_explosion"}],
+        }],
+        "random_sequence": "forja:blocks/colador",
+    })
+
     # Clay until it is infused, and then whatever metal went through it.
     write_json(ASSETS / "items/colador.json", {
         "model": {

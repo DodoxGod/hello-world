@@ -176,6 +176,25 @@ public final class ModBlocks {
 			tier));
 	}
 
+	/**
+	 * The strainer, set down on top of a casting table: the pour falls through it on its way into the
+	 * mould. No tool needed and quick to knock off, because it is a clay grate on four legs and the item
+	 * it drops is the same colador that went down (see block/StrainerBlock).
+	 */
+	public static final Block COLADOR = register(
+		"colador",
+		new dev.forja.block.StrainerBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.TERRACOTTA_ORANGE)
+				.strength(0.4F, 3.0F)
+				.sound(SoundType.DECORATED_POT)
+				.noOcclusion()
+				// A piston does not shove a grate along the table: it knocks it off, and it drops.
+				.pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("colador")))
+		)
+	);
+
 	/** The workshop's drawer: a chest that only takes what a smith makes. */
 	public static final Block ARMARIO_DE_PIEZAS = register(
 		"armario_de_piezas",

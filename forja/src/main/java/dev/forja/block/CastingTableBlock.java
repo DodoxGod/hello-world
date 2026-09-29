@@ -23,12 +23,13 @@ import org.jspecify.annotations.Nullable;
 /**
  * Mesas de colada: dark stone tables that pour a whole tool at once.
  *
- * <p>The casting box fills a mould and gives back a part. These fill a <b>frame</b> and give back the
- * finished thing. You set the frame down on the table, the reachable tanks drop in exactly the metal
- * that tool is worth — not a drop more — and what you pick up is a pickaxe, not a pick head.
+ * <p>They are where everything in the foundry is poured. Set a <b>mould</b> down on one and it gives back
+ * that part; set a <b>frame</b> down and it gives back the finished thing. The reachable tanks drop in
+ * exactly the metal it is worth — not a drop more — through the strainer standing on top of the table
+ * (block/StrainerBlock), and that strainer decides whether the casting comes out clean or rough.
  *
- * <p>All three do the same work. They differ in one thing only, and it is the thing dark stone is good
- * at: <b>holding heat</b>. A table that is not being warmed bleeds heat every second, and the better
+ * <p>All three do the same work. They differ in how hard a metal they will take (Tier#holds, as the
+ * boxes did) and, above all, in the thing dark stone is good at: <b>holding heat</b>. A table that is not being warmed bleeds heat every second, and the better
  * the stone the slower it goes. A cold table will not start a pour at all, and a pour that was started
  * on the last of the heat comes out <b>rough</b> — the metal set in the frame before it was done. The
  * better stone also has the steadier hand: a good pour has a chance of coming out <b>perfect</b>, the
@@ -42,23 +43,33 @@ public class CastingTableBlock extends BaseEntityBlock {
 	/** Set while there is metal in the frame, which is what the model and the particles read. */
 	public static final BooleanProperty LIT = BlockStateProperties.LIT;
 
-	/** What a table is cut from, and therefore how long its heat lasts. */
+	/**
+	 * What a table is cut from, and therefore how long its heat lasts and how hard a metal it will take.
+	 *
+	 * <p>The hardness limit is the one the casting box had while it still cast parts, read the same way:
+	 * off the material's own durability, so a metal added tomorrow lands in the right tier by itself.
+	 * The slate table is bound with refractory steel, so it stands what the steel box stood; the soul
+	 * table, like the damascus box, takes anything.
+	 */
 	public enum Tier {
 		/** Polished deepslate and iron: a cold stone that works, and asks for a fire close by. */
-		LOSA(4, 0.10F),
-		/** Blackstone and gold, off the fallen smith's own floor: it remembers the fire longer. */
-		BRASA(2, 0.25F),
+		LOSA(4, 0.10F, CastingBoxBlock.Tier.ACERO.holds),
+		/** Blackstone and gold, off the fallen smith's own floor: it remembers the fire longer. Up to diamond. */
+		BRASA(2, 0.25F, 1600),
 		/** Basalt and obsidian, with something in the seams: it barely lets go of the heat at all. */
-		ALMAS(1, 0.50F);
+		ALMAS(1, 0.50F, Integer.MAX_VALUE);
 
 		/** Heat lost every second with nothing warming it. */
 		public final int cools;
 		/** The chance a finished pour comes out perfect, worth +5% on every stat. */
 		public final float luck;
+		/** The highest material durability this table will let be poured into it. */
+		public final int holds;
 
-		Tier(int cools, float luck) {
+		Tier(int cools, float luck, int holds) {
 			this.cools = cools;
 			this.luck = luck;
+			this.holds = holds;
 		}
 
 		public String id() {
@@ -107,6 +118,10 @@ public class CastingTableBlock extends BaseEntityBlock {
 	@Override
 	protected InteractionResult useItemOn(ItemStack held, BlockState state, Level level, BlockPos pos, Player player,
 		net.minecraft.world.InteractionHand hand, BlockHitResult hit) {
+		// A strainer in the hand is going on top of the table, not into it: let the item place itself.
+		if (held.getItem() instanceof dev.forja.item.StrainerItem) {
+			return InteractionResult.PASS;
+		}
 		if (level.isClientSide()) {
 			return InteractionResult.SUCCESS;
 		}

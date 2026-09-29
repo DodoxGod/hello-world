@@ -3,10 +3,8 @@ package dev.forja.block.entity;
 import java.util.List;
 
 import dev.forja.block.CastingBoxBlock;
-import dev.forja.forge.Assembler;
 import dev.forja.item.CastingMouldItem;
 import dev.forja.material.ForgeMaterial;
-import dev.forja.part.PartType;
 import dev.forja.registry.ModComponents;
 import dev.forja.registry.ModItems;
 import net.minecraft.core.BlockPos;
@@ -30,15 +28,21 @@ import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The two jobs of a casting box, once a tick.
+ * The preparation jobs of a casting box, once a tick.
  *
  * <p><b>Cutting a mould.</b> A finished part in the pattern slot and refractory steel beside it: the
  * steel is poured over the part, the part is gone, and a mould of it comes out. It is the only thing in
  * the mod that deliberately destroys something you made, and it should be — a mould is worth a part
  * because from then on you never cut that part by hand again.
  *
- * <p><b>Casting.</b> A mould in the pattern slot and a tank of metal within reach: it pours the part in
- * whatever the tanks are holding, as long as the box is built of something that will stand that metal.
+ * <p><b>Casting is not done here any more.</b> Parts used to be poured inside this menu, from the tanks,
+ * with a strainer in a slot. Andy asked for the metal to have to fall — through the strainer and onto
+ * the mould — so a mould now goes on a casting table like a frame does, with the strainer standing on
+ * top of it (CastingTableBlockEntity). A mould left in a box from an older world just sits in the pattern
+ * slot until it is taken out; so does a strainer left in the old strainer slot.
+ *
+ * <p><b>Bathing a strainer.</b> A strainer in the pattern slot and a harder metal in a tank it reaches:
+ * the metal runs over it and it comes back out made of that metal.
  *
  * <p><b>Cutting a frame.</b> The same trade one size up. A <i>finished tool</i> in the pattern slot and
  * enough steel beside it: the tool is destroyed and what comes out is a <b>frame</b> of the whole thing,
@@ -48,6 +52,11 @@ import org.jspecify.annotations.Nullable;
 public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContainer, net.minecraft.world.MenuProvider {
 	public static final int SLOT_PATTERN = 0;
 	public static final int SLOT_STEEL = 1;
+	/**
+	 * Where the strainer used to guard the pour, back when the box cast parts. Nothing goes in any more; it
+	 * is kept, and kept at this index, so a strainer left there in an older world is still there to be
+	 * taken out (and the output slot is still where saves say it is).
+	 */
 	public static final int SLOT_STRAINER = 2;
 	public static final int SLOT_OUTPUT = 3;
 	public static final int SIZE = 4;
@@ -64,19 +73,8 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 	/** How much metal it takes to infuse a strainer into something better. */
 	public static final int BATH_COST = 8;
 
-	/**
-	 * What a part poured cleanly is worth, as a percentage of one upgrade.
-	 *
-	 * <p>This is the whole reason to own a foundry. A part cut at the bench is a part; a part poured
-	 * through a strainer that held, into a mould, off a table that was hot enough, comes out already
-	 * <b>better than the sum of its metal</b> — and the upgrade rides up into whatever you build with
-	 * it. A rough pour gets nothing at all, which is what makes the strainer worth infusing and the
-	 * heat worth keeping.
-	 */
-	public static final int CAST_PERCENT = 15;
-
 	private static final int[] TOP = {SLOT_PATTERN};
-	private static final int[] SIDES = {SLOT_STEEL, SLOT_STRAINER};
+	private static final int[] SIDES = {SLOT_STEEL};
 	private static final int[] BOTTOM = {SLOT_OUTPUT};
 
 	private NonNullList<ItemStack> items = NonNullList.withSize(SIZE, ItemStack.EMPTY);
@@ -89,8 +87,7 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 	public static final int JOB_NONE = 0;
 	public static final int JOB_MOULD = 1;
 	public static final int JOB_FRAME = 2;
-	public static final int JOB_CAST = 3;
-	public static final int JOB_ROUGH = 4;
+	// 3 and 4 were casting cleanly and casting rough: that happens on the casting tables now.
 	public static final int JOB_INFUSE = 5;
 	private int job;
 	/** The metal being poured, as a material ordinal, or -1. */
@@ -111,8 +108,7 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 		boolean working = job != null;
 		box.job = job == null ? JOB_NONE
 			: job.cutting() != null ? (dev.forja.item.CastingFrameItem.typeOf(job.result()) != null ? JOB_FRAME : JOB_MOULD)
-			: job.result().getItem() instanceof dev.forja.item.StrainerItem ? JOB_INFUSE
-			: job.rough() ? JOB_ROUGH : JOB_CAST;
+			: JOB_INFUSE;
 		box.jobMetal = job == null || job.metal() == null ? -1 : job.metal().ordinal();
 		if (!working) {
 			box.progress = 0;
@@ -138,36 +134,12 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 		// comes back out made of that metal.
 		if (pattern.getItem() instanceof dev.forja.item.StrainerItem) {
 			ForgeMaterial bath = this.bathMetal(pattern);
-			return bath == null ? null : new Job(dev.forja.item.StrainerItem.of(bath), null, 0, bath, false);
+			return bath == null ? null : new Job(dev.forja.item.StrainerItem.of(bath), null, 0, bath);
 		}
-		// A mould in the slot means casting; anything else means cutting a mould out of it.
-		PartType mould = CastingMouldItem.partOf(pattern);
-		if (mould != null) {
-			ForgeMaterial metal = this.pourable(mould);
-			if (metal == null) {
-				return null;
-			}
-			ItemStack strainer = this.items.get(SLOT_STRAINER);
-			// No strainer at all, or one that will not take this metal: the casting comes out rough.
-			boolean rough = strainer.isEmpty() || !dev.forja.item.StrainerItem.survives(strainer, metal);
-			ItemStack part = Assembler.createPart(mould, metal);
-			if (rough) {
-				part.set(ModComponents.ROUGH, true);
-			} else {
-				// Poured, and poured well: whatever is built with it has more room for upgrades than the
-				// same thing cut at the bench (forge/Potential). Its upgrade is only drawn when the pour
-				// finishes (see finish): drawn here it was a new one every tick.
-				part.set(ModComponents.COLADA, true);
-			}
-			// The output has to take the part as it will really come out. It was asked whether it would
-			// take a plain part, which nothing that comes out of here is: after the first casting the
-			// slot held a rough or a blessed part, the plain one never matched it, and the box stood
-			// there with a full tank and a mould until someone emptied it by hand. A rough part stacks
-			// with the rough ones before it; a blessed one carries its own upgrade and waits for room.
-			if (rough ? !this.fits(part) : !this.items.get(SLOT_OUTPUT).isEmpty()) {
-				return null;
-			}
-			return new Job(part, null, 0, metal, rough);
+		// A mould is filled on a casting table now, not in here: a mould in the slot is only waiting to be
+		// taken out (an older world's box, or a smith who put it back by habit).
+		if (CastingMouldItem.partOf(pattern) != null) {
+			return null;
 		}
 		// A finished tool is not one shape but all of its shapes at once, so what comes off it is not a
 		// mould but a frame, and only a casting table will ever fill one.
@@ -178,74 +150,20 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 			}
 			ItemStack frame = dev.forja.item.CastingFrameItem.of(assembled.type());
 			return this.fits(frame)
-				? new Job(frame, assembled.type().displayName(), FRAME_COST, null, false)
+				? new Job(frame, assembled.type().displayName(), FRAME_COST, null)
 				: null;
 		}
 		if (!(pattern.getItem() instanceof dev.forja.item.PartItem made) || !this.hasSteel(MOULD_COST)) {
 			return null;
 		}
 		ItemStack result = CastingMouldItem.of(made.type);
-		return this.fits(result) ? new Job(result, made.type.displayName(), MOULD_COST, null, false) : null;
-	}
-
-	/**
-	 * Puts one upgrade on a cleanly poured part, chosen from the ones anything built with that part
-	 * could actually use.
-	 *
-	 * <p>A part has no {@link ForgeType} of its own, so the choice is made over every type this part
-	 * goes into: a blade could become a sword, a dagger or a scythe, and an upgrade that suits any of
-	 * them suits the blade.
-	 */
-	private void bless(ItemStack part, PartType mould) {
-		if (!(this.level instanceof ServerLevel server)) {
-			return;
-		}
-		java.util.List<dev.forja.upgrade.Upgrade> possible = new java.util.ArrayList<>();
-		for (dev.forja.upgrade.Upgrade upgrade : dev.forja.upgrade.Upgrade.values()) {
-			for (dev.forja.forge.ForgeType type : dev.forja.forge.ForgeType.values()) {
-				if (type.slots.contains(mould) && upgrade.appliesTo(type)) {
-					possible.add(upgrade);
-					break;
-				}
-			}
-		}
-		if (possible.isEmpty()) {
-			return;
-		}
-		dev.forja.upgrade.Upgrade chosen = possible.get(server.getRandom().nextInt(possible.size()));
-		part.set(ModComponents.UPGRADES,
-			dev.forja.upgrade.Upgrades.EMPTY.with(chosen, CAST_PERCENT));
+		return this.fits(result) ? new Job(result, made.type.displayName(), MOULD_COST, null) : null;
 	}
 
 	/** Whether the side slot holds at least this much refractory steel. */
 	private boolean hasSteel(int needed) {
 		ItemStack steel = this.items.get(SLOT_STEEL);
 		return steel.getCount() >= needed && steel.is(ModItems.alloy("acero_refractario"));
-	}
-
-	/**
-	 * The metal a connected tank is holding, if this box will stand it and there is enough of it.
-	 *
-	 * <p>The limit is the material's own durability against the tier's: a clay box cracks on anything
-	 * harder than bronze, and a metal added to the mod tomorrow lands in the right tier by itself.
-	 */
-	private @Nullable ForgeMaterial pourable(PartType part) {
-		if (this.level == null) {
-			return null;
-		}
-		for (MeltTankBlockEntity tank : this.tanks()) {
-			Item metal = tank.bankMetal();
-			// Metal that has set will not pour, however much of it there is.
-			if (metal == null || tank.isSet() || tank.bankAmount() < part.cost) {
-				continue;
-			}
-			ForgeMaterial material = ForgeMaterial.fromInput(new ItemStack(metal));
-			if (material == null || !part.accepts(material) || material.durability > this.tier().holds) {
-				continue;
-			}
-			return material;
-		}
-		return null;
 	}
 
 	/** The metal a connected tank is holding that would make this strainer better than it is. */
@@ -289,31 +207,17 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 			this.items.get(SLOT_PATTERN).shrink(1);
 			this.items.get(SLOT_STEEL).shrink(job.steel());
 		} else if (job.metal() != null) {
-			ItemStack pattern = this.items.get(SLOT_PATTERN);
-			PartType part = CastingMouldItem.partOf(pattern);
-			boolean infusing = pattern.getItem() instanceof dev.forja.item.StrainerItem;
-			int spend = infusing ? BATH_COST : part == null ? 0 : part.cost;
+			// Bathing a strainer: the bath comes out of the tanks, and the old strainer goes into it and
+			// does not come back out as itself.
 			for (MeltTankBlockEntity tank : this.tanks()) {
 				if (tank.bankMetal() != null && !tank.isSet()
 					&& ForgeMaterial.fromInput(new ItemStack(tank.bankMetal())) == job.metal()
-					&& tank.bankAmount() >= spend) {
-					tank.drain(spend);
+					&& tank.bankAmount() >= BATH_COST) {
+					tank.drain(BATH_COST);
 					break;
 				}
 			}
-			if (infusing) {
-				// The old strainer goes into the bath and does not come back out as itself.
-				pattern.shrink(1);
-			} else if (!job.rough() && part != null) {
-				bless(result, part);
-			}
-			if (job.rough()) {
-				// The strainer could not take it and went with the pour.
-				this.items.set(SLOT_STRAINER, ItemStack.EMPTY);
-				if (level instanceof ServerLevel server) {
-					server.playSound(null, pos, SoundEvents.GLASS_BREAK, SoundSource.BLOCKS, 0.8F, 0.7F);
-				}
-			}
+			this.items.get(SLOT_PATTERN).shrink(1);
 		}
 		ItemStack out = this.items.get(SLOT_OUTPUT);
 		if (out.isEmpty()) {
@@ -335,9 +239,9 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 	 *
 	 * <p>{@code cutting} is the name of whatever is being copied, and is what tells the three jobs
 	 * apart: a mould or a frame is being <b>cut</b>, and costs steel and the thing it was taken from; a
-	 * casting or an infusion is being <b>poured</b>, and costs metal out of the tanks.
+	 * strainer's bath is being <b>poured</b>, and costs metal out of the tanks.
 	 */
-	private record Job(ItemStack result, @Nullable Component cutting, int steel, @Nullable ForgeMaterial metal, boolean rough) {
+	private record Job(ItemStack result, @Nullable Component cutting, int steel, @Nullable ForgeMaterial metal) {
 	}
 
 	/** What it is doing, in one line, for the screen and for Jade. */
@@ -347,13 +251,12 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 			if (job.cutting() != null) {
 				return Component.translatable("gui.forja.caja.moldeando", job.cutting());
 			}
-			return job.rough()
-				? Component.translatable("gui.forja.caja.basta", job.result().getHoverName())
-				: Component.translatable("gui.forja.caja.colando", job.result().getHoverName());
+			return Component.translatable("gui.forja.caja.infundiendo", job.metal() == null
+				? job.result().getHoverName() : job.metal().displayName());
 		}
-		PartType mould = CastingMouldItem.partOf(this.items.get(SLOT_PATTERN));
-		if (mould != null) {
-			return Component.translatable("gui.forja.caja.sin_metal");
+		if (CastingMouldItem.partOf(this.items.get(SLOT_PATTERN)) != null) {
+			// Somebody expecting the old box: say where casting went.
+			return Component.translatable("gui.forja.caja.molde_a_mesa");
 		}
 		return Component.translatable("gui.forja.caja.vacia", this.tier().holds == Integer.MAX_VALUE
 			? Component.translatable("gui.forja.caja.todo")
@@ -498,7 +401,7 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 				// A finished tool, to be cut into a frame. A frame itself has no business in here.
 				|| (stack.has(ModComponents.PARTS) && dev.forja.item.CastingFrameItem.typeOf(stack) == null);
 			case SLOT_STEEL -> stack.is(ModItems.alloy("acero_refractario"));
-			case SLOT_STRAINER -> stack.getItem() instanceof dev.forja.item.StrainerItem;
+			// The old strainer gate takes nothing new: the strainer stands on the casting table now.
 			default -> false;
 		};
 	}

@@ -6,6 +6,7 @@ import dev.forja.block.entity.CastingBoxBlockEntity;
 import dev.forja.block.entity.CastingTableBlockEntity;
 import dev.forja.block.entity.CrucibleBlockEntity;
 import dev.forja.block.entity.MeltTankBlockEntity;
+import dev.forja.block.entity.StrainerBlockEntity;
 import dev.forja.forge.Assembler;
 import dev.forja.forge.ForgeType;
 import dev.forja.item.CastingFrameItem;
@@ -34,7 +35,12 @@ import net.minecraft.world.level.block.Blocks;
  * The foundry (Andy, 2026-09-28: "se puede poner cualquier objeto en los contenedores", and the furnace,
  * the ores and all that "no funcione de forma correcta"). One test per thing that was wrong: what each
  * slot and each tank takes, the crucible melting ore and ingots at all, the crucible that stopped after
- * one pour into its own tank, the casting box that stopped after one casting, and what survives a save.
+ * one pour into its own tank, and what survives a save.
+ *
+ * <p>And casting on the tables (Andy, same day: "¿se podría hacer que el líquido tenga que caer en la
+ * herramienta? pasando primero por el colador antes de que llegue a la mesa con el molde"): a mould on a
+ * table with a strainer standing on it, the strainer that breaks, no strainer, a frame, the stone's limit,
+ * the strainer block itself, a spout pouring through it, hoppers — and the box that no longer casts.
  */
 public class FundicionGameTests {
 	private static final BlockPos POT = new BlockPos(1, 1, 1);
@@ -235,42 +241,55 @@ public class FundicionGameTests {
 	}
 
 	/**
-	 * The casting box keeps casting. It checked the output against a plain part, and nothing it makes
-	 * is plain, so it stopped after one; and a clean part's upgrade was drawn again every tick.
+	 * The casting box no longer casts. Andy, 2026-09-28: the liquid has to fall onto the mould through the
+	 * strainer, so a mould in the box over a full tank just waits there to be taken out, and the old strainer
+	 * gate keeps what an older world left in it without taking anything new.
 	 */
 	@GameTest
-	public void castingBoxKeepsCasting(GameTestHelper helper) {
-		helper.setBlock(POT, ModBlocks.CAJA_DE_MOLDEO.defaultBlockState());
+	public void castingBoxNoLongerCasts(GameTestHelper helper) {
+		helper.setBlock(POT, ModBlocks.CAJA_DE_MOLDEO_DE_DAMASCO.defaultBlockState());
 		CastingBoxBlockEntity box = helper.getBlockEntity(POT, CastingBoxBlockEntity.class);
 		MeltTankBlockEntity tank = tank(helper, POT.east());
 		tank.fill(Items.IRON_INGOT, 60);
 		box.setItem(CastingBoxBlockEntity.SLOT_PATTERN, CastingMouldItem.of(PartType.CABEZA_PICO));
-		int cook = dev.forja.block.CastingBoxBlock.Tier.BARRO.cook;
-		runBox(helper, POT, box, cook * 3 + 3);
-		ItemStack rough = box.getItem(CastingBoxBlockEntity.SLOT_OUTPUT);
-		helper.assertTrue(rough.getCount() == 3 && rough.getOrDefault(ModComponents.ROUGH, false),
-			"tres coladas bastas seguidas sin colador, hay " + rough);
+		// What an older world could have left in the strainer gate.
+		box.setItem(CastingBoxBlockEntity.SLOT_STRAINER, StrainerItem.of(ForgeMaterial.NETHERITA));
+		runBox(helper, POT, box, dev.forja.block.CastingBoxBlock.Tier.DAMASCO.cook * 3);
+		helper.assertTrue(box.getItem(CastingBoxBlockEntity.SLOT_OUTPUT).isEmpty(), "la caja ya no cuela piezas");
+		helper.assertTrue(tank.bankAmount() == 60, "ni toca la cuba: " + tank.bankAmount());
+		helper.assertTrue(CastingMouldItem.partOf(box.getItem(CastingBoxBlockEntity.SLOT_PATTERN)) == PartType.CABEZA_PICO,
+			"el molde se queda ahí para sacarlo");
+		helper.assertTrue(StrainerItem.materialOf(box.getItem(CastingBoxBlockEntity.SLOT_STRAINER)) == ForgeMaterial.NETHERITA,
+			"y el colador viejo también");
+		helper.assertFalse(CastingBoxBlockEntity.allowed(CastingBoxBlockEntity.SLOT_STRAINER, StrainerItem.of(null)),
+			"al hueco del colador ya no entra nada");
+		helper.assertTrue(box.describe().getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents said
+			&& said.getKey().equals("gui.forja.caja.molde_a_mesa"), "y dice dónde se cuela ahora");
 
-		// Clean, through a strainer that holds: one part, and it waits with its upgrade for the output.
-		helper.setBlock(POT, ModBlocks.CAJA_DE_MOLDEO_DE_DAMASCO.defaultBlockState());
-		CastingBoxBlockEntity good = helper.getBlockEntity(POT, CastingBoxBlockEntity.class);
-		good.setItem(CastingBoxBlockEntity.SLOT_PATTERN, CastingMouldItem.of(PartType.CABEZA_PICO));
-		good.setItem(CastingBoxBlockEntity.SLOT_STRAINER, StrainerItem.of(ForgeMaterial.NETHERITA));
-		int fast = dev.forja.block.CastingBoxBlock.Tier.DAMASCO.cook;
-		runBox(helper, POT, good, fast + 1);
-		ItemStack clean = good.getItem(CastingBoxBlockEntity.SLOT_OUTPUT).copy();
-		helper.assertTrue(clean.getCount() == 1 && clean.getOrDefault(ModComponents.COLADA, false) && clean.has(ModComponents.UPGRADES),
-			"una colada limpia lleva su mejora: " + clean);
-		runBox(helper, POT, good, fast * 2);
-		helper.assertTrue(ItemStack.isSameItemSameComponents(good.getItem(CastingBoxBlockEntity.SLOT_OUTPUT), clean)
-			&& good.getItem(CastingBoxBlockEntity.SLOT_OUTPUT).getCount() == 1, "espera a que la saquen, sin cambiar de mejora");
-		good.setItem(CastingBoxBlockEntity.SLOT_OUTPUT, ItemStack.EMPTY);
-		runBox(helper, POT, good, fast + 1);
-		helper.assertTrue(!good.getItem(CastingBoxBlockEntity.SLOT_OUTPUT).isEmpty(), "y al sacarla cuela la siguiente");
+		// Through the screen: the old gate shows only while it holds that strainer, and gives it back.
+		Player player = helper.makeMockServerPlayerInLevel();
+		// A mock player comes with a full bag (every stack the test world hands out); make room first.
+		player.getInventory().clearContent();
+		AbstractContainerMenu menu = box.createMenu(1, player.getInventory(), player);
+		helper.assertTrue(menu.getSlot(CastingBoxBlockEntity.SLOT_STRAINER).isActive(), "el hueco viejo se ve mientras tiene algo");
+		menu.clicked(CastingBoxBlockEntity.SLOT_STRAINER, 0, ContainerInput.QUICK_MOVE, player);
+		helper.assertTrue(box.getItem(CastingBoxBlockEntity.SLOT_STRAINER).isEmpty(), "el colador sale del hueco viejo: queda "
+			+ box.getItem(CastingBoxBlockEntity.SLOT_STRAINER) + ", en el menú " + menu.getSlot(CastingBoxBlockEntity.SLOT_STRAINER).getItem()
+			+ ", en el inventario " + player.getInventory().countItem(ModItems.COLADOR));
+		helper.assertFalse(menu.getSlot(CastingBoxBlockEntity.SLOT_STRAINER).isActive(), "y vacío ya no se ve");
+		helper.assertFalse(menu.getSlot(CastingBoxBlockEntity.SLOT_STRAINER).mayPlace(StrainerItem.of(null)), "ni admite nada");
+		// And a box from an older world that is saved and loaded keeps its slots where they were.
+		var registries = helper.getLevel().registryAccess();
+		box.setItem(CastingBoxBlockEntity.SLOT_STRAINER, StrainerItem.of(null));
+		var copy = (CastingBoxBlockEntity) net.minecraft.world.level.block.entity.BlockEntity.loadStatic(box.getBlockPos(),
+			box.getBlockState(), box.saveWithFullMetadata(registries), registries);
+		helper.assertTrue(copy != null && CastingMouldItem.partOf(copy.getItem(CastingBoxBlockEntity.SLOT_PATTERN)) == PartType.CABEZA_PICO
+			&& copy.getItem(CastingBoxBlockEntity.SLOT_STRAINER).getItem() instanceof StrainerItem,
+			"una caja guardada con molde y colador carga igual");
 		helper.succeed();
 	}
 
-	/** The box's screen takes a finished tool (to cut its frame) and strainers, and nothing else odd. */
+	/** The box's screen takes a finished tool (to cut its frame) and strainers (to bathe), and nothing else odd. */
 	@GameTest
 	public void castingBoxScreenTakesToolsAndStrainers(GameTestHelper helper) throws ReflectiveOperationException {
 		ItemStack tool = Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO));
@@ -287,12 +306,9 @@ public class FundicionGameTests {
 		helper.assertTrue(menu.getSlot(CastingBoxBlockEntity.SLOT_PATTERN).mayPlace(tool), "la pantalla acepta la herramienta");
 		player.getInventory().setItem(0, StrainerItem.of(null));
 		menu.clicked(hotbar(0), 0, ContainerInput.QUICK_MOVE, player);
-		helper.assertTrue(box.getItem(CastingBoxBlockEntity.SLOT_STRAINER).getItem() instanceof StrainerItem,
-			"con mayúsculas el colador va a su hueco");
-		player.getInventory().setItem(1, StrainerItem.of(null));
-		menu.clicked(hotbar(1), 0, ContainerInput.QUICK_MOVE, player);
 		helper.assertTrue(box.getItem(CastingBoxBlockEntity.SLOT_PATTERN).getItem() instanceof StrainerItem,
-			"y el segundo, al de arriba para bañarlo");
+			"con mayúsculas el colador va arriba, a bañarse");
+		helper.assertTrue(box.getItem(CastingBoxBlockEntity.SLOT_STRAINER).isEmpty(), "y no al hueco viejo del colador");
 		player.getInventory().setItem(2, tool.copy());
 		box.setItem(CastingBoxBlockEntity.SLOT_PATTERN, ItemStack.EMPTY);
 		menu.clicked(hotbar(2), 0, ContainerInput.QUICK_MOVE, player);
@@ -311,6 +327,266 @@ public class FundicionGameTests {
 		}
 		helper.assertTrue(client.holds() == Integer.MAX_VALUE, "la caja de damasco dice que aguanta todo, no " + client.holds());
 		helper.succeed();
+	}
+
+	// ------------------------------------------------------------------ casting on the tables
+
+	/** Where the table stands in these tests: on a wisp lantern, with its strainer on top and a tank beside. */
+	private static final BlockPos TABLE = POT.above();
+
+	/** A table on a lantern, a tank of this metal beside it, and (if given) a strainer of this make on top. */
+	private static CastingTableBlockEntity castingRig(GameTestHelper helper, Block tier, net.minecraft.world.item.Item metal,
+		@org.jspecify.annotations.Nullable ForgeMaterial strainer, boolean withStrainer) {
+		helper.setBlock(POT, ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+		helper.setBlock(TABLE, tier.defaultBlockState());
+		tank(helper, TABLE.east()).fill(metal, 120);
+		if (withStrainer) {
+			helper.setBlock(TABLE.above(), ModBlocks.COLADOR.defaultBlockState());
+			helper.getBlockEntity(TABLE.above(), StrainerBlockEntity.class).setMaterial(strainer);
+		}
+		return helper.getBlockEntity(TABLE, CastingTableBlockEntity.class);
+	}
+
+	private static void runTable(GameTestHelper helper, BlockPos at, CastingTableBlockEntity table, int ticks) {
+		ServerLevel level = helper.getLevel();
+		BlockPos where = helper.absolutePos(at);
+		for (int tick = 0; tick < ticks; tick++) {
+			CastingTableBlockEntity.serverTick(level, where, level.getBlockState(where), table);
+		}
+	}
+
+	/** Two seconds on the lantern to warm up, and a whole pour. */
+	private static final int ONE_POUR = 60 + CastingTableBlockEntity.COOK;
+
+	/**
+	 * A mould on a table, a strainer that holds on top of it: the part comes out clean, marked as poured,
+	 * carrying the one upgrade the box used to give it, for exactly what that part is worth.
+	 */
+	@GameTest
+	public void tableCastsAPartThroughItsStrainer(GameTestHelper helper) {
+		CastingTableBlockEntity table = castingRig(helper, ModBlocks.MESA_DE_LOSA, Items.IRON_INGOT, null, true);
+		MeltTankBlockEntity tank = helper.getBlockEntity(TABLE.east(), MeltTankBlockEntity.class);
+		table.setItem(CastingTableBlockEntity.SLOT_FRAME, CastingMouldItem.of(PartType.CABEZA_PICO));
+		runTable(helper, TABLE, table, ONE_POUR);
+		ItemStack part = table.result();
+		helper.assertTrue(part.getItem() == ModItems.part(PartType.CABEZA_PICO) && part.get(ModComponents.MATERIAL) == ForgeMaterial.HIERRO,
+			"sale una cabeza de pico de hierro: " + part);
+		helper.assertTrue(part.getOrDefault(ModComponents.COLADA, false) && !part.getOrDefault(ModComponents.ROUGH, false),
+			"limpia, por un colador de barro que aguanta el hierro");
+		var upgrades = part.getOrDefault(ModComponents.UPGRADES, dev.forja.upgrade.Upgrades.EMPTY).percents();
+		helper.assertTrue(upgrades.size() == 1 && upgrades.values().iterator().next() == CastingTableBlockEntity.CAST_PERCENT,
+			"con su mejora al " + CastingTableBlockEntity.CAST_PERCENT + "%: " + upgrades);
+		helper.assertTrue(tank.bankAmount() == 120 - PartType.CABEZA_PICO.cost, "gasta lo que vale la pieza: " + (120 - tank.bankAmount()));
+		helper.assertTrue(CastingMouldItem.partOf(table.frame()) == PartType.CABEZA_PICO, "y el molde se queda en la mesa");
+		helper.assertTrue(helper.getBlockEntity(TABLE.above(), StrainerBlockEntity.class) != null, "el colador sigue en pie");
+		// It waits with its upgrade until it is taken, and the next one does not overwrite it.
+		ItemStack first = part.copy();
+		runTable(helper, TABLE, table, ONE_POUR);
+		helper.assertTrue(ItemStack.isSameItemSameComponents(table.result(), first), "espera a que la saquen, sin cambiar de mejora");
+		helper.succeed();
+	}
+
+	/** Diamond through a clay strainer: the strainer breaks in the pour, drops nothing, and the part is rough. */
+	@GameTest
+	public void aStrainerThatCannotTakeItBreaks(GameTestHelper helper) {
+		CastingTableBlockEntity table = castingRig(helper, ModBlocks.MESA_DE_ALMAS, Items.DIAMOND, null, true);
+		table.setItem(CastingTableBlockEntity.SLOT_FRAME, CastingMouldItem.of(PartType.CABEZA_PICO));
+		runTable(helper, TABLE, table, 60);
+		helper.assertTrue(table.metal() == Items.DIAMOND, "empezó a colar diamante");
+		helper.assertTrue(table.pouringRough(), "y ya sabe que saldrá basta");
+		helper.assertBlockNotPresent(ModBlocks.COLADOR, TABLE.above());
+		int strainers = helper.getLevel().getEntitiesOfClass(ItemEntity.class,
+			new net.minecraft.world.phys.AABB(helper.absolutePos(TABLE)).inflate(3.0)).stream()
+			.filter(item -> item.getItem().getItem() instanceof StrainerItem).mapToInt(item -> item.getItem().getCount()).sum();
+		helper.assertTrue(strainers == 0, "el colador roto se va con la colada, no cae al suelo");
+		runTable(helper, TABLE, table, CastingTableBlockEntity.COOK);
+		ItemStack part = table.result();
+		helper.assertTrue(!part.isEmpty() && part.getOrDefault(ModComponents.ROUGH, false), "la pieza sale basta: " + part);
+		helper.assertFalse(part.has(ModComponents.UPGRADES), "y sin mejora");
+		helper.succeed();
+	}
+
+	/** No strainer on the table at all: the pour is rough, part or tool. */
+	@GameTest
+	public void noStrainerPoursRough(GameTestHelper helper) {
+		CastingTableBlockEntity table = castingRig(helper, ModBlocks.MESA_DE_LOSA, Items.IRON_INGOT, null, false);
+		table.setItem(CastingTableBlockEntity.SLOT_FRAME, CastingMouldItem.of(PartType.HOJA));
+		runTable(helper, TABLE, table, ONE_POUR);
+		ItemStack part = table.result();
+		helper.assertTrue(!part.isEmpty() && part.getOrDefault(ModComponents.ROUGH, false) && !part.has(ModComponents.UPGRADES),
+			"sin colador la hoja sale basta y sin mejora: " + part);
+		table.setItem(CastingTableBlockEntity.SLOT_OUTPUT, ItemStack.EMPTY);
+		table.setItem(CastingTableBlockEntity.SLOT_FRAME, CastingFrameItem.of(ForgeType.PICO));
+		runTable(helper, TABLE, table, CastingTableBlockEntity.COOK + 20);
+		ItemStack tool = table.result();
+		helper.assertTrue(tool.has(ModComponents.PARTS) && tool.getOrDefault(ModComponents.ROUGH, false),
+			"y un pico entero también: " + tool);
+		helper.succeed();
+	}
+
+	/** A frame through a strainer that holds: the whole tool comes out clean, every slot of it cast. */
+	@GameTest
+	public void aFrameThroughAStrainerIsClean(GameTestHelper helper) {
+		CastingTableBlockEntity table = castingRig(helper, ModBlocks.MESA_DE_LOSA, Items.IRON_INGOT, ForgeMaterial.ACERO, true);
+		MeltTankBlockEntity tank = helper.getBlockEntity(TABLE.east(), MeltTankBlockEntity.class);
+		table.setItem(CastingTableBlockEntity.SLOT_FRAME, CastingFrameItem.of(ForgeType.PICO));
+		runTable(helper, TABLE, table, ONE_POUR);
+		ItemStack tool = table.result();
+		var parts = tool.get(ModComponents.PARTS);
+		helper.assertTrue(parts != null && parts.type() == ForgeType.PICO, "sale un pico: " + tool);
+		helper.assertFalse(tool.getOrDefault(ModComponents.ROUGH, false), "limpio por un colador de acero");
+		helper.assertTrue(tool.getOrDefault(ModComponents.COLADAS, 0) == (1 << ForgeType.PICO.slots.size()) - 1, "con todas sus piezas coladas");
+		helper.assertTrue(120 - tank.bankAmount() == CastingFrameItem.cost(ForgeType.PICO), "gastando lo que vale el pico");
+		helper.succeed();
+	}
+
+	/** The table's stone limits the metal, as the box's material did: slate refuses diamond, soul takes it. */
+	@GameTest
+	public void theTableStoneLimitsTheMetal(GameTestHelper helper) {
+		CastingTableBlockEntity slate = castingRig(helper, ModBlocks.MESA_DE_LOSA, Items.DIAMOND, ForgeMaterial.NETHERITA, true);
+		MeltTankBlockEntity tank = helper.getBlockEntity(TABLE.east(), MeltTankBlockEntity.class);
+		slate.setItem(CastingTableBlockEntity.SLOT_FRAME, CastingMouldItem.of(PartType.CABEZA_PICO));
+		runTable(helper, TABLE, slate, ONE_POUR);
+		helper.assertTrue(slate.result().isEmpty() && tank.bankAmount() == 120, "la mesa de losa no aguanta el diamante");
+		helper.setBlock(TABLE, ModBlocks.MESA_DE_ALMAS.defaultBlockState());
+		CastingTableBlockEntity soul = helper.getBlockEntity(TABLE, CastingTableBlockEntity.class);
+		soul.setItem(CastingTableBlockEntity.SLOT_FRAME, CastingMouldItem.of(PartType.CABEZA_PICO));
+		runTable(helper, TABLE, soul, ONE_POUR);
+		ItemStack part = soul.result();
+		helper.assertTrue(part.get(ModComponents.MATERIAL) == ForgeMaterial.DIAMANTE && part.getOrDefault(ModComponents.COLADA, false),
+			"la de almas sí, y limpia por un colador de netherita: " + part);
+		helper.succeed();
+	}
+
+	/**
+	 * The strainer as a block: placed by using the colador on the table (from its side too), it keeps the
+	 * metal it was made of, and broken it drops the very same colador. Clicking it with a mould or an empty
+	 * hand reaches the table under it.
+	 */
+	@GameTest
+	public void theStrainerBlockKeepsItsMetal(GameTestHelper helper) {
+		helper.setBlock(TABLE, ModBlocks.MESA_DE_BRASA.defaultBlockState());
+		ServerLevel level = helper.getLevel();
+		BlockPos table = helper.absolutePos(TABLE);
+		net.minecraft.server.level.ServerPlayer player = helper.makeMockServerPlayerInLevel();
+		player.snapTo(table.getX() + 3.5, table.getY(), table.getZ() + 0.5, 90.0F, 0.0F);
+		// A mock player comes in creative, where a block placed is not taken from the hand.
+		player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+		ItemStack held = StrainerItem.of(ForgeMaterial.DAMASCO);
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, held);
+		// Clicked on the table's east side: it still goes on top.
+		var result = held.useOn(new net.minecraft.world.item.context.UseOnContext(player, net.minecraft.world.InteractionHand.MAIN_HAND,
+			new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(table).add(0.5, 0.0, 0.0),
+				net.minecraft.core.Direction.EAST, table, false)));
+		helper.assertTrue(result.consumesAction(), "el colador se pone: " + result);
+		helper.assertBlockPresent(ModBlocks.COLADOR, TABLE.above());
+		StrainerBlockEntity strainer = helper.getBlockEntity(TABLE.above(), StrainerBlockEntity.class);
+		helper.assertTrue(strainer.material() == ForgeMaterial.DAMASCO && strainer.holds() == ForgeMaterial.DAMASCO.durability,
+			"y es de damasco: " + strainer.material());
+		helper.assertTrue(held.isEmpty(), "y sale de la mano");
+
+		// A mould on the strainer is a mould on the table.
+		ItemStack mould = CastingMouldItem.of(PartType.MANGO);
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, mould);
+		BlockPos over = helper.absolutePos(TABLE.above());
+		var hit = new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(over),
+			net.minecraft.core.Direction.UP, over, false);
+		// Through the same path a real right click takes, so an empty hand is tried the way the game tries it.
+		player.gameMode.useItemOn(player, level, mould, net.minecraft.world.InteractionHand.MAIN_HAND, hit);
+		CastingTableBlockEntity bench = helper.getBlockEntity(TABLE, CastingTableBlockEntity.class);
+		helper.assertTrue(CastingMouldItem.partOf(bench.frame()) == PartType.MANGO, "el molde, puesto a través del colador");
+		// A finished piece on the table comes off with an empty hand clicked on the strainer, then the mould.
+		bench.setItem(CastingTableBlockEntity.SLOT_OUTPUT, dev.forja.forge.Assembler.createPart(PartType.MANGO, ForgeMaterial.HIERRO));
+		player.getInventory().clearContent();
+		player.gameMode.useItemOn(player, level, ItemStack.EMPTY, net.minecraft.world.InteractionHand.MAIN_HAND, hit);
+		helper.assertTrue(bench.result().isEmpty() && player.getInventory().countItem(ModItems.part(PartType.MANGO)) == 1,
+			"con la mano vacía sobre el colador se recoge lo colado");
+		// And a different mould swaps places with the one on the table, instead of being refused.
+		ItemStack other = CastingMouldItem.of(PartType.HOJA);
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, other);
+		player.gameMode.useItemOn(player, level, other, net.minecraft.world.InteractionHand.MAIN_HAND, hit);
+		helper.assertTrue(CastingMouldItem.partOf(bench.frame()) == PartType.HOJA
+			&& player.getInventory().countItem(ModItems.MOLDE_DE_FUNDICION) == 1, "otro molde se cambia por el que había");
+		player.getInventory().clearContent();
+		player.gameMode.useItemOn(player, level, ItemStack.EMPTY, net.minecraft.world.InteractionHand.MAIN_HAND, hit);
+		helper.assertTrue(bench.frame().isEmpty(), "y con la mano vacía se recoge el molde");
+
+		// Saved and loaded, it is still damascus.
+		var registries = level.registryAccess();
+		var copy = (StrainerBlockEntity) net.minecraft.world.level.block.entity.BlockEntity.loadStatic(strainer.getBlockPos(),
+			strainer.getBlockState(), strainer.saveWithFullMetadata(registries), registries);
+		helper.assertTrue(copy != null && copy.material() == ForgeMaterial.DAMASCO, "guardado y cargado sigue siendo de damasco");
+
+		// Broken, it drops the same colador: its metal and its tint.
+		level.destroyBlock(over, true, player);
+		List<ItemEntity> dropped = level.getEntitiesOfClass(ItemEntity.class, new net.minecraft.world.phys.AABB(over).inflate(2.0));
+		ItemStack back = dropped.stream().map(ItemEntity::getItem).filter(stack -> stack.getItem() instanceof StrainerItem)
+			.findFirst().orElse(ItemStack.EMPTY);
+		helper.assertTrue(ItemStack.isSameItemSameComponents(back, StrainerItem.of(ForgeMaterial.DAMASCO)),
+			"roto suelta el mismo colador de damasco: " + back + " " + back.getComponentsPatch());
+
+		// And a plain one knocked off by taking the table away drops a plain one.
+		helper.setBlock(TABLE.above(), ModBlocks.COLADOR.defaultBlockState());
+		dropped.forEach(net.minecraft.world.entity.Entity::discard);
+		level.destroyBlock(table, false);
+		List<ItemEntity> fell = level.getEntitiesOfClass(ItemEntity.class, new net.minecraft.world.phys.AABB(over).inflate(2.0));
+		helper.assertBlockNotPresent(ModBlocks.COLADOR, TABLE.above());
+		helper.assertTrue(fell.stream().anyMatch(item -> ItemStack.isSameItemSameComponents(item.getItem(), StrainerItem.of(null))),
+			"sin la mesa debajo se cae, y cae el colador de barro");
+		helper.succeed();
+	}
+
+	/** The stream from a spout overhead goes through the strainer: the table still finds the tank, and casts. */
+	@GameTest
+	public void aSpoutPoursThroughTheStrainer(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		helper.setBlock(POT, ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+		helper.setBlock(TABLE, ModBlocks.MESA_DE_BRASA.defaultBlockState());
+		helper.setBlock(TABLE.above(), ModBlocks.COLADOR.defaultBlockState());
+		BlockPos spout = TABLE.above(2);
+		helper.setBlock(spout.east(), ModBlocks.CONDUCTO_DE_COLADA.defaultBlockState());
+		tank(helper, spout.east().east()).fill(Items.GOLD_INGOT, 60);
+		helper.setBlock(spout, ModBlocks.CANO_DE_COLADA.defaultBlockState());
+		BlockPos lands = dev.forja.block.MeltPipeBlock.landing(level, helper.absolutePos(spout));
+		helper.assertTrue(helper.absolutePos(TABLE).equals(lands), "el caño cae en la mesa a través del colador: " + lands);
+		helper.assertTrue(helper.absolutePos(TABLE.above()).equals(dev.forja.block.MeltPipeBlock.strainerUnder(level, helper.absolutePos(spout))),
+			"y sabe que pasa por el colador");
+		CastingTableBlockEntity table = helper.getBlockEntity(TABLE, CastingTableBlockEntity.class);
+		table.setItem(CastingTableBlockEntity.SLOT_FRAME, CastingMouldItem.of(PartType.CABEZA_PICO));
+		runTable(helper, TABLE, table, ONE_POUR);
+		ItemStack part = table.result();
+		helper.assertTrue(part.get(ModComponents.MATERIAL) == ForgeMaterial.ORO && part.getOrDefault(ModComponents.COLADA, false),
+			"cuela oro limpio desde el caño: " + part);
+		helper.succeed();
+	}
+
+	/**
+	 * Automation: a hopper under the table takes the cast part out, a hopper beside it puts the mould in
+	 * (its top is the strainer's now), and the strainer on top gets in the way of neither.
+	 */
+	@GameTest(maxTicks = 400)
+	public void hoppersRunATableUnderAStrainer(GameTestHelper helper) {
+		// The table is kept hot from the side here, because the hopper is underneath.
+		BlockPos table = new BlockPos(2, 2, 2);
+		helper.setBlock(table.north(), ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+		helper.setBlock(table, ModBlocks.MESA_DE_LOSA.defaultBlockState());
+		helper.setBlock(table.above(), ModBlocks.COLADOR.defaultBlockState());
+		tank(helper, table.east()).fill(Items.IRON_INGOT, 120);
+		helper.setBlock(table.below(), Blocks.HOPPER.defaultBlockState()
+			.setValue(net.minecraft.world.level.block.HopperBlock.FACING, net.minecraft.core.Direction.DOWN));
+		helper.setBlock(table.west(), Blocks.HOPPER.defaultBlockState()
+			.setValue(net.minecraft.world.level.block.HopperBlock.FACING, net.minecraft.core.Direction.EAST));
+		var feeder = (net.minecraft.world.Container) helper.getBlockEntity(table.west(), net.minecraft.world.level.block.entity.BlockEntity.class);
+		feeder.setItem(0, CastingMouldItem.of(PartType.CABEZA_PICO));
+		feeder.setItem(1, new ItemStack(Items.STICK));
+		helper.succeedWhen(() -> {
+			var below = (net.minecraft.world.Container) helper.getBlockEntity(table.below(), net.minecraft.world.level.block.entity.BlockEntity.class);
+			ItemStack out = below.getItem(0);
+			helper.assertTrue(out.getItem() == ModItems.part(PartType.CABEZA_PICO) && out.getOrDefault(ModComponents.COLADA, false),
+				"la tolva de abajo recibe la cabeza colada, tiene " + out);
+			helper.assertTrue(feeder.getItem(1).is(Items.STICK), "y el palo no entra en la mesa");
+			helper.assertBlockPresent(ModBlocks.COLADOR, table.above());
+		});
 	}
 
 	/** Breaking a casting table mid-pour spills the metal instead of losing it. */
@@ -341,12 +617,14 @@ public class FundicionGameTests {
 	/**
 	 * A table set down on a wisp lantern — the guide's cure for rough pours — pours clean. It started the
 	 * moment its first 25 heat came in, under the 40 a pour costs, so the first tool always came out rough.
+	 * (With a strainer on it: without one every pour is rough now, see noStrainerPoursRough.)
 	 */
 	@GameTest
 	public void tableOnALanternPoursClean(GameTestHelper helper) {
 		BlockPos at = POT.above();
 		helper.setBlock(POT, ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
 		helper.setBlock(at, ModBlocks.MESA_DE_LOSA.defaultBlockState());
+		helper.setBlock(at.above(), ModBlocks.COLADOR.defaultBlockState());
 		CastingTableBlockEntity table = helper.getBlockEntity(at, CastingTableBlockEntity.class);
 		tank(helper, at.east()).fill(Items.IRON_INGOT, 60);
 		table.setItem(CastingTableBlockEntity.SLOT_FRAME, CastingFrameItem.of(ForgeType.PICO));
@@ -424,6 +702,20 @@ public class FundicionGameTests {
 			tank.getBlockState(), tank.saveWithFullMetadata(registries), registries);
 		helper.assertTrue(tankCopy != null && tankCopy.metal() == Items.GOLD_INGOT && tankCopy.amount() == 77
 			&& tankCopy.heat() == tank.heat(), "la cuba guarda su metal y su calor");
+
+		// A table halfway through pouring a part through no strainer: the mould, the metal, and that it is
+		// going to come out rough, all survive. (The gold tank goes first: the table's own iron one would
+		// stand on it and make one bank of the two.)
+		helper.setBlock(POT.east(), Blocks.AIR.defaultBlockState());
+		CastingTableBlockEntity table = castingRig(helper, ModBlocks.MESA_DE_LOSA, Items.IRON_INGOT, null, false);
+		table.setItem(CastingTableBlockEntity.SLOT_FRAME, CastingMouldItem.of(PartType.HOJA));
+		runTable(helper, TABLE, table, 60);
+		helper.assertTrue(table.metal() == Items.IRON_INGOT, "la mesa está colando");
+		var tableCopy = (CastingTableBlockEntity) net.minecraft.world.level.block.entity.BlockEntity.loadStatic(table.getBlockPos(),
+			table.getBlockState(), table.saveWithFullMetadata(registries), registries);
+		helper.assertTrue(tableCopy != null && CastingMouldItem.partOf(tableCopy.frame()) == PartType.HOJA
+			&& tableCopy.metal() == Items.IRON_INGOT && tableCopy.amount() == PartType.HOJA.cost && tableCopy.pouringRough(),
+			"la mesa guarda su molde, su colada y que saldrá basta");
 		helper.succeed();
 	}
 }

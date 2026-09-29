@@ -56,6 +56,23 @@ public final class ForjaClient implements ClientModInitializer {
 			dev.forja.block.entity.ModBlockEntities.MESA_DE_COLADA, CastingTableRenderer::new);
 		net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(
 			dev.forja.block.entity.ModBlockEntities.COLADA, MeltFlowRenderer::new);
+		// A strainer set down on a table keeps the colour of whatever metal it was bathed in, as the item
+		// does: the grate is drawn grey and tinted by what the block entity says it is made of.
+		net.fabricmc.fabric.api.client.rendering.v1.BlockColorRegistry.register(
+			List.of(new net.minecraft.client.color.block.BlockTintSource() {
+				@Override
+				public int color(net.minecraft.world.level.block.state.BlockState state) {
+					return 0xFF000000 | dev.forja.item.StrainerItem.CLAY_COLOUR;
+				}
+
+				@Override
+				public int colorInWorld(net.minecraft.world.level.block.state.BlockState state,
+					net.minecraft.client.renderer.block.BlockAndTintGetter level, net.minecraft.core.BlockPos pos) {
+					return 0xFF000000 | (level.getBlockEntity(pos) instanceof dev.forja.block.entity.StrainerBlockEntity strainer
+						? strainer.colour() : dev.forja.item.StrainerItem.CLAY_COLOUR);
+				}
+			}),
+			dev.forja.registry.ModBlocks.COLADOR);
 		GuideBookItem.opener = () -> Minecraft.getInstance().gui.setScreen(new GuideBookScreen());
 		// The mod's own three. A particle needs its behaviour registered on the client and its sprites
 		// listed in assets/forja/particles; the registry hands over the loaded sprite set here.

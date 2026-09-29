@@ -17,7 +17,8 @@ import net.minecraft.world.level.block.Blocks;
 /**
  * The whole foundry line, stood up and running, for looking at: Andy asked to be shown "un sistema entero de
  * fundicion" in a world before deciding what to change about it. Pot, channels, a bank of tanks, the working row
- * with a moulding box and two casting tables kept hot by pavesa lanterns, and a gantry with a spout pouring down.
+ * with a moulding box and two casting tables kept hot by pavesa lanterns and each with a strainer on top, and a
+ * gantry with a spout pouring down through the first strainer.
  * {@code /forja fundicion} puts one down in front of whoever asks.
  */
 public final class FoundryDemo {
@@ -92,6 +93,15 @@ public final class FoundryDemo {
 		}
 		ForgeType[] made = {ForgeType.PICO, ForgeType.ESPADA};
 		int[] xs = {1, 3};
+		// A strainer standing on each table, or every pour comes out rough: a plain clay one under the spout,
+		// and a steel one on the other so both looks are there to compare.
+		for (int i = 0; i < xs.length; i++) {
+			BlockPos over = new BlockPos(px + xs[i], y + 1, pz + 3);
+			level.setBlockAndUpdate(over, ModBlocks.COLADOR.defaultBlockState());
+			if (i == 1 && level.getBlockEntity(over) instanceof dev.forja.block.entity.StrainerBlockEntity strainer) {
+				strainer.setMaterial(dev.forja.material.ForgeMaterial.ACERO);
+			}
+		}
 		for (int i = 0; i < xs.length; i++) {
 			BlockPos at = new BlockPos(px + xs[i], y, pz + 3);
 			if (level.getBlockEntity(at) instanceof CastingTableBlockEntity table) {

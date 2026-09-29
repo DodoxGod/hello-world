@@ -22,14 +22,16 @@ import org.jspecify.annotations.Nullable;
 /**
  * Caja de moldeo: where a part stops being something you cut and becomes something you pour.
  *
- * <p>It does two jobs, and the first one costs you something. Put a finished part in it with refractory
- * steel and the steel is poured over the part: the part is destroyed and what comes out is a
- * <b>mould</b> of it. From then on that mould, fed from the tanks, casts the same part in any metal the
- * box can stand — which is what the tiers are for. A clay box will pour bronze all day and crack on
- * diamond; a damascus one takes anything the mod has.
+ * <p>It is the foundry's workshop bench, where things are made ready to be poured, and it costs you
+ * something. Put a finished part in it with refractory steel and the steel is poured over the part: the
+ * part is destroyed and what comes out is a <b>mould</b> of it. A finished tool the same way gives a
+ * <b>frame</b>. And a strainer set in it over a tank of harder metal is <b>bathed</b> in that metal —
+ * which is what the tiers are for: a clay box will bathe in bronze and crack on diamond; a damascus one
+ * takes anything the mod has.
  *
- * <p>So the line finishes here: ore into the crucible, molten metal into the tanks, tanks down a pipe
- * into this, and parts out of the bottom without a table in sight.
+ * <p>It used to pour the parts too, from the tanks, inside its own menu. It does not any more: Andy wanted
+ * the metal to have to fall, through the strainer and onto the mould, so the mould goes on a casting
+ * table (block/CastingTableBlock) with a strainer standing on top of it, under a spout.
  */
 public class CastingBoxBlock extends BaseEntityBlock {
 	public static final MapCodec<CastingBoxBlock> CODEC =
@@ -50,9 +52,9 @@ public class CastingBoxBlock extends BaseEntityBlock {
 		/** Damascus over refractory steel: there is nothing it will not take. */
 		DAMASCO(Integer.MAX_VALUE, 40);
 
-		/** The highest material durability this box will pour. */
+		/** The highest material durability this box will hold: a bath for a strainer, and the casting tables copy it. */
 		public final int holds;
-		/** Ticks per cast. */
+		/** Ticks per job: a mould, a frame or a bath. */
 		public final int cook;
 
 		Tier(int holds, int cook) {

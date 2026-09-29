@@ -75,6 +75,16 @@ public final class ModBlockEntities {
 			ModBlocks.CONDUCTO_DE_DAMASCO, ModBlocks.CANO_DE_COLADA))
 	);
 
+	private static final ResourceKey<BlockEntityType<?>> COLADOR_KEY =
+		ResourceKey.create(Registries.BLOCK_ENTITY_TYPE, Forja.id("colador"));
+
+	/** A strainer set down on a casting table, which only has to remember what it is made of. */
+	public static final BlockEntityType<StrainerBlockEntity> COLADOR = Registry.register(
+		BuiltInRegistries.BLOCK_ENTITY_TYPE,
+		COLADOR_KEY,
+		new BlockEntityType<>(StrainerBlockEntity::new, java.util.Set.of(ModBlocks.COLADOR))
+	);
+
 	private ModBlockEntities() {
 	}
 

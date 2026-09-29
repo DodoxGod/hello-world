@@ -13,7 +13,12 @@ import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-/** The casting box's screen: a shape, the steel to cut it out of, and what comes out. */
+/**
+ * The casting box's screen: a shape, the steel to cut it out of, and what comes out.
+ *
+ * <p>A strainer shift-clicked in goes to the pattern slot, to be bathed: there is no strainer gate to
+ * guard any more, because the box no longer casts (the strainer stands on a casting table now).
+ */
 public class CastingBoxMenu extends AbstractContainerMenu {
 	public static final int DATA_PROGRESS = 0;
 	public static final int DATA_COOK = 1;
@@ -63,10 +68,17 @@ public class CastingBoxMenu extends AbstractContainerMenu {
 				return CastingBoxBlockEntity.allowed(CastingBoxBlockEntity.SLOT_STEEL, stack);
 			}
 		});
+		// The old strainer gate. The box no longer casts, so nothing goes in; it only shows, and only while
+		// a strainer from an older world is still sitting in it, so that strainer can be taken back out.
 		this.addSlot(new Slot(box, CastingBoxBlockEntity.SLOT_STRAINER, STRAINER_X, STRAINER_Y) {
 			@Override
 			public boolean mayPlace(ItemStack stack) {
-				return CastingBoxBlockEntity.allowed(CastingBoxBlockEntity.SLOT_STRAINER, stack);
+				return false;
+			}
+
+			@Override
+			public boolean isActive() {
+				return this.hasItem();
 			}
 		});
 		this.addSlot(new Slot(box, CastingBoxBlockEntity.SLOT_OUTPUT, OUTPUT_X, OUTPUT_Y) {
@@ -130,15 +142,6 @@ public class CastingBoxMenu extends AbstractContainerMenu {
 			}
 		} else if (stack.is(ModItems.alloy("acero_refractario"))) {
 			if (!this.moveItemStackTo(stack, CastingBoxBlockEntity.SLOT_STEEL, CastingBoxBlockEntity.SLOT_STEEL + 1, false)) {
-				return ItemStack.EMPTY;
-			}
-		} else if (stack.getItem() instanceof dev.forja.item.StrainerItem) {
-			// A strainer goes to its gate; only a second one, with the gate taken, goes to the pattern slot
-			// to be infused. It asked the pattern slot first, which would not take a strainer at all, so a
-			// strainer shift-clicked into an empty box went nowhere; and had it gone, the one strainer a
-			// smith owned would have been bathed instead of guarding the pour.
-			if (!this.moveItemStackTo(stack, CastingBoxBlockEntity.SLOT_STRAINER, CastingBoxBlockEntity.SLOT_STRAINER + 1, false)
-				&& !this.moveItemStackTo(stack, CastingBoxBlockEntity.SLOT_PATTERN, CastingBoxBlockEntity.SLOT_PATTERN + 1, false)) {
 				return ItemStack.EMPTY;
 			}
 		} else if (!this.moveItemStackTo(stack, CastingBoxBlockEntity.SLOT_PATTERN, CastingBoxBlockEntity.SLOT_PATTERN + 1, false)) {

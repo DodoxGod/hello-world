@@ -13,10 +13,11 @@ import org.jspecify.annotations.Nullable;
 /**
  * A mould: the shape of one part, cut into refractory steel by pouring it over the real thing.
  *
- * <p>It is not a template. A template tells the forge table what to cut out of a bar; a mould tells the
- * casting box what shape to pour molten metal into, and the metal comes out of the tanks rather than out
- * of your pockets. Making one costs you the part it was taken from, which is the whole trade: one pick
- * head spent to never cut another by hand.
+ * <p>It is not a template. A template tells the forge table what to cut out of a bar; a mould is set down
+ * on a casting table and tells it what shape to pour molten metal into, and the metal comes out of the
+ * tanks — falling from a spout, through the strainer on the table — rather than out of your pockets.
+ * Making one (in the casting box) costs you the part it was taken from, which is the whole trade: one
+ * pick head spent to never cut another by hand.
  */
 public class CastingMouldItem extends Item {
 	public CastingMouldItem(Properties properties) {
@@ -37,6 +38,18 @@ public class CastingMouldItem extends Item {
 
 	public static @Nullable PartType partOf(ItemStack stack) {
 		return stack.get(ModComponents.MOULD);
+	}
+
+	@Override
+	public void appendHoverText(ItemStack stack, TooltipContext context,
+		net.minecraft.world.item.component.TooltipDisplay display,
+		java.util.function.Consumer<Component> lines, TooltipFlag flag) {
+		PartType part = partOf(stack);
+		if (part != null) {
+			// Where it goes and what one pour costs: it used to go back in the box, and now it does not.
+			lines.accept(Component.translatable("tooltip.forja.molde", part.cost)
+				.withStyle(net.minecraft.ChatFormatting.GRAY));
+		}
 	}
 
 	@Override

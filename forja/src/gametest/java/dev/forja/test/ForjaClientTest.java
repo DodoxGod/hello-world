@@ -4378,11 +4378,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 			}
 		});
 
-		// ---- The casting box: a part becomes a mould, and the mould casts out of the tanks; and a clay
-		// box refuses a metal it cannot hold while a damascus one takes it.
+		// ---- The casting box: a part becomes a mould. The mould is then cast on a casting table with a
+		// strainer on it (the box does not pour any more), and the table's stone decides what it will take:
+		// a slate table refuses diamond while a soul one takes it.
 		int[] casting = server.computeOnServer(s -> {
 			ServerLevel level = connection.getServerLevel();
-			var registries = level.registryAccess();
 			BlockPos boxAt = new BlockPos(px + 8, y, pz + 6);
 			BlockPos tankAt = boxAt.east();
 			level.setBlockAndUpdate(boxAt, dev.forja.registry.ModBlocks.CAJA_DE_MOLDEO.defaultBlockState());
@@ -4404,59 +4404,67 @@ public class ForjaClientTest implements FabricClientGameTest {
 			int partSpent = box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_PATTERN).isEmpty() ? 1 : 0;
 			int steelLeft = box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_STEEL).getCount();
 
-			// Now cast with it: iron in the tank, and the clay box will take iron.
+			// The mould back in the box casts nothing, however full the tank beside it.
 			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT, ItemStack.EMPTY);
-			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_PATTERN,
-				dev.forja.item.CastingMouldItem.of(PartType.CABEZA_PICO));
+			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_PATTERN, out.copy());
 			tank.fill(net.minecraft.world.item.Items.IRON_INGOT, 60);
 			int before = tank.bankAmount();
 			for (int tick = 0; tick < 200; tick++) {
 				dev.forja.block.entity.CastingBoxBlockEntity.serverTick(level, boxAt, level.getBlockState(boxAt), box);
 			}
-			ItemStack cast = box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT);
+			int boxIdle = box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT).isEmpty()
+				&& tank.bankAmount() == before ? 1 : 0;
+
+			// On a slate table beside the tank, under a clay strainer, it casts the head in iron.
+			BlockPos tableAt = tankAt.south();
+			var table = tableWithStrainer(level, tableAt, dev.forja.registry.ModBlocks.MESA_DE_LOSA, true, null);
+			table.setItem(dev.forja.block.entity.CastingTableBlockEntity.SLOT_FRAME,
+				box.removeItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_PATTERN, 1));
+			pourOnTable(level, tableAt, table, 60 + dev.forja.block.entity.CastingTableBlockEntity.COOK);
+			ItemStack cast = table.result();
 			int castIron = cast.getItem() == dev.forja.registry.ModItems.part(PartType.CABEZA_PICO)
 				&& cast.get(dev.forja.registry.ModComponents.MATERIAL) == HIERRO ? cast.getCount() : 0;
 			int drained = before - tank.bankAmount();
-			int mouldKept = dev.forja.item.CastingMouldItem.partOf(
-				box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_PATTERN)) != null ? 1 : 0;
+			int mouldKept = dev.forja.item.CastingMouldItem.partOf(table.frame()) != null ? 1 : 0;
 
-			// And diamond: too hard for a clay box, fine for a damascus one.
-			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT, ItemStack.EMPTY);
+			// And diamond: too hard for the slate table, fine for a soul one.
+			table.setItem(dev.forja.block.entity.CastingTableBlockEntity.SLOT_OUTPUT, ItemStack.EMPTY);
 			tank.drain(tank.bankAmount());
 			tank.fill(net.minecraft.world.item.Items.DIAMOND, 60);
-			for (int tick = 0; tick < 200; tick++) {
-				dev.forja.block.entity.CastingBoxBlockEntity.serverTick(level, boxAt, level.getBlockState(boxAt), box);
-			}
-			int clayRefused = box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT).isEmpty() ? 1 : 0;
+			pourOnTable(level, tableAt, table, 60 + dev.forja.block.entity.CastingTableBlockEntity.COOK);
+			int slateRefused = table.result().isEmpty() && tank.bankAmount() == 60 ? 1 : 0;
+			ItemStack mould = table.frame().copy();
+			level.setBlockAndUpdate(tableAt, dev.forja.registry.ModBlocks.MESA_DE_ALMAS.defaultBlockState());
+			var soul = (dev.forja.block.entity.CastingTableBlockEntity) level.getBlockEntity(tableAt);
+			check(soul != null, "the soul table should have its block entity");
+			soul.setItem(dev.forja.block.entity.CastingTableBlockEntity.SLOT_FRAME, mould);
+			pourOnTable(level, tableAt, soul, 60 + dev.forja.block.entity.CastingTableBlockEntity.COOK);
+			int soulTook = soul.result().isEmpty() ? 0 : 1;
 
-			level.setBlockAndUpdate(boxAt, dev.forja.registry.ModBlocks.CAJA_DE_MOLDEO_DE_DAMASCO.defaultBlockState());
-			var hard = (dev.forja.block.entity.CastingBoxBlockEntity) level.getBlockEntity(boxAt);
-			check(hard != null, "the damascus bench should have its block entity");
-			hard.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_PATTERN,
-				dev.forja.item.CastingMouldItem.of(PartType.CABEZA_PICO));
-			for (int tick = 0; tick < 200; tick++) {
-				dev.forja.block.entity.CastingBoxBlockEntity.serverTick(level, boxAt, level.getBlockState(boxAt), hard);
+			for (BlockPos at : List.of(tableAt.above(), tableAt, boxAt, tankAt)) {
+				level.removeBlock(at, false);
 			}
-			int damascusTook = hard.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT).isEmpty() ? 0 : 1;
-
-			level.removeBlock(boxAt, false);
-			level.removeBlock(tankAt, false);
-			return new int[] {gotMould, partSpent, steelLeft, castIron, drained, mouldKept, clayRefused, damascusTook};
+			level.setBlockAndUpdate(tableAt.below(), Blocks.STONE.defaultBlockState());
+			level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+				new net.minecraft.world.phys.AABB(boxAt).inflate(4.0)).forEach(net.minecraft.world.entity.Entity::discard);
+			return new int[] {gotMould, partSpent, steelLeft, castIron, drained, mouldKept, slateRefused, soulTook, boxIdle};
 		});
 		log("caja de moldeo: sale el molde " + (casting[0] > 0) + ", se gasta la pieza " + (casting[1] > 0)
-			+ ", acero restante " + casting[2] + ", cuela hierro " + casting[3] + " gastando " + casting[4]
-			+ ", conserva el molde " + (casting[5] > 0) + ", el barro rechaza el diamante " + (casting[6] > 0)
-			+ ", el damasco lo cuela " + (casting[7] > 0));
+			+ ", acero restante " + casting[2] + ", la caja ya no cuela " + (casting[8] > 0)
+			+ " · la mesa cuela hierro " + casting[3] + " gastando " + casting[4]
+			+ ", conserva el molde " + (casting[5] > 0) + ", la losa rechaza el diamante " + (casting[6] > 0)
+			+ ", la de almas lo cuela " + (casting[7] > 0));
 		check(casting[0] > 0, "pouring steel over a part should give its mould");
 		check(casting[1] > 0, "and the part should be gone");
 		check(casting[2] == 4 - dev.forja.block.entity.CastingBoxBlockEntity.MOULD_COST,
 			"a mould should cost its refractory steel, got " + casting[2] + " left");
-		check(casting[3] > 0, "a mould over a tank of iron should cast the part in iron");
+		check(casting[8] > 0, "a mould in the box must not cast any more: that is the tables' job");
+		check(casting[3] > 0, "a mould on a table beside a tank of iron should cast the part in iron");
 		check(casting[4] == PartType.CABEZA_PICO.cost * casting[3],
 			"and take exactly what the part costs, got " + casting[4]);
 		check(casting[5] > 0, "the mould itself is not used up");
-		check(casting[6] > 0, "a clay box should refuse diamond");
-		check(casting[7] > 0, "and a damascus one should take it");
+		check(casting[6] > 0, "a slate table should refuse diamond");
+		check(casting[7] > 0, "and a soul one should take it");
 
 		// ---- The metal cools: a bank left alone sets, one over a wisp lantern does not, and a lit
 		// crucible melts a set one back down for a price.
@@ -4538,40 +4546,37 @@ public class ForjaClientTest implements FabricClientGameTest {
 
 		int[] strainers = server.computeOnServer(s -> {
 			ServerLevel level = connection.getServerLevel();
-			BlockPos boxAt = new BlockPos(px + 12, y, pz + 12);
-			BlockPos tankAt = boxAt.east();
-			level.setBlockAndUpdate(boxAt, dev.forja.registry.ModBlocks.CAJA_DE_MOLDEO_DE_DAMASCO.defaultBlockState());
+			BlockPos tableAt = new BlockPos(px + 12, y, pz + 12);
+			BlockPos tankAt = tableAt.east();
 			level.setBlockAndUpdate(tankAt, dev.forja.registry.ModBlocks.CUBA_DE_COLADA.defaultBlockState());
-			var box = (dev.forja.block.entity.CastingBoxBlockEntity) level.getBlockEntity(boxAt);
 			var tank = (dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(tankAt);
-			check(box != null && tank != null, "the strainer bench should have its block entities");
+			var table = tableWithStrainer(level, tableAt, dev.forja.registry.ModBlocks.MESA_DE_ALMAS, true, null);
+			check(tank != null, "the strainer bench should have its tank");
 
-			// Diamond through a clay strainer: it goes with the pour and the casting comes out rough.
-			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_PATTERN,
+			// Diamond through a clay strainer: it breaks as the pour starts and the casting comes out rough.
+			table.setItem(dev.forja.block.entity.CastingTableBlockEntity.SLOT_FRAME,
 				dev.forja.item.CastingMouldItem.of(PartType.CABEZA_PICO));
-			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_STRAINER,
-				dev.forja.item.StrainerItem.of(null));
 			tank.fill(net.minecraft.world.item.Items.DIAMOND, 60);
-			for (int tick = 0; tick < 200; tick++) {
-				dev.forja.block.entity.CastingBoxBlockEntity.serverTick(level, boxAt, level.getBlockState(boxAt), box);
-			}
-			ItemStack rough = box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT);
+			pourOnTable(level, tableAt, table, 60 + dev.forja.block.entity.CastingTableBlockEntity.COOK);
+			ItemStack rough = table.result();
 			int wasRough = rough.getOrDefault(dev.forja.registry.ModComponents.ROUGH, false) ? 1 : 0;
-			int strainerGone = box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_STRAINER).isEmpty() ? 1 : 0;
+			int strainerGone = level.getBlockState(tableAt.above()).isAir() ? 1 : 0;
 
-			// The same pour through a damascus strainer comes out clean and the strainer survives.
-			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT, ItemStack.EMPTY);
-			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_STRAINER,
-				dev.forja.item.StrainerItem.of(dev.forja.material.ForgeMaterial.NETHERITA));
-			for (int tick = 0; tick < 200; tick++) {
-				dev.forja.block.entity.CastingBoxBlockEntity.serverTick(level, boxAt, level.getBlockState(boxAt), box);
-			}
-			ItemStack clean = box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT);
+			// The same pour through a netherite strainer comes out clean and the strainer stays standing.
+			table.setItem(dev.forja.block.entity.CastingTableBlockEntity.SLOT_OUTPUT, ItemStack.EMPTY);
+			level.setBlockAndUpdate(tableAt.above(), dev.forja.registry.ModBlocks.COLADOR.defaultBlockState());
+			((dev.forja.block.entity.StrainerBlockEntity) level.getBlockEntity(tableAt.above()))
+				.setMaterial(dev.forja.material.ForgeMaterial.NETHERITA);
+			pourOnTable(level, tableAt, table, 60 + dev.forja.block.entity.CastingTableBlockEntity.COOK);
+			ItemStack clean = table.result();
 			int wasClean = clean.isEmpty() || clean.getOrDefault(dev.forja.registry.ModComponents.ROUGH, false) ? 0 : 1;
-			int strainerKept = box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_STRAINER).isEmpty() ? 0 : 1;
+			int strainerKept = level.getBlockState(tableAt.above()).getBlock() instanceof dev.forja.block.StrainerBlock ? 1 : 0;
 
-			// And infusing: a clay strainer in the pattern slot over a bath of diamond comes out better.
-			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT, ItemStack.EMPTY);
+			// And infusing, which is still the box's: a clay strainer in the pattern slot over a bath of
+			// diamond comes out better.
+			BlockPos boxAt = tankAt.north();
+			level.setBlockAndUpdate(boxAt, dev.forja.registry.ModBlocks.CAJA_DE_MOLDEO_DE_DAMASCO.defaultBlockState());
+			var box = (dev.forja.block.entity.CastingBoxBlockEntity) level.getBlockEntity(boxAt);
 			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_PATTERN,
 				dev.forja.item.StrainerItem.of(null));
 			tank.fill(net.minecraft.world.item.Items.DIAMOND, 60);
@@ -4582,8 +4587,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 			int infusedHolds = dev.forja.item.StrainerItem.materialOf(infused) == null ? 0
 				: dev.forja.item.StrainerItem.holds(infused);
 
-			level.removeBlock(boxAt, false);
-			level.removeBlock(tankAt, false);
+			for (BlockPos at : List.of(tableAt.above(), tableAt, boxAt, tankAt)) {
+				level.removeBlock(at, false);
+			}
+			level.setBlockAndUpdate(tableAt.below(), Blocks.STONE.defaultBlockState());
+			level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+				new net.minecraft.world.phys.AABB(tableAt).inflate(4.0)).forEach(net.minecraft.world.entity.Entity::discard);
 			return new int[] {wasRough, strainerGone, wasClean, strainerKept, infusedHolds};
 		});
 		log("coladores: el de barro revienta con el diamante " + (strainers[0] > 0)
@@ -5131,6 +5140,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 				var tank = (dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(at.east());
 				check(table != null && tank != null, "the three tables should have their block entities");
 				tank.fill(metals.get(i), 200);
+				// Each with a strainer that will take its metal: clay for iron and gold, netherite for diamond.
+				level.setBlockAndUpdate(at.above(), dev.forja.registry.ModBlocks.COLADOR.defaultBlockState());
+				if (i == 2 && level.getBlockEntity(at.above()) instanceof dev.forja.block.entity.StrainerBlockEntity strainer) {
+					strainer.setMaterial(dev.forja.material.ForgeMaterial.NETHERITA);
+				}
 				// Only warmed here. The frames go in after the sky has cleared, because the block ticks
 				// for real while the test waits and a pour started now would be finished by then.
 				for (int tick = 0; tick < dev.forja.block.entity.CastingTableBlockEntity.EVERY * 8; tick++) {
@@ -5185,7 +5199,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			ServerLevel level = connection.getServerLevel();
 			for (int i = 0; i < 3; i++) {
 				BlockPos at = new BlockPos(px + i * 3, y, shotZ);
-				for (BlockPos gone : List.of(at, at.below(), at.east())) {
+				for (BlockPos gone : List.of(at.above(), at, at.below(), at.east())) {
 					level.removeBlock(gone, false);
 				}
 			}
@@ -5297,34 +5311,28 @@ public class ForjaClientTest implements FabricClientGameTest {
 		float[] cast = server.computeOnServer(s -> {
 			ServerLevel level = connection.getServerLevel();
 			var registries = level.registryAccess();
-			BlockPos boxAt = new BlockPos(px, y, pz);
-			BlockPos tankAt = boxAt.east();
-			level.setBlockAndUpdate(boxAt, dev.forja.registry.ModBlocks.CAJA_DE_MOLDEO_DE_DAMASCO.defaultBlockState());
+			BlockPos tableAt = new BlockPos(px, y, pz);
+			BlockPos tankAt = tableAt.east();
 			level.setBlockAndUpdate(tankAt, dev.forja.registry.ModBlocks.CUBA_DE_COLADA.defaultBlockState());
-			var box = (dev.forja.block.entity.CastingBoxBlockEntity) level.getBlockEntity(boxAt);
 			var tank = (dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(tankAt);
-			check(box != null && tank != null, "the casting box and its tank should have their block entities");
+			var bench = tableWithStrainer(level, tableAt, dev.forja.registry.ModBlocks.MESA_DE_ALMAS, true,
+				dev.forja.material.ForgeMaterial.NETHERITA);
+			check(tank != null, "the casting table's tank should have its block entity");
 			tank.fill(net.minecraft.world.item.Items.IRON_INGOT, 200);
 
 			// A strainer that holds: the pour is clean.
-			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_PATTERN,
+			bench.setItem(dev.forja.block.entity.CastingTableBlockEntity.SLOT_FRAME,
 				dev.forja.item.CastingMouldItem.of(PartType.CABEZA_PICO));
-			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_STRAINER,
-				dev.forja.item.StrainerItem.of(dev.forja.material.ForgeMaterial.NETHERITA));
-			for (int tick = 0; tick < 200; tick++) {
-				dev.forja.block.entity.CastingBoxBlockEntity.serverTick(level, boxAt, level.getBlockState(boxAt), box);
-			}
-			ItemStack clean = box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT).copy();
+			pourOnTable(level, tableAt, bench, 60 + dev.forja.block.entity.CastingTableBlockEntity.COOK);
+			ItemStack clean = bench.result().copy();
 			var cleanUp = clean.getOrDefault(dev.forja.registry.ModComponents.UPGRADES, dev.forja.upgrade.Upgrades.EMPTY);
 			int cleanCount = cleanUp.percents().size();
 
 			// No strainer at all: the pour is rough and worth nothing.
-            box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT, ItemStack.EMPTY);
-			box.setItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_STRAINER, ItemStack.EMPTY);
-			for (int tick = 0; tick < 200; tick++) {
-				dev.forja.block.entity.CastingBoxBlockEntity.serverTick(level, boxAt, level.getBlockState(boxAt), box);
-			}
-			ItemStack rough = box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT).copy();
+			bench.setItem(dev.forja.block.entity.CastingTableBlockEntity.SLOT_OUTPUT, ItemStack.EMPTY);
+			level.removeBlock(tableAt.above(), false);
+			pourOnTable(level, tableAt, bench, 20 + dev.forja.block.entity.CastingTableBlockEntity.COOK);
+			ItemStack rough = bench.result().copy();
 			int roughCount = rough.getOrDefault(dev.forja.registry.ModComponents.UPGRADES,
 				dev.forja.upgrade.Upgrades.EMPTY).percents().size();
 
@@ -5337,8 +5345,9 @@ public class ForjaClientTest implements FabricClientGameTest {
 			int percent = cleanUp.percents().isEmpty() ? 0
 				: cleanUp.percents().values().iterator().next();
 
-			level.removeBlock(boxAt, false);
+			level.removeBlock(tableAt, false);
 			level.removeBlock(tankAt, false);
+			level.setBlockAndUpdate(tableAt.below(), Blocks.STONE.defaultBlockState());
 			return new float[] {cleanCount, roughCount, builtCount, percent};
 		});
 		log("colada: limpia lleva " + (int) cast[0] + " mejora al " + (int) cast[3] + "%, basta lleva "
@@ -5346,8 +5355,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 		check(cast[0] == 1, "a clean pour should carry one upgrade, got " + (int) cast[0]);
 		check(cast[1] == 0, "a rough pour should carry none, got " + (int) cast[1]);
 		check(cast[2] == 1, "and the upgrade should ride up into what is built with it");
-		check(cast[3] == dev.forja.block.entity.CastingBoxBlockEntity.CAST_PERCENT,
-			"at the percentage the box pours, got " + (int) cast[3]);
+		check(cast[3] == dev.forja.block.entity.CastingTableBlockEntity.CAST_PERCENT,
+			"at the percentage a clean pour is worth, got " + (int) cast[3]);
 	}
 
 	/**
@@ -5361,11 +5370,16 @@ public class ForjaClientTest implements FabricClientGameTest {
 	 * and the furnace, the ores and the rest of the main mechanic did not work as they should.
 	 *
 	 * <p>Raw iron goes into an iron crucible by a drag across both slots (the capacity holds), a stick, a
-	 * sword and dirt are refused by shift-click and by hand, the ore melts into the tank beside it, the
-	 * tank feeds a casting box down a channel where a pick head is cut into a mould and the mould casts a
-	 * new head, a finished pickaxe is cut into a frame, and the frame goes on a hot casting table that
-	 * pours the whole pickaxe. A second, clay crucible is run by hoppers alone, and junk in the hoppers
-	 * stays in the hoppers. The screens are asked what they say against what the server is doing.
+	 * sword and dirt are refused by shift-click and by hand, the ore melts into the tank beside it, and the
+	 * tank feeds a casting box down a channel where a pick head is cut into a mould and a finished pickaxe
+	 * into a frame; the box, given the mould back, says it does not pour it. Then the pour, the way Andy
+	 * asked for it on 2026-09-28 ("que el líquido tenga que caer en la herramienta, pasando primero por el
+	 * colador"): a casting table set down by hand on a wisp lantern, the mould put on it, a clay strainer
+	 * put on top of that, and a spout set at the end of a channel from the tank, three blocks over it. The
+	 * iron falls from the spout through the strainer onto the mould, and a clean pick head comes off with
+	 * its upgrade; the mould is changed for the frame and the whole pickaxe is poured the same way. A
+	 * second, clay crucible is run by hoppers alone, and junk in the hoppers stays in the hoppers. The
+	 * screens are asked what they say against what the server is doing.
 	 */
 	private static void checkFoundrySurvival(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
 		int px = x + 130;
@@ -5376,13 +5390,17 @@ public class ForjaClientTest implements FabricClientGameTest {
 		server.runCommand("weather clear 1000000");
 		server.runCommand("gamemode survival @a");
 
-		// The line: crucible, tank on a wisp lantern, channel, casting box; and a casting table on a lantern
-		// against the tank's other side.
+		// The line: crucible, tank on a wisp lantern, channel, casting box; and a channel climbing off the
+		// top of the tank and running two blocks up toward where the casting table will be set down (on a
+		// lantern let into the floor), so a spout at its end can pour onto the table from above.
 		BlockPos potAt = new BlockPos(px, y, pz);
 		BlockPos tankAt = potAt.east();
 		BlockPos channelAt = tankAt.east();
 		BlockPos boxAt = channelAt.east();
-		BlockPos tableAt = tankAt.south();
+		BlockPos tableAt = tankAt.south().south();
+		BlockPos strainerAt = tableAt.above();
+		BlockPos spoutAt = tableAt.above(3);
+		List<BlockPos> gantry = List.of(tankAt.above(), tankAt.above(2), tankAt.above(3), tankAt.above(3).south());
 		// And a clay crucible fed and emptied by hoppers only.
 		BlockPos hopperPotAt = new BlockPos(px - 5, y + 1, pz + 3);
 		server.runOnServer(s -> {
@@ -5393,7 +5411,9 @@ public class ForjaClientTest implements FabricClientGameTest {
 			level.setBlockAndUpdate(channelAt, dev.forja.registry.ModBlocks.CONDUCTO_DE_COLADA.defaultBlockState());
 			level.setBlockAndUpdate(boxAt, dev.forja.registry.ModBlocks.CAJA_DE_MOLDEO.defaultBlockState());
 			level.setBlockAndUpdate(tableAt.below(), dev.forja.registry.ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
-			level.setBlockAndUpdate(tableAt, dev.forja.registry.ModBlocks.MESA_DE_LOSA.defaultBlockState());
+			for (BlockPos at : gantry) {
+				level.setBlockAndUpdate(at, dev.forja.registry.ModBlocks.CONDUCTO_DE_COLADA.defaultBlockState());
+			}
 
 			level.setBlockAndUpdate(hopperPotAt, dev.forja.registry.ModBlocks.CRISOL_DE_BARRO.defaultBlockState());
 			level.setBlockAndUpdate(hopperPotAt.above(), Blocks.HOPPER.defaultBlockState()
@@ -5538,7 +5558,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
 		context.waitTicks(5);
 
-		// ---- the casting box, down the channel from the tank.
+		// ---- the casting box, down the channel from the tank: it prepares, it does not pour.
 		openByHand(context, boxAt);
 		check(context.computeOnClient(mc -> mc.gui.screen() instanceof dev.forja.client.CastingBoxScreen), "a right click should open the casting box");
 		shiftClickSlot(context, foundryHotbar(2));
@@ -5556,34 +5576,28 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.getInput().setCursorPos(0, 0);
 		context.waitTicks(2);
 		context.takeScreenshot(TestScreenshotOptions.of("fundicion_05_caja_molde").disableCounterPrefix());
-		// The mould comes out by shift-click, goes back into the pattern slot, and the strainer to its gate.
+		// The mould comes out by shift-click. Put back in, the box does not pour it: it says where to go.
 		shiftClickSlot(context, dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT);
 		int mouldAt = server.computeOnServer(s -> findInInventory(connection, stack -> dev.forja.item.CastingMouldItem.partOf(stack) == PartType.CABEZA_PICO));
 		check(mouldAt >= 0, "the mould should be in the player's inventory");
+		int tankBeforeBox = server.computeOnServer(s -> ((dev.forja.block.entity.MeltTankBlockEntity) connection.getServerLevel().getBlockEntity(tankAt)).bankAmount());
 		shiftClickSlot(context, mouldAt < 9 ? foundryHotbar(mouldAt) : foundryInventory(mouldAt));
-		shiftClickSlot(context, foundryHotbar(7));
-		context.waitTicks(boxCook / 2);
+		context.waitTicks(boxCook + 10);
 		context.getInput().setCursorPos(0, 0);
 		context.waitTicks(2);
-		int[] boxSays = context.computeOnClient(mc -> mc.player.containerMenu instanceof dev.forja.menu.CastingBoxMenu menu
-			? new int[] {menu.job(), menu.jobMetal()} : new int[] {-1, -1});
-		check(boxSays[0] == dev.forja.block.entity.CastingBoxBlockEntity.JOB_CAST && boxSays[1] == HIERRO.ordinal(),
-			"the box's screen should say it is casting iron cleanly, says " + java.util.Arrays.toString(boxSays));
-		context.takeScreenshot(TestScreenshotOptions.of("fundicion_06_caja_colando").disableCounterPrefix());
-		context.waitTicks(boxCook / 2 + 10);
-		// Take the head out by hand: pick it up and put it down in an empty slot.
-		clickSlot(context, dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT);
-		int empty = server.computeOnServer(s -> findInInventory(connection, ItemStack::isEmpty));
-		clickSlot(context, empty < 9 ? foundryHotbar(empty) : foundryInventory(empty));
-		// And the mould out, so the box stops drawing on the tank.
-		shiftClickSlot(context, dev.forja.block.entity.CastingBoxBlockEntity.SLOT_PATTERN);
-		int[] head = server.computeOnServer(s -> {
-			int at = findInInventory(connection, stack -> stack.getItem() == ModItems.part(PartType.CABEZA_PICO));
-			ItemStack cast = at < 0 ? ItemStack.EMPTY : connection.getServerPlayer().getInventory().getItem(at);
-			return new int[] {at, cast.get(ModComponents.MATERIAL) == HIERRO ? 1 : 0, cast.getOrDefault(ModComponents.COLADA, false) ? 1 : 0};
+		int[] boxIdle = server.computeOnServer(s -> {
+			var box = (dev.forja.block.entity.CastingBoxBlockEntity) connection.getServerLevel().getBlockEntity(boxAt);
+			var bank = (dev.forja.block.entity.MeltTankBlockEntity) connection.getServerLevel().getBlockEntity(tankAt);
+			return new int[] {box.getItem(dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT).isEmpty() ? 1 : 0,
+				bank.bankAmount() == tankBeforeBox ? 1 : 0};
 		});
-		log("fundicion: la caja cuela una cabeza de pico de hierro " + (head[1] > 0) + ", limpia " + (head[2] > 0));
-		check(head[0] >= 0 && head[1] > 0 && head[2] > 0, "the box should have cast a clean iron pick head into the player's hands");
+		int boxSays = context.computeOnClient(mc -> mc.player.containerMenu instanceof dev.forja.menu.CastingBoxMenu menu ? menu.job() : -1);
+		log("fundicion: con el molde dentro la caja no cuela " + (boxIdle[0] > 0) + ", no toca la cuba " + (boxIdle[1] > 0)
+			+ ", trabajo " + boxSays);
+		check(boxIdle[0] > 0 && boxIdle[1] > 0 && boxSays == dev.forja.block.entity.CastingBoxBlockEntity.JOB_NONE,
+			"a mould in the box must not be poured there any more");
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_06_caja_manda_a_la_mesa").disableCounterPrefix());
+		shiftClickSlot(context, dev.forja.block.entity.CastingBoxBlockEntity.SLOT_PATTERN);
 
 		// A finished pickaxe into the box, by shift-click: out comes its frame.
 		shiftClickSlot(context, foundryHotbar(8));
@@ -5594,43 +5608,207 @@ public class ForjaClientTest implements FabricClientGameTest {
 		shiftClickSlot(context, dev.forja.block.entity.CastingBoxBlockEntity.SLOT_OUTPUT);
 		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
 		context.waitTicks(5);
-		int frameAt = server.computeOnServer(s -> findInInventory(connection, stack -> dev.forja.item.CastingFrameItem.typeOf(stack) == ForgeType.PICO));
-		check(frameAt >= 0 && frameAt < 9, "the pickaxe's frame should be on the hotbar, at " + frameAt);
 
-		// ---- the casting table: the frame goes down with a right click, the pickaxe comes up with another.
-		// From the table's own side: from where the smith stood for the pot, the tank is in the way.
-		tp(server, px + 1.5, y, pz + 3.5, 180.0F, 30.0F);
+		// ---- the pour, set up by hand: table, mould, strainer, spout.
+		// The table and the spout are handed over; everything else is what the player made above. The mould
+		// and the frame go to the hotbar so a number key can pick them.
+		int[] hands = server.computeOnServer(s -> {
+			var inventory = connection.getServerPlayer().getInventory();
+			inventory.setItem(0, new ItemStack(ModItems.MESA_DE_LOSA));
+			inventory.setItem(1, new ItemStack(ModItems.CANO_DE_COLADA));
+			int mould = findInInventory(connection, stack -> dev.forja.item.CastingMouldItem.partOf(stack) == PartType.CABEZA_PICO);
+			int frame = findInInventory(connection, stack -> dev.forja.item.CastingFrameItem.typeOf(stack) == ForgeType.PICO);
+			if (mould >= 0 && mould != 5) {
+				ItemStack moved = inventory.getItem(mould);
+				inventory.setItem(mould, inventory.getItem(5));
+				inventory.setItem(5, moved);
+			}
+			frame = findInInventory(connection, stack -> dev.forja.item.CastingFrameItem.typeOf(stack) == ForgeType.PICO);
+			if (frame >= 0 && frame != 8) {
+				ItemStack moved = inventory.getItem(frame);
+				inventory.setItem(frame, inventory.getItem(8));
+				inventory.setItem(8, moved);
+			}
+			return new int[] {dev.forja.item.CastingMouldItem.partOf(inventory.getItem(5)) == PartType.CABEZA_PICO ? 1 : 0,
+				dev.forja.item.CastingFrameItem.typeOf(inventory.getItem(8)) == ForgeType.PICO ? 1 : 0,
+				inventory.getItem(7).getItem() instanceof dev.forja.item.StrainerItem ? 1 : 0};
+		});
+		check(hands[0] > 0 && hands[1] > 0 && hands[2] > 0, "the mould, the frame and the strainer should be on the hotbar, got "
+			+ java.util.Arrays.toString(hands));
+		// Standing just east of where the table goes, close enough to reach the lantern's top.
+		tp(server, tableAt.getX() + 1.5, y, tableAt.getZ() + 0.5, 90.0F, 30.0F);
 		context.waitTicks(5);
-		int tankBefore = server.computeOnServer(s -> ((dev.forja.block.entity.MeltTankBlockEntity) connection.getServerLevel().getBlockEntity(tankAt)).bankAmount());
-		context.getInput().pressKey(options -> options.keyHotbarSlots[frameAt]);
+		// The table, on the lantern.
+		context.getInput().pressKey(options -> options.keyHotbarSlots[0]);
+		context.waitTicks(2);
+		openByHand(context, tableAt.below());
+		// The mould, on the table.
+		context.getInput().pressKey(options -> options.keyHotbarSlots[5]);
 		context.waitTicks(2);
 		openByHand(context, tableAt);
-		context.waitTicks(60);
-		context.takeScreenshot(TestScreenshotOptions.of("fundicion_08_mesa_colando").disableCounterPrefix());
-		context.waitTicks(dev.forja.block.entity.CastingTableBlockEntity.COOK + 20);
-		context.takeScreenshot(TestScreenshotOptions.of("fundicion_09_mesa_hecha").disableCounterPrefix());
-		// Measured while the pickaxe is still lying on the table: once it is taken the frame, which stays,
-		// starts the next one.
-		int tankPoured = server.computeOnServer(s -> ((dev.forja.block.entity.MeltTankBlockEntity) connection.getServerLevel().getBlockEntity(tankAt)).bankAmount());
-		int handAt = server.computeOnServer(s -> findInInventory(connection, ItemStack::isEmpty));
-		check(handAt >= 0 && handAt < 9, "there should be an empty hotbar slot to take the pickaxe with");
+		// The strainer, on top of the table.
+		context.getInput().pressKey(options -> options.keyHotbarSlots[7]);
+		context.waitTicks(2);
+		openByHand(context, tableAt);
+		// Measured before the spout goes up: the table is hot by now, and pours the moment it can reach metal.
+		int tankBefore = server.computeOnServer(s -> ((dev.forja.block.entity.MeltTankBlockEntity) connection.getServerLevel().getBlockEntity(tankAt)).bankAmount());
+		// And the spout, at the end of the channel from the tank, three blocks over the table: set against the
+		// channel's open end, the side facing the table.
+		context.getInput().pressKey(options -> options.keyHotbarSlots[1]);
+		context.waitTicks(2);
+		BlockPos channelEnd = spoutAt.north();
+		lookAtPoint(context, new Vec3(channelEnd.getX() + 0.5, channelEnd.getY() + 3.0 / 16.0, channelEnd.getZ() + 1.0));
+		context.waitTicks(2);
+		context.getInput().pressKey(options -> options.keyUse);
+		context.waitTicks(6);
+		int[] built = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var table = level.getBlockEntity(tableAt) instanceof dev.forja.block.entity.CastingTableBlockEntity found ? found : null;
+			var strainer = level.getBlockEntity(strainerAt) instanceof dev.forja.block.entity.StrainerBlockEntity found ? found : null;
+			return new int[] {table != null ? 1 : 0,
+				table != null && dev.forja.item.CastingMouldItem.partOf(table.frame()) == PartType.CABEZA_PICO ? 1 : 0,
+				strainer != null ? 1 : 0,
+				level.getBlockState(spoutAt).getBlock() instanceof dev.forja.block.MeltSpoutBlock ? 1 : 0,
+				tableAt.equals(dev.forja.block.MeltPipeBlock.landing(level, spoutAt)) ? 1 : 0};
+		});
+		log("fundicion: a mano, mesa " + (built[0] > 0) + ", molde encima " + (built[1] > 0) + ", colador " + (built[2] > 0)
+			+ ", caño " + (built[3] > 0) + " que cae en la mesa " + (built[4] > 0));
+		check(built[0] > 0, "a right click on the lantern should have set the casting table down");
+		check(built[1] > 0, "a right click on the table with the mould should have put the mould on it");
+		check(built[2] > 0, "a right click on the table with the strainer should have stood the strainer on it");
+		check(built[3] > 0, "a right click on the end of the channel with the spout should have put the spout over the table");
+		check(built[4] > 0, "and the spout's stream should land on the table, through the strainer");
+
+		// Let the pour start, and look at it: the stream from the spout, through the grate, onto the mould.
+		context.waitTicks(50);
+		int[] pouring = server.computeOnServer(s -> {
+			var table = (dev.forja.block.entity.CastingTableBlockEntity) connection.getServerLevel().getBlockEntity(tableAt);
+			return new int[] {table.metal() == Items.IRON_INGOT ? 1 : 0, table.pouringRough() ? 1 : 0};
+		});
+		log("fundicion: la mesa cuela hierro " + (pouring[0] > 0) + ", basta " + (pouring[1] > 0));
+		check(pouring[0] > 0, "the table under the spout should be pouring iron by now");
+		check(pouring[1] == 0, "through a clay strainer, iron should be pouring clean");
+		float[] spoutSeen = context.computeOnClient(mc -> {
+			if (mc.level == null || !(mc.level.getBlockEntity(spoutAt) instanceof dev.forja.block.entity.MeltFlowBlockEntity flow)) {
+				return new float[] {-1, -1};
+			}
+			BlockPos lands = dev.forja.block.MeltPipeBlock.landing(mc.level, spoutAt);
+			return new float[] {flow.metal() == null ? 0 : 1, lands == null ? -1 : spoutAt.getY() - lands.getY()};
+		});
+		log("fundicion: el caño en el cliente lleva metal " + (spoutSeen[0] > 0) + " y cae " + spoutSeen[1] + " bloques");
+		check(spoutSeen[0] > 0 && spoutSeen[1] == 3, "the client should see the spout wet, falling three blocks to the table");
+		server.runCommand("gamemode spectator @a");
+		// Side on and a little above, close: the spout, the stream, the grate and the mould under it.
+		tp(server, tableAt.getX() + 2.6, y + 2.0, tableAt.getZ() + 2.6, 135.0F, 33.0F);
+		context.waitTicks(8);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_08_chorro_por_el_colador").disableCounterPrefix());
+		// From lower down, level with the grate, where the stream is seen going through it onto the mould.
+		tp(server, tableAt.getX() + 2.2, y - 0.15, tableAt.getZ() + 0.5, 90.0F, 4.0F);
+		context.waitTicks(8);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_08b_chorro_de_lado").disableCounterPrefix());
+		context.waitTicks(dev.forja.block.entity.CastingTableBlockEntity.COOK);
+		tp(server, tableAt.getX() + 1.9, y - 0.1, tableAt.getZ() + 0.5, 90.0F, 18.0F);
+		context.waitTicks(8);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_08c_pieza_hecha").disableCounterPrefix());
+		server.runCommand("gamemode survival @a");
+		tp(server, tableAt.getX() + 1.5, y, tableAt.getZ() + 0.5, 90.0F, 30.0F);
+		context.waitTicks(5);
+
+		// Take the head off with an empty hand (through the strainer, which passes the click to the table),
+		// then change the mould for the frame while the table holds off the next pour.
+		int partPoured = server.computeOnServer(s -> ((dev.forja.block.entity.MeltTankBlockEntity) connection.getServerLevel().getBlockEntity(tankAt)).bankAmount());
+		int handAt = server.computeOnServer(s -> {
+			var inventory = connection.getServerPlayer().getInventory();
+			for (int slot = 0; slot < 9; slot++) {
+				if (inventory.getItem(slot).isEmpty()) {
+					return slot;
+				}
+			}
+			return -1;
+		});
+		check(handAt >= 0, "there should be an empty hotbar slot to take the head with");
 		context.getInput().pressKey(options -> options.keyHotbarSlots[handAt]);
 		context.waitTicks(2);
-		openByHand(context, tableAt);
+		openByHand(context, strainerAt);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[8]);
+		context.waitTicks(2);
+		openByHand(context, strainerAt);
+		String swap = server.computeOnServer(s -> {
+			var table = (dev.forja.block.entity.CastingTableBlockEntity) connection.getServerLevel().getBlockEntity(tableAt);
+			var player = connection.getServerPlayer();
+			return "en la mano " + player.getMainHandItem() + " (hueco " + player.getInventory().getSelectedSlot() + "), en la mesa "
+				+ table.frame() + " / " + table.result() + ", metal " + table.metal();
+		});
+		String aimed = context.computeOnClient(mc -> mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult block
+			? block.getType() + " " + block.getBlockPos() + " " + block.getDirection() + " " + mc.level.getBlockState(block.getBlockPos())
+			: String.valueOf(mc.hitResult == null ? null : mc.hitResult.getType()));
+		log("fundicion: tras cambiar el molde por el marco: " + swap + " · apuntando a " + aimed + " (mesa en " + tableAt + ")");
+		int[] head = server.computeOnServer(s -> {
+			int at = findInInventory(connection, stack -> stack.getItem() == ModItems.part(PartType.CABEZA_PICO));
+			ItemStack cast = at < 0 ? ItemStack.EMPTY : connection.getServerPlayer().getInventory().getItem(at);
+			var table = (dev.forja.block.entity.CastingTableBlockEntity) connection.getServerLevel().getBlockEntity(tableAt);
+			var upgrades = cast.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY).percents();
+			return new int[] {at, cast.get(ModComponents.MATERIAL) == HIERRO ? 1 : 0, cast.getOrDefault(ModComponents.COLADA, false) ? 1 : 0,
+				upgrades.size() == 1 && upgrades.values().iterator().next() == dev.forja.block.entity.CastingTableBlockEntity.CAST_PERCENT ? 1 : 0,
+				dev.forja.item.CastingFrameItem.typeOf(table.frame()) == ForgeType.PICO ? 1 : 0,
+				findInInventory(connection, stack -> dev.forja.item.CastingMouldItem.partOf(stack) == PartType.CABEZA_PICO)};
+		});
+		log("fundicion: la mesa cuela una cabeza de pico de hierro " + (head[1] > 0) + ", limpia " + (head[2] > 0)
+			+ ", con su mejora del " + dev.forja.block.entity.CastingTableBlockEntity.CAST_PERCENT + "% " + (head[3] > 0)
+			+ ", gastando " + (tankBefore - partPoured) + " · el marco en la mesa " + (head[4] > 0) + ", el molde de vuelta " + (head[5] >= 0));
+		check(head[0] >= 0 && head[1] > 0 && head[2] > 0, "the table should have poured a clean iron pick head into the player's hands");
+		check(head[3] > 0, "and it should carry the cast upgrade");
+		check(tankBefore - partPoured == PartType.CABEZA_PICO.cost, "and have taken exactly the head's worth of iron, took " + (tankBefore - partPoured));
+		check(head[4] > 0 && head[5] >= 0, "the frame should have taken the mould's place, and the mould come back to the player");
+
+		// ---- the frame on the same table, under the same strainer: the whole pickaxe.
+		context.waitTicks(60);
+		server.runCommand("gamemode spectator @a");
+		tp(server, tableAt.getX() + 2.6, y + 2.0, tableAt.getZ() + 2.6, 135.0F, 33.0F);
+		context.waitTicks(5);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_09_mesa_colando_marco").disableCounterPrefix());
+		context.waitTicks(dev.forja.block.entity.CastingTableBlockEntity.COOK);
+		tp(server, tableAt.getX() + 1.9, y - 0.1, tableAt.getZ() + 0.5, 90.0F, 18.0F);
+		context.waitTicks(5);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_09b_mesa_hecha").disableCounterPrefix());
+		server.runCommand("gamemode survival @a");
+		tp(server, tableAt.getX() + 1.5, y, tableAt.getZ() + 0.5, 90.0F, 30.0F);
+		context.waitTicks(5);
+		// Measured while the pickaxe is still lying on the table.
+		int tankPoured = server.computeOnServer(s -> ((dev.forja.block.entity.MeltTankBlockEntity) connection.getServerLevel().getBlockEntity(tankAt)).bankAmount());
+		// With an empty hand again: the head went into the slot that was empty for it.
+		int emptyAt = server.computeOnServer(s -> {
+			var inventory = connection.getServerPlayer().getInventory();
+			for (int slot = 0; slot < 9; slot++) {
+				if (inventory.getItem(slot).isEmpty()) {
+					return slot;
+				}
+			}
+			return -1;
+		});
+		check(emptyAt >= 0, "there should be an empty hotbar slot to take the pickaxe with");
+		context.getInput().pressKey(options -> options.keyHotbarSlots[emptyAt]);
+		context.waitTicks(2);
+		openByHand(context, strainerAt);
 		context.waitTicks(5);
 		int[] pick = server.computeOnServer(s -> {
 			int at = findInInventory(connection, stack -> {
 				var parts = stack.get(ModComponents.PARTS);
-				return parts != null && parts.type() == ForgeType.PICO && parts.materials().stream().allMatch(m -> m == HIERRO);
+				return parts != null && parts.type() == ForgeType.PICO && parts.materials().stream().allMatch(m -> m == HIERRO)
+					&& stack.getOrDefault(ModComponents.COLADAS, 0) == (1 << ForgeType.PICO.slots.size()) - 1;
 			});
+			ItemStack tool = at < 0 ? ItemStack.EMPTY : connection.getServerPlayer().getInventory().getItem(at);
 			var table = (dev.forja.block.entity.CastingTableBlockEntity) connection.getServerLevel().getBlockEntity(tableAt);
-			return new int[] {at, tankPoured, table.frame().isEmpty() ? 0 : 1};
+			return new int[] {at, tool.getOrDefault(ModComponents.ROUGH, false) ? 1 : 0, table.frame().isEmpty() ? 0 : 1};
 		});
-		log("fundicion: la mesa cuela un pico de hierro " + (pick[0] >= 0) + ", gastando " + (tankBefore - pick[1])
-			+ " de la cuba, y el marco se queda en la mesa " + (pick[2] > 0));
-		check(pick[0] >= 0, "the casting table should have poured an iron pickaxe into the player's hands");
-		check(tankBefore - pick[1] == dev.forja.item.CastingFrameItem.cost(ForgeType.PICO),
-			"and taken exactly the pickaxe's worth out of the tank, took " + (tankBefore - pick[1]));
+		log("fundicion: la mesa cuela un pico de hierro entero " + (pick[0] >= 0) + ", basto " + (pick[1] > 0) + ", gastando "
+			+ (partPoured - tankPoured) + " de la cuba, y el marco se queda en la mesa " + (pick[2] > 0));
+		check(pick[0] >= 0, "the casting table should have poured a whole cast iron pickaxe into the player's hands");
+		check(pick[1] == 0, "clean, through the strainer");
+		check(partPoured - tankPoured == dev.forja.item.CastingFrameItem.cost(ForgeType.PICO),
+			"and taken exactly the pickaxe's worth out of the tank, took " + (partPoured - tankPoured));
 
 		// ---- the hopper-fed pot: gold went in, came out as bars into the chest; the stick and the coal did not move.
 		int[] hoppers = server.computeOnServer(s -> {
@@ -5669,14 +5847,57 @@ public class ForjaClientTest implements FabricClientGameTest {
 		server.runCommand("gamemode survival @a");
 		server.runOnServer(s -> {
 			ServerLevel level = connection.getServerLevel();
-			for (BlockPos at : List.of(potAt, tankAt, tankAt.below(), channelAt, boxAt, tableAt, tableAt.below(), hopperPotAt,
-				hopperPotAt.above(), hopperPotAt.west(), hopperPotAt.below(), hopperPotAt.below().below())) {
+			for (BlockPos at : List.of(spoutAt, strainerAt, potAt, tankAt, tankAt.below(), channelAt, boxAt, tableAt, tableAt.below(),
+				hopperPotAt, hopperPotAt.above(), hopperPotAt.west(), hopperPotAt.below(), hopperPotAt.below().below())) {
+				level.removeBlock(at, false);
+			}
+			for (BlockPos at : gantry) {
 				level.removeBlock(at, false);
 			}
 			level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
 				new net.minecraft.world.phys.AABB(potAt).inflate(12.0)).forEach(net.minecraft.world.entity.Entity::discard);
 			connection.getServerPlayer().getInventory().clearContent();
 		});
+	}
+
+	/**
+	 * A casting table on a wisp lantern (set into the floor under it), and a strainer standing on it if
+	 * asked for: clay when {@code made} is null, otherwise bathed in that metal.
+	 */
+	private static dev.forja.block.entity.CastingTableBlockEntity tableWithStrainer(ServerLevel level, BlockPos at,
+		net.minecraft.world.level.block.Block tier, boolean strainer, dev.forja.material.ForgeMaterial made) {
+		level.setBlockAndUpdate(at.below(), dev.forja.registry.ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+		level.setBlockAndUpdate(at, tier.defaultBlockState());
+		if (strainer) {
+			level.setBlockAndUpdate(at.above(), dev.forja.registry.ModBlocks.COLADOR.defaultBlockState());
+			if (made != null && level.getBlockEntity(at.above()) instanceof dev.forja.block.entity.StrainerBlockEntity grate) {
+				grate.setMaterial(made);
+			}
+		}
+		var table = (dev.forja.block.entity.CastingTableBlockEntity) level.getBlockEntity(at);
+		check(table != null, "the casting table at " + at + " should have its block entity");
+		return table;
+	}
+
+	/** Runs a casting table by hand, which is a whole pour in a single tick. */
+	private static void pourOnTable(ServerLevel level, BlockPos at, dev.forja.block.entity.CastingTableBlockEntity table, int ticks) {
+		for (int tick = 0; tick < ticks; tick++) {
+			dev.forja.block.entity.CastingTableBlockEntity.serverTick(level, at, level.getBlockState(at), table);
+		}
+	}
+
+	/** Turns the player's head to look straight at a point, measured from their own eyes on the client. */
+	private static void lookAtPoint(ClientGameTestContext context, Vec3 target) {
+		float[] angles = context.computeOnClient(mc -> {
+			Vec3 eye = mc.player.getEyePosition();
+			double dx = target.x - eye.x;
+			double dy = target.y - eye.y;
+			double dz = target.z - eye.z;
+			float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+			float pitch = (float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
+			return new float[] {yaw, pitch};
+		});
+		context.getInput().lookAt(angles[0], angles[1]);
 	}
 
 	/** Right-clicks a block for real: look at it and press use. */
@@ -5914,6 +6135,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 			level.removeBlock(tableAt, false);
 			int overNothing = dev.forja.block.MeltPipeBlock.landing(level, spoutAt) == null ? 1 : 0;
 			level.setBlockAndUpdate(tableAt, dev.forja.registry.ModBlocks.MESA_DE_ALMAS.defaultBlockState());
+			// And a strainer standing on the table is not a roof: the stream goes through it.
+			level.setBlockAndUpdate(tableAt.above(), dev.forja.registry.ModBlocks.COLADOR.defaultBlockState());
+			BlockPos through = dev.forja.block.MeltPipeBlock.landing(level, spoutAt);
+			int strained = through != null && through.equals(tableAt)
+				&& tableAt.above().equals(dev.forja.block.MeltPipeBlock.strainerUnder(level, spoutAt)) ? 1 : 0;
 
 			// Now pour: fill the tank, warm the table, and let it run.
 			var tank = (dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(shelf);
@@ -5932,10 +6158,10 @@ public class ForjaClientTest implements FabricClientGameTest {
 			int cast = parts != null && parts.type() == ForgeType.DAGA ? 1 : 0;
 			int spent = before - tank.bankAmount();
 
-			for (BlockPos at : List.of(shelf, shelf.east(), spoutAt, tableAt, tableAt.north())) {
+			for (BlockPos at : List.of(shelf, shelf.east(), spoutAt, tableAt.above(), tableAt, tableAt.north())) {
 				level.removeBlock(at, false);
 			}
-			return new int[] {found, cost, seesTank, overNothing, cast, spent};
+			return new int[] {found, cost, seesTank, overNothing, cast, spent, strained};
 		});
 		log("caño: cae en la mesa " + (drop[0] > 0) + " a un coste de " + drop[1] + " de calor, la mesa lo ve "
 			+ (drop[2] > 0) + ", sobre el vacío no cuela " + (drop[3] > 0)
@@ -5945,6 +6171,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			"and the fall should cost more than a block of the worst pipe, got " + drop[1]);
 		check(drop[2] > 0, "the table has to see the tank back through the spout");
 		check(drop[3] > 0, "a spout over nothing lands nowhere");
+		check(drop[6] > 0, "and a strainer on the table lets the stream through to it");
 		check(drop[4] > 0, "and the table under it should cast");
 		check(drop[5] == dev.forja.item.CastingFrameItem.cost(ForgeType.DAGA),
 			"taking exactly what the dagger is worth, got " + drop[5]);
@@ -6153,6 +6380,15 @@ public class ForjaClientTest implements FabricClientGameTest {
 			for (int dx : new int[] {0, 2, 4}) {
 				level.setBlockAndUpdate(new BlockPos(px + dx, y, pz + 3),
 					dev.forja.registry.ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+			}
+			// A strainer standing on each table, the pour going through it: clay under the spout, steel on the
+			// other, so both looks are in the picture.
+			for (int dx : new int[] {1, 3}) {
+				BlockPos over = new BlockPos(px + dx, y + 1, pz + 3);
+				level.setBlockAndUpdate(over, dev.forja.registry.ModBlocks.COLADOR.defaultBlockState());
+				if (dx == 3 && level.getBlockEntity(over) instanceof dev.forja.block.entity.StrainerBlockEntity strainer) {
+					strainer.setMaterial(dev.forja.material.ForgeMaterial.ACERO);
+				}
 			}
 			// Warm the tables before the frames go in, or their first pour comes out rough.
 			for (int dx : new int[] {1, 3}) {
