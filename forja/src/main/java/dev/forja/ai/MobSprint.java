@@ -38,6 +38,11 @@ public final class MobSprint {
 	public static final double AWAY_SPEED = 0.05;
 	public static final double RING_ANGLE = Math.toRadians(50.0);
 	public static final float FLEE_HEALTH = 0.3F;
+	/**
+	 * Going to its place on the ring, and further from it than this, it runs: coming from afar to the far side
+	 * is a long way however small the angle (Andy, 2026-09-29: "casi no esprintan para posicionarse").
+	 */
+	public static final double SLOT_FAR = 5.0;
 
 	private static final Identifier EXTRA = Forja.id("carrera");
 	/** On top of vanilla's sprint (×1.3) to make ×1.35. */
@@ -63,6 +68,11 @@ public final class MobSprint {
 		}
 		if ((decision.tactic() == Tactic.RODEAR || decision.tactic() == Tactic.ESPERAR) && !Double.isNaN(mind.ringAngle)
 			&& Math.abs(Squad.wrap(Squad.angle(mob, target) - mind.ringAngle)) > RING_ANGLE) {
+			return true;
+		}
+		if ((decision.tactic() == Tactic.RODEAR || decision.tactic() == Tactic.FLANQUEAR) && !Double.isNaN(mind.ringAngle)
+			&& mob.distanceToSqr(target.getX() + Math.cos(mind.ringAngle) * mind.ringRadius, mob.getY(),
+				target.getZ() + Math.sin(mind.ringAngle) * mind.ringRadius) > SLOT_FAR * SLOT_FAR) {
 			return true;
 		}
 		double distance = mob.distanceTo(target);

@@ -45,6 +45,10 @@ public final class Squad {
 	private static final Map<Player, Integer> PEAK = new WeakHashMap<>();
 	private static final Map<Player, Long> ROUTED_UNTIL = new WeakHashMap<>();
 	private static final Map<Player, Mob> LEADER = new WeakHashMap<>();
+	/** Where each player's ring starts, and when that was last used: kept while the fight goes on. */
+	private static final Map<Player, double[]> START = new WeakHashMap<>();
+	/** A ring start not used for this long is forgotten, and the next fight starts from its own side. */
+	static final int START_MEMORY = 3 * PERIOD;
 
 	private Squad() {
 	}
@@ -122,11 +126,30 @@ public final class Squad {
 		// it (whichever side it is already on), and the last to arrive the ones round the back. Andy wants them
 		// to surround ("que rodeen"), and taking the free slot nearest to each one's own angle, as this did,
 		// let everyone who came the same way settle on the same side of the player.
-		int n = members.size();
-		double radius = ringRadius(n);
-		double start = angle(members.get(0).mob, player);
-		boolean[] taken = new boolean[n];
+		//
+		// Only the ones that fight up close stand on it: an archer or a creeper holding a slot left a gap in the
+		// ring where it stood off, and pushed the rest round it (Andy, 2026-09-29: "no rodean de verdad").
+		// Those two keep a slot where they already are, so what they read of the ring says they are on it.
+		//
+		// The start is kept from one pass to the next while the fight lasts. Taken afresh from whoever was
+		// nearest, it swung round each time another one got closer, and every slot moved with it: the group
+		// chased slots that kept going away and bunched up behind them instead of taking the sides and back.
+		List<MobMind> ring = new ArrayList<>();
 		for (MobMind mind : members) {
+			if (onRing(mind.mob)) {
+				ring.add(mind);
+			} else {
+				mind.ringAngle = angle(mind.mob, player);
+				mind.ringRadius = mind.mob.distanceTo(player);
+			}
+		}
+		int n = ring.size();
+		double radius = ringRadius(n);
+		double[] kept = START.get(player);
+		double start = n == 0 ? 0.0 : kept != null && now - (long) kept[1] <= START_MEMORY ? kept[0] : angle(ring.get(0).mob, player);
+		START.put(player, new double[] {start, now});
+		boolean[] taken = new boolean[n];
+		for (MobMind mind : ring) {
 			double own = angle(mind.mob, player);
 			int slot = -1;
 			for (int step = 0; step <= n / 2 && slot < 0; step++) {
@@ -158,7 +181,7 @@ public final class Squad {
 		}
 
 		MobMind flanker = null;
-		if (n >= 3) {
+		if (members.size() >= 3) {
 			double facing = facing(player);
 			double far = -1.0;
 			for (MobMind mind : members) {
@@ -174,7 +197,7 @@ public final class Squad {
 		}
 		for (MobMind mind : members) {
 			mind.routed = routed;
-			mind.othersWaiting = n > Aggression.maxAttackers(player);
+			mind.othersWaiting = members.size() > Aggression.maxAttackers(player);
 			mind.guarding = down != null && down != mind;
 			if (mind.guarding) {
 				mind.ringAngle = angle(down.mob, player);
@@ -191,6 +214,12 @@ public final class Squad {
 				mind.role = SquadRole.RESERVA;
 			}
 		}
+	}
+
+	/** Whether it takes a slot on the ring: everything but the ones that fight from off it. */
+	static boolean onRing(Mob mob) {
+		MobFamily family = MobFamily.of(mob);
+		return family != MobFamily.ARQUERO && family != MobFamily.CREEPER;
 	}
 
 	private static MobMind firstMelee(List<MobMind> members, MobMind except) {
@@ -231,6 +260,32 @@ public final class Squad {
 		while (a > Math.PI) a -= 2.0 * Math.PI;
 		while (a < -Math.PI) a += 2.0 * Math.PI;
 		return a;
+	}
+
+	/**
+	 * The archer's answer to a friend in its line of fire: a step to the side away from that friend, two
+	 * blocks, where the line is clear. Holding the arrow and standing there, it waited for a zombie that was
+	 * busy fighting to move out of the way, and never shot (Andy, 2026-09-29). Nothing when the line is
+	 * clear, or when the step would be into lava or off a drop.
+	 */
+	public static boolean stepToClearLine(Mob archer, Player target) {
+		Mob ally = allyInLineOf(archer, target);
+		if (ally == null) {
+			return false;
+		}
+		double dx = target.getX() - archer.getX();
+		double dz = target.getZ() - archer.getZ();
+		double d = Math.max(1.0E-6, Math.hypot(dx, dz));
+		// The side the friend leans to, from the archer's line: the step goes the other way.
+		double cross = dx * (ally.getZ() - archer.getZ()) - dz * (ally.getX() - archer.getX());
+		double side = cross >= 0.0 ? -1.0 : 1.0;
+		double x = archer.getX() - dz / d * side * 2.0;
+		double z = archer.getZ() + dx / d * side * 2.0;
+		if (Terrain.danger(archer.level(), x, z, archer.getY())) {
+			return false;
+		}
+		archer.getMoveControl().setWantedPosition(x, archer.getY(), z, 1.0);
+		return true;
 	}
 
 	/** Whether any of the squad's other hostiles stands in the way of a shot from the archer at the target. */

@@ -330,7 +330,7 @@ public final class CombatConfig {
 	public int chargedExtraDrawTicks = 20;
 	public double chargedArrowDamageMultiplier = 1.5;
 	public double chargedArrowExtraPenetration = 0.25;
-	public double creeperFeintChance = 0.35;
+	public double creeperFeintChance = 0.15;
 	public int creeperFeintAtTicks = 12;
 	public int creeperFeintPauseTicks = 20;
 	/**

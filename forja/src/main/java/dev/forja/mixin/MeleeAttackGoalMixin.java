@@ -56,6 +56,12 @@ abstract class MeleeAttackGoalMixin {
 	@Inject(method = "checkAndPerformAttack", at = @At("HEAD"), cancellable = true)
 	private void forja$telegraphedAttack(LivingEntity target, CallbackInfo ci) {
 		CombatConfig cfg = CombatConfig.get();
+		// A creeper has no blow: its attack is the fuse (SwellGoal). Given the warning, it stopped two blocks
+		// short, flashed, took a turn from the ones that do strike and hopped back, and hardly ever blew up
+		// (Andy, 2026-09-29).
+		if (mob instanceof net.minecraft.world.entity.monster.Creeper) {
+			return;
+		}
 		// A duel's watchers do not swing (idea 96).
 		if (forja$windup == 0 && dev.forja.ai.Duels.watching(mob)) {
 			ci.cancel();
@@ -141,7 +147,7 @@ abstract class MeleeAttackGoalMixin {
 	@Inject(method = "tick", at = @At("TAIL"))
 	private void forja$holdAtReach(CallbackInfo ci) {
 		LivingEntity target = mob.getTarget();
-		if (target != null && forja$windup == 0 && CombatConfig.get().enabled && dev.forja.ai.Reach.closeEnough(mob, target)
+		if (target != null && forja$windup == 0 && CombatConfig.get().enabled && !(mob instanceof net.minecraft.world.entity.monster.Creeper) && dev.forja.ai.Reach.closeEnough(mob, target)
 			&& mob.getSensing().hasLineOfSight(target)) {
 			forja$holdStill(target);
 		}

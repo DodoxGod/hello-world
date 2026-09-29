@@ -18,6 +18,12 @@ import net.minecraft.world.entity.player.Player;
 public final class RuleBrain {
 	/** Mobs closer than this that cannot attack circle instead of pressing in. */
 	static final double CIRCLE_RANGE = 6.0;
+	/**
+	 * With company, a mob takes its place on the ring from this far off, instead of walking straight in and
+	 * turning aside only at {@link #CIRCLE_RANGE}: by then the whole group had arrived in a column behind
+	 * the first one, and the ones at the back never got round (Andy, 2026-09-29).
+	 */
+	static final double SPREAD_RANGE = 16.0;
 	/** A mob with a turn further than this round the ring from its slot goes round to it before it strikes. */
 	static final double GO_ROUND_ANGLE = Math.toRadians(60.0);
 	/** ...unless it is already this close: then it just strikes. */
@@ -162,8 +168,12 @@ public final class RuleBrain {
 		if (!hasTurn && distance < 8.0 && hasShield(mob) && !MobDefense.guardBroken(mob) && mind.role != SquadRole.FLANCO) {
 			return Decision.tactic(Tactic.CUBRIRSE);
 		}
-		// Waiting for a turn: from further off against a player whose weapon reaches further (flail, lance...).
-		if (!hasTurn && distance < Reach.outside(target, CIRCLE_RANGE)) {
+		// Waiting for a turn: from further off against a player whose weapon reaches further (flail, lance...),
+		// from further off still in company (see SPREAD_RANGE), and never inside a ring wider than the range
+		// (a big group's): there it walked in from its slot, was told to circle, and walked back out.
+		boolean squad = !Double.isNaN(mind.ringAngle) && ObsM1.allies(mob).size() >= 1;
+		double circle = Math.max(CIRCLE_RANGE, squad ? Math.max(SPREAD_RANGE, mind.ringRadius + 2.0) : 0.0);
+		if (!hasTurn && distance < Reach.outside(target, circle)) {
 			// Waiting for a turn: against heavy plate, round the side; against a head-heavy weapon, out of its
 			// reach; otherwise on the ring.
 			if (Aggression.heavy(target)) {
@@ -182,7 +192,7 @@ public final class RuleBrain {
 		// Going in from its own side: with others at the same player, one with a turn that is still well round
 		// the ring from its slot goes round to it first, so the blows come from all sides and not one.
 		// A long weapon strikes from further off, so "already this close" starts further off too.
-		if (distance > GO_ROUND_MIN + Reach.extra(mob) && distance < Reach.outside(target, CIRCLE_RANGE + 2.0) && !Double.isNaN(mind.ringAngle)
+		if (distance > GO_ROUND_MIN + Reach.extra(mob) && distance < Reach.outside(target, Math.max(CIRCLE_RANGE + 2.0, circle)) && !Double.isNaN(mind.ringAngle)
 			&& ObsM1.allies(mob).size() >= 1
 			&& Math.abs(Squad.wrap(Squad.angle(mob, target) - mind.ringAngle)) > GO_ROUND_ANGLE) {
 			return Decision.tactic(Tactic.RODEAR);

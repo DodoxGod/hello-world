@@ -30,6 +30,8 @@ import net.minecraft.world.phys.Vec3;
 public final class TacticGoal extends Goal {
 	public static final double RING_RADIUS = 3.5;
 	public static final double FLANK_RADIUS = 2.5;
+	/** Closer than this a creeper lights its fuse whether or not its brain asked. */
+	static final double FUSE_ANYWAY = 2.0;
 	public static final double WAIT_MIN = 4.0;
 	/** How much of the ring a mob going round to its slot covers at a time, in radians (50 degrees). */
 	public static final double ARC_STEP = Math.toRadians(50.0);
@@ -336,6 +338,7 @@ public final class TacticGoal extends Goal {
 			// the arrow until the line is clear instead of putting it in its friend's back.
 			if (Squad.allyInLine(this.mob, target)) {
 				this.mind.draw = BOW_DRAW;
+				Squad.stepToClearLine(this.mob, target);
 				return;
 			}
 			this.mob.stopUsingItem();
@@ -345,7 +348,11 @@ public final class TacticGoal extends Goal {
 		}
 	}
 
-	/** Light the fuse only within 3 blocks and in sight; lit, it burns on while within 7 and in sight. */
+	/**
+	 * Light the fuse within 3 blocks and in sight when asked; lit, it burns on while within 7 and in sight.
+	 * Right up against the player it lights whatever was asked: a creeper that hugs you and waits is no threat
+	 * (Andy, 2026-09-29).
+	 */
 	private void fuse(Player target, boolean use) {
 		if (!(this.mob instanceof Creeper creeper)) {
 			return;
@@ -356,7 +363,7 @@ public final class TacticGoal extends Goal {
 			if (d >= 7.0 || !sees) {
 				creeper.setSwellDir(-1);
 			}
-		} else if (use && d < 3.0 && sees) {
+		} else if ((use && d < 3.0 || d < FUSE_ANYWAY) && sees) {
 			creeper.setSwellDir(1);
 		} else {
 			creeper.setSwellDir(-1);

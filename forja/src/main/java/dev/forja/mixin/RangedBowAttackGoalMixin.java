@@ -68,6 +68,14 @@ abstract class RangedBowAttackGoalMixin {
 		return ticks - extra;
 	}
 
+	/** Covering fire, the other half: holding for a clear line, it steps aside to get one. */
+	@Inject(method = "tick", at = @At("TAIL"))
+	private void forja$clearTheLine(CallbackInfo ci) {
+		if (CombatConfig.get().enabled && mob.isUsingItem() && mob.getTicksUsingItem() >= 15 && mob.getTarget() instanceof net.minecraft.world.entity.player.Player player) {
+			dev.forja.ai.Squad.stepToClearLine(mob, player);
+		}
+	}
+
 	@Inject(method = "tick", at = @At(value = "INVOKE", shift = At.Shift.AFTER,
 		target = "Lnet/minecraft/world/entity/monster/RangedAttackMob;performRangedAttack(Lnet/minecraft/world/entity/LivingEntity;F)V"))
 	private void forja$afterShot(CallbackInfo ci) {
