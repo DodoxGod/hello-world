@@ -160,6 +160,13 @@ public final class CombatConfig {
 	public int finisherCooldownTicks = 100;
 	/** A boss can only be finished at or below this share of its health. */
 	public double bossFinisherHealth = 0.5;
+	/**
+	 * Damage a boss takes from anything that is not a player (Andy, 2026-09-28: "si pones un warden al lado
+	 * del jefe éste lo mata y ni siquiera tienes que pelear"). A warden's boom, an iron golem, another
+	 * monster: this share of the blow. A player's pet or arrow counts as the player and is not touched, and
+	 * neither is damage with no attacker behind it (lava, a fall, an upgrade's lightning). 1 turns it off.
+	 */
+	public double jefeDanoAjeno = 0.5;
 	/** Chance a hostile mob spawns a veteran or an elite, before the multipliers (difficulty, distance, depth, nights, gear, adaptive). */
 	public double veteranChance = 0.12;
 	public double eliteChance = 0.03;

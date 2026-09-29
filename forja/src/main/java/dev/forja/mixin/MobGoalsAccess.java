@@ -16,4 +16,8 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface MobGoalsAccess {
 	@Accessor("goalSelector")
 	GoalSelector forjaGoals();
+
+	/** The target goals, for the few that choose whom to fight differently (the smith's apprentices). */
+	@Accessor("targetSelector")
+	GoalSelector forjaTargets();
 }

@@ -239,7 +239,100 @@ public class FallenSmith extends Monster implements GeoEntity {
 		this.goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.7));
 		this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 12.0F));
 		this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
-		this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
+		// Whoever hurts him is answered in hurtServer rather than by a HurtByTargetGoal, because the
+		// vanilla one never lets go: the first golem to hit him kept him forever, player or no player.
+		// The rules are on FOCUS_TICKS. While something other than a player is still hitting him, he does
+		// not go looking for one.
+		this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false,
+			(player, level) -> !this.heldByFoe()));
+	}
+
+	/**
+	 * How long a blow holds his attention, in ticks. Andy, 2026-09-28: "el jefe no se defiende si algo lo
+	 * ataca" — a warden stood next to him could kill him while he walked after the player.
+	 *
+	 * <p>Who he fights, in order:
+	 * <ol>
+	 *   <li>A player who hits him (with anything: a blade, an arrow) gets him at once, whatever he was
+	 *       doing. Players are what he is for.
+	 *   <li>Anything else that hits him — a warden, a golem, somebody's wolf — gets him too, unless he is
+	 *       busy with a player who has hit him within this many ticks. A player fighting him keeps him;
+	 *       a player standing by and letting something else do it does not.
+	 *   <li>Something that is not a player holds him only while it keeps hitting him. Once it has not
+	 *       for this long, he turns to the nearest player he can see, if there is one — a golem that
+	 *       wandered off does not keep him from the player in front of him.
+	 * </ol>
+	 */
+	public static final int FOCUS_TICKS = 100;
+
+	/** The last thing that hurt him and when (his own tick count): what his apprentices answer. */
+	private LivingEntity lastAttacker;
+	private int lastAttackedAt = Integer.MIN_VALUE / 2;
+	/** The last player who hit him, and the last thing that was not a player. */
+	private Player striker;
+	private int struckAt = Integer.MIN_VALUE / 2;
+	private LivingEntity foe;
+	private int foeStruckAt = Integer.MIN_VALUE / 2;
+
+	public LivingEntity lastAttacker() {
+		return this.lastAttacker != null && this.lastAttacker.isAlive() ? this.lastAttacker : null;
+	}
+
+	public int lastAttackedAt() {
+		return this.lastAttackedAt;
+	}
+
+	/** Someone went for him: rules 1 and 2 of {@link #FOCUS_TICKS}. */
+	private void answer(LivingEntity attacker) {
+		if (attacker == this || !attacker.isAlive() || !this.canAttack(attacker)) {
+			return;
+		}
+		this.lastAttacker = attacker;
+		this.lastAttackedAt = this.tickCount;
+		if (attacker instanceof Player player) {
+			this.striker = player;
+			this.struckAt = this.tickCount;
+			this.setTarget(player);
+			return;
+		}
+		this.foe = attacker;
+		this.foeStruckAt = this.tickCount;
+		if (!this.busyWithPlayer()) {
+			this.setTarget(attacker);
+		}
+	}
+
+	/** Whether he is fighting a player who has hit him lately, which nothing else can take him off. */
+	private boolean busyWithPlayer() {
+		return this.getTarget() instanceof Player player && player == this.striker && player.isAlive()
+			&& this.canAttack(player) && this.tickCount - this.struckAt <= FOCUS_TICKS;
+	}
+
+	/** Whether what he is fighting is not a player and is still hitting him: rule 3 of {@link #FOCUS_TICKS}. */
+	public boolean heldByFoe() {
+		LivingEntity target = this.getTarget();
+		return target != null && !(target instanceof Player) && target == this.foe && target.isAlive()
+			&& this.tickCount - this.foeStruckAt <= FOCUS_TICKS;
+	}
+
+	/** Twice a second: drops a dead target, and lets go of a foe that has stopped hitting him (rule 3). */
+	private void reconsider(ServerLevel level) {
+		LivingEntity target = this.getTarget();
+		if (target == null || target instanceof Player) {
+			return;
+		}
+		if (!target.isAlive()) {
+			this.setTarget(null);
+			return;
+		}
+		if (this.heldByFoe()) {
+			return;
+		}
+		Player player = level.getNearestPlayer(this.getX(), this.getY(), this.getZ(), this.getAttributeValue(Attributes.FOLLOW_RANGE),
+			seen -> seen instanceof Player candidate && this.canAttack(candidate) && this.hasLineOfSight(candidate));
+		if (player != null) {
+			this.setTarget(player);
+		}
 	}
 
 	@Override
@@ -252,14 +345,24 @@ public class FallenSmith extends Monster implements GeoEntity {
 		return effect.is(MobEffects.WITHER) ? false : super.canBeAffected(effect);
 	}
 
-	/** While he is reforging, nothing gets through: the embers are the way in. */
+	/**
+	 * While he is reforging, nothing gets through: the embers are the way in.
+	 *
+	 * <p>Whoever swung is answered either way (see {@link #FOCUS_TICKS}), and a blow from anything that
+	 * is not a player, or a player's pet, only does {@link dev.forja.combat.CombatConfig#jefeDanoAjeno}
+	 * of itself — so a warden parked beside him is a fight he joins, not a way of skipping him.
+	 */
 	@Override
 	public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+		// One of ours is kept off him by the truce further down; it must not turn him round either.
+		if (source.getEntity() instanceof LivingEntity attacker && !dev.forja.world.Truce.blocks(this, source)) {
+			this.answer(attacker);
+		}
 		if (this.reforging > 0 && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
 			level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 1.0F, 1.8F);
 			return false;
 		}
-		return super.hurtServer(level, source, damage);
+		return super.hurtServer(level, source, damage * dev.forja.difficulty.Bosses.othersShare(source));
 	}
 
 	@Override
@@ -280,6 +383,9 @@ public class FallenSmith extends Monster implements GeoEntity {
 		this.forgeBreathes(level, hot);
 		if (this.tickCount % 20 == 0) {
 			this.watchers(level);
+		}
+		if (this.tickCount % 10 == 0) {
+			this.reconsider(level);
 		}
 		// He has been burning for a long time and it settles on everything around him.
 		if (this.tickCount % 6 == 0) {
@@ -637,6 +743,8 @@ public class FallenSmith extends Monster implements GeoEntity {
 			apprentice.snapTo(this.getX() + Math.cos(angle) * 3.0, this.getY(), this.getZ() + Math.sin(angle) * 3.0, 0.0F, 0.0F);
 			dev.forja.world.Elites.makeElite(apprentice, level.getRandom());
 			apprentice.setCustomName(Component.translatable("entity.forja.aprendiz"));
+			// His, not just four more elites: they go for whatever goes for him.
+			dev.forja.world.Apprentices.enlist(apprentice);
 			level.addFreshEntity(apprentice);
 		}
 	}
@@ -695,7 +803,10 @@ public class FallenSmith extends Monster implements GeoEntity {
 		Vec3 at = target.position();
 		level.sendParticles(ParticleTypes.END_ROD, at.x, at.y + 6.0, at.z, 60, 1.0, 1.0, 1.0, 0.1);
 		level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.HOSTILE, 2.0F, 0.6F);
-		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, target.getBoundingBox().inflate(3.0), other -> other != this && other.isAlive())) {
+		// Aimed at whatever he is fighting, which is not always a player now; the apprentices crowding a
+		// golem with him are his own side and the shower passes them by (it has no attacker for the truce).
+		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, target.getBoundingBox().inflate(3.0),
+			other -> other != this && other.isAlive() && !dev.forja.world.Truce.ours(other))) {
 			victim.invulnerableTime = 0;
 			victim.hurtServer(level, level.damageSources().magic(), 9.0F);
 		}

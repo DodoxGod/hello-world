@@ -454,6 +454,7 @@
   "gui.forja.libro.herrero_caido.titulo": "The Fallen Smith",
   "gui.forja.libro.herrero_caido": "Somewhere in the Nether there is a forge-fortress of blackstone with lava channels, his two tables and, in the middle, his dead forge. That block exists nowhere else. Put your hand on it carrying the offering and the Smith rises.",
   "gui.forja.libro.herrero_caido_fases": "%s health, a damascus flail and obsidian steel plate. Under three quarters he calls his apprentices; at half he reforges and nothing touches him until you put out his %s embers; under a quarter he brings the sky down on you. He leaves his forge heart, the best material in the mod, and a legend.",
+  "gui.forja.libro.herrero_caido_defensa": "Nothing else is going to kill him for you: if something else hits him (a warden, a golem, another monster) he turns round and fights it with everything he has, his apprentices go for it, and whatever does not come from a player only does half. Your wolves and your arrows count as you. Hit him while he is fighting something else and he comes back for you.",
   "gui.forja.libro.cap.mesas": "Tables",
   "gui.forja.libro.cap.objetos": "Gear",
   "gui.forja.libro.cap.piezas": "Parts",

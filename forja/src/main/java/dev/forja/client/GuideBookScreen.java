@@ -1447,6 +1447,7 @@ public class GuideBookScreen extends Screen {
 		body.add(new IconRow(offering));
 		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_fases", Math.round(dev.forja.entity.FallenSmith.HEALTH),
 			dev.forja.entity.FallenSmith.EMBERS), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_defensa"), INK_SOFT));
 		return body;
 	}
 

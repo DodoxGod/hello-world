@@ -1,5 +1,21 @@
 # Novedades
 
+## 2026-09-28 — el Herrero Caído se defiende
+
+- El Herrero Caído ya pelea contra lo que le pegue, no solo contra jugadores: un warden, un gólem, lobos, otro
+  monstruo. Se da la vuelta y usa todo lo suyo contra ello (revés, onda, garfio, el cielo).
+- A quién pelea: un jugador que le pega se lo lleva al momento, pase lo que pase. Otra cosa que le pega se lo lleva
+  solo si no está peleando con un jugador que le haya pegado en los últimos 5 s. Y algo que no es un jugador lo
+  retiene solo mientras le siga pegando: 5 s sin golpes y se vuelve al jugador más cercano que vea.
+- Sus aprendices lo defienden: van a por lo que le pegue (jugador o no) y, si no tienen pelea propia, a por lo que
+  él esté peleando. Nunca entre ellos ni contra él. Vale también tras guardar y cargar el mundo.
+- Contra el truco de ponerle un warden al lado: lo que no viene de un jugador le hace la mitad
+  (`jefeDanoAjeno` en la config de combate, 0,5). Tus lobos domados y tus flechas cuentan como tú y pegan entero;
+  el daño sin atacante (lava, caída, los rayos de tus mejoras) no se toca. El botín y el logro siguen igual.
+- La lluvia de estrellas de su último cuarto ya no le cae a sus aprendices ni a sus yunques.
+- La guía (capítulo del Herrero) lo cuenta.
+- Revisado: el Guardián del Cuño y los campeones ya respondían a quien les pegara; ahora hay prueba de ello.
+
 ## 2026-09-28 — la red de metal: depósitos, llenado de uno en uno y llave de paso
 
 - **Una sola red.** Crisoles, cubas, caños y mesas de colada unidos por conductos son una red: el metal va de
