@@ -209,6 +209,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			}
 			if ("molde".equals(solo)) {
 				shotMouldCopy(context, server, connection, x, y, z);
+				filmMouldGrip(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
@@ -8948,6 +8949,239 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.runOnClient(mc -> mc.options.fov().set(70));
 		server.runCommand("gamemode survival @a");
 		server.runCommand("difficulty peaceful");
+	}
+
+	/**
+	 * The broken mould gripping what it copied (Andy, 2026-09-28: "mira cómo funciona el molde roto, no agarra
+	 * el arma"). The blank first; then one mould per forged shape, looked at from the front, three quarters and
+	 * the side while it stands, a few of them also walking and striking; and last the blank back once the copy
+	 * has gone. The pictures (molde_agarre_*) are for the eye; what is measured is that the copy and the blank
+	 * are never out together. FORJA_SOLO=molde runs it, FORJA_ARMAS=espada,lanza only those shapes.
+	 */
+	private static void filmMouldGrip(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		server.runCommand("gamemode spectator @a");
+		server.runCommand("time set noon");
+		server.runCommand("difficulty easy");
+		context.runOnClient(mc -> {
+			mc.options.fov().set(50);
+			mc.options.fovEffectScale().set(0.0);
+			mc.gui.toastManager().clear();
+		});
+		double mx = x + 70.5;
+		double mz = z + 70.5;
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			for (int fx = -6; fx <= 6; fx++) {
+				for (int fz = -6; fz <= 6; fz++) {
+					BlockPos floor = BlockPos.containing(mx + fx, y - 1, mz + fz);
+					level.setBlockAndUpdate(floor, Blocks.SMOOTH_STONE.defaultBlockState());
+					for (int fy = 1; fy <= 4; fy++) {
+						level.setBlockAndUpdate(floor.above(fy), Blocks.AIR.defaultBlockState());
+					}
+				}
+			}
+		});
+		record Shape(String name, ForgeType type, List<dev.forja.material.ForgeMaterial> materials, boolean moves) {
+		}
+		List<Shape> shapes = List.of(
+			new Shape("espada", ForgeType.ESPADA, List.of(DIAMANTE, MADERA, ORO), true),
+			new Shape("hacha", ForgeType.HACHA, List.of(COBRE, MADERA, HIERRO), false),
+			new Shape("martillo", ForgeType.MARTILLO, List.of(HIERRO, MADERA, HIERRO), true),
+			new Shape("mazo", ForgeType.MAZO, List.of(HIERRO, MADERA, HIERRO), false),
+			new Shape("lanza", ForgeType.LANZA, List.of(HIERRO, MADERA, CUERO), true),
+			new Shape("mangual", ForgeType.MANGUAL, List.of(HIERRO, HIERRO, MADERA), true),
+			new Shape("daga", ForgeType.DAGA, List.of(HIERRO, MADERA), false),
+			new Shape("espadon", ForgeType.ESPADON, List.of(DIAMANTE, DIAMANTE, MADERA, HIERRO), false),
+			new Shape("guadana", ForgeType.GUADANA, List.of(HIERRO, MADERA, CUERO), false),
+			new Shape("tridente", ForgeType.TRIDENTE, List.of(HIERRO, MADERA, CUERO), false),
+			new Shape("baculo", ForgeType.BACULO, List.of(AMATISTA, HIERRO, MADERA), false),
+			new Shape("grimorio", ForgeType.GRIMORIO, List.of(VARA_DE_BLAZE, NETHERITA, ORO), false),
+			new Shape("guanteletes", ForgeType.GUANTELETES, List.of(CUERO, HIERRO, ORO), false));
+		String only = System.getenv("FORJA_ARMAS");
+		List<String> wanted = only == null || only.isBlank() ? List.of() : List.of(only.split(","));
+
+		// The blank, before anything has been copied.
+		clearStage(server, connection, mx, y, mz);
+		int[] id = {spawnGripMould(server, connection, mx, y, mz)};
+		orbitShot(context, server, mx, y, mz, 0.0F, 40, "molde_agarre_0_blank_1_frente");
+		orbitShot(context, server, mx, y, mz, 40.0F, 10, "molde_agarre_0_blank_2_tres_cuartos");
+		orbitShot(context, server, mx, y, mz, 90.0F, 10, "molde_agarre_0_blank_3_lado");
+		check("empty:blank_shown".equals(blankState(context)), "with nothing copied the mould should show its blank, got " + blankState(context));
+
+		for (Shape shape : shapes) {
+			if (!wanted.isEmpty() && !wanted.contains(shape.name())) {
+				continue;
+			}
+			clearStage(server, connection, mx, y, mz);
+			id[0] = spawnGripMould(server, connection, mx, y, mz);
+			server.runOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				if (!(level.getEntity(id[0]) instanceof dev.forja.entity.BrokenMould mould)) {
+					throw new AssertionError("the mould went missing");
+				}
+				ItemStack weapon = Assembler.create(shape.type(), shape.materials(), level.registryAccess());
+				mould.consider(level, weapon);
+				for (int tick = 0; tick < dev.forja.entity.BrokenMould.RECAST_WINDUP; tick++) {
+					mould.tick();
+				}
+				check(mould.getMainHandItem().is(weapon.getItem()), "the mould should come out of the recast holding the " + shape.name());
+			});
+			String base = "molde_agarre_" + shape.name();
+			// Long enough for the recast (2.6 s) to have finished and the mould to stand still again.
+			orbitShot(context, server, mx, y, mz, 0.0F, 60, base + "_1_frente");
+			String blank = blankState(context);
+			check("held:blank_gone".equals(blank), "holding the " + shape.name() + " the blank should be gone, got " + blank);
+			orbitShot(context, server, mx, y, mz, 40.0F, 10, base + "_2_tres_cuartos");
+			orbitShot(context, server, mx, y, mz, 90.0F, 10, base + "_3_lado");
+			if (!shape.moves()) {
+				continue;
+			}
+			// Walking towards the camera's side of the stage, two steps apart; the camera stands still.
+			double[] cam = orbitCamera(mx, y, mz, 60.0F, 5.4);
+			float[] aim = aimAt(cam, mx, y + 1.3, mz);
+			context.runOnClient(mc -> mc.particleEngine.clearParticles());
+			for (int tick = 0; tick <= 30; tick++) {
+				double at = mz - 1.0 + tick * 0.065;
+				server.runOnServer(s -> {
+					if (connection.getServerLevel().getEntity(id[0]) instanceof dev.forja.entity.BrokenMould mould) {
+						mould.setPos(mx, y, at);
+						mould.setYRot(0.0F);
+						mould.setYBodyRot(0.0F);
+						mould.setYHeadRot(0.0F);
+					}
+				});
+				tp(server, cam[0], cam[1] - EYE_HEIGHT, cam[2], aim[0], aim[1]);
+				// Moved by the server a little at a time, the client's own sense of its gait lags: held at a walk.
+				context.runOnClient(mc -> {
+					if (mc.level != null && mc.level.getEntity(id[0]) instanceof dev.forja.entity.BrokenMould mould) {
+						mould.walkAnimation.setSpeed(0.8F);
+					}
+				});
+				context.waitTicks(1);
+				if (tick == 16 || tick == 29) {
+					// After a recast it has to walk again: GeckoLib 5 left the recast on as its animation for good.
+					String gait = context.computeOnClient(mc -> {
+						if (mc.level != null && mc.level.getEntity(id[0]) instanceof dev.forja.entity.BrokenMould mould) {
+							var controller = mould.getAnimatableInstanceCache().getManagerForId(mould.getId()).getAnimationControllers().get("molde");
+							var playing = controller == null ? null : controller.getCurrentRawAnimation();
+							return mould.walkAnimation.speed() + " " + (playing == null ? "none" : playing.getAnimationStages().get(0).animationName());
+						}
+						return "no mould";
+					});
+					log("molde agarre: andando con " + shape.name() + ": " + gait);
+					check(gait.endsWith(" walk"), "the mould should walk after its recast, got " + gait);
+					context.takeScreenshot(TestScreenshotOptions.of(base + (tick == 16 ? "_4_andando_a" : "_4_andando_b"))
+						.disableCounterPrefix().withSize(1280, 720));
+				}
+			}
+			server.runOnServer(s -> {
+				if (connection.getServerLevel().getEntity(id[0]) instanceof dev.forja.entity.BrokenMould mould) {
+					mould.setPos(mx, y, mz);
+				}
+			});
+			// The blow: the warning the mod's brains give before every melee strike, then the swing itself.
+			cam = orbitCamera(mx, y, mz, 70.0F, 5.0);
+			float[] side = aimAt(cam, mx, y + 1.4, mz);
+			for (int tick = 0; tick < 20; tick++) {
+				tp(server, cam[0], cam[1] - EYE_HEIGHT, cam[2], side[0], side[1]);
+				context.waitTicks(1);
+			}
+			context.runOnClient(mc -> mc.particleEngine.clearParticles());
+			int warning = 16;
+			server.runOnServer(s -> {
+				if (connection.getServerLevel().getEntity(id[0]) instanceof dev.forja.entity.BrokenMould mould) {
+					dev.forja.combat.CombatFeedback.telegraph(mould, warning);
+				}
+			});
+			for (int tick = 1; tick <= warning + 12; tick++) {
+				if (tick == warning) {
+					server.runOnServer(s -> {
+						if (connection.getServerLevel().getEntity(id[0]) instanceof dev.forja.entity.BrokenMould mould) {
+							mould.swing(InteractionHand.MAIN_HAND);
+						}
+					});
+				}
+				tp(server, cam[0], cam[1] - EYE_HEIGHT, cam[2], side[0], side[1]);
+				context.waitTicks(1);
+				String frame = switch (tick - warning) {
+					case -6 -> "_5_carga";
+					case 3 -> "_6_golpe_a";
+					case 5 -> "_6_golpe_b";
+					case 9 -> "_6_golpe_c";
+					default -> null;
+				};
+				if (frame != null) {
+					context.takeScreenshot(TestScreenshotOptions.of(base + frame).disableCounterPrefix().withSize(1280, 720));
+				}
+			}
+		}
+
+		// The copy taken away again: the blank has to come back.
+		server.runOnServer(s -> {
+			if (connection.getServerLevel().getEntity(id[0]) instanceof dev.forja.entity.BrokenMould mould) {
+				mould.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+			}
+		});
+		orbitShot(context, server, mx, y, mz, 40.0F, 20, "molde_agarre_z_sin_copia");
+		String back = blankState(context);
+		log("molde agarre: sin copia otra vez " + back);
+		check("empty:blank_shown".equals(back), "with the copy gone the blank should be back, got " + back);
+		clearStage(server, connection, mx, y, mz);
+		context.runOnClient(mc -> mc.options.fov().set(70));
+		server.runCommand("gamemode survival @a");
+		server.runCommand("difficulty peaceful");
+	}
+
+	/** A still broken mould facing south (+z), for filmMouldGrip; its entity id. */
+	private static int spawnGripMould(TestServerContext server, TestServerConnection connection, double mx, int y, double mz) {
+		return server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var mould = dev.forja.registry.ModEntities.MOLDE_ROTO.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+			check(mould != null, "the broken mould should be creatable");
+			mould.snapTo(mx, y, mz, 0.0F, 0.0F);
+			mould.setYHeadRot(0.0F);
+			mould.setYBodyRot(0.0F);
+			mould.setNoAi(true);
+			mould.setPersistenceRequired();
+			level.addFreshEntity(mould);
+			return mould.getId();
+		});
+	}
+
+	/** "held:" or "empty:" and what the mould's blank controller is playing, read on the client. */
+	private static String blankState(ClientGameTestContext context) {
+		return context.computeOnClient(mc -> {
+			for (net.minecraft.world.entity.Entity entity : mc.level.entitiesForRendering()) {
+				if (entity instanceof dev.forja.entity.BrokenMould mould) {
+					var controller = mould.getAnimatableInstanceCache().getManagerForId(mould.getId())
+						.getAnimationControllers().get("blank");
+					var playing = controller == null ? null : controller.getCurrentRawAnimation();
+					return (mould.getMainHandItem().isEmpty() ? "empty:" : "held:")
+						+ (playing == null ? "none" : playing.getAnimationStages().get(0).animationName());
+				}
+			}
+			return "no mould";
+		});
+	}
+
+	/**
+	 * Where the camera's eye goes to look at a south-facing mould from {@code angle} degrees round to its right
+	 * (0 in front, 90 its right side), this far away.
+	 */
+	private static double[] orbitCamera(double mx, int y, double mz, float angle, double distance) {
+		double turn = Math.toRadians(angle);
+		return new double[] {mx - Math.sin(turn) * distance, y + 1.75, mz + Math.cos(turn) * distance};
+	}
+
+	private static float[] aimAt(double[] eye, double tx, double ty, double tz) {
+		double flat = Math.sqrt((tx - eye[0]) * (tx - eye[0]) + (tz - eye[2]) * (tz - eye[2]));
+		return new float[] {(float) -Math.toDegrees(Math.atan2(tx - eye[0], tz - eye[2])),
+			(float) Math.toDegrees(Math.atan2(eye[1] - ty, Math.max(0.01, flat)))};
+	}
+
+	private static void orbitShot(ClientGameTestContext context, TestServerContext server, double mx, int y, double mz, float angle, int settle, String name) {
+		double[] eye = orbitCamera(mx, y, mz, angle, 4.6);
+		mobShot(context, server, eye[0], eye[1], eye[2], mx, y + 1.3, mz, settle, name);
 	}
 
 	private static void filmMeteor(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {

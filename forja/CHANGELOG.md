@@ -1,5 +1,21 @@
 # Novedades
 
+## 2026-09-28 — el Molde Roto agarra el arma
+
+- Antes los puños flotaban delante de la barriga, sueltos de los brazos (que colgaban a los lados y un poco hacia
+  atrás), y la copia era el dibujo plano del arma puesto de frente entre los dos puños: de lado no se veía, la
+  lanza salía atravesada y el mangual con el palo fuera de las manos. Y no tenía animación de ataque: pegaba quieto.
+- Ahora los brazos (hombro, codo y antebrazo) llegan a los dos puños, uno encima del otro, cerrados sobre el mango.
+  La copia se agarra por su propia empuñadura, igual que la lleva un jugador: la espada por el puño con la guarda
+  encima, el martillo y el hacha por el mango, la lanza y el tridente inclinados hacia delante, el mangual con su
+  cadena y su bola colgando de verdad, el grimorio como libro. Se ve de frente, de lado y de tres cuartos.
+- Pega de verdad: durante el aviso sube el arma por encima de la cabeza con las dos manos y, al golpear, la baja
+  delante de él en un tajo; luego vuelve a la guardia. La copia y el lingote siguen a los brazos en todo (quieto,
+  andando, al meterlos en el horno para recolar).
+- El lingote al rojo desaparece en cuanto tiene la copia en las manos y vuelve si la pierde.
+- Arreglado: después de su primera recolada el Molde Roto ya no volvía a andar (se quedaba con la animación de
+  recolar puesta para siempre).
+
 ## 2026-09-28 — el enderman esquiva teletransportándose
 
 - Cuando le va a llegar un golpe con alguien detrás, el enderman tiene un **34 %** de probabilidad de esquivarlo

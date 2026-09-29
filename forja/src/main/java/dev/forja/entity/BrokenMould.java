@@ -5,6 +5,9 @@ import com.geckolib.animatable.instance.AnimatableInstanceCache;
 import com.geckolib.animatable.manager.AnimatableManager;
 import com.geckolib.animation.AnimationController;
 import com.geckolib.animation.RawAnimation;
+import com.geckolib.animation.object.PlayState;
+import com.geckolib.animation.state.AnimationTest;
+import com.geckolib.constant.dataticket.DataTicket;
 import com.geckolib.util.GeckoLibUtil;
 import dev.forja.part.ForgedParts;
 import dev.forja.part.PartType;
@@ -69,6 +72,16 @@ public class BrokenMould extends Monster implements GeoEntity {
 	private static final RawAnimation RECAST = RawAnimation.begin().thenPlay("recast");
 	private static final RawAnimation BLANK_SHOWN = RawAnimation.begin().thenLoop("blank_shown");
 	private static final RawAnimation BLANK_GONE = RawAnimation.begin().thenLoop("blank_gone");
+	private static final RawAnimation RAISE_ANIM = RawAnimation.begin().thenPlayAndHold("raise");
+	private static final RawAnimation STRIKE = RawAnimation.begin().thenPlay("strike");
+	private static final RawAnimation GUARD = RawAnimation.begin().thenLoop("guard");
+
+	/**
+	 * How far into the warning before a melee blow it is, 0 to 1, or -1 when none is coming: worked out on
+	 * the client from the telegraph every mob's blow is announced with (client.BrokenMouldRenderer), so the
+	 * weapon goes up over its head for exactly as long as the warning lasts.
+	 */
+	public static final DataTicket<Float> RAISE = DataTicket.create("forja_molde_raise", Float.class);
 
 	private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 	private final dev.forja.entity.ai.Windup windup = new dev.forja.entity.ai.Windup();
@@ -297,13 +310,40 @@ public class BrokenMould extends Monster implements GeoEntity {
 
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+		// A triggered animation in GeckoLib 5 stays the controller's animation once it has played, and the
+		// controller stops asking what to play next: after its first recast the mould never walked again. So
+		// the controllers are asked all the time and let a triggered one run out before going back.
 		controllers.add(new AnimationController<BrokenMould>("molde", test ->
-			GeoGait.walk(test, WALK, IDLE)
-		).triggerableAnim("recast", RECAST));
+			playing(test, RECAST) ? PlayState.CONTINUE : GeoGait.walk(test, WALK, IDLE)
+		).receiveTriggeredAnimations().triggerableAnim("recast", RECAST));
 		// The blank on a controller of its own. GeckoLib 5 cannot hide a bone, so while there is a copy in
-		// its hands (drawn by the renderer) the molten bar is scaled down into the fist that held it.
+		// its hands (drawn by the renderer) the molten bar is scaled down into the fists that held it.
 		controllers.add(new AnimationController<BrokenMould>("blank", test ->
 			test.setAndContinue(test.animatable().getMainHandItem().isEmpty() ? BLANK_SHOWN : BLANK_GONE)));
+		// Its blows, over the walk: the weapon raised over its head through the warning, and brought down in
+		// front of it when the blow is struck (see swing).
+		controllers.add(new AnimationController<BrokenMould>("golpe", 2, test -> {
+			if (playing(test, STRIKE)) {
+				return PlayState.CONTINUE;
+			}
+			// "guard" animates nothing, and leaves the arms to the walk.
+			return test.setAndContinue(test.getDataOrDefault(RAISE, -1.0F) >= 0.0F ? RAISE_ANIM : GUARD);
+		}).receiveTriggeredAnimations().triggerableAnim("strike", STRIKE));
+	}
+
+	/** Whether the controller is still part way through this (triggered) animation. */
+	private static boolean playing(AnimationTest<BrokenMould> test, RawAnimation animation) {
+		return test.controller().getCurrentRawAnimation() == animation && !test.controller().hasAnimationFinished();
+	}
+
+	/** The blow itself: whatever struck it (the mod's brains or vanilla's melee goal), the arms chop down. */
+	@Override
+	public void swing(net.minecraft.world.InteractionHand hand, boolean sendToSwingingEntity) {
+		super.swing(hand, sendToSwingingEntity);
+		// -1 only when this call started a swing, not when one already under way was left alone.
+		if (!this.level().isClientSide() && this.swingTime == -1) {
+			this.triggerAnim("golpe", "strike");
+		}
 	}
 
 	@Override
