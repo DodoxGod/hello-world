@@ -12,6 +12,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The monsters fighting the same player, as a group (ideas 11 to 20 of the plan). Every 10 ticks it
@@ -269,9 +271,19 @@ public final class Squad {
 	 * clear, or when the step would be into lava or off a drop.
 	 */
 	public static boolean stepToClearLine(Mob archer, Player target) {
+		Vec3 step = clearLineStep(archer, target);
+		if (step == null) {
+			return false;
+		}
+		archer.getMoveControl().setWantedPosition(step.x, archer.getY(), step.z, 1.0);
+		return true;
+	}
+
+	/** Where {@link #stepToClearLine} would send the archer, or null for nowhere. */
+	public static @Nullable Vec3 clearLineStep(Mob archer, Player target) {
 		Mob ally = allyInLineOf(archer, target);
 		if (ally == null) {
-			return false;
+			return null;
 		}
 		double dx = target.getX() - archer.getX();
 		double dz = target.getZ() - archer.getZ();
@@ -282,10 +294,9 @@ public final class Squad {
 		double x = archer.getX() - dz / d * side * 2.0;
 		double z = archer.getZ() + dx / d * side * 2.0;
 		if (Terrain.danger(archer.level(), x, z, archer.getY())) {
-			return false;
+			return null;
 		}
-		archer.getMoveControl().setWantedPosition(x, archer.getY(), z, 1.0);
-		return true;
+		return new Vec3(x, archer.getY(), z);
 	}
 
 	/** Whether any of the squad's other hostiles stands in the way of a shot from the archer at the target. */

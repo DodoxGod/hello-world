@@ -136,6 +136,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// The squad AI (docs/red_mob_v4_propuesta.md): thirteen zombies and two skeletons on the player, seen from above.
+			if ("cerco".equals(solo)) {
+				filmSurround(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("meteorito".equals(solo)) {
 				filmMeteor(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
@@ -9793,6 +9799,109 @@ public class ForjaClientTest implements FabricClientGameTest {
 	 * day and by night, over a step and a ditch — because none of the above says whether it looks
 	 * like fire, or whether it follows the floor.
 	 */
+	/**
+	 * Andy's example (2026-09-29): with thirteen on you, three behind, three on each side and four in front. The
+	 * group comes from one side; the camera hangs over the player, looking down, and a line in the log counts
+	 * them by side at each shot.
+	 */
+	private static void filmSurround(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		int sx = x + 300;
+		int sz = z + 300;
+		server.runCommand("time set noon");
+		server.runCommand("difficulty normal");
+		server.runCommand("gamemode survival @a");
+		server.runCommand("effect give @a resistance infinite 4 true");
+		server.runCommand("effect give @a saturation infinite 0 true");
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d smooth_stone", sx - 30, y - 1, sz - 30, sx + 30, y - 1, sz + 30));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", sx - 30, y, sz - 30, sx + 30, y + 20, sz + 30));
+		tp(server, sx + 0.5, y, sz + 0.5, 0.0F, 0.0F);
+		context.waitTicks(20);
+		// The eye in the sky: a marker stand high over the player, looking straight down.
+		int eye = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var stand = new net.minecraft.world.entity.decoration.ArmorStand(level, sx + 0.5, y + 22.0, sz + 0.5);
+			stand.setInvisible(true);
+			stand.setNoGravity(true);
+			stand.snapTo(sx + 0.5, y + 22.0, sz + 0.5, 0.0F, 90.0F);
+			level.addFreshEntity(stand);
+			return stand.getId();
+		});
+		int[] crowd = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			net.minecraft.server.level.ServerPlayer player = connection.getServerPlayer();
+			dev.forja.combat.CombatConfig.get().veteranChance = 0.0;
+			dev.forja.combat.CombatConfig.get().eliteChance = 0.0;
+			int[] made = new int[15];
+			for (int i = 0; i < made.length; i++) {
+				var type = i < 13 ? net.minecraft.world.entity.EntityTypes.ZOMBIE : net.minecraft.world.entity.EntityTypes.SKELETON;
+				var mob = (net.minecraft.world.entity.Mob) type.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				// All from the south, in a clump eighteen blocks off.
+				mob.snapTo(sx + 0.5 + (i % 5) - 2, y, sz + 18.5 + i / 5, 180.0F, 0.0F);
+				mob.setPersistenceRequired();
+				if (i >= 13) {
+					mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+				}
+				level.addFreshEntity(mob);
+				mob.setTarget(player);
+				made[i] = mob.getId();
+			}
+			return made;
+		});
+		context.runOnClient(mc -> {
+			mc.gui.hud.getChat().clearMessages(false);
+			if (!mc.gui.hud.isHidden()) {
+				mc.gui.hud.toggle();
+			}
+			if (mc.level.getEntity(eye) != null) {
+				mc.setCameraEntity(mc.level.getEntity(eye));
+			}
+		});
+		String[] shots = {"cerco_01_llegan", "cerco_02_se_abren", "cerco_03_rodean", "cerco_04_cerco", "cerco_05_pelea"};
+		for (int shot = 0; shot < shots.length; shot++) {
+			context.waitTicks(shot == 0 ? 5 : 50);
+			context.takeScreenshot(shots[shot]);
+			String count = server.computeOnServer(s -> {
+				net.minecraft.server.level.ServerPlayer player = connection.getServerPlayer();
+				int front = 0;
+				int behind = 0;
+				int left = 0;
+				int right = 0;
+				int far = 0;
+				double facing = Math.atan2(Math.cos(Math.toRadians(player.getYRot())), -Math.sin(Math.toRadians(player.getYRot())));
+				for (int id : crowd) {
+					var mob = connection.getServerLevel().getEntity(id);
+					if (!(mob instanceof net.minecraft.world.entity.monster.zombie.Zombie) || !mob.isAlive()) {
+						continue;
+					}
+					if (mob.distanceTo(player) > 9.0) {
+						far++;
+						continue;
+					}
+					double off = Math.IEEEremainder(Math.atan2(mob.getZ() - player.getZ(), mob.getX() - player.getX()) - facing, Math.PI * 2.0);
+					if (Math.abs(off) <= Math.PI / 4.0) {
+						front++;
+					} else if (Math.abs(off) >= Math.PI * 3.0 / 4.0) {
+						behind++;
+					} else if (off > 0.0) {
+						left++;
+					} else {
+						right++;
+					}
+				}
+				return "delante " + front + ", detrás " + behind + ", izquierda " + left + ", derecha " + right + ", aún lejos " + far;
+			});
+			log("cerco " + shots[shot] + ": " + count);
+		}
+		context.runOnClient(mc -> {
+			mc.setCameraEntity(mc.player);
+			if (mc.gui.hud.isHidden()) {
+				mc.gui.hud.toggle();
+			}
+		});
+		server.runCommand("kill @e[type=!player]");
+		server.runCommand("effect clear @a");
+	}
+
 	/** The class screens as a player meets them, and the Curandero with the lantern in hand and the mana bar up. */
 	private static void showClasses(ClientGameTestContext context, TestServerContext server, TestServerConnection connection) {
 		context.runOnClient(mc -> mc.gui.setScreen(new dev.forja.client.ClassChoiceScreen(false)));

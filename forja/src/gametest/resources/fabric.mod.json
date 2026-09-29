@@ -25,6 +25,7 @@
 			"dev.forja.test.CalorGameTests",
 			"dev.forja.test.JefeGameTests",
 			"dev.forja.test.ClasesGameTests",
+			"dev.forja.test.FormacionGameTests",
 			"dev.forja.test.AlcanceGameTests",
 			"dev.forja.test.EndermanGameTests",
 			"dev.forja.test.ManaGameTests",
