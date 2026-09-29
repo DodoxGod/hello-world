@@ -486,7 +486,13 @@ public final class TacticGoal extends Goal {
 			this.mob.getNavigation().stop();
 			return;
 		}
-		this.pathTo(x, target.getY(), z, speed);
+		if (!this.pathTo(x, target.getY(), z, speed) || this.mob.getNavigation().isDone()) {
+			// No path to a point beside a player on the move (it is gone before the path is): straight at it,
+			// as a mob walks to the last step of any path. It stood still here, and never went round a player who
+			// was backing away (Andy, 2026-09-29).
+			this.mind.pathless++;
+			this.mob.getMoveControl().setWantedPosition(x, target.getY(), z, speed);
+		}
 	}
 
 	/**

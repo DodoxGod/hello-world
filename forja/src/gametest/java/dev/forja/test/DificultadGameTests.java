@@ -218,7 +218,7 @@ public class DificultadGameTests {
 				MobMind mind = MobAi.mind(first);
 				where.append("; primero: ").append(mind == null ? "sin mente" : "táctica " + mind.decision.tactic() + ", quiere correr "
 					+ mind.wantsRun + ", corre " + mind.running + ", rodeo " + mind.rodeo + ", aguante " + mind.stamina + ", hueco "
-					+ mind.ringAngle + ", objetivo de la mente " + (mind.target == player));
+					+ mind.ringAngle + ", objetivo de la mente " + (mind.target == player) + ", ticks sin camino " + mind.pathless);
 				where.append(", objetivo ").append(first.getTarget() == player).append(", navegación hecha ").append(first.getNavigation().isDone())
 					.append(", velocidad ").append(first.getAttributeValue(Attributes.MOVEMENT_SPEED)).append(", movimiento del jugador ")
 					.append(MobSprint.motion(player)).append(", metas ").append(((dev.forja.mixin.MobGoalsAccess) first).forjaGoals().getAvailableGoals().stream()

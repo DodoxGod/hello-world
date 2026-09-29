@@ -57,6 +57,8 @@ public final class MobMind {
 	public boolean running;
 	/** Running in surround mode (MobSprint.rodeo): going round to its slot while the player backs away. */
 	public boolean rodeo;
+	/** Ticks it went to its ring slot with no path, steering straight at it instead (TacticGoal.toRing). */
+	public int pathless;
 	/** Ran itself out: it runs again only once its breath is partly back. */
 	public boolean winded;
 	public long lastRun = Long.MIN_VALUE / 2;
