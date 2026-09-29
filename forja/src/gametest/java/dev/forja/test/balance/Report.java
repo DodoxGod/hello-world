@@ -495,7 +495,9 @@ public final class Report {
 			+ " por punto de espada). TTK medio al 100 %: báculo " + f(staff, 2) + " s, grimorio " + f(tome, 2)
 			+ " s, frente a una mediana cuerpo a cuerpo de " + f(this.meleeMedian(), 2) + " s."
 			+ (witch == null ? "" : " La bruja sólo recibe el " + pct(witch.bolt[0]) + " de la magia.")
-			+ (enderman == null ? "" : enderman.bolt[0] > 0.5 ? " El enderman no esquiva el rayo del báculo (sólo esquiva flechas)."
+			+ (enderman == null ? "" : enderman.bolt[0] > 0.5
+				? " El enderman no se teletransporta ante el rayo del báculo como ante las flechas; lo esquiva como un golpe "
+					+ "(34 %, luego 7 s sin esquivar), y eso el modelo no lo cuenta."
 				: " El enderman esquiva el rayo del báculo."));
 		this.line("");
 	}

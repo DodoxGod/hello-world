@@ -59,7 +59,12 @@ public final class CombatFeedback {
 	}
 
 	public static void dodgedHit(Entity entity) {
-		sound(entity, SoundEvents.PLAYER_ATTACK_NODAMAGE, 0.8F, 1.4F);
+		dodgedHit(entity, entity.position());
+	}
+
+	/** The same, heard where the blow missed: an enderman that blinked away has already left that spot. */
+	public static void dodgedHit(Entity entity, net.minecraft.world.phys.Vec3 where) {
+		entity.level().playSound(null, where.x, where.y, where.z, SoundEvents.PLAYER_ATTACK_NODAMAGE, SoundSource.HOSTILE, 0.8F, 1.4F);
 	}
 
 	/** A staggered foe taken down hard: sparks, a heavy crack, and everyone watching is told. */

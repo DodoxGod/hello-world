@@ -43,7 +43,7 @@
 - **Afilado (+3 por golpe mientras el arma está nueva) vale en cualquier pieza**, también en una atadura o una guarda, y se suma a cada golpe sin mirar la velocidad. Cambiar las piezas con Afilado de la mejor al 100 % por netherita sube el TTK: hacha +17 %, espada +31 %, daga +41 %, espadon +14 %, lanza +16 %, mazo +10 %, tridente +13 %, mangual +12 %, guanteletes +15 %, guadana +9 %, baculo +2 %, grimorio +21 %.
 - **El mango de vidriacero está en 30 de 36 mejores armas.** Su velocidad de mango (+0,30) más la de su rasgo Diáfano (+0,3 al atributo) le dan el doble que cualquier otro mango. Cambiarlo por acero estelar (el mejor mango sin rasgo): espada +13 %, daga +19 %, espadon +13 %, hacha +21 %, lanza +9 %, mazo +5 %, tridente +9 %, mangual +3 %, guanteletes +17 %, guadana +11 %.
 - **El Mestizaje sale en la ficha pero no en el golpe.** `ForgeStats.sheet(stack)` suma el 10 % de mezclar rasgos, pero `Assembler.write` escribe los atributos sin él: una espada de damasco con mango de vidriacero y guarda de eco enseña 8,70 de daño y pega 8,00. Pasa igual en armaduras y herramientas (sólo arcos, flechas, escudos y alas leen la ficha con el Mestizaje dentro).
-- **La magia no gasta estamina ni se cansa**, no le afecta la invulnerabilidad (cada proyectil y cada mordisco de runa la ponen a 0) y pasa por encima de la armadura (daño mágico: el yunque andante, con 10 de armadura, pierde 1,15 por punto de rayo del báculo y 0,45 / 0,56 por punto de espada). TTK medio al 100 %: báculo 0,38 s, grimorio 1,01 s, frente a una mediana cuerpo a cuerpo de 0,70 s. La bruja sólo recibe el 15 % de la magia. El enderman no esquiva el rayo del báculo (sólo esquiva flechas).
+- **La magia no gasta estamina ni se cansa**, no le afecta la invulnerabilidad (cada proyectil y cada mordisco de runa la ponen a 0) y pasa por encima de la armadura (daño mágico: el yunque andante, con 10 de armadura, pierde 1,15 por punto de rayo del báculo y 0,45 / 0,56 por punto de espada). TTK medio al 100 %: báculo 0,38 s, grimorio 1,01 s, frente a una mediana cuerpo a cuerpo de 0,70 s. La bruja sólo recibe el 15 % de la magia. El enderman no se teletransporta ante el rayo del báculo como ante las flechas; lo esquiva como un golpe (34 %, luego 7 s sin esquivar), y eso el modelo no lo cuenta.
 
 ## Mejor conjunto por tipo de arma
 
@@ -451,7 +451,7 @@ Vida y tope por golpe en HERRERO, sin veteranos ni élites (un veterano es ×1,5
 | vindicator | 24 | 10,8 | 19 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 |  |
 | evoker | 24 | 10,8 | 19 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 |  |
 | witch | 26 | 11,7 | 21 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 / 1,25 | 0,15 |  |
-| enderman | 40 | 18,0 | 29 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 | se teletransporta ante proyectiles |
+| enderman | 40 | 18,0 | 29 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 | se teletransporta ante proyectiles; esquiva el 34 % de los golpes teletransportándose (7 s sin esquivar tras hacerlo), no modelado |
 | blaze | 20 | 9,0 | 17 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 |  |
 | piglin_brute | 50 | 22,5 | 35 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 |  |
 | herrero_caido *(Forja)* | 320 | 25,6 | 197 | 0,30 / 0,75 | 0,31 / 0,78 | 0,32 / 0,79 | 0,50 | jefe: guardia al 50 %, tope por golpe del 8 %, postura sólo tras sus golpes pesados, fases de reforja invulnerables |

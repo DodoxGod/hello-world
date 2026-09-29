@@ -1,5 +1,22 @@
 # Novedades
 
+## 2026-09-28 — el enderman esquiva teletransportándose
+
+- Cuando le va a llegar un golpe con alguien detrás, el enderman tiene un **34 %** de probabilidad de esquivarlo
+  teletransportándose: aparece a 4–8 bloques, hacia un lado o alejándose de quien le pegó, con el sonido y las
+  partículas de siempre, y el golpe no le hace nada (ni daño, ni postura, ni armadura). Sigue sabiendo quién fue y
+  va a por él.
+- Si la teletransportación sale bien, pasa **7 segundos** sin poder esquivar así. Si no encuentra dónde aparecer
+  (encerrado), no hay esquiva ni enfriamiento: se come el golpe y el siguiente vuelve a tirar.
+- Qué esquiva: golpes cuerpo a cuerpo de jugadores y de mobs, espinas, explosiones que alguien provocó y la magia
+  (el rayo del báculo, el área del grimorio). Las flechas y demás proyectiles, y las pociones lanzadas, siguen como
+  en vanilla: las esquiva siempre él solo. Nunca esquiva el daño sin atacante (caída, lava, fuego, cactus, ahogarse,
+  el vacío, /kill, tampoco un /damage generic_kill "de" un jugador en creativo), un golpe que la invulnerabilidad de
+  después de un golpe se iba a tragar de todas formas, ni estando aturdido (la postura rota es la ocasión del
+  remate).
+- Va igual con la IA del mod, con la de vanilla o sin IA. En la config de combate: `endermanDodgeChance` (0,34; 0
+  lo apaga) y `endermanDodgeCooldownTicks` (140). El enfriamiento no se guarda con el mundo.
+
 ## 2026-09-28 — los monstruos cuentan con el alcance del arma
 
 - Un monstruo golpea desde donde llega **su arma**, no desde donde llega su brazo: el golpe empieza y acierta a

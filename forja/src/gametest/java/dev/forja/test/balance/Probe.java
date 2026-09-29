@@ -274,6 +274,8 @@ public final class Probe {
 		mob.invulnerableTime = 0;
 		mob.setRemainingFireTicks(0);
 		mob.removeAllEffects();
+		// The probe measures the blow, not the enderman's dodge (ai/EnderDodge): as if it had just dodged.
+		dev.forja.ai.EnderDodge.hold(mob);
 	}
 
 	/** A plain one of its kind: no gear, no veteran's or elite's roll, no difficulty modifier, no brain. */
@@ -319,7 +321,7 @@ public final class Probe {
 			return "copia el arma con que le pegan";
 		}
 		if (mob.getType() == EntityTypes.ENDERMAN) {
-			return "se teletransporta ante proyectiles";
+			return "se teletransporta ante proyectiles; esquiva el 34 % de los golpes teletransportándose (7 s sin esquivar tras hacerlo), no modelado";
 		}
 		return "";
 	}

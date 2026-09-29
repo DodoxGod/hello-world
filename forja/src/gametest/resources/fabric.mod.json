@@ -24,7 +24,8 @@
 			"dev.forja.test.MontadoraGameTests",
 			"dev.forja.test.CalorGameTests",
 			"dev.forja.test.JefeGameTests",
-			"dev.forja.test.AlcanceGameTests"
+			"dev.forja.test.AlcanceGameTests",
+			"dev.forja.test.EndermanGameTests"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"

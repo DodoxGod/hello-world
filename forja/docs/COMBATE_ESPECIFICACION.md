@@ -533,6 +533,14 @@ Una red v2 puede usar un prefijo de este bloque (sus `nombres_obs` tienen que co
   **70 %** del daño. Si eso lo aturde → **guardia rota**: baja el escudo y no puede levantarlo en **60** ticks.
 - **Esquiva**: salto lateral (lado al azar) 0,6 horizontal y 0,25 vertical. Da **6** ticks de invulnerabilidad a
   golpes con atacante; enfriamiento **60**; solo en el suelo.
+- **Esquiva del enderman** (2026-09-28, `EnderDodge`, sin red ni reglas: va en el camino del daño): ante un golpe con
+  atacante vivo (no él mismo) tira `endermanDodgeChance` (**0,34**); si sale, se teletransporta con el teletransporte
+  vanilla del enderman a 4–8 bloques, dentro de ±90° de la dirección opuesta al atacante, altura −2..+4, hasta
+  **16** intentos, y el golpe se anula antes de armadura y postura (recuerda al atacante: `setLastHurtByMob`). Solo
+  un teletransporte logrado da el enfriamiento `endermanDodgeCooldownTicks` (**140**); si ninguno sale, recibe el
+  golpe y no hay enfriamiento. No tira: proyectiles (`is_projectile`) ni pociones lanzadas (los esquiva vanilla),
+  daño sin atacante, `bypasses_invulnerability`, un golpe que la invulnerabilidad se tragaría
+  (`invulnerableTime` > 10 y daño ≤ `lastHurt`), ni aturdido. Enfriamiento en memoria, no se guarda.
 - **Cabeza `defensa`**: 1 = levantar el escudo (si lo tiene y no está roto) mientras lo pida; 2 = esquivar.
   CUBRIRSE levanta el escudo.
 

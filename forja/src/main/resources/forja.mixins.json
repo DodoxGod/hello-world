@@ -26,6 +26,7 @@
 		"DrownedRainMixin",
 		"LivingEntityAiAccess",
 		"CreeperAiAccess",
+		"EnderManAccess",
 		"PiglinAiMixin",
 		"PlayerAffinityMixin",
 		"PlayerGlideMixin",

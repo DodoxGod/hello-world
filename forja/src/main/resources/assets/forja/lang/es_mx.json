@@ -566,7 +566,7 @@
   "gui.forja.libro.mundo.botin.titulo": "Botín",
   "gui.forja.libro.mundo.botin": "En llanuras, bosques y otros biomas de aldea hay forjas abandonadas con las dos mesas, un cofre de plantillas grabadas, equipo y orbes, y un Herrero ermitaño con quien comerciar. Los cofres de herreros guardan plantillas y equipo forjado; mazmorras, minas, fortalezas, templos y portales en ruinas esconden plantillas grabadas y equipo gastado con mejoras; los bastiones, armas de netherita.",
   "gui.forja.libro.mundo.monstruos.titulo": "Monstruos",
-  "gui.forja.libro.mundo.monstruos": "Zombis, esqueletos y vindicadores a veces llevan armadura o armas forjadas en lugar de las normales.",
+  "gui.forja.libro.mundo.monstruos": "Zombis, esqueletos y vindicadores a veces llevan armadura o armas forjadas en lugar de las normales. El enderman esquiva el 34 % de los golpes teletransportándose; tras una esquiva así pasa 7 segundos sin poder repetirla.",
   "gui.forja.libro.mundo.aldeanos.titulo": "Aldeanos",
   "gui.forja.libro.mundo.aldeanos": "Los herreros venden plantillas base, plantillas grabadas de su oficio y, en nivel 4, orbes de Eficiencia, Filo o Protección. El herrero de herramientas maestro vende un mapa hacia una forja abandonada. Un aldeano que toma una Mesa de piezas se vuelve Forjador: plantillas, kits de reparación, orbes y el mapa de forja.",
   "gui.forja.libro.mundo.adornos.titulo": "Adornos",

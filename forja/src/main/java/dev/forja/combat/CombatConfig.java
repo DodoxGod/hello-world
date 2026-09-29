@@ -285,6 +285,14 @@ public final class CombatConfig {
 	public double creeperFeintChance = 0.35;
 	public int creeperFeintAtTicks = 12;
 	public int creeperFeintPauseTicks = 20;
+	/**
+	 * Andy, 2026-09-28: "quiero que el enderman tenga un 34 % de probabilidad de esquivar por teletransportación,
+	 * pero que tenga cooldown de 7 segundos si hay una teletransportación exitosa". The chance an enderman blinks
+	 * away from a blow that has an attacker behind it instead of taking it (dev.forja.ai.EnderDodge); 0 turns it off.
+	 */
+	public double endermanDodgeChance = 0.34;
+	/** Ticks an enderman cannot dodge that way after a teleport that went through (7 s). A failed one costs nothing. */
+	public int endermanDodgeCooldownTicks = 140;
 
 	/** Natural attacks of unarmed mobs by entity id; anything missing hits BLUNT. */
 	public Map<String, DamageKind> ataquesNaturales = defaultNaturalAttacks();

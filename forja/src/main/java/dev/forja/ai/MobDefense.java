@@ -26,7 +26,8 @@ import net.minecraft.world.phys.Vec3;
  *   mob's balance, and a broken balance breaks the guard: shield down for 3 seconds;</li>
  *   <li><b>parry</b>: a blow that meets a shield raised in the last 4 ticks bounces off, the player
  *   reels, and the mob's next blow comes after a short warning (its counter);</li>
- *   <li><b>dodge</b>: a hop to the side with 6 ticks of i-frames, every 3 seconds at most.</li>
+ *   <li><b>dodge</b>: a hop to the side with 6 ticks of i-frames, every 3 seconds at most;</li>
+ *   <li><b>the enderman's blink</b>: a blow it teleports away from instead of taking (see {@link EnderDodge}).</li>
  * </ul>
  */
 public final class MobDefense {
@@ -134,6 +135,10 @@ public final class MobDefense {
 	public static boolean allowDamage(Mob mob, DamageSource source, float amount) {
 		if (dodging(mob) && source.getEntity() != null) {
 			CombatFeedback.dodgedHit(mob);
+			return false;
+		}
+		// An enderman blinks away from a blow now and then, instead of taking it (EnderDodge).
+		if (mob instanceof net.minecraft.world.entity.monster.EnderMan ender && EnderDodge.dodges(ender, source, amount)) {
 			return false;
 		}
 		if (!mob.isUsingItem() || !hasShield(mob) || mob.getUsedItemHand() != InteractionHand.OFF_HAND
