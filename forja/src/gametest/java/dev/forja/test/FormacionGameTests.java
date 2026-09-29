@@ -281,7 +281,9 @@ public class FormacionGameTests {
 		CombatConfig.get().eliteChance = 0.0;
 		var villager = helper.spawn(EntityTypes.VILLAGER, new BlockPos(4, 1, 4));
 		villager.setNoAi(true);
-		villager.setInvulnerable(true);
+		// Sturdy rather than invulnerable: an invulnerable target is no enemy at all, and they would leave it be.
+		villager.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(500.0);
+		villager.setHealth(500.0F);
 		List<Zombie> crowd = new ArrayList<>();
 		for (BlockPos pos : List.of(new BlockPos(1, 1, 1), new BlockPos(7, 1, 1), new BlockPos(1, 1, 7), new BlockPos(7, 1, 7))) {
 			Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, pos);

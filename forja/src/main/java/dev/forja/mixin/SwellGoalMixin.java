@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * The feint: now and then a creeper hisses and swells, then stops. Once per encounter; the next fuse is real.
- * Only a creeper on its own feints: in a group the feint only cost it the kill (the simulator, 2026-09-29).
+ * Only a creeper on its own feints (no ally after the same target): in a group the feint only cost it the kill (the simulator, 2026-09-29).
  *
  * <p>And the commitment (PROPUESTAS_IA_SIMULADOR.md 2.5): lit, it keeps walking at the player at half speed
  * instead of standing still, and once the fuse has burnt {@link #COMMIT} ticks it only lets it go out beyond
@@ -61,7 +61,8 @@ abstract class SwellGoalMixin {
 		forja$feinted = false;
 	}
 
-	@Inject(method = "tick", at = @At("TAIL"))
+	// every return, not only the last: vanilla puts the fuse out and leaves, and the commitment has to see that
+	@Inject(method = "tick", at = @At("RETURN"))
 	private void forja$feint(CallbackInfo ci) {
 		CombatConfig cfg = CombatConfig.get();
 		if (!cfg.enabled) return;
@@ -78,7 +79,7 @@ abstract class SwellGoalMixin {
 		}
 		if (forja$fuseTicks++ == 0) {
 			forja$feintPlanned = !forja$feinted && target instanceof Player && creeper.getRandom().nextDouble() < cfg.creeperFeintChance
-				&& dev.forja.ai.ObsM1.allies(creeper).isEmpty();
+				&& dev.forja.ai.ObsM1.allies(creeper).stream().noneMatch(ally -> ally.getTarget() == target);
 		}
 		if (forja$feintPlanned && forja$fuseTicks >= cfg.creeperFeintAtTicks) {
 			creeper.setSwellDir(-1);
