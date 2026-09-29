@@ -10062,13 +10062,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 		server.runCommand("time set 13500");
 		server.runCommand("weather clear");
 		server.runOnServer(s -> dev.forja.world.WorldEvents.stop(connection.getServerLevel()));
-		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d grass_block", px - 14, y - 1, pz - 14, px + 14, y - 1, pz + 14));
-		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", px - 14, y, pz - 14, px + 14, y + 20, pz + 14));
-		// The rod on a short plinth, as it would be on a roof, and two lanterns to read it by at dusk.
-		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d polished_deepslate", px, y, pz, px, y + 1, pz));
-		server.runCommand(String.format(Locale.ROOT, "setblock %d %d %d forja:pararrayos", px, y + 2, pz));
-		server.runCommand(String.format(Locale.ROOT, "setblock %d %d %d lantern", px - 2, y, pz + 1));
-		server.runCommand(String.format(Locale.ROOT, "setblock %d %d %d lantern", px + 2, y, pz - 1));
+		// The camera first: 240 blocks off, the chunks are not loaded until someone is there, and a fill or a
+		// setblock on them does nothing.
 		double camX = px + 10.5;
 		double camY = y + 3.0;
 		double camZ = pz + 7.5;
@@ -10076,6 +10071,13 @@ public class ForjaClientTest implements FabricClientGameTest {
 			server.runCommand(String.format(Locale.ROOT, "tp @a %.2f %.2f %.2f facing %.2f %.2f %.2f", camX, camY, camZ, px + 0.5, y + 7.0, pz + 0.5));
 			context.waitTicks(1);
 		}
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d grass_block", px - 14, y - 1, pz - 14, px + 14, y - 1, pz + 14));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", px - 14, y, pz - 14, px + 14, y + 20, pz + 14));
+		// The rod on a short plinth, as it would be on a roof, and two lanterns to read it by at dusk.
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d polished_deepslate", px, y, pz, px, y + 1, pz));
+		server.runCommand(String.format(Locale.ROOT, "setblock %d %d %d forja:pararrayos", px, y + 2, pz));
+		server.runCommand(String.format(Locale.ROOT, "setblock %d %d %d lantern", px - 2, y, pz + 1));
+		server.runCommand(String.format(Locale.ROOT, "setblock %d %d %d lantern", px + 2, y, pz - 1));
 		context.runOnClient(mc -> {
 			mc.options.fov().set(80);
 			mc.gui.hud.getChat().clearMessages(false);
