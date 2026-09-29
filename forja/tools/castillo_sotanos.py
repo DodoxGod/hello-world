@@ -9,6 +9,7 @@ import math
 from castillo import HORIZONTAL, OPPOSITE, _hash, _smooth, disc, masonry, noise_origin, slab, stairs
 
 L1, L2 = -10, -25
+DOME_RISE = 3
 CHAIN = {"axis": "y", "waterlogged": "false"}
 
 
@@ -110,8 +111,15 @@ def stair_run(w, x, z, y_top, direction, drop, width=3, keep=False):
                     w.put(bx, yy, bz, *stairs(f"{family}_stairs", OPPOSITE[direction])) if k < drop else w.put(bx, yy, bz, "polished_deepslate")
                 else:
                     w.air(bx, yy, bz)
-        if k % 6 == 3:
-            w.put(cx + px * half, y + 3, cz + pz * half, "lantern", {"hanging": "false", "waterlogged": "false"}) if False else None
+        # Where the flight comes down through a room (the crypt, the guard room, the coal store, the antechamber) the
+        # steps used to hang in the air with nothing under them: the flight stands on a mass of stone to the floor.
+        if k < drop:
+            for across in range(-half, half + 1):
+                bx, bz = cx + px * across, cz + pz * across
+                yy = y - 2
+                while w.name(bx, yy, bz) == "minecraft:air" and yy > y - 24:
+                    w.put(bx, yy, bz, stone(bx, yy, bz, 0.5))
+                    yy -= 1
     return x + dx * drop, z + dz * drop
 
 
@@ -123,7 +131,10 @@ def rotunda(w, cx, cz, r, floor_y, height):
     for (dx, dz), depth in disc(r + 2.4).items():
         x, z = cx + dx, cz + dz
         d = r + 2.4 - depth                          # distance from the middle
-        dome = floor_y + height + int(round(math.sqrt(max(0.0, 1.0 - (d / (r + 0.5)) ** 2)) * 6)) if d <= r else floor_y + height
+        # The dome rises three at the crown, not six: at six its crown came up through the quenching hall's floor and
+        # took all four quench pools with it, and its flank cut the bottom out of the cistern (Andy, 2026-09-29: "parts
+        # overlap"). Its crown is now under the pools' beds.
+        dome = floor_y + height + int(round(math.sqrt(max(0.0, 1.0 - (d / (r + 0.5)) ** 2)) * DOME_RISE)) if d <= r else floor_y + height
         for y in range(floor_y - 1, dome + 2):
             if d > r:
                 w.put(x, y, z, stone(x, y, z, 0.5))
@@ -131,7 +142,8 @@ def rotunda(w, cx, cz, r, floor_y, height):
                 ring = int(d) % 6 == 5
                 w.put(x, y, z, "polished_blackstone" if ring else "polished_blackstone_bricks" if _hash(x, y, z, 121) < 0.85 else "cracked_polished_blackstone_bricks")
             elif y >= dome:
-                w.put(x, y, z, stone(x, y, z, 0.9))
+                if w.name(x, y, z) is None:            # what is over the dome already (the cistern's floor) stays
+                    w.put(x, y, z, stone(x, y, z, 0.9))
             else:
                 w.air(x, y, z)
     # the star: five points on a circle, joined two apart, drawn in the mod's own melt channels
@@ -192,9 +204,13 @@ def build(w):
     corridor(w, (71, 86), (75, 86), L1)
     corridor(w, (126, 86), (130, 86), L1)
     corridor(w, (100, 99), (100, 103), L1)
+    # the larder and the ingot store were dug with no way into either (a walk from the gate found them)
+    corridor(w, (81, 99), (81, 101), L1)                                                          # quenching hall to the larder
+    corridor(w, (142, 98), (142, 100), L1, keep=True)                                             # coal store to the ingot store
     corridor(w, (130, 30), (145, 30), L1, soul=True)
-    corridor(w, (165, 30), (178, 30), L1, soul=True)                                              # the ossuary's tunnel to the graveyard
-    corridor(w, (154, 64), (176, 64), L1)                                                         # the mine gallery
+    corridor(w, (165, 30), (180, 30), L1, soul=True)                                              # the ossuary's tunnel to the graveyard
+    corridor(w, (180, 20), (180, 30), L1, soul=True)                                              # and on under the tomb
+    corridor(w, (154, 64), (188, 64), L1)                                                         # the mine gallery
     corridor(w, (154, 92), (203, 92), L1, width=3, height=3, keep=True)                           # the slag drain, out to the ditch
     # the four quenches, each in its own pool
     for k, (px, pz, liquid) in enumerate(((84, 79, "water"), (108, 79, "lava"), (84, 89, "powder_snow"), (108, 89, "honey_block"))):
@@ -208,18 +224,25 @@ def build(w):
                     w.put(x, L1 - 2, z, "polished_deepslate")
                     w.put(x, L1 - 1, z, liquid, {"level": "0"} if liquid in ("water", "lava") else None)
     # ---- ways down from above
-    stair_run(w, 78, 27, 0, "south", 0)                                                           # placeholder landing in the keep
+    # (Two zero-length "placeholder" flights stood here and at level -2: walled slots with a floor and a roof that
+    # led nowhere. They are gone.)
     stair_run(w, 78, 20, -1, "south", 9, keep=True)                                               # the keep's north-west stair to the crypt
     stair_run(w, 52, 60, -1, "south", 9)                                                          # the armoury's, to the guard room
     stair_run(w, 135, 58, -1, "south", 9, keep=True)                                              # the foundry's, to the coal
-    stair_run(w, 181, 30, -1, "west", 9, keep=True)                                               # the tomb's, to the ossuary tunnel
-    stair_run(w, 186, 64, -1, "west", 9)                                                          # by the ice house, to the mine
+    # The tomb's, to the ossuary tunnel: it started seven blocks south of the tomb, an open hole among the graves that
+    # cut two of them in half. It goes down from inside the tomb now, and the tunnel comes on under it.
+    stair_run(w, 189, 20, -1, "west", 9, keep=True)
+    # By the ice house, to the mine: it went down westward through the ice house's own wall. It comes down from the
+    # north beside it now, into the end of the mine gallery.
+    stair_run(w, 188, 54, -1, "south", 9)
     # ---- level -2
     cellar(w, 86, 40, 115, 62, L2, 8, keep=True, decay=0.05, soul=True, pillars=7)                 # the antechamber of the nine
-    rotunda(w, 100, 92, 25, L2, 9)
+    rotunda(w, 100, 92, 25, L2, 8)
     cellar(w, 131, 80, 153, 104, L2, 7, keep=True, decay=0.08, soul=True)                         # the soul foundry
     cellar(w, 48, 80, 72, 104, L2, 6, keep=True, decay=0.02)                                      # the vault
     corridor(w, (100, 63), (100, 66), L2, keep=True)
     corridor(w, (126, 92), (130, 92), L2, keep=True, soul=True)
-    stair_run(w, 100, 76, L1 - 0, "north", 0)
-    stair_run(w, 100, 84, L1 - 1, "north", 14, keep=True)                                         # from the quenching hall down to the antechamber
+    # The way down to level -2. It went from the quenching hall north through the Deep Forge's dome, a flight hanging
+    # in the boss's hall, and landed in it, not in the antechamber its comment promised. It goes from the crypt now,
+    # between the tombs, down into the antechamber - which is under the crypt - and the Deep Forge is the room past it.
+    stair_run(w, 95, 66, L1 - 1, "north", 14, keep=True)

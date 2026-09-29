@@ -342,8 +342,12 @@ def keep(w):
                     w.put(ox + dx, y, oz + dz, "oxidized_cut_copper")
     for y in range(66, 72):
         w.put(ox, y, oz, "lightning_rod", {"facing": "up", "powered": "false", "waterlogged": "false"}) if y == 71 else w.put(ox, y, oz, "oxidized_copper")
-    for k in range(4):
-        w.air(ox - 1 + k % 2, 47 + k // 2, oz + r)          # the door from the roof
+    # the door from the roof: through both courses of the drum, three wide, from the deck up. It was cut through the
+    # outer course only, a step up, and so opened onto the inner course: the observatory had no way in.
+    for x in range(ox - 1, ox + 2):
+        for z in (oz + r, oz + r - 1):
+            for y in range(46, 49):
+                w.air(x, y, z)
     # the hall's great chimney on the east face, smoking
     for y in range(0, 58):
         for dx in (0, 1, 2):
@@ -362,18 +366,26 @@ def keep(w):
 def wings(w):
     # the west range: library, scriptorium, armoury, hall of banners, barracks, all under one long roof; the worse kept side
     noise_origin(48, 0, 24)
+    # It is built up against the keep's south-west turret, not through it, and its doors open where somebody can walk
+    # to them: the east face north of the turret looks onto a slot a block wide between it and the keep, cut up by
+    # the keep's buttresses, so the north door (into the court under the Archive tower) takes the place of the one
+    # that opened onto a buttress, and the one that opened into the turret's wall is gone.
     building(w, 48, 24, 70, 112, 0, [9, 9], decay=0.2, wall=2, roof="tile", ridge="z", windows=3,
-             doors=[("east", 8, 3, 5), ("east", 44, 3, 5), ("east", 76, 3, 5)], chimneys=[(50, 50), (50, 100)], open_roof=0.12)
+             doors=[("north", 10, 3, 5), ("east", 76, 3, 5)], chimneys=[(50, 50), (50, 100)], open_roof=0.12,
+             keep_out=[(KEEP[0], KEEP[3], 6.4)])
     # the chapel of the anvil: tall, copper-roofed, half its vault down
     noise_origin(131, 0, 24)
     building(w, 131, 24, 153, 44, 0, [16], decay=0.25, wall=2, roof="copper", ridge="x", windows=8, glass="red_stained_glass_pane",
-             doors=[("west", 8, 3, 6)], open_roof=0.3)
-    # the sacristy, the great foundry with its three stacks, and the master's workshop: the east range, kept working
+             doors=[], open_roof=0.3)
+    # the sacristy, the great foundry with its three stacks, and the master's workshop: the east range, kept working.
+    # The chapel and the sacristy used to have their doors on the west, onto the same slot between the range and the
+    # keep, walled in by buttresses: you went in from the foundry, through the sacristy (castillo_salas.sacristy).
     noise_origin(131, 0, 46)
-    building(w, 131, 46, 153, 54, 0, [8], decay=0.1, wall=2, roof="tile", ridge="x", doors=[("west", 3, 2, 4)])
+    building(w, 131, 46, 153, 54, 0, [8], decay=0.1, wall=2, roof="tile", ridge="x", doors=[])
     noise_origin(131, 0, 56)
+    # built up against the keep's south-east turret, its door moved south clear of it
     building(w, 131, 56, 153, 98, 0, [18], decay=0.06, keep=True, wall=2, roof="black", ridge="z", windows=6, glass="gray_stained_glass_pane",
-             doors=[("west", 18, 5, 7)], chimneys=[(149, 62), (149, 76), (149, 90)])
+             doors=[("west", 21, 5, 7)], chimneys=[(149, 62), (149, 76), (149, 90)], keep_out=[(KEEP[2], KEEP[3], 6.4)])
     noise_origin(131, 0, 100)
     building(w, 131, 100, 153, 112, 0, [9, 9], decay=0.08, wall=2, roof="tile", ridge="x", doors=[("west", 5, 3, 5)], chimneys=[(149, 104)])
     # the mess and the alloy room, either side of the inner gate
@@ -413,6 +425,29 @@ def lower_ward(w):
     noise_origin()
 
 
+def wall_stair(w, x_start, z_near, top, z_walk, keep=False):
+    """A flight of stone up the inner face of a curtain to its wall walk, climbing west two wide along z_near and
+    z_near + 1, its last step level with the walk at `top`, and the walk's low wall opened where it lands.
+
+    A walk counts its way in from the towers; three towers and the stretches between them were cut off from all of
+    that - their doors on the ground open into the curtain's own masonry, and the gatehouses, the breach and the keep's
+    turrets cut the walks - so nobody could reach them (a walk from the gate found it, 2026-09-29)."""
+    stone = masonry(0.1, keep)
+    family = "polished_blackstone_brick" if keep else "deepslate_brick"
+    for k in range(top + 1):
+        x = x_start - k
+        for z in (z_near, z_near + 1):
+            for y in range(0, k):
+                w.put(x, y, z, stone(x, y, z, 0.3))
+            w.put(x, k, z, *stairs(f"{family}_stairs", "west"))
+            for y in range(k + 1, k + 4):
+                w.air(x, y, z)
+    x_end = x_start - top
+    for x in range(x_end - 1, x_end + 2):
+        for y in range(top + 1, top + 4):
+            w.air(x, y, z_walk)
+
+
 def build():
     w = Canvas()
     ground(w)
@@ -425,6 +460,10 @@ def build():
     keep(w)
     wings(w)
     lower_ward(w)
+    # the ways up to the walks that had none: the inner curtain's south-east stretch (and through it the east one and
+    # its two towers), and the outer curtain's south-east stretch (and the Glass tower on its corner)
+    wall_stair(w, 147, INNER[3] - INNER_T - 1, INNER_H - 1, INNER[3] - INNER_T + 1)
+    wall_stair(w, 160, OUTER[3] - OUTER_T - 1, OUTER_H - 1, OUTER[3] - OUTER_T + 1)
     import castillo_bajo
     castillo_bajo.build(w)
     # last, because its stairs are cut down through floors that have to be there first

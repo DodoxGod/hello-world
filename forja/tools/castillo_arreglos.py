@@ -7,6 +7,7 @@
 - Anything left hanging in the air: a block with nothing on any side, a lantern with nothing to hang from, a banner
   with no wall behind it, a torch or a carpet on nothing.
 - The garrison: a castle this size had 32 monsters in it. Each floor gets a patrol to match its size.
+- What the game would not leave as written: lava with a way out, gravel over nothing, a flower on stone.
 """
 from castillo import HORIZONTAL, OPPOSITE, _hash, is_full
 
@@ -212,12 +213,44 @@ def tidy_stands(world):
     return removed
 
 
+SIDES_AND_UNDER = ((1, 0, 0), (-1, 0, 0), (0, 0, 1), (0, 0, -1), (0, -1, 0))
+# What falls when there is nothing under it, and the look-alike that does not.
+FALLS = {"minecraft:gravel": "minecraft:cobblestone", "minecraft:sand": "minecraft:smooth_sandstone",
+         "minecraft:red_sand": "minecraft:smooth_red_sandstone"}
+SOIL = ("grass_block", "dirt", "coarse_dirt", "podzol", "rooted_dirt", "farmland", "moss_block", "mud", "mycelium", "dirt_path")
+FLOWERS = ("allium", "azure_bluet", "cornflower", "oxeye_daisy", "poppy", "dandelion", "dead_bush", "short_grass", "fern")
+
+
+def settle(world):
+    """What the game would not leave as it was written (a second look, 2026-09-29): lava walled in behind an ember
+    window whose wall a door was later cut through runs down the tower; gravel with a stair dug out under it falls;
+    a flower on stone pops off. The lava becomes magma, which glows the same and stays; the gravel, a stone that
+    looks like it; the flower goes."""
+    counts = {"lava": 0, "fall": 0, "flowers": 0}
+    for (x, y, z), (name, props, nbt) in list(world.blocks.items()):
+        if name == "minecraft:lava":
+            if any(_free(world, x + dx, y + dy, z + dz) for dx, dy, dz in SIDES_AND_UNDER):
+                world.blocks[(x, y, z)] = ("minecraft:magma_block", {}, None)
+                counts["lava"] += 1
+        elif name in FALLS:
+            under = world.name(x, y - 1, z)
+            if under == "minecraft:air" or (under is None and y >= 0):
+                world.blocks[(x, y, z)] = (FALLS[name], {}, None)
+                counts["fall"] += 1
+        elif _short(name) in FLOWERS:
+            if _short(world.name(x, y - 1, z)) not in SOIL + ("sand", "red_sand"):
+                world.blocks[(x, y, z)] = AIR
+                counts["flowers"] += 1
+    return counts
+
+
 def apply(world):
     report = {}
     report.update(cheaper_decor(world))
     report["loot"] = thin_loot(world)
     report["garrison"] = garrison(world)
     report["floating"] = drop_floating(world)
+    report["settled"] = settle(world)
     report["stands_removed"] = tidy_stands(world)
     hostile = sum(1 for e in world.entities if e["nbt"]["id"] != "minecraft:armor_stand" and "villager" not in e["nbt"]["id"])
     report["monsters"] = hostile

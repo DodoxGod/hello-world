@@ -292,12 +292,11 @@ def p_quench(w, x, y, z, facing, salt):
 
 
 def p_ingots(w, x, y, z, facing, salt):
-    pick = ("raw_iron_block", "raw_copper_block", "iron_bars", "chain")
+    # a lone iron bar standing on the floor was a stray post, not a stock of iron (Andy, 2026-09-29): a plate of it
+    pick = ("raw_iron_block", "raw_copper_block", "heavy_weighted_pressure_plate", "chain")
     name = pick[int(_hash(x, y, z, salt) * len(pick))]
     if name == "chain":
         w.put(x, y, z, "iron_chain", {"axis": "x" if facing in ("north", "south") else "z", "waterlogged": "false"})
-    elif name == "iron_bars":
-        w.put(x, y, z, "iron_bars")
     else:
         w.put(x, y, z, name)
 
@@ -320,10 +319,12 @@ def keep_upstairs(w):
     # storey 3, the counting house: clerks' desks along the north of it, the ledgers
     dress(w, (101, 39, 126, 57), 27, [p_desk, p_chiseled, p_coins, p_desk, p_lectern, p_shelves], spacing=2, salt=14)
     # storey 4, the stores under the roof: what a garrison eats and burns, round every wall of it
+    # Not every block of wall with a cask against it, nor a stack every five: the store was so full of barrels that it
+    # read as clutter (Andy, 2026-09-29: "a store room of barrels"). Every third place, and a stack every ten.
     store = [p_barrels("forja:chests/bastion_bodega", 0.15), p_hay, p_barrels(), p_block("coal_block"), p_pot, p_barrels(), p_hay]
-    dress(w, (75, 18, 126, 37), 36, store, spacing=2, salt=15)
+    dress(w, (75, 18, 126, 37), 36, store, spacing=3, salt=15)
     # and in the middle of the north end, stacks in rows as the south end has them, an aisle down the middle
-    for x in range(78, 123, 5):
+    for x in range(78, 123, 10):
         if 96 <= x <= 105:
             continue
         for z in (27, 32):
@@ -335,8 +336,8 @@ def keep_upstairs(w):
                     for k in range(tall):
                         if _free(w, x + dx, 36 + k, z + dz, 1):
                             w.put(x + dx, 36 + k, z + dz, "barrel", {"facing": "up" if _hash(x + dx, k, z + dz, 303) < 0.7 else "north", "open": "false"})
-    dress(w, (101, 39, 126, 67), 36, store, spacing=2, salt=16)
-    dress(w, (75, 39, 99, 67), 36, store, spacing=2, salt=17)
+    dress(w, (101, 39, 126, 67), 36, store, spacing=3, salt=16)
+    dress(w, (75, 39, 99, 67), 36, store, spacing=3, salt=17)
 
 
 def tavern_upstairs(w):
@@ -380,7 +381,8 @@ def guard_house(w):
 
 
 def powder_house(w):
-    dress(w, (170, 77, 186, 87), 0, [p_cauldron, p_block("sand"), p_barrels("forja:chests/campamento_saqueadores", 0.2), p_block("iron_bars", high=2)],
+    # kegs and sand against the walls; the iron bars two high it had between them were posts of bars joined to nothing
+    dress(w, (170, 77, 186, 87), 0, [p_cauldron, p_block("sand"), p_barrels("forja:chests/campamento_saqueadores", 0.2), p_barrels()],
           spacing=2, salt=26)
 
 

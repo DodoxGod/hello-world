@@ -21,10 +21,13 @@ def _floor(w, x0, z0, x1, z1, chooser):
 
 
 def _clear(w, x0, z0, x1, z1, height=6):
+    """Air over a yard, round whatever already stands there: the quarry and the graveyard reach into the feet of two
+    towers, and clearing them used to cut a slot of air through each tower's wall (Andy, 2026-09-29: holes)."""
     for x in range(x0, x1 + 1):
         for z in range(z0, z1 + 1):
             for y in range(0, height):
-                w.air(x, y, z)
+                if w.name(x, y, z) is None:
+                    w.air(x, y, z)
 
 
 def lists(w):
@@ -32,11 +35,17 @@ def lists(w):
     x0, z0, x1, z1 = 8, 138, 84, 152
     _clear(w, x0, z0, x1, z1, 8)
     _floor(w, x0, z0 + 4, x1, z1, lambda x, z: "sand" if _smooth(x, 0, z, 5.0, 100) > 0.35 else "coarse_dirt")
+    # The tilt barrier. It was a fence one block high, lying on the sand like a rope, with a carpet laid on every
+    # sixth post for a pennant (Andy, 2026-09-29: "banderitas on a string through the floor"). Now it is a barrier a
+    # rider could not ride through: a rail two high between posts of log, and on every other post the guild's colours.
     for x in range(x0 + 6, x1 - 5):
-        w.put(x, 0, 147, "dark_oak_fence")
-        if (x - x0) % 6 == 0:
-            w.put(x, 1, 147, "dark_oak_fence")
-            w.put(x, 2, 147, "black_carpet" if (x // 6) % 2 else "orange_carpet")
+        post = (x - x0) % 6 == 0
+        for y in (0, 1):
+            w.put(x, y, 147, "dark_oak_log" if post else "dark_oak_fence", {"axis": "y"} if post else None)
+        if post:
+            w.put(x, 2, 147, "dark_oak_log", {"axis": "y"})
+            if (x - x0) % 12 == 0:
+                w.put(x, 3, 147, "black_banner" if (x // 12) % 2 else "orange_banner", {"rotation": "0"}, {"id": "minecraft:banner"})
     for x in (x0 + 2, x1 - 2):                                  # quintains: a post, an arm, a target
         for y in range(0, 3):
             w.put(x, y, 150, "dark_oak_fence")
@@ -163,14 +172,19 @@ def graveyard(w):
     x0, z0, x1, z1 = 165, 14, 193, 50
     _clear(w, x0, z0, x1, z1, 9)
     _floor(w, x0, z0, x1, z1, lambda x, z: "podzol" if _smooth(x, 0, z, 6.0, 107) > 0.45 else "coarse_dirt" if _hash(x, 0, z, 108) < 0.7 else "rooted_dirt")
+    # the railing: a low wall with bars on it, a gap three wide for the gate, and none of it into the tower's foot
+    # that the yard's corner reaches. Bars on every stretch, not most of them: one missing here and there left posts
+    # standing on their own.
+    def rail(x, z):
+        if w.name(x, 0, z) in (None, "minecraft:air"):
+            w.put(x, 0, z, "cobbled_deepslate_wall")
+            w.put(x, 1, z, "iron_bars")
     for x in range(x0, x1 + 1):
         for z in (z0, z1):
             if not (z == z1 and abs(x - (x0 + x1) // 2) < 2):
-                w.put(x, 0, z, "cobbled_deepslate_wall")
-                w.put(x, 1, z, "iron_bars") if _hash(x, 1, z, 109) < 0.85 else None
+                rail(x, z)
     for z in range(z0, z1 + 1):
-        w.put(x0, 0, z, "cobbled_deepslate_wall")
-        w.put(x0, 1, z, "iron_bars") if _hash(x0, 1, z, 109) < 0.85 else None
+        rail(x0, z)
     for row, z in enumerate(range(z0 + 5, z1 - 8, 6)):
         for col, x in enumerate(range(x0 + 4, x1 - 3, 5)):
             kind = int(_hash(x, 0, z, 110) * 4)
@@ -213,8 +227,9 @@ def graveyard(w):
     for dx in (2, 3, 4):
         for y in range(0, 4):
             w.air(mx + dx, y, mz + 6)
-    w.put(mx + 3, 1, mz + 3, "soul_lantern", {"hanging": "false", "waterlogged": "false"})
-    w.put(mx + 3, 0, mz + 3, "chiseled_polished_blackstone")
+    # the stair down to the ossuary takes the middle of the floor (castillo_sotanos): the lantern stands in a corner
+    w.put(mx + 1, 1, mz + 1, "soul_lantern", {"hanging": "false", "waterlogged": "false"})
+    w.put(mx + 1, 0, mz + 1, "chiseled_polished_blackstone")
 
 
 def icehouse(w):

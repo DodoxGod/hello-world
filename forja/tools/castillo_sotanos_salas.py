@@ -44,9 +44,10 @@ def crypt(w):
                     w.put(tx + dx, y + 1, tz + dz, *slab("polished_blackstone_slab"))
             w.put(tx, y + 1, tz - 2, "chiseled_polished_blackstone")
             w.put(tx, y + 2, tz - 2, "skeleton_skull", {"rotation": "8"})
+            # the candles at the foot, set into the lid on the stone: a candle cannot stand on a half slab
             for dx in (-1, 1):
                 if _hash(tx + dx, y, tz, 201) < 0.7:
-                    w.put(tx + dx, y + 2, tz + 2, "candle", CANDLE)
+                    w.put(tx + dx, y + 1, tz + 2, "candle", CANDLE)
             put_if_free(w, tx, y, tz + 3, "polished_blackstone_brick_wall")
             if _hash(tx, y, tz, 202) < 0.5:
                 put_if_free(w, tx - 2, y, tz, "cobweb")
@@ -109,6 +110,10 @@ def dungeon(w):
                     door = z in (z0 + 2, z0 + 3) and dy < 2 and broken
                     if not door:
                         w.put(x_front, y + dy, z, "iron_bars")
+                # Over the bars, wall to the vault: bars three high under a ceiling six up read as a row of low
+                # railings, not as cells (Andy, 2026-09-29: "a corridor of portcullises").
+                for dy in range(3, 6):
+                    w.put(x_front, y + dy, z, "deepslate_bricks" if _hash(x_front, y + dy, z, 224) < 0.85 else "cracked_deepslate_bricks")
                 # straw on the floor, a chain on the back wall
                 if _hash(x_back, y, z, 222) < 0.5:
                     put_if_free(w, x_back + step * -1, y, z, "hay_block", {"axis": "z"})

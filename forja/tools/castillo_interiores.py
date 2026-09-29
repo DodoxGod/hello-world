@@ -284,6 +284,15 @@ def workshop(w):
     for x in (137, 145):
         lantern(w, x, 7, 106, 1)
     banner(w, 141, 5, 102, "south", ANVIL_BANNER, "gray")
+    # the stair up to the orb cabinet, against the south wall: the cabinet upstairs had no way up to it at all
+    for k in range(9):
+        x = 137 + k
+        for z in (109, 110):
+            for y in range(0, k):
+                w.put(x, y, z, "polished_blackstone_bricks")
+            w.put(x, k, z, *stairs("polished_blackstone_brick_stairs", "east"))
+            for y in range(k + 1, k + 5):
+                w.air(x, y, z)
 
 
 def build(w):

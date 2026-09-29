@@ -5,7 +5,7 @@ The west range is the worse kept side: shelves with gaps, cobwebs, a bed frame w
 """
 import math
 
-from castillo import HORIZONTAL, _hash, disc, noise_origin, slab, stairs
+from castillo import HORIZONTAL, _hash, disc, masonry, noise_origin, slab, stairs
 from castillo_interiores import ANVIL_BANNER, EMBER_BANNER, banner, barrel, chest, mob, opening, partition, rug
 
 LOOT = "forja:chests/castillo_de_forja"
@@ -198,15 +198,40 @@ def chapel(w):
     noise_origin()
 
 
+def passage(w, x0, x1, z0, z1, y=0, height=4, keep=False):
+    """A doorway along z through two buildings' walls and the gap between them: open three wide and `height` high, the
+    gap walled and roofed so it is a passage and not a slot of sky, a floor under it, and a stair in each top corner
+    of both faces as the buildings' own doors have."""
+    stone = masonry(0.1, keep)
+    family = "polished_blackstone_brick" if keep else "deepslate_brick"
+    for z in range(z0, z1 + 1):
+        for x in range(x0 - 1, x1 + 2):
+            for yy in range(y - 1, y + height + 1):
+                inside = x0 <= x <= x1 and y <= yy < y + height
+                if inside:
+                    w.air(x, yy, z)
+                elif w.name(x, yy, z) in (None, "minecraft:air"):
+                    w.put(x, yy, z, stone(x, yy, z, 0.5) if yy >= y else "polished_deepslate")
+    for z in (z0, z1):
+        w.put(x0, y + height - 1, z, *stairs(f"{family}_stairs", "east", top=True))
+        w.put(x1, y + height - 1, z, *stairs(f"{family}_stairs", "west", top=True))
+
+
 def sacristy(w):
     """Where the talismans are kept: item frames would want entities with the mod's items in them, so they are in the chests,
-    and what shows is the cases - glass over gilded blackstone - and the ledger."""
+    and what shows is the cases - glass over gilded blackstone - and the ledger.
+
+    It is also the way into the chapel: both used to open west onto a slot a block wide between them and the keep, cut
+    up by the keep's buttresses, that nobody could walk into. Now the foundry opens into the sacristy and the sacristy
+    into the chapel, beside the altar, as a sacristy door would."""
+    passage(w, 148, 150, 43, 47)                       # chapel south wall, the gap, sacristy north wall
+    passage(w, 140, 142, 53, 57)                       # sacristy south wall, the gap, foundry north wall
     for x in range(135, 150, 3):
         w.put(x, 0, 48, "gilded_blackstone")
         w.put(x, 1, 48, "glass")
     chest(w, 150, 0, 52, "west", LOOT)
     chest(w, 150, 0, 50, "west", LOOT)
-    w.put(142, 0, 52, "lectern", {"facing": "north", "has_book": "false", "powered": "false"})
+    w.put(146, 0, 52, "lectern", {"facing": "north", "has_book": "false", "powered": "false"})
     rug(w, 134, 49, 149, 51, 0, "purple_carpet", "black_carpet")
 
 
@@ -264,9 +289,22 @@ def keep_upstairs(w):
             partition(w, 75, 38, 126, 38, y, y + 8)
             opening(w, 98, 38, 103, 38, y, y + 4)
         flight(w, x_a, x_b, z, y, 9, facing, "polished_blackstone_brick_stairs", "polished_blackstone_bricks")
+    # The stair of honour comes up into the throne room, north of the wall that goes up from the ground floor through
+    # this one; the next flight starts on the gallery, south of it. Nothing went through that wall at this storey, so
+    # the four floors above could not be reached from below at all. A doorway at the foot of the throne room's rug.
+    opening(w, 98, 38, 103, 38, 9, 13)
+    w.put(98, 12, 38, *stairs("polished_blackstone_brick_stairs", "east", top=True))
+    w.put(103, 12, 38, *stairs("polished_blackstone_brick_stairs", "west", top=True))
     for y in (18, 27):
         partition(w, 100, 39, 100, 67, y, y + 8)
         opening(w, 100, 52, 100, 54, y, y + 4)
+    # The council's floor is level with the inner curtain's walk, which runs past the keep's north face between its two
+    # turrets and had no way on or off: a door out onto it, through the wall and the walk's low wall, under the window.
+    opening(w, 99, 17, 101, 19, 18, 22)
+    opening(w, 99, 16, 101, 16, 18, 19)
+    for z in (17, 19):
+        w.put(99, 21, z, *stairs("polished_blackstone_brick_stairs", "east", top=True))
+        w.put(101, 21, z, *stairs("polished_blackstone_brick_stairs", "west", top=True))
 
     # -- 1: the throne of the Grand Master, over the stamping hall (the rest of this floor is the hall's gallery)
     rug(w, 98, 23, 103, 37, 9, "red_carpet", "black_carpet")
@@ -351,9 +389,11 @@ def keep_upstairs(w):
         w.put(x, 27, 62, "gold_block" if x % 4 == 0 else "raw_gold_block")
     mob(w, 110, 27, 50, "forja:tenaza")
 
-    # -- 4: the stores under the roof: what a garrison eats and burns, stacked the way somebody who counts it stacks it
-    for x in range(78, 118, 6):
-        for z in (44, 50, 56, 62):
+    # -- 4: the stores under the roof: what a garrison eats and burns, stacked the way somebody who counts it stacks it.
+    # Twenty-eight stacks were a floor you could not see across (Andy, 2026-09-29: "a store room of barrels"): ten,
+    # in two rows either side of an aisle.
+    for x in range(78, 118, 8):
+        for z in (46, 54):
             for dx in (0, 1):
                 for dz in (0, 1):
                     tall = 1 + int(_hash(x + dx, 36, z + dz, 170) * 3)

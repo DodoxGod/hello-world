@@ -54,8 +54,11 @@ def _smooth(x, y, z, scale, salt=0):
     return total
 
 
-# How much of what each building asks for in fallen-in roof is kept (see building()).
+# How much of what each building asks for in fallen-in roof is kept (see building()). A second look (Andy, 2026-09-29:
+# "a library with no roof") keeps it only for a ruin - a building that asks for at least RUIN of its roof gone, the
+# burnt-out house: a hole in the roof over a furnished room reads as unfinished, not as old.
 ROOF_HOLES = 0.3
+RUIN = 0.5
 
 
 # ------------------------------------------------------------------------------------------ the canvas
@@ -175,19 +178,11 @@ def is_full(name):
     return not any(part in short for part in NOT_FULL)
 
 
-def _is(name, *suffixes):
-    return name is not None and any(name.endswith(s) for s in suffixes)
-
-
 def resolve(canvas):
-    """Arms of walls, bars, panes and fences, and the corners of stairs, from what is beside them."""
+    """Arms of walls, bars, panes and fences, fence gates in walls, and the corners of stairs, from what is beside
+    them, by the game's own rules (castillo_juntas). Returns how many blocks each kind changed."""
     for (x, y, z), (name, props, nbt) in list(canvas.blocks.items()):
-        if _is(name, "_bars", "_pane"):
-            for side, (dx, dz) in HORIZONTAL.items():
-                other = canvas.name(x + dx, y, z + dz)
-                props[side] = "true" if is_full(other) or _is(other, "_bars", "_pane", "_wall") else "false"
-            props.setdefault("waterlogged", "false")
-        elif name.startswith("forja:conducto_") or name == "forja:cano_de_colada":
+        if name.startswith("forja:conducto_") or name == "forja:cano_de_colada":
             # the mod's melt channels join each other and whatever holds metal, the way MeltPipeBlock.joins does
             for side, (dx, dz) in HORIZONTAL.items():
                 other = canvas.name(x + dx, y, z + dz) or ""
@@ -195,56 +190,8 @@ def resolve(canvas):
                                                          "forja:mesa_de_brasa", "forja:mesa_de_almas", "forja:caja_de_moldeo")) else "false"
             props["up"] = "false"
             props["down"] = "false"
-        elif _is(name, "_fence"):
-            for side, (dx, dz) in HORIZONTAL.items():
-                other = canvas.name(x + dx, y, z + dz)
-                props[side] = "true" if is_full(other) or _is(other, "_fence", "_fence_gate") else "false"
-            props.setdefault("waterlogged", "false")
-        elif _is(name, "_wall"):
-            above = canvas.name(x, y + 1, z)
-            arms = {}
-            for side, (dx, dz) in HORIZONTAL.items():
-                other = canvas.name(x + dx, y, z + dz)
-                joined = is_full(other) or _is(other, "_wall", "_bars", "_pane", "_fence_gate")
-                if not joined:
-                    arms[side] = "none"
-                    continue
-                over = canvas.name(x + dx, y + 1, z + dz)
-                covered = is_full(above) or (_is(above, "_wall") and (is_full(over) or _is(over, "_wall", "_bars", "_pane")))
-                arms[side] = "tall" if covered else "low"
-            props.update(arms)
-            joined = [side for side, state in arms.items() if state != "none"]
-            straight = (sorted(joined) in (["north", "south"], ["east", "west"])
-                        and len({arms[side] for side in joined}) == 1)
-            post_above = above is not None and not is_full(above) and above != "minecraft:air" and not _is(above, "_wall")
-            props["up"] = "false" if straight and not post_above else "true"
-            props.setdefault("waterlogged", "false")
-    for (x, y, z), (name, props, nbt) in list(canvas.blocks.items()):
-        if not _is(name, "_stairs"):
-            continue
-        facing, half = props.get("facing", "north"), props.get("half", "bottom")
-
-        def stair_at(direction):
-            dx, dz = HORIZONTAL[direction]
-            other = canvas.name(x + dx, y, z + dz)
-            if _is(other, "_stairs"):
-                p = canvas.props(x + dx, y, z + dz)
-                if p.get("half", "bottom") == half:
-                    return p.get("facing", "north")
-            return None
-
-        def can_take(direction):
-            return stair_at(direction) != facing
-
-        shape = "straight"
-        front = stair_at(facing)
-        if front is not None and front not in (facing, OPPOSITE[facing]) and can_take(OPPOSITE[front]):
-            shape = "outer_left" if front == LEFT_OF[facing] else "outer_right"
-        else:
-            back = stair_at(OPPOSITE[facing])
-            if back is not None and back not in (facing, OPPOSITE[facing]) and can_take(back):
-                shape = "inner_left" if back == LEFT_OF[facing] else "inner_right"
-        props["shape"] = shape
+    import castillo_juntas
+    return castillo_juntas.resolve_joints(canvas)
 
 
 def validate(canvas):
@@ -525,21 +472,48 @@ ROOFS = {
 }
 
 
+class _KeepingOut:
+    """A canvas that leaves alone what stands inside some drums: a range built up against a tower meets its wall and
+    stops, instead of carving its rooms through the tower (Andy, 2026-09-29: "parts overlap and leave holes")."""
+
+    def __init__(self, canvas, drums):
+        self.canvas = canvas
+        self.drums = [(cx, cz, (r + 0.01) ** 2) for cx, cz, r in drums]      # the same columns as disc(r)
+
+    def _kept(self, x, z):
+        return any((x - cx) ** 2 + (z - cz) ** 2 <= r2 for cx, cz, r2 in self.drums)
+
+    def put(self, x, y, z, block, props=None, nbt=None):
+        if not self._kept(x, z):
+            self.canvas.put(x, y, z, block, props, nbt)
+
+    def air(self, x, y, z):
+        if not self._kept(x, z):
+            self.canvas.air(x, y, z)
+
+    def __getattr__(self, name):
+        return getattr(self.canvas, name)
+
+
 def building(c, x0, z0, x1, z1, base, storeys, decay=0.12, keep=False, wall=2, roof="tile", ridge="z", doors=(), windows=3,
-             glass="gray_stained_glass_pane", chimneys=(), footing=5, floor="spruce_planks", open_roof=0.0, pave=None):
+             glass="gray_stained_glass_pane", chimneys=(), footing=5, floor="spruce_planks", open_roof=0.0, pave=None, keep_out=()):
     """A house of the castle, from a shed to a hall: walls with corner posts, a course at every floor,
     windows in every bay, a gabled roof with eaves, chimneys that smoke.
 
     `storeys` are the heights of each floor, walls included; `ridge` is the axis the roof's ridge runs
-    along; `doors` are (side, along, width, height); `open_roof` is how much of the roof has fallen in.
+    along; `doors` are (side, along, width, height); `open_roof` is how much of the roof has fallen in;
+    `keep_out` are (x, z, radius) drums already standing (radius as disc() takes it) that the building is built up
+    against, not through.
     """
+    if keep_out:
+        c = _KeepingOut(c, keep_out)
     stone = masonry(decay, keep)
     family = "polished_blackstone_brick" if keep else "deepslate_brick"
     top = base + sum(storeys)                    # first course of the roof
     post = "polished_basalt"
     # Andy, 2026-09-29: roofs with holes in them read as unfinished, not as old; and a door you have to squeeze
     # through, with its lintel at head height, reads as a mistake. Fewer holes, and every door a proper doorway.
-    open_roof *= ROOF_HOLES
+    open_roof = open_roof * ROOF_HOLES if open_roof >= RUIN else 0.0
     doors = [(side, along, max(3, width), min(max(4, height), storeys[0] - 1)) for side, along, width, height in doors]
     for x in range(x0, x1 + 1):
         for z in range(z0, z1 + 1):

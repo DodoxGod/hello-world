@@ -11661,7 +11661,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			{"carbonera", 143.5, -6.5, 94.5, 142.0, -7.5, 58.0},
 			{"antesala", 100.0, -20.0, 60.0, 100.0, -22.0, 42.0},
 			{"fragua_profunda", 100.0, -17.0, 114.0, 100.0, -24.0, 90.0},
-			{"fragua_profunda_estrella", 100.0, -13.5, 92.5, 100.0, -25.0, 92.0},
+			{"fragua_profunda_estrella", 100.0, -16.0, 92.5, 100.0, -25.0, 92.0},
 			{"forja_de_almas", 133.0, -21.0, 102.0, 152.0, -23.0, 82.0},
 			{"camara_acorazada", 53.0, -21.5, 100.0, 70.0, -23.0, 82.0},
 			{"cripta_altar", 100.0, -7.5, 34.0, 100.0, -8.5, 18.0},

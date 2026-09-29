@@ -253,8 +253,9 @@ def p_obsidian(w, x, y, z, facing, salt):
 
 
 def p_magma_cage(w, x, y, z, facing, salt):
+    # embers under a grate: a single iron bar on the block, joined to nothing, read as a stray post (Andy, 2026-09-29)
     w.put(x, y, z, "magma_block")
-    w.put(x, y + 1, z, "iron_bars")
+    w.put(x, y + 1, z, "copper_grate")
 
 
 def p_resin(w, x, y, z, facing, salt):
@@ -300,7 +301,11 @@ def p_bell(w, x, y, z, facing, salt):
 
 PIECES = {
     "store": [p_barrels, p_chest, p_barrels, p_table, p_barrels, p_hay],
+    "store_grain": [p_hay, p_barrels, p_hay, p_block("composter"), p_chest, p_hay],
+    "store_tools": [p_barrels, p_block("grindstone", {"face": "floor", "facing": "north"}), p_table, p_chest, p_block("crafting_table")],
     "guard": [p_brazier, p_stand, p_barrels, p_table, p_chest, p_banner("black")],
+    "guard_mess": [p_table, p_barrels, p_stand, p_table, p_banner("gray"), p_chest],
+    "guard_watch": [p_stand, p_block("cartography_table"), p_brazier, p_chest, p_stand, p_barrels],
     "barracks": [p_bed, p_bed, p_chest, p_bed, p_table, p_stand],
     "copper_shop": [p_anvil, p_copper_pile, p_block("smithing_table"), p_copper_pile, p_forja("mesa_de_forja"), p_barrels],
     "rust_nest": [p_copper_pile, p_cobweb, p_copper_pile, p_rare, p_copper_pile, p_cobweb],
@@ -373,14 +378,24 @@ def dress_floor(w, key, cx, cz, radius, y, level, doors_here):
         banner(w, cx + dx, y + 3, cz + dz, _inward(dx, dz), colour="black" if index % 2 else colour)
 
 
+# The rooms every tower has - a store on the ground floor and a guard post on the wall walk's - were furnished the same
+# in all of them, piece for piece (Andy, 2026-09-29: "the rooms do not vary"). Each tower takes one of these.
+VARIANTS = {"store": ("store", "store_grain", "store_tools"), "guard": ("guard", "guard_mess", "guard_watch")}
+
+
 def furnish(w, key, cx, cz, radius, level, floor_y, doors_here):
     theme = THEMES[key][level]
+    salt = zlib.crc32(f"{key}/{level}".encode()) & 0xFFFF
+    if theme in VARIANTS:
+        theme = VARIANTS[theme][salt % len(VARIANTS[theme])]
     pieces = PIECES[theme]
+    turn = (salt >> 4) % len(pieces)                  # and the round of pieces starts somewhere else in each
+    pieces = pieces[turn:] + pieces[:turn]
     y = floor_y + 1
     # the top room has no stair going on up through it, and is the smallest: closer together there
     top = level == len(THEMES[key]) - 1
     places = wall_places(w, cx, cz, radius, y, doors_here, spacing=2 if top or theme in ("archive", "archive_top") else 3,
-                         salt=zlib.crc32(f"{key}/{level}".encode()) & 0xFFFF)
+                         salt=salt)
     for index, (dx, dz) in enumerate(places):
         x, z = cx + dx, cz + dz
         if w.name(x, y, z) in (None, "minecraft:air"):

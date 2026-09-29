@@ -4,9 +4,11 @@ forty-six blocks long.)
 
 So light is not furniture here, it is a pass over the finished building. It works block light out the way the
 game does - fifteen at a lantern, one less for every block it travels, stopped by whatever is solid - finds
-every roofed floor that ends up too dark to see, and hangs a light for it: a **sconce** on the nearest wall (an
-upturned stair with a lantern under it), a **lantern on a chain** from the ceiling where the walls are too far
-off, a **lamp post** where the ceiling is too. Each one lights the floors round it, so the next is put where
+every roofed floor that ends up too dark to see, and hangs a light for it: a **sconce** on the nearest wall (a
+bracket of the wall's brick with a lantern under it), a **lantern on a chain** from the ceiling - or the roof, or
+the gallery - where the walls are too far off, a lantern in a **niche** in a low passage, a sconce on a wall further
+off, and only where there is none of those a **lamp post** (none, as the castle stands: Andy, 2026-09-29, found
+halls with posts standing in the middle of them). Each one lights the floors round it, so the next is put where
 that light runs out, and the castle ends up lit in pools with dusk between them: every room can be read, no
 floor is left at zero for something to spawn on, and none of it is bright.
 
@@ -22,6 +24,10 @@ NEED = 6
 # two hundred of them in the crypt. Half as much there - still never zero, so still nothing spawns.
 NEED_AMONG_THE_DEAD = 3
 WALL_REACH = 3
+# how far a sconce may be from the floor it is for before a lamp post is stood on the floor itself
+FAR_WALL = 6
+# how high a chain may go looking for something to hang from: the foundry is open to its ridge, thirty up
+CHAIN_REACH = 32
 # how far into the dark a light is aimed from the first dark floor met, nearest last
 AIM = (3, 2, 0)
 
@@ -162,6 +168,15 @@ def _rooms_only(floors, least=9):
     return kept
 
 
+# what a chain cannot be hung from: things that hang or stand themselves, and what is not there
+NO_HOLD = ("lantern", "chain", "torch", "banner", "carpet", "candle", "cobweb", "rail", "pressure_plate", "button",
+           "ladder", "vine", "fire", "water", "lava", "_sign", "head", "skull", "farol")
+
+
+def _holds(name):
+    return name not in (None, "minecraft:air") and not any(part in name.split(":", 1)[1] for part in NO_HOLD)
+
+
 def _soul(x, y, z):
     return any(x0 <= x <= x1 and y0 <= y <= y1 and z0 <= z <= z1 for x0, y0, z0, x1, y1, z1 in SOUL_BOXES)
 
@@ -191,7 +206,7 @@ def light(world):
     grid = Grid(world)
     solid, taken, lit = grid.solid, grid.taken, grid.light
     sx, sy = grid.sx, grid.sy
-    hung = {"sconce": 0, "chain": 0, "niche": 0, "post": 0}
+    hung = {"sconce": 0, "chain": 0, "niche": 0, "floor": 0, "post": 0}
 
     def free(i):
         return not solid[i] and not taken[i]
@@ -210,22 +225,24 @@ def light(world):
     for (x, below, z) in list(world.blocks):
         y = below + 1
         i = grid.index(x, y, z)
-        if solid[i - sy] and free(i) and not solid[i + sy] and roofed(x, y, z):
+        # and not the top of a wall: a partition that stops short of the roof is a line of "floor" a block wide, and
+        # had a lamp post stood on it in the roof space over every room of the west range
+        ridge = ((not solid[i - sy + grid.sx] and not solid[i - sy - grid.sx])
+                 or (not solid[i - sy + 1] and not solid[i - sy - 1]))
+        if solid[i - sy] and free(i) and not solid[i + sy] and roofed(x, y, z) and not ridge:
             floors.append((y, x, z))
     floors = _rooms_only(floors)
     floors.sort()
 
     standing = {(x, y, z) for y, x, z in floors}
 
-    def hang(x, y, z):
-        """A light for the floor at (x, y, z): on the nearest real wall, else from the ceiling, else on a post."""
-        i = grid.index(x, y, z)
-        lamp = "soul_lantern" if _soul(x, y, z) else "lantern"
-        source = None
-        # a sconce on the nearest stretch of real wall: four blocks of it, floor to bracket, so never over a doorway
+    def sconce(x, y, z, reach, lamp):
+        """A sconce on the nearest stretch of real wall within `reach`: four blocks of it, floor to bracket, so never
+        over a doorway. A bracket of the wall's own brick for the lantern to hang from: an upside-down stair with a
+        lantern under it is a thing no player could build (Andy, 2026-09-29)."""
         best = None
-        for cx in range(x - WALL_REACH, x + WALL_REACH + 1):
-            for cz in range(z - WALL_REACH, z + WALL_REACH + 1):
+        for cx in range(x - reach, x + reach + 1):
+            for cz in range(z - reach, z + reach + 1):
                 c = grid.index(cx, y, cz)
                 if not (solid[c - sy] and free(c) and free(c + sy) and free(c + 2 * sy) and free(c + 3 * sy)):
                     continue
@@ -235,53 +252,74 @@ def light(world):
                         score = abs(cx - x) + abs(cz - z)
                         if best is None or score < best[0]:
                             best = (score, cx, cz, side)
-        if best is not None:
-            _, cx, cz, side = best
-            wall = world.name(cx + HORIZONTAL[side][0], y + 2, cz + HORIZONTAL[side][1]) or ""
-            # a bracket of the wall's own brick for the lantern to hang from: an upside-down stair with a lantern under
-            # it is a thing no player could build (Andy, 2026-09-29)
-            place(cx, y + 3, cz, "polished_blackstone_bricks" if "blackstone" in wall else "deepslate_bricks")
-            source = place(cx, y + 2, cz, lamp, {"hanging": "true", "waterlogged": "false"})
-            hung["sconce"] += 1
-        else:
-            # no wall near: from the ceiling, on as much chain as brings it down to a little over head height
+        if best is None:
+            return None
+        _, cx, cz, side = best
+        wall = world.name(cx + HORIZONTAL[side][0], y + 2, cz + HORIZONTAL[side][1]) or ""
+        place(cx, y + 3, cz, "polished_blackstone_bricks" if "blackstone" in wall else "deepslate_bricks")
+        hung["sconce"] += 1
+        return place(cx, y + 2, cz, lamp, {"hanging": "true", "waterlogged": "false"})
+
+    def hang(x, y, z):
+        """A light for the floor at (x, y, z): on the nearest real wall, else from the ceiling, else in a niche, else on
+        a wall further off, and only when there is none of those on a post."""
+        i = grid.index(x, y, z)
+        lamp = "soul_lantern" if _soul(x, y, z) else "lantern"
+        source = sconce(x, y, z, WALL_REACH, lamp)
+        if source is None:
+            # no wall near: from the ceiling, on as much chain as brings it down to a little over head height. A roof of
+            # stairs and slabs, a gallery of planks and fences, a beam of wall: whatever is over it carries a chain. Only
+            # asking for a solid block put a lamp post in the middle of every hall under a pitched roof (the mess had two).
             top = None
-            for up in range(3, 15):
+            for up in range(3, CHAIN_REACH):
+                if y + up >= grid.y0 + grid.ny - 1:
+                    break
                 if solid[i + up * sy]:
                     top = up
                     break
                 if taken[i + up * sy]:
+                    if _holds(world.name(x, y + up, z)):
+                        top = up
                     break
-            if top is not None and top >= 4:
-                drop = max(3, top - 7)
+            if top is not None and top >= 3:
+                # never more than five over the floor however high the roof, and under a low one (the ice house's
+                # dome) straight under it, over the head
+                drop = min(top - 1, max(3, min(top - 7, 5)))
                 if all(free(i + k * sy) for k in range(drop, top)):
                     for k in range(drop + 1, top):
                         place(x, y + k, z, "iron_chain", {"axis": "y", "waterlogged": "false"})
                     source = place(x, y + drop, z, lamp, {"hanging": "true", "waterlogged": "false"})
                     hung["chain"] += 1
-            if source is None:
-                # a low passage has neither the height for a bracket nor a ceiling to hang from: the lantern goes
-                # into the wall, in a niche cut at shoulder height - if the wall is thick enough to keep it
-                for cx, cz in ((x, z), (x + 1, z), (x - 1, z), (x, z + 1), (x, z - 1)):
-                    c = grid.index(cx, y, cz)
-                    if not (solid[c - sy] and free(c) and free(c + sy)):
-                        continue
-                    for dx, dz in HORIZONTAL.values():
-                        w = grid.index(cx + dx, y + 1, cz + dz)
-                        behind = grid.index(cx + 2 * dx, y + 1, cz + 2 * dz)
-                        if (solid[w] and solid[w - sy] and solid[w + sy] and solid[behind] and solid[w + grid.sx * dz + dx]
-                                and solid[w - grid.sx * dz - dx] and world.nbt_free(cx + dx, y + 1, cz + dz)):
-                            source = place(cx + dx, y + 1, cz + dz, lamp, {"hanging": "false", "waterlogged": "false"})
-                            solid[source] = 0
-                            hung["niche"] += 1
-                            break
-                    if source is not None:
+        if source is None:
+            # a low passage has neither the height for a bracket nor a ceiling to hang from: the lantern goes
+            # into the wall, in a niche cut at shoulder height - if the wall is thick enough to keep it
+            for cx, cz in ((x, z), (x + 1, z), (x - 1, z), (x, z + 1), (x, z - 1)):
+                c = grid.index(cx, y, cz)
+                if not (solid[c - sy] and free(c) and free(c + sy)):
+                    continue
+                for dx, dz in HORIZONTAL.values():
+                    w = grid.index(cx + dx, y + 1, cz + dz)
+                    behind = grid.index(cx + 2 * dx, y + 1, cz + 2 * dz)
+                    if (solid[w] and solid[w - sy] and solid[w + sy] and solid[behind] and solid[w + grid.sx * dz + dx]
+                            and solid[w - grid.sx * dz - dx] and world.nbt_free(cx + dx, y + 1, cz + dz)):
+                        source = place(cx + dx, y + 1, cz + dz, lamp, {"hanging": "false", "waterlogged": "false"})
+                        solid[source] = 0
+                        hung["niche"] += 1
                         break
-            if source is None and free(i) and free(i + sy) and free(i + 2 * sy):
-                place(x, y, z, "polished_blackstone_brick_wall" if y < 0 else "deepslate_brick_wall")
-                place(x, y + 1, z, "polished_blackstone_brick_wall" if y < 0 else "deepslate_brick_wall")
-                source = place(x, y + 2, z, lamp, {"hanging": "false", "waterlogged": "false"})
-                hung["post"] += 1
+                if source is not None:
+                    break
+        if source is None:
+            # a wall further off still lights the middle of a room better than a post standing in it does
+            source = sconce(x, y, z, FAR_WALL, lamp)
+        if source is None and free(i) and free(i + sy) and not free(i + 2 * sy):
+            # a room too low for a post (the ice house): the lantern stands on the floor
+            source = place(x, y, z, lamp, {"hanging": "false", "waterlogged": "false"})
+            hung["floor"] += 1
+        if source is None and free(i) and free(i + sy) and free(i + 2 * sy):
+            place(x, y, z, "polished_blackstone_brick_wall" if y < 0 else "deepslate_brick_wall")
+            place(x, y + 1, z, "polished_blackstone_brick_wall" if y < 0 else "deepslate_brick_wall")
+            source = place(x, y + 2, z, lamp, {"hanging": "false", "waterlogged": "false"})
+            hung["post"] += 1
         if source is not None:
             grid.spread([(source, 10 if lamp == "soul_lantern" else 15)])
         return source is not None
@@ -305,6 +343,6 @@ def light(world):
     mean = sum(lit[grid.index(x, y, z)] for y, x, z in floors) / max(1, len(floors))
     dark = sum(1 for y, x, z in floors if lit[grid.index(x, y, z)] == 0)
     dim = sum(1 for y, x, z in floors if lit[grid.index(x, y, z)] < need(x, y, z))
-    print(f"bastion light: {len(floors)} roofed floors; hung {hung['sconce']} sconces, {hung['chain']} chain lanterns, {hung['niche']} niches, {hung['post']} lamp posts;"
+    print(f"bastion light: {len(floors)} roofed floors; hung {hung['sconce']} sconces, {hung['chain']} chain lanterns, {hung['niche']} niches, {hung['floor']} on the floor, {hung['post']} lamp posts;"
           f" {dim} floors still short of what they need, {dark} at zero; mean floor light {mean:.1f}")
     return hung
