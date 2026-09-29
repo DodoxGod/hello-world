@@ -4,7 +4,7 @@ Para Andy. Todo está en la rama `claude/hola-rv9w0u` (PR #1). El detalle de la 
 `docs/RESUMEN_2026-09-29.md`; aquí va todo junto, con la segunda tanda (la que mandaste por la sesión "Mod Forja")
 y lo que vino después.
 
-**Estado del CI:** `b438486` compila y pasan todas las pruebas de servidor, también las nuevas de `SitioGameTests`.
+**Estado del CI:** ver "Estado de las pruebas" al final.
 
 ## Cómo lo he probado sin tu PC
 
@@ -273,34 +273,145 @@ entre sí y los factores multiplican al final.
 - **Pavesa y ascua mayor:** ya no se lanzan en picado antes de acabar su aviso.
 - **Capturas:** en `docs/capturas_2026-09-29/animaciones_mobs/`.
 
+## 9. Los monstruos no construyen (y lo que sí pueden romper)
+
+- **Fuera:** los pilares de tierra de los zombis y el excavar bloques blandos (`MovementGoals.Builder`).
+- **Se queda, como decidiste:**
+  - la telaraña de la araña (un bloque que se quita a los 5 s);
+  - el fuego del Cargador de carbón y del Herrero;
+  - la cabeza lanzada;
+  - las explosiones de los creepers;
+  - los bloques que coge el enderman;
+  - los zombis que rompen puertas.
+
+  La telaraña llegué a quitarla y la he devuelto tal cual.
+- **Lo único nuevo que podrán romper, con la v4:** antorchas (normal, de pared, de almas y de almas de pared), y
+  solo con `mobGriefing` activado.
+- **Pruebas:** `zombiesNeverBuildNorDig` (ni un bloque cambia en 5 s con un zombi bajo un jugador en un pilar).
+  Borré `zombieDigsThroughLeaves`: ya no excavan, y en el CI solo pasaba porque las hojas sin tronco se caen solas.
+
+## 10. Dificultad: el buen equipo ya no vuelve inofensivas a las multitudes
+
+| Qué | Antes | Ahora | En `config/forja.json` |
+|---|---|---|---|
+| Daño de los monstruos según tu tramo de equipo (0-3) | igual | +15 % por tramo (+45 % en el 3) | `mobDamagePerGearTier` |
+| Atacantes a la vez | 2 de base, tope 4 | +1 por tramo; +1 en MAESTRO y +2 en LEYENDA (hasta 9) | `attackersPerGearTier`, `attackersMaestro`, `attackersLeyenda` |
+| Penetración de armadura por amenaza | 0 | veterano 10 %, élite 20 %, campeón 35 % (cuenta la mayor, con la presión) | `penetrationVeteran/Elite/Champion` |
+| Presión por golpe | 0,07 | 0,10 | `pressurePerHit` |
+| Espera antes de que baje la presión | 40 ticks | 60 ticks | `pressureDelayTicks` |
+| Golpe parado con escudo o desviado | no sumaba | suma la mitad | `pressureBlockedShare` |
+
+Una config con los valores viejos de presión pasa sola a los nuevos.
+
+**Armaduras (revisión):**
+- **Diamante y netherita con Protección IV:** paran un 81-84 %. La mayor parte la hace la Protección IV: el
+  diamante sin ella para un 47-57 %.
+- **Las del mod a mejoras completas:** estaban entre 1 y 4,4 puntos por encima de la netherita con P4.
+- **Lo que he bajado:** la armadura de las 4 más altas.
+  - corazón y acero vivo: de 24 a 21 en el juego completo;
+  - solacero y lunacero: de 23 a 20.
+
+  Ahora la peor queda 4 puntos por encima de la netherita con P4.
+
+| Juego (torso, contundente / cortante) | Antes | Ahora | Frente a netherita P4 |
+|---|---|---|---|
+| Diamante P4 (vanilla) | 81,1 / 84,3 | igual | |
+| Netherita P4 (vanilla) | 82,9 / 84,3 | igual | |
+| Corazón | 86,9 / 86,7 | 86,0 / 85,9 | +3,2 / +1,6 |
+| Acero vivo | 86,9 / 86,7 | 86,0 / 85,9 | +3,2 / +1,6 |
+| Solacero | 86,6 / 87,2 | 85,6 / 86,2 | +2,8 / +1,9 |
+| Lunacero | 86,1 / 86,7 | 85,0 / 85,7 | +2,2 / +1,3 |
+| Obsidiacero | 86,7 / 85,9 | igual | +3,9 / +1,6 |
+
+- **La prueba:** `ArmaduraGameTests` monta cada juego de verdad, lo golpea y exige como mucho netherita P4 + 5
+  puntos.
+- **La tabla entera:** 39 materiales, en `docs/EQUILIBRIO.md`.
+- **Aviso:** con el don Baluarte en todas las piezas, prensa perfecta y obra maestra, el obsidiacero llega a +5,9.
+  No lo he tocado porque es la armadura del Herrero Caído.
+
+## 11. Modo rodeo
+
+- **Qué hace:** si retrocedes, un monstruo que va a su hueco del anillo corre a **×2,3** en vez de ×1,35.
+  - **Coste:** 1,4 de aguante por tick, así que le dura unos 3,5 s.
+  - **Solo camino de su hueco,** nunca huyendo.
+  - **Quién lo usa:** las reglas, y la salida de correr de la red cuando el monstruo tiene hueco.
+  - **Ajuste:** `rodeoSpeed` y `rodeoCostPerTick`.
+- **Tres fallos que encontré y arreglé:**
+  - **Velocidad del jugador:** se leía de lo que manda el cliente, que es 0 tras un teletransporte y en un jugador
+    de prueba. Ahora también se calcula por posiciones.
+  - **Sin camino:** si no hay camino a un hueco junto a un jugador que se mueve, el monstruo va derecho a él. A un
+    hueco lejano va por puntos de paso de 12 bloques.
+  - **Huida:** el rodeo también valía para huir. Ahora solo para ir al hueco.
+- **Por qué fallaba la prueba en tu PC:** los 4 zombis acababan exactamente a la misma distancia (31,7) porque
+  chocaban con el borde del área de la prueba, de 8 bloques. El jugador de prueba lo atraviesa y ellos no. No era
+  la IA, así que quité esa prueba de servidor.
+  - `theSurroundModeRunsAtTwoPointThree` comprueba el modo en sí.
+  - La escena entera va en la prueba del cliente (sección `cerco`, terreno abierto), que exige que al menos dos le
+    hayan rodeado al final.
+- **Resultado en el juego:** 6 zombis contra un jugador que retrocede a velocidad de carrera.
+  - Le siguen a 4-7 bloques.
+  - Dos o tres llegan a los lados, en corro.
+  - Ninguno se le pone detrás en 5 s.
+  - A los 3,5 s se quedan sin aliento, como está diseñado.
+  - Vistas: `docs/capturas_2026-09-29/cerco_y_retroceso_1.jpg` y `cerco_retroceso_2.jpg`.
+- **Lo que tienes que probar:** si ×2,3 y 3,5 s te parecen bien jugando. Si quieres que te adelanten, se sube
+  `rodeoSpeed` o se baja `rodeoCostPerTick`.
+
+## 12. Red v4 (con el chat de entrenamiento)
+
+- **M0:** hecho (sin construir; las puertas siguen como en vanilla, como decidiste).
+- **Acciones preparadas (`MobActions`), apagadas hasta que la red las decida:**
+  - coger un arma mejor del suelo (también la tuya, que cae al morir);
+  - beber, lanzar y comer;
+  - perla de ender;
+  - romper antorchas;
+  - escudo inteligente.
+- **Carga de redes:**
+  - carpeta `config/forja/redes_v4/`;
+  - opción `iaContrato` (`v3`, `v4` o `auto`);
+  - se elige por el campo `formato`, no por los nombres;
+  - las redes v3, v3b y v3.1 siguen igual.
+- **Percepción honesta** (`iaPercepcionHonesta`): un monstruo que te ha perdido de vista 20 ticks va a donde te vio
+  por última vez, no a donde estás. Una base cerrada sigue siendo segura.
+- **M1** (`ObsV4` nombre por nombre con `red_mob_v4_contrato.json`, valores neutros a 0 y carga de las redes v4)
+  está en marcha. Lo cuento en el siguiente resumen.
+
 ## Capturas
 
-- **La forja reclama:** `docs/capturas_2026-09-29/jefe_reclama.jpg`, en 4 vistas: el aviso, el anillo, el arrastre y cómo queda después, sin los gólems.
+- **La forja reclama:** `docs/capturas_2026-09-29/jefe_reclama.jpg`, en 4 vistas: el aviso, el anillo, el
+  arrastre y cómo queda después, sin los gólems.
 - **Mundo:** `docs/capturas_2026-09-29/mundo_locate.jpg`, el castillo encontrado con `/locate`, visto desde arriba y
   desde los cuatro lados.
-- **Pendientes:** pararrayos, clases y castillo.
+- **Pararrayos:** `docs/capturas_2026-09-29/pararrayos.jpg`. El meteorito que apuntaba a 6 bloques cae en el
+  pararrayos (desgaste 1, sin cráter).
+- **Cerco y retroceso:** `docs/capturas_2026-09-29/cerco_y_retroceso_1.jpg` y `cerco_retroceso_2.jpg`.
+- **Pendientes:** clases y castillo (tercera pasada).
 
 ## Estado de las pruebas
 
-- **Pruebas intermitentes:** `flail_zombie_strikes_from_its_reach` y `telegraphed_attack_hits_still_player`
-  fallaron una vez cada una y pasaron al repetir.
+- **Commit `4aac249`:** todas las pruebas de servidor pasan salvo una:
+  `telegraphed_attack_hits_still_player`, la inestable de tu lista. Vuelvo a lanzarla.
+- **Otras intermitentes:** `flail_zombie_strikes_from_its_reach` falló una vez en tu PC y una aquí; al repetir pasa.
 - **La prueba de la mecha a 8 bloques:** fallaba porque el jugador se alejaba hacia fuera de la zona de la prueba.
-  Ahora se aleja en diagonal por dentro, y si falla dice la distancia, si el creeper lo ve y cuánto lleva la mecha.
+  Ahora se aleja en diagonal por dentro.
 
 ## Lo que no pude hacer
 
 - **"Antes" de la IA:** no hay capturas de la IA antigua. Hacía falta un commit temporal con la IA vieja y el
   sistema de permisos lo bloqueó.
-- **Responder a la sesión "Mod Forja":** desde aquí no puedo mandar mensajes a otra sesión.
+- **Responder a la sesión "Mod Forja":** desde aquí no puedo mandar mensajes a otra sesión. Todo lo que le habría
+  dicho está en este resumen.
 
 ## Preguntas para ti
 
-1. **Castillo menos raro de encontrar.** El conjunto está a 110 chunks de separación (unos 1.760 bloques). Con el
-   control del terreno, el más cercano puede quedar lejos. ¿Lo bajo a 80 para que haya más?
+1. **Castillo menos raro de encontrar.** El conjunto está a 110 chunks de separación (unos 1.760 bloques). ¿Lo bajo
+   a 80 para que haya más?
 2. **Sitio del castillo.** ¿Te parecen bien los límites nuevos (desnivel 24, 3 muestras con agua), o prefieres
    más llano aunque salgan menos?
-3. **Simulador.** Del documento de propuestas quedan 2.2 (sectores con cupos), 2.3 (carrera barata) y 2.6 (roles
-   por tipo). ¿Los hago ya en el mod, o esperamos a que el simulador los mida?
-4. **Contrato del blaze.** El simulador propone un contrato propio para el blaze (más entradas y salidas en 3D).
-   ¿Lo escribimos como `red_blaze_contrato.json` v1, con su observación y su ejecutor en el mod?
-5. **Mob contra mob con red.** El simulador lo deja para después de una v4. ¿De acuerdo?
+3. **Protección IV.** Es lo que de verdad vuelve inofensivas a las multitudes. ¿Limito la mejora de Protección de
+   la forja a III, o activo `soloMejorasForja`?
+4. **Baluarte.** Con él, el obsidiacero pasa de +5 sobre la netherita P4. ¿Hago que dé dureza en vez de armadura?
+5. **Modo rodeo.** ¿Te vale que te sigan y te flanqueen, o quieres que te adelanten? Si es lo segundo, subo
+   `rodeoSpeed` o bajo el coste.
+6. **Contrato del blaze.** El simulador propone un contrato propio para el blaze. ¿Lo escribimos como
+   `red_blaze_contrato.json` v1?
