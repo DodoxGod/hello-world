@@ -72,6 +72,8 @@ TYPES = {
     "alas": ["membrana", "forro"],
     "baculo": ["nucleo", "engaste", "mango"],
     "grimorio": ["nucleo", "tapas", "remache"],
+    # The healing lantern (docs/CLASES.md): the chain is the hook and the cage, the handle the crook.
+    "farol": ["nucleo", "cadena", "mango"],
 }
 THROWABLE = {"pico", "hacha", "pala", "martillo", "picahacha", "daga", "tridente"}
 ARMOR = {"casco", "pechera", "grebas", "botas"}
@@ -1981,6 +1983,29 @@ FORGED_TOME = [
 ]
 
 
+# The healing lantern is the third staff Andy was shown (docs/arma_magica/variantes_baculo.py, A3): a crook
+# with a cage hanging from its hook and the núcleo inside it. Drawn as it was then, a letter to a part: the
+# shaft is the handle, the hook, the cage and the ferrule are the chain's metal, and the sparks glow.
+LANTERN_STAFF = [
+    "........EEEE....",
+    ".......EE..EE...",
+    ".......E....E...",
+    "......SE....E.g.",
+    "......S....EEE..",
+    ".....SS....EGE..",
+    ".....S.....GGG..",
+    "....SS.....EGE..",
+    "....S......EEE..",
+    "...SS...........",
+    "...S....g.......",
+    "..SS............",
+    "..S.............",
+    ".SS.............",
+    ".E..............",
+    "E...............",
+]
+
+
 def drawn(rows, labels):
     """A sprite from its letters: `labels` says which slot a letter belongs to; 'g' glows with the núcleo."""
     def same(x, y, letter):
@@ -2008,6 +2033,10 @@ def forged_tome():
     return drawn(FORGED_TOME, {"G": 0, "T": 1, "C": 2})
 
 
+def lantern_staff():
+    return drawn(LANTERN_STAFF, {"G": 0, "E": 1, "S": 2})
+
+
 def tome_fixed():
     """What no part tints: the leather of the spine and the edges of the pages."""
     image = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
@@ -2026,6 +2055,7 @@ FIXED_LAYERS = {"grimorio": tome_fixed}
 TOOL_LAYERS = {
     "baculo": crescent_staff,
     "grimorio": forged_tome,
+    "farol": lantern_staff,
     "pico": lambda: split_tool("item/iron_pickaxe.png"),
     "hacha": lambda: split_tool("item/iron_axe.png"),
     "pala": lambda: split_tool("item/iron_shovel.png"),
@@ -4597,6 +4627,8 @@ ADVANCEMENTS = {
     "pavesa": ("ruina", "forja:huevo_pavesa", "goal", None),
     # Taking one alive is harder than killing it: the catch only works while it is fed.
     "farol": ("pavesa", "forja:farol_de_pavesa", "challenge", None),
+    # A class taken (docs/CLASES.md), from the guide, the K key or the emblem.
+    "clase": ("guia", "forja:emblema_del_olvido", "task", None),
     # The two steps of the guide's path (ForjaPath) that nothing marked. Holding anything that came out
     # of the foundry: a part from a casting box, clean or rough, or a whole tool off a casting table,
     # whose mask has every one of its slots cast (a table makes tools of two to six parts).
@@ -10923,6 +10955,9 @@ if __name__ == "__main__":
     import sys as _sys
     import castillo
     castle_problems = castillo.generate(_sys.modules[__name__])
+    # The class screens' texture and the Emblema del olvido (tools/clases_assets.py), likewise.
+    import clases_assets
+    clases_assets.generate(_sys.modules[__name__])
     generate_painting_data()
     generate_trades()
     problems = check_enums()

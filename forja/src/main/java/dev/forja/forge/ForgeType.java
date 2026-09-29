@@ -116,7 +116,14 @@ public enum ForgeType implements StringRepresentable {
 	 * The forged tome: use it and an area opens five blocks ahead, in the colour of the circle on its
 	 * cover, and leaves a rune behind. The boards are its handle and the rivets its corner plates.
 	 */
-	GRIMORIO(Kind.WEAPON, List.of(NUCLEO, TAPAS, REMACHE), 0.5F, -2.0F, 1.0F, 1.2F, 0.0F, 0, false);
+	GRIMORIO(Kind.WEAPON, List.of(NUCLEO, TAPAS, REMACHE), 0.5F, -2.0F, 1.0F, 1.2F, 0.0F, 0, false),
+	/**
+	 * The healing lantern (docs/CLASES.md, magic/Healing): Andy's A3 drawing, a crook with a cage hanging from
+	 * it and the núcleo inside. A tap sends a beam that mends an ally, a charge a ring that mends everyone
+	 * near. The chain is the hook and the cage; the handle is the crook. Last in the list: types go over the
+	 * wire by their place in it.
+	 */
+	FAROL(Kind.WEAPON, List.of(NUCLEO, CADENA, MANGO), 0.5F, -2.6F, 1.0F, 1.0F, 0.0F, 0, false);
 
 	public static final Codec<ForgeType> CODEC = StringRepresentable.fromEnum(ForgeType::values);
 	public static final net.minecraft.network.codec.StreamCodec<io.netty.buffer.ByteBuf, ForgeType> STREAM_CODEC =

@@ -160,7 +160,8 @@ public final class Mana {
 		if (ArmorSets.fullSet(entity) == ForgeMaterial.AMATISTA) {
 			max += AMETHYST_SET_MANA;
 		}
-		return max;
+		// The class (clase/ClassEffects): a Mago's bar is deeper.
+		return entity instanceof Player player ? max * (1.0F + dev.forja.clase.ClassEffects.manaMaxBonus(player)) : max;
 	}
 
 	/**
@@ -185,7 +186,8 @@ public final class Mana {
 		}
 		float meditation = Math.max(Upgrades.fraction(entity.getMainHandItem(), Upgrade.MEDITACION),
 			Upgrades.fraction(entity.getOffhandItem(), Upgrade.MEDITACION));
-		return factor + Upgrade.meditationRegen(meditation);
+		factor += Upgrade.meditationRegen(meditation);
+		return entity instanceof Player player ? factor * (1.0F + dev.forja.clase.ClassEffects.manaRegenBonus(player)) : factor;
 	}
 
 	/** Whether there is this much to spend. On the client, what the server last said. */
@@ -303,7 +305,7 @@ public final class Mana {
 		if (parts == null) {
 			return false;
 		}
-		if (parts.type() == ForgeType.BACULO || parts.type() == ForgeType.GRIMORIO) {
+		if (parts.type() == ForgeType.BACULO || parts.type() == ForgeType.GRIMORIO || parts.type() == ForgeType.FAROL) {
 			return true;
 		}
 		Upgrades upgrades = stack.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY);

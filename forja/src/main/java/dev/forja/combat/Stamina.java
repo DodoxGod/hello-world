@@ -105,7 +105,8 @@ public final class Stamina {
 		for (EquipmentSlot slot : ARMOUR) {
 			max += Upgrade.enduranceBonus(Upgrades.fraction(entity.getItemBySlot(slot), Upgrade.AGUANTE));
 		}
-		return max;
+		// The class (clase/ClassEffects): an Asesino's bar is longer, a Tanque's as it always was.
+		return entity instanceof Player player ? max * dev.forja.clase.ClassEffects.staminaMaxMultiplier(player) : max;
 	}
 
 	/** How much faster than bare the breath comes back: Fuelle on every piece, added up. */
@@ -114,7 +115,7 @@ public final class Stamina {
 		for (EquipmentSlot slot : ARMOUR) {
 			factor += Upgrade.bellowsRegen(Upgrades.fraction(entity.getItemBySlot(slot), Upgrade.FUELLE));
 		}
-		return factor;
+		return entity instanceof Player player ? factor * dev.forja.clase.ClassEffects.staminaRegenMultiplier(player) : factor;
 	}
 
 	/**
@@ -175,7 +176,7 @@ public final class Stamina {
 	/** A jump: a little, twice that at a run. It goes regardless; out of stamina, the wait before it comes back starts again. */
 	public static void onJump(Player player) {
 		CombatConfig cfg = CombatConfig.get();
-		trySpend(player, cost(player, player.isSprinting() ? cfg.sprintJumpCost : cfg.jumpCost));
+		trySpend(player, cost(player, player.isSprinting() ? cfg.sprintJumpCost : cfg.jumpCost) * dev.forja.clase.ClassEffects.staminaCostMultiplier(player));
 	}
 
 	/**
@@ -212,6 +213,7 @@ public final class Stamina {
 		CombatConfig cfg = CombatConfig.get();
 		data.counterUntil = now + cfg.counterWindowTicks;
 		restore(player, cfg.counterStaminaRefund);
+		dev.forja.clase.ClassEvents.onPerfectDodge(player);
 		CombatAnim.broadcast(player, CombatAnim.Kind.PERFECT_DODGE, cfg.counterWindowTicks);
 		if (player instanceof ServerPlayer serverPlayer) {
 			serverPlayer.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("gui.forja.esquiva_perfecta"));
@@ -237,7 +239,7 @@ public final class Stamina {
 	}
 
 	public static void onAttack(Player player) {
-		data(player).tiredAttack = !trySpend(player, CombatConfig.get().attackCost);
+		data(player).tiredAttack = !trySpend(player, CombatConfig.get().attackCost * dev.forja.clase.ClassEffects.staminaCostMultiplier(player));
 	}
 
 	/** Whether the swing that is landing now was made out of breath. Reading it clears it. */
@@ -264,13 +266,14 @@ public final class Stamina {
 		Data data = data(player);
 		long now = player.level().getGameTime();
 		if (now + DODGE_COOLDOWN_SLACK < data.dodgeCooldownUntil) return;
-		float dodgeCost = cost(player, cfg.dodgeCost);
+		// The class (clase/ClassEffects): what a dodge costs, how long it shields you and how soon the next one comes.
+		float dodgeCost = cost(player, cfg.dodgeCost) * dev.forja.clase.ClassEffects.dodgeCostMultiplier(player);
 		if (!exempt(player)) {
 			if (data.stamina + DODGE_STAMINA_SLACK < dodgeCost) return;
 			data.stamina = Math.max(0.0F, data.stamina - dodgeCost);
 			data.lastSpend = now;
 		}
-		data.dodgeUntil = now + cfg.dodgeIframeTicks;
+		data.dodgeUntil = now + cfg.dodgeIframeTicks + dev.forja.clase.ClassEffects.dodgeIframeBonus(player);
 		// Paso arcano: the blade in hand turns the dodge into a blink, further, for mana. The client has already
 		// moved as far as it thought the mana would carry it; here it is paid for, shown, and a little safer.
 		if (Upgrades.fraction(player.getMainHandItem(), Upgrade.PASO_ARCANO) > 0.0F && dev.forja.magic.Mana.trySpend(player, Upgrade.BLINK_COST)) {
@@ -282,7 +285,7 @@ public final class Stamina {
 			level.playSound(null, player.getX(), player.getY(), player.getZ(), net.minecraft.sounds.SoundEvents.PLAYER_TELEPORT,
 				net.minecraft.sounds.SoundSource.PLAYERS, 0.5F, 1.6F);
 		}
-		data.dodgeCooldownUntil = now + cfg.dodgeCooldownTicks;
+		data.dodgeCooldownUntil = now + Math.round(cfg.dodgeCooldownTicks * dev.forja.clase.ClassEffects.dodgeCooldownMultiplier(player));
 		CombatFeedback.dodge(player);
 		double length = Math.sqrt(x * x + z * z);
 		if (Double.isFinite(length) && length > 1.0E-4) {

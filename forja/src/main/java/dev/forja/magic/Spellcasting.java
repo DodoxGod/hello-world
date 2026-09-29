@@ -86,6 +86,8 @@ public final class Spellcasting {
 	public static final float CHARGE_BONUS = 0.5F;
 	/** Who is gathering a spell right now, so the pose is dropped when the charge ends some other way. */
 	private static final Map<LivingEntity, ForgeType> GATHERING = new java.util.WeakHashMap<>();
+	/** Who has heard the full-charge chime of the charge they are holding (a quicker charge skips ticks). */
+	private static final java.util.Set<LivingEntity> CHIMED = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
 
 	/**
 	 * A rune lying on the floor. It counts its own age rather than what it has left, and bites on the tens of
@@ -208,7 +210,7 @@ public final class Spellcasting {
 	}
 
 	public static boolean casts(ForgeType type) {
-		return type == ForgeType.BACULO || type == ForgeType.GRIMORIO;
+		return type == ForgeType.BACULO || type == ForgeType.GRIMORIO || type == ForgeType.FAROL;
 	}
 
 	/** What the núcleo of a staff or a tome is made of, which is everything about its magic. */
@@ -229,7 +231,7 @@ public final class Spellcasting {
 
 	/** The wait after a player's spell, in ticks: the weapon's own, less what Conjuro veloz takes off it. */
 	public static int cooldown(ItemStack stack, ForgeType type) {
-		return hasted(stack, type == ForgeType.BACULO ? BOLT_COOLDOWN : TOME_COOLDOWN);
+		return hasted(stack, type == ForgeType.BACULO ? BOLT_COOLDOWN : type == ForgeType.FAROL ? Healing.COOLDOWN : TOME_COOLDOWN);
 	}
 
 	/** The wait after a monster's spell: the old, longer one, as a monster pays no mana. */
@@ -253,7 +255,7 @@ public final class Spellcasting {
 	/** The price of a tap, which is the least a spell of this weapon can cost. */
 	public static float tapCost(ItemStack stack, ForgeType type) {
 		dev.forja.combat.CombatConfig cfg = dev.forja.combat.CombatConfig.get();
-		float base = type == ForgeType.BACULO ? cfg.manaBoltCost : cfg.manaTomeCost;
+		float base = type == ForgeType.BACULO ? cfg.manaBoltCost : type == ForgeType.FAROL ? Healing.MANA_COST : cfg.manaTomeCost;
 		return base * (1.0F - Upgrade.manaDiscount(Upgrades.fraction(stack, Upgrade.CONCENTRACION)));
 	}
 
@@ -322,7 +324,7 @@ public final class Spellcasting {
 
 	/** How long this weapon takes to gather a full charge. */
 	public static int chargeTicks(ForgeType type) {
-		return type == ForgeType.BACULO ? STAFF_CHARGE_TICKS : TOME_CHARGE_TICKS;
+		return type == ForgeType.BACULO ? STAFF_CHARGE_TICKS : type == ForgeType.FAROL ? Healing.CHARGE_TICKS : TOME_CHARGE_TICKS;
 	}
 
 	/** How far a charge held this long has got, 0 to 1. */
@@ -340,6 +342,8 @@ public final class Spellcasting {
 		if (!(level instanceof ServerLevel server) || parts == null) {
 			return;
 		}
+		// Canalización: a mage's charge fills sooner, so count the ticks held as more than they were.
+		held = Math.round(held / dev.forja.clase.ClassEffects.spellChargeMultiplier(caster));
 		int full = chargeTicks(type);
 		if (GATHERING.put(caster, type) == null) {
 			dev.forja.combat.CombatAnim.broadcast(caster, dev.forja.combat.CombatAnim.Kind.CHARGE, full, 1.0F, 0.0F);
@@ -357,7 +361,8 @@ public final class Spellcasting {
 			Vec3 in = dir.scale(-0.06);
 			server.sendParticles(new DustParticleOptions(colour, 0.4F + 0.3F * share), from.x, from.y, from.z, 0, in.x, in.y, in.z, 1.0);
 		}
-		if (held == full) {
+		if (held >= full && !CHIMED.contains(caster)) {
+			CHIMED.add(caster);
 			for (int step = 0; step < 10; step++) {
 				double angle = step * Math.PI / 5.0;
 				server.sendParticles(new DustParticleOptions(colour, 0.7F), hand.x + Math.cos(angle) * 0.35, hand.y, hand.z + Math.sin(angle) * 0.35,
@@ -376,16 +381,20 @@ public final class Spellcasting {
 		InteractionHand hand = player.getUsedItemHand();
 		if (level instanceof ServerLevel server) {
 			stopGathering(caster);
-			float charge = chargeShare(type, held);
+			// Canalización (clase/ClassEffects): a mage's charge fills sooner, so the ticks held count for more.
+			float charge = chargeShare(type, Math.round(held / dev.forja.clase.ClassEffects.spellChargeMultiplier(player)));
 			boolean free = Mana.exempt(player);
-			float mana = free ? Float.MAX_VALUE : Mana.value(player);
+			// The class's price (Mago, Curandero with the lantern...) on everything below: the bar is read as
+			// though it held that much more or less.
+			float price = dev.forja.clase.ClassEffects.spellCostMultiplier(player);
+			float mana = free ? Float.MAX_VALUE : Mana.value(player) / Math.max(0.01F, price);
 			if (mana + 1.0E-4F < tapCost(stack, type)) {
 				// Spent between the press and the release (a blade's Filo arcano, a blink): nothing leaves.
 				Mana.deny(player);
 				return false;
 			}
 			charge = affordableCharge(stack, type, charge, mana);
-			float cost = manaCost(stack, type, charge);
+			float cost = manaCost(stack, type, charge) * price;
 			// Descarga: a full charge pours the whole bar in, and every ten points past the price hit harder.
 			float pour = 0.0F;
 			float dump = Upgrade.dumpBonus(Upgrades.fraction(stack, Upgrade.DESCARGA));
@@ -397,7 +406,8 @@ public final class Spellcasting {
 			}
 			Mana.cast(player, cost);
 			cast(server, player, stack, type, null, charge, pour);
-			player.getCooldowns().addCooldown(stack, cooldown(stack, type));
+			// The class's wait (Mago, Mente clara, Concentración) on top of the weapon's own.
+			player.getCooldowns().addCooldown(stack, Math.max(2, Math.round(cooldown(stack, type) * dev.forja.clase.ClassEffects.spellCooldownMultiplier(player))));
 			stack.hurtAndBreak(1, player, hand.asEquipmentSlot());
 		}
 		player.swing(hand);
@@ -405,6 +415,7 @@ public final class Spellcasting {
 	}
 
 	private static void stopGathering(LivingEntity caster) {
+		CHIMED.remove(caster);
 		if (GATHERING.remove(caster) != null) {
 			dev.forja.combat.CombatAnim.broadcast(caster, dev.forja.combat.CombatAnim.Kind.CHARGE, 0, 0.0F, 0.0F);
 		}
@@ -445,10 +456,15 @@ public final class Spellcasting {
 		if (parts == null || !casts(type)) {
 			return;
 		}
+		if (type == ForgeType.FAROL) {
+			Healing.lantern(server, caster, stack, charge);
+			return;
+		}
 		ForgeMaterial core = core(parts);
 		boolean big = overcharged(server, caster, stack, core.color);
 		float power = (big ? 1.0F + Upgrade.overchargeBonus(Upgrades.fraction(stack, Upgrade.SOBRECARGA)) : 1.0F)
-			* (1.0F + CHARGE_BONUS * Math.max(0.0F, Math.min(1.0F, charge)));
+			* (1.0F + (CHARGE_BONUS + dev.forja.clase.ClassEffects.chargeBonusExtra(caster)) * Math.max(0.0F, Math.min(1.0F, charge)))
+			* dev.forja.clase.ClassEffects.spellDamageMultiplier(caster);
 		if (pour > 0.0F) {
 			power *= 1.0F + pour;
 			big = true;
@@ -574,6 +590,11 @@ public final class Spellcasting {
 		ServerLevel level = rune.level;
 		Vec3 at = rune.at;
 		double reach = rune.reach;
+		// A Curandero's tome mends its allies a tenth of the bite and leaves monsters alone (magic/Healing).
+		if (Healing.converts(caster)) {
+			Healing.runeHeal(level, at, reach, caster, damage, rune.colour);
+			return;
+		}
 		AABB box = new AABB(at, at).inflate(reach, 2.0, reach);
 		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, box,
 			other -> other.isAlive() && other != caster && !spares(rune.spareMonsters, other))) {
@@ -637,6 +658,7 @@ public final class Spellcasting {
 				if (!caster.isAlive() || !caster.isUsingItem() || !(caster.getUseItem().getItem() instanceof dev.forja.item.ForgedItems.Forged forged)
 					|| forged.forgeType() != entry.getValue()) {
 					it.remove();
+					CHIMED.remove(caster);
 					dev.forja.combat.CombatAnim.broadcast(caster, dev.forja.combat.CombatAnim.Kind.CHARGE, 0, 0.0F, 0.0F);
 				}
 			}

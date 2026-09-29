@@ -30,6 +30,9 @@ public final class GearScore {
 		EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND, EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET
 	};
 
+	/** What a class at the top level adds to the score. */
+	public static final double CLASS_WEIGHT = 0.08;
+
 	private GearScore() {
 	}
 
@@ -50,7 +53,9 @@ public final class GearScore {
 		double mastery = Mastery.level(player.getMainHandItem()) / (double) Mastery.MAX_LEVEL;
 		double smith = SmithLevel.level(player) / (double) SmithLevel.MAX_LEVEL;
 		double armor = Mth.clamp(player.getArmorValue() / 30.0, 0.0, 1.0);
-		return Mth.clamp(0.35 * weapon + 0.20 * upgrades + 0.15 * mastery + 0.10 * smith + 0.20 * armor, 0.0, 1.0);
+		// A seasoned class counts like better gear (docs/CLASES.md): nothing at all without one.
+		double clazz = dev.forja.clase.ClassProgress.data(player).level() / (double) dev.forja.clase.ClassProgress.MAX_LEVEL;
+		return Mth.clamp(0.35 * weapon + 0.20 * upgrades + 0.15 * mastery + 0.10 * smith + 0.20 * armor + CLASS_WEIGHT * clazz, 0.0, 1.0);
 	}
 
 	public static int tier(double score) {

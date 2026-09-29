@@ -64,7 +64,10 @@ public final class CombatHooks {
 				// A weapon only turns part of a blow aside, but a parry with it catches all of it.
 				return false;
 			}
-			if (!parry && !Stamina.trySpend(player, amount * cfg.blockCostPerDamage)) {
+			if (struck) {
+				dev.forja.clase.ClassEvents.onShieldBlock(player, source, amount);
+			}
+			if (!parry && !Stamina.trySpend(player, amount * cfg.blockCostPerDamage * dev.forja.clase.ClassEffects.blockCostMultiplier(player))) {
 				player.getCooldowns().addCooldown(shield, cfg.guardBreakTicks);
 				player.stopUsingItem();
 				CombatFeedback.guardBreak(player);
@@ -145,12 +148,13 @@ public final class CombatHooks {
 			} else if (Stamina.consumeTiredAttack(attacker)) {
 				scaled *= (float) cfg.tiredDamageMultiplier;
 			}
+			postureScale *= dev.forja.clase.ClassEffects.postureMultiplier(attacker);
 			if (Combos.consumeFinisher(attacker)) {
 				scaled *= (float) cfg.comboFinisherDamage;
 				postureScale *= cfg.comboFinisherPosture;
 			}
 			if (Stamina.consumeCounter(attacker)) {
-				scaled *= (float) cfg.counterDamage;
+				scaled *= (float) (cfg.counterDamage + dev.forja.clase.ClassEffects.counterBonus(attacker));
 				postureScale *= cfg.counterPosture;
 				CombatFeedback.headHit(target);
 			}
@@ -169,12 +173,17 @@ public final class CombatHooks {
 			// A finisher: a staggered foe struck with a charged blow, or from behind.
 			if (source.getEntity() instanceof Player attacker && source.getDirectEntity() == attacker
 				&& (charged || fromBehind(target, attacker)) && finisherReady(target, now)) {
-				scaled *= (float) cfg.finisherMultiplier;
+				scaled *= (float) cfg.finisherMultiplier * (1.0F + dev.forja.clase.ClassEffects.finisherBonus(attacker));
 				finisher = true;
 				LAST_FINISHER.put(target, now);
 				Posture.endStagger(target);
 				CombatFeedback.finisher(target);
 			}
+		}
+		// The classes (clase/ClassEffects): what the one who struck adds, and what the one struck shrugs off.
+		scaled *= dev.forja.clase.ClassEffects.dealt(source, target, staggered, attack.precise() && attack.zone() == HitZone.HEAD);
+		if (target instanceof Player classed) {
+			scaled *= dev.forja.clase.ClassEffects.taken(classed, source);
 		}
 		// Each mob takes each kind of blow its own way.
 		scaled *= (float) dev.forja.difficulty.MobResistances.factor(target, attack.kind());
@@ -187,6 +196,9 @@ public final class CombatHooks {
 		}
 		if (source.getEntity() != null) {
 			Posture.onHit(target, attack.kind(), (float) (scaled * postureScale), now);
+			if (!staggered && source.getEntity() instanceof Player breaker && Posture.isStaggered(target, now)) {
+				dev.forja.clase.ClassEvents.onStagger(breaker);
+			}
 		}
 		// Elites, champions and bosses: while their guard holds, only part of a blow reaches their health.
 		if (!staggered && (dev.forja.difficulty.Threat.of(target).guarded() || dev.forja.difficulty.Bosses.isBoss(target))) {

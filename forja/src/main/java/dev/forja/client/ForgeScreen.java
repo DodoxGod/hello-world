@@ -817,7 +817,8 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 		boolean steady = dev.forja.forge.Techniques.has(this.minecraft.player, dev.forja.forge.Technique.PULSO_FIRME);
 		return WINDOW + dev.forja.forge.SmithLevel.level(this.minecraft.player) * 0.01F
 			+ (this.menu.wholeWorkshop() ? 0.02F : 0.0F)
-			+ (steady ? dev.forja.forge.Technique.PULSE_WINDOW * 0.01F : 0.0F);
+			+ (steady ? dev.forja.forge.Technique.PULSE_WINDOW * 0.01F : 0.0F)
+			+ dev.forja.clase.ClassEffects.forgeWindowBonus(this.minecraft.player);
 	}
 
 	/** The quality of a press stopped now: 2 for perfect, 1 for a decent hit, 0 for a miss. */

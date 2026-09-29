@@ -120,6 +120,8 @@ public final class ModItems {
 	public static Item CORAZON_DE_FORJA;
 	public static Item FRAGUA_APAGADA;
 	public static Item CINTURON;
+	/** What changing class costs (clase/ClassNetwork, docs/CLASES.md). */
+	public static Item EMBLEMA_DEL_OLVIDO;
 
 	/** The ingot of one alloy, by its id. */
 	public static Item alloy(String id) {
@@ -256,6 +258,10 @@ public final class ModItems {
 		CINTURON = register("cinturon", dev.forja.item.ToolBeltItem::new, new Item.Properties().stacksTo(1).durability(512)
 			.component(DataComponents.CONTAINER, net.minecraft.world.item.component.ItemContainerContents.EMPTY));
 		ORBE_DE_MEJORA = register("orbe_de_mejora", dev.forja.item.UpgradeOrbItem::new, new Item.Properties().stacksTo(16));
+		EMBLEMA_DEL_OLVIDO = register("emblema_del_olvido", dev.forja.item.OblivionEmblemItem::new,
+			new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.RARE)
+				.component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(
+					java.util.List.of(net.minecraft.network.chat.Component.translatable("item.forja.emblema_del_olvido.desc")))));
 
 		Registry.register(
 			BuiltInRegistries.CREATIVE_MODE_TAB,
@@ -390,6 +396,7 @@ public final class ModItems {
 		stacks.add(new ItemStack(HUEVO_MOLDE_ROTO));
 		stacks.add(new ItemStack(HUEVO_GUARDIAN));
 		stacks.add(new ItemStack(CINTURON));
+		stacks.add(new ItemStack(EMBLEMA_DEL_OLVIDO));
 		stacks.add(new ItemStack(HIERRO_ESTELAR));
 		for (Item ingot : ALLOYS.values()) {
 			stacks.add(new ItemStack(ingot));

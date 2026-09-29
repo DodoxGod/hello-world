@@ -325,6 +325,7 @@ public final class Potential {
 		int total = FLOOR
 			+ PER_QUALITY * Math.max(0, Math.min(2, quality))
 			+ PER_SMITH_LEVEL * SmithLevel.level(smith)
+			+ dev.forja.clase.ClassEffects.potentialBonus(smith)
 			+ (station == Station.FORJA_MAYOR ? GREATER_TABLE : 0)
 			+ (wholeWorkshop ? WHOLE_WORKSHOP : 0);
 		return Math.min(MOST, total);

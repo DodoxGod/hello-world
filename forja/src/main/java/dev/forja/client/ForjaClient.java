@@ -137,6 +137,7 @@ public final class ForjaClient implements ClientModInitializer {
 			data -> data instanceof dev.forja.item.PartsStrip strip ? new PartsStripTooltip(strip) : null);
 		registerGuideKey();
 		CombatClient.register();
+		ClassClient.register();
 		net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.attachElementAfter(
 			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.AIR_BAR, dev.forja.Forja.id("barra_vuelo"), new FlightHud()
 		);

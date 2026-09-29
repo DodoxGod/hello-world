@@ -416,6 +416,8 @@ final class WeaponMotions {
 		BY_TYPE.put(ForgeType.GUANTELETES, GUANTELETES);
 		BY_TYPE.put(ForgeType.BACULO, BACULO);
 		BY_TYPE.put(ForgeType.GRIMORIO, GRIMORIO);
+		// The lantern is a staff with a cage on it, and it is swung like one.
+		BY_TYPE.put(ForgeType.FAROL, BACULO);
 		BY_TYPE.put(ForgeType.PICO, PICO);
 		BY_TYPE.put(ForgeType.PALA, PALA);
 		BY_TYPE.put(ForgeType.AZADA, AZADA);
