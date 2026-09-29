@@ -201,3 +201,22 @@ fuertes (x5), pero a costa de ~10 % de daño/min en grupos de zombis solos: sin 
 "a mano" y lo paga. Los esqueletos mejoran poco (siguen sin moverse de lado: 11-14 %): hace falta 2.4 en el ejecutor.
 Lo que queda de verdad del lado del mod: huecos estables y sectores (2.1/2.2), tiro libre en el ejecutor (2.4), creeper que
 no se para con la mecha (2.5) y grupos mixtos con tope de élites (3).
+
+## 7. Blaze y peleas mob contra mob (decisiones de Andy, 29-09)
+
+### 7.1 Blaze con red propia (`red_blaze.json`)
+Lo que el simulador necesita (en el motor de Rust, carpeta `combate/forja/`), cuando el documento del blaze de la nube esté listo:
+- **Vuelo con altura preferida**: el blaze flota entre 2 y 5 bloques sobre el suelo, sube y baja despacio (sin gravedad normal), y cae poco a poco si no tiene nada debajo. En las observaciones hace falta su altura sobre el suelo y la del jugador.
+- **Ráfaga de 3 bolas de fuego**: carga (aviso visible), 3 disparos seguidos y una pausa larga. La red decide cuándo cargar y hacia dónde apuntar (con adelanto al movimiento del jugador). Las bolas se pueden desviar con un golpe, como en vanilla.
+- **Inmune al fuego y la lava**; le hacen daño el agua y las bolas de nieve.
+- **Contrato propio** (`red_blaze_contrato.json`, v1): no cabe en `red_mob_v3` sin romperlo. Tendría las mismas observaciones de jugador y aliados que v3 y además altura, carga de la ráfaga y bolas en vuelo. Las salidas serían moverse en 3D (subir y bajar), cargar, disparar y retirarse.
+- **Premios**: acertar bolas, mantener distancia 8-14, no quedar a tiro de espada, cubrir a los aliados de tierra (quemar al jugador mientras lo rodean).
+
+**Bloqueo actual**: el Control inteligente de aplicaciones de Windows no deja compilar el motor de Rust desde el 29-09 a las 02:00 (bloquea los `build-script-build` nuevos). Hasta que Andy lo resuelva en su PC (desactivarlo o añadir una excepción es decisión suya), no se pueden añadir mecánicas nuevas al simulador; los entrenamientos que ya corren siguen.
+
+### 7.2 Mob contra mob (gólem, lobos, otro mob): ¿vale la pena?
+**Sí, pero con prioridad baja** y sin tocar `red_mob_v3`:
+- Hoy las redes solo han visto jugadores. Contra un gólem o unos lobos, las REGLAS del mod lo hacen bien, y lo que el jugador ve de esas peleas es poco.
+- Donde sí ganaría: el mob **no debería perder la pista del jugador** por pelearse con un lobo o un gólem. Eso se puede arreglar en el `Squad` sin red nueva: el lobo y el gólem son estorbos, y el objetivo sigue siendo el jugador.
+- Si más adelante se quiere, se haría así: escenarios en el simulador con un gólem (mucha vida, golpe que lanza hacia arriba, lento) y 1-3 lobos (rápidos, poca vida) como "enemigos no jugadores". La observación del objetivo (la misma que la del jugador) pasa a ser "el enemigo más cercano", con un indicador de 1 bit de si es jugador. Eso sería un contrato v4 (ya hay hueco en `red_mob_v4_contrato.propuesta`).
+- **Recomendación**: primero el blaze y los voladores. Mob contra mob, después de v4.
