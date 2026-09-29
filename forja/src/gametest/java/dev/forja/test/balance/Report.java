@@ -24,6 +24,8 @@ import dev.forja.upgrade.Upgrade;
  * does today and the day the code changes, it says that instead.
  */
 public final class Report {
+	/** From this line on EQUILIBRIO.md is written by hand, and a new report keeps it instead of wiping it. */
+	public static final String HAND_WRITTEN = "<!-- escrito a mano:";
 	public final Analysis analysis;
 	public final Probe probe;
 	public final Findings findings;
@@ -172,7 +174,17 @@ public final class Report {
 			Path root = net.fabricmc.loader.api.FabricLoader.getInstance().getGameDir().getParent().getParent().getParent();
 			Path docs = root.resolve("docs");
 			Files.createDirectories(docs);
-			Files.writeString(docs.resolve("EQUILIBRIO.md"), this.out.toString());
+			// What was written by hand under the marker (the armour section, 2026-09-29) is kept as it was.
+			Path file = docs.resolve("EQUILIBRIO.md");
+			String kept = "";
+			if (Files.exists(file)) {
+				String before = Files.readString(file);
+				int at = before.indexOf(HAND_WRITTEN);
+				if (at >= 0) {
+					kept = "\n" + before.substring(at);
+				}
+			}
+			Files.writeString(file, this.out.toString() + kept);
 			this.written = true;
 			Forja.LOGGER.info("equilibrio: escrito docs/EQUILIBRIO.md ({} peleas, {} s)", an.evaluations(), String.format(Locale.ROOT, "%.1f", this.seconds));
 		} catch (java.io.IOException failure) {

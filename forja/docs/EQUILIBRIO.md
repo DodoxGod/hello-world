@@ -496,3 +496,150 @@ Sólo propuestas: ningún número se ha tocado. Cada una sale de una medida de a
 9. **Báculo**: mata en 0,24 s de media contra 0,70 s del cuerpo a cuerpo, sin estamina y por encima de la armadura; contra jefes es el mejor con diferencia. Hoy la magia sólo paga la espera entre hechizos: un coste de estamina por hechizo la pondría en su sitio.
 10. **Techo del frenesí**: ×2,5 para las de un ingrediente convierte Matagigantes y Ejecución en el centro de todo; bajar el techo de las de daño (p. ej. ×1,5) o dejar el ×2,5 para las de utilidad.
 
+
+<!-- escrito a mano: desde aquí esta página no la escribe BalanceGameTests, y al regenerarla se conserva tal cual -->
+
+## Armaduras frente a diamante y netherita con Protección IV (2026-09-29)
+
+Andy: "el diamante con Protección IV, y más aún las armaduras del mod, hacen que las multitudes no hagan daño".
+Aquí se mide cuánto para cada armadura forjada comparada con el diamante y la netherita vanilla, las dos con
+Protección IV en las cuatro piezas.
+
+**Cómo se mide.** Un golpe de monstruo en el torso (a la altura de los brazos del zombi), de 6 y de 10 de daño,
+sin penetración: el puño de un zombi (contundente) y el hacha de un vindicador (cortante). El golpe pasa primero por
+la armadura del mod (`ArmorCalculator`, la fórmula armadura / (armadura + 20)) y después por la protección de los
+encantamientos de vanilla, que el mod no toca: Protección IV en cuatro piezas son 16 puntos y quitan el 64 % de lo
+que queda. Cada conjunto forjado lleva su placa en las cuatro piezas, forro de cuero (el que mejor amortigua un golpe
+contundente; el forro no cambia nada contra un filo) y todo lo que dan las mejoras de la forja: Protección al 100 %
+(que es Protección IV) en cada pieza, Vitalidad en la pechera (con Protección despierta Fortaleza, +1 de armadura) y
+el bono de conjunto (+2 de armadura y el del material). Sin desgaste. La dureza no cuenta aquí porque solo frena la
+penetración, y estos golpes no tienen.
+
+**Estos números los he calculado a mano** (un guion de Python que copia `ArmorMath`, `MaterialCombat`,
+`ArmorCalculator`, `ForgeStats` y `ArmorSets`). Los que valen son los de la prueba `ArmaduraGameTests`, que hace lo
+mismo en un servidor de verdad y deja la tabla en el registro de CI, en las líneas que empiezan por
+`[forja-test] armadura:`.
+
+La reducción es la misma con 6 que con 10 de daño: la fórmula del mod es proporcional al golpe. Por eso la tabla
+grande da un solo porcentaje por columna; el daño recibido de 6 y de 10 está en la primera tabla y en la de los
+cambios.
+
+### Las referencias
+
+| Conjunto | Contundente (zombi) | Daño recibido de 6 / 10 | Cortante (vindicador) | Daño recibido de 6 / 10 |
+|---|---|---|---|---|
+| diamante vanilla, Protección IV | 81,1 % | 1,14 / 1,89 | 84,3 % | 0,94 / 1,57 |
+| netherita vanilla, Protección IV | 82,9 % | 1,03 / 1,71 | 84,3 % | 0,94 / 1,57 |
+
+### Cada conjunto forjado, a tope de mejoras
+
+Porcentaje del golpe que se queda en la armadura y la protección (más es mejor para quien la lleva). Los marcados con
+\* son los que han cambiado: antes → **después**. Los demás no cambian. Las dos últimas columnas son puntos de
+reducción por encima (+) o por debajo (−) del diamante y de la netherita vanilla con Protección IV.
+
+| Material (placa) | Contundente antes → después | Cortante antes → después | Después − diamante P4 (cont. / cort.) | Después − netherita P4 (cont. / cort.) |
+|---|---|---|---|---|
+| obsidiacero | 86,7 % | 85,9 % | +5,7 / +1,6 | +3,9 / +1,6 |
+| corazon * | 86,9 → **86,0** % | 86,7 → **85,9** % | +5,0 / +1,6 | +3,2 / +1,6 |
+| acero_vivo * | 86,9 → **86,0** % | 86,7 → **85,9** % | +5,0 / +1,6 | +3,2 / +1,6 |
+| solacero * | 86,6 → **85,6** % | 87,2 → **86,2** % | +4,6 / +1,9 | +2,8 / +1,9 |
+| netherita | 85,8 % | 85,7 % | +4,7 / +1,3 | +2,9 / +1,3 |
+| obsidiana | 85,8 % | 85,1 % | +4,7 / +0,8 | +2,9 / +0,8 |
+| obsidiana_llorona | 85,0 % | 85,7 % | +4,0 / +1,3 | +2,2 / +1,3 |
+| damasco | 85,0 % | 85,7 % | +4,0 / +1,3 | +2,2 / +1,3 |
+| almacero | 85,0 % | 85,7 % | +4,0 / +1,3 | +2,2 / +1,3 |
+| lunacero * | 86,1 → **85,0** % | 86,7 → **85,7** % | +4,0 / +1,3 | +2,2 / +1,3 |
+| diamante | 84,2 % | 85,7 % | +3,1 / +1,3 | +1,3 / +1,3 |
+| acero_estelar | 83,9 % | 85,2 % | +2,8 / +0,8 | +1,0 / +0,8 |
+| vidriacero | 83,5 % | 85,0 % | +2,4 / +0,7 | +0,6 / +0,7 |
+| eco | 83,5 % | 84,9 % | +2,4 / +0,5 | +0,6 / +0,5 |
+| cinerio | 83,6 % | 84,7 % | +2,5 / +0,3 | +0,7 / +0,3 |
+| acero | 83,5 % | 84,8 % | +2,4 / +0,4 | +0,6 / +0,4 |
+| escama | 84,1 % | 83,6 % | +3,1 / -0,7 | +1,2 / -0,7 |
+| esmeralda | 83,2 % | 83,8 % | +2,2 / -0,6 | +0,4 / -0,6 |
+| estelar | 83,2 % | 83,8 % | +2,2 / -0,6 | +0,4 / -0,6 |
+| hueco | 83,0 % | 82,4 % | +1,9 / -1,9 | +0,1 / -1,9 |
+| amatista | 82,4 % | 82,9 % | +1,4 / -1,5 | -0,4 / -1,5 |
+| bronce | 82,6 % | 82,2 % | +1,5 / -2,1 | -0,3 / -2,1 |
+| purpur | 82,1 % | 82,4 % | +1,1 / -1,9 | -0,7 / -1,9 |
+| prismarina | 82,1 % | 81,8 % | +1,1 / -2,6 | -0,7 / -2,6 |
+| voltaico | 81,8 % | 82,0 % | +0,7 / -2,4 | -1,1 / -2,4 |
+| hierro | 82,1 % | 81,1 % | +1,1 / -3,2 | -0,7 / -3,2 |
+| peltre | 80,9 % | 79,6 % | -0,2 / -4,8 | -2,0 / -4,8 |
+| vara_de_blaze | 80,9 % | 79,4 % | -0,2 / -4,9 | -2,0 / -4,9 |
+| cuarzo | 80,9 % | 79,4 % | -0,2 / -4,9 | -2,0 / -4,9 |
+| laton | 80,9 % | 79,4 % | -0,2 / -4,9 | -2,0 / -4,9 |
+| oro | 80,5 % | 78,9 % | -0,5 / -5,4 | -2,3 / -5,4 |
+| resina | 80,5 % | 78,9 % | -0,5 / -5,4 | -2,3 / -5,4 |
+| electro | 80,5 % | 78,9 % | -0,5 / -5,4 | -2,3 / -5,4 |
+| hueso | 79,5 % | 77,8 % | -1,6 / -6,6 | -3,4 / -6,6 |
+| cobre | 79,5 % | 77,8 % | -1,6 / -6,6 | -3,4 / -6,6 |
+| piedra | 79,0 % | 77,2 % | -2,0 / -7,2 | -3,8 / -7,2 |
+| escoria | 79,0 % | 77,2 % | -2,0 / -7,2 | -3,8 / -7,2 |
+| madera | 77,3 % | 75,3 % | -3,8 / -9,0 | -5,6 / -9,0 |
+| cuero | 77,3 % | 75,3 % | -3,8 / -9,0 | -5,6 / -9,0 |
+
+Daño recibido (de un golpe de 6 / de 10) con los cuatro materiales que han cambiado:
+
+| Conjunto | Contundente | Cortante |
+|---|---|---|
+| corazón de forja (antes) | 0,79 / 1,31 | 0,80 / 1,33 |
+| corazón de forja (después) | 0,84 / 1,40 | 0,84 / 1,41 |
+| acero vivo (antes) | 0,79 / 1,31 | 0,80 / 1,33 |
+| acero vivo (después) | 0,84 / 1,40 | 0,84 / 1,41 |
+| solacero (antes) | 0,80 / 1,34 | 0,77 / 1,28 |
+| solacero (después) | 0,86 / 1,44 | 0,83 / 1,38 |
+| lunacero (antes) | 0,83 / 1,39 | 0,80 / 1,33 |
+| lunacero (después) | 0,90 / 1,50 | 0,86 / 1,43 |
+
+### Lo que dice la tabla
+
+- **Protección IV lo aprieta todo.** Después de la armadura, Protección IV deja pasar solo el 36 %. Por eso todos los
+  conjuntos, del cuero al corazón de forja, quedan entre el 75 y el 87 %, cuando el diamante vanilla sin ella para el
+  47 % de un puño y el 57 % de un filo. Lo que hace inofensiva a una multitud es sobre todo Protección IV, y eso
+  vale igual para el diamante vanilla que para lo forjado. Esta revisión no lo toca (ver *Lo que queda*).
+- **A igual armadura, lo forjado para algo más que vanilla**: la netherita forjada, con los mismos números que la de
+  vanilla, para 2,9 puntos más contra un puño y 1,3 más contra un filo. Viene del forro de cuero (amortigua los golpes
+  contundentes un 20 % más que una pieza vanilla de diamante o netherita), del +2 de armadura del conjunto y de la
+  Fortaleza de la pechera. Es lo que se quería que diera la forja; no se ha cambiado.
+- **Antes, cuatro materiales se salían**: el corazón de forja y el acero vivo tenían 24 de armadura en el conjunto, y
+  el solacero y el lunacero 23, contra 20 de la netherita. Eran los que más se pasaban de la netherita con Protección IV:
+  hasta +4,4 puntos (corazón, golpe a la cabeza) a tope de mejoras.
+- **Los materiales normales están donde deben**: el diamante forjado queda a +3,1 / +1,3 del diamante vanilla con
+  Protección IV; el hierro, el bronce y la amatista rondan el diamante con Protección IV; el cobre, la piedra y el cuero
+  quedan por debajo.
+
+### Lo que ha cambiado
+
+En `material/ForgeMaterial.java`, la armadura por pieza (casco, pechera, grebas, botas):
+
+| Material | Antes | Después | Conjunto |
+|---|---|---|---|
+| corazón de forja | 4 / 9 / 7 / 4 | 3 / 8 / 7 / 3 | 24 → 21 |
+| acero vivo | 4 / 9 / 7 / 4 | 3 / 8 / 7 / 3 | 24 → 21 |
+| solacero | 4 / 9 / 7 / 3 | 3 / 8 / 6 / 3 | 23 → 20 |
+| lunacero | 4 / 9 / 7 / 3 | 3 / 8 / 6 / 3 | 23 → 20 |
+
+El corazón y el acero vivo quedan un punto por encima de la netherita (en las grebas); el solacero y el lunacero,
+iguales. Los cuatro conservan su dureza (3 a 3,5), que es lo que les queda por encima de la netherita: solo cuenta
+contra golpes que penetran (hachas, flechas, la presión de una multitud), no contra el puño de un zombi. Tampoco
+cambia lo que pesan: un conjunto de 20 o más ya pesa lo máximo, así que el peso de sus armas y armaduras es el mismo.
+Nada más ha cambiado: ni las mejoras, ni el bono de conjunto, ni la fórmula.
+
+**Resultado**: a tope de mejoras, el conjunto que más se pasa de la netherita con Protección IV, mirando los cuatro
+sitios del cuerpo y los dos tipos de golpe, pasa de +4,4 puntos (corazón, a la cabeza, contundente) a +4,0
+(obsidiacero, a las piernas, contundente). En el torso: el corazón pasa de +4,0 / +2,4 a +3,2 / +1,6. La prueba
+exige que ninguno pase de +5.
+
+### Lo que queda
+
+- **El máximo absoluto**: si además cada pieza tiene el don Baluarte (+1 de armadura), salió de una forja perfecta y es
+  obra maestra (+8 % a todo), el obsidiacero llega a +5,9 puntos sobre la netherita con Protección IV (a las piernas,
+  contundente; ya estaba ahí antes) y el corazón a +5,2 (antes +5,7; en el torso, 87,8 %). La prueba lo imprime pero no lo exige: no son mejoras, cuesta una
+  vida entera de uso por pieza, y el obsidiacero es la armadura del Herrero Caído, así que tocarla cambia al jefe.
+  Lo que más pesa ahí es el +1 plano de Baluarte en cascos y botas, que con la normalización por pieza cuenta como
+  +6,7 en su zona. Si hay que recortarlo, lo limpio es que Baluarte dé dureza en vez de armadura.
+- **Protección IV**: si las multitudes deben seguir doliendo con diamante o netherita con Protección IV, el cambio es
+  de la protección de los encantamientos, no de las armaduras. Opciones: que la mejora Protección de la forja llegue
+  solo a III, o activar `soloMejorasForja` (los encantamientos vanilla dejan de hacer nada en equipo no forjado).
+  Decide Andy.

@@ -47,6 +47,22 @@ Andy: "con diamante y Protección IV, y más con la armadura del mod, las multit
 - El arma que coge un monstruo cae siempre al morir, así que si coge la tuya la recuperas.
 - Pruebas: `AccionesGameTests`, una por acción. La tabla está en `docs/red_mob_v4_propuesta.md`.
 
+## 2026-09-29 — las armaduras de arriba, a la altura de la netherita
+
+- Andy: "el diamante con Protección IV, y más aún las armaduras del mod, hacen que las multitudes no hagan daño".
+  Medido (docs/EQUILIBRIO.md, *Armaduras frente a diamante y netherita con Protección IV*): con Protección IV todo
+  conjunto para entre el 75 y el 87 % del golpe de un zombi o un vindicador; el diamante vanilla con Protección IV,
+  el 81–84 %, y la netherita, el 83–84 %. Lo que más aprieta es Protección IV, que deja pasar solo un 36 %.
+- Cuatro materiales se salían: el **corazón de forja** y el **acero vivo** pasan de 24 a 21 de armadura en el
+  conjunto (casco 3, pechera 8, grebas 7, botas 3) y el **solacero** y el **lunacero** de 23 a 20, como la
+  netherita. Conservan su dureza y su peso. A tope de mejoras, el conjunto forjado que más se pasa de la netherita
+  con Protección IV lo hace por unos 4 puntos (el obsidiacero, que no cambia); antes, el corazón, por 4,4.
+- Prueba nueva: `forgedArmourStaysNearNetheriteWithProtection` (`ArmaduraGameTests`) pone cada conjunto en un jugador,
+  le pega con 6 y 10 de daño por la armadura del mod y la protección de vanilla, deja la tabla en el registro
+  (`[forja-test] armadura:`) y falla si alguno pasa de la netherita con Protección IV más 5 puntos.
+- EQUILIBRIO.md: lo escrito a mano al final (la sección de armaduras) ya no se pierde cuando `BalanceGameTests`
+  regenera la página.
+
 ## 2026-09-29 — los monstruos ya no construyen ni rompen bloques
 
 - Por decisión de Andy, ningún monstruo pone ni rompe bloques:
@@ -56,7 +72,7 @@ Andy: "con diamante y Protección IV, y más con la armadura del mod, las multit
     y también el fuego del Cargador de carbón y del Herrero Caído, la cabeza lanzada, las explosiones de los creepers,
     los bloques que coge el enderman y los zombis que rompen puertas.
 - Para bajarte de un pilar, el contrato v4 de la red dará otras salidas: tiros que empujan, arañas que trepan y
-  empujones. La única excepción futura será romper antorchas y otras luces, también con la v4.
+  empujones. La única excepción futura será romper antorchas, también con la v4.
 - Lo único nuevo que podrán romper, con la v4: antorchas (normal, de pared, de almas y de almas de pared), y solo con la
   regla `mobGriefing` activada (`MobActions.breakLight`).
 - Pruebas: `zombiesNeverBuildNorDig` (ni un bloque cambia en 5 s con un zombi bajo un jugador en un pilar); fuera

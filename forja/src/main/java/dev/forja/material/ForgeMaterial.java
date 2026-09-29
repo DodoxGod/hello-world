@@ -56,9 +56,14 @@ public enum ForgeMaterial implements StringRepresentable {
 	/**
 	 * The heart of the fallen smith: the last material in the mod, and the only one you cannot dig up,
 	 * buy or find. It hits like damascus, lasts like obsidian steel and keeps working when it breaks.
+	 *
+	 * <p>Its plate is one point over netherite's and no more (so is living steel's; sun and moon steel match
+	 * netherite). Andy, 2026-09-29: with Protection IV on top a crowd could no longer hurt a full set of it.
+	 * What is left over netherite is toughness, which only counts against a blow that bites into armour.
+	 * ArmaduraGameTests holds every set to netherite with Protection IV plus five points.
 	 */
 	CORAZON(0xFF7A3C, TagKey.create(net.minecraft.core.registries.Registries.ITEM, dev.forja.Forja.id("corazon_de_forja")), null,
-		true, 2400, 9.5F, 4.5F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL, 25, 1.60F, 0.10F, 1.15F, new int[]{4, 7, 9, 4}, 48, 3.5F, 0.1F,
+		true, 2400, 9.5F, 4.5F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL, 25, 1.60F, 0.10F, 1.15F, new int[]{3, 7, 8, 3}, 48, 3.5F, 0.1F,
 		SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.LLANTO),
 	// ---------------------------------------------------------------- alloys, melted at the star
 	/** Bronze: what copper becomes when it grows up. Cheap, steady, nothing special. */
@@ -110,13 +115,13 @@ public enum ForgeMaterial implements StringRepresentable {
 	// ---- white heat: the obsidian crucible or nothing
 	/** Sun steel: it keeps the noon in it, and gives it back to whoever stands under open sky. */
 	SOLACERO(0xFFC341, alloyTag("solacero"), null, true, 1700, 9.0F, 4.0F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
-		20, 1.45F, 0.10F, 1.10F, new int[]{3, 7, 9, 4}, 40, 3.0F, 0.05F, SoundEvents.ARMOR_EQUIP_GOLD, Trait.SOLAR),
+		20, 1.45F, 0.10F, 1.10F, new int[]{3, 6, 8, 3}, 40, 3.0F, 0.05F, SoundEvents.ARMOR_EQUIP_GOLD, Trait.SOLAR),
 	/** Moon steel: the same metal facing the other way. It is worth nothing at noon and everything at midnight. */
 	LUNACERO(0x5A6CC0, alloyTag("lunacero"), null, true, 1700, 8.0F, 4.0F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
-		22, 1.45F, 0.15F, 1.05F, new int[]{3, 7, 9, 4}, 40, 3.0F, 0.05F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.NOCTURNO),
+		22, 1.45F, 0.15F, 1.05F, new int[]{3, 6, 8, 3}, 40, 3.0F, 0.05F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.NOCTURNO),
 	/** Living steel: a smith's heart poured into damascus. It eats what you kill and mends itself on it. */
 	ACERO_VIVO(0xE8231A, alloyTag("acero_vivo"), null, true, 2200, 9.0F, 4.5F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
-		24, 1.55F, 0.10F, 1.10F, new int[]{4, 7, 9, 4}, 46, 3.5F, 0.1F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.VIVO),
+		24, 1.55F, 0.10F, 1.10F, new int[]{3, 7, 8, 3}, 46, 3.5F, 0.1F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.VIVO),
 	/**
 	 * Slag: what gets skimmed off the top of a melt, still hot. Brittle, blunt and worth nothing on
 	 * paper — and the only <b>igneous</b> material in the mod you can get without going to the Nether.

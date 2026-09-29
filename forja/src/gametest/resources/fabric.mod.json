@@ -33,7 +33,8 @@
 			"dev.forja.test.ManaGameTests",
 			"dev.forja.test.HuevosGameTests",
 			"dev.forja.test.PararrayosGameTests",
-			"dev.forja.test.AccionesGameTests"
+			"dev.forja.test.AccionesGameTests",
+			"dev.forja.test.ArmaduraGameTests"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"
