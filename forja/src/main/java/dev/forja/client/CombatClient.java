@@ -95,7 +95,9 @@ public final class CombatClient {
 	private static void tryDodge(LocalPlayer player) {
 		CombatRules rules = CombatAnims.rules();
 		if (!rules.enabled() || !rules.dodge() || dodgeCooldown > 0 || !player.onGround() || player.isSpectator()) return;
-		if (!player.isCreative() && rules.stamina() && player.getAttachedOrElse(Stamina.VALUE, rules.staminaMax()) < rules.dodgeCost()) return;
+		// The class (clase/ClassEffects), read from the synced copy: the server judges the same numbers.
+		float cost = rules.dodgeCost() * dev.forja.clase.ClassEffects.dodgeCostMultiplier(player);
+		if (!player.isCreative() && rules.stamina() && player.getAttachedOrElse(Stamina.VALUE, rules.staminaMax()) < cost) return;
 		if (!ClientPlayNetworking.canSend(DodgePayload.TYPE)) return;
 
 		Vec2 input = player.input.getMoveVector();
@@ -106,8 +108,9 @@ public final class CombatClient {
 		double sin = Math.sin(yaw);
 		double cos = Math.cos(yaw);
 		Vec3 dir = new Vec3(sideways * cos - forward * sin, 0.0, forward * cos + sideways * sin).normalize();
-		player.setDeltaMovement(dir.x * rules.dodgeStrength(), rules.dodgeLift(), dir.z * rules.dodgeStrength());
-		dodgeCooldown = rules.dodgeCooldownTicks();
+		double strength = rules.dodgeStrength() * dev.forja.clase.ClassEffects.dodgeDistanceMultiplier(player);
+		player.setDeltaMovement(dir.x * strength, rules.dodgeLift(), dir.z * strength);
+		dodgeCooldown = Math.round(rules.dodgeCooldownTicks() * dev.forja.clase.ClassEffects.dodgeCooldownMultiplier(player));
 		ClientPlayNetworking.send(new DodgePayload((float) dir.x, (float) dir.z));
 	}
 }

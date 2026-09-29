@@ -132,6 +132,16 @@ public class MagicBolt extends Projectile {
 				return;
 			}
 			AABB box = new AABB(at, at).inflate(this.big ? 0.6 : 0.35);
+			// A Curandero's bolt goes through monsters and mends the first ally it meets (magic/Healing).
+			if (dev.forja.magic.Healing.converts(this.getOwner()) && this.getOwner() instanceof LivingEntity healer) {
+				LivingEntity ally = dev.forja.magic.Healing.allyIn(level, box, healer);
+				if (ally != null) {
+					dev.forja.magic.Healing.spellHeal(level, healer, ally, this.damage);
+					this.burst(level, at);
+					return;
+				}
+				continue;
+			}
 			for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, box,
 				other -> other.isAlive() && other != this.getOwner() && !Spellcasting.spares(this.spareMonsters, other))) {
 				if (this.insistent) {
@@ -154,7 +164,7 @@ public class MagicBolt extends Projectile {
 	 * being ridden, and an upgrade that kills your horse is not an upgrade.
 	 */
 	private void steer(ServerLevel level) {
-		if (this.seek <= 0.0F) {
+		if (this.seek <= 0.0F || dev.forja.magic.Healing.converts(this.getOwner())) {
 			return;
 		}
 		Vec3 flight = this.getDeltaMovement();

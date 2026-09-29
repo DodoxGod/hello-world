@@ -328,6 +328,7 @@ public final class CombatUpgrades {
 			player.sendOverlayMessage(Component.translatable(perfect ? "gui.forja.parada" : "gui.forja.parada_normal"));
 		}
 		dev.forja.combat.ParryRhythm.landed(defender);
+		dev.forja.clase.ClassEvents.onParry(defender);
 		RIPOSTE.put(defender, level.getServer().getTickCount() + (perfect ? RIPOSTE_TICKS * 2 : RIPOSTE_TICKS));
 		if (source.getDirectEntity() instanceof Projectile projectile && projectile.isAlive() && source.getEntity() instanceof LivingEntity archer) {
 			PENDING_REFLECT.add(new Reflected(projectile, archer, level.getGameTime()));
@@ -434,7 +435,8 @@ public final class CombatUpgrades {
 	 * whoever threw it, hurls them away and leaves them shaken.
 	 */
 	public static boolean isParry(LivingEntity defender, ItemStack shield) {
-		return defender.getUseItem() == shield && !shield.isBroken() && defender.getTicksUsingItem() <= parryWindow(shield)
+		return defender.getUseItem() == shield && !shield.isBroken()
+			&& defender.getTicksUsingItem() <= parryWindow(shield) + dev.forja.clase.ClassEffects.parryWindowBonus(defender)
 			&& !dev.forja.combat.ParryRhythm.rushed(defender);
 	}
 

@@ -610,6 +610,7 @@ public class GuideBookScreen extends Screen {
 		this.chapter("pactos", this.pactsChapter());
 		this.chapter("combate", this.combatChapter());
 		this.chapter("accesorios", this.trinketsChapter());
+		this.chapter("clases", this.classesChapter());
 		this.chapter("eventos", this.eventsChapter());
 		this.chapter("encargos", this.commissionsChapter());
 		this.chapter("amenazas", this.threatsChapter());
@@ -677,7 +678,7 @@ public class GuideBookScreen extends Screen {
 	static {
 		SECTIONS.put("taller", List.of("primeros_pasos", "siguiente_paso", "mesas", "objetos", "piezas", "materiales", "rasgos", "aleaciones", "fundicion", "temple", "herrero", "tecnicas"));
 		SECTIONS.put("mejoras", List.of("mejoras", "potencial", "maestria", "sinergias", "pactos"));
-		SECTIONS.put("pelear", List.of("combate", "accesorios"));
+		SECTIONS.put("pelear", List.of("combate", "accesorios", "clases"));
 		SECTIONS.put("mundo", List.of("eventos", "encargos", "amenazas", "bestiario", "mundo"));
 		SECTIONS.put("referencia", List.of("mi_taller", "estadisticas"));
 	}
@@ -705,6 +706,7 @@ public class GuideBookScreen extends Screen {
 			case "potencial" -> new ItemStack(dev.forja.registry.ModItems.FUNDENTE_MAESTRO);
 			case "combate" -> Assembler.create(ForgeType.ESPADA, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.HIERRO));
 			case "accesorios" -> new ItemStack(ModItems.CINTURON);
+			case "clases" -> new ItemStack(ModItems.EMBLEMA_DEL_OLVIDO);
 			case "eventos" -> new ItemStack(ModItems.JARRA);
 			case "encargos" -> new ItemStack(Items.EMERALD);
 			case "amenazas" -> new ItemStack(Items.CROSSBOW);
@@ -1610,6 +1612,53 @@ public class GuideBookScreen extends Screen {
 		body.add(new Crafting(new Item[] {Items.LEATHER, Items.LEATHER, Items.LEATHER, Items.IRON_INGOT, Items.STRING, Items.IRON_INGOT,
 			Items.LEATHER, Items.LEATHER, Items.LEATHER}, new ItemStack(ModItems.CINTURON)));
 		body.add(new Text(Component.translatable("gui.forja.libro.cinturon", dev.forja.item.ToolBeltItem.SLOTS), INK));
+		return body;
+	}
+
+	/**
+	 * The classes (docs/CLASES.md): how to take one, each of the seven with its numbers and its two skills,
+	 * what changing costs, and the healing lantern. Every number is read from the enums the game plays by.
+	 */
+	private List<Element> classesChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libro.clases.intro"), INK));
+		body.add(new ClassButton());
+		body.add(new Text(Component.translatable("gui.forja.libro.clases.niveles", dev.forja.clase.ClassProgress.MAX_LEVEL,
+			dev.forja.clase.ClassProgress.POINTS_PER_LEVEL, dev.forja.clase.Talent.COST[1], dev.forja.clase.Talent.COST[2],
+			dev.forja.clase.Talent.COST[3], dev.forja.clase.Talent.SKILL_COST, dev.forja.clase.ClassProgress.FIRST_STEP,
+			dev.forja.clase.ClassProgress.STEP_GROWTH), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.clases.experiencia"), INK_SOFT));
+		for (dev.forja.clase.PlayerClass clazz : dev.forja.clase.PlayerClass.values()) {
+			body.add(new Divider());
+			body.add(new SubHeader(clazz.displayName()));
+			body.add(new IconRow(List.of(clazz.icon(), clazz.firstSkill.icon(), clazz.secondSkill().icon())));
+			body.add(new Text(clazz.description(), INK));
+			net.minecraft.network.chat.MutableComponent numbers = Component.empty();
+			for (int i = 0; i < clazz.base.size(); i++) {
+				if (i > 0) {
+					numbers.append(" · ");
+				}
+				numbers.append(clazz.base.get(i).stat().plain(clazz.base.get(i).value()));
+			}
+			body.add(new Text(numbers, INK_SOFT));
+			body.add(new Text(Component.translatable("gui.forja.libro.clases.habilidades", clazz.firstSkill.displayName(),
+				clazz.secondSkill().displayName()), INK_SOFT));
+		}
+		body.add(new Divider());
+		body.add(new SubHeader(Component.translatable("item.forja.emblema_del_olvido")));
+		body.add(new Crafting(new Item[] {Items.GOLD_INGOT, Items.GHAST_TEAR, Items.GOLD_INGOT, Items.DIAMOND, Items.ECHO_SHARD, Items.DIAMOND,
+			Items.GOLD_INGOT, Items.AMETHYST_SHARD, Items.GOLD_INGOT}, new ItemStack(ModItems.EMBLEMA_DEL_OLVIDO)));
+		body.add(new Text(Component.translatable("gui.forja.libro.clases.cambio"), INK));
+		body.add(new Divider());
+		body.add(new SubHeader(Component.translatable("item.forja.farol")));
+		body.add(new IconRow(List.of(
+			Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.ESMERALDA, ForgeMaterial.ORO, ForgeMaterial.MADERA)),
+			Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.DIAMANTE, ForgeMaterial.HIERRO, ForgeMaterial.HUESO)),
+			Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.AMATISTA, ForgeMaterial.COBRE, ForgeMaterial.MADERA)))));
+		body.add(new Text(Component.translatable("gui.forja.libro.farol", Math.round(dev.forja.magic.Healing.BEAM_REACH),
+			Math.round(dev.forja.magic.Healing.RING_REACH), Math.round(dev.forja.magic.Healing.RING_GROWTH),
+			Math.round(dev.forja.magic.Healing.SELF_SHARE * 100)), INK));
+		body.add(new Text(Component.translatable("gui.forja.libro.farol.curandero"), INK_SOFT));
 		return body;
 	}
 
@@ -3091,6 +3140,44 @@ public class GuideBookScreen extends Screen {
 		@Override
 		boolean click(GuideBookScreen screen) {
 			screen.jumpTo(screen.chapterPage(this.chapter));
+			return true;
+		}
+	}
+
+	/**
+	 * A button on the page: "Elegir clase" without one, "Ver tu árbol" with one. It opens the same screens as
+	 * the K key (client/ClassClient), because the guide is where a new player looks first.
+	 */
+	private final class ClassButton extends Element {
+		private Component label() {
+			return Component.translatable(dev.forja.clase.ClassProgress.clazz(GuideBookScreen.this.minecraft.player) == null
+				? "gui.forja.libro.clases.boton_elegir" : "gui.forja.libro.clases.boton_arbol");
+		}
+
+		@Override
+		int height() {
+			return 18;
+		}
+
+		@Override
+		int widest(Font font) {
+			return CONTENT_W - 10;
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			boolean hovered = over(mouseX, mouseY, x + 5, y + 1, CONTENT_W - 10, 14);
+			g.fill(x + 5, y + 1, x + CONTENT_W - 5, y + 15, hovered ? 0xFF8A5A2A : 0xFF6B4422);
+			g.fill(x + 6, y + 2, x + CONTENT_W - 6, y + 3, 0xFFC8904A);
+			g.fill(x + 5, y + 14, x + CONTENT_W - 5, y + 15, 0xFF3A2410);
+			Component label = this.label();
+			int width = Math.round(screen.font.width(label) * SMALL);
+			screen.small(g, label, x + (CONTENT_W - width) / 2, y + 5, 0xFFFFF0D0);
+		}
+
+		@Override
+		boolean click(GuideBookScreen screen) {
+			ClassClient.openClassScreen(screen.minecraft);
 			return true;
 		}
 	}

@@ -63,6 +63,7 @@ public final class ForjaCommand {
 			Commands.literal("forja")
 				.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
 				.then(dev.forja.ai.AiDebug.command())
+				.then(dev.forja.clase.ClassCommand.command())
 				.then(Commands.literal("dificultad")
 					.executes(c -> {
 						ServerPlayer player = c.getSource().getPlayer();

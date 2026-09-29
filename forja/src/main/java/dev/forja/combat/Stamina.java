@@ -78,7 +78,7 @@ public final class Stamina {
 	/** A jump: a little, twice that at a run. It goes regardless; out of stamina, the wait before it comes back starts again. */
 	public static void onJump(Player player) {
 		CombatConfig cfg = CombatConfig.get();
-		trySpend(player, player.isSprinting() ? cfg.sprintJumpCost : cfg.jumpCost);
+		trySpend(player, (player.isSprinting() ? cfg.sprintJumpCost : cfg.jumpCost) * dev.forja.clase.ClassEffects.staminaCostMultiplier(player));
 	}
 
 	/**
@@ -95,7 +95,7 @@ public final class Stamina {
 
 	public static void restore(Player player, float amount) {
 		Data data = data(player);
-		data.stamina = Math.min(CombatConfig.get().staminaMax, data.stamina + amount);
+		data.stamina = Math.min(dev.forja.clase.ClassEffects.staminaMax(player), data.stamina + amount);
 	}
 
 	public static boolean isDodging(Player player, long now) {
@@ -115,6 +115,7 @@ public final class Stamina {
 		CombatConfig cfg = CombatConfig.get();
 		data.counterUntil = now + cfg.counterWindowTicks;
 		restore(player, cfg.counterStaminaRefund);
+		dev.forja.clase.ClassEvents.onPerfectDodge(player);
 		CombatAnim.broadcast(player, CombatAnim.Kind.PERFECT_DODGE, cfg.counterWindowTicks);
 		if (player instanceof ServerPlayer serverPlayer) {
 			serverPlayer.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("gui.forja.esquiva_perfecta"));
@@ -140,7 +141,7 @@ public final class Stamina {
 	}
 
 	public static void onAttack(Player player) {
-		data(player).tiredAttack = !trySpend(player, CombatConfig.get().attackCost);
+		data(player).tiredAttack = !trySpend(player, CombatConfig.get().attackCost * dev.forja.clase.ClassEffects.staminaCostMultiplier(player));
 	}
 
 	/** Whether the swing that is landing now was made out of breath. Reading it clears it. */
@@ -167,13 +168,15 @@ public final class Stamina {
 		Data data = data(player);
 		long now = player.level().getGameTime();
 		if (now + DODGE_COOLDOWN_SLACK < data.dodgeCooldownUntil) return;
+		// The class (clase/ClassEffects): what a dodge costs, how long it shields you and how soon the next one comes.
+		float cost = cfg.dodgeCost * dev.forja.clase.ClassEffects.dodgeCostMultiplier(player);
 		if (!exempt(player)) {
-			if (data.stamina + DODGE_STAMINA_SLACK < cfg.dodgeCost) return;
-			data.stamina = Math.max(0.0F, data.stamina - cfg.dodgeCost);
+			if (data.stamina + DODGE_STAMINA_SLACK < cost) return;
+			data.stamina = Math.max(0.0F, data.stamina - cost);
 			data.lastSpend = now;
 		}
-		data.dodgeUntil = now + cfg.dodgeIframeTicks;
-		data.dodgeCooldownUntil = now + cfg.dodgeCooldownTicks;
+		data.dodgeUntil = now + cfg.dodgeIframeTicks + dev.forja.clase.ClassEffects.dodgeIframeBonus(player);
+		data.dodgeCooldownUntil = now + Math.round(cfg.dodgeCooldownTicks * dev.forja.clase.ClassEffects.dodgeCooldownMultiplier(player));
 		CombatFeedback.dodge(player);
 		double length = Math.sqrt(x * x + z * z);
 		if (Double.isFinite(length) && length > 1.0E-4) {
@@ -199,12 +202,12 @@ public final class Stamina {
 			if (now % 10 == 0) {
 				updateWeight(player, data, cfg);
 			}
-			float max = cfg.staminaMax;
+			float max = dev.forja.clase.ClassEffects.staminaMax(player);
 			if (exempt(player)) {
 				data.stamina = max;
 			} else if (now - data.lastSpend >= cfg.staminaRegenDelayTicks && data.stamina < max) {
 				double penalty = Math.min(0.9, Math.max(0.0, data.weight) * cfg.regenPenaltyPerWeight);
-				data.stamina = (float) Math.min(max, data.stamina + cfg.staminaRegenPerTick * (1.0 - penalty));
+				data.stamina = (float) Math.min(max, data.stamina + cfg.staminaRegenPerTick * dev.forja.clase.ClassEffects.staminaRegenMultiplier(player) * (1.0 - penalty));
 			}
 			if (Math.abs(data.stamina - data.synced) >= 0.5F || (data.stamina == max && data.synced != max)) {
 				data.synced = data.stamina;

@@ -295,7 +295,7 @@ public final class ForgedItems {
 		@Override
 		public boolean releaseUsing(ItemStack stack, Level level, LivingEntity entity, int remainingTime) {
 			int duration = this.getUseDuration(stack, entity);
-			int held = Math.round((duration - remainingTime) * drawSpeed(stack));
+			int held = Math.round((duration - remainingTime) * drawSpeed(stack) * dev.forja.clase.ClassEffects.drawSpeedMultiplier(entity));
 			return super.releaseUsing(stack, level, entity, duration - held);
 		}
 

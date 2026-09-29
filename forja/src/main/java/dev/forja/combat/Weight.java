@@ -61,6 +61,7 @@ public final class Weight {
 		BASE_KG.put(ForgeType.MARTILLO, 3.6F);
 		BASE_KG.put(ForgeType.BACULO, 1.5F);
 		BASE_KG.put(ForgeType.GRIMORIO, 1.2F);
+		BASE_KG.put(ForgeType.FAROL, 1.6F);
 		BASE_KG.put(ForgeType.ARCO, 0.9F);
 		BASE_KG.put(ForgeType.BALLESTA, 3.0F);
 		BASE_KG.put(ForgeType.ESCUDO, 4.0F);

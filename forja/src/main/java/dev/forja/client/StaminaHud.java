@@ -29,7 +29,7 @@ public final class StaminaHud implements HudElement {
 		if (player == null || player.isSpectator() || player.isCreative() || !cfg.enabled || !cfg.stamina) {
 			return;
 		}
-		float max = Math.max(1F, cfg.staminaMax);
+		float max = Math.max(1F, dev.forja.clase.ClassEffects.staminaMax(player));
 		float value = player.getAttachedOrElse(Stamina.VALUE, max);
 		long now = net.minecraft.util.Util.getMillis();
 		if (value != last) {

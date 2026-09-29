@@ -64,6 +64,11 @@ public final class Forja implements ModInitializer {
 		dev.forja.forge.HeatSources.register();
 		dev.forja.forge.SmithLevel.register();
 		dev.forja.forge.Techniques.register();
+		// The classes (docs/CLASES.md): the synced attachment first, on both sides, then the rest.
+		dev.forja.clase.ClassProgress.register();
+		dev.forja.clase.ClassNetwork.register();
+		dev.forja.clase.ClassEvents.register();
+		dev.forja.clase.ClassSkills.register();
 		dev.forja.upgrade.Pacts.register();
 		dev.forja.ai.HopBack.register();
 		dev.forja.forge.SmithRecord.register();

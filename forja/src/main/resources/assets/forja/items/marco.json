@@ -26,6 +26,13 @@
             }
           },
           {
+            "when": "farol",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/marco/farol"
+            }
+          },
+          {
             "when": "pico",
             "model": {
               "type": "minecraft:model",

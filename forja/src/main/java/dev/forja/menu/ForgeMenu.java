@@ -1217,7 +1217,8 @@ public class ForgeMenu extends AbstractContainerMenu {
 				return false;
 			}
 		}
-		int perItem = Math.max(1, gear.getMaxDamage() / 4);
+		// The Herrero's class (Remiendo): each ingot closes more of the damage.
+		int perItem = Math.max(1, Math.round(gear.getMaxDamage() / 4 * dev.forja.clase.ClassEffects.repairMultiplier(this.smith)));
 		// Ahorro de metal: the same ingot closes a third more of the damage.
 		if (dev.forja.forge.Techniques.has(this.smith, dev.forja.forge.Technique.AHORRO_DE_METAL)) {
 			perItem = perItem * dev.forja.forge.Technique.REPAIR_NUMERATOR / dev.forja.forge.Technique.REPAIR_DENOMINATOR;
