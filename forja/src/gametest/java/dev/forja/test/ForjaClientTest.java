@@ -208,6 +208,13 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// The mod's own monsters, every move of each (MobAnimationFilm); FORJA_MOBS=pavesa,tenaza films only those.
+			if ("animaciones_mobs".equals(solo)) {
+				checkAttackTimings();
+				MobAnimationFilm.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("cielo".equals(solo)) {
 				filmSkyFlicker(context, server, connection, x, y, z);
 				shotSkies(context, server, connection, x, y, z);
@@ -10095,8 +10102,15 @@ public class ForjaClientTest implements FabricClientGameTest {
 			new Timing("templador", "douse", dev.forja.entity.Quencher.DOUSE_WINDUP),
 			new Timing("molde_roto", "recast", dev.forja.entity.BrokenMould.RECAST_WINDUP),
 			new Timing("tenaza", "grab", dev.forja.entity.Tongs.GRAB_WINDUP),
-			new Timing("nucleo_estelar", "release", dev.forja.entity.StarCore.RELEASE_WINDUP)
+			new Timing("nucleo_estelar", "gather", dev.forja.entity.StarCore.RELEASE_WINDUP),
+			new Timing("automata_de_forja", "vent", dev.forja.entity.ForgeAutomaton.EMBER_WINDUP)
 		);
+		// And the warning before every plain blow: drawn on the tick the code stretches it to (entity.MobMoves).
+		timings = new ArrayList<>(timings);
+		for (String mob : List.of("herrero_caido", "automata_de_forja", "coraza_vacia", "pavesa", "herrumbre", "ascua_mayor",
+			"escoria_viviente", "yunque_andante", "percutor", "tenaza", "cargador_de_carbon", "guardian_de_cuno")) {
+			timings.add(new Timing(mob, "windup", dev.forja.entity.MobMoves.WINDUP_TICKS));
+		}
 		List<String> wrong = new ArrayList<>();
 		for (Timing timing : timings) {
 			String path = "/assets/forja/geckolib/animations/entity/" + timing.mob() + ".animation.json";

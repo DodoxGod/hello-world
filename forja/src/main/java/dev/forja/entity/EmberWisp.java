@@ -71,6 +71,10 @@ public class EmberWisp extends Monster implements GeoEntity {
 	private static final RawAnimation FLY = RawAnimation.begin().thenLoop("fly");
 	private static final RawAnimation FLARE = RawAnimation.begin().thenLoop("flare");
 	private static final RawAnimation DIVE = RawAnimation.begin().thenPlay("dive");
+	private static final RawAnimation STRIKE = RawAnimation.begin().thenPlay("strike");
+	private static final RawAnimation WINDUP = RawAnimation.begin().thenPlayAndHold("windup");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
+	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
 
 	/** Whether it is running hot. The client draws the fire, so the client has to be told. */
 	private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> DATA_FED =
@@ -148,6 +152,15 @@ public class EmberWisp extends Monster implements GeoEntity {
 
 	@Override
 	protected void checkFallDamage(double y, boolean onGround, net.minecraft.world.level.block.state.BlockState state, BlockPos pos) {
+	}
+
+	/** Its plain blow comes out of its wind-up as it is swung, whether or not it lands (see MobMoves). */
+	@Override
+	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
+		super.swing(hand, updateSelf);
+		if (this.level() instanceof ServerLevel) {
+			this.triggerAnim("pavesa", "strike");
+		}
 	}
 
 	@Override
@@ -265,6 +278,11 @@ public class EmberWisp extends Monster implements GeoEntity {
 		if (distance < DIVE_MIN || distance > DIVE_MAX || !this.hasLineOfSight(target)) {
 			return;
 		}
+		this.diveAt(level, target);
+	}
+
+	/** Starts a dive at {@code target} now, whatever the distance and the cooldown. */
+	public void diveAt(ServerLevel level, LivingEntity target) {
 		this.diveCooldown = this.isFed() ? DIVE_COOLDOWN / 2 : DIVE_COOLDOWN;
 		this.triggerAnim("pavesa", "dive");
 		Vec3 aim = target.position().add(0.0, target.getBbHeight() * 0.5, 0.0).subtract(this.position()).normalize();
@@ -357,12 +375,10 @@ public class EmberWisp extends Monster implements GeoEntity {
 
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<EmberWisp>("pavesa", test -> {
-			if (test.animatable().isFed()) {
-				return test.setAndContinue(FLARE);
-			}
-			return test.setAndContinue(test.isMoving() ? FLY : IDLE);
-		}).triggerableAnim("dive", DIVE));
+		controllers.add(MobMoves.controller("pavesa", MobMoves.Clips.<EmberWisp>of(IDLE, FLY)
+			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER).death(DEATH)
+			.state(wisp -> wisp.isFed() ? FLARE : null))
+			.triggerableAnim("dive", DIVE).triggerableAnim("strike", STRIKE));
 	}
 
 	@Override

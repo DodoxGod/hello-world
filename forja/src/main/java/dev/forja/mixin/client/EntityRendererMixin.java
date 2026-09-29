@@ -5,7 +5,11 @@ import com.geckolib.renderer.base.GeoRenderState;
 import dev.forja.client.MobGaits;
 import dev.forja.client.ThreatBadge;
 import dev.forja.client.ThreatPlate;
+import dev.forja.client.CombatAnims;
+import dev.forja.client.CombatPoses;
 import dev.forja.entity.GeoGait;
+import dev.forja.entity.MobMoves;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
@@ -32,7 +36,19 @@ abstract class EntityRendererMixin {
 			MobGaits.Gait gait = MobGaits.compute(living, MobGaits.bodyOf((EntityRenderer<?, ?>) (Object) this), partialTicks);
 			state.setData(MobGaits.KEY, gait);
 			if (state instanceof GeoRenderState geo) {
-				geo.addGeckolibData(GeoGait.RUN, MobGaits.geoRun(gait));
+				float run = MobGaits.geoRun(gait);
+				geo.addGeckolibData(GeoGait.RUN, run > 0.0F ? Float.valueOf(run) : MobMoves.NONE);
+				if ((Object) this instanceof com.geckolib.renderer.GeoEntityRenderer<?, ?>) {
+					// What the fight is doing to it, for its clips (entity.MobMoves) and for its whole body: the
+					// flinch, the lean into a blow, the sway of a stagger (CombatPoses), which vanilla's mobs get
+					// through LivingEntityRenderer and GeckoLib's never went through.
+					float warning = CombatAnims.warning(living.getId(), partialTicks);
+					geo.addGeckolibData(MobMoves.WINDUP, warning > 0.0F ? Float.valueOf(warning) : MobMoves.NONE);
+					geo.addGeckolibData(MobMoves.STAGGER, CombatAnims.staggerLeft(living.getId(), partialTicks) > 0.0F ? MobMoves.ONE : MobMoves.NONE);
+					if (state instanceof LivingEntityRenderState livingState) {
+						state.setData(CombatPoses.KEY, CombatPoses.compute(living, livingState, partialTicks));
+					}
+				}
 			}
 			var threat = ThreatBadge.of(living);
 			state.setData(ThreatBadge.KEY, threat);

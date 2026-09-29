@@ -65,6 +65,9 @@ public class Quencher extends Monster implements GeoEntity {
 
 	private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
 	private static final RawAnimation WALK = RawAnimation.begin().thenLoop("walk");
+	private static final RawAnimation RUN = RawAnimation.begin().thenLoop("run");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
+	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
 	private static final RawAnimation DOUSE = RawAnimation.begin().thenPlay("douse");
 
 	/** The dull green of the oil, used for the arc and the splash. */
@@ -226,9 +229,8 @@ public class Quencher extends Monster implements GeoEntity {
 
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<Quencher>("templador", test ->
-			GeoGait.walk(test, WALK, IDLE)
-		).triggerableAnim("douse", DOUSE));
+		controllers.add(MobMoves.controller("templador", MobMoves.Clips.<Quencher>of(IDLE, WALK).run(RUN).stagger(STAGGER).death(DEATH))
+			.triggerableAnim("douse", DOUSE));
 	}
 
 	@Override

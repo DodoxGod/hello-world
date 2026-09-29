@@ -60,6 +60,9 @@ public class RustSwarm extends Monster implements GeoEntity {
 	private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
 	private static final RawAnimation WALK = RawAnimation.begin().thenLoop("walk");
 	private static final RawAnimation BITE_ANIM = RawAnimation.begin().thenPlay("bite");
+	private static final RawAnimation WINDUP = RawAnimation.begin().thenPlayAndHold("windup");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
+	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
 
 	/** The colour of what it leaves behind on a plate it has been at. */
 	private static final net.minecraft.core.particles.DustParticleOptions RUST =
@@ -93,9 +96,17 @@ public class RustSwarm extends Monster implements GeoEntity {
 		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
 	}
 
+	/** The bite comes out of its wind-up as it is swung, whether or not it lands (see MobMoves). */
+	@Override
+	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
+		super.swing(hand, updateSelf);
+		if (this.level() instanceof ServerLevel) {
+			this.triggerAnim("herrumbre", "bite");
+		}
+	}
+
 	@Override
 	public boolean doHurtTarget(ServerLevel level, net.minecraft.world.entity.Entity target) {
-		this.triggerAnim("herrumbre", "bite");
 		boolean hurt = super.doHurtTarget(level, target);
 		if (hurt && target instanceof LivingEntity victim) {
 			this.gnaw(level, victim);
@@ -179,9 +190,9 @@ public class RustSwarm extends Monster implements GeoEntity {
 
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<RustSwarm>("herrumbre", test ->
-			GeoGait.walk(test, WALK, IDLE)
-		).triggerableAnim("bite", BITE_ANIM));
+		controllers.add(MobMoves.controller("herrumbre", MobMoves.Clips.<RustSwarm>of(IDLE, WALK)
+			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER).death(DEATH))
+			.triggerableAnim("bite", BITE_ANIM));
 	}
 
 	@Override

@@ -87,6 +87,12 @@ public class FallenSmith extends Monster implements GeoEntity {
 	private static final RawAnimation ROAR = RawAnimation.begin().thenPlay("roar");
 	private static final RawAnimation STRIKE = RawAnimation.begin().thenPlay("strike");
 	private static final RawAnimation HOOK = RawAnimation.begin().thenPlay("hook");
+	/** His plain blow, out of its wind-up (see MobMoves); the backhand is STRIKE, a special of its own. */
+	private static final RawAnimation SWING = RawAnimation.begin().thenPlay("swing");
+	private static final RawAnimation WINDUP = RawAnimation.begin().thenPlayAndHold("windup");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
+	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
+	private static final RawAnimation REFORGE = RawAnimation.begin().thenLoop("reforge");
 	// The fire runs on its own controller, so it can burn however it likes while he does something else.
 	private static final RawAnimation FIRE_CALM = RawAnimation.begin().thenLoop("fire_calm");
 	private static final RawAnimation FIRE_RAGE = RawAnimation.begin().thenLoop("fire_rage");
@@ -177,7 +183,15 @@ public class FallenSmith extends Monster implements GeoEntity {
 	protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
 		super.defineSynchedData(builder);
 		builder.define(DATA_RAGING, false);
+		builder.define(DATA_REFORGING, false);
 	}
+
+	/**
+	 * Whether he is at the forge reforging, as the client sees it: he kneels at it and works the hammer. The
+	 * controller used to read the server's own count here, which the client never has, so it never did.
+	 */
+	private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> DATA_REFORGING =
+		net.minecraft.network.syncher.SynchedEntityData.defineId(FallenSmith.class, net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
 
 	/** The forge goes violet in his last quarter, while he is reforging, and just after a heavy blow. */
 	public boolean isRaging() {
@@ -376,6 +390,9 @@ public class FallenSmith extends Monster implements GeoEntity {
 			this.raging--;
 		}
 		boolean hot = this.reforging > 0 || this.raging > 0 || this.getHealth() / this.getMaxHealth() <= 0.25F;
+		if ((this.reforging > 0) != this.entityData.get(DATA_REFORGING)) {
+			this.entityData.set(DATA_REFORGING, this.reforging > 0);
+		}
 		if (hot != this.entityData.get(DATA_RAGING)) {
 			this.entityData.set(DATA_RAGING, hot);
 			level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.BLAZE_SHOOT, SoundSource.HOSTILE, 2.0F, hot ? 0.5F : 1.4F);
@@ -840,9 +857,17 @@ public class FallenSmith extends Monster implements GeoEntity {
 		super.remove(reason);
 	}
 
+	/** The hammer comes down out of its wind-up as it is swung, whether or not it lands (see MobMoves). */
+	@Override
+	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
+		super.swing(hand, updateSelf);
+		if (this.level() instanceof ServerLevel) {
+			this.triggerAnim("boss", "swing");
+		}
+	}
+
 	@Override
 	public boolean doHurtTarget(ServerLevel level, net.minecraft.world.entity.Entity target) {
-		this.triggerAnim("boss", "strike");
 		this.triggerAnim("fire", this.isRaging() ? "flash_hot" : "flash");
 		Vec3 facing = this.getLookAngle();
 		double mouthX = this.getX() - facing.x * 0.55;
@@ -882,18 +907,17 @@ public class FallenSmith extends Monster implements GeoEntity {
 
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<FallenSmith>("boss", test -> {
-			FallenSmith smith = test.animatable();
-			if (smith.reforging > 0) {
-				return test.setAndContinue(SLAM);
-			}
-			return test.setAndContinue(test.isMoving() ? WALK : IDLE);
-		}).triggerableAnim("slam", SLAM).triggerableAnim("roar", ROAR).triggerableAnim("strike", STRIKE).triggerableAnim("hook", HOOK));
+		controllers.add(MobMoves.controller("boss", MobMoves.Clips.<FallenSmith>of(IDLE, WALK)
+			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER).death(DEATH)
+			.state(smith -> smith.entityData.get(DATA_REFORGING) ? REFORGE : null))
+			.triggerableAnim("slam", SLAM).triggerableAnim("roar", ROAR).triggerableAnim("strike", STRIKE).triggerableAnim("hook", HOOK)
+			.triggerableAnim("swing", SWING));
 		// The fire is its own controller: it only touches the two bones the flames hang off, so it can
-		// keep burning through a swing, a roar or a reforge without any of them fighting over a bone.
-		controllers.add(new AnimationController<FallenSmith>("fire", test ->
-			test.setAndContinue(test.animatable().isRaging() ? FIRE_RAGE : FIRE_CALM)
-		).triggerableAnim("flash", FIRE_FLASH).triggerableAnim("flash_hot", FIRE_FLASH_HOT));
+		// keep burning through a swing, a roar or a reforge without any of them fighting over a bone. It goes
+		// back to burning after a flash, too: it used to stop dead on the flash's last frame.
+		controllers.add(MobMoves.controller("fire", MobMoves.Clips.<FallenSmith>of(FIRE_CALM, FIRE_CALM)
+			.state(smith -> smith.isRaging() ? FIRE_RAGE : FIRE_CALM))
+			.triggerableAnim("flash", FIRE_FLASH).triggerableAnim("flash_hot", FIRE_FLASH_HOT));
 	}
 
 	@Override

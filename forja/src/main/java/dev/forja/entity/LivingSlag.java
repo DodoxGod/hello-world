@@ -64,6 +64,9 @@ public class LivingSlag extends Monster implements GeoEntity {
 	private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
 	private static final RawAnimation WALK = RawAnimation.begin().thenLoop("walk");
 	private static final RawAnimation SPLIT = RawAnimation.begin().thenPlay("split");
+	private static final RawAnimation STRIKE = RawAnimation.begin().thenPlay("strike");
+	private static final RawAnimation WINDUP = RawAnimation.begin().thenPlayAndHold("windup");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
 
 	private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
@@ -134,6 +137,15 @@ public class LivingSlag extends Monster implements GeoEntity {
 	@Override
 	public boolean fireImmune() {
 		return true;
+	}
+
+	/** Its plain blow comes out of its wind-up as it is swung, whether or not it lands (see MobMoves). */
+	@Override
+	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
+		super.swing(hand, updateSelf);
+		if (this.level() instanceof ServerLevel) {
+			this.triggerAnim("escoria", "strike");
+		}
 	}
 
 	@Override
@@ -217,9 +229,10 @@ public class LivingSlag extends Monster implements GeoEntity {
 
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<LivingSlag>("escoria", test ->
-			GeoGait.walk(test, WALK, IDLE)
-		).triggerableAnim("split", SPLIT));
+		// No death clip: it dies by coming apart (split, triggered as it dies).
+		controllers.add(MobMoves.controller("escoria", MobMoves.Clips.<LivingSlag>of(IDLE, WALK)
+			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER))
+			.triggerableAnim("split", SPLIT).triggerableAnim("strike", STRIKE));
 	}
 
 	@Override

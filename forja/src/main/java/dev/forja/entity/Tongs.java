@@ -64,6 +64,16 @@ public class Tongs extends Monster implements GeoEntity {
 	private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
 	private static final RawAnimation WALK = RawAnimation.begin().thenLoop("walk");
 	private static final RawAnimation GRAB = RawAnimation.begin().thenPlay("grab");
+	private static final RawAnimation STRIKE = RawAnimation.begin().thenPlay("strike");
+	private static final RawAnimation WINDUP = RawAnimation.begin().thenPlayAndHold("windup");
+	private static final RawAnimation HOLD = RawAnimation.begin().thenLoop("hold");
+	private static final RawAnimation RUN = RawAnimation.begin().thenLoop("run");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
+	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
+
+	/** Whether it has someone in its jaws, for the client: it holds them clamped for as long as it does. */
+	private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> DATA_HOLDING =
+		net.minecraft.network.syncher.SynchedEntityData.defineId(Tongs.class, net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
 
 	/** The pale soul colour it is lit with, used for the jaws closing. */
 	private static final net.minecraft.core.particles.DustParticleOptions SOUL =
@@ -115,6 +125,10 @@ public class Tongs extends Monster implements GeoEntity {
 				this.getX(), this.getY(1.55), this.getZ(), 1, 0.12, 0.06, 0.12, 0.01);
 		}
 		this.hold(level);
+		boolean holding = this.holding() != null;
+		if (holding != this.entityData.get(DATA_HOLDING)) {
+			this.entityData.set(DATA_HOLDING, holding);
+		}
 		this.close(level);
 	}
 
@@ -268,10 +282,26 @@ public class Tongs extends Monster implements GeoEntity {
 	}
 
 	@Override
+	protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+		super.defineSynchedData(builder);
+		builder.define(DATA_HOLDING, false);
+	}
+
+	/** Its plain blow comes out of its wind-up as it is swung, whether or not it lands (see MobMoves). */
+	@Override
+	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
+		super.swing(hand, updateSelf);
+		if (this.level() instanceof ServerLevel) {
+			this.triggerAnim("tenaza", "strike");
+		}
+	}
+
+	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<Tongs>("tenaza", test ->
-			GeoGait.walk(test, WALK, IDLE)
-		).triggerableAnim("grab", GRAB));
+		controllers.add(MobMoves.controller("tenaza", MobMoves.Clips.<Tongs>of(IDLE, WALK).run(RUN)
+			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER).death(DEATH)
+			.state(tongs -> tongs.entityData.get(DATA_HOLDING) ? HOLD : null))
+			.triggerableAnim("grab", GRAB).triggerableAnim("strike", STRIKE));
 	}
 
 	@Override

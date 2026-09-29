@@ -58,6 +58,11 @@ public class WalkingAnvil extends Monster implements GeoEntity {
 
 	private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
 	private static final RawAnimation WALK = RawAnimation.begin().thenLoop("walk");
+	private static final RawAnimation STRIKE = RawAnimation.begin().thenPlay("strike");
+	private static final RawAnimation WINDUP = RawAnimation.begin().thenPlayAndHold("windup");
+	private static final RawAnimation RUN = RawAnimation.begin().thenLoop("run");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
+	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
 	private static final RawAnimation WELD = RawAnimation.begin().thenPlay("weld");
 
 	/** The orange of a weld, which is what the thread between it and its patient is drawn in. */
@@ -219,11 +224,21 @@ public class WalkingAnvil extends Monster implements GeoEntity {
 		return SoundEvents.ANVIL_DESTROY;
 	}
 
+	/** Its plain blow comes out of its wind-up as it is swung, whether or not it lands (see MobMoves). */
+	@Override
+	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
+		super.swing(hand, updateSelf);
+		if (this.level() instanceof ServerLevel) {
+			this.triggerAnim("yunque", "strike");
+		}
+	}
+
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<WalkingAnvil>("yunque", test ->
-			GeoGait.walk(test, WALK, IDLE)
-		).triggerableAnim("weld", WELD));
+		controllers.add(MobMoves.controller("yunque", MobMoves.Clips.<WalkingAnvil>of(IDLE, WALK).run(RUN)
+			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER).death(DEATH))
+			.triggerableAnim("weld", WELD)
+			.triggerableAnim("strike", STRIKE));
 	}
 
 	@Override

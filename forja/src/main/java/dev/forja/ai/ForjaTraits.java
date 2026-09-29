@@ -125,6 +125,8 @@ public final class ForjaTraits {
 			hollow.setNoAi(true);
 			hollow.setInvulnerable(true);
 			hollow.setDeltaMovement(Vec3.ZERO);
+			// And it is seen to drop: until now it stood there, still and upright, "dead".
+			hollow.feignDeath();
 			level.playSound(null, hollow.getX(), hollow.getY(), hollow.getZ(), SoundEvents.ARMOR_EQUIP_IRON.value(), SoundSource.HOSTILE, 1.2F, 0.5F);
 			level.sendParticles(ParticleTypes.SOUL, hollow.getX(), hollow.getY(0.5), hollow.getZ(), 20, 0.4, 0.3, 0.4, 0.02);
 			return false;
@@ -195,6 +197,7 @@ public final class ForjaTraits {
 			it.remove();
 			hollow.setNoAi(false);
 			hollow.setInvulnerable(false);
+			hollow.rise();
 			// Behind the one it was fighting, not whoever happens to stand nearest: with two players about,
 			// the nearest was as likely as not the other one. Only if that one is gone does it take the
 			// nearest, as it always did.

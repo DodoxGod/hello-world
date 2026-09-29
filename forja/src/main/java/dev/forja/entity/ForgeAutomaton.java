@@ -79,6 +79,10 @@ public class ForgeAutomaton extends Monster implements GeoEntity {
 	private static final RawAnimation VENT = RawAnimation.begin().thenPlay("vent");
 	private static final RawAnimation STEAM = RawAnimation.begin().thenPlay("steam");
 	private static final RawAnimation SLAG = RawAnimation.begin().thenPlay("coz");
+	private static final RawAnimation WINDUP = RawAnimation.begin().thenPlayAndHold("windup");
+	private static final RawAnimation RUN = RawAnimation.begin().thenLoop("run");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
+	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
 
 	/** The parts it is made of, and so the parts it leaves behind. */
 	private static final PartType[] SCRAP = {
@@ -154,7 +158,6 @@ public class ForgeAutomaton extends Monster implements GeoEntity {
 
 	@Override
 	public boolean doHurtTarget(ServerLevel level, net.minecraft.world.entity.Entity target) {
-		this.triggerAnim("automata", "smash");
 		level.sendParticles(dev.forja.registry.ModParticles.CHISPA,
 			target.getX(), target.getY(0.6), target.getZ(), 10, 0.25, 0.25, 0.25, 0.2);
 		return super.doHurtTarget(level, target);
@@ -165,6 +168,15 @@ public class ForgeAutomaton extends Monster implements GeoEntity {
 	 * out of, but it is the one answer it has to somebody who stands off and shoots it, which until now
 	 * was the whole of the fight against it.
 	 */
+	/** The fist comes down out of its wind-up as it is swung, whether or not it lands (see MobMoves). */
+	@Override
+	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
+		super.swing(hand, updateSelf);
+		if (this.level() instanceof ServerLevel) {
+			this.triggerAnim("automata", "smash");
+		}
+	}
+
 	private void emberSpit(ServerLevel level) {
 		if (this.emberCooldown > 0) {
 			this.emberCooldown--;
@@ -418,9 +430,9 @@ public class ForgeAutomaton extends Monster implements GeoEntity {
 
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<ForgeAutomaton>("automata", test ->
-			GeoGait.walk(test, WALK, IDLE)
-		).triggerableAnim("smash", SMASH).triggerableAnim("vent", VENT).triggerableAnim("steam", STEAM)
+		controllers.add(MobMoves.controller("automata", MobMoves.Clips.<ForgeAutomaton>of(IDLE, WALK).run(RUN)
+			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER).death(DEATH))
+			.triggerableAnim("smash", SMASH).triggerableAnim("vent", VENT).triggerableAnim("steam", STEAM)
 			.triggerableAnim("coz", SLAG));
 	}
 
