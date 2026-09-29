@@ -4,7 +4,7 @@ Para Andy. Todo está en la rama `claude/hola-rv9w0u` (PR #1). El detalle de la 
 `docs/RESUMEN_2026-09-29.md`; aquí va todo junto, con la segunda tanda (la que mandaste por la sesión "Mod Forja")
 y lo que vino después.
 
-**Estado del CI:** `b4f6b16` compila y pasan todas las pruebas de servidor. El arreglo nuevo de `/locate` (`b438486`) está en el CI.
+**Estado del CI:** `b438486` compila y pasan todas las pruebas de servidor, también las nuevas de `SitioGameTests`.
 
 ## Cómo lo he probado sin tu PC
 
@@ -103,7 +103,12 @@ Tres pasadas al generador (`tools/castillo*.py`).
   - en la prueba del cliente (`mundo`), se busca el castillo como lo hace el mapa del Forjador y luego con
     `/locate`, las dos con un tope de 15 s, y se escribe en el registro cuántos sitios se miraron y por qué se
     descartaron.
-- **Resultado:** pendiente del run de `b438486` (el anterior tardó 20 s).
+- **Resultado:** en un mundo nuevo, buscar el castillo pasó de **20 s a 4,4 s**, y un `/locate` después, **0,3 s**.
+  - El control del sitio costó 1,4 s en total: 313 candidatos, 277 descartados por bioma, 34 por el terreno y 2
+    válidos.
+  - El castillo salió a unos 20.000 bloques, en una taiga nevada y en tierra firme, con un río al oeste y el mar
+    justo fuera de la muralla este.
+  - Vistas: `docs/capturas_2026-09-29/mundo_locate.jpg`.
 
 ## 3. Grupos de mobs
 
@@ -271,7 +276,9 @@ entre sí y los factores multiplican al final.
 ## Capturas
 
 - **La forja reclama:** `docs/capturas_2026-09-29/jefe_reclama.jpg`, en 4 vistas: el aviso, el anillo, el arrastre y cómo queda después, sin los gólems.
-- **Pendientes:** pararrayos, clases, castillo y mundo.
+- **Mundo:** `docs/capturas_2026-09-29/mundo_locate.jpg`, el castillo encontrado con `/locate`, visto desde arriba y
+  desde los cuatro lados.
+- **Pendientes:** pararrayos, clases y castillo.
 
 ## Estado de las pruebas
 
