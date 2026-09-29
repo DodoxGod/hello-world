@@ -17,7 +17,6 @@
   y corren a su puesto, los esqueletos se apartan para tener línea de tiro, los grupos mezclan tipos con un solo
   líder, y los élites conservan sus movimientos al recargar.
 
-## 2026-09-28 — animaciones para los monstruos del mod
 ## 2026-09-29 — animaciones para los monstruos del mod
 
 - **Arreglo de base: los monstruos se quedaban congelados.** Tras su primer golpe o su primer especial, todos los
