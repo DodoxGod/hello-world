@@ -509,7 +509,7 @@ Una red v2 puede usar un prefijo de este bloque (sus `nombres_obs` tienen que co
 | zombi, husk, aldeano zombi, ahogado (1) | `lunge` embestida | en el suelo, 3,5–7 bloques, lo ve, no es élite legendario, turno libre (lo toma al empezar) | 12, se agacha | salto hacia el jugador: vel. horizontal 0,85, vertical 0,35; si toca: golpe + Lentitud II 30 ticks; acaba al aterrizar (tick > 3) o a los 25 | 100–200 | 0,3 |
 | ahogado con tridente, en el agua (2) | `estocada_tridente` | en el agua, con tridente, 3–8, lo ve | 12, burbujas | impulso hacia los ojos del jugador ×1,0; si toca: golpe + 2; acaba al tocar o a los 12 | 100–180 | 0,06 |
 | araña, araña de cueva (1) | `salto_arana` | en el suelo, 2,5–6, lo ve | 10, se agacha | salto 0,7 horizontal, 0,45 vertical; si toca: golpe | 60–120 | 0,06 |
-| araña (2) | `telarana` | 4–12, lo ve, el jugador en el suelo | 15, tinta en sus pies (marca fija al empezar) | telaraña en la marca si es aire; se quita a los 100 ticks | 160–260 | 0,02 |
+| araña (2) | `telarana` | 4–12, lo ve, el jugador en el suelo | 15, tinta en sus pies (marca fija al empezar) | quien siga a ≤ 1,2 de la marca queda enredado: Lentitud III 60 ticks (sin bloque de telaraña) | 160–260 | 0,02 |
 | esqueleto, stray, bogged (1) | `paso_atras` | en el suelo, < 3, con arco | 4 | salto atrás 0,6 horizontal, 0,35 vertical; al tick 5, disparo de fuerza 0,8 si lo ve | 80–140 | 0,15 |
 | esqueleto… (2) | `andanada` | 6–16, lo ve, con arco, nadie en la línea | 30, brillo y tensado | 3 flechas de fuerza 1,0 giradas −10°, 0° y +10° | 200–320 | 0,02 |
 | enderman (1) | `teletransporte` | 3–16, jugador en el suelo | 12, portal y sonido en el destino | destino = 2 bloques detrás del jugador (según su mirada al empezar); allí, aviso normal de 8 y golpe si alcanza | 160–240 | 0,04 |
@@ -618,11 +618,8 @@ porque su IA propia ya los lanza.
 - **Terreno alto** (51, arqueros con reglas): cada 100 ticks (el primero a los 200) busca un punto a 3 o 6 bloques
   (8 direcciones) ≥ 1,9 más alto y sin peligro. Si el jugador está a 8–16 y no está tensando, va allí a 1,1 durante
   hasta 60 ticks.
-- **Abrirse paso y pilar** (54, 55; zombis; solo con la regla `mobGriefing`):
-  - **Excavar**: bloque blando (hojas, lana, arena, tierra, heno, nieve, grava) a 0,9 bloques hacia el jugador, a la
-    altura de los pies o de la cabeza. Lo excava en 20 ticks y lo rompe, soltando el objeto.
-  - **Pilar**: si el jugador está ≥ 2,5 más alto y a ≤ 3 en horizontal, salta y pone tierra bajo sí al caer (máx. 4
-    bloques). Los bloques se quitan a los 200 ticks.
+- **Abrirse paso y pilar** (54, 55): **quitado** (Andy, 2026-09-29). Los monstruos nunca ponen ni rompen bloques.
+  Para bajar a un jugador de un pilar, el contrato v4 dará a la red otras salidas (tiros que empujan, arañas que trepan, empujones).
 - **Zigzag** (58) y **parapeto** (59), con el jugador tensando un arco y el mob sin escudo:
   - a > 8 bloques: táctica PARAPETARSE (nueva, índice 8), hacia un punto a 2 o 4 bloques (8 direcciones), a ±1 de
     altura, sin peligro, desde cuyos ojos un bloque tapa los ojos del jugador. Se busca cada 20 ticks; si no hay

@@ -1,5 +1,18 @@
 # Novedades
 
+## 2026-09-29 — los monstruos ya no construyen ni rompen bloques
+
+- Por decisión de Andy, ningún monstruo pone ni rompe bloques:
+  - los zombis ya no se hacen pilares de tierra para subir hasta ti, ni excavan hojas, arena o tierra para abrirse
+    paso (fuera `MovementGoals.Builder`);
+  - la telaraña de la araña ya no deja un bloque: quien siga en la marca queda enredado (Lentitud III durante 3 s).
+
+  Las puertas siguen como en vanilla. `TemporaryBlocks`, que solo servía para esto, se ha borrado.
+- Para bajarte de un pilar, el contrato v4 de la red dará otras salidas: tiros que empujan, arañas que trepan y
+  empujones. La única excepción futura será romper antorchas y otras luces, también con la v4.
+- Pruebas: `zombiesNeverBuildNorDig` (ni un bloque cambia en 5 s con un zombi bajo un jugador en un pilar) y
+  `spiderWebTanglesWithoutABlock`.
+
 ## 2026-09-29 — /locate del castillo, más barato
 
 - `/locate structure forja:bastion_del_gremio` tardaba 20 s en encontrar un castillo a 45.000 bloques: solo valía uno

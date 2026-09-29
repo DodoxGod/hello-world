@@ -321,9 +321,12 @@ public class AiGameTests {
 		});
 	}
 
-	/** A spider marks the player's feet and a web appears there; five seconds later it is gone. */
+	/**
+	 * A spider marks the player's feet and its web tangles whoever is still there: slowed, and no cobweb block,
+	 * since monsters never place or break blocks (Andy, 2026-09-29).
+	 */
 	@GameTest(maxTicks = 200)
-	public void spiderWebComesAndGoes(GameTestHelper helper) {
+	public void spiderWebTanglesWithoutABlock(GameTestHelper helper) {
 		var spider = helper.spawn(EntityTypes.SPIDER, new BlockPos(1, 1, 1));
 		spider.setNoAi(true);
 		CombatGameTests.TestPlayer player = player(helper, new BlockPos(7, 1, 1));
@@ -331,11 +334,9 @@ public class AiGameTests {
 		helper.runAfterDelay(5, () -> {
 			release(helper, specials(spider), 1, player);
 			BlockPos at = BlockPos.containing(player.position());
-			helper.assertTrue(helper.getLevel().getBlockState(at).is(net.minecraft.world.level.block.Blocks.COBWEB), "debería haber telaraña");
-			helper.runAfterDelay(110, () -> {
-				helper.assertFalse(helper.getLevel().getBlockState(at).is(net.minecraft.world.level.block.Blocks.COBWEB), "la telaraña debería quitarse");
-				helper.succeed();
-			});
+			helper.assertFalse(helper.getLevel().getBlockState(at).is(net.minecraft.world.level.block.Blocks.COBWEB), "no debería haber bloque de telaraña");
+			helper.assertTrue(player.hasEffect(net.minecraft.world.effect.MobEffects.SLOWNESS), "la telaraña debería enredarlo (lentitud)");
+			helper.succeed();
 		});
 	}
 
@@ -996,5 +997,31 @@ public class AiGameTests {
 		Decision oldDecision = NetBrain.sample(old.forward(new float[old.inputs()], new float[old.memory]), 1.0, RandomSource.create(3), null);
 		helper.assertTrue(oldDecision.tactic().ordinal() < dev.forja.ai.Tactic.V2_COUNT, "una red v2 sigue en sus nueve tácticas");
 		helper.succeed();
+	}
+
+	/**
+	 * Monsters never build or break blocks (Andy, 2026-09-29): a zombie under a player standing on a pillar, with
+	 * soft dirt round it, used to pile up dirt to reach them and dig through what was in the way. For five
+	 * seconds not one block in the test's area may change.
+	 */
+	@GameTest(maxTicks = 140)
+	public void zombiesNeverBuildNorDig(GameTestHelper helper) {
+		for (int dy = 1; dy <= 3; dy++) {
+			helper.setBlock(new BlockPos(4, dy, 4), net.minecraft.world.level.block.Blocks.STONE);
+		}
+		for (int dx = 1; dx <= 3; dx++) {
+			helper.setBlock(new BlockPos(dx, 1, 2), net.minecraft.world.level.block.Blocks.DIRT);
+		}
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 4, 4));
+		var zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(3, 1, 4));
+		zombie.setTarget(player);
+		java.util.Map<BlockPos, net.minecraft.world.level.block.state.BlockState> before = new java.util.HashMap<>();
+		BlockPos.betweenClosed(new BlockPos(0, 1, 0), new BlockPos(7, 7, 7)).forEach(pos -> before.put(pos.immutable(), helper.getBlockState(pos)));
+		helper.runAfterDelay(100, () -> {
+			before.forEach((pos, state) -> helper.assertTrue(helper.getBlockState(pos).equals(state),
+				"el zombi cambió " + pos.toShortString() + ": " + state + " -> " + helper.getBlockState(pos)));
+			zombie.discard();
+			helper.succeed();
+		});
 	}
 }

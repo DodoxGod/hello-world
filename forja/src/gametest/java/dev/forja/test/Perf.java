@@ -47,7 +47,6 @@ public final class Perf {
 		TACTIC_USE("TacticGoal.canUse"),
 		SPECIAL_USE("SpecialGoal.canUse (reglas: ¿empieza un especial?)"),
 		SPECIAL_TICK("SpecialGoal.tick"),
-		BUILDER("MovementGoals.Builder canUse+tick"),
 		MOVEMENT("MovementGoals Track/Home/Curious/HighGround canUse"),
 		SHOCKWAVE("Shockwave.tick"),
 		SMITH_TICK("FallenSmith.tick (incluye su cuerpo vanilla)"),

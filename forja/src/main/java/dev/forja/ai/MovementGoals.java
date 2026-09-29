@@ -3,14 +3,9 @@ package dev.forja.ai;
 import java.util.EnumSet;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.BlockParticleOption;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
 /** The movement goals of phase 7: following a trail, taking the high ground, and getting through or up. */
@@ -174,117 +169,6 @@ public final class MovementGoals {
 		@Override
 		public boolean canContinueToUse() {
 			return --this.left > 0 && !this.mob.getNavigation().isDone();
-		}
-	}
-
-	/**
-	 * Ideas 54 and 55: a zombie that cannot reach its player gets through soft blocks in its way (after a
-	 * moment of digging), and if the player stands high above, builds itself a pillar of dirt to them.
-	 * Only where mobs may change blocks; whatever it places is taken away again after 10 seconds.
-	 */
-	public static final class Builder extends Goal {
-		public static final int DIG_TICKS = 20;
-		public static final int MAX_PILLAR = 4;
-		public static final int BLOCK_LIFE = 200;
-		private final Mob mob;
-		private int digging;
-		private BlockPos dig;
-		private int placed;
-		private long lastPlace;
-
-		public Builder(Mob mob) {
-			this.mob = mob;
-			this.setFlags(EnumSet.of(Flag.MOVE, Flag.JUMP));
-		}
-
-		@Override
-		public boolean canUse() {
-			if (!(this.mob.getTarget() instanceof Player player) || !(this.mob.level() instanceof ServerLevel level) || !Terrain.griefing(level)) {
-				return false;
-			}
-			return this.mob.getNavigation().isStuck() || this.needsPillar(player) || this.softAhead(player) != null;
-		}
-
-		private boolean needsPillar(Player player) {
-			double flat = Math.hypot(player.getX() - this.mob.getX(), player.getZ() - this.mob.getZ());
-			return player.getY() - this.mob.getY() >= 2.5 && flat <= 3.0 && this.placed < MAX_PILLAR;
-		}
-
-		private BlockPos softAhead(Player player) {
-			Vec3 dir = new Vec3(player.getX() - this.mob.getX(), 0.0, player.getZ() - this.mob.getZ());
-			if (dir.lengthSqr() < 1.0E-6) {
-				return null;
-			}
-			dir = dir.normalize();
-			for (double up : new double[] {0.5, 1.5}) {
-				BlockPos pos = BlockPos.containing(this.mob.getX() + dir.x * 0.9, this.mob.getY() + up, this.mob.getZ() + dir.z * 0.9);
-				if (Terrain.soft(this.mob.level().getBlockState(pos))) {
-					return pos;
-				}
-			}
-			return null;
-		}
-
-		@Override
-		public boolean canContinueToUse() {
-			return this.mob.getTarget() instanceof Player && (this.digging > 0 || this.canUse());
-		}
-
-		@Override
-		public boolean requiresUpdateEveryTick() {
-			return true;
-		}
-
-		@Override
-		public void tick() {
-			if (!(this.mob.getTarget() instanceof Player player) || !(this.mob.level() instanceof ServerLevel level)) {
-				return;
-			}
-			this.mob.getLookControl().setLookAt(player, 30.0F, 30.0F);
-			if (this.needsPillar(player)) {
-				// Jump, and once clear of the ground put a block where the feet were.
-				if (this.mob.onGround()) {
-					this.mob.getJumpControl().jump();
-				} else if (this.mob.getDeltaMovement().y < 0.1 && level.getGameTime() - this.lastPlace > 8) {
-					BlockPos below = BlockPos.containing(this.mob.getX(), this.mob.getY() - 0.5, this.mob.getZ());
-					if (level.getBlockState(below).isAir() && this.mob.getY() - below.getY() >= 0.9) {
-						level.setBlockAndUpdate(below, Blocks.DIRT.defaultBlockState());
-						TemporaryBlocks.add(level, below, Blocks.DIRT, BLOCK_LIFE);
-						this.placed++;
-						this.lastPlace = level.getGameTime();
-					}
-				}
-				return;
-			}
-			BlockPos soft = this.dig != null ? this.dig : this.softAhead(player);
-			if (soft == null) {
-				this.digging = 0;
-				return;
-			}
-			if (this.dig == null) {
-				this.dig = soft;
-				this.digging = DIG_TICKS;
-			}
-			this.mob.getNavigation().stop();
-			level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, level.getBlockState(this.dig)),
-				this.dig.getX() + 0.5, this.dig.getY() + 0.5, this.dig.getZ() + 0.5, 3, 0.3, 0.3, 0.3, 0.05);
-			if (--this.digging <= 0) {
-				level.destroyBlock(this.dig, true, this.mob);
-				this.dig = null;
-			}
-		}
-
-		@Override
-		public void stop() {
-			this.dig = null;
-			this.digging = 0;
-			if (this.mob.level().getGameTime() - this.lastPlace > BLOCK_LIFE) {
-				this.placed = 0;
-			}
-		}
-
-		public static boolean builds(Mob mob) {
-			return mob instanceof Zombie;
 		}
 	}
 }

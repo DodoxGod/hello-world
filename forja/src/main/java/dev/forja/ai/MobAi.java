@@ -62,13 +62,9 @@ public final class MobAi {
 				if (MobFamily.of(mob) == MobFamily.ARQUERO) {
 					goals.addGoal(3, new MovementGoals.HighGround(mob, mind));
 				}
-				if (MovementGoals.Builder.builds(mob)) {
-					goals.addGoal(2, new MovementGoals.Builder(mob));
-				}
 			}
 		});
 		ServerTickEvents.END_LEVEL_TICK.register(MobAi::tick);
-		TemporaryBlocks.register();
 		ForjaTraits.register();
 		Personality.register();
 		WorldFights.register();
