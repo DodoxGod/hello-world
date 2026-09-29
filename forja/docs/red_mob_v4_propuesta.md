@@ -86,3 +86,45 @@ almas, de cobre en todas sus edades). No cuentan el farol marino ni la calabaza 
 
 Pendiente para el contrato v4: las salidas de la red que elijan estas acciones y las entradas que las hagan
 posibles (qué lleva en la mano izquierda, armas en el suelo, luces cerca del jugador).
+
+## Estado en el mod (2026-09-29)
+
+**Decisiones de Andy (2026-09-29), que cambian el paso M0 del diseño:**
+
+1. **Los zombis siguen rompiendo puertas.** `BreakDoorGoal` vanilla se queda como está. También se quedan la
+   telaraña de la araña, el fuego de los mobs del mod, las explosiones del creeper y el enderman que coge bloques.
+   Lo único que no hacen los mobs es construir (pilares, torres) ni cavar: eso ya se quitó con `MovementGoals.Builder`.
+   La frase del asedio ("¡Asedio! Vienen a por tu forja") no promete nada de eso y no se toca; solo se corrigió el
+   comentario de `WorldFights.siege`, que aún decía que los zombis cavan y trepan.
+2. **Luces: solo antorchas** (`torch`, `wall_torch`, `soul_torch`, `soul_wall_torch` y las de cobre si existen) y
+   **solo con la regla `mobGriefing` activada**. Es para M3; aún no está hecho. Ojo: `MobActions.breakLight` cuenta
+   hoy también faroles y antorchas de redstone, y habrá que recortarlo al hacer M3.
+3. **Una base cerrada del todo es segura**, como en vanilla: ningún cambio de la IA abre camino a través de bloques.
+
+**Hecho:**
+
+- **M0:** completo con las decisiones de arriba. Sin Builder, sin cambios de bloques salvo lo que Andy deja, y la
+  prueba `zombiesNeverBuildNorDig`.
+- **Carga de la v4 (parte de M1 que no depende de las respuestas):**
+  - opción `iaContrato` = `v3` | `v4` | `auto` (por defecto `auto`) en `config/forja.json`;
+  - las v4 se leen de `config/forja/redes_v4/red_<familia>.json` (y `red_capitan.json`, reservado); las v1, v2, v3,
+    v3b y v3.1 siguen en `config/forja/redes/`;
+  - `MobAi.check` mira el campo `"formato"` antes que los nombres: una v4 en la carpeta de las v3 se rechaza;
+  - como aún no hay `ObsV4`, una v4 se detecta, se anota una vez en el registro ("red v4 encontrada para X, aún no
+    soportada: se usa v3") y no se usa. La familia sigue con su v3 o con las reglas. `NetBrain.format` guarda el
+    formato de cada red.
+- **Percepción honesta (parte de M4):** opción `iaPercepcionHonesta` (por defecto activada). Un mob que lleva 20 ticks
+  sin percibir a su jugador va a la última posición en la que lo percibió (`MobMind.lastSeen`), no a la real, y a menos
+  de 2 bloques de ella se para y espera. Vale para el ejecutor (`TacticGoal`) y para el ataque cuerpo a cuerpo vanilla
+  (`MeleeAttackGoal`). Excepciones: a menos de 1,5 bloques lo "siente" y ataca como siempre; los jefes no cambian; y un
+  mob que nunca vio a su jugador (asedio, llamada de ayuda) sigue como antes, porque no tiene última posición.
+- **Pruebas:** `PercepcionGameTests`:
+  - `lostPlayerIsSoughtWhereLastSeen`: jugador tras un muro, el zombi espera donde lo vio y nunca llega a 2 bloques de
+    la posición real;
+  - `v4NetworkIsDetectedButNotUsed`: una v4 falsa en `redes_v4` se detecta y no se usa.
+
+**Pendiente de las respuestas de Andy (§7 del diseño):** `ObsV4` y las cabezas nuevas de `NetBrain` (M1), furia y
+capitán (M3 a M5), la lista exacta de luces y la etiqueta `forja:luces_rompibles` (M3), y el resto de M2 a M7.
+
+**Pendiente sin depender de él:** la estimación en la observación (hoy una red sigue viendo la posición real aunque no
+lo perciba), los sonidos, BUSCAR y la caza hasta 48 bloques y 600 ticks (el resto de M4).

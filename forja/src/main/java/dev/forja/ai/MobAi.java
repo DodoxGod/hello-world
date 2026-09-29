@@ -32,11 +32,24 @@ import net.minecraft.world.entity.player.Player;
 public final class MobAi {
 	public enum Mode { AUTO, REGLAS, RED }
 
+	/** The network contract to run (CombatConfig.iaContrato): v1..v3.1 from redes, v4 from redes_v4, or v4 where there is one. */
+	public enum Contract { V3, V4, AUTO }
+
+	/** The "formato" of a v4 mob network, and the file name reserved for the v4 captain in redes_v4. */
+	public static final String V4_FORMAT = "red_mob_v4";
+	public static final String V4_CAPTAIN = "capitan";
+
 	private static final Map<Mob, MobMind> MINDS = new WeakHashMap<>();
 	/** Networks by family file name ("cuerpo", "forja_tanque"...), and why the ones that were refused were. */
 	private static final Map<String, NetBrain> NETS = new java.util.LinkedHashMap<>();
 	private static final Map<String, String> NET_PROBLEMS = new java.util.LinkedHashMap<>();
 	private static boolean loaded;
+	/**
+	 * v4 files found in redes_v4 that this mod cannot run yet, by family ("capitan" for red_capitan.json), and the
+	 * families already logged, so a reload does not say it again.
+	 */
+	private static final Map<String, Path> V4_WAITING = new java.util.LinkedHashMap<>();
+	private static final java.util.Set<String> V4_LOGGED = new java.util.HashSet<>();
 
 	private MobAi() {
 	}
@@ -87,6 +100,22 @@ public final class MobAi {
 		}
 	}
 
+	public static Contract contract() {
+		try {
+			return Contract.valueOf(CombatConfig.get().iaContrato.trim().toUpperCase(java.util.Locale.ROOT));
+		} catch (IllegalArgumentException | NullPointerException ignored) {
+			return Contract.AUTO;
+		}
+	}
+
+	/**
+	 * Whether this mod can feed a v4 network its observation. Not yet: ObsV4 (the 468 inputs) comes with M1, once
+	 * Andy has answered the design's questions. Until then a v4 file is found, logged and left alone.
+	 */
+	public static boolean supportsV4() {
+		return false;
+	}
+
 	public static MobMind mind(Mob mob) {
 		return MINDS.get(mob);
 	}
@@ -100,11 +129,33 @@ public final class MobAi {
 		return FabricLoader.getInstance().getConfigDir().resolve("forja").resolve("redes");
 	}
 
+	/**
+	 * The folder the v4 networks are read from: redes_v4 beside {@link #netFolder()} (config/forja/redes_v4 by
+	 * default). A folder of its own, so a v4 file is never mistaken for a v3b one with the same first 280 names.
+	 */
+	public static Path netFolderV4() {
+		return netFolder().toAbsolutePath().resolveSibling("redes_v4");
+	}
+
+	/** The v4 files waiting in redes_v4 for a mod that can run them, by family. */
+	public static Map<String, Path> v4Waiting() {
+		return V4_WAITING;
+	}
+
 	/** (Re)reads every family's network, checking each against the observation it will be fed. */
 	public static synchronized void reload() {
 		NETS.clear();
 		NET_PROBLEMS.clear();
+		V4_WAITING.clear();
+		if (contract() != Contract.V3) {
+			noteV4(V4_CAPTAIN);
+		}
 		for (String family : families()) {
+			// v4 first (docs/red_mob_v4_diseno.md §1.6): with "auto" or "v4", a v4 file would take the family over.
+			// None can yet (supportsV4), so the family carries on with its v3 file below, or the rules.
+			if (contract() != Contract.V3 && noteV4(family) && supportsV4()) {
+				continue;
+			}
 			Path file = netFolder().resolve("red_" + family + ".json");
 			if (!Files.exists(file)) {
 				continue;
@@ -127,8 +178,63 @@ public final class MobAi {
 		loaded = true;
 	}
 
-	/** Why a network cannot be used here, or null: its inputs must be ours, in our order. */
+	/**
+	 * Whether redes_v4 holds a v4 file for this family; one that the mod cannot run is kept in {@link #v4Waiting()}
+	 * and logged once. A file there whose formato is not v4 is not used: it belongs in redes.
+	 */
+	private static boolean noteV4(String family) {
+		Path file = netFolderV4().resolve("red_" + family + ".json");
+		if (!Files.exists(file)) {
+			return false;
+		}
+		String format;
+		try (java.io.Reader reader = Files.newBufferedReader(file)) {
+			com.google.gson.JsonObject json = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
+			format = json.has("formato") ? json.get("formato").getAsString() : null;
+		} catch (Exception failure) {
+			Forja.LOGGER.warn("No se pudo leer la red v4 {}", file, failure);
+			return false;
+		}
+		boolean v4 = V4_CAPTAIN.equals(family) ? "red_capitan_v4".equals(format) : V4_FORMAT.equals(format);
+		if (!v4) {
+			if (V4_LOGGED.add(family + ":" + format)) {
+				Forja.LOGGER.warn("{} está en redes_v4 pero su formato es '{}', no v4: no se usa", file.getFileName(), format);
+			}
+			return false;
+		}
+		if (!supportsV4()) {
+			V4_WAITING.put(family, file);
+			if (V4_LOGGED.add(family)) {
+				Forja.LOGGER.info("red v4 encontrada para {}, aún no soportada: se usa v3", family);
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Whether a network's formato is one of the contracts this loader runs: none (the first v1 files), or red_mob_v1,
+	 * v2 or v3 with anything after that is not another digit (v3b, v3_1...). A v4 or a captain's file is not.
+	 */
+	static boolean v3Format(String format) {
+		if (format == null) {
+			return true;
+		}
+		for (String ok : new String[] {"red_mob_v1", "red_mob_v2", "red_mob_v3"}) {
+			if (format.startsWith(ok) && (format.length() == ok.length() || !Character.isDigit(format.charAt(ok.length())))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Why a network cannot be used here, or null: its formato must be one we run (docs/red_mob_v4_diseno.md §1.6: by
+	 * formato, not by the names, since v4's first 280 are v3b's), and its inputs ours, in our order.
+	 */
 	public static String check(NetBrain net) {
+		if (!v3Format(net.format)) {
+			return "formato '" + net.format + "': no es una red v1..v3" + (V4_FORMAT.equals(net.format) ? " (las v4 van en redes_v4)" : "");
+		}
 		List<String> ours = new ArrayList<>(ObsNames.M1);
 		ours.addAll(ObsForja.names());
 		ours.addAll(ObsV3.names());

@@ -399,6 +399,21 @@ public final class CombatConfig {
 	/** Natural attacks of unarmed mobs by entity id; anything missing hits BLUNT. */
 	public Map<String, DamageKind> ataquesNaturales = defaultNaturalAttacks();
 
+	// --- Network contract v4 and honest perception (docs/red_mob_v4_diseno.md §1.6, §4.5) -------------
+	/**
+	 * Which network contract the mobs use (Andy, 2026-09-29): "v3" only the v1..v3.1 files of config/forja/redes;
+	 * "v4" the red_mob_v4 files of config/forja/redes_v4; "auto" a v4 file where there is one for the family and the
+	 * mod can feed it, v3 elsewhere. The mod cannot build the v4 observation yet (no ObsV4), so today every v4 file is
+	 * found, logged once and left unused, whatever this says, and v3 keeps running.
+	 */
+	public String iaContrato = "auto";
+	/**
+	 * Honest perception (Andy, 2026-09-29): a monster that has not perceived its player for a second walks to where it
+	 * last did, not to where the player really is, and waits there. Vanilla's navigation went to the real position
+	 * through walls, which is cheating. It only redirects movement: it never breaks or builds anything.
+	 */
+	public boolean iaPercepcionHonesta = true;
+
 	public double postureFactor(DamageKind kind) {
 		return switch (kind) {
 			case SLASH -> postureSlash;

@@ -32,6 +32,11 @@ public final class NetBrain {
 	 */
 	public final int reachVersion;
 	public final List<String> names;
+	/**
+	 * The file's "formato" ("red_mob_v2", "red_mob_v3", "red_mob_v4"...), or null when it has none (the first v1
+	 * files). MobAi.check goes by this before the input names: v4's first 280 names are v3b's, but not their meaning.
+	 */
+	public final String format;
 	private final float[][] w1;
 	private final float[] b1;
 	private final float[][] w2;
@@ -58,6 +63,7 @@ public final class NetBrain {
 		this.group = json.get("grupo").getAsString();
 		this.ticksPerDecision = json.has("ticks_por_decision") ? json.get("ticks_por_decision").getAsInt() : 2;
 		this.reachVersion = json.has("alcance_v") ? json.get("alcance_v").getAsInt() : 1;
+		this.format = json.has("formato") ? json.get("formato").getAsString() : null;
 		this.names = new ArrayList<>();
 		for (var name : json.getAsJsonArray("nombres_obs")) {
 			this.names.add(name.getAsString());

@@ -18,6 +18,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Melee monsters warn a player before they strike: they stop, flash and wait a few ticks, and a player
@@ -173,6 +174,25 @@ abstract class MeleeAttackGoalMixin {
 			} else {
 				mob.getNavigation().stop();
 			}
+		}
+	}
+
+	/**
+	 * Honest perception (ai.HonestPerception, Andy 2026-09-29): a monster that has lost sight of its player does not
+	 * chase them by vanilla's path to the real position; the executor (TacticGoal) walks it to where it last saw them.
+	 * A player it perceives, or touches, is attacked as always.
+	 */
+	@Inject(method = "canUse", at = @At("HEAD"), cancellable = true)
+	private void forja$honestStart(CallbackInfoReturnable<Boolean> cir) {
+		if (forja$windup == 0 && dev.forja.ai.HonestPerception.lost(mob)) {
+			cir.setReturnValue(false);
+		}
+	}
+
+	@Inject(method = "canContinueToUse", at = @At("HEAD"), cancellable = true)
+	private void forja$honestGoOn(CallbackInfoReturnable<Boolean> cir) {
+		if (forja$windup == 0 && dev.forja.ai.HonestPerception.lost(mob)) {
+			cir.setReturnValue(false);
 		}
 	}
 

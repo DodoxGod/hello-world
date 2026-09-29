@@ -1,5 +1,23 @@
 # Novedades
 
+## 2026-09-29 — los monstruos no ven a través de las paredes, y la carga de las redes v4
+
+- **Percepción honesta:** un monstruo que lleva un segundo sin verte ya no va a donde estás de verdad (la navegación
+  vanilla iba a tu posición real a través de las paredes). Va a donde te vio por última vez y te espera allí. Si te
+  vuelve a ver, o te tiene a menos de 1,5 bloques, ataca como siempre. Los jefes no cambian. Opción:
+  `iaPercepcionHonesta` (activada).
+- **Redes v4:** nueva opción `iaContrato` (`v3`, `v4` o `auto`). Las redes v4 irán en `config/forja/redes_v4/`. Las de
+  siempre siguen en `config/forja/redes/`. Cada red se elige por su campo `formato`, así que una v4 puesta en la carpeta
+  de las v3 se rechaza. El mod aún no sabe usar las v4: si encuentra una, lo dice una vez en el registro y sigue con la
+  v3 o con las reglas.
+- **Decisiones de Andy:**
+  - los zombis siguen rompiendo puertas;
+  - los monstruos solo podrán romper antorchas, y solo con `mobGriefing` activado (llegará con la v4);
+  - una base cerrada del todo es segura.
+- **Pruebas:** `PercepcionGameTests`:
+  - un zombi que pierde de vista al jugador tras un muro va a donde lo vio y no rodea el muro hasta él;
+  - una red v4 falsa se detecta y no se usa.
+
 ## 2026-09-29 — el buen equipo ya no vuelve inofensivas a las multitudes
 
 Andy: "con diamante y Protección IV, y más con la armadura del mod, las multitudes no hacen nada". Cambios:

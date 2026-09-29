@@ -110,7 +110,8 @@ public final class WorldFights {
 	/**
 	 * A band comes for the player's forge: 6 to 10 zombies and skeletons (more after many nights, with a
 	 * cap), led by an elite, from about 30 blocks off. They take the forge as their home, so they defend
-	 * the ground they take, and zombies dig and climb their way in.
+	 * the ground they take. They come in on foot: nothing is dug or piled up on the way (Andy, 2026-09-29; vanilla's
+	 * zombies still break doors, which stays).
 	 */
 	public static int siege(ServerLevel level, Player player) {
 		BlockPos forge = forgeNear(player);

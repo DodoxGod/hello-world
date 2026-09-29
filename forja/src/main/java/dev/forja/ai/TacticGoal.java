@@ -65,6 +65,8 @@ public final class TacticGoal extends Goal {
 	private int repath;
 	/** Who the blow being wound up is for: the player whose turn it holds. */
 	private Player struck;
+	/** Whether it was following the trail to the last known position last tick (HonestPerception). */
+	private boolean trailing;
 
 	public TacticGoal(Mob mob, MobMind mind) {
 		this.mob = mob;
@@ -75,7 +77,8 @@ public final class TacticGoal extends Goal {
 	@Override
 	public boolean canUse() {
 		return this.mind.target != null && this.mind.target.isAlive()
-			&& (this.mind.networked || this.mind.decision.tactic() != Tactic.ACERCARSE);
+			&& (this.mind.networked || this.mind.decision.tactic() != Tactic.ACERCARSE
+				|| HonestPerception.lost(this.mind, this.mob.level().getGameTime()));
 	}
 
 	@Override
@@ -91,6 +94,7 @@ public final class TacticGoal extends Goal {
 	@Override
 	public void stop() {
 		this.mob.getNavigation().stop();
+		this.trailing = false;
 		if (this.mob.isUsingItem()) {
 			this.mob.stopUsingItem();
 		}
@@ -116,8 +120,17 @@ public final class TacticGoal extends Goal {
 		if (this.mind.cooldown > 0) {
 			this.mind.cooldown--;
 		}
-		this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
 		long now = this.mob.level().getGameTime();
+		boolean lost = HonestPerception.lost(this.mind, now);
+		if (lost != this.trailing) {
+			// A fresh path either way: the one it had led to the real player, or to where it last saw them.
+			this.trailing = lost;
+			this.repath = 0;
+			this.mob.getNavigation().stop();
+		}
+		if (!lost) {
+			this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
+		}
 		if (Posture.isStaggered(this.mob, now)) {
 			this.mind.windup = 0;
 			this.mob.getNavigation().stop();
@@ -130,7 +143,7 @@ public final class TacticGoal extends Goal {
 				return;
 			}
 			int asked = this.mind.decision.special();
-			if (asked > 0 && this.mind.windup == 0 && this.mind.specials.start(asked - 1, target)) {
+			if (asked > 0 && !lost && this.mind.windup == 0 && this.mind.specials.start(asked - 1, target)) {
 				return;
 			}
 		}
@@ -140,6 +153,10 @@ public final class TacticGoal extends Goal {
 		}
 		if (this.mind.windup > 0) {
 			this.tickWindup(target);
+			return;
+		}
+		if (lost) {
+			this.toLastKnown();
 			return;
 		}
 		Decision decision = this.mind.decision;
@@ -666,6 +683,22 @@ public final class TacticGoal extends Goal {
 		} else {
 			this.pathTo(target.getX(), target.getY(), target.getZ(), 1.0);
 		}
+	}
+
+	/**
+	 * Honest perception (HonestPerception, Andy 2026-09-29): with its player unseen for a second, it walks to where it
+	 * last saw them, whatever the brain decided (every tactic is worked out from the real position), and waits there.
+	 */
+	private void toLastKnown() {
+		if (this.mob.isUsingItem() && this.mind.draw > 0) {
+			this.mob.stopUsingItem();
+			this.mind.draw = 0;
+		}
+		if (HonestPerception.arrived(this.mind)) {
+			this.mob.getNavigation().stop();
+			return;
+		}
+		this.pathTo(this.mind.lastSeen.x, this.mind.lastSeen.y, this.mind.lastSeen.z, 1.0);
 	}
 
 	/** A path, refreshed at most every 10 ticks so the pathfinder is not asked every tick. */
