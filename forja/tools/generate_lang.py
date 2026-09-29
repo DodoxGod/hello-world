@@ -82,7 +82,7 @@ TYPES = {
     "daga": ("Daga", "Dagger"), "espadon": ("Espadón", "Greatsword"), "casco": ("Casco", "Helmet"),
     "pechera": ("Pechera", "Chestplate"), "grebas": ("Grebas", "Leggings"), "botas": ("Botas", "Boots"),
     "arco": ("Arco", "Bow"), "ballesta": ("Ballesta", "Crossbow"), "escudo": ("Escudo", "Shield"), "lanza": ("Lanza", "Spear"), "tridente": ("Tridente", "Trident"), "cincel": ("Cincel", "Chisel"), "mazo": ("Mazo", "Mace"), "guadana": ("Guadaña", "Scythe"), "mangual": ("Mangual", "Flail"), "flecha": ("Flecha", "Arrow"), "gancho": ("Gancho", "Grappling Hook"), "barda": ("Barda", "Barding"), "armadura_de_lobo": ("Armadura de lobo", "Wolf Armor"), "guanteletes": ("Guanteletes", "Gauntlets"), "cana": ("Caña", "Fishing Rod"), "alas": ("Alas", "Wings"),
-    "baculo": ("Báculo", "Staff"), "grimorio": ("Grimorio", "Tome"),
+    "baculo": ("Báculo", "Staff"), "grimorio": ("Grimorio", "Tome"), "farol": ("Farol de curación", "Healing Lantern"),
 }
 # name, effect (None for enchantment-backed upgrades, whose effect text is the vanilla enchantment name)
 UPGRADES = {
@@ -2156,6 +2156,356 @@ GUI.update({
 })
 
 
+# --- Clases (docs/CLASES.md) ---
+GUI.update({
+    "gui.forja.clase.elegir": ("Elige tu clase", "Choose Your Class"),
+    "gui.forja.clase.cambiar": ("Cambiar de clase", "Change Class"),
+    "gui.forja.clase.arbol": ("Árbol de talentos", "Talent Tree"),
+    "gui.forja.clase.base": ("De base", "Base stats"),
+    "gui.forja.clase.habilidades": ("Habilidades", "Skills"),
+    "gui.forja.clase.habilidad_1": ("I · %s %s", "I · %s %s"),
+    "gui.forja.clase.habilidad_2": ("II · %s %s · del árbol", "II · %s %s · from the tree"),
+    "gui.forja.clase.tecla": ("[%s]", "[%s]"),
+    "gui.forja.clase.coste_cambio": ("Cambiar gasta el Emblema del olvido. Conservas nivel y experiencia; los talentos se borran y recuperas todos los puntos.",
+                                     "Changing spends the Emblem of Oblivion. You keep your level and experience; your talents are wiped and every point comes back."),
+    "gui.forja.clase.boton_elegir": ("Elegir", "Choose"),
+    "gui.forja.clase.boton_cambiar": ("Cambiar", "Change"),
+    "gui.forja.clase.elegida": ("Tu clase ahora es %s. Tu árbol de talentos está en la tecla K.", "Your class is now %s. Your talent tree is on the K key."),
+    "gui.forja.clase.cambiada": ("Cambiaste de clase: ahora eres %s. Todos tus puntos vuelven a estar libres.",
+                                 "You changed class: you are now %s. All your points are free again."),
+    "gui.forja.clase.sube": ("%s sube al nivel %s · puntos sin gastar: %s", "%s reaches level %s · unspent points: %s"),
+    "gui.forja.clase.aviso": ("Aún no tienes clase. Elige una en el capítulo «Clases» de la guía (G) o con la tecla K.",
+                              "You have no class yet. Pick one in the guide's \"Classes\" chapter (G) or with the K key."),
+    "gui.forja.clase.falta_emblema": ("Para cambiar de clase necesitas un Emblema del olvido", "You need an Emblem of Oblivion to change class"),
+    "gui.forja.clase.nivel": ("Nivel %s · %s/%s de experiencia", "Level %s · %s/%s XP"),
+    "gui.forja.clase.nivel_maximo": ("Nivel %s · máximo", "Level %s · max"),
+    "gui.forja.clase.puntos": ("Puntos: %s", "Points: %s"),
+    "gui.forja.clase.toast.nivel": ("%s · nivel %s", "%s · level %s"),
+    "gui.forja.clase.toast.punto": ("+%s punto de talento (K)", "+%s talent point (K)"),
+    "gui.forja.clase.toast.maximo": ("¡Nivel máximo alcanzado!", "Max level reached!"),
+    "gui.forja.clase.toast.elegida": ("Clase elegida. Tu árbol: K", "Class chosen. Your tree: K"),
+    "gui.forja.habilidad.espera": ("Espera: %s s", "Cooldown: %s s"),
+    "gui.forja.habilidad.esperando": ("%s aún no está lista: %s s", "%s is not ready yet: %s s"),
+    "gui.forja.habilidad.sin_clase": ("No tienes clase: elige una con la tecla K", "You have no class: pick one with the K key"),
+    "gui.forja.habilidad.sin_aprender": ("Aún no has aprendido tu segunda habilidad: está al final de tu árbol",
+                                         "You have not learned your second skill yet: it is at the bottom of your tree"),
+    "gui.forja.habilidad.sin_objetivo": ("No hay ningún monstruo a la vista", "No monster in sight"),
+    "gui.forja.habilidad.sin_aliado": ("No hay ningún aliado a la vista", "No ally in sight"),
+    "gui.forja.habilidad.sin_pieza": ("Necesitas una pieza forjada en la mano", "You need a forged piece in your hand"),
+    "gui.forja.talento.aprender": ("Clic para aprender", "Click to learn"),
+    "gui.forja.talento.aprendido": ("Talento aprendido: %s", "Talent learned: %s"),
+    "gui.forja.talento.necesita": ("Necesita: %s", "Requires: %s"),
+    "gui.forja.talento.necesita_rama": ("Necesita un talento de nivel %s de cualquier rama", "Requires a tier %s talent from any branch"),
+    "gui.forja.talento.posicion": ("%s · nivel %s · coste %s", "%s · tier %s · cost %s"),
+    "gui.forja.talento.posicion_habilidad": ("Habilidad II · coste %s", "Skill II · cost %s"),
+    "gui.forja.talento.evasion": ("¡Evasión! El proyectil no te toca", "Evasion! The projectile misses you"),
+    "gui.forja.talento.ultimo_bastion": ("¡Último bastión! Sigues en pie", "Last Stand! You are still standing"),
+    # "gui.forja.talento.no." + ClassProgress.Refusal. The tree passes the points to "points", the command
+    # passes nothing, so it takes no argument.
+    "gui.forja.talento.no.no_class": ("No tienes clase", "You have no class"),
+    "gui.forja.talento.no.other_class": ("Es un talento de otra clase", "This talent belongs to another class"),
+    "gui.forja.talento.no.already": ("Ya aprendido", "Already learned"),
+    "gui.forja.talento.no.prerequisite": ("Aún no cumples lo que pide", "Requirements not met yet"),
+    "gui.forja.talento.no.points": ("No tienes puntos suficientes", "Not enough points"),
+    "commands.forja.clase.info": ("%s: %s de nivel %s · %s de experiencia · %s puntos libres · %s talentos",
+                                  "%s: %s, level %s · %s XP · %s free points · %s talents"),
+    "commands.forja.clase.ninguna": ("%s no tiene clase", "%s has no class"),
+    "commands.forja.clase.desconocida": ("No existe esa clase o ese talento", "No such class or talent"),
+    "key.category.forja.clases": ("Forja: clases", "Forja: Classes"),
+    "key.forja.clase_arbol": ("Árbol de clase / elegir clase", "Class tree / choose class"),
+    "key.forja.habilidad_1": ("Habilidad de clase I", "Class skill I"),
+    "key.forja.habilidad_2": ("Habilidad de clase II", "Class skill II"),
+    "item.forja.emblema_del_olvido": ("Emblema del olvido", "Emblem of Oblivion"),
+    "item.forja.emblema_del_olvido.desc": ("Clic derecho: cambia de clase. Conservas el nivel; los talentos se olvidan y los puntos vuelven.",
+                                           "Right-click: change class. You keep your level; talents are forgotten and the points come back."),
+    "advancements.forja.clase.title": ("Un camino propio", "A Path of Your Own"),
+    "advancements.forja.clase.description": ("Elige tu primera clase", "Choose your first class"),
+    "gui.forja.libro.cap.clases": ("Clases", "Classes"),
+    "gui.forja.libro.clases.boton_elegir": ("Elegir clase", "Choose a class"),
+    "gui.forja.libro.clases.boton_arbol": ("Ver tu árbol", "See your tree"),
+    "gui.forja.libro.clases.intro": (
+        "Una **clase** es tu forma de pelear (o de forjar). Elegir la primera es gratis: con el botón de aquí "
+        "abajo o con la tecla **K**. Sin clase juegas como siempre, sin bonos ni penalizaciones. La clase, el "
+        "nivel y los talentos **sobreviven a la muerte**. Cada clase trae una habilidad (**V**) y guarda otra al "
+        "final de su árbol (**B**).",
+        "A **class** is your way of fighting (or of forging). The first one is free: with the button below or "
+        "with the **K** key. Without a class you play as always, with no bonuses and no drawbacks. Your class, "
+        "level and talents **survive death**. Each class comes with one skill (**V**) and keeps another at the "
+        "bottom of its tree (**B**).",
+    ),
+    "gui.forja.libro.clases.niveles": (
+        "Nivel máximo %s, y cada nivel da %s punto para el árbol. Cada clase tiene tres ramas: sus nodos "
+        "cuestan %s, %s y %s puntos, y la segunda habilidad %s (pide un nodo de nivel 2). No llegan los puntos "
+        "para todo: hay que elegir. Pasar al siguiente nivel pide %s de experiencia, y %s más por cada nivel "
+        "que ya tengas por encima del primero.",
+        "Max level %s, and each level gives %s point for the tree. Each class has three branches: their nodes "
+        "cost %s, %s and %s points, and the second skill %s (it needs a tier 2 node). There are never enough "
+        "points for everything: you have to choose. The next level takes %s experience, plus %s more for each "
+        "level you already have past the first.",
+    ),
+    "gui.forja.libro.clases.experiencia": (
+        "**Experiencia de clase:** matar monstruos (más si son veteranos, élites, campeones o jefes, y un 50%% "
+        "más si los matas a la manera de tu clase) y lo propio de cada una: paradas y posturas rotas para el "
+        "Guerrero, esquivas perfectas y puñaladas para el Asesino, daño aguantado para el Tanque, hechizos que "
+        "aciertan para el Mago, vida curada a otros para el Curandero, flechas que aciertan (más cuanto más "
+        "lejos) para el Arquero. El Herrero sube forjando.",
+        "**Class experience:** killing monsters (more for veterans, elites, champions and bosses, and 50%% more "
+        "when you kill them your class's way) and each class's own deeds: parries and broken postures for the "
+        "Warrior, perfect dodges and backstabs for the Assassin, damage taken for the Tank, spells that land for "
+        "the Mage, health healed on others for the Healer, arrows that hit (more the farther they fly) for the "
+        "Archer. The Smith levels up by forging.",
+    ),
+    "gui.forja.libro.clases.habilidades": ("Habilidades: **%s** (V) y **%s** (B, del árbol).", "Skills: **%s** (V) and **%s** (B, from the tree)."),
+    "gui.forja.libro.clases.cambio": (
+        "**Cambiar de clase** cuesta un Emblema del olvido: clic derecho abre la elección y el emblema se gasta "
+        "solo al confirmar. Conservas el nivel y la experiencia; los talentos se borran y **todos los puntos "
+        "vuelven**. Elegir tu misma clase sirve para repartir los puntos de nuevo. El fragmento de eco de las "
+        "ciudades antiguas es lo que lo hace caro.",
+        "**Changing class** costs an Emblem of Oblivion: right-click opens the choice and the emblem is spent "
+        "only when you confirm. You keep your level and experience; your talents are wiped and **every point "
+        "comes back**. Picking your own class again lets you spend your points anew. The echo shard from the "
+        "ancient cities is what makes it dear.",
+    ),
+    "gui.forja.libro.farol.curandero": (
+        "Cualquiera puede usar el farol, pero en manos de un **Curandero** cura un 50%% más, y sus talentos "
+        "(Manos cálidas, Milagro) lo suben más aún; Renuevo, Bendición, Purificar y Vínculo también van en "
+        "sus curas. Además, mientras eres Curandero, el proyectil del báculo y el área y la runa del grimorio "
+        "**curan** a los aliados que tocan una décima parte del daño que harían, y no dañan a los monstruos.",
+        "Anyone can use the lantern, but in a **Healer's** hands it heals 50%% more, and their talents (Warm "
+        "Hands, Miracle) raise it further; Renewal, Blessing, Cleanse and Bond ride on their heals too. What's "
+        "more, while you are a Healer the staff's bolt and the tome's area and rune **heal** the allies they "
+        "touch for a tenth of the damage they would deal, and do not hurt monsters.",
+    ),
+    # Not read yet: "gui.forja.libro.farol" is the caged ember wisp's text in the bestiary, and the classes
+    # chapter asks for the same key with four numbers. This is the lantern's text for when it gets its own key.
+    "gui.forja.libro.clases.farol": (
+        "El arma de curación: núcleo, cadena y mango, en cualquier mesa de forja; el núcleo decide el color y "
+        "la fuerza. **Toque:** un rayo de hasta %s bloques cura al primer aliado que alcanza (a ti no). "
+        "**Carga:** un anillo de %s bloques, %s más con la carga llena, cura a todos los aliados de dentro y "
+        "a ti el %s%%. Aliados son los jugadores, tus animales domados y tu equipo; nunca un monstruo. Gasta "
+        "maná como el báculo: el toque es barato y la carga cuesta más. Como arma de golpe no sirve.",
+        "The healing weapon: core, chain and handle, at any forge table; the core sets its colour and its "
+        "strength. **Tap:** a beam of up to %s blocks heals the first ally it reaches (not you). **Charge:** a "
+        "ring of %s blocks, %s more at full charge, heals every ally inside and you for %s%%. Allies are "
+        "players, your tamed animals and your team; never a monster. It spends mana like the staff: a tap is "
+        "cheap and a charge costs more. As a melee weapon it is useless.",
+    ),
+})
+
+# name, motto, description, the three branches
+CLASSES = {
+    "guerrero": (("Guerrero", "Warrior"), ("Cuerpo a cuerpo y aguante", "Melee and endurance"),
+                 ("Aguanta, para y rompe. Algo más de vida y de daño, mucha más estamina, más daño de postura y una ventana de parada más generosa.",
+                  "Endure, parry, break. A little more health and damage, much more stamina, more posture damage and a more forgiving parry window."),
+                 (("Aguante", "Endurance"), ("Guardia", "Guard"), ("Quebranto", "Breaker"))),
+    "asesino": (("Asesino", "Assassin"), ("Más estamina, más esquiva, menos vida", "More stamina, more dodge, less health"),
+                ("Más estamina, más esquiva, un poquito más de daño, bastante menos vida. Esquiva más lejos, más seguido y más barato, y castiga por la espalda.",
+                 "More stamina, more dodge, a little more damage, a lot less health. Dodges farther, more often and for less, and punishes from behind."),
+                (("Sombra", "Shadow"), ("Filo", "Edge"), ("Sigilo", "Stealth"))),
+    "tanque": (("Tanque", "Tank"), ("Mucha vida, poca prisa", "Lots of health, no hurry"),
+               ("Mucha vida, estamina normal, menos movilidad, esquiva más corta y más lento. A cambio, armadura, aguante al empuje y un escudo que cansa menos.",
+                "Lots of health, normal stamina, less mobility, shorter dodges and slower feet. In return: armor, knockback resistance and a shield that tires you less."),
+               (("Muralla", "Rampart"), ("Coraza", "Plating"), ("Firmeza", "Steadfast"))),
+    "mago": (("Mago", "Mage"), ("Báculo y grimorio", "Staff and tome"),
+             ("La magia, más fuerte y más seguido: más daño de hechizos, menos espera, más maná y más rápido de recuperar. Lo paga en vida, estamina y daño cuerpo a cuerpo.",
+              "Magic, harder and sooner: more spell damage, shorter cooldowns, more mana that refills faster. Paid for in health, stamina and melee damage."),
+             (("Arcano", "Arcane"), ("Flujo", "Flow"), ("Égida", "Aegis"))),
+    "curandero": (("Curandero", "Healer"), ("Su magia cura, no hiere", "Their magic heals, not harms"),
+                  ("Las armas mágicas cambian el daño por curación: el báculo y el grimorio curan a los aliados 1/10 del daño que harían y no dañan a los monstruos. Cura un 50 % más con todo, y su arma es el farol.",
+                   "Magic weapons trade damage for healing: the staff and the tome heal allies for 1/10 of the damage they would deal and do not hurt monsters. Heals 50 % more with everything, and the lantern is their weapon."),
+                  (("Sanación", "Healing"), ("Amparo", "Shelter"), ("Fe", "Faith"))),
+    "arquero": (("Arquero", "Archer"), ("Arco, ballesta y buenas piernas", "Bow, crossbow and quick feet"),
+                ("Cazador a distancia: más daño de proyectiles, tensado más rápido, más velocidad y mejor esquiva, y cae mejor. Un poco menos de vida.",
+                 "A hunter at range: more projectile damage, faster draw, more speed and better dodges, and lands softer. A little less health."),
+                (("Puntería", "Aim"), ("Tensión", "Draw"), ("Viento", "Wind"))),
+    "herrero": (("Herrero", "Smith"), ("El que forja", "The one who forges"),
+                ("Sube de nivel forjando. Golpe perfecto más fácil, más potencial en lo que forja, reparaciones que rinden más y mina más rápido.",
+                 "Levels up by forging. An easier perfect strike, more potential in what they forge, repairs that go further and faster mining."),
+                (("Yunque", "Anvil"), ("Crisol", "Crucible"), ("Fragua", "Forge"))),
+}
+# "gui.forja.clase.stat." + ClassStat: the formatted number ("+15 %", "−2", "+3") is the argument
+CLASS_STATS = {
+    "max_health": ("Vida %s", "Health %s"),
+    "move_speed": ("Velocidad %s", "Speed %s"),
+    "melee_damage": ("Daño cuerpo a cuerpo %s", "Melee damage %s"),
+    "armor": ("Armadura %s", "Armor %s"),
+    "toughness": ("Dureza de armadura %s", "Armor toughness %s"),
+    "knockback": ("Resistencia al empuje %s", "Knockback resistance %s"),
+    "mining": ("Velocidad de minado %s", "Mining speed %s"),
+    "jump": ("Salto %s", "Jump %s"),
+    "sneak_speed": ("Velocidad agachado %s", "Sneaking speed %s"),
+    "fall_damage": ("Daño de caída %s", "Fall damage %s"),
+    "burning": ("Tiempo ardiendo %s", "Burning time %s"),
+    "stamina_max": ("Estamina máxima %s", "Max stamina %s"),
+    "stamina_regen": ("Regeneración de estamina %s", "Stamina regeneration %s"),
+    "stamina_cost": ("Coste de estamina %s", "Stamina cost %s"),
+    "dodge_distance": ("Distancia de esquiva %s", "Dodge distance %s"),
+    "dodge_cooldown": ("Espera de esquiva %s", "Dodge cooldown %s"),
+    "dodge_cost": ("Coste de esquiva %s", "Dodge cost %s"),
+    "dodge_iframes": ("Invulnerabilidad al esquivar %s ticks", "Dodge invulnerability %s ticks"),
+    "parry_window": ("Ventana de parada %s ticks", "Parry window %s ticks"),
+    "block_cost": ("Estamina al parar con escudo %s", "Shield block stamina %s"),
+    "posture": ("Daño de postura %s", "Posture damage %s"),
+    "damage_taken": ("Daño recibido %s", "Damage taken %s"),
+    "magic_taken": ("Daño mágico recibido %s", "Magic damage taken %s"),
+    "fire_taken": ("Daño de fuego y lava %s", "Fire and lava damage %s"),
+    "backstab": ("Daño por la espalda %s", "Backstab damage %s"),
+    "counter": ("Daño de contraataque %s", "Counterattack damage %s"),
+    "staggered_bonus": ("Daño a enemigos aturdidos %s", "Damage to staggered foes %s"),
+    "finisher": ("Daño de remate %s", "Finisher damage %s"),
+    "execute": ("Daño a enemigos con menos del 35 % de vida %s", "Damage to foes under 35 % health %s"),
+    "projectile_damage": ("Daño de proyectiles %s", "Projectile damage %s"),
+    "headshot": ("Daño de tiro a la cabeza %s", "Headshot damage %s"),
+    "draw_speed": ("Velocidad de tensado %s", "Draw speed %s"),
+    "arrow_speed": ("Velocidad de flecha %s", "Arrow speed %s"),
+    "spell_damage": ("Daño de hechizos %s", "Spell damage %s"),
+    "spell_cooldown": ("Espera de hechizos %s", "Spell cooldown %s"),
+    "spell_charge": ("Tiempo de carga %s", "Charge time %s"),
+    "charge_bonus": ("Bono de carga completa %s", "Full-charge bonus %s"),
+    "healing": ("Curación %s", "Healing %s"),
+    "mana_max": ("Maná máximo %s", "Max mana %s"),
+    "mana_regen": ("Regeneración de maná %s", "Mana regeneration %s"),
+    "spell_cost": ("Coste de maná %s", "Mana cost %s"),
+    "forge_window": ("Ventana del golpe perfecto %s", "Perfect-strike window %s"),
+    "potential": ("Potencial al forjar %s", "Forging potential %s"),
+    "repair": ("Reparación por lingote %s", "Repair per ingot %s"),
+    "upgrade_bonus": ("Porcentaje de cada mejora que pones %s", "Share of each upgrade you add %s"),
+    "smith_weapon": ("Daño con martillo, mazo, pico y hacha %s", "Hammer, mace, pickaxe and axe damage %s"),
+}
+# "gui.forja.talento." + Talent: name, and the effect text for the nodes that do something a number cannot say
+# (their Talent.numbers are the arguments, shares already as "30 %")
+TALENTS = {
+    "guerrero_segundo_aliento": (("Segundo aliento", "Second Wind"), None),
+    "guerrero_piel_curtida": (("Piel curtida", "Tanned Hide"), None),
+    "guerrero_inquebrantable": (("Inquebrantable", "Unbreakable"),
+                                ("Por debajo del %s de vida, recibes un %s menos de daño", "Below %s health, you take %s less damage")),
+    "guerrero_guardia_alta": (("Guardia alta", "High Guard"), None),
+    "guerrero_parada_firme": (("Parada firme", "Firm Block"), None),
+    "guerrero_replica": (("Réplica", "Riposte"),
+                         ("Una parada te devuelve %s de estamina y tu siguiente golpe en %s s hace un %s más",
+                          "A parry gives back %s stamina and your next blow within %s s deals %s more")),
+    "guerrero_golpe_pesado": (("Golpe pesado", "Heavy Blow"), None),
+    "guerrero_rompeguardias": (("Rompeguardias", "Guardbreaker"), None),
+    "guerrero_verdugo": (("Verdugo", "Executioner"), None),
+    "guerrero_postura_de_hierro": (("Postura de hierro", "Iron Stance"), None),
+    "asesino_pies_ligeros": (("Pies ligeros", "Light Feet"), None),
+    "asesino_contraataque": (("Contraataque", "Counterattack"), None),
+    "asesino_danza": (("Danza", "Dance"), None),
+    "asesino_punalada": (("Puñalada", "Stab"), None),
+    "asesino_ejecutor": (("Ejecutor", "Executor"), None),
+    "asesino_golpe_letal": (("Golpe letal", "Lethal Blow"),
+                            ("Matar cuerpo a cuerpo te devuelve %s de estamina y te da Velocidad II %s s",
+                             "A melee kill gives back %s stamina and Speed II for %s s")),
+    "asesino_paso_quedo": (("Paso quedo", "Soft Step"), None),
+    "asesino_acrobata": (("Acróbata", "Acrobat"), None),
+    "asesino_evasion": (("Evasión", "Evasion"),
+                        ("%s de probabilidad de que un proyectil no te haga nada", "%s chance that a projectile does nothing to you")),
+    "asesino_marca_de_muerte": (("Marca de muerte", "Death Mark"), None),
+    "tanque_escudo_pesado": (("Escudo pesado", "Heavy Shield"), None),
+    "tanque_represalia": (("Represalia", "Retaliation"),
+                          ("Quien golpea tu escudo alzado recibe %s de daño", "Whoever strikes your raised shield takes %s damage")),
+    "tanque_bastion": (("Bastión", "Bastion"), None),
+    "tanque_piel_de_hierro": (("Piel de hierro", "Iron Skin"), None),
+    "tanque_dureza": (("Dureza", "Toughness"), None),
+    "tanque_coloso": (("Coloso", "Colossus"), None),
+    "tanque_recuperacion": (("Recuperación", "Recovery"), ("Recuperas %s de vida cada %s s", "You recover %s health every %s s")),
+    "tanque_raices": (("Raíces", "Roots"), None),
+    "tanque_ultimo_bastion": (("Último bastión", "Last Stand"),
+                              ("Una vez cada %s min, un golpe mortal te deja a 1 de vida con Resistencia III %s s",
+                               "Once every %s min, a lethal blow leaves you at 1 health with Resistance III for %s s")),
+    "tanque_baluarte": (("Baluarte", "Bulwark"), None),
+    "mago_nucleo_afinado": (("Núcleo afinado", "Tuned Core"), None),
+    "mago_sobrecarga_arcana": (("Sobrecarga arcana", "Arcane Overload"), None),
+    "mago_catalizador": (("Catalizador", "Catalyst"), None),
+    "mago_mente_clara": (("Mente clara", "Clear Mind"), None),
+    "mago_canalizacion": (("Canalización", "Channeling"), None),
+    "mago_economia": (("Economía arcana", "Arcane Thrift"), None),
+    "mago_barrera": (("Barrera", "Barrier"), None),
+    "mago_paso_etereo": (("Paso etéreo", "Ethereal Step"), None),
+    "mago_egida": (("Égida", "Aegis"), ("Cada %s s ganas %s de absorción", "Every %s s you gain %s absorption")),
+    "mago_concentracion": (("Concentración", "Focus"), None),
+    "curandero_manos_calidas": (("Manos cálidas", "Warm Hands"), None),
+    "curandero_renuevo": (("Renuevo", "Renewal"), ("Lo que curas recibe además Regeneración I %s s", "Whatever you heal also gets Regeneration I for %s s")),
+    "curandero_milagro": (("Milagro", "Miracle"), None),
+    "curandero_bendicion": (("Bendición", "Blessing"),
+                            ("Curar a alguien por debajo del %s de su vida le da Resistencia I %s s",
+                             "Healing someone below %s of their health gives them Resistance I for %s s")),
+    "curandero_purificar": (("Purificar", "Cleanse"),
+                            ("Tus curas quitan Veneno, Marchitamiento, Debilidad y Lentitud", "Your heals remove Poison, Wither, Weakness and Slowness")),
+    "curandero_vinculo": (("Vínculo", "Bond"), ("Te curas el %s de lo que curas a otros", "You heal yourself %s of what you heal others")),
+    "curandero_serenidad": (("Serenidad", "Serenity"), None),
+    "curandero_voluntad": (("Voluntad", "Willpower"), None),
+    "curandero_aura": (("Aura", "Aura"),
+                       ("Tú y tus aliados a %s bloques: %s de vida cada %s s", "You and your allies within %s blocks: %s health every %s s")),
+    "curandero_resurgir": (("Resurgir", "Resurgence"), None),
+    "arquero_ojo_de_halcon": (("Ojo de halcón", "Hawk Eye"), None),
+    "arquero_tiro_a_la_cabeza": (("Tiro a la cabeza", "Headshot"), None),
+    "arquero_tiro_lejano": (("Tiro lejano", "Long Shot"),
+                            ("Más allá de %s bloques, +%s de daño por bloque, hasta +%s",
+                             "Past %s blocks, +%s damage per block, up to +%s")),
+    "arquero_mano_rapida": (("Mano rápida", "Quick Hand"), None),
+    "arquero_flecha_veloz": (("Flecha veloz", "Swift Arrow"), None),
+    "arquero_tiro_certero": (("Tiro certero", "True Shot"),
+                             ("Un tiro a tensión completa deja Lentitud II %s s", "A full-draw hit leaves Slowness II for %s s")),
+    "arquero_zancada": (("Zancada", "Stride"), None),
+    "arquero_rodar": (("Rodar", "Roll"), None),
+    "arquero_pluma": (("Pluma", "Feather"), None),
+    "arquero_lluvia_de_flechas": (("Lluvia de flechas", "Arrow Rain"), None),
+    "herrero_pulso": (("Pulso", "Steady Pulse"), None),
+    "herrero_golpe_maestro": (("Golpe maestro", "Master Strike"), None),
+    "herrero_martillo_de_oro": (("Martillo de oro", "Golden Hammer"), None),
+    "herrero_ojo_de_metal": (("Ojo de metal", "Metal Eye"), None),
+    "herrero_mano_firme": (("Mano firme", "Steady Hand"), None),
+    "herrero_alma_del_metal": (("Alma del metal", "Soul of Metal"), None),
+    "herrero_remiendo": (("Remiendo", "Patchwork"), None),
+    "herrero_brazo_de_herrero": (("Brazo de herrero", "Smith's Arm"), None),
+    "herrero_piel_de_fragua": (("Piel de fragua", "Forge Skin"), None),
+    "herrero_forja_al_rojo": (("Forja al rojo", "Red-Hot Forging"), None),
+}
+# "gui.forja.habilidad." + ActiveSkill: name, and its effect (ActiveSkill.numbers are the arguments)
+SKILLS = {
+    "grito_de_guerra": (("Grito de guerra", "War Cry"),
+                        ("Recuperas %s de estamina; tú y los jugadores a %s bloques ganan Fuerza I %s s",
+                         "Recover %s stamina; you and players within %s blocks gain Strength I for %s s")),
+    "postura_de_hierro": (("Postura de hierro", "Iron Stance"), ("Resistencia II y Lentitud I durante %s s", "Resistance II and Slowness I for %s s")),
+    "paso_sombrio": (("Paso sombrío", "Shadow Step"),
+                     ("Invisibilidad y Velocidad II %s s; tu siguiente golpe cuerpo a cuerpo en ese tiempo hace un %s más",
+                      "Invisibility and Speed II for %s s; your next melee blow in that time deals %s more")),
+    "marca_de_muerte": (("Marca de muerte", "Death Mark"),
+                        ("El monstruo que miras (hasta %s bloques) brilla %s s y recibe un %s más de tus golpes",
+                         "The monster you look at (up to %s blocks) glows for %s s and takes %s more from your blows")),
+    "provocar": (("Provocar", "Taunt"),
+                 ("Los monstruos hostiles a %s bloques van a por ti; Resistencia I %s s",
+                  "Hostile monsters within %s blocks come for you; Resistance I for %s s")),
+    "baluarte": (("Baluarte", "Bulwark"),
+                 ("Durante %s s: Resistencia II para ti y Resistencia I para los jugadores a %s bloques",
+                  "For %s s: Resistance II for you and Resistance I for players within %s blocks")),
+    "nova_arcana": (("Nova arcana", "Arcane Nova"),
+                    ("Un anillo de %s bloques a tu alrededor: %s de daño mágico a los monstruos hostiles, y los empuja",
+                     "A ring of %s blocks around you: %s magic damage to hostile monsters, and it pushes them back")),
+    "concentracion": (("Concentración", "Focus"),
+                      ("Durante %s s tus hechizos esperan solo el %s y no gastan maná",
+                       "For %s s your spells wait only %s as long and cost no mana")),
+    "pulso_sanador": (("Pulso sanador", "Healing Pulse"),
+                      ("Tú, los jugadores y tus animales a %s bloques recuperan %s de vida (más con tu curación)",
+                       "You, players and your animals within %s blocks recover %s health (more with your healing)")),
+    "resurgir": (("Resurgir", "Resurgence"),
+                 ("El aliado que miras (hasta %s bloques) recupera el %s de la vida que le falta y Regeneración II %s s",
+                  "The ally you look at (up to %s blocks) gets back %s of their missing health and Regeneration II for %s s")),
+    "salto_atras": (("Salto atrás", "Backflip"),
+                    ("Un salto de unos %s bloques hacia atrás y Caída lenta %s s", "A leap of about %s blocks backwards and Slow Falling for %s s")),
+    "lluvia_de_flechas": (("Lluvia de flechas", "Arrow Rain"),
+                          ("%s flechas caen durante %s s en un círculo de %s bloques donde miras (hasta %s bloques), %s de daño cada una",
+                           "%s arrows fall over %s s on a circle of %s blocks where you look (up to %s blocks), %s damage each")),
+    "temple_de_campana": (("Temple de campaña", "Field Tempering"),
+                          ("Repara el %s de la durabilidad de la pieza forjada que llevas en la mano y da Prisa minera II %s s",
+                           "Mends %s of the durability of the forged piece in your hand and gives Haste II for %s s")),
+    "forja_al_rojo": (("Forja al rojo", "Red-Hot Forging"),
+                      ("Durante %s s tus golpes cuerpo a cuerpo prenden fuego %s s y hacen un %s más",
+                       "For %s s your melee blows set fire for %s s and deal %s more")),
+}
+
+
 def build(index):
     lang = {}
     for key, names in GUI.items():
@@ -2178,6 +2528,19 @@ def build(index):
         lang[f"upgrade.forja.{key}"] = names[index]
         if effect is not None:
             lang[f"upgrade.forja.{key}.efecto"] = effect[index]
+    for key, (names, motto, description, branches) in CLASSES.items():
+        lang[f"gui.forja.clase.{key}"] = names[index]
+        lang[f"gui.forja.clase.{key}.lema"] = motto[index]
+        lang[f"gui.forja.clase.{key}.desc"] = description[index]
+        for branch, branch_names in enumerate(branches):
+            lang[f"gui.forja.clase.rama.{key}.{branch}"] = branch_names[index]
+    for key, texts in CLASS_STATS.items():
+        lang[f"gui.forja.clase.stat.{key}"] = texts[index]
+    for key, (names, effect) in list(TALENTS.items()) + list(SKILLS.items()):
+        kind = "talento" if key in TALENTS else "habilidad"
+        lang[f"gui.forja.{kind}.{key}"] = names[index]
+        if effect is not None:
+            lang[f"gui.forja.{kind}.{key}.efecto"] = effect[index]
     # Item tags, named after the item each one stands for. A recipe viewer shows a tag by its
     # translation, and without one it prints "forja:acero_refractario" in the middle of a recipe;
     # Fabric warns about exactly that on every start.

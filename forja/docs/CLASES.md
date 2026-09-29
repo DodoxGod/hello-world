@@ -213,9 +213,8 @@ la media luna (`docs/arma_magica/variantes_baculo.py`): un cayado del que cuelga
 - **Espera:** 30 ticks. Pose de carga y partículas del núcleo como el báculo y el grimorio.
 - **Cualquiera puede usarlo.** El Curandero cura con él un 50 % más de base, y sus talentos de curación suben
   eso hasta +150 %; Renuevo, Bendición, Purificar y Vínculo también se aplican a sus curas.
-- **Maná:** costará maná tras la fusión (`ManaHooks.cost(FAROL, carga)` = 6 + 8 × carga, por
-  `ClassEffects.spellCostMultiplier`). Hasta entonces `ManaHooks.spend` siempre dice que sí y el límite es la
-  espera.
+- **Maná:** gasta maná de la barra de `magic/Mana`: un toque cuesta `Healing.MANA_COST` = 12 y una carga llena un
+  25 % más, como el báculo; `ClassEffects.spellCostMultiplier` lo abarata. Sin maná bastante no sale.
 - Como golpe es malo (0,5 de daño base, lento, contundente). Las mejoras de arma se le pueden poner, pero no
   afectan a la curación; las mejoras de magia (Conjuro veloz, Sobrecarga...) son solo de báculo y grimorio.
 
@@ -248,16 +247,15 @@ la media luna (`docs/arma_magica/variantes_baculo.py`): un cayado del que cuelga
 
 ## Ganchos para la fusión con el maná
 
-El otro agente añade maná; aquí no se crea maná propio. Lo que el coordinador debe cablear:
+Integración con el maná (hecha al unir la rama, 2026-09-29):
 
-| Gancho | Qué devuelve | Dónde llamarlo |
+| Gancho | Qué devuelve | Dónde se usa |
 |---|---|---|
-| `ClassEffects.manaMaxBonus(player)` | fracción a sumar al maná máximo (Mago +0,25, Canalización +0,30, Curandero +0,15) | cálculo del maná máximo |
-| `ClassEffects.manaRegenBonus(player)` | fracción a sumar a la regeneración (Mago +0,20, Mente clara +0,25, Serenidad +0,25) | regeneración pasiva |
-| `ClassEffects.spellCostMultiplier(player)` | multiplicador del coste (Economía arcana 0,75; Concentración 0) | coste de báculo, grimorio y farol |
-| `ManaHooks.spend(player, cantidad)` | `true` si pudo pagar; hoy siempre `true` | lo llama ya `magic/Healing` (farol) |
-| `ClassEffects.staminaMax(player)` | estamina máxima con la clase | sus mejoras de estamina máxima se multiplican con esto |
-| `ClassEffects.dodgeDistanceMultiplier(player)` | multiplicador de distancia | sus mejoras de distancia de embestida/esquiva |
+| `ClassEffects.manaMaxBonus(player)` | fracción a sumar al maná máximo (Mago +0,25, Canalización +0,30, Curandero +0,15) | `Mana.maxOf` |
+| `ClassEffects.manaRegenBonus(player)` | fracción a sumar a la regeneración (Mago +0,20, Mente clara +0,25, Serenidad +0,25) | `Mana.regenFactor` |
+| `ClassEffects.spellCostMultiplier(player)` | multiplicador del coste (Economía arcana 0,75; Concentración 0) | `Spellcasting.tryCast` (báculo, grimorio y farol) |
+| `ClassEffects.staminaMaxMultiplier(player)` | multiplicador de la estamina máxima | `Stamina.maxOf`, con Aguante |
+| `ClassEffects.dodgeDistanceMultiplier(player)` | multiplicador de distancia | `CombatClient.tryDodge`, con Quiebro y Paso arcano |
 
 ## Decisiones que Andy debería confirmar
 

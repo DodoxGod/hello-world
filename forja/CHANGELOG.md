@@ -1,5 +1,22 @@
 # Novedades
 
+## 2026-09-29 — clases, farol de curación, castillo rehecho e IA de grupo
+
+- **Clases** (docs/CLASES.md): Guerrero, Asesino, Tanque, Mago, Curandero, Arquero y Herrero. Se elige una, se sube
+  de nivel (hasta 15) con experiencia de su estilo de pelea y cada nivel da un punto para su árbol de talentos. Se
+  puede cambiar con el Emblema del olvido: conserva el nivel y devuelve los puntos.
+- **Farol de curación:** cualquiera puede usarlo; un toque lanza un rayo que cura al primer aliado, cargado suelta un
+  anillo que cura a todos los aliados cerca (y a ti a la mitad). Gasta maná: 12 por toque, un 25 % más cargado. El
+  Curandero cura más con él, y su báculo y su grimorio curan a los aliados (1/10 del daño) en vez de herir.
+- Las clases cambian la estamina, el esquive, el maná y el coste de los hechizos a través de los mismos cálculos que
+  las mejoras (Aguante, Quiebro, Reserva, Flujo...).
+- **Castillo del Herrero:** solo en terreno llano y seco y lejos de aldeas, sin bloques anegados, una sola fragua
+  apagada (en el sótano), 44 cofres en vez de 164, sin adornos caros ni bloques flotantes, puertas de 3 de ancho,
+  90 monstruos y la arena del jefe cerrada a construir y romper mientras vive.
+- **Monstruos:** el creeper ya no duda (enciende pegado a ti y finta menos), los grupos rodean de verdad desde lejos
+  y corren a su puesto, los esqueletos se apartan para tener línea de tiro, los grupos mezclan tipos con un solo
+  líder, y los élites conservan sus movimientos al recargar.
+
 ## 2026-09-28 — un huevo para cada monstruo
 
 - Los quince monstruos del mod tienen huevo generador (antes solo cuatro): herrumbre, ascua mayor, escoria

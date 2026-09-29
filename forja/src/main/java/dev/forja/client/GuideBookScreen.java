@@ -1710,7 +1710,7 @@ public class GuideBookScreen extends Screen {
 			Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.ESMERALDA, ForgeMaterial.ORO, ForgeMaterial.MADERA)),
 			Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.DIAMANTE, ForgeMaterial.HIERRO, ForgeMaterial.HUESO)),
 			Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.AMATISTA, ForgeMaterial.COBRE, ForgeMaterial.MADERA)))));
-		body.add(new Text(Component.translatable("gui.forja.libro.farol", Math.round(dev.forja.magic.Healing.BEAM_REACH),
+		body.add(new Text(Component.translatable("gui.forja.libro.clases.farol", Math.round(dev.forja.magic.Healing.BEAM_REACH),
 			Math.round(dev.forja.magic.Healing.RING_REACH), Math.round(dev.forja.magic.Healing.RING_GROWTH),
 			Math.round(dev.forja.magic.Healing.SELF_SHARE * 100)), INK));
 		body.add(new Text(Component.translatable("gui.forja.libro.farol.curandero"), INK_SOFT));
