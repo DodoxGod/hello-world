@@ -268,4 +268,41 @@ public class AlcanceGameTests {
 		fist.discard();
 		helper.succeed();
 	}
+
+	/**
+	 * Contract v3.1 (docs/red_mob_v3_1.md): a network whose file says "alcance_v": 2 reads yo_arma_alcance as the
+	 * full reach the monster strikes with; one without it reads the old number.
+	 */
+	@GameTest
+	public void yoArmaAlcanceFollowsTheNetworksVersion(GameTestHelper helper) {
+		com.google.gson.JsonObject json = AiGameTests.fakeV2(new float[NetBrain.V2_OUTPUTS]);
+		helper.assertTrue(NetBrain.fromJson(json).reachVersion == 1, "sin el campo, la versión 1");
+		json.addProperty("alcance_v", 2);
+		helper.assertTrue(NetBrain.fromJson(json).reachVersion == 2, "con \"alcance_v\": 2, la 2");
+
+		Zombie sword = armed(helper, new BlockPos(3, 1, 1), new ItemStack(Items.IRON_SWORD));
+		Zombie lance = armed(helper, new BlockPos(3, 1, 4), forged(ForgeType.LANZA));
+		sword.setNoAi(true);
+		lance.setNoAi(true);
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 2));
+		helper.runAfterDelay(1, () -> {
+			int at = dev.forja.ai.ObsV3.names().indexOf("yo_arma_alcance/6");
+			helper.assertTrue(at >= 0, "la entrada existe");
+			float[] out = new float[dev.forja.ai.ObsV3.size()];
+			MobMind mind = MobAi.mind(sword);
+			mind.reachVersion = 1;
+			dev.forja.ai.ObsV3.fill(sword, player, out, 0);
+			helper.assertTrue(Math.abs(out[at] - Reach.of(new ItemStack(Items.IRON_SWORD)) / 6.0) < 1.0E-4, "v1: la espada, como en el contrato: " + out[at] * 6.0);
+			mind.reachVersion = 2;
+			dev.forja.ai.ObsV3.fill(sword, player, out, 0);
+			helper.assertTrue(Math.abs(out[at] - Reach.actionOf(new ItemStack(Items.IRON_SWORD)) / 6.0) < 1.0E-4, "v2: la espada con su extra: " + out[at] * 6.0);
+			MobMind lanceMind = MobAi.mind(lance);
+			lanceMind.reachVersion = 2;
+			dev.forja.ai.ObsV3.fill(lance, player, out, 0);
+			helper.assertTrue(Math.abs(out[at] * 6.0 - (ObsM1.REACH + 1.5)) < 1.0E-3, "v2: la lanza, su máximo (2,33): " + out[at] * 6.0);
+			sword.discard();
+			lance.discard();
+			helper.succeed();
+		});
+	}
 }

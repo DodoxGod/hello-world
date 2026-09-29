@@ -285,6 +285,7 @@ public final class MobAi {
 		if (mind.memory == null || mind.memory.length != net.memory) {
 			mind.resetMemory(net.memory);
 		}
+		mind.reachVersion = net.reachVersion;
 		float[] obs = ObsM1.of(mob, target, mind.cooldown, mind.draw);
 		if (net.inputs() > obs.length) {
 			obs = ObsForja.full(mob, target, mind, obs, net.inputs());

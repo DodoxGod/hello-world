@@ -66,6 +66,8 @@ public final class MobMind {
 	 * The slot as the Squad last handed it out, before any tactic moves ringAngle (closing round a staggered ally):
 	 * its angle, the size of the ring it was cut for, and whose ring. A ring of the same size keeps its slots.
 	 */
+	/** The yo_arma_alcance its network reads (NetBrain.reachVersion); 1 without a network. */
+	public int reachVersion = 1;
 	public double slotAngle = Double.NaN;
 	public int slotN;
 	public net.minecraft.world.entity.player.Player slotOf;

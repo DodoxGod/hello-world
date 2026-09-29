@@ -255,7 +255,8 @@ public final class ObsV3 {
 		o[i++] = spell == ForgeType.BACULO ? 1.0 : 0.0;
 		o[i++] = spell == ForgeType.GRIMORIO ? 1.0 : 0.0;
 		o[i++] = !bow && !crossbow && spell == null ? 1.0 : 0.0;
-		o[i++] = ObsM1.clip(reach(held) / 6.0, 0.0, 2.0);
+		MobMind self = MobAi.mind(mob);
+		o[i++] = ObsM1.clip(reach(held, self == null ? 1 : self.reachVersion) / 6.0, 0.0, 2.0);
 		List<Mob> side = new ArrayList<>();
 		for (Mob other : ObsM1.allies(mob)) {
 			if (other.getTarget() == target && other.distanceTo(target) <= ALLY_RANGE) {
@@ -489,9 +490,13 @@ public final class ObsV3 {
 
 	// ---------------------------------------------------------------- the rest
 
-	/** How far its blow reaches: the body's reach and whatever the weapon adds (the executor strikes by the same, {@link Reach}). */
-	static double reach(ItemStack held) {
-		return Reach.of(held);
+	/**
+	 * How far its blow reaches, as the network was trained to read it (contract v3.1): version 1, the body's reach and
+	 * what the weapon's attributes add ({@link Reach#of}); version 2, the full reach it really strikes with, the
+	 * weapon kind's bonus included ({@link Reach#actionOf}; a lance 2.33).
+	 */
+	static double reach(ItemStack held, int version) {
+		return version >= 2 ? Reach.actionOf(held) : Reach.of(held);
 	}
 
 	/** How far off the middle of the player's view a point is, flat (radians, 0..pi). */

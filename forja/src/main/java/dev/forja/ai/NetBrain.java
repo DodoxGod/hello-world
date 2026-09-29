@@ -26,6 +26,11 @@ import net.minecraft.util.RandomSource;
 public final class NetBrain {
 	public final String group;
 	public final int ticksPerDecision;
+	/**
+	 * Which yo_arma_alcance the network was trained on (contract v3.1, docs/red_mob_v3_1.md): 1, the contract's
+	 * body-plus-attributes; 2 ("alcance_v": 2 in its file), the full reach the monster really strikes with.
+	 */
+	public final int reachVersion;
 	public final List<String> names;
 	private final float[][] w1;
 	private final float[] b1;
@@ -52,6 +57,7 @@ public final class NetBrain {
 	private NetBrain(JsonObject json) {
 		this.group = json.get("grupo").getAsString();
 		this.ticksPerDecision = json.has("ticks_por_decision") ? json.get("ticks_por_decision").getAsInt() : 2;
+		this.reachVersion = json.has("alcance_v") ? json.get("alcance_v").getAsInt() : 1;
 		this.names = new ArrayList<>();
 		for (var name : json.getAsJsonArray("nombres_obs")) {
 			this.names.add(name.getAsString());
