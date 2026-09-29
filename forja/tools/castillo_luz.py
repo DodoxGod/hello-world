@@ -238,8 +238,9 @@ def light(world):
         if best is not None:
             _, cx, cz, side = best
             wall = world.name(cx + HORIZONTAL[side][0], y + 2, cz + HORIZONTAL[side][1]) or ""
-            family = "polished_blackstone_brick" if "blackstone" in wall else "deepslate_brick"
-            place(cx, y + 3, cz, *stairs(f"{family}_stairs", side, top=True))
+            # a bracket of the wall's own brick for the lantern to hang from: an upside-down stair with a lantern under
+            # it is a thing no player could build (Andy, 2026-09-29)
+            place(cx, y + 3, cz, "polished_blackstone_bricks" if "blackstone" in wall else "deepslate_bricks")
             source = place(cx, y + 2, cz, lamp, {"hanging": "true", "waterlogged": "false"})
             hung["sconce"] += 1
         else:

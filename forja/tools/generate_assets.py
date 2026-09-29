@@ -6844,7 +6844,10 @@ def generate_forge_castle():
         "use_expansion_hack": False,
     })
     write_json(DATA / "worldgen/structure_set/castillo_de_forja.json", {
-        "placement": {"type": "minecraft:random_spread", "salt": 771204853, "separation": 26, "spacing": 84},
+        # Never within twelve chunks of the great castle: that one keeps its distance from villages, so the small one
+        # keeps its distance from it (a structure set can only be kept away from one other).
+        "placement": {"type": "minecraft:random_spread", "salt": 771204853, "separation": 26, "spacing": 84,
+                      "exclusion_zone": {"other_set": "forja:bastion_del_gremio", "chunk_count": 12}},
         "structures": [{"structure": "forja:castillo_de_forja", "weight": 1}],
     })
     # Rare and far apart on purpose: it is the only place the templates come out of a chest, and a

@@ -2,11 +2,11 @@
   "placement": {
     "type": "minecraft:random_spread",
     "salt": 920260920,
-    "spacing": 140,
-    "separation": 60,
+    "spacing": 110,
+    "separation": 50,
     "exclusion_zone": {
-      "other_set": "forja:castillo_de_forja",
-      "chunk_count": 12
+      "other_set": "minecraft:villages",
+      "chunk_count": 10
     }
   },
   "structures": [

@@ -54,6 +54,10 @@ def _smooth(x, y, z, scale, salt=0):
     return total
 
 
+# How much of what each building asks for in fallen-in roof is kept (see building()).
+ROOF_HOLES = 0.3
+
+
 # ------------------------------------------------------------------------------------------ the canvas
 
 class Canvas:
@@ -522,7 +526,7 @@ ROOFS = {
 
 
 def building(c, x0, z0, x1, z1, base, storeys, decay=0.12, keep=False, wall=2, roof="tile", ridge="z", doors=(), windows=3,
-             glass="iron_bars", chimneys=(), footing=5, floor="spruce_planks", open_roof=0.0, pave=None):
+             glass="gray_stained_glass_pane", chimneys=(), footing=5, floor="spruce_planks", open_roof=0.0, pave=None):
     """A house of the castle, from a shed to a hall: walls with corner posts, a course at every floor,
     windows in every bay, a gabled roof with eaves, chimneys that smoke.
 
@@ -533,6 +537,10 @@ def building(c, x0, z0, x1, z1, base, storeys, decay=0.12, keep=False, wall=2, r
     family = "polished_blackstone_brick" if keep else "deepslate_brick"
     top = base + sum(storeys)                    # first course of the roof
     post = "polished_basalt"
+    # Andy, 2026-09-29: roofs with holes in them read as unfinished, not as old; and a door you have to squeeze
+    # through, with its lintel at head height, reads as a mistake. Fewer holes, and every door a proper doorway.
+    open_roof *= ROOF_HOLES
+    doors = [(side, along, max(3, width), min(max(4, height), storeys[0] - 1)) for side, along, width, height in doors]
     for x in range(x0, x1 + 1):
         for z in range(z0, z1 + 1):
             edge = min(x - x0, x1 - x, z - z0, z1 - z)
@@ -797,10 +805,21 @@ def cut(world, api, folder, start_height_offset=0):
     have a block so that what they turn back into is simply what was there.
     """
     (x0, y0, z0), (x1, y1, z1) = world.bounds()
+    # The grid is laid so that the middle piece is centred on the plan: the game drops every piece that reaches
+    # more than 128 blocks from the start piece's centre, and with the grid at the plan's corner the end of the
+    # bridge was 132 out and never built.
+    cx, cz = (x0 + x1) // 2, (z0 + z1) // 2
+    low_x, low_z = x0, z0
+    x0 = cx - CELL // 2 - CELL * -(-(cx - CELL // 2 - x0) // CELL)
+    z0 = cz - CELL // 2 - CELL * -(-(cz - CELL // 2 - z0) // CELL)
     cells = {}
     for (x, y, z), value in world.blocks.items():
         cells.setdefault(((x - x0) // CELL, (y - y0) // CELL, (z - z0) // CELL), {})[(x, y, z)] = value
-    middle = min(cells, key=lambda k: (k[1], abs(k[0] - (x1 - x0) // CELL / 2.0) + abs(k[2] - (z1 - z0) // CELL / 2.0)))
+    middle = ((cx - x0) // CELL, 0, (cz - z0) // CELL)
+    if middle not in cells:
+        middle = min(cells, key=lambda k: (k[1], abs(k[0] - (cx - x0) / CELL) + abs(k[2] - (cz - z0) / CELL)))
+    reach = max(abs(x - (x0 + middle[0] * CELL + CELL // 2)) for x in (low_x, x1)), max(abs(z - (z0 + middle[2] * CELL + CELL // 2)) for z in (low_z, z1))
+    assert max(reach) <= 128, f"a piece would be {max(reach)} from the start piece: the game only builds up to 128"
 
     # Where two neighbouring pieces can be joined: a pair of blocks facing each other across the cut,
     # the plainer and the lower the better. Two pieces that touch only with air between them cannot be.
@@ -831,13 +850,14 @@ def cut(world, api, folder, start_height_offset=0):
                 if best is None or score < best[0]:
                     best = (score, (x, y, z), across)
             if best is None and not d[1]:
-                # Side by side with only air between them (a bridge with a span gone): joined under the
-                # ground instead, by a block of deepslate either side that nobody will ever see.
+                # Side by side with only air between them (a bridge with a span gone, or the sky over two
+                # wards): joined by a pair of jigsaw blocks that turn back into air. They used to turn into
+                # deepslate, which is how a grid of lone blocks came to hang over the whole castle, 48 apart.
                 ox, oz = key[0] * CELL + x0, key[2] * CELL + z0
                 here = (ox + CELL - 1, by, oz + CELL // 2) if d[0] else (ox + CELL // 2, by, oz + CELL - 1)
                 there = (here[0] + d[0], here[1], here[2] + d[2])
-                blocks[here] = ("minecraft:deepslate", {}, None)
-                cells[other][there] = ("minecraft:deepslate", {}, None)
+                blocks[here] = ("minecraft:air", {}, None)
+                cells[other][there] = ("minecraft:air", {}, None)
                 world.blocks[here] = blocks[here]
                 world.blocks[there] = cells[other][there]
                 best = ((0, by), here, there)
@@ -997,9 +1017,12 @@ def generate(api):
     write(api, exterior, "bastion/muestra_exterior")
 
     world = castillo_obra.build()
-    clear_the_site(world)
+    # Air all the way up to the top of the highest piece: a hill taller than the old 24 stood inside the walls.
+    clear_the_site(world, height=world.bounds()[1][1] + 1)
     underpin(world)
     no_saplings(world)
+    import castillo_arreglos
+    castillo_arreglos.apply(world)
     resolve(world)
     problems += validate(world)
     import castillo_botin
@@ -1016,6 +1039,12 @@ def generate(api):
             render(world, docs / f"render_{view}.png", 0, scale=4, tilt=0.5, storey=storey)
         except Exception as problem:
             print("bastion: no render:", problem)
+    # the grid moved: pieces of the old one would lie about in the jar and in the pools
+    for folder in ("bastion", "bastion_prueba"):
+        for old in (api.DATA / "structure" / folder).glob("p_*.nbt"):
+            old.unlink()
+        for old in (api.DATA / "worldgen/template_pool" / folder).glob("p_*.json"):
+            old.unlink()
     info = cut(world, api, "bastion")
     shallow = Canvas()
     shallow.blocks = {position: value for position, value in world.blocks.items() if position[1] >= -3}
@@ -1038,6 +1067,8 @@ def generate(api):
         "project_start_to_heightmap": "WORLD_SURFACE_WG",
         "size": min(20, info["depth"] + 2),
         "spawn_overrides": {},
+        # what the castle writes is what stands: no stair or wall comes out full of the sea it was built over
+        "liquid_settings": "ignore_waterlogging",
         # the middle piece starts underground: its floor is this far under the courtyard, which is what meets the surface
         "start_height": {"absolute": info["start_y"] + 1},
         "start_pool": f"forja:{info['start']}",
@@ -1045,16 +1076,20 @@ def generate(api):
         "terrain_adaptation": "none",
         "use_expansion_hack": False,
     })
-    # Very rare, and never within twelve chunks of the small castle: where the big one fits, the small one is its
-    # outpost, not its neighbour. The test's clipped twin has no set of its own, so it is never generated.
+    # Very rare, and never within ten chunks of a village: the castle is 250 blocks across and used to come down on
+    # top of one (Andy, 2026-09-29). The small castle keeps away from this one from its own side. Candidates are a
+    # little closer than they were because the ground check (mixin/JigsawStructureMixin) turns many of them down.
+    # The test's clipped twin has no set of its own, so it is never generated.
     api.write_json(api.DATA / "worldgen/structure_set/bastion_del_gremio.json", {
-        "placement": {"type": "minecraft:random_spread", "salt": 920260920, "spacing": 140, "separation": 60,
-                      "exclusion_zone": {"other_set": "forja:castillo_de_forja", "chunk_count": 12}},
+        "placement": {"type": "minecraft:random_spread", "salt": 920260920, "spacing": 110, "separation": 50,
+                      "exclusion_zone": {"other_set": "minecraft:villages", "chunk_count": 10}},
         "structures": [{"structure": "forja:bastion_del_gremio", "weight": 1}],
     })
+    # Wide, fairly level ground only: no swamp (water everywhere) and no badlands (the first castle Andy found ate
+    # a mesa). The ground check does the rest.
     api.write_json(api.DATA / "tags/worldgen/biome/has_structure/bastion_del_gremio.json", {"values": [
         "minecraft:dark_forest", "minecraft:taiga", "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga",
-        "minecraft:snowy_taiga", "minecraft:snowy_plains", "minecraft:swamp", "minecraft:badlands", "minecraft:plains",
+        "minecraft:snowy_taiga", "minecraft:snowy_plains", "minecraft:plains", "minecraft:sunflower_plains",
     ]})
     ox, oy, oz = test_info["origin"]
     mx, my, mz = ox + test_info["middle"][0] * CELL, oy + test_info["middle"][1] * CELL, oz + test_info["middle"][2] * CELL

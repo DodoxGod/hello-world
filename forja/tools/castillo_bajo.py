@@ -178,7 +178,8 @@ def graveyard(w):
             w.put(x, -1, z + 2, "coarse_dirt")
             if kind == 0:
                 w.put(x, 0, z, "polished_deepslate")
-                w.put(x, 1, z, "damaged_anvil" if _hash(x, 1, z, 111) < 0.6 else "chipped_anvil", {"facing": "south"})
+                # a headstone, not an anvil: anvils are what the castle is short of, not what it buries its dead under
+                w.put(x, 1, z, "mossy_cobblestone_wall" if _hash(x, 1, z, 111) < 0.6 else "cobbled_deepslate_wall")
             elif kind == 1:
                 w.put(x, 0, z, "chiseled_deepslate")
                 w.put(x, 1, z, *slab("deepslate_brick_slab"))
@@ -208,8 +209,10 @@ def graveyard(w):
                 else:
                     w.air(x, y, z)
             w.put(x, 5, z, *slab("polished_blackstone_brick_slab")) if edge else w.put(x, 5, z, "polished_blackstone")
-    for y in range(0, 3):
-        w.air(mx + 3, y, mz + 6)
+    # a doorway three wide and as tall as the room, under a lintel of the wall's own brick
+    for dx in (2, 3, 4):
+        for y in range(0, 4):
+            w.air(mx + dx, y, mz + 6)
     w.put(mx + 3, 1, mz + 3, "soul_lantern", {"hanging": "false", "waterlogged": "false"})
     w.put(mx + 3, 0, mz + 3, "chiseled_polished_blackstone")
 
@@ -230,8 +233,10 @@ def icehouse(w):
         w.put(cx + dx, -4, cz + dz, "cobbled_deepslate")
     for y in (0, 1):
         for d in (0, 1):
-            w.air(cx - r + d, y, cz)
+            for dz in (0, 1):
+                w.air(cx - r + d, y, cz + dz)
     w.put(cx - r - 1, -1, cz, *stairs("cobbled_deepslate_stairs", "east"))
+    w.put(cx - r - 1, -1, cz + 1, *stairs("cobbled_deepslate_stairs", "east"))
 
 
 def camp(w):
@@ -307,7 +312,8 @@ def yard_furniture(w):
             w.put(cx + dx, 3, cz + dz, "polished_blackstone_bricks")
     w.put(cx + 4, 3, cz, *stairs("polished_blackstone_brick_stairs", "west", top=True))
     w.put(cx - 4, 3, cz, *slab("polished_blackstone_brick_slab", top=True))
-    w.put(cx, 4, cz, "forja:fragua_apagada")
+    # A cold hearth on the monument, not the dead forge itself: that stands once, in the Deep Forge (Andy, 2026-09-29).
+    w.put(cx, 4, cz, "blast_furnace", {"facing": "south", "lit": "false"})
     for dx, dz in ((-5, -5), (5, -5), (-5, 5), (5, 5)):
         if abs(dx) + abs(dz) <= 10:
             w.put(cx + dx - (1 if dx > 0 else -1), 0, cz + dz - (1 if dz > 0 else -1), "polished_blackstone_brick_wall")

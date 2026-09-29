@@ -372,7 +372,7 @@ def wings(w):
     noise_origin(131, 0, 46)
     building(w, 131, 46, 153, 54, 0, [8], decay=0.1, wall=2, roof="tile", ridge="x", doors=[("west", 3, 2, 4)])
     noise_origin(131, 0, 56)
-    building(w, 131, 56, 153, 98, 0, [18], decay=0.06, keep=True, wall=2, roof="black", ridge="z", windows=6, glass="iron_bars",
+    building(w, 131, 56, 153, 98, 0, [18], decay=0.06, keep=True, wall=2, roof="black", ridge="z", windows=6, glass="gray_stained_glass_pane",
              doors=[("west", 18, 5, 7)], chimneys=[(149, 62), (149, 76), (149, 90)])
     noise_origin(131, 0, 100)
     building(w, 131, 100, 153, 112, 0, [9, 9], decay=0.08, wall=2, roof="tile", ridge="x", doors=[("west", 5, 3, 5)], chimneys=[(149, 104)])

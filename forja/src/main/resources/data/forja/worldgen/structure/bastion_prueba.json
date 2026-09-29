@@ -8,7 +8,7 @@
   "start_height": {
     "absolute": -2
   },
-  "start_pool": "forja:bastion_prueba/p_2_0_2",
+  "start_pool": "forja:bastion_prueba/p_2_0_3",
   "step": "surface_structures",
   "terrain_adaptation": "none",
   "use_expansion_hack": false

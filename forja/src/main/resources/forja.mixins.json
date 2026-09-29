@@ -9,6 +9,7 @@
 		"ItemGuardMixin",
 		"ItemStackMixin",
 		"ItemWaxMixin",
+		"JigsawStructureMixin",
 		"LivingEntityMixin",
 		"CombatArmorMixin",
 		"MeleeAttackGoalMixin",
