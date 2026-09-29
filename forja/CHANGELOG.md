@@ -36,6 +36,17 @@ Andy: "con diamante y Protección IV, y más con la armadura del mod, las multit
   - 4 zombis adelantan en menos de 6 s a un jugador que retrocede a velocidad de carrera.
 - **Capturas:** `FORJA_SOLO=cerco` añade las del retroceso (`cerco_retroceso_*`).
 
+## 2026-09-29 — acciones preparadas para la red v4
+
+- Nuevas acciones de los monstruos, listas para que las decida la red con el contrato v4 (Andy): coger un arma
+  mejor del suelo, beber pociones, lanzar pociones arrojadizas, comer cuando están heridos, lanzar perlas de ender,
+  romper luces y subir el escudo cuando les apuntan. Están en `ai/MobActions.java`.
+- Nada las usa todavía: ni las reglas ni las redes actuales. Todas se apagan con `mobActionsV4` (por defecto
+  `false`) en `config/forja.json`. Romper luces necesita además `mobsBreakLights`, también apagada: los monstruos
+  siguen sin romper bloques. `mobPickupRange` (6) es la distancia a la que buscan armas.
+- El arma que coge un monstruo cae siempre al morir, así que si coge la tuya la recuperas.
+- Pruebas: `AccionesGameTests`, una por acción. La tabla está en `docs/red_mob_v4_propuesta.md`.
+
 ## 2026-09-29 — los monstruos ya no construyen ni rompen bloques
 
 - Por decisión de Andy, ningún monstruo pone ni rompe bloques:

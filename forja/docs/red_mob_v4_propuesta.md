@@ -60,3 +60,29 @@ magma, ghast y shulker.
 
 Pendiente de medir en el simulador: sectores con cupos (2.2), roles por tipo (2.6) y carrera barata para
 recolocarse (2.3). Se dejan para después de copiar esto y medirlo.
+
+## Acciones preparadas para la v4 (MobActions)
+
+Andy aprobó nuevas acciones para los monstruos (2026-09-29). Las decidirá la red con el contrato v4, que aún no
+está escrito. El código de las acciones ya está en `ai/MobActions.java`: métodos estáticos que devuelven si han
+hecho algo. Nada los llama todavía, ni las reglas ni la red. Cuando llegue la v4, `RuleBrain` y la red llamarán a
+los mismos métodos.
+
+Todas están apagadas con `mobActionsV4 = false` en `config/forja.json`. Romper luces necesita además
+`mobsBreakLights = true`: los monstruos no rompen ni ponen bloques, y las luces son la única excepción prevista.
+
+| Acción | Qué hace | Bandera | Prueba |
+|---|---|---|---|
+| `pickUpBetterWeapon` | Busca armas en el suelo a `mobPickupRange` bloques (6) que pueda ver. Si una pega más que la suya (daño de sus atributos), va a por ella; a 1,5 bloques la coge y suelta la suya. El arma cogida cae siempre al morir, así que el jugador la recupera | `mobActionsV4` | `zombiePicksUpBetterSword` |
+| `drinkPotion` | Bebe la poción que lleve en una mano: sus efectos pasan al mob y se gasta | `mobActionsV4` | `mobDrinksHealingPotion` |
+| `throwSplash` | Lanza la poción arrojadiza de la mano izquierda al objetivo, como la bruja | `mobActionsV4` | `mobThrowsSplashPotion` |
+| `eat` | Con menos de media vida, come lo de la mano izquierda y se cura lo que alimenta (pan 5) | `mobActionsV4` | `mobEatsBreadWhenHurt` |
+| `throwPearl` | Lanza una perla de la mano izquierda hacia un punto. La perla vanilla ya teletransporta a cualquier dueño, no solo a jugadores. Sin perla no hace nada | `mobActionsV4` | `pearlMovesTheMob` |
+| `breakLight` / `nearestLight` | Rompe una antorcha o un farol a 2,5 bloques de sus ojos. `nearestLight` busca la luz más cercana al jugador | `mobActionsV4` y `mobsBreakLights` (apagada) | `breakLightOnlyWithTheFlag` |
+| `raiseShieldSmart` | Sube el escudo si la amenaza le apunta con un arco o una ballesta tensos, o prepara un golpe cerca. Si no, lo baja. Usa `MobDefense.raise`, así que la guardia rota sigue abajo | `mobActionsV4` | `shieldUpAgainstADrawnBow` |
+
+Luces: todas las antorchas (normal, de pared, de almas, de redstone, de cobre) y todos los faroles (normal, de
+almas, de cobre en todas sus edades). No cuentan el farol marino ni la calabaza iluminada.
+
+Pendiente para el contrato v4: las salidas de la red que elijan estas acciones y las entradas que las hagan
+posibles (qué lleva en la mano izquierda, armas en el suelo, luces cerca del jugador).

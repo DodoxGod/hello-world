@@ -380,6 +380,22 @@ public final class CombatConfig {
 	/** Ticks an enderman cannot dodge that way after a teleport that went through (7 s). A failed one costs nothing. */
 	public int endermanDodgeCooldownTicks = 140;
 
+	// --- Mob actions for the v4 network (dev.forja.ai.MobActions) ---------------------------------
+	/**
+	 * Andy, 2026-09-29: monsters will pick up better weapons, drink and throw potions, eat, throw ender pearls,
+	 * break lights and raise their shield when aimed at, and the network (contract v4) will decide when. The
+	 * actions are built and tested but nothing calls them yet: this master switch keeps every one of them off
+	 * until the v4 wires them in. The rules do not read it.
+	 */
+	public boolean mobActionsV4 = false;
+	/** How far (blocks) a monster looks for a better weapon lying on the floor. */
+	public double mobPickupRange = 6.0;
+	/**
+	 * Monsters never break or place blocks (Andy, 2026-09-29). The one exception planned is putting out torches and
+	 * lanterns, and it comes with the v4: off until then, even with {@link #mobActionsV4} on.
+	 */
+	public boolean mobsBreakLights = false;
+
 	/** Natural attacks of unarmed mobs by entity id; anything missing hits BLUNT. */
 	public Map<String, DamageKind> ataquesNaturales = defaultNaturalAttacks();
 
