@@ -11940,7 +11940,15 @@ public class ForjaClientTest implements FabricClientGameTest {
 				return at == null ? null : new int[] {at.getX(), at.getZ()};
 			});
 			check(found != null, "no Bastion within 200 chunks of spawn: the set, its biomes or its exclusion zone are wrong");
-			log("mundo: el Bastion mas cercano esta en x=" + found[0] + " z=" + found[1] + " (buscarlo costo " + (System.currentTimeMillis() - started) + " ms)");
+			long cost = System.currentTimeMillis() - started;
+			log("mundo: el Bastion mas cercano esta en x=" + found[0] + " z=" + found[1] + " (buscarlo costo " + cost + " ms)");
+			// /locate froze the game (Andy, 2026-09-29): the site check has to keep a search to seconds
+			check(cost < 15000, "finding the Bastion took " + cost + " ms: /locate would hang");
+			long located = System.currentTimeMillis();
+			server.runCommand("locate structure forja:bastion_del_gremio");
+			long locateCost = System.currentTimeMillis() - located;
+			log("mundo: /locate structure forja:bastion_del_gremio costo " + locateCost + " ms");
+			check(locateCost < 15000, "/locate structure took " + locateCost + " ms");
 			// over its start first, so that the whole of it is asked for and built
 			tp(server, found[0] + 0.5, 200.0, found[1] + 0.5, 0.0F, 90.0F);
 			context.waitTicks(600);
