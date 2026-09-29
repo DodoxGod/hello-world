@@ -55,3 +55,25 @@ jobs:
         with:
           name: forja-mod
           path: forja/build/libs/*.jar
+      - name: Mini jar del cliente (bloques y colores) para el generador del castillo
+        run: |
+          pip install -q pillow
+          python3 - <<'PY'
+          import base64, io, lzma, zipfile, glob
+          from PIL import Image
+          jar = glob.glob('/home/runner/.gradle/caches/fabric-loom/26.2/minecraft-client.jar')[0]
+          out = io.BytesIO()
+          with zipfile.ZipFile(jar) as src, zipfile.ZipFile(out, 'w', zipfile.ZIP_STORED) as dst:
+              for name in src.namelist():
+                  if name.startswith('assets/minecraft/blockstates/') and name.endswith('.json'):
+                      dst.writestr(name, src.read(name))
+                  elif name.startswith('assets/minecraft/textures/block/') and name.endswith('.png'):
+                      im = Image.open(io.BytesIO(src.read(name))).convert('RGBA').resize((1, 1), Image.BOX)
+                      b = io.BytesIO(); im.save(b, 'PNG'); dst.writestr(name, b.getvalue())
+          data = base64.b64encode(lzma.compress(out.getvalue(), preset=9)).decode()
+          print('===MINIJAR===')
+          for i in range(0, len(data), 2000):
+              print(data[i:i+2000])
+          print('===FIN===')
+          PY
+
