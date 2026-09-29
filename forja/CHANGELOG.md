@@ -1,5 +1,14 @@
 # Novedades
 
+## 2026-09-29 — respuestas de Andy: castillo más llano y el precio de Baluarte
+
+- **Sitio del castillo más llano** (Andy: "más llano"): el desnivel máximo bajo el plano pasa de 24 a 14 bloques
+  y el centro tiene que quedar a 4 de la altura típica (antes 6). Saldrán menos castillos, en terreno más plano.
+- **Baluarte tiene precio** (Andy: "algo malo debe de tener"): sigue dando +1 de armadura y 4 ticks más de parada,
+  pero la pieza pesa un 30 % más (anda, golpea y recupera estamina más despacio, como cualquier placa más pesada),
+  y con un escudo cada bloqueo cuesta un 20 % más de estamina. Prueba: `baluarteIsHeavier`.
+- Se quedan como estaban: la Protección IV de la forja y la separación del castillo (110 chunks).
+
 ## 2026-09-29 — el mod ya usa las redes v4 de los monstruos (paso M1)
 
 - **Redes v4:** una `red_<familia>.json` con `"formato": "red_mob_v4"` en `config/forja/redes_v4/` se carga y manda

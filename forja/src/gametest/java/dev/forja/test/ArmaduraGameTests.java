@@ -164,6 +164,25 @@ public class ArmaduraGameTests {
 	}
 
 	/**
+	 * Baluarte's price (Andy, 2026-09-29: "algo malo debe de tener"): the same chestplate with the gift has one
+	 * more armour point and counts 30 % heavier (slower walk, swing and stamina).
+	 */
+	@GameTest
+	public void baluarteIsHeavier(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		ItemStack plain = Assembler.create(ForgeType.PECHERA, List.of(ForgeMaterial.HIERRO, ForgeMaterial.CUERO), level.registryAccess());
+		ItemStack gifted = plain.copy();
+		gifted.set(ModComponents.DON, Perk.BALUARTE.id());
+		Assembler.rewrite(plain, BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM);
+		Assembler.rewrite(gifted, BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM);
+		double light = ArmorCalculator.profileOf(plain).weight();
+		double heavy = ArmorCalculator.profileOf(gifted).weight();
+		helper.assertTrue(light > 0.0 && Math.abs(heavy / light - (1.0 + Perk.BALUARTE_WEIGHT)) < 1.0E-6,
+			"con Baluarte la pieza pesa un 30 % más: " + light + " -> " + heavy);
+		helper.succeed();
+	}
+
+	/**
 	 * A full set of one plate with a leather lining, with everything the forge's upgrades give it: Protección
 	 * at 100 % on every piece and Vitalidad on the chestplate, which with it wakes Fortaleza (+1 armour). With
 	 * {@code absolute}, also what only a long life gives a piece: Maestría 10, the Baluarte gift (+1 armour),

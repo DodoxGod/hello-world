@@ -21,7 +21,11 @@ public enum Perk {
 	CAZADOR(0xD0343F, kind -> kind == ForgeType.Kind.WEAPON || kind == ForgeType.Kind.RANGED),
 	/** Tools: veins run deeper and ores teach more. */
 	MINERO(0xE8DDCF, kind -> kind == ForgeType.Kind.TOOL),
-	/** Armor and shields: one more point of armor, and a wider parry window. */
+	/**
+	 * Armor and shields: one more point of armor, and a wider parry window. At a price (Andy, 2026-09-29: "algo
+	 * malo debe de tener"): an armor piece weighs {@link #BALUARTE_WEIGHT} more (slower walk, swing and stamina, as
+	 * any heavier plate), and a shield's block costs {@link #BALUARTE_BLOCK_COST} more stamina.
+	 */
 	BALUARTE(0x9BD37A, kind -> kind == ForgeType.Kind.ARMOR || kind == ForgeType.Kind.SHIELD),
 	/** Armor and wings: softer landings and a quicker step. */
 	VIAJERO(0xA9E2FF, kind -> kind == ForgeType.Kind.ARMOR || kind == ForgeType.Kind.ALAS),
@@ -54,6 +58,10 @@ public enum Perk {
 
 	/** What Jinete turns aside: the share of hits on the mount that simply do not land. */
 	public static final float JINETE_SHARE = 0.20F;
+
+	/** Baluarte: how much heavier an armor piece with it counts, and how much dearer a block with a shield that has it. */
+	public static final double BALUARTE_WEIGHT = 0.3;
+	public static final double BALUARTE_BLOCK_COST = 0.2;
 
 	/** The Maestria level that unlocks a gift. */
 	public static final int LEVEL = Mastery.MAX_LEVEL;

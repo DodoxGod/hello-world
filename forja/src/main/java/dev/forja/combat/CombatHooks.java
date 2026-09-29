@@ -71,7 +71,9 @@ public final class CombatHooks {
 			if (struck) {
 				dev.forja.clase.ClassEvents.onShieldBlock(player, source, amount);
 			}
-			if (!parry && !Stamina.trySpend(player, amount * cfg.blockCostPerDamage * dev.forja.clase.ClassEffects.blockCostMultiplier(player))) {
+			// Baluarte's price on a shield: every block costs a fifth more (forge/Perk.BALUARTE_BLOCK_COST)
+			double baluarte = dev.forja.forge.Perk.has(shield, dev.forja.forge.Perk.BALUARTE) ? 1.0 + dev.forja.forge.Perk.BALUARTE_BLOCK_COST : 1.0;
+			if (!parry && !Stamina.trySpend(player, (float) (amount * cfg.blockCostPerDamage * dev.forja.clase.ClassEffects.blockCostMultiplier(player) * baluarte))) {
 				player.getCooldowns().addCooldown(shield, cfg.guardBreakTicks);
 				player.stopUsingItem();
 				CombatFeedback.guardBreak(player);

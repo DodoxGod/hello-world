@@ -91,7 +91,13 @@ public final class ArmorCalculator {
 		if (parts != null && parts.type().kind == ForgeType.Kind.ARMOR) {
 			ForgeMaterial plate = parts.material(parts.type().slotOf(PartType.Role.PLATE));
 			ForgeMaterial lining = parts.material(parts.type().slotOf(PartType.Role.LINING));
-			return MaterialCombat.forged(plate, lining);
+			MaterialCombat.Profile forged = MaterialCombat.forged(plate, lining);
+			// Baluarte's price: the piece is heavier (forge/Perk.BALUARTE_WEIGHT)
+			if (dev.forja.forge.Perk.has(stack, dev.forja.forge.Perk.BALUARTE)) {
+				forged = new MaterialCombat.Profile(forged.slash(), forged.blunt(), forged.pierce(),
+					forged.weight() * (1.0 + dev.forja.forge.Perk.BALUARTE_WEIGHT));
+			}
+			return forged;
 		}
 		int index = switch (slot) {
 			case HEAD -> 0;

@@ -29,7 +29,8 @@ import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
  * <p>The second version still took 20 s to find a castle 45,000 blocks away: one candidate in two thousand passed,
  * and every one cost two columns of noise per sample. Now the biome is sampled (cheap: a few noises at one point, no
  * column) at the start and the four corners first, a column asks for the water under it only when its surface is
- * at sea level, and the limits are a little wider. {@link #report()} says where the candidates went.
+ * at sea level. Andy (2026-09-29) wants the site flatter even if there are fewer: at most 14 blocks between the
+ * highest and lowest ground sampled, and the start within 4 of the median. {@link #report()} says where the candidates went.
  */
 public final class BastionGround {
 	/** Half the width of the ground looked at, around the start piece's corner (the plan is about 250 across). */
@@ -37,9 +38,9 @@ public final class BastionGround {
 	/** Samples along each side of the full grid. */
 	static final int GRID = 5;
 	/** The highest and the lowest sampled ground may differ by this much, and no more. */
-	static final int MAX_RISE = 24;
+	static final int MAX_RISE = 14;
 	/** The start column (which sets the courtyard's height) may be this far from the ground's median. */
-	static final int MAX_OFF_MEDIAN = 6;
+	static final int MAX_OFF_MEDIAN = 4;
 	/** Samples with water over the ground allowed: a pond, not a lake. */
 	static final int MAX_WET = 3;
 	/** Candidates remembered (by seed and chunk) before the memory is emptied. */
