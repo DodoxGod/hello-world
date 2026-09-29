@@ -9831,6 +9831,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 			net.minecraft.server.level.ServerPlayer player = connection.getServerPlayer();
 			dev.forja.combat.CombatConfig.get().veteranChance = 0.0;
 			dev.forja.combat.CombatConfig.get().eliteChance = 0.0;
+			// Only the fifteen of the shot: no companions brought along.
+			dev.forja.combat.CombatConfig.get().packChance = 0.0;
 			int[] made = new int[15];
 			for (int i = 0; i < made.length; i++) {
 				var type = i < 13 ? net.minecraft.world.entity.EntityTypes.ZOMBIE : net.minecraft.world.entity.EntityTypes.SKELETON;
@@ -9841,6 +9843,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 				if (i >= 13) {
 					mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
 				}
+				// Noon, for the light: a helmet keeps them from burning.
+				mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
 				level.addFreshEntity(mob);
 				mob.setTarget(player);
 				made[i] = mob.getId();
@@ -9852,13 +9856,23 @@ public class ForjaClientTest implements FabricClientGameTest {
 			if (!mc.gui.hud.isHidden()) {
 				mc.gui.hud.toggle();
 			}
-			if (mc.level.getEntity(eye) != null) {
-				mc.setCameraEntity(mc.level.getEntity(eye));
-			}
 		});
+		// The stand reaches the client a few ticks after it is made: wait for it, then look through it.
+		context.waitFor(mc -> mc.level.getEntity(eye) != null, 100);
+		context.runOnClient(mc -> mc.setCameraEntity(mc.level.getEntity(eye)));
+		context.waitTicks(2);
+		check(context.computeOnClient(mc -> mc.getCameraEntity() != null && mc.getCameraEntity().getId() == eye),
+			"the camera should look down from the stand");
 		String[] shots = {"cerco_01_llegan", "cerco_02_se_abren", "cerco_03_rodean", "cerco_04_cerco", "cerco_05_pelea"};
 		for (int shot = 0; shot < shots.length; shot++) {
 			context.waitTicks(shot == 0 ? 5 : 50);
+			// Anything that resets the camera (a respawn, a hit) is undone before each shot.
+			context.runOnClient(mc -> {
+				if (mc.level.getEntity(eye) != null && mc.getCameraEntity() != mc.level.getEntity(eye)) {
+					mc.setCameraEntity(mc.level.getEntity(eye));
+				}
+			});
+			context.waitTicks(1);
 			context.takeScreenshot(shots[shot]);
 			String count = server.computeOnServer(s -> {
 				net.minecraft.server.level.ServerPlayer player = connection.getServerPlayer();
@@ -9900,6 +9914,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 		});
 		server.runCommand("kill @e[type=!player]");
 		server.runCommand("effect clear @a");
+		dev.forja.combat.CombatConfig.get().packChance = new dev.forja.combat.CombatConfig().packChance;
 	}
 
 	/** The class screens as a player meets them, and the Curandero with the lantern in hand and the mana bar up. */
