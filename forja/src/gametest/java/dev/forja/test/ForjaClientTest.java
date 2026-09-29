@@ -222,9 +222,16 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			if ("red".equals(solo)) {
+				// Only the metal network of the foundry (FUNDICION_V2, part A), which fundicion also runs first.
+				checkFoundryNetwork(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("fundicion".equals(solo)) {
 				// The survival flow with real clicks, then every older foundry check, so a change to the
 				// foundry is looked at whole in one run.
+				checkFoundryNetwork(context, server, connection, x, y, z);
 				checkFoundrySurvival(context, server, connection, x, y, z);
 				playAssembler(context, server, connection, x, y, z);
 				checkCrucibles(context, server, connection, x, y, z);
@@ -4346,8 +4353,13 @@ public class ForjaClientTest implements FabricClientGameTest {
 			ServerLevel level = connection.getServerLevel();
 			BlockPos tankAt = new BlockPos(px + 4, y, pz + 6);
 			BlockPos potAt = tankAt.east();
+			// A second, empty tank on the pot's other side: the steel made out of the first tank's iron has
+			// to have somewhere to go, because a deposit holds one metal and a pot on a foundry waits for a
+			// tank rather than pouring into its own slot.
+			BlockPos steelAt = potAt.east();
 			level.setBlockAndUpdate(tankAt, dev.forja.registry.ModBlocks.CUBA_DE_COLADA.defaultBlockState());
 			level.setBlockAndUpdate(potAt, dev.forja.registry.ModBlocks.CRISOL_DE_HIERRO.defaultBlockState());
+			level.setBlockAndUpdate(steelAt, dev.forja.registry.ModBlocks.CUBA_DE_COLADA.defaultBlockState());
 			var tank = (dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(tankAt);
 			var pot = (dev.forja.block.entity.CrucibleBlockEntity) level.getBlockEntity(potAt);
 			check(tank != null && pot != null, "the foundry should have its block entities");
@@ -4373,10 +4385,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 			for (int tick = 0; tick < half; tick++) {
 				dev.forja.block.entity.CrucibleBlockEntity.serverTick(level, potAt, level.getBlockState(potAt), pot);
 			}
-			// It ate two iron out of the glass and put steel back, all inside half the usual time.
-			boolean fast = tank.bankAmount() != before;
+			// It ate two iron out of the glass and put steel into the other tank, all inside half the usual time.
+			boolean fast = tank.bankAmount() != before
+				&& ((dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(steelAt)).bankMetal() == dev.forja.registry.ModItems.alloy("acero");
 			level.removeBlock(potAt, false);
 			level.removeBlock(tankAt, false);
+			level.removeBlock(steelAt, false);
 			return new boolean[] {intoTank, fast};
 		});
 		log("fundicion: el crisol vuelca en la cuba " + foundry[0] + ", y alimentado por ella cuela al doble " + foundry[1]);
@@ -4663,27 +4677,32 @@ public class ForjaClientTest implements FabricClientGameTest {
 			boolean pouredDownThePipe = tank.bankAmount() > 0
 				&& pot.getItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_OUTPUT).isEmpty();
 
-			// And the bank sends its metal down a pipe into a chest at the far end.
+			// A chest at the far end of a pipe is not part of the network and gets nothing (it used to be
+			// handed the tank's metal as ingots, which is how a hopper feeding a pot fed it back its own
+			// metal); a chest right UNDER the tank is its tap, and does.
 			BlockPos chestAt = tankAt.north().north();
 			level.setBlockAndUpdate(tankAt.north(), dev.forja.registry.ModBlocks.CONDUCTO_DE_COLADA.defaultBlockState());
 			level.setBlockAndUpdate(chestAt, net.minecraft.world.level.block.Blocks.CHEST.defaultBlockState());
+			level.setBlockAndUpdate(tankAt.below(), net.minecraft.world.level.block.Blocks.CHEST.defaultBlockState());
 			var chest = (net.minecraft.world.Container) level.getBlockEntity(chestAt);
-			check(chest != null, "the chest should have its block entity");
+			var tap = (net.minecraft.world.Container) level.getBlockEntity(tankAt.below());
+			check(chest != null && tap != null, "the chests should have their block entities");
 			for (int tick = 0; tick < 80; tick++) {
 				dev.forja.block.entity.MeltTankBlockEntity.serverTick(level, tankAt, level.getBlockState(tankAt), tank);
 			}
-			boolean delivered = !chest.isEmpty();
+			boolean delivered = chest.isEmpty() && !tap.isEmpty();
 			for (BlockPos at : List.of(potAt, tankAt, chestAt, tankAt.north(), potAt.west(),
 				potAt.west().west(), potAt.west().west().west())) {
 				level.removeBlock(at, false);
 			}
+			level.setBlockAndUpdate(tankAt.below(), Blocks.STONE.defaultBlockState());
 			return new boolean[] {joined, pouredDownThePipe, delivered};
 		});
 		log("conductos: se enganchan a los dos extremos " + pipes2[0] + ", el crisol cuela por la tuberia "
-			+ pipes2[1] + ", la cuba reparte por la tuberia " + pipes2[2]);
+			+ pipes2[1] + ", la cuba sólo suelta lingotes por su grifo de abajo " + pipes2[2]);
 		check(pipes2[0], "a pipe should take the shape of what it is touching");
 		check(pipes2[1], "a crucible should reach a tank three pipes away");
-		check(pipes2[2], "and a bank should empty down a pipe into whatever is on the end of it");
+		check(pipes2[2], "a bank should empty only into the container right under it, not into a chest at the end of a pipe");
 
 		// A picture of the three, with the middle one working, because "which is which" should be
 		// answerable by looking at them.
@@ -5376,6 +5395,343 @@ public class ForjaClientTest implements FabricClientGameTest {
 	 * takes the colour of the metal actually going past, and that the band spreads along a run and
 	 * drains back out of it when the tank runs dry.
 	 */
+	/**
+	 * The metal network (docs/FUNDICION_V2.md, part A), built and run the way a player would, with real
+	 * clicks: FORJA_SOLO=red runs it alone, FORJA_SOLO=fundicion runs it first.
+	 *
+	 * <p>An obsidian crucible on a wisp lantern at one end of a twenty-block channel. The player sets a
+	 * valve into the gap the channel leaves by the pot, stacks three tanks halfway down the line (one on
+	 * top of the other, by clicking the top of each: they merge into one deposit) and puts one more at the
+	 * far end. Raw iron goes into the pot through its screen. Then:
+	 * <ul>
+	 * <li>the first pour lands in the bottom of the three-tank deposit, the nearest empty container;</li>
+	 * <li>the deposit fills from the bottom up, and the far tank stays EMPTY until the deposit is full
+	 * (Andy: "se va llenando cada bloque de forma individual hasta llenar el contenedor, apenas ahí se
+	 * inicia a llenar otro") — checked after every single pour, not just at the end;</li>
+	 * <li>the valve is closed with a right click: iron ingots in the pot wait, and its screen says there is
+	 * no tank with room; opened again, they go to the far tank; a redstone block set against it closes it
+	 * with the lever still open.</li>
+	 * </ul>
+	 * The filling itself is run fast on the server between the looks (the same crucible code, more ticks),
+	 * because 768 ingots at a pour every three seconds would be a long film.
+	 */
+	private static void checkFoundryNetwork(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		int px = x + 160;
+		int pz = z + 40;
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d stone", px - 4, y - 1, pz - 8, px + 24, y - 1, pz + 6));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", px - 4, y, pz - 8, px + 24, y + 6, pz + 6));
+		server.runCommand("time set noon");
+		server.runCommand("weather clear 1000000");
+		server.runCommand("gamemode survival @a");
+
+		BlockPos potAt = new BlockPos(px, y, pz);
+		BlockPos valveAt = potAt.east(2);
+		BlockPos lowAt = new BlockPos(px + 9, y, pz + 1);
+		List<BlockPos> deposit = List.of(lowAt, lowAt.above(), lowAt.above(2));
+		BlockPos farAt = new BlockPos(px + 19, y, pz);
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			level.setBlockAndUpdate(potAt.below(), dev.forja.registry.ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+			level.setBlockAndUpdate(potAt, dev.forja.registry.ModBlocks.CRISOL_DE_OBSIDIANA.defaultBlockState());
+			for (int dx = 1; dx <= 18; dx++) {
+				if (dx != 2) {
+					level.setBlockAndUpdate(potAt.east(dx), dev.forja.registry.ModBlocks.CONDUCTO_DE_COLADA.defaultBlockState());
+				}
+			}
+			// A wisp lantern beside each place a tank will go, so the metal stays liquid while it waits.
+			level.setBlockAndUpdate(lowAt.west(), dev.forja.registry.ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+			level.setBlockAndUpdate(farAt.south(), dev.forja.registry.ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+			ServerPlayer player = connection.getServerPlayer();
+			player.getInventory().clearContent();
+			player.getInventory().setItem(0, new ItemStack(ModItems.CUBA_DE_COLADA, 4));
+			player.getInventory().setItem(1, new ItemStack(ModItems.LLAVE_DE_PASO));
+			player.getInventory().setItem(2, new ItemStack(Items.RAW_IRON, 32));
+			player.getInventory().setItem(3, new ItemStack(Items.IRON_INGOT, 16));
+			player.getInventory().setItem(4, new ItemStack(Items.REDSTONE_BLOCK));
+			player.getInventory().setSelectedSlot(0);
+		});
+
+		// ---- building it, by hand. The three tanks, each one clicked onto the top of the one below — from a
+		// step, as a player would: from the floor the top of the second tank is above your eyes, and the
+		// click lands on its side.
+		BlockPos step = lowAt.south(2);
+		server.runOnServer(s -> connection.getServerLevel().setBlockAndUpdate(step, Blocks.STONE.defaultBlockState()));
+		tp(server, lowAt.getX() + 0.5, y + 1, lowAt.getZ() + 2.5, 180.0F, 40.0F);
+		context.waitTicks(5);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[0]);
+		context.waitTicks(2);
+		for (int level = 0; level < 3; level++) {
+			// The top face of what the next tank stands on: the floor, then each tank in turn.
+			lookAtPoint(context, new Vec3(lowAt.getX() + 0.5, y + level, lowAt.getZ() + 0.5));
+			context.waitTicks(2);
+			context.getInput().pressKey(options -> options.keyUse);
+			context.waitTicks(6);
+		}
+		server.runOnServer(s -> connection.getServerLevel().removeBlock(step, false));
+		// The far tank, at the end of the line.
+		tp(server, farAt.getX() + 2.5, y, farAt.getZ() + 0.5, 90.0F, 40.0F);
+		context.waitTicks(5);
+		lookAtPoint(context, new Vec3(farAt.getX() + 0.5, y, farAt.getZ() + 0.5));
+		context.waitTicks(2);
+		context.getInput().pressKey(options -> options.keyUse);
+		context.waitTicks(6);
+		// And the valve, into the gap the channel leaves by the pot.
+		tp(server, valveAt.getX() + 0.5, y, valveAt.getZ() - 2.5, 0.0F, 40.0F);
+		context.waitTicks(5);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[1]);
+		context.waitTicks(2);
+		lookAtPoint(context, new Vec3(valveAt.getX() + 0.5, y, valveAt.getZ() + 0.5));
+		context.waitTicks(2);
+		context.getInput().pressKey(options -> options.keyUse);
+		context.waitTicks(6);
+		int[] built = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			int tanks = 0;
+			for (BlockPos at : deposit) {
+				tanks += level.getBlockEntity(at) instanceof dev.forja.block.entity.MeltTankBlockEntity ? 1 : 0;
+			}
+			var low = level.getBlockEntity(lowAt) instanceof dev.forja.block.entity.MeltTankBlockEntity found ? found : null;
+			var far = level.getBlockEntity(farAt) instanceof dev.forja.block.entity.MeltTankBlockEntity found ? found : null;
+			var valve = level.getBlockState(valveAt);
+			return new int[] {tanks, low == null ? -1 : low.bank().size(), far == null ? -1 : far.bank().size(),
+				valve.getBlock() instanceof dev.forja.block.MeltValveBlock ? 1 : 0,
+				valve.getBlock() instanceof dev.forja.block.MeltValveBlock && dev.forja.block.MeltValveBlock.isOpen(valve) ? 1 : 0,
+				valve.getBlock() instanceof dev.forja.block.MeltValveBlock && valve.getValue(dev.forja.block.MeltValveBlock.AXIS)
+					== net.minecraft.core.Direction.Axis.X ? 1 : 0,
+				dev.forja.block.entity.MeltNetwork.deposits(level, potAt).size()};
+		});
+		log("red: a mano, " + built[0] + " cubas apiladas que forman un depósito de " + built[1] + ", la del fondo sola " + built[2]
+			+ ", llave puesta " + (built[3] > 0) + " abierta " + (built[4] > 0) + " a lo largo del canal " + (built[5] > 0)
+			+ ", el crisol ve " + built[6] + " depósitos");
+		check(built[0] == 3 && built[1] == 3, "three tanks stacked by hand should be one deposit of three, got " + built[1]);
+		check(built[2] == 1, "the far tank should be a deposit of its own, got " + built[2]);
+		check(built[3] > 0 && built[4] > 0 && built[5] > 0, "the valve should be set into the channel, open, across the flow");
+		check(built[6] == 2, "the crucible should reach both deposits down the line, got " + built[6]);
+
+		// ---- the pot, loaded through its own screen.
+		tp(server, px + 0.5, y, pz - 2.5, 0.0F, 30.0F);
+		context.waitTicks(5);
+		openByHand(context, potAt);
+		check(context.computeOnClient(mc -> mc.gui.screen() instanceof dev.forja.client.CrucibleScreen), "a right click should open the crucible");
+		shiftClickSlot(context, foundryHotbar(2));
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+		// One pour (an obsidian pot takes three seconds) and a little for the packets.
+		context.waitTicks(dev.forja.block.CrucibleBlock.Tier.OBSIDIANA.cook + 20);
+		int[] first = amounts(server, connection, deposit, farAt);
+		log("red: primera colada, depósito " + first[0] + " (" + first[1] + "/" + first[2] + "/" + first[3] + "), la del fondo " + first[4]);
+		check(first[0] == 32 && first[1] == 32 && first[2] == 0 && first[3] == 0,
+			"the first pour should land in the bottom of the nearest empty deposit, got " + java.util.Arrays.toString(first));
+		check(first[4] == 0, "and the far tank should get none of it, got " + first[4]);
+		server.runCommand("gamemode spectator @a");
+		tp(server, px + 10.0, y + 5.0, pz - 8.5, 0.0F, 30.0F);
+		context.waitTicks(20);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_red_01_linea_primera_colada").disableCounterPrefix());
+
+		// ---- filling: poured fast on the server, one pour at a time, the far tank watched after every one.
+		int[] rising = pourUntil(server, connection, potAt, deposit, farAt, 300);
+		log("red: el depósito sube de abajo arriba: " + rising[1] + "/" + rising[2] + "/" + rising[3] + ", la del fondo " + rising[4]
+			+ ", veces que la del fondo recibió antes de tiempo " + rising[5]);
+		check(rising[1] == dev.forja.block.entity.MeltTankBlockEntity.CAPACITY && rising[2] > 0 && rising[2] < dev.forja.block.entity.MeltTankBlockEntity.CAPACITY
+			&& rising[3] == 0, "the deposit should fill from the bottom up, got " + java.util.Arrays.toString(rising));
+		check(rising[4] == 0 && rising[5] == 0, "and the far tank should still be empty, got " + rising[4]);
+		tp(server, px + 10.0, y + 3.0, pz - 9.5, 0.0F, 14.0F);
+		context.waitTicks(15);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_red_02_deposito_subiendo").disableCounterPrefix());
+		tp(server, lowAt.getX() + 0.5, y + 1.6, lowAt.getZ() - 3.2, 0.0F, 10.0F);
+		context.waitTicks(15);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_red_02b_nivel_de_abajo_arriba").disableCounterPrefix());
+		// And the far tank at that moment: empty glass.
+		tp(server, farAt.getX() + 0.5, y + 0.2, farAt.getZ() - 2.4, 0.0F, 14.0F);
+		context.waitTicks(15);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_red_02c_la_otra_sigue_vacia").disableCounterPrefix());
+		int full = 3 * dev.forja.block.entity.MeltTankBlockEntity.CAPACITY;
+		int[] topped = pourUntil(server, connection, potAt, deposit, farAt, full + 1);
+		log("red: depósito lleno " + topped[0] + "/" + full + ", la del fondo empieza con " + topped[4]
+			+ ", veces que recibió antes de llenarse el depósito " + topped[5]);
+		check(topped[0] == full, "the deposit should be full, got " + topped[0]);
+		check(topped[4] > 0, "and only now should the far tank start, got " + topped[4]);
+		check(topped[5] == 0, "the far tank must not get a drop while the deposit had room, it did " + topped[5] + " times");
+		tp(server, px + 10.0, y + 3.0, pz - 9.5, 0.0F, 14.0F);
+		context.waitTicks(15);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_red_03_lleno_y_empieza_la_otra").disableCounterPrefix());
+		tp(server, farAt.getX() + 0.5, y + 0.2, farAt.getZ() - 2.4, 0.0F, 14.0F);
+		context.waitTicks(15);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_red_03b_la_otra_empieza").disableCounterPrefix());
+		int farBefore = topped[4];
+
+		// ---- the valve: closed with a right click, the pot waits and says why.
+		server.runCommand("gamemode survival @a");
+		tp(server, valveAt.getX() + 0.5, y, valveAt.getZ() - 2.5, 0.0F, 40.0F);
+		context.waitTicks(5);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[8]);
+		context.waitTicks(2);
+		lookAtPoint(context, new Vec3(valveAt.getX() + 0.5, y + 0.6, valveAt.getZ() + 0.5));
+		context.waitTicks(2);
+		context.getInput().pressKey(options -> options.keyUse);
+		context.waitTicks(6);
+		boolean closed = server.computeOnServer(s -> !dev.forja.block.MeltValveBlock.isOpen(connection.getServerLevel().getBlockState(valveAt)));
+		check(closed, "a right click on the valve should close it");
+		// Iron ingots can only go into a tank: with the line cut, the pot has nowhere to put them.
+		tp(server, px + 0.5, y, pz - 2.5, 0.0F, 30.0F);
+		context.waitTicks(5);
+		openByHand(context, potAt);
+		shiftClickSlot(context, foundryHotbar(3));
+		context.waitTicks(dev.forja.block.CrucibleBlock.Tier.OBSIDIANA.cook + 20);
+		context.getInput().setCursorPos(0, 0);
+		int[] waiting = context.computeOnClient(mc -> mc.player.containerMenu instanceof dev.forja.menu.CrucibleMenu menu
+			? new int[] {menu.job(), menu.jobWhat()} : new int[] {-1, -1});
+		int[] cut = amounts(server, connection, deposit, farAt);
+		int ingotsLeft = server.computeOnServer(s -> ((dev.forja.block.entity.CrucibleBlockEntity) connection.getServerLevel().getBlockEntity(potAt))
+			.getItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_FIRST).getCount());
+		log("red: con la llave cerrada el crisol dice " + waiting[0] + " (sin cuba = " + dev.forja.block.entity.CrucibleBlockEntity.JOB_NEEDS_TANK
+			+ "), le quedan " + ingotsLeft + " lingotes, la del fondo sigue en " + cut[4]);
+		check(waiting[0] == dev.forja.block.entity.CrucibleBlockEntity.JOB_NEEDS_TANK, "with the valve shut the pot should say it needs a tank, says " + waiting[0]);
+		check(ingotsLeft == 16 && cut[4] == farBefore, "and nothing should go down the line, the far tank went " + farBefore + " -> " + cut[4]);
+		quiet(context);
+		context.waitTicks(2);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_red_04_crisol_espera").disableCounterPrefix());
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+		server.runCommand("gamemode spectator @a");
+		tp(server, valveAt.getX() + 2.6, y - 0.3, valveAt.getZ() - 0.4, 67.0F, 17.0F);
+		context.waitTicks(15);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_red_05_llave_cerrada").disableCounterPrefix());
+
+		// ---- opened again with another click: the ingots go through to the far tank.
+		server.runCommand("gamemode survival @a");
+		tp(server, valveAt.getX() + 0.5, y, valveAt.getZ() - 2.5, 0.0F, 40.0F);
+		context.waitTicks(5);
+		lookAtPoint(context, new Vec3(valveAt.getX() + 0.5, y + 0.6, valveAt.getZ() + 0.5));
+		context.waitTicks(2);
+		context.getInput().pressKey(options -> options.keyUse);
+		context.waitTicks(dev.forja.block.CrucibleBlock.Tier.OBSIDIANA.cook + 20);
+		int[] reopened = amounts(server, connection, deposit, farAt);
+		boolean open = server.computeOnServer(s -> dev.forja.block.MeltValveBlock.isOpen(connection.getServerLevel().getBlockState(valveAt)));
+		log("red: abierta otra vez " + open + ", la del fondo pasa de " + cut[4] + " a " + reopened[4]);
+		check(open && reopened[4] == cut[4] + 16, "opened again, the 16 ingots should reach the far tank, got " + cut[4] + " -> " + reopened[4]);
+		server.runCommand("gamemode spectator @a");
+		tp(server, valveAt.getX() + 2.6, y - 0.3, valveAt.getZ() - 0.4, 67.0F, 17.0F);
+		context.waitTicks(15);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_red_06_llave_abierta").disableCounterPrefix());
+
+		// ---- a redstone block set against it closes it, lever and all.
+		server.runCommand("gamemode survival @a");
+		tp(server, valveAt.getX() + 0.5, y, valveAt.getZ() - 2.5, 0.0F, 40.0F);
+		context.waitTicks(5);
+		context.getInput().pressKey(options -> options.keyHotbarSlots[4]);
+		context.waitTicks(2);
+		lookAtPoint(context, new Vec3(valveAt.getX() + 0.5, y, valveAt.getZ() - 0.5));
+		context.waitTicks(2);
+		context.getInput().pressKey(options -> options.keyUse);
+		context.waitTicks(6);
+		int[] redstone = server.computeOnServer(s -> {
+			var state = connection.getServerLevel().getBlockState(valveAt);
+			return new int[] {connection.getServerLevel().getBlockState(valveAt.north()).is(Blocks.REDSTONE_BLOCK) ? 1 : 0,
+				state.getValue(dev.forja.block.MeltValveBlock.OPEN) ? 1 : 0, dev.forja.block.MeltValveBlock.isOpen(state) ? 1 : 0};
+		});
+		log("red: bloque de redstone puesto " + (redstone[0] > 0) + ", palanca abierta " + (redstone[1] > 0) + ", pasa " + (redstone[2] > 0));
+		check(redstone[0] > 0 && redstone[1] > 0 && redstone[2] == 0, "a redstone block against the valve should hold it shut, got "
+			+ java.util.Arrays.toString(redstone));
+		server.runCommand("gamemode spectator @a");
+		tp(server, valveAt.getX() + 2.4, y - 0.3, valveAt.getZ() + 2.1, 130.0F, 16.0F);
+		context.waitTicks(15);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_red_07_redstone_la_cierra").disableCounterPrefix());
+		// And the whole line once more from above.
+		tp(server, px + 10.0, y + 5.0, pz - 8.5, 0.0F, 30.0F);
+		context.waitTicks(15);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("fundicion_red_08_linea_al_final").disableCounterPrefix());
+		// And what the guide says about it now: the tanks, the network and the valve, two spreads in.
+		context.runOnClient(mc -> {
+			GuideBookScreen book = new GuideBookScreen();
+			mc.gui.setScreen(book);
+		});
+		context.waitTicks(3);
+		int chapter = context.computeOnClient(mc -> ((GuideBookScreen) mc.gui.screen()).chapterPage("fundicion"));
+		for (int spread = 2; spread <= 4; spread++) {
+			int page = chapter + spread * 2;
+			context.runOnClient(mc -> {
+				((GuideBookScreen) mc.gui.screen()).goToPage(page);
+				mc.gui.toastManager().clear();
+			});
+			context.waitTicks(5);
+			context.takeScreenshot(TestScreenshotOptions.of("fundicion_red_09_guia_" + spread).disableCounterPrefix());
+		}
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+		context.waitTicks(3);
+		server.runCommand("gamemode survival @a");
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", px - 4, y, pz - 8, px + 24, y + 6, pz + 6));
+		server.runOnServer(s -> {
+			connection.getServerLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+				new net.minecraft.world.phys.AABB(potAt).inflate(30.0)).forEach(net.minecraft.world.entity.Entity::discard);
+			connection.getServerPlayer().getInventory().clearContent();
+		});
+	}
+
+	/** The deposit's total and each of its three tanks, the far tank, and (for pourUntil) the times it filled too early. */
+	private static int[] amounts(TestServerContext server, TestServerConnection connection, List<BlockPos> deposit, BlockPos farAt) {
+		return server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			int[] out = new int[6];
+			for (int i = 0; i < 3; i++) {
+				var tank = (dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(deposit.get(i));
+				out[i + 1] = tank.amount();
+				out[0] = tank.bankAmount();
+			}
+			out[4] = ((dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(farAt)).bankAmount();
+			return out;
+		});
+	}
+
+	/**
+	 * Runs the crucible on the server, raw iron in and one pour after another, until the deposit holds at
+	 * least this much (or, past a full deposit, until the far tank has started). After every tick it looks
+	 * at the far tank: any metal there while the deposit still had room is counted as a fault.
+	 */
+	private static int[] pourUntil(TestServerContext server, TestServerConnection connection, BlockPos potAt, List<BlockPos> deposit,
+		BlockPos farAt, int target) {
+		return server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var pot = (dev.forja.block.entity.CrucibleBlockEntity) level.getBlockEntity(potAt);
+			var low = (dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(deposit.getFirst());
+			var far = (dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(farAt);
+			int capacity = low.bankCapacity();
+			int early = 0;
+			for (int tick = 0; tick < 20000; tick++) {
+				if (low.bankAmount() >= Math.min(target, capacity) && (target <= capacity || far.bankAmount() > 0)) {
+					break;
+				}
+				if (pot.getItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_FIRST).isEmpty()) {
+					// Not more than the deposit still needs, so the checkpoint lands where it is asked for.
+					int wanted = target <= capacity ? Math.max(1, Math.min(32, target - low.bankAmount())) : 32;
+					pot.setItem(dev.forja.block.entity.CrucibleBlockEntity.SLOT_FIRST, new ItemStack(Items.RAW_IRON, wanted));
+				}
+				dev.forja.block.entity.CrucibleBlockEntity.serverTick(level, potAt, level.getBlockState(potAt), pot);
+				if (far.bankAmount() > 0 && low.bankAmount() < capacity) {
+					early++;
+				}
+			}
+			int[] out = new int[6];
+			for (int i = 0; i < 3; i++) {
+				out[i + 1] = ((dev.forja.block.entity.MeltTankBlockEntity) level.getBlockEntity(deposit.get(i))).amount();
+			}
+			out[0] = low.bankAmount();
+			out[4] = far.bankAmount();
+			out[5] = early;
+			return out;
+		});
+	}
+
 	/**
 	 * The foundry the way a smith in survival meets it, with real clicks in the real screens
 	 * (FORJA_SOLO=fundicion). Andy, 2026-09-28: "se puede poner cualquier objeto en los contenedores",

@@ -718,4 +718,447 @@ public class FundicionGameTests {
 			"la mesa guarda su molde, su colada y que saldrá basta");
 		helper.succeed();
 	}
+
+	// ------------------------------------------------------------------ the network (FUNDICION_V2, part A)
+
+	/**
+	 * A serpentine of damascus channel, three floors of it, 95 blocks long: longer than the old reach of 64.
+	 * Returns the positions in order, from the end by the pot to the end by the far tank.
+	 */
+	private static List<BlockPos> serpentine(GameTestHelper helper, Block pipe) {
+		List<BlockPos> line = new java.util.ArrayList<>();
+		for (int floor = 0; floor < 3; floor++) {
+			int y = 1 + floor * 2;
+			List<BlockPos> layer = new java.util.ArrayList<>();
+			for (int row = 0; row < 4; row++) {
+				int z = row * 2;
+				for (int step = 0; step < 7; step++) {
+					int x = row % 2 == 0 ? 1 + step : 7 - step;
+					layer.add(new BlockPos(x, y, z));
+				}
+				if (row < 3) {
+					layer.add(new BlockPos(row % 2 == 0 ? 7 : 1, y, z + 1));
+				}
+			}
+			if (floor % 2 == 1) {
+				java.util.Collections.reverse(layer);
+			}
+			if (floor > 0) {
+				// The riser from the floor below: at (1, y-1, 6) going up from floor 0, at (1, y-1, 0) from floor 1.
+				line.add(new BlockPos(1, y - 1, floor % 2 == 1 ? 6 : 0));
+			}
+			line.addAll(layer);
+		}
+		for (BlockPos at : line) {
+			helper.setBlock(at, pipe.defaultBlockState());
+		}
+		return line;
+	}
+
+	/**
+	 * "El metal va de donde sale a donde se necesita, aunque estén lejos": a crucible pours down 95 blocks
+	 * of channel into a tank at the far end, and a casting table at the crucible's end of the line pulls a
+	 * part's worth back out of that same tank. The old pipes gave up after 64 blocks.
+	 */
+	@GameTest(maxTicks = 400)
+	public void theNetworkReachesAcrossDistance(GameTestHelper helper) {
+		List<BlockPos> line = serpentine(helper, ModBlocks.CONDUCTO_DE_DAMASCO);
+		helper.assertTrue(line.size() > 64, "la línea es más larga que el alcance viejo: " + line.size());
+		BlockPos potAt = new BlockPos(0, 1, 0);
+		BlockPos tankAt = line.getLast().west();
+		CrucibleBlockEntity pot = pot(helper, potAt, ModBlocks.CRISOL_DE_BARRO);
+		MeltTankBlockEntity tank = tank(helper, tankAt);
+		ServerLevel level = helper.getLevel();
+		var reach = dev.forja.block.entity.MeltNetwork.reach(level, helper.absolutePos(potAt));
+		var end = reach.end(helper.absolutePos(tankAt));
+		helper.assertTrue(end != null && end.distance() == line.size() + 1,
+			"el crisol ve la cuba a " + (end == null ? "ninguna" : end.distance()) + " bloques de red, no a " + (line.size() + 1));
+		pot.setItem(CrucibleBlockEntity.SLOT_FIRST, new ItemStack(Items.RAW_IRON, 8));
+		pot.setItem(CrucibleBlockEntity.SLOT_FUEL, new ItemStack(ModItems.ASCUA, 1));
+		run(helper, potAt, pot, dev.forja.block.CrucibleBlock.Tier.BARRO.cook + 10);
+		helper.assertTrue(tank.bankMetal() == Items.IRON_INGOT && tank.bankAmount() == 8,
+			"la mena llega fundida a la otra punta: " + tank.bankAmount() + " de " + tank.bankMetal());
+		helper.assertFalse(tank.isSet(), "por damasco llega líquida (calor " + tank.heat() + ")");
+		helper.assertTrue(pot.getItem(CrucibleBlockEntity.SLOT_OUTPUT).isEmpty(), "y nada sale en lingotes");
+
+		// And back the other way: a table at the pot's end of the line casts out of the far tank.
+		tank.fill(Items.IRON_INGOT, 60);
+		BlockPos tableAt = new BlockPos(2, 1, 1);
+		helper.setBlock(tableAt.above(), ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+		helper.setBlock(tableAt, ModBlocks.MESA_DE_LOSA.defaultBlockState());
+		CastingTableBlockEntity table = helper.getBlockEntity(tableAt, CastingTableBlockEntity.class);
+		table.setItem(CastingTableBlockEntity.SLOT_FRAME, CastingMouldItem.of(PartType.CABEZA_PICO));
+		runTable(helper, tableAt, table, ONE_POUR);
+		helper.assertTrue(table.result().get(ModComponents.MATERIAL) == ForgeMaterial.HIERRO,
+			"la mesa cuela del depósito del otro extremo: " + table.result());
+		helper.assertTrue(tank.bankAmount() == 68 - PartType.CABEZA_PICO.cost, "gastando lo suyo: queda " + tank.bankAmount());
+		helper.succeed();
+	}
+
+	/**
+	 * Nothing walks the network every tick: two hundred ticks of a pot pouring down a long line and a tank
+	 * pushing and cooling cost no new walk at all once the first one is remembered, and building a block
+	 * onto the line costs exactly one.
+	 */
+	@GameTest(maxTicks = 400)
+	public void theNetworkIsRememberedNotWalkedEveryTick(GameTestHelper helper) {
+		List<BlockPos> line = serpentine(helper, ModBlocks.CONDUCTO_DE_DAMASCO);
+		BlockPos potAt = new BlockPos(0, 1, 0);
+		CrucibleBlockEntity pot = pot(helper, potAt, ModBlocks.CRISOL_DE_HIERRO);
+		MeltTankBlockEntity tank = tank(helper, line.getLast().west());
+		ServerLevel level = helper.getLevel();
+		pot.setItem(CrucibleBlockEntity.SLOT_FIRST, new ItemStack(Items.RAW_IRON, 16));
+		pot.setItem(CrucibleBlockEntity.SLOT_FUEL, new ItemStack(ModItems.ASCUA, 4));
+		BlockPos where = tank.getBlockPos();
+		// A second of both, so each has asked its question once and the answer is remembered.
+		for (int tick = 0; tick < MeltTankBlockEntity.PUSH_EVERY + 2; tick++) {
+			CrucibleBlockEntity.serverTick(level, helper.absolutePos(potAt), level.getBlockState(helper.absolutePos(potAt)), pot);
+			MeltTankBlockEntity.serverTick(level, where, level.getBlockState(where), tank);
+		}
+		int[] before = dev.forja.block.entity.MeltNetwork.builds(level);
+		for (int tick = 0; tick < 200; tick++) {
+			CrucibleBlockEntity.serverTick(level, helper.absolutePos(potAt), level.getBlockState(helper.absolutePos(potAt)), pot);
+			MeltTankBlockEntity.serverTick(level, where, level.getBlockState(where), tank);
+		}
+		int[] after = dev.forja.block.entity.MeltNetwork.builds(level);
+		helper.assertTrue(tank.bankAmount() == 16, "el crisol coló por la línea: " + tank.bankAmount());
+		helper.assertTrue(after[0] == before[0] && after[1] == before[1],
+			"200 ticks sin recorrer la red ni rehacer depósitos: " + (after[0] - before[0]) + " recorridos, "
+				+ (after[1] - before[1]) + " depósitos");
+		// A block of pipe laid onto the line throws away what it touched, and the next question walks once.
+		helper.setBlock(line.get(3).above(), ModBlocks.CONDUCTO_DE_DAMASCO.defaultBlockState());
+		run(helper, potAt, pot, 5);
+		int[] rebuilt = dev.forja.block.entity.MeltNetwork.builds(level);
+		helper.assertTrue(rebuilt[0] == after[0] + 1, "un conducto nuevo cuesta un solo recorrido: " + (rebuilt[0] - after[0]));
+		helper.succeed();
+	}
+
+	/**
+	 * Tanks of the same metal touching are one deposit: one capacity, one metal, the level drawn from the
+	 * bottom up (each layer to the same height), and a comparator reads it whole. Another metal is refused,
+	 * and an older world's two metals touching stay two deposits.
+	 */
+	@GameTest
+	public void tanksMergeIntoOneDeposit(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		// An L: a column of three and one more beside the bottom.
+		List<BlockPos> at = List.of(new BlockPos(1, 1, 1), new BlockPos(1, 2, 1), new BlockPos(1, 3, 1), new BlockPos(2, 1, 1));
+		for (BlockPos pos : at) {
+			tank(helper, pos);
+		}
+		MeltTankBlockEntity top = helper.getBlockEntity(at.get(2), MeltTankBlockEntity.class);
+		helper.assertTrue(top.bank().size() == 4 && top.bankCapacity() == 4 * MeltTankBlockEntity.CAPACITY,
+			"cuatro cubas pegadas son un depósito de " + top.bankCapacity() + ": " + top.bank().size());
+		helper.assertTrue(top.fill(Items.IRON_INGOT, 300) == 0, "300 caben");
+		int[] share = at.stream().mapToInt(pos -> helper.getBlockEntity(pos, MeltTankBlockEntity.class).amount()).toArray();
+		helper.assertTrue(share[0] == 150 && share[3] == 150 && share[1] == 0 && share[2] == 0,
+			"el nivel va de abajo arriba, igual en las dos de abajo: " + java.util.Arrays.toString(share));
+		top.fill(Items.IRON_INGOT, 400);
+		share = at.stream().mapToInt(pos -> helper.getBlockEntity(pos, MeltTankBlockEntity.class).amount()).toArray();
+		helper.assertTrue(share[0] == 256 && share[3] == 256 && share[1] == 188 && share[2] == 0,
+			"700: la capa de abajo llena y la del medio a 188: " + java.util.Arrays.toString(share));
+		helper.assertTrue(helper.getBlockEntity(at.get(1), MeltTankBlockEntity.class).bankAmount() == 700, "un solo nivel para todas");
+		// One metal: gold goes nowhere, by hand either.
+		helper.assertTrue(top.fill(Items.GOLD_INGOT, 10) == 10, "el depósito de hierro no admite oro");
+		// A comparator against any of them reads the whole deposit.
+		int expected = 1 + 14 * 700 / (4 * MeltTankBlockEntity.CAPACITY);
+		for (BlockPos pos : at) {
+			BlockPos abs = helper.absolutePos(pos);
+			int signal = level.getBlockState(abs).getAnalogOutputSignal(level, abs, net.minecraft.core.Direction.NORTH);
+			helper.assertTrue(signal == expected, "el comparador lee " + signal + " en " + pos + ", no " + expected);
+		}
+		// A real comparator beside the empty top tank reads the deposit, not that one block of glass.
+		BlockPos comparator = at.get(2).east();
+		helper.setBlock(comparator.below(), Blocks.STONE.defaultBlockState());
+		helper.setBlock(comparator, Blocks.COMPARATOR.defaultBlockState()
+			.setValue(net.minecraft.world.level.block.ComparatorBlock.FACING, net.minecraft.core.Direction.WEST));
+		// An older world: a gold tank that was already touching the iron keeps to itself.
+		BlockPos goldAt = new BlockPos(3, 1, 1);
+		oldTank(helper, goldAt, Items.GOLD_INGOT, 50);
+		MeltTankBlockEntity gold = helper.getBlockEntity(goldAt, MeltTankBlockEntity.class);
+		helper.assertTrue(gold.bankMetal() == Items.GOLD_INGOT && gold.bankAmount() == 50 && gold.bank().size() == 1,
+			"el oro de un mundo viejo pegado al hierro es su propio depósito: " + gold.bankAmount() + " en " + gold.bank().size());
+		helper.assertTrue(top.bankAmount() == 700 && top.bank().size() == 4, "y el hierro sigue con lo suyo: " + top.bankAmount());
+		helper.runAfterDelay(4, () -> {
+			var output = helper.getBlockEntity(comparator, net.minecraft.world.level.block.entity.ComparatorBlockEntity.class);
+			helper.assertTrue(output.getOutputSignal() == expected, "el comparador de verdad da " + output.getOutputSignal() + ", no " + expected);
+			helper.succeed();
+		});
+	}
+
+	/** Puts a tank down the way an older world loads one: its own metal and share, nothing levelled. */
+	private static MeltTankBlockEntity oldTank(GameTestHelper helper, BlockPos at, net.minecraft.world.item.Item metal, int amount) {
+		ServerLevel level = helper.getLevel();
+		helper.setBlock(at, ModBlocks.CUBA_DE_COLADA.defaultBlockState());
+		net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+		tag.putString("id", "forja:cuba_de_colada");
+		tag.putInt("Amount", amount);
+		tag.putInt("Heat", MeltTankBlockEntity.HOT);
+		tag.putString("Metal", net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(metal).toString());
+		BlockPos abs = helper.absolutePos(at);
+		var loaded = net.minecraft.world.level.block.entity.BlockEntity.loadStatic(abs, level.getBlockState(abs), tag, level.registryAccess());
+		helper.assertTrue(loaded instanceof MeltTankBlockEntity, "la cuba vieja carga");
+		level.setBlockEntity(loaded);
+		return (MeltTankBlockEntity) loaded;
+	}
+
+	/**
+	 * Breaking a tank out of a deposit spills that tank's share and splits the rest, and each part keeps what
+	 * it held. A saved tank loads with its share, and an older world's unlevelled column is levelled the
+	 * first time it is looked at, without losing an ingot.
+	 */
+	@GameTest
+	public void depositsSplitAndLoad(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		List<BlockPos> column = List.of(new BlockPos(1, 1, 1), new BlockPos(1, 2, 1), new BlockPos(1, 3, 1));
+		for (BlockPos pos : column) {
+			tank(helper, pos);
+		}
+		MeltTankBlockEntity bottom = helper.getBlockEntity(column.get(0), MeltTankBlockEntity.class);
+		bottom.fill(Items.COPPER_INGOT, 600);
+		MeltTankBlockEntity middle = helper.getBlockEntity(column.get(1), MeltTankBlockEntity.class);
+		helper.assertTrue(middle.amount() == 256 && helper.getBlockEntity(column.get(2), MeltTankBlockEntity.class).amount() == 88,
+			"600 de cobre: 256, 256 y 88");
+		// Saved and loaded, a tank is still its share.
+		var registries = level.registryAccess();
+		var copy = (MeltTankBlockEntity) net.minecraft.world.level.block.entity.BlockEntity.loadStatic(middle.getBlockPos(),
+			middle.getBlockState(), middle.saveWithFullMetadata(registries), registries);
+		helper.assertTrue(copy != null && copy.metal() == Items.COPPER_INGOT && copy.amount() == 256, "guardada y cargada sigue con su parte");
+		// Break the middle one: it spills its 256, and the top and the bottom are two deposits of what they had.
+		level.destroyBlock(helper.absolutePos(column.get(1)), true);
+		int spilled = level.getEntitiesOfClass(ItemEntity.class, new net.minecraft.world.phys.AABB(helper.absolutePos(column.get(1))).inflate(3.0))
+			.stream().filter(item -> item.getItem().is(Items.COPPER_INGOT)).mapToInt(item -> item.getItem().getCount()).sum();
+		MeltTankBlockEntity top = helper.getBlockEntity(column.get(2), MeltTankBlockEntity.class);
+		helper.assertTrue(spilled == 256, "la del medio derrama lo suyo: " + spilled);
+		helper.assertTrue(bottom.bank().size() == 1 && bottom.bankAmount() == 256, "abajo queda un depósito de 256: " + bottom.bankAmount());
+		helper.assertTrue(top.bank().size() == 1 && top.bankAmount() == 88 && top.bankMetal() == Items.COPPER_INGOT,
+			"arriba queda uno de 88: " + top.bankAmount());
+		// Put the middle back: the three are one deposit again, 344 levelled from the bottom.
+		tank(helper, column.get(1));
+		helper.assertTrue(bottom.bank().size() == 3 && bottom.bankAmount() == 344, "vuelven a ser uno: " + bottom.bankAmount());
+		helper.assertTrue(bottom.amount() == 256 && helper.getBlockEntity(column.get(1), MeltTankBlockEntity.class).amount() == 88
+			&& top.amount() == 0, "con el nivel de abajo arriba otra vez");
+
+		// An older world's column, never levelled: 40 up top, 0 below. It loads, forms one deposit, and levels.
+		BlockPos oldLow = new BlockPos(4, 1, 1);
+		oldTank(helper, oldLow, Items.GOLD_INGOT, 0);
+		oldTank(helper, oldLow.above(), Items.GOLD_INGOT, 40);
+		MeltTankBlockEntity low = helper.getBlockEntity(oldLow, MeltTankBlockEntity.class);
+		helper.assertTrue(low.bankAmount() == 40 && low.bank().size() == 2, "el mundo viejo carga como un depósito de 40: " + low.bankAmount());
+		helper.assertTrue(low.amount() == 40 && helper.getBlockEntity(oldLow.above(), MeltTankBlockEntity.class).amount() == 0,
+			"y su oro baja al fondo del cristal");
+		helper.succeed();
+	}
+
+	/** A pot at one end of a straight channel, and a tank hanging off the channel at each of these x. */
+	private static CrucibleBlockEntity line(GameTestHelper helper, int length) {
+		for (int x = 1; x <= length; x++) {
+			helper.setBlock(new BlockPos(x, 1, 1), ModBlocks.CONDUCTO_DE_COLADA.defaultBlockState());
+		}
+		return pot(helper, new BlockPos(0, 1, 1), ModBlocks.CRISOL_DE_HIERRO);
+	}
+
+	/**
+	 * Andy: "llenando 1 por 1 [...] no se usan todos para 1, se va llenando cada bloque de forma individual
+	 * hasta llenar el contenedor, apenas ahí se inicia a llenar otro". Down one channel: gold nearest, then
+	 * an empty tank, then one already holding iron, then another empty one furthest away. Iron goes to the
+	 * iron first (though it is further), fills it to the top, and only then starts the NEAREST empty one;
+	 * the second pour keeps on at that one; the far empty one and the gold are never touched.
+	 */
+	@GameTest
+	public void metalFillsOneDepositAtATime(GameTestHelper helper) {
+		CrucibleBlockEntity pot = line(helper, 7);
+		MeltTankBlockEntity gold = tank(helper, new BlockPos(2, 1, 2));
+		MeltTankBlockEntity near = tank(helper, new BlockPos(4, 1, 2));
+		MeltTankBlockEntity iron = tank(helper, new BlockPos(6, 1, 2));
+		MeltTankBlockEntity far = tank(helper, new BlockPos(7, 1, 0));
+		gold.fill(Items.GOLD_INGOT, 50);
+		iron.fill(Items.IRON_INGOT, MeltTankBlockEntity.CAPACITY - 6);
+		pot.setItem(CrucibleBlockEntity.SLOT_FIRST, new ItemStack(Items.RAW_IRON, 16));
+		pot.setItem(CrucibleBlockEntity.SLOT_FUEL, new ItemStack(ModItems.ASCUA, 4));
+		BlockPos potAt = new BlockPos(0, 1, 1);
+		run(helper, potAt, pot, dev.forja.block.CrucibleBlock.Tier.HIERRO.cook + 5);
+		helper.assertTrue(iron.bankAmount() == MeltTankBlockEntity.CAPACITY, "primero se llena la que ya tenía hierro: " + iron.bankAmount());
+		helper.assertTrue(near.bankMetal() == Items.IRON_INGOT && near.bankAmount() == 10,
+			"y lo que sobra empieza la vacía más cercana: " + near.bankAmount());
+		helper.assertTrue(far.bankAmount() == 0, "la vacía lejana no se toca: " + far.bankAmount());
+		helper.assertTrue(gold.bankAmount() == 50 && gold.bankMetal() == Items.GOLD_INGOT, "ni la de oro");
+		// The second pour keeps on at the one being filled.
+		pot.setItem(CrucibleBlockEntity.SLOT_FIRST, new ItemStack(Items.RAW_IRON, 16));
+		run(helper, potAt, pot, dev.forja.block.CrucibleBlock.Tier.HIERRO.cook + 5);
+		helper.assertTrue(near.bankAmount() == 26 && far.bankAmount() == 0,
+			"la segunda colada sigue en la misma: " + near.bankAmount() + ", la lejana " + far.bankAmount());
+		helper.assertTrue(pot.getItem(CrucibleBlockEntity.SLOT_OUTPUT).isEmpty(), "y nada sale en lingotes");
+		helper.succeed();
+	}
+
+	/**
+	 * "Si no queda ninguno con sitio, el crisol espera": with the only iron deposit full and the other one
+	 * holding gold, the ore stays in the pot, nothing comes out in bars, and the screen says it needs a tank.
+	 * Draw some iron off and the pot carries on by itself.
+	 */
+	@GameTest
+	public void thePotWaitsWhenNoDepositHasRoom(GameTestHelper helper) {
+		CrucibleBlockEntity pot = line(helper, 4);
+		MeltTankBlockEntity iron = tank(helper, new BlockPos(2, 1, 2));
+		MeltTankBlockEntity gold = tank(helper, new BlockPos(4, 1, 2));
+		iron.fill(Items.IRON_INGOT, MeltTankBlockEntity.CAPACITY);
+		gold.fill(Items.GOLD_INGOT, 10);
+		pot.setItem(CrucibleBlockEntity.SLOT_FIRST, new ItemStack(Items.RAW_IRON, 8));
+		pot.setItem(CrucibleBlockEntity.SLOT_FUEL, new ItemStack(ModItems.ASCUA, 4));
+		BlockPos potAt = new BlockPos(0, 1, 1);
+		run(helper, potAt, pot, dev.forja.block.CrucibleBlock.Tier.HIERRO.cook * 2);
+		helper.assertTrue(pot.getItem(CrucibleBlockEntity.SLOT_FIRST).getCount() == 8, "la mena espera en el crisol");
+		helper.assertTrue(pot.getItem(CrucibleBlockEntity.SLOT_OUTPUT).isEmpty(), "sin convertirse en lingotes");
+		helper.assertTrue(gold.bankAmount() == 10 && gold.bankMetal() == Items.GOLD_INGOT, "ni tocar el oro");
+		Player player = helper.makeMockServerPlayerInLevel();
+		var menu = (dev.forja.menu.CrucibleMenu) pot.createMenu(1, player.getInventory(), player);
+		helper.assertTrue(menu.job() == CrucibleBlockEntity.JOB_NEEDS_TANK && menu.jobWhat() == ForgeMaterial.HIERRO.ordinal(),
+			"la pantalla dice que no hay cuba con sitio para el hierro: " + menu.job() + "/" + menu.jobWhat());
+		iron.drain(20);
+		run(helper, potAt, pot, dev.forja.block.CrucibleBlock.Tier.HIERRO.cook + 5);
+		helper.assertTrue(pot.getItem(CrucibleBlockEntity.SLOT_FIRST).isEmpty() && iron.bankAmount() == MeltTankBlockEntity.CAPACITY - 12,
+			"con sitio otra vez, sigue sola: " + iron.bankAmount());
+		helper.succeed();
+	}
+
+	/**
+	 * Metal only goes to the network's own members. A tank used to hand ingots to any container at the end
+	 * of a pipe: a hopper touching a pipe (the one feeding a crucible its ore) drained the tank as bars and
+	 * fed them straight back into the pot. Now a pipe does not even reach for a hopper or a chest, and the
+	 * one way out as items is the tap: a container right under a tank — but not a hopper pouring into a pot.
+	 */
+	@GameTest
+	public void metalOnlyGoesToTheNetwork(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		MeltTankBlockEntity tank = tank(helper, new BlockPos(1, 1, 1));
+		tank.fill(Items.IRON_INGOT, 100);
+		helper.setBlock(new BlockPos(2, 1, 1), ModBlocks.CONDUCTO_DE_COLADA.defaultBlockState());
+		helper.setBlock(new BlockPos(3, 1, 1), ModBlocks.CONDUCTO_DE_COLADA.defaultBlockState());
+		// A crucible fed by a hopper that happens to touch the end of the pipe, and a chest beside the run.
+		pot(helper, new BlockPos(5, 1, 1), ModBlocks.CRISOL_DE_HIERRO);
+		helper.setBlock(new BlockPos(4, 1, 1), Blocks.HOPPER.defaultBlockState()
+			.setValue(net.minecraft.world.level.block.HopperBlock.FACING, net.minecraft.core.Direction.EAST));
+		helper.setBlock(new BlockPos(2, 1, 0), Blocks.CHEST.defaultBlockState());
+		BlockPos where = tank.getBlockPos();
+		for (int tick = 0; tick < MeltTankBlockEntity.PUSH_EVERY * 3; tick++) {
+			MeltTankBlockEntity.serverTick(level, where, level.getBlockState(where), tank);
+		}
+		var hopper = (net.minecraft.world.Container) helper.getBlockEntity(new BlockPos(4, 1, 1), net.minecraft.world.level.block.entity.BlockEntity.class);
+		var chest = (net.minecraft.world.Container) helper.getBlockEntity(new BlockPos(2, 1, 0), net.minecraft.world.level.block.entity.BlockEntity.class);
+		helper.assertTrue(hopper.isEmpty() && chest.isEmpty(), "ni la tolva del crisol ni el cofre junto al conducto reciben lingotes");
+		helper.assertTrue(tank.bankAmount() == 100, "y la cuba no se vacía: " + tank.bankAmount());
+		helper.assertFalse(level.getBlockState(helper.absolutePos(new BlockPos(3, 1, 1))).getValue(dev.forja.block.MeltPipeBlock.EAST),
+			"el conducto no se engancha a la tolva");
+		// The tap: a chest right under a tank does get the metal, a stack a second.
+		MeltTankBlockEntity tapped = tank(helper, new BlockPos(1, 2, 4));
+		helper.setBlock(new BlockPos(1, 1, 4), Blocks.CHEST.defaultBlockState());
+		tapped.fill(Items.GOLD_INGOT, 100);
+		BlockPos tap = tapped.getBlockPos();
+		for (int tick = 0; tick < MeltTankBlockEntity.PUSH_EVERY + 2; tick++) {
+			MeltTankBlockEntity.serverTick(level, tap, level.getBlockState(tap), tapped);
+		}
+		var below = (net.minecraft.world.Container) helper.getBlockEntity(new BlockPos(1, 1, 4), net.minecraft.world.level.block.entity.BlockEntity.class);
+		helper.assertTrue(below.countItem(Items.GOLD_INGOT) >= 64 && below.countItem(Items.GOLD_INGOT) + tapped.bankAmount() == 100,
+			"el cofre de debajo recibe una pila: " + below.countItem(Items.GOLD_INGOT) + ", queda " + tapped.bankAmount());
+		// But not a hopper under a tank that pours into a crucible: that is the same circle.
+		MeltTankBlockEntity overHopper = tank(helper, new BlockPos(4, 2, 4));
+		helper.setBlock(new BlockPos(4, 1, 4), Blocks.HOPPER.defaultBlockState()
+			.setValue(net.minecraft.world.level.block.HopperBlock.FACING, net.minecraft.core.Direction.EAST));
+		pot(helper, new BlockPos(5, 1, 4), ModBlocks.CRISOL_DE_BARRO);
+		overHopper.fill(Items.COPPER_INGOT, 40);
+		BlockPos over = overHopper.getBlockPos();
+		for (int tick = 0; tick < MeltTankBlockEntity.PUSH_EVERY * 2; tick++) {
+			MeltTankBlockEntity.serverTick(level, over, level.getBlockState(over), overHopper);
+		}
+		helper.assertTrue(overHopper.bankAmount() == 40, "una cuba sobre la tolva de un crisol no se vacía en ella: " + overHopper.bankAmount());
+		helper.succeed();
+	}
+
+	/**
+	 * A deposit that has set on the pot's network is melted again BEFORE the pot takes on new ore. It used
+	 * to come last: a pot with ore in it and a hopper under it always had ore to turn into bars for the
+	 * hopper, and the wall stayed cold for ever. Now the pot re-melts the deposit (at its usual 15% cost)
+	 * and pours the ore into it, and nothing comes out underneath.
+	 */
+	@GameTest
+	public void aSetDepositIsMeltedBeforeNewOre(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		BlockPos potAt = new BlockPos(1, 2, 1);
+		CrucibleBlockEntity pot = pot(helper, potAt, ModBlocks.CRISOL_DE_HIERRO);
+		helper.setBlock(potAt.below(), Blocks.HOPPER.defaultBlockState()
+			.setValue(net.minecraft.world.level.block.HopperBlock.FACING, net.minecraft.core.Direction.EAST));
+		helper.setBlock(potAt.below().east(), Blocks.CHEST.defaultBlockState());
+		MeltTankBlockEntity tank = tank(helper, potAt.west());
+		tank.fill(Items.IRON_INGOT, 100);
+		BlockPos where = tank.getBlockPos();
+		int cold = (MeltTankBlockEntity.HOT / MeltTankBlockEntity.COOLS + 5) * (MeltTankBlockEntity.PUSH_EVERY + 1);
+		for (int tick = 0; tick < cold; tick++) {
+			MeltTankBlockEntity.serverTick(level, where, level.getBlockState(where), tank);
+		}
+		helper.assertTrue(tank.isSet(), "la cuba sola se cuaja");
+		pot.setItem(CrucibleBlockEntity.SLOT_FIRST, new ItemStack(Items.RAW_IRON, 8));
+		pot.setItem(CrucibleBlockEntity.SLOT_FUEL, new ItemStack(ModItems.ASCUA, 2));
+		run(helper, potAt, pot, dev.forja.block.CrucibleBlock.Tier.HIERRO.cook * 2);
+		int lost = Math.round(100 * MeltTankBlockEntity.REMELT_LOSS);
+		helper.assertFalse(tank.isSet(), "el crisol la refunde primero");
+		helper.assertTrue(tank.bankAmount() == 100 - lost + 8, "perdiendo lo de siempre, y la mena va dentro: " + tank.bankAmount());
+		helper.assertTrue(pot.getItem(CrucibleBlockEntity.SLOT_OUTPUT).isEmpty() && pot.getItem(CrucibleBlockEntity.SLOT_FIRST).isEmpty(),
+			"sin sacar lingotes por abajo");
+		helper.succeed();
+	}
+
+	/**
+	 * The valve: turned by hand it cuts the network (the pot waits, the tank beyond gets nothing), turned
+	 * back it passes; a redstone signal holds it shut whatever the lever says, and the flow resumes when the
+	 * signal goes.
+	 */
+	@GameTest
+	public void theValveCutsTheNetwork(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		BlockPos potAt = new BlockPos(0, 1, 1);
+		BlockPos valveAt = new BlockPos(2, 1, 1);
+		helper.setBlock(new BlockPos(1, 1, 1), ModBlocks.CONDUCTO_DE_COLADA.defaultBlockState());
+		helper.setBlock(valveAt, ModBlocks.LLAVE_DE_PASO.defaultBlockState());
+		helper.setBlock(new BlockPos(3, 1, 1), ModBlocks.CONDUCTO_DE_COLADA.defaultBlockState());
+		MeltTankBlockEntity tank = tank(helper, new BlockPos(4, 1, 1));
+		CrucibleBlockEntity pot = pot(helper, potAt, ModBlocks.CRISOL_DE_HIERRO);
+		helper.assertTrue(dev.forja.block.MeltValveBlock.isOpen(level.getBlockState(helper.absolutePos(valveAt))), "la llave se pone abierta");
+		helper.assertTrue(dev.forja.block.entity.MeltNetwork.deposits(level, helper.absolutePos(potAt)).size() == 1, "y deja ver la cuba");
+
+		// A right click, the way a player turns it.
+		net.minecraft.server.level.ServerPlayer player = helper.makeMockServerPlayerInLevel();
+		BlockPos abs = helper.absolutePos(valveAt);
+		var hit = new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(abs), net.minecraft.core.Direction.UP, abs, false);
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+		player.gameMode.useItemOn(player, level, ItemStack.EMPTY, net.minecraft.world.InteractionHand.MAIN_HAND, hit);
+		helper.assertFalse(dev.forja.block.MeltValveBlock.isOpen(level.getBlockState(abs)), "un clic la cierra");
+		helper.assertTrue(dev.forja.block.entity.MeltNetwork.deposits(level, helper.absolutePos(potAt)).isEmpty(), "y corta la red");
+		pot.setItem(CrucibleBlockEntity.SLOT_FIRST, new ItemStack(Items.GOLD_INGOT, 6));
+		pot.setItem(CrucibleBlockEntity.SLOT_FUEL, new ItemStack(ModItems.ASCUA, 4));
+		run(helper, potAt, pot, dev.forja.block.CrucibleBlock.Tier.HIERRO.cook + 5);
+		helper.assertTrue(tank.bankAmount() == 0 && pot.getItem(CrucibleBlockEntity.SLOT_FIRST).getCount() == 6,
+			"cerrada, el oro no pasa: la cuba tiene " + tank.bankAmount());
+
+		// Another click opens it, and the pour goes through.
+		player.gameMode.useItemOn(player, level, ItemStack.EMPTY, net.minecraft.world.InteractionHand.MAIN_HAND, hit);
+		helper.assertTrue(dev.forja.block.MeltValveBlock.isOpen(level.getBlockState(abs)), "otro clic la abre");
+		run(helper, potAt, pot, dev.forja.block.CrucibleBlock.Tier.HIERRO.cook + 5);
+		helper.assertTrue(tank.bankAmount() == 6, "abierta, pasa: " + tank.bankAmount());
+
+		// Redstone shuts it with the lever still open, and letting go of the signal opens it again.
+		BlockPos torch = valveAt.north();
+		helper.setBlock(torch, Blocks.REDSTONE_BLOCK.defaultBlockState());
+		net.minecraft.world.level.block.state.BlockState powered = level.getBlockState(abs);
+		helper.assertTrue(powered.getValue(dev.forja.block.MeltValveBlock.POWERED) && powered.getValue(dev.forja.block.MeltValveBlock.OPEN)
+			&& !dev.forja.block.MeltValveBlock.isOpen(powered), "con redstone queda cerrada aunque la palanca esté abierta");
+		pot.setItem(CrucibleBlockEntity.SLOT_FIRST, new ItemStack(Items.GOLD_INGOT, 6));
+		run(helper, potAt, pot, dev.forja.block.CrucibleBlock.Tier.HIERRO.cook + 5);
+		helper.assertTrue(tank.bankAmount() == 6, "y no pasa nada: " + tank.bankAmount());
+		helper.setBlock(torch, Blocks.AIR.defaultBlockState());
+		helper.assertTrue(dev.forja.block.MeltValveBlock.isOpen(level.getBlockState(abs)), "sin señal vuelve a abrirse");
+		run(helper, potAt, pot, dev.forja.block.CrucibleBlock.Tier.HIERRO.cook + 5);
+		helper.assertTrue(tank.bankAmount() == 12, "y el oro sigue: " + tank.bankAmount());
+		helper.succeed();
+	}
 }

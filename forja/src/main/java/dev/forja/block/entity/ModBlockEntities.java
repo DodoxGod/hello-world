@@ -72,7 +72,7 @@ public final class ModBlockEntities {
 		COLADA_KEY,
 		new BlockEntityType<>(MeltFlowBlockEntity::new, java.util.Set.of(
 			ModBlocks.CONDUCTO_DE_COLADA, ModBlocks.CONDUCTO_DE_ACERO,
-			ModBlocks.CONDUCTO_DE_DAMASCO, ModBlocks.CANO_DE_COLADA))
+			ModBlocks.CONDUCTO_DE_DAMASCO, ModBlocks.CANO_DE_COLADA, ModBlocks.LLAVE_DE_PASO))
 	);
 
 	private static final ResourceKey<BlockEntityType<?>> COLADOR_KEY =

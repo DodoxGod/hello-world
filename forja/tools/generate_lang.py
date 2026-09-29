@@ -908,21 +908,27 @@ GUI = {
         "The star melts one bar at a time. A foundry melts by the shovelful: a pot that does not need you standing over it, tanks to hold the molten metal and pipes to move it. Build it in this order."),
     "gui.forja.libro.fundicion.paso1": ("1. El crisol", "1. The crucible"),
     "gui.forja.libro.fundicion.paso1.desc": (
-        "Lo primero. Come ascuas (%s segundos cada una) y le metes mena o lingotes por arriba, con una tolva o en su pantalla. Con una cuba pegada lo funde todo dentro de ella; sin cuba, la mena sale en lingotes por abajo. Lo duro pide un crisol más caliente. Nadie tiene que mirarlo.",
-        "First of all. It eats embers (%s seconds apiece) and takes ore or ingots in from above, by hopper or in its screen. With a tank against it everything melts into the tank; with none, ore comes out below as ingots. The hard metals want a hotter crucible. Nobody has to watch it."),
+        "Lo primero. Come ascuas (%s segundos cada una) y le metes mena o lingotes por arriba, con una tolva o en su pantalla. Con cubas en su red (pegadas o por conducto) lo funde todo dentro de ellas, y si ninguna tiene sitio ESPERA; sin ninguna cuba, la mena sale en lingotes por abajo. Lo duro pide un crisol más caliente. Nadie tiene que mirarlo.",
+        "First of all. It eats embers (%s seconds apiece) and takes ore or ingots in from above, by hopper or in its screen. With tanks on its network (touching it or down a pipe) everything melts into them, and if none has room it WAITS; with no tank at all, ore comes out below as ingots. The hard metals want a hotter crucible. Nobody has to watch it."),
     "gui.forja.libro.fundicion.crisol_linea": ("· %s: calor %s, cabida %s, %ss por colada", "· %s: %s heat, holds %s, %ss per pour"),
     "gui.forja.libro.fundicion.paso1.farol": (
         "Un farol de pavesa justo debajo lo mantiene encendido sin gastar ascuas. Y mientras arde, arde tan caliente como lo que tenga debajo, si es más que su propio calor: sobre magma, caliente; sobre lava o un farol, fundido.",
         "A wisp lantern directly underneath keeps it lit without spending embers. And while it burns, it burns as hot as what it stands on, if that is hotter than its own heat: on magma, hot; on lava or a lantern, molten."),
     "gui.forja.libro.fundicion.paso2": ("2. Las cubas", "2. The tanks"),
     "gui.forja.libro.fundicion.paso2.desc": (
-        "Pega cubas unas a otras y son un solo depósito: %s por cuba, hasta %s cubas. Se llenan por abajo y se vacían por arriba, y una cuba sólo guarda un metal.",
-        "Set tanks touching and they are one store: %s each, up to %s tanks. They fill from the bottom and empty from the top, and one tank holds one metal."),
+        "Pega cubas del mismo metal (o vacías) unas a otras, en cualquier dirección, y se FUNDEN en un solo depósito: %s por cuba, hasta %s cubas, un solo metal y un solo nivel, que sube por el cristal de abajo arriba. Si rompes una, derrama lo suyo y el resto sigue siendo depósito con lo que tenía. Dos metales distintos pegados no se mezclan: son dos depósitos. Un comparador al lado de cualquier cuba lee lo lleno que está el depósito entero.",
+        "Set tanks of the same metal (or empty ones) against each other, any way round, and they MERGE into one deposit: %s each, up to %s tanks, one metal and one level, rising through the glass from the bottom up. Break one and it spills its own share; the rest stay a deposit with what they held. Two different metals touching do not mix: they are two deposits. A comparator beside any tank reads how full the whole deposit is."),
     "gui.forja.libro.fundicion.paso3": ("3. Los conductos", "3. The pipes"),
     "gui.forja.libro.fundicion.paso3.desc": (
-        "No guardan nada: conectan. Un crisol cuela por ellos hasta %s bloques, y una cuba reparte igual. Pero el metal se enfría por el camino, y de qué estén hechos decide cuánto.",
-        "They hold nothing: they connect. A crucible pours down them up to %s blocks, and a tank shares out the same way. But the metal cools on the way, and what they are made of decides how much."),
+        "No guardan nada: conectan. Crisoles, cubas, caños y mesas unidos por conductos son UNA red, y el metal va de donde sale a donde hace falta aunque estén lejos (hasta %s bloques de conducto). Pero se enfría por el camino, y de qué estén hechos decide cuánto.",
+        "They hold nothing: they connect. Crucibles, tanks, spouts and tables joined by pipe are ONE network, and the metal goes from where it comes out to where it is wanted however far apart they are (up to %s blocks of pipe). But it cools on the way, and what they are made of decides how much."),
     "gui.forja.libro.fundicion.conducto_linea": ("· %s: pierde %s de calor por tramo", "· %s: loses %s heat per run"),
+    "gui.forja.libro.fundicion.llenado": (
+        "Se llena de UNO EN UNO: lo que sale del crisol va a un solo depósito hasta llenarlo, y sólo entonces empieza el siguiente. Primero el que ya tiene ese metal y no está lleno; si no hay, el vacío más cercano por la red. Un depósito con otro metal no se toca nunca. Si no queda ninguno con sitio, el crisol espera y su pantalla lo dice.",
+        "It fills ONE AT A TIME: what comes out of the crucible goes into a single deposit until it is full, and only then does the next one start. First the one already holding that metal and not full; failing that, the nearest empty one along the network. A deposit holding another metal is never touched. If none has room left, the crucible waits and its screen says so."),
+    "gui.forja.libro.fundicion.llave": (
+        "La llave de paso es un tramo de conducto con compuerta: abierta deja pasar, cerrada corta la red en dos justo ahí. Se abre y se cierra con clic derecho, y una señal de redstone la cierra mientras dure (un comparador en una cuba llena puede cerrar su propia entrada). Se ve de lejos: abierta, la rueda roja arriba y el metal pasando por debajo; cerrada, la compuerta roja metida en el canal.",
+        "The valve is a length of channel with a gate in it: open it lets the metal through, closed it cuts the network in two right there. Right-click to open or close it, and a redstone signal keeps it shut for as long as it lasts (a comparator on a full tank can close its own inlet). It reads from across the room: open, the red wheel is up high and the metal runs under it; closed, the red gate stands in the channel."),
     "gui.forja.libro.fundicion.cano": (
         "El caño de colada es el final del tramo: tiene el suelo agujereado y lo que le llega CAE, hasta %s bloques, sobre lo que haya debajo. Es la única forma de dar de comer a algo que está en otro piso, y sólo cuela cuando tiene dónde caer: si ves el chorro, el tramo está conectado. Caer cuesta %s de calor por bloque, peor que el peor conducto.",
         "The spout is the end of a run: its floor is open and what reaches it FALLS, up to %s blocks, into whatever is underneath. It is the only way to feed something on another floor, and it only pours when it has somewhere to land: if you can see the stream, the run is connected. Falling costs %s heat a block, worse than the worst pipe there is."),
@@ -1739,6 +1745,11 @@ GUI = {
     "gui.forja.cuba.otro": ("Esta cuba lleva %s: un depósito, un metal", "This tank is holding %s: one bank, one metal"),
     "gui.forja.cuba.llena": ("El depósito está lleno", "The bank is full"),
     "block.forja.cano_de_colada": ("Caño de colada", "Melt Spout"),
+    "block.forja.llave_de_paso": ("Llave de paso", "Melt Valve"),
+    "gui.forja.llave.abierta": ("Llave abierta: el metal pasa", "Valve open: the metal goes through"),
+    "gui.forja.llave.cerrada": ("Llave cerrada: la red queda cortada aquí", "Valve closed: the network is cut here"),
+    "gui.forja.llave.forzada": ("Llave abierta, pero la redstone la mantiene cerrada",
+                                "Valve open, but a redstone signal is holding it shut"),
     "block.forja.conducto_de_acero": ("Conducto de acero", "Steel Melt Pipe"),
     "block.forja.conducto_de_damasco": ("Conducto de damasco", "Damascus Melt Pipe"),
     "item.forja.colador": ("Colador de barro", "Clay Strainer"),

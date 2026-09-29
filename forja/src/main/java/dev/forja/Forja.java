@@ -48,6 +48,7 @@ public final class Forja implements ModInitializer {
 		dev.forja.world.SlagWatch.register();
 		dev.forja.world.ConstructWatch.register();
 		dev.forja.world.FoundryWatch.register();
+		dev.forja.block.entity.MeltNetwork.register();
 		dev.forja.world.CoreWatch.register();
 		dev.forja.world.OilPools.register();
 		dev.forja.registry.ModVillagers.init();

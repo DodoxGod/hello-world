@@ -135,11 +135,13 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		}
 		// The heat line first: it decides how hot the pot is before the pot decides what it can do.
 		dev.forja.forge.HeatSources.Supply piped = crucible.readHeat(level);
-		Pour pour = crucible.pending();
-		// A bank that has set beside the pot is work too: it fires up by itself to save your metal,
-		// because a smith who walked away and came back to a cold wall should not also have to be told
-		// which button melts it.
-		MeltTankBlockEntity frozen = pour != null ? null : crucible.setTank();
+		// A deposit that has set on the pot's network is work too, and it comes FIRST: the pot fires up by
+		// itself to save your metal, because a smith who walked away and came back to a cold wall should not
+		// also have to be told which button melts it. It used to come last, after anything else the pot
+		// could do — and a pot with ore in it and a hopper under it emptying its slot always had something
+		// else to do, so it turned the ore into bars for the hopper for ever and the wall stayed cold.
+		MeltDeposit frozen = crucible.setTank();
+		Pour pour = frozen != null ? null : crucible.pending();
 		crucible.job = pour != null ? pour.job() : frozen != null ? JOB_REMELT : crucible.idleReason;
 		crucible.jobWhat = pour != null ? pour.what() : frozen != null ? 0 : crucible.idleWhat;
 		if (pour == null && frozen == null) {
@@ -411,7 +413,7 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 	private @Nullable Pour pending() {
 		this.idleReason = JOB_NONE;
 		this.idleWhat = 0;
-		List<MeltTankBlockEntity> banks = this.banks();
+		List<MeltNetwork.Fed> banks = this.reached();
 		Pour alloy = this.alloy(banks);
 		if (alloy != null) {
 			return alloy;
@@ -420,17 +422,20 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		for (int slot : TOP) {
 			ItemStack scrap = this.items.get(slot);
 			ItemStack back = this.recovered(scrap);
-			ForgeMaterial backMaterial = back.isEmpty() ? null : ForgeMaterial.fromInput(back);
-			if (backMaterial != null && backMaterial.durability > this.meltCap) {
-				// Steam will not take an iron tool back down, any more than it melts iron ore.
-				this.idleReason = JOB_TOO_COLD;
-				this.idleWhat = backMaterial.ordinal();
+			if (back.isEmpty()) {
 				continue;
 			}
-			if (!back.isEmpty() && this.room(banks, back.getItem(), true) >= back.getCount()) {
-				ForgeMaterial material = ForgeMaterial.fromInput(back);
+			ForgeMaterial material = ForgeMaterial.fromInput(back);
+			if (material != null && material.durability > this.meltCap) {
+				// Steam will not take an iron tool back down, any more than it melts iron ore.
+				this.idleReason = JOB_TOO_COLD;
+				this.idleWhat = material.ordinal();
+				continue;
+			}
+			if (this.room(banks, back.getItem(), true) >= back.getCount()) {
 				return new Pour(back, null, slot, 1, null, List.of(), JOB_RECOVER, material == null ? 0 : material.ordinal());
 			}
+			this.waitFor(material);
 		}
 		// Or ore, or a metal, to melt into the tanks.
 		for (int slot : TOP) {
@@ -452,9 +457,9 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 			int room = this.room(banks, one.getItem(), ore);
 			int count = Math.min(stack.getCount(), room / one.getCount());
 			if (count <= 0) {
-				if (!ore && this.idleReason == JOB_NONE) {
-					this.idleReason = JOB_NEEDS_TANK;
-					this.idleWhat = what;
+				// On a network with tanks on it, ore waits too: its metal only goes into a tank.
+				if (!ore || this.foundry(banks, one.getItem())) {
+					this.waitFor(material);
 				}
 				continue;
 			}
@@ -472,7 +477,7 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 	 * that no recipe used, and the crucible stopped after one pour. A foundry with a bank of iron and a
 	 * bank of gold on the same pipe could not pour bronze at all.
 	 */
-	private @Nullable Pour alloy(List<MeltTankBlockEntity> banks) {
+	private @Nullable Pour alloy(List<MeltNetwork.Fed> banks) {
 		Alloys.Heat heat = this.heat();
 		Pour best = null;
 		for (int index = 0; index < Alloys.POURABLE.size(); index++) {
@@ -507,9 +512,10 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 			}
 			List<Draw> draws = new java.util.ArrayList<>();
 			for (Alloys.Part part : needed) {
-				MeltTankBlockEntity from = null;
-				for (MeltTankBlockEntity bank : banks) {
-					if (bank.bankMetal() == part.item().get() && bank.bankAmount() >= part.count()
+				MeltDeposit from = null;
+				for (MeltNetwork.Fed fed : banks) {
+					MeltDeposit bank = fed.deposit();
+					if (!bank.isSet() && bank.metal() == part.item().get() && bank.amount() >= part.count()
 						&& draws.stream().noneMatch(draw -> draw.tank() == bank)) {
 						from = bank;
 						break;
@@ -527,6 +533,7 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 			ItemStack result = recipe.result();
 			result.setCount(result.getCount() + this.tier().bonus);
 			if (this.room(banks, result.getItem(), true) < result.getCount()) {
+				this.waitFor(ForgeMaterial.fromInput(result));
 				continue;
 			}
 			best = new Pour(result, recipe, null, 0, fromSlots, draws, JOB_ALLOY, index);
@@ -535,39 +542,73 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 	}
 
 	/**
-	 * One tank out of every bank the pot reaches whose metal is still liquid, so a bank of four tanks
-	 * touching the pot is counted once and not four times.
+	 * Every deposit the pot reaches, nearest first and each one once: the ones it touches, and the ones at
+	 * the end of any pipe run from it however long. A deposit of four tanks touching the pot is one
+	 * container, not four.
+	 *
+	 * <p>This is asked every tick and is not worked out every tick: the network (MeltNetwork) remembers it
+	 * until a block of the network is placed, broken or turned.
 	 */
-	private List<MeltTankBlockEntity> banks() {
-		List<MeltTankBlockEntity> found = new java.util.ArrayList<>();
-		java.util.Set<BlockPos> seen = new java.util.HashSet<>();
-		for (MeltTankBlockEntity tank : this.tanks()) {
-			if (seen.contains(tank.getBlockPos())) {
-				continue;
-			}
-			for (MeltTankBlockEntity member : tank.bank()) {
-				seen.add(member.getBlockPos());
-			}
-			if (!tank.isSet()) {
-				found.add(tank);
-			}
-		}
-		return found;
+	private List<MeltNetwork.Fed> reached() {
+		return this.level == null ? List.of() : MeltNetwork.deposits(this.level, this.worldPosition);
 	}
 
 	/**
-	 * How much of this could go somewhere right now: into banks holding it or holding nothing, and, if
-	 * the output slot is allowed, into that.
+	 * Where a pour of this metal goes, in the order it goes there.
+	 *
+	 * <p>Andy, 2026-09-28: "llenando 1 por 1 hasta que no haya un contenedor disponible o haya uno pero que
+	 * no es del mismo tipo de material, no se usan todos para 1, se va llenando cada bloque de forma
+	 * individual hasta llenar el contenedor, apenas ahí se inicia a llenar otro". So the pour goes into ONE
+	 * deposit until it is full, and only then into the next: first a deposit already holding this metal
+	 * that still has room (the one being filled), nearest first; then an empty one, nearest first by the
+	 * network. A deposit holding another metal is never touched, and nor is one that has set.
 	 */
-	private int room(List<MeltTankBlockEntity> banks, Item item, boolean slotToo) {
-		int room = 0;
-		for (MeltTankBlockEntity bank : MeltTankBlockEntity.holds(item) ? banks : List.<MeltTankBlockEntity>of()) {
-			Item held = bank.bankMetal();
-			if (held == null || held == item) {
-				room += bank.bankCapacity() - bank.bankAmount();
+	public static List<MeltNetwork.Fed> targets(List<MeltNetwork.Fed> reached, Item item) {
+		List<MeltNetwork.Fed> order = new java.util.ArrayList<>();
+		for (MeltNetwork.Fed fed : reached) {
+			MeltDeposit deposit = fed.deposit();
+			if (deposit.amount() > 0 && deposit.metal() == item && !deposit.full() && !deposit.isSet()) {
+				order.add(fed);
 			}
 		}
-		if (slotToo) {
+		for (MeltNetwork.Fed fed : reached) {
+			if (fed.deposit().amount() <= 0) {
+				order.add(fed);
+			}
+		}
+		return order;
+	}
+
+	/**
+	 * Whether this pot pours this metal into a foundry: it can go in a tank, and the pot reaches at least
+	 * one. Then the tanks are the only place it goes, and with none of them free the pot WAITS (Andy's
+	 * design: "si no queda ninguno con sitio, el crisol espera") instead of turning its ore into bars.
+	 */
+	private boolean foundry(List<MeltNetwork.Fed> reached, Item item) {
+		return !reached.isEmpty() && MeltTankBlockEntity.holds(item);
+	}
+
+	/** Records that the pot is waiting for a tank with room, when nothing more pressing is to be said. */
+	private void waitFor(@Nullable ForgeMaterial material) {
+		if (this.idleReason == JOB_NONE) {
+			this.idleReason = JOB_NEEDS_TANK;
+			this.idleWhat = material == null ? 0 : material.ordinal();
+		}
+	}
+
+	/**
+	 * How much of this could go somewhere right now: into the deposits it would fill one after the other
+	 * (see targets), or — for a pot that reaches no tank at all, or a metal no tank holds — into its own
+	 * output slot, if that is allowed.
+	 */
+	private int room(List<MeltNetwork.Fed> banks, Item item, boolean slotToo) {
+		int room = 0;
+		if (MeltTankBlockEntity.holds(item)) {
+			for (MeltNetwork.Fed fed : targets(banks, item)) {
+				room += fed.deposit().room();
+			}
+		}
+		if (slotToo && !this.foundry(banks, item)) {
 			ItemStack out = this.items.get(SLOT_OUTPUT);
 			if (out.isEmpty()) {
 				room += new ItemStack(item).getMaxStackSize();
@@ -657,68 +698,50 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 	}
 
 	/**
-	 * Pours into the banks the crucible can reach, and says how much would not go.
+	 * Pours into the deposits the crucible reaches, one after the other (see targets), and says how much
+	 * would not go.
 	 *
-	 * <p>Every bank that will take it, not just the first: a pour bigger than what the first bank had
-	 * room for used to drop the rest into the pot's own slot even with an empty bank beside it. A bank
-	 * that has set takes nothing — hot metal into a cold wall was a wall that half-woke — and nor does a
-	 * tank take what is not a metal.
+	 * <p>A pour bigger than what the first deposit has room for fills it to the top and the rest starts
+	 * the next one; it never spreads over all of them at once. A deposit that has set takes nothing — hot
+	 * metal into a cold wall was a wall that half-woke — and nor does a tank take what is not a metal.
 	 */
 	private int pourIntoTank(ItemStack result) {
 		if (this.level == null || !MeltTankBlockEntity.holds(result.getItem())) {
 			return result.getCount();
 		}
 		int left = result.getCount();
-		for (MeltTankBlockEntity tank : this.banks()) {
+		for (MeltNetwork.Fed fed : targets(this.reached(), result.getItem())) {
 			if (left <= 0) {
 				break;
 			}
 			// What the run of pipe between here and there took out of it, which is nothing when the
 			// glass is built against the pot and a great deal at the end of a long bronze tendril.
-			int bled = dev.forja.block.MeltPipeBlock.bleedBetween(this.level, this.worldPosition, tank.getBlockPos());
-			left = tank.fill(result.getItem(), left, bled);
+			left = fed.deposit().fill(result.getItem(), left, fed.end().bleed());
 		}
 		return left;
 	}
 
-	/**
-	 * Every tank this crucible can reach: the ones it is touching, and the ones on the end of a pipe.
-	 *
-	 * <p>A pipe is only a connection, so reaching through one is the same as being built against the
-	 * glass — which is the point of having them at all.
-	 */
-	private List<MeltTankBlockEntity> tanks() {
-		List<MeltTankBlockEntity> found = new java.util.ArrayList<>();
-		if (this.level == null) {
-			return found;
-		}
-		boolean piped = false;
-		for (Direction side : Direction.values()) {
-			BlockPos at = this.worldPosition.relative(side);
-			if (this.level.getBlockEntity(at) instanceof MeltTankBlockEntity tank) {
-				found.add(tank);
-			} else if (this.level.getBlockState(at).getBlock() instanceof dev.forja.block.MeltPipeBlock) {
-				piped = true;
-			}
-		}
-		if (piped) {
-			for (BlockPos end : dev.forja.block.MeltPipeBlock.reachable(this.level, this.worldPosition)) {
-				if (this.level.getBlockEntity(end) instanceof MeltTankBlockEntity tank && !found.contains(tank)) {
-					found.add(tank);
-				}
-			}
-		}
-		return found;
-	}
-
-	/** The first tank it can reach whose metal has set, if any. */
-	private @Nullable MeltTankBlockEntity setTank() {
-		for (MeltTankBlockEntity tank : this.tanks()) {
-			if (tank.isSet()) {
-				return tank;
+	/** The first deposit it can reach whose metal has set, if any. */
+	private @Nullable MeltDeposit setTank() {
+		for (MeltNetwork.Fed fed : this.reached()) {
+			if (fed.deposit().isSet()) {
+				return fed.deposit();
 			}
 		}
 		return null;
+	}
+
+	/** Placed, broken, loaded or unloaded: the network around the pot is worked out again when next asked. */
+	@Override
+	public void clearRemoved() {
+		super.clearRemoved();
+		MeltNetwork.changed(this.level, this.worldPosition);
+	}
+
+	@Override
+	public void setRemoved() {
+		super.setRemoved();
+		MeltNetwork.changed(this.level, this.worldPosition);
 	}
 
 	/** Whether any tank is feeding this pour, which is what halves the time it takes. */
@@ -735,8 +758,8 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		int @Nullable [] fromSlots, List<Draw> draws, int job, int what) {
 	}
 
-	/** What an alloy takes out of one bank. */
-	private record Draw(MeltTankBlockEntity tank, int count) {
+	/** What an alloy takes out of one deposit. */
+	private record Draw(MeltDeposit tank, int count) {
 	}
 
 	// ------------------------------------------------------------------ hands

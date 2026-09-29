@@ -35,7 +35,8 @@ import org.jspecify.annotations.Nullable;
  * by passing it back and forth, but a stale <em>time</em> can only ever get staler.
  *
  * <p>It costs six block lookups every {@link #EVERY} ticks and no searching at all: no block walks the
- * network, each one only ever asks the six blocks it is touching.
+ * network, each one only ever asks the six blocks it is touching. A closed valve (MeltValveBlock) passes
+ * no stamp on, so the run beyond it goes out like a run whose tank has run dry.
  */
 public class MeltFlowBlockEntity extends BlockEntity {
 	/** How long a stamp stays good for. After this with nothing new coming in, the channel is dry. */
@@ -48,9 +49,28 @@ public class MeltFlowBlockEntity extends BlockEntity {
 	/** The tick the metal was last seen leaving a tank or a pot, as passed along the run. */
 	private long stamp = Long.MIN_VALUE;
 	private int tickIn = -1;
+	/** On a spout: where its stream landed last time it looked, so a change can be passed on to the network. */
+	private @Nullable BlockPos landing;
+	private boolean landingKnown;
 
 	public MeltFlowBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.COLADA, pos, state);
+	}
+
+	/**
+	 * A length of pipe laid, taken up, loaded or unloaded: the network through here is worked out again
+	 * the next time anything asks (MeltNetwork).
+	 */
+	@Override
+	public void clearRemoved() {
+		super.clearRemoved();
+		MeltNetwork.changed(this.level, this.worldPosition);
+	}
+
+	@Override
+	public void setRemoved() {
+		super.setRemoved();
+		MeltNetwork.changed(this.level, this.worldPosition);
 	}
 
 	/**
@@ -100,9 +120,26 @@ public class MeltFlowBlockEntity extends BlockEntity {
 		}
 		// A spout only carries metal on if it has somewhere to pour it; one over a drop to nowhere is
 		// as dry as an unconnected stub, and it should look like it.
-		if (state.getBlock() instanceof dev.forja.block.MeltSpoutBlock && MeltPipeBlock.landing(level, pos) == null) {
+		if (state.getBlock() instanceof dev.forja.block.MeltSpoutBlock) {
+			BlockPos lands = MeltPipeBlock.landing(level, pos);
+			if (lands == null) {
+				best = Long.MIN_VALUE;
+				found = null;
+			}
+			// Where the stream lands is part of the network, and a block set down in the fall — a floor,
+			// a table taken away — is not one of the foundry's own, so nothing else would notice. This
+			// does, every other tick, for the price of the few lookups it was already making.
+			if (flow.landingKnown && !java.util.Objects.equals(lands, flow.landing)) {
+				MeltNetwork.changed(level, pos);
+			}
+			flow.landing = lands;
+			flow.landingKnown = true;
+		}
+		// A closed valve passes nothing on, and forgets what it was passing: the run beyond it goes out.
+		if (state.getBlock() instanceof dev.forja.block.MeltValveBlock && !dev.forja.block.MeltValveBlock.isOpen(state)) {
 			best = Long.MIN_VALUE;
 			found = null;
+			flow.stamp = Long.MIN_VALUE;
 		}
 		Item had = flow.metal;
 		if (best > flow.stamp) {

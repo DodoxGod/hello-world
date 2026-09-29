@@ -1,15 +1,10 @@
 package dev.forja.block;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.mojang.serialization.MapCodec;
-import dev.forja.block.entity.CrucibleBlockEntity;
 import dev.forja.block.entity.MeltTankBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -28,11 +23,11 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 /**
  * Conducto de colada: the pipe that joins a foundry together.
  *
- * <p>It holds nothing. A pipe is a <em>connection</em>, not a container: a crucible looks for its tanks
- * through pipes as though they were touching, and a bank of tanks pushes its metal out to whatever
- * container a pipe run ends at. That is deliberate — a pipe with its own little buffer is a pipe that
- * has to be saved, synced, balanced and debugged, and all a foundry ever wanted from one is to stop
- * having to build the crucible directly against the glass.
+ * <p>It holds nothing. A pipe is a <em>connection</em>, not a container: everything joined by pipe is one
+ * network (block/entity/MeltNetwork), a crucible pours into the deposits on it however far away they
+ * are, and a casting table pulls out of them the same way. That is deliberate — a pipe with its own
+ * little buffer is a pipe that has to be saved, synced, balanced and debugged, and all a foundry ever
+ * wanted from one is to stop having to build the crucible directly against the glass.
  *
  * <p>It is shaped like <b>floor</b>, not like plumbing: a slab you walk over with the metal sunk flush
  * into a channel down the middle, open to the sky. A foundry is worth looking at, and a tube hid the
@@ -81,8 +76,12 @@ public class MeltPipeBlock extends Block implements net.minecraft.world.level.bl
 		Direction.WEST, WEST, Direction.UP, UP, Direction.DOWN, DOWN
 	);
 
-	/** How far a run of pipe will carry, so a mistake with a stack of them cannot cost a tick. */
-	public static final int REACH = 64;
+	/**
+	 * How far a run of pipe will carry. It used to be 64 because every pot walked its pipes every tick;
+	 * the network is worked out once now and remembered (MeltNetwork), so a run can be as long as a
+	 * foundry is ever going to be.
+	 */
+	public static final int REACH = dev.forja.block.entity.MeltNetwork.REACH;
 
 	/** How far metal poured out of a spout falls before there is nothing left to catch it. */
 	public static final int DROP = 5;
@@ -121,14 +120,21 @@ public class MeltPipeBlock extends Block implements net.minecraft.world.level.bl
 		builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN);
 	}
 
-	/** Whatever a pipe is willing to reach for: more pipe, glass, a pot, or something that holds items. */
+	/**
+	 * Whatever a pipe is willing to reach for: the members of the metal network and nothing else — more
+	 * pipe, glass, a pot, a casting table, a casting box.
+	 *
+	 * <p>It used to reach for anything that held items, and a tank at the other end of the run then filled
+	 * it with ingots: a hopper that happened to touch a pipe (the one feeding a crucible its ore, say) took
+	 * the tank's metal as bars and fed it straight back into the pot, which melted it back into the tank,
+	 * burning embers to go round in a circle. Metal goes where the network needs it — a deposit with room,
+	 * a table that casts — and the one deliberate way out as items is a container right under a tank
+	 * (MeltTankBlockEntity#serverTick), which you have to build on purpose.
+	 */
 	public static boolean joins(BlockGetter level, BlockPos pos) {
-		BlockState state = level.getBlockState(pos);
-		if (state.getBlock() instanceof MeltPipeBlock || state.getBlock() instanceof MeltTankBlock
-			|| state.getBlock() instanceof CrucibleBlock) {
-			return true;
-		}
-		return level.getBlockEntity(pos) instanceof net.minecraft.world.Container;
+		net.minecraft.world.level.block.Block block = level.getBlockState(pos).getBlock();
+		return block instanceof MeltPipeBlock || block instanceof MeltTankBlock || block instanceof CrucibleBlock
+			|| block instanceof CastingTableBlock || block instanceof CastingBoxBlock;
 	}
 
 	private BlockState shaped(LevelReader level, BlockPos pos, BlockState state) {
@@ -144,10 +150,26 @@ public class MeltPipeBlock extends Block implements net.minecraft.world.level.bl
 		return this.shaped(context.getLevel(), context.getClickedPos(), this.defaultBlockState());
 	}
 
+	/**
+	 * A neighbour changed. If that changes what this pipe is joined to — a chest set down at the end of a
+	 * run, a tank taken away — the network around it is worked out again the next time it is asked.
+	 */
 	@Override
 	protected BlockState updateShape(BlockState state, LevelReader level, net.minecraft.world.level.ScheduledTickAccess ticks,
 		BlockPos pos, Direction side, BlockPos neighbour, BlockState neighbourState, net.minecraft.util.RandomSource random) {
-		return state.setValue(SIDES.get(side), joins(level, neighbour));
+		boolean joined = joins(level, neighbour);
+		if (joined != state.getValue(SIDES.get(side)) && level instanceof Level world) {
+			dev.forja.block.entity.MeltNetwork.changed(world, pos);
+		}
+		return state.setValue(SIDES.get(side), joined);
+	}
+
+	/**
+	 * Whether metal goes through this block of pipe. Every pipe and spout does; a valve only while it is
+	 * open (MeltValveBlock).
+	 */
+	public static boolean passes(BlockState state) {
+		return !(state.getBlock() instanceof MeltValveBlock) || MeltValveBlock.isOpen(state);
 	}
 
 	@Override
@@ -266,48 +288,13 @@ public class MeltPipeBlock extends Block implements net.minecraft.world.level.bl
 	 * the last block before the tank is damascus.
 	 */
 	public static java.util.Map<BlockPos, Integer> walk(Level level, BlockPos from) {
+		// The walk itself lives in MeltNetwork now, where it is done once and remembered until a block of
+		// the network changes. What is left here is the old question: the ends down a pipe or a spout (not
+		// the ones merely touching), and what the way there costs.
 		java.util.Map<BlockPos, Integer> ends = new java.util.LinkedHashMap<>();
-		Set<BlockPos> seen = new HashSet<>();
-		Deque<BlockPos> queue = new ArrayDeque<>();
-		java.util.Map<BlockPos, Integer> cost = new java.util.HashMap<>();
-		seen.add(from);
-		for (Direction side : Direction.values()) {
-			BlockPos next = from.relative(side);
-			if (seen.add(next) && level.getBlockState(next).getBlock() instanceof MeltPipeBlock pipe) {
-				cost.put(next, pipe.grade.bleeds);
-				queue.add(next);
-			}
-		}
-		// And the spout overhead, if this is what one has been pouring into all along.
-		BlockPos over = spoutAbove(level, from);
-		if (over != null && seen.add(over)) {
-			cost.put(over, FALL_BLEED * (over.getY() - from.getY()));
-			queue.add(over);
-		}
-		int walked = 0;
-		while (!queue.isEmpty() && walked < REACH) {
-			BlockPos at = queue.poll();
-			walked++;
-			int here = cost.getOrDefault(at, 0);
-			// A spout reaches whatever is under it across open air, and the fall costs the metal.
-			if (level.getBlockState(at).getBlock() instanceof MeltSpoutBlock) {
-				BlockPos lands = landing(level, at);
-				if (lands != null) {
-					ends.putIfAbsent(lands, here + FALL_BLEED * (at.getY() - lands.getY()));
-					seen.add(lands);
-				}
-			}
-			for (Direction side : Direction.values()) {
-				BlockPos next = at.relative(side);
-				if (!seen.add(next)) {
-					continue;
-				}
-				if (level.getBlockState(next).getBlock() instanceof MeltPipeBlock pipe) {
-					cost.put(next, here + pipe.grade.bleeds);
-					queue.add(next);
-				} else if (joins(level, next)) {
-					ends.put(next, here);
-				}
+		for (dev.forja.block.entity.MeltNetwork.End end : dev.forja.block.entity.MeltNetwork.reach(level, from).ends()) {
+			if (!end.direct()) {
+				ends.put(end.pos(), end.bleed());
 			}
 		}
 		return ends;
@@ -328,23 +315,7 @@ public class MeltPipeBlock extends Block implements net.minecraft.world.level.bl
 		return null;
 	}
 
-	/**
-	 * Every container a run of pipe out of this block reaches, which is where a bank empties itself.
-	 *
-	 * <p>Tanks and crucibles are left out on purpose even though both hold items. A tank emptying into
-	 * another tank would be metal going round in circles, and a tank emptying into a crucible would fill
-	 * the pot's own slots with the very metal it is about to take back out of the glass — the crucible
-	 * pulls what it needs by itself, and being on the same pipe run must not mean being force-fed.
-	 */
-	public static List<net.minecraft.world.Container> containersFrom(Level level, BlockPos from) {
-		List<net.minecraft.world.Container> found = new ArrayList<>();
-		for (BlockPos end : reachable(level, from)) {
-			var at = level.getBlockEntity(end);
-			if (at instanceof net.minecraft.world.Container container
-				&& !(at instanceof MeltTankBlockEntity) && !(at instanceof CrucibleBlockEntity)) {
-				found.add(container);
-			}
-		}
-		return found;
-	}
+	// There used to be a containersFrom here: every container at the end of a run, which is where a bank
+	// emptied itself as ingots. It is gone with the containers themselves (see joins): the network carries
+	// metal between its own members, and a tank's one way out as items is the container right under it.
 }

@@ -671,6 +671,22 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 		}
 	}
 
+	/**
+	 * Placed, broken, loaded or unloaded: the network around the table — the deposits it pulls from, however
+	 * far down the pipe they are — is worked out again when next asked (MeltNetwork).
+	 */
+	@Override
+	public void clearRemoved() {
+		super.clearRemoved();
+		MeltNetwork.changed(this.level, this.worldPosition);
+	}
+
+	@Override
+	public void setRemoved() {
+		super.setRemoved();
+		MeltNetwork.changed(this.level, this.worldPosition);
+	}
+
 	// ------------------------------------------------------------------ saving and syncing
 
 	@Override

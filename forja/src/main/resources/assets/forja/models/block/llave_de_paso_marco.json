@@ -1,0 +1,219 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "piedra": "forja:block/canal_piedra",
+    "metal": "forja:block/canal_metal",
+    "borde": "forja:block/conducto_de_acero",
+    "hierro": "forja:block/llave_de_paso_hierro",
+    "compuerta": "forja:block/llave_de_paso_compuerta",
+    "cerrada": "forja:block/llave_de_paso_compuerta_cerrada",
+    "rueda": "forja:block/llave_de_paso_rueda",
+    "particle": "forja:block/llave_de_paso_hierro"
+  },
+  "elements": [
+    {
+      "from": [
+        3,
+        6,
+        7
+      ],
+      "to": [
+        5,
+        14,
+        9
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            3,
+            2,
+            5,
+            10
+          ],
+          "texture": "#hierro"
+        },
+        "south": {
+          "uv": [
+            3,
+            2,
+            5,
+            10
+          ],
+          "texture": "#hierro"
+        },
+        "east": {
+          "uv": [
+            7,
+            2,
+            9,
+            10
+          ],
+          "texture": "#hierro"
+        },
+        "west": {
+          "uv": [
+            7,
+            2,
+            9,
+            10
+          ],
+          "texture": "#hierro"
+        },
+        "up": {
+          "uv": [
+            3,
+            7,
+            5,
+            9
+          ],
+          "texture": "#hierro"
+        },
+        "down": {
+          "uv": [
+            3,
+            7,
+            5,
+            9
+          ],
+          "texture": "#hierro"
+        }
+      }
+    },
+    {
+      "from": [
+        11,
+        6,
+        7
+      ],
+      "to": [
+        13,
+        14,
+        9
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            11,
+            2,
+            13,
+            10
+          ],
+          "texture": "#hierro"
+        },
+        "south": {
+          "uv": [
+            11,
+            2,
+            13,
+            10
+          ],
+          "texture": "#hierro"
+        },
+        "east": {
+          "uv": [
+            7,
+            2,
+            9,
+            10
+          ],
+          "texture": "#hierro"
+        },
+        "west": {
+          "uv": [
+            7,
+            2,
+            9,
+            10
+          ],
+          "texture": "#hierro"
+        },
+        "up": {
+          "uv": [
+            11,
+            7,
+            13,
+            9
+          ],
+          "texture": "#hierro"
+        },
+        "down": {
+          "uv": [
+            11,
+            7,
+            13,
+            9
+          ],
+          "texture": "#hierro"
+        }
+      }
+    },
+    {
+      "from": [
+        3,
+        14,
+        7
+      ],
+      "to": [
+        13,
+        15.5,
+        9
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            3,
+            0.5,
+            13,
+            2
+          ],
+          "texture": "#hierro"
+        },
+        "south": {
+          "uv": [
+            3,
+            0.5,
+            13,
+            2
+          ],
+          "texture": "#hierro"
+        },
+        "east": {
+          "uv": [
+            7,
+            0.5,
+            9,
+            2
+          ],
+          "texture": "#hierro"
+        },
+        "west": {
+          "uv": [
+            7,
+            0.5,
+            9,
+            2
+          ],
+          "texture": "#hierro"
+        },
+        "up": {
+          "uv": [
+            3,
+            7,
+            13,
+            9
+          ],
+          "texture": "#hierro"
+        },
+        "down": {
+          "uv": [
+            3,
+            7,
+            13,
+            9
+          ],
+          "texture": "#hierro"
+        }
+      }
+    }
+  ]
+}

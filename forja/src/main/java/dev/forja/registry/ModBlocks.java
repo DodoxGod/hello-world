@@ -137,6 +137,21 @@ public final class ModBlocks {
 		)
 	);
 
+	/** A length of channel with a gate in it: open it passes, closed it cuts the network. See block/MeltValveBlock. */
+	public static final Block LLAVE_DE_PASO = register(
+		"llave_de_paso",
+		new dev.forja.block.MeltValveBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.METAL)
+				.strength(3.5F, 7.0F)
+				.sound(SoundType.COPPER)
+				.requiresCorrectToolForDrops()
+				.noOcclusion()
+				.lightLevel(state -> 7)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("llave_de_paso")))
+		)
+	);
+
 	/** The three casting boxes; see block/CastingBoxBlock. */
 	public static final Block CAJA_DE_MOLDEO = castingBox(dev.forja.block.CastingBoxBlock.Tier.BARRO, MapColor.TERRACOTTA_ORANGE, 2.5F);
 	public static final Block CAJA_DE_MOLDEO_DE_ACERO = castingBox(dev.forja.block.CastingBoxBlock.Tier.ACERO, MapColor.METAL, 4.5F);

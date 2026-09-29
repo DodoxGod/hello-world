@@ -77,6 +77,11 @@ public class MeltTankBlock extends BaseEntityBlock {
 
 	@Override
 	protected InteractionResult useItemOn(ItemStack held, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+		// A block in hand that is not a metal is building: another tank set on top of this one makes the
+		// deposit taller, and it used to be refused with "that is not molten metal".
+		if (held.getItem() instanceof net.minecraft.world.item.BlockItem && !MeltTankBlockEntity.holds(held.getItem())) {
+			return InteractionResult.PASS;
+		}
 		if (level.isClientSide()) {
 			return InteractionResult.SUCCESS;
 		}
@@ -95,6 +100,21 @@ public class MeltTankBlock extends BaseEntityBlock {
 			tank.hand(player, ItemStack.EMPTY);
 		}
 		return InteractionResult.CONSUME;
+	}
+
+	/**
+	 * A comparator against any tank of a deposit reads the whole deposit: nothing when it is empty, 15 when
+	 * it is full, like a chest. Paired with a valve (MeltValveBlock) it closes the line into a deposit that
+	 * is full.
+	 */
+	@Override
+	protected boolean hasAnalogOutputSignal(BlockState state) {
+		return true;
+	}
+
+	@Override
+	protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, net.minecraft.core.Direction side) {
+		return level.getBlockEntity(pos) instanceof MeltTankBlockEntity tank ? tank.signal() : 0;
 	}
 
 	// What it holds is dropped by the block entity (preRemoveSideEffects): by the time

@@ -3363,7 +3363,7 @@ PICKAXE_BLOCKS = [
     "forja:mesa_de_forja", "forja:mesa_de_forja_mayor", "forja:mesa_de_piezas", "forja:mesa_de_extraccion",
     "forja:fragua_apagada", "forja:yunque_del_herrero", "forja:farol_de_pavesa",
     "forja:crisol_de_barro", "forja:crisol_de_hierro", "forja:crisol_de_obsidiana",
-    "forja:cuba_de_colada", "forja:cano_de_colada",
+    "forja:cuba_de_colada", "forja:cano_de_colada", "forja:llave_de_paso",
     "forja:conducto_de_colada", "forja:conducto_de_acero", "forja:conducto_de_damasco",
     "forja:caja_de_moldeo", "forja:caja_de_moldeo_de_acero", "forja:caja_de_moldeo_de_damasco",
     "forja:mesa_de_losa", "forja:mesa_de_brasa", "forja:mesa_de_almas",
@@ -8660,6 +8660,172 @@ def generate_melt_tank_assets():
         "pattern": ["B B", "BCB"],
         "key": {"B": "forja:bronce", "C": "forja:conducto_de_colada"},
         "result": {"id": f"forja:{spout}", "count": 1},
+    })
+
+    # ---- the valve (llave de paso): a length of steel channel with a sluice gate across it.
+    #
+    # Andy asked for "llave de paso" (2026-09-28): open it passes, closed it cuts the network in two. It
+    # has to read from across a foundry, so it is a rising-stem gate valve, the real thing: a frame
+    # standing across the channel, a gate that drops INTO the channel when it is shut, and a red handwheel
+    # on a stem that climbs out of the frame when it is open. Open: the wheel is up high, the gate hangs
+    # clear and the metal runs under it. Closed: the wheel sits down on the frame and the red gate stands
+    # in the channel. Drawn for a channel running north-south; the blockstate turns it for east-west.
+    valve = "llave_de_paso"
+    # Its own dice: drawing from the shared ones would reshuffle every texture made after this one.
+    valve_rng = __import__("random").Random(280926)
+
+    def painted(base, dark, light, stripe=None, rivets=True):
+        sheet = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+        for y in range(16):
+            for x in range(16):
+                grain = valve_rng.randint(-7, 7)
+                shade = light if y < 2 else (dark if y > 13 else base)
+                sheet.putpixel((x, y), tuple(max(0, min(255, c + grain)) for c in shade) + (255,))
+        if stripe is not None:
+            for y in (2, 3):
+                for x in range(16):
+                    sheet.putpixel((x, y), stripe + (255,))
+        if rivets:
+            for x in (2, 7, 12):
+                sheet.putpixel((x, 6), light + (255,))
+                sheet.putpixel((x, 10), light + (255,))
+        return sheet
+
+    painted((112, 116, 124), (72, 74, 82), (164, 168, 178)).save(folder / f"{valve}_hierro.png")
+    # The gate: bare steel with a green band along its top when it is up and letting metal by...
+    painted((136, 140, 148), (92, 94, 102), (184, 188, 198), stripe=(70, 176, 84)).save(folder / f"{valve}_compuerta.png")
+    # ...and painted red, top to bottom, the one you see standing in the channel when it is shut.
+    painted((178, 40, 34), (118, 24, 22), (222, 84, 70), stripe=(236, 226, 214)).save(folder / f"{valve}_compuerta_cerrada.png")
+    # The handwheel, red like every valve wheel in every plant there is.
+    painted((196, 44, 36), (132, 26, 22), (236, 96, 82), rivets=False).save(folder / f"{valve}_rueda.png")
+
+    valve_textures = {
+        "piedra": "forja:block/canal_piedra",
+        "metal": "forja:block/canal_metal",
+        "borde": "forja:block/conducto_de_acero",
+        "hierro": f"forja:block/{valve}_hierro",
+        "compuerta": f"forja:block/{valve}_compuerta",
+        "cerrada": f"forja:block/{valve}_compuerta_cerrada",
+        "rueda": f"forja:block/{valve}_rueda",
+        "particle": f"forja:block/{valve}_hierro",
+    }
+
+    def high(box, texture):
+        """faces() for a piece that stands above the block (the open valve's stem and wheel): its side UVs
+        are read one sheet lower, because a UV above the top of a texture is not somewhere to read from."""
+        (x0, y0, z0), (x1, y1, z1) = box
+        if y1 <= 16:
+            return faces(box, texture)
+        shift = y1 - 16
+        element = faces(((x0, y0 - shift, z0), (x1, y1 - shift, z1)), texture)
+        element["from"] = [x0, y0, z0]
+        element["to"] = [x1, y1, z1]
+        return element
+
+    def wheel(y):
+        """A handwheel lying flat at this height: a square rim and a cross of spokes, on the stem's axis."""
+        return [
+            high(((5, y, 5), (11, y + 1, 6)), "#rueda"),
+            high(((5, y, 10), (11, y + 1, 11)), "#rueda"),
+            high(((5, y, 6), (6, y + 1, 10)), "#rueda"),
+            high(((10, y, 6), (11, y + 1, 10)), "#rueda"),
+            high(((7.5, y, 6), (8.5, y + 1, 10)), "#rueda"),
+            high(((6, y, 7.5), (10, y + 1, 8.5)), "#rueda"),
+        ]
+
+    # The frame: two posts on the walking surface either side of the channel, and the lintel across.
+    frame = [
+        faces(((3, 6, 7), (5, 14, 9)), "#hierro"),
+        faces(((11, 6, 7), (13, 14, 9)), "#hierro"),
+        faces(((3, 14, 7), (13, 15.5, 9)), "#hierro"),
+    ]
+    write_json(ASSETS / f"models/block/{valve}_marco.json",
+               {"parent": "minecraft:block/block", "textures": valve_textures, "elements": frame})
+    # Open: the gate hangs high in the frame, clear of the metal, and the stem stands up out of the
+    # lintel with the wheel on top of it.
+    write_json(ASSETS / f"models/block/{valve}_abierta.json", {
+        "parent": "minecraft:block/block",
+        "textures": valve_textures,
+        "elements": [
+            faces(((5.5, 9.5, 7.5), (10.5, 13.5, 8.5)), "#compuerta"),
+            faces(((7.5, 13.5, 7.5), (8.5, 16, 8.5)), "#hierro"),
+            high(((7.5, 16, 7.5), (8.5, 19, 8.5)), "#hierro"),
+            *wheel(19),
+        ],
+    })
+    # Closed: the red gate stands down in the channel below the level of the metal, and the wheel sits on
+    # the lintel with no stem showing.
+    write_json(ASSETS / f"models/block/{valve}_cerrada.json", {
+        "parent": "minecraft:block/block",
+        "textures": valve_textures,
+        "elements": [
+            faces(((5.5, 4.2, 7.5), (10.5, 12, 8.5)), "#cerrada"),
+            faces(((7.5, 12, 7.5), (8.5, 15.5, 8.5)), "#hierro"),
+            *wheel(15.5),
+        ],
+    })
+    closed_when = {"OR": [{"open": "false"}, {"powered": "true"}]}
+    open_when = {"open": "true", "powered": "false"}
+    parts = [{"apply": {"model": "forja:block/conducto_de_acero_core"}}]
+    for side, turn in (("north", 0), ("south", 180), ("east", 90), ("west", 270)):
+        arm = {"model": "forja:block/conducto_de_acero_arm"}
+        cap = {"model": "forja:block/conducto_de_acero_cap"}
+        if turn:
+            arm["y"] = turn
+            cap["y"] = turn
+        parts.append({"when": {side: "true"}, "apply": arm})
+        parts.append({"when": {side: "false"}, "apply": cap})
+    parts.append({"when": {"up": "true"}, "apply": {"model": "forja:block/conducto_de_acero_riser"}})
+    for axis, turn in (("z", 0), ("x", 90)):
+        def turned(model):
+            out = {"model": model}
+            if turn:
+                out["y"] = turn
+            return out
+        parts.append({"when": {"axis": axis}, "apply": turned(f"forja:block/{valve}_marco")})
+        parts.append({"when": {"AND": [{"axis": axis}, open_when]}, "apply": turned(f"forja:block/{valve}_abierta")})
+        parts.append({"when": {"AND": [{"axis": axis}, closed_when]}, "apply": turned(f"forja:block/{valve}_cerrada")})
+    write_json(ASSETS / f"blockstates/{valve}.json", {"multipart": parts})
+    # In the hand: a straight length of steel channel with the valve standing open on it.
+    write_json(ASSETS / f"models/block/{valve}_inventory.json", {
+        "parent": "minecraft:block/block",
+        "textures": valve_textures,
+        "elements": [
+            faces(((0, 0, 0), (16, 4, 16)), "#piedra"),
+            faces(((0, 4, 0), (5, 6, 16)), "#piedra"),
+            faces(((11, 4, 0), (16, 6, 16)), "#piedra"),
+            faces(((5, 4, 0), (6, 6, 16)), "#borde"),
+            faces(((10, 4, 0), (11, 6, 16)), "#borde"),
+            faces(((6, 4, 0), (10, 5.5, 16)), "#metal"),
+            *frame,
+            faces(((5.5, 9.5, 7.5), (10.5, 13.5, 8.5)), "#compuerta"),
+            faces(((7.5, 13.5, 7.5), (8.5, 16, 8.5)), "#hierro"),
+            *wheel(16),
+        ],
+        "display": {
+            "gui": {"rotation": [30, 225, 0], "translation": [0, -1.5, 0], "scale": [0.6, 0.6, 0.6]},
+            "ground": {"rotation": [0, 0, 0], "translation": [0, 3, 0], "scale": [0.25, 0.25, 0.25]},
+            "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.5, 0.5, 0.5]},
+            "thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]},
+            "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [0, 0, 0], "scale": [0.4, 0.4, 0.4]},
+            "firstperson_lefthand": {"rotation": [0, 225, 0], "translation": [0, 0, 0], "scale": [0.4, 0.4, 0.4]},
+        },
+    })
+    write_json(ASSETS / f"items/{valve}.json",
+               {"model": {"type": "minecraft:model", "model": f"forja:block/{valve}_inventory"}})
+    write_json(DATA / f"loot_table/blocks/{valve}.json", {
+        "type": "minecraft:block",
+        "pools": [{"rolls": 1.0, "bonus_rolls": 0.0, "entries": [{"type": "minecraft:item", "name": f"forja:{valve}"}],
+                   "conditions": [{"condition": "minecraft:survives_explosion"}]}],
+        "random_sequence": f"forja:blocks/{valve}",
+    })
+    # A length of bronze channel, steel for the fitting, and a lever to turn it with.
+    write_json(DATA / f"recipe/{valve}.json", {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "pattern": [" L ", "ACA"],
+        "key": {"L": "minecraft:lever", "A": "forja:acero", "C": "forja:conducto_de_colada"},
+        "result": {"id": f"forja:{valve}", "count": 1},
     })
 
     # Bronze is crafted; the better two are the one below them re-lined, the way the casting boxes go.

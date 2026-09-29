@@ -56,6 +56,7 @@ public final class ModItems {
 	public static Item CONDUCTO_DE_ACERO;
 	public static Item CONDUCTO_DE_DAMASCO;
 	public static Item CANO_DE_COLADA;
+	public static Item LLAVE_DE_PASO;
 	public static Item CAJA_DE_MOLDEO;
 	public static Item CAJA_DE_MOLDEO_DE_ACERO;
 	public static Item CAJA_DE_MOLDEO_DE_DAMASCO;
@@ -192,6 +193,7 @@ public final class ModItems {
 			new Item.Properties().useBlockDescriptionPrefix().rarity(net.minecraft.world.item.Rarity.UNCOMMON));
 		CUBA_DE_COLADA = register("cuba_de_colada", p -> new BlockItem(ModBlocks.CUBA_DE_COLADA, p), new Item.Properties().useBlockDescriptionPrefix());
 		CANO_DE_COLADA = register("cano_de_colada", p -> new BlockItem(ModBlocks.CANO_DE_COLADA, p), new Item.Properties().useBlockDescriptionPrefix());
+		LLAVE_DE_PASO = register("llave_de_paso", p -> new BlockItem(ModBlocks.LLAVE_DE_PASO, p), new Item.Properties().useBlockDescriptionPrefix());
 		CAJA_DE_MOLDEO = register("caja_de_moldeo", p -> new BlockItem(ModBlocks.CAJA_DE_MOLDEO, p), new Item.Properties().useBlockDescriptionPrefix());
 		CAJA_DE_MOLDEO_DE_ACERO = register("caja_de_moldeo_de_acero", p -> new BlockItem(ModBlocks.CAJA_DE_MOLDEO_DE_ACERO, p), new Item.Properties().useBlockDescriptionPrefix());
 		CAJA_DE_MOLDEO_DE_DAMASCO = register("caja_de_moldeo_de_damasco", p -> new BlockItem(ModBlocks.CAJA_DE_MOLDEO_DE_DAMASCO, p),
@@ -374,6 +376,7 @@ public final class ModItems {
 		stacks.add(new ItemStack(CONDUCTO_DE_ACERO));
 		stacks.add(new ItemStack(CONDUCTO_DE_DAMASCO));
 		stacks.add(new ItemStack(CANO_DE_COLADA));
+		stacks.add(new ItemStack(LLAVE_DE_PASO));
 		stacks.add(new ItemStack(CAJA_DE_MOLDEO));
 		stacks.add(new ItemStack(CAJA_DE_MOLDEO_DE_ACERO));
 		stacks.add(new ItemStack(CAJA_DE_MOLDEO_DE_DAMASCO));

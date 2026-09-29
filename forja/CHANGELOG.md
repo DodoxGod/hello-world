@@ -1,5 +1,29 @@
 # Novedades
 
+## 2026-09-28 — la red de metal: depósitos, llenado de uno en uno y llave de paso
+
+- **Una sola red.** Crisoles, cubas, caños y mesas de colada unidos por conductos son una red: el metal va de
+  donde sale a donde hace falta aunque estén lejos (hasta 1024 bloques de conducto; antes 64). La red se calcula
+  una vez y se recuerda; sólo se vuelve a calcular cuando se pone, se rompe o se gira un bloque de ella.
+- **Cubas que se funden.** Cubas del mismo metal (o vacías) pegadas en cualquier dirección son un depósito: una
+  cabida (la suma), un metal y un solo nivel que sube por el cristal de abajo arriba, igual en toda la capa. Al
+  romper una, derrama lo suyo y el resto sigue siendo depósito con lo que tenía; dos metales pegados (de un mundo
+  viejo) son dos depósitos. Los mundos viejos cargan tal cual y el depósito se forma al cargar. Un comparador al
+  lado de cualquier cuba lee lo lleno que está el depósito entero.
+- **Llenado de uno en uno.** Lo que sale del crisol llena UN depósito hasta arriba antes de empezar otro: primero
+  el que ya tiene ese metal y no está lleno; si no, el vacío más cercano por la red. Nunca uno con otro metal.
+  Si ninguno tiene sitio, el crisol espera y su pantalla dice "no hay cuba con sitio" (sin ninguna cuba en su
+  red, la mena sigue saliendo en lingotes por abajo como antes).
+- **Llave de paso** (nuevo bloque): un tramo de conducto con compuerta. Abierta deja pasar, cerrada corta la
+  red en dos. Se gira con clic derecho y una señal de redstone la cierra mientras dure. Abierta se ve la rueda
+  roja arriba y la compuerta levantada; cerrada, la compuerta roja metida en el canal.
+- Una cuba cuajada en la red del crisol se refunde ANTES de fundir mena nueva (antes, con una tolva vaciando el
+  crisol, la mena salía en lingotes para siempre y la cuba seguía fría).
+- Los conductos ya no se enganchan a tolvas ni cofres, ni les dan lingotes: una tolva que tocaba un conducto
+  (la que llena el crisol) vaciaba la cuba y le devolvía el metal al crisol. La única salida en lingotes es el
+  "grifo": un contenedor justo debajo de una cuba (y no una tolva que vierte en un crisol).
+- Con una cuba en la mano se puede poner otra encima de una cuba (antes decía "no es metal").
+
 ## 2026-09-28 — la montadora y la fundición sin manos
 
 - Nuevo bloque: la **montadora**. Es la estrella de la mesa de forja sin el herrero: las piezas le entran por

@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "forja:block/llave_de_paso_inventory"
+  }
+}

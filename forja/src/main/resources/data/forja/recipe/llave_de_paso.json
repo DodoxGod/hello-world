@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " L ",
+    "ACA"
+  ],
+  "key": {
+    "L": "minecraft:lever",
+    "A": "forja:acero",
+    "C": "forja:conducto_de_colada"
+  },
+  "result": {
+    "id": "forja:llave_de_paso",
+    "count": 1
+  }
+}

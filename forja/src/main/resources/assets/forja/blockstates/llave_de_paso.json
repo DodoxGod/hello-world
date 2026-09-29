@@ -1,0 +1,182 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "forja:block/conducto_de_acero_core"
+      }
+    },
+    {
+      "when": {
+        "north": "true"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_arm"
+      }
+    },
+    {
+      "when": {
+        "north": "false"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_cap"
+      }
+    },
+    {
+      "when": {
+        "south": "true"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_arm",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "false"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_cap",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "east": "true"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_arm",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "false"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_cap",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "west": "true"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_arm",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "false"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_cap",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "up": "true"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_riser"
+      }
+    },
+    {
+      "when": {
+        "axis": "z"
+      },
+      "apply": {
+        "model": "forja:block/llave_de_paso_marco"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "axis": "z"
+          },
+          {
+            "open": "true",
+            "powered": "false"
+          }
+        ]
+      },
+      "apply": {
+        "model": "forja:block/llave_de_paso_abierta"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "axis": "z"
+          },
+          {
+            "OR": [
+              {
+                "open": "false"
+              },
+              {
+                "powered": "true"
+              }
+            ]
+          }
+        ]
+      },
+      "apply": {
+        "model": "forja:block/llave_de_paso_cerrada"
+      }
+    },
+    {
+      "when": {
+        "axis": "x"
+      },
+      "apply": {
+        "model": "forja:block/llave_de_paso_marco",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "axis": "x"
+          },
+          {
+            "open": "true",
+            "powered": "false"
+          }
+        ]
+      },
+      "apply": {
+        "model": "forja:block/llave_de_paso_abierta",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "axis": "x"
+          },
+          {
+            "OR": [
+              {
+                "open": "false"
+              },
+              {
+                "powered": "true"
+              }
+            ]
+          }
+        ]
+      },
+      "apply": {
+        "model": "forja:block/llave_de_paso_cerrada",
+        "y": 90
+      }
+    }
+  ]
+}

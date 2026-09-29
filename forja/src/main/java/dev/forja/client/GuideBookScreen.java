@@ -1057,6 +1057,11 @@ public class GuideBookScreen extends Screen {
 		body.add(new IconRow(List.of(new ItemStack(ModItems.CANO_DE_COLADA))));
 		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.cano",
 			dev.forja.block.MeltPipeBlock.DROP, dev.forja.block.MeltPipeBlock.FALL_BLEED), INK));
+		// How the network shares the metal out (Andy: "llenando 1 por 1"), and the valve that cuts it.
+		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.llenado"), INK));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.LLAVE_DE_PASO), new ItemStack(Items.REDSTONE_TORCH),
+			new ItemStack(Items.COMPARATOR))));
+		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.llave"), INK));
 
 		// 4. Heat, which is the thing that catches people out.
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.fundicion.paso4")));

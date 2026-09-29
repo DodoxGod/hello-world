@@ -45,6 +45,13 @@ public class MeltTankRenderer implements BlockEntityRenderer<MeltTankBlockEntity
 		public float alpha;
 		public float shine;
 		public float time;
+		/**
+		 * Which faces of the melt run on into the next block of the same deposit: the melt goes right up to
+		 * the glass there and no wall is drawn, so a deposit reads as one body of metal (Andy: "un solo nivel
+		 * que se dibuja repartido entre los bloques") rather than a stack of separate jars. Indexed by
+		 * Direction#get3DDataValue.
+		 */
+		public final boolean[] joined = new boolean[6];
 	}
 
 	@Override
@@ -65,6 +72,26 @@ public class MeltTankRenderer implements BlockEntityRenderer<MeltTankBlockEntity
 		state.alpha = Math.max(0.78F, Math.min(0.98F, 0.98F - 0.22F * bright));
 		state.shine = 0.3F + 0.6F * bright;
 		state.time = (System.currentTimeMillis() % 100000L) / 1000.0F;
+		java.util.Arrays.fill(state.joined, false);
+		if (metal == null || tank.getLevel() == null) {
+			return;
+		}
+		// Six lookups a frame per tank that has metal in it, and only on the client.
+		for (net.minecraft.core.Direction side : net.minecraft.core.Direction.values()) {
+			if (!(tank.getLevel().getBlockEntity(tank.getBlockPos().relative(side)) instanceof MeltTankBlockEntity next)
+				|| next.metal() != metal) {
+				continue;
+			}
+			boolean full = state.fill >= 1.0F;
+			state.joined[side.get3DDataValue()] = switch (side) {
+				// Upward the melt only runs on if this block is full and the next one has metal in it too.
+				case UP -> full && next.amount() > 0;
+				// Downward, the one below is full or this one could not have any.
+				case DOWN -> next.amount() >= MeltTankBlockEntity.CAPACITY;
+				// Sideways, a neighbour of the same deposit in the same layer is at the same height.
+				default -> true;
+			};
+		}
 	}
 
 	@Override
@@ -72,10 +99,18 @@ public class MeltTankRenderer implements BlockEntityRenderer<MeltTankBlockEntity
 		if (state.fill <= 0.0F) {
 			return;
 		}
-		float top = 0.02F + state.fill * 0.94F;
-		float low = 0.02F;
+		boolean[] joined = state.joined;
 		float in = 0.055F;
 		float out = 1.0F - in;
+		// Where the melt runs on into the next block of its deposit it goes right up to the edge, and the
+		// wall between the two is not drawn at all: one body of metal, not a row of jars.
+		float x0 = joined[net.minecraft.core.Direction.WEST.get3DDataValue()] ? 0.0F : in;
+		float x1 = joined[net.minecraft.core.Direction.EAST.get3DDataValue()] ? 1.0F : out;
+		float z0 = joined[net.minecraft.core.Direction.NORTH.get3DDataValue()] ? 0.0F : in;
+		float z1 = joined[net.minecraft.core.Direction.SOUTH.get3DDataValue()] ? 1.0F : out;
+		boolean up = joined[net.minecraft.core.Direction.UP.get3DDataValue()];
+		float low = joined[net.minecraft.core.Direction.DOWN.get3DDataValue()] ? 0.0F : 0.02F;
+		float top = up ? 1.0F : low + state.fill * (0.96F - low);
 		float scroll = state.time * FLOW % 1.0F;
 		int colour = state.colour;
 		int alpha = Math.round(state.alpha * 255.0F);
@@ -85,25 +120,35 @@ public class MeltTankRenderer implements BlockEntityRenderer<MeltTankBlockEntity
 		RenderType type = RenderTypes.entityTranslucentEmissive(MELT, false);
 		collector.submitCustomGeometry(pose, type, (p, buffer) -> {
 			// Sides, with the texture scrolling upward so the metal looks like it is turning over.
-			quad(p, buffer, in, low, in, out, top, in, 0.0F, scroll, colour, alpha, 0.0F, 0.0F, -1.0F);
-			quad(p, buffer, out, low, out, in, top, out, 0.0F, scroll, colour, alpha, 0.0F, 0.0F, 1.0F);
-			quad(p, buffer, in, low, out, in, top, in, 0.0F, scroll, colour, alpha, -1.0F, 0.0F, 0.0F);
-			quad(p, buffer, out, low, in, out, top, out, 0.0F, scroll, colour, alpha, 1.0F, 0.0F, 0.0F);
-			// The surface, scrolling sideways at its own speed.
-			float drift = state.time * FLOW * 0.6F % 1.0F;
-			flat(p, buffer, in, top, in, out, out, drift, brighter(colour, 1.12F), alpha, 1.0F);
+			if (!joined[net.minecraft.core.Direction.NORTH.get3DDataValue()]) {
+				quad(p, buffer, x0, low, z0, x1, top, z0, 0.0F, scroll, colour, alpha, 0.0F, 0.0F, -1.0F);
+			}
+			if (!joined[net.minecraft.core.Direction.SOUTH.get3DDataValue()]) {
+				quad(p, buffer, x1, low, z1, x0, top, z1, 0.0F, scroll, colour, alpha, 0.0F, 0.0F, 1.0F);
+			}
+			if (!joined[net.minecraft.core.Direction.WEST.get3DDataValue()]) {
+				quad(p, buffer, x0, low, z1, x0, top, z0, 0.0F, scroll, colour, alpha, -1.0F, 0.0F, 0.0F);
+			}
+			if (!joined[net.minecraft.core.Direction.EAST.get3DDataValue()]) {
+				quad(p, buffer, x1, low, z0, x1, top, z1, 0.0F, scroll, colour, alpha, 1.0F, 0.0F, 0.0F);
+			}
+			// The surface, scrolling sideways at its own speed — only where the level actually is.
+			if (!up) {
+				float drift = state.time * FLOW * 0.6F % 1.0F;
+				flat(p, buffer, x0, top, z0, x1, z1, drift, brighter(colour, 1.12F), alpha, 1.0F);
+			}
 		});
 
 		// And the shine: one bright band crossing the surface, which is the whole reason a pot of gold
 		// does not look like a pot of iron with a different hue.
 		float sweep = (state.time * SHINE % 1.6F) - 0.3F;
-		if (sweep >= 0.0F && sweep <= 1.0F && state.shine > 0.0F) {
-			float from = Math.max(in, sweep - 0.12F);
-			float to = Math.min(out, sweep + 0.12F);
+		if (!up && sweep >= 0.0F && sweep <= 1.0F && state.shine > 0.0F) {
+			float from = Math.max(x0, sweep - 0.12F);
+			float to = Math.min(x1, sweep + 0.12F);
 			if (to > from) {
 				int glow = Math.round(state.shine * 150.0F);
 				collector.submitCustomGeometry(pose, RenderTypes.entityTranslucentEmissive(MELT, false), (p, buffer) ->
-					flat(p, buffer, from, top + 0.002F, in, to, out, 0.0F, 0xFFFFFF, glow, 1.0F));
+					flat(p, buffer, from, top + 0.002F, z0, to, z1, 0.0F, 0xFFFFFF, glow, 1.0F));
 			}
 		}
 	}
