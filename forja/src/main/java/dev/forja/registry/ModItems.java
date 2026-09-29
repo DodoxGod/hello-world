@@ -88,6 +88,8 @@ public final class ModItems {
 	public static Item ARMARIO_DE_PIEZAS;
 	public static Item MESA_DE_EXTRACCION;
 	public static Item MONTADORA;
+	/** Pararrayos de estrellas: see block/StarRodBlock. */
+	public static Item PARARRAYOS;
 	public static Item HUEVO_HERRERO_CAIDO;
 	public static Item HUEVO_AUTOMATA;
 	public static Item HUEVO_CORAZA;
@@ -249,6 +251,7 @@ public final class ModItems {
 		MESA_DE_EXTRACCION = register("mesa_de_extraccion", p -> new BlockItem(ModBlocks.MESA_DE_EXTRACCION, p),
 			new Item.Properties().useBlockDescriptionPrefix());
 		MONTADORA = register("montadora", p -> new BlockItem(ModBlocks.MONTADORA, p), new Item.Properties().useBlockDescriptionPrefix());
+		PARARRAYOS = register("pararrayos", p -> new BlockItem(ModBlocks.PARARRAYOS, p), new Item.Properties().useBlockDescriptionPrefix());
 		YUNQUE_PORTATIL = register("yunque_portatil", dev.forja.item.PortableAnvilItem::new,
 			new Item.Properties().stacksTo(1).durability(128).rarity(net.minecraft.world.item.Rarity.UNCOMMON)
 				.component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(
@@ -427,6 +430,7 @@ public final class ModItems {
 		stacks.add(new ItemStack(MESA_DE_BRASA));
 		stacks.add(new ItemStack(MESA_DE_ALMAS));
 		stacks.add(new ItemStack(MONTADORA));
+		stacks.add(new ItemStack(PARARRAYOS));
 		stacks.add(new ItemStack(TUBO_DE_CALOR));
 		stacks.add(new ItemStack(CALDERA));
 		stacks.add(new ItemStack(DEPOSITO_DE_CALOR));

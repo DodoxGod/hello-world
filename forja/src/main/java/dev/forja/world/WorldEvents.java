@@ -61,6 +61,14 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 	/** The chance per minute that an event starts when none is running. */
 	public static final float CHANCE = 0.02F;
 
+	/**
+	 * While the meteor shower runs, the chance each minute that another meteorite comes down near each
+	 * player, on top of the one every player gets as it starts. Five minutes of event: one for sure and
+	 * two more on average. It used to be the one and nothing else, which left the Pararrayos de estrellas
+	 * (block/StarRodBlock) with one meteorite a night to catch.
+	 */
+	public static final float METEOR_CHANCE = 0.5F;
+
 	public final Upgrade upgrade;
 	public final int color;
 
@@ -161,6 +169,13 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 			}
 			// While it runs, the sky says so wherever anyone is standing.
 			WorldEvents event = active(level);
+			if (event == METEORITOS) {
+				for (ServerPlayer player : level.players()) {
+					if (level.getRandom().nextFloat() < METEOR_CHANCE) {
+						meteor(level, player);
+					}
+				}
+			}
 			for (ServerPlayer player : level.players()) {
 				level.sendParticles(
 					switch (event) {
@@ -193,7 +208,18 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 	 * empty sky most of the time.
 	 */
 	public static void meteorForTest(ServerLevel level, BlockPos ground) {
-		INBOUND.add(new Falling(level, ground, FALL_TICKS, landingMark(level, ground)));
+		BlockPos landing = drawnTo(level, ground);
+		INBOUND.add(new Falling(level, landing, FALL_TICKS, landingMark(level, landing)));
+	}
+
+	/**
+	 * Where a meteorite meant for {@code ground} actually comes down: on the nearest Pararrayos de estrellas
+	 * in reach (block/StarRodBlock#attract), or where it was going. Decided as it appears, so the warning
+	 * ring and the chat line already point at the rod.
+	 */
+	public static BlockPos drawnTo(ServerLevel level, BlockPos ground) {
+		BlockPos rod = dev.forja.block.StarRodBlock.attract(level, ground);
+		return rod != null ? rod : ground;
 	}
 
 	/**
@@ -214,7 +240,12 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 			int left = falling.left() - 1;
 			if (left <= 0) {
 				INBOUND.remove(index);
-				strike(level, falling.ground());
+				// A rod still standing where it was drawn to takes it whole: no crater, and the star iron at its foot.
+				if (dev.forja.block.StarRodBlock.takeStrike(level, falling.ground())) {
+					dropStarIron(level, falling.ground());
+				} else {
+					strike(level, falling.ground());
+				}
 				net.minecraft.world.phys.Vec3 centre = net.minecraft.world.phys.Vec3.atBottomCenterOf(falling.ground());
 				if (falling.mark() != null && falling.mark().isAlive()) {
 					falling.mark().fire(centre);
@@ -250,7 +281,7 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 	 */
 	private static void meteor(ServerLevel level, ServerPlayer player) {
 		BlockPos where = player.blockPosition().offset(level.getRandom().nextInt(41) - 20, 0, level.getRandom().nextInt(41) - 20);
-		BlockPos ground = level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, where);
+		BlockPos ground = drawnTo(level, level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, where));
 		INBOUND.add(new Falling(level, ground, FALL_TICKS, landingMark(level, ground)));
 		for (ServerPlayer nearby : level.players()) {
 			nearby.sendSystemMessage(Component.translatable("gui.forja.evento.meteorito", ground.getX(), ground.getZ()).withColor(METEORITOS.color));
@@ -265,6 +296,13 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 	 */
 	private static dev.forja.entity.Shockwave landingMark(ServerLevel level, BlockPos ground) {
 		return dev.forja.entity.Shockwave.markFalling(level, net.minecraft.world.phys.Vec3.atBottomCenterOf(ground), 4.0, FALL_TICKS, 8, 0xFFC27A, 0.9F, FALL_HEIGHT);
+	}
+
+	/** What is left of the meteorite, lying where it came down for whoever walks up to it. */
+	private static void dropStarIron(ServerLevel level, BlockPos ground) {
+		int pieces = 3 + level.getRandom().nextInt(4);
+		ItemStack iron = new ItemStack(dev.forja.registry.ModItems.HIERRO_ESTELAR, pieces);
+		level.addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(level, ground.getX() + 0.5, ground.getY() + 0.5, ground.getZ() + 0.5, iron));
 	}
 
 	/** The moment it arrives. */
@@ -284,10 +322,7 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 				}
 			}
 		}
-		// What is left of the meteorite, lying in the crater for whoever walks up to it.
-		int pieces = 3 + level.getRandom().nextInt(4);
-		ItemStack iron = new ItemStack(dev.forja.registry.ModItems.HIERRO_ESTELAR, pieces);
-		level.addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(level, ground.getX() + 0.5, ground.getY() + 0.5, ground.getZ() + 0.5, iron));
+		dropStarIron(level, ground);
 		level.playSound(null, ground, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.AMBIENT, 4.0F, 0.6F);
 		level.sendParticles(ParticleTypes.EXPLOSION, ground.getX() + 0.5, ground.getY() + 1.0, ground.getZ() + 0.5, 8, 2.0, 1.0, 2.0, 0.0);
 		// And the dust it throws up, which hangs around after the bang.

@@ -15,7 +15,10 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.phys.AABB;
 
 /**
  * El jefe se defiende (Andy, 2026-09-28): "el jefe no se defiende si algo lo ataca, y los aprendices no
@@ -190,6 +193,8 @@ public class JefeGameTests {
 		pet.setNoAi(true);
 		CombatGameTests.TestPlayer owner = CombatGameTests.player(helper, new BlockPos(6, 1, 5));
 		pet.tame(owner);
+		// Andy, 2026-09-29: a third, not a half.
+		helper.assertTrue(new CombatConfig().jefeDanoAjeno == 0.333, "por defecto, un tercio: " + new CombatConfig().jefeDanoAjeno);
 		helper.assertTrue(dev.forja.difficulty.Bosses.fromPlayer(pet), "un lobo domado cuenta como su dueño");
 		helper.assertFalse(dev.forja.difficulty.Bosses.fromPlayer(wild), "uno salvaje no");
 		var golem = helper.spawn(EntityTypes.IRON_GOLEM, new BlockPos(6, 1, 1));
@@ -268,5 +273,135 @@ public class JefeGameTests {
 		smith.discard();
 		helper.assertFalse(dev.forja.world.BossArena.lockers(level, player).contains(smith), "sin el herrero, se debería poder construir");
 		helper.succeed();
+	}
+
+	// ------------------------------------------------------------------ La forja reclama
+
+	/**
+	 * Three golems hit him: he plays La forja reclama, and they are gone with nothing left behind, along with
+	 * the spider that was only standing there. His apprentice, a player's wolf and the player are untouched.
+	 * Padded, because it takes everything that is nobody's for twelve blocks round him.
+	 */
+	@GameTest(padding = 16, maxTicks = 120)
+	public void aCrowdOfGolemsIsReclaimed(GameTestHelper helper) {
+		Runnable restore = plainSpawns();
+		var level = helper.getLevel();
+		FallenSmith smith = stillSmith(helper, new BlockPos(4, 1, 4));
+		List<Mob> golems = new ArrayList<>();
+		for (BlockPos at : List.of(new BlockPos(1, 1, 4), new BlockPos(7, 1, 4), new BlockPos(4, 1, 1))) {
+			Mob golem = helper.spawn(EntityTypes.IRON_GOLEM, at);
+			golem.setNoAi(true);
+			golems.add(golem);
+		}
+		Mob bystander = helper.spawn(EntityTypes.SPIDER, new BlockPos(1, 1, 1));
+		bystander.setNoAi(true);
+		Mob apprentice = helper.spawn(EntityTypes.WITHER_SKELETON, new BlockPos(4, 1, 7));
+		apprentice.setNoAi(true);
+		Apprentices.enlist(apprentice);
+		CombatGameTests.TestPlayer owner = CombatGameTests.player(helper, new BlockPos(7, 1, 7));
+		var pet = helper.spawn(EntityTypes.WOLF, new BlockPos(1, 1, 7));
+		pet.setNoAi(true);
+		pet.tame(owner);
+		helper.assertFalse(FallenSmith.reclaimable(owner), "un jugador nunca");
+		helper.assertFalse(FallenSmith.reclaimable(pet), "la mascota de un jugador nunca");
+		helper.assertFalse(FallenSmith.reclaimable(apprentice), "sus aprendices nunca");
+		helper.assertFalse(FallenSmith.reclaimable(smith), "él tampoco");
+		boolean[] started = {false};
+		helper.runAfterDelay(5, () -> {
+			for (Mob golem : golems) {
+				smith.invulnerableTime = 0;
+				smith.hurtServer(level, level.damageSources().mobAttack(golem), 3.0F);
+			}
+		});
+		helper.onEachTick(() -> started[0] |= smith.isReclaiming());
+		helper.succeedWhen(() -> {
+			helper.assertTrue(started[0], "tres gólems le han pegado: debería hacer La forja reclama");
+			helper.assertFalse(smith.isReclaiming(), "todavía está en ello");
+			for (Mob golem : golems) {
+				helper.assertTrue(golem.isRemoved(), "el gólem debería haber desaparecido: " + golem);
+			}
+			helper.assertTrue(bystander.isRemoved(), "la araña que no es de nadie también se va");
+			helper.assertTrue(apprentice.isAlive(), "a su aprendiz no lo toca");
+			helper.assertTrue(pet.isAlive(), "al lobo de un jugador no lo toca");
+			helper.assertTrue(owner.isAlive(), "al jugador no lo toca");
+			AABB around = smith.getBoundingBox().inflate(FallenSmith.RECLAIM_RADIUS + 2.0);
+			helper.assertTrue(level.getEntitiesOfClass(ItemEntity.class, around).isEmpty(), "no debería quedar nada en el suelo");
+			helper.assertTrue(level.getEntitiesOfClass(ExperienceOrb.class, around).isEmpty(), "ni experiencia");
+			helper.assertTrue(smith.reclaimCooldown() > 0, "después, a esperar " + FallenSmith.RECLAIM_COOLDOWN + " ticks");
+			apprentice.discard();
+			pet.discard();
+			smith.discard();
+			restore.run();
+		});
+	}
+
+	/** A player's dog biting him, however often, is the player fighting him: nothing is reclaimed. */
+	@GameTest(padding = 16, maxTicks = 60)
+	public void aPlayersWolvesAreNeverReclaimed(GameTestHelper helper) {
+		Runnable restore = plainSpawns();
+		var level = helper.getLevel();
+		FallenSmith smith = stillSmith(helper, new BlockPos(4, 1, 4));
+		CombatGameTests.TestPlayer owner = CombatGameTests.player(helper, new BlockPos(7, 1, 7));
+		List<Mob> wolves = new ArrayList<>();
+		for (BlockPos at : List.of(new BlockPos(2, 1, 4), new BlockPos(6, 1, 4), new BlockPos(4, 1, 2))) {
+			var wolf = helper.spawn(EntityTypes.WOLF, at);
+			wolf.setNoAi(true);
+			wolf.tame(owner);
+			wolves.add(wolf);
+		}
+		boolean[] started = {false};
+		helper.runAfterDelay(5, () -> {
+			// Three of them, three times each: more than would set it off if they were anybody's.
+			for (int round = 0; round < 3; round++) {
+				for (Mob wolf : wolves) {
+					smith.invulnerableTime = 0;
+					smith.hurtServer(level, level.damageSources().mobAttack(wolf), 4.0F);
+				}
+			}
+		});
+		helper.onEachTick(() -> started[0] |= smith.isReclaiming());
+		helper.runAfterDelay(30, () -> {
+			helper.assertFalse(started[0], "los lobos de un jugador no deberían hacerle reclamar");
+			for (Mob wolf : wolves) {
+				helper.assertTrue(wolf.isAlive(), "el lobo sigue ahí");
+			}
+			helper.assertTrue(smith.reclaimCooldown() == 0, "no ha gastado nada");
+			wolves.forEach(Mob::discard);
+			smith.discard();
+			restore.run();
+			helper.succeed();
+		});
+	}
+
+	/** One golem alone does not set it off with a blow or two; one pounding him for a tenth of his health does. */
+	@GameTest(padding = 16, maxTicks = 100)
+	public void aGolemPoundingHimAloneIsReclaimed(GameTestHelper helper) {
+		Runnable restore = plainSpawns();
+		var level = helper.getLevel();
+		FallenSmith smith = stillSmith(helper, new BlockPos(4, 1, 4));
+		Mob golem = helper.spawn(EntityTypes.IRON_GOLEM, new BlockPos(2, 1, 4));
+		golem.setNoAi(true);
+		boolean[] early = {false};
+		boolean[] started = {false};
+		helper.runAfterDelay(5, () -> {
+			smith.hurtServer(level, level.damageSources().mobAttack(golem), 10.0F);
+		});
+		helper.runAfterDelay(8, () -> {
+			early[0] = smith.isReclaiming();
+			// Ten of its hardest, at a third each: a tenth of him and a little more.
+			for (int blow = 0; blow < 10; blow++) {
+				smith.invulnerableTime = 0;
+				smith.hurtServer(level, level.damageSources().mobAttack(golem), 10.0F);
+			}
+		});
+		helper.onEachTick(() -> started[0] |= smith.isReclaiming());
+		helper.succeedWhen(() -> {
+			helper.assertFalse(early[0], "un solo golpe de un gólem no basta");
+			helper.assertTrue(started[0], "un gólem que le quita una décima parte sí");
+			helper.assertTrue(golem.isRemoved(), "y el gólem desaparece");
+			helper.assertTrue(level.getEntitiesOfClass(ItemEntity.class, smith.getBoundingBox().inflate(6.0)).isEmpty(), "sin hierro ni amapolas");
+			smith.discard();
+			restore.run();
+		});
 	}
 }

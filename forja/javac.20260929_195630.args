@@ -1,0 +1,15 @@
+-d
+/tmp/claude-0/-home-user-hello-world/f10f6b52-b950-5f0d-a078-c763a4181aaa/scratchpad/jc
+-proc:none
+-Xmaxerrs
+2000
+src/main/java/dev/forja/entity/FallenSmith.java
+src/main/java/dev/forja/block/StarRodBlock.java
+src/main/java/dev/forja/world/WorldEvents.java
+src/gametest/java/dev/forja/test/JefeGameTests.java
+src/gametest/java/dev/forja/test/PararrayosGameTests.java
+src/gametest/java/dev/forja/test/ForjaClientTest.java
+src/main/java/dev/forja/registry/ModBlocks.java
+src/main/java/dev/forja/registry/ModItems.java
+src/main/java/dev/forja/client/GuideBookScreen.java
+src/main/java/dev/forja/ForjaConfig.java

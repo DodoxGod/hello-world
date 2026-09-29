@@ -1437,6 +1437,12 @@ public class GuideBookScreen extends Screen {
 			body.add(new IconRow(List.of(new ItemStack(eventIcon(event)), dev.forja.item.UpgradeOrbItem.create(event.upgrade, 100))));
 			body.add(new Text(Component.translatable("gui.forja.libro.evento." + event.id()), INK_SOFT));
 			body.add(new Text(Component.translatable("gui.forja.libro.evento_mejora", event.upgrade.displayName(), event.upgrade.effect(100)), INK));
+			// The one event with something to build against it.
+			if (event == dev.forja.world.WorldEvents.METEORITOS) {
+				body.add(new IconRow(List.of(new ItemStack(ModItems.PARARRAYOS))));
+				body.add(new Text(Component.translatable("gui.forja.libro.pararrayos",
+					dev.forja.block.StarRodBlock.RADIUS, dev.forja.block.StarRodBlock.STRIKES), INK_SOFT));
+			}
 		}
 		return body;
 	}
@@ -1505,6 +1511,9 @@ public class GuideBookScreen extends Screen {
 		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_fases", Math.round(dev.forja.entity.FallenSmith.HEALTH),
 			dev.forja.entity.FallenSmith.EMBERS), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_defensa"), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_reclama",
+			dev.forja.entity.FallenSmith.RECLAIM_WINDOW / 20, Math.round(dev.forja.entity.FallenSmith.RECLAIM_RADIUS),
+			dev.forja.entity.FallenSmith.RECLAIM_COOLDOWN / 20), INK_SOFT));
 		return body;
 	}
 

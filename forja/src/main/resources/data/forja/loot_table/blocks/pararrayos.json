@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "forja:pararrayos",
+          "functions": [
+            {
+              "function": "minecraft:copy_state",
+              "block": "forja:pararrayos",
+              "properties": [
+                "desgaste"
+              ]
+            }
+          ]
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "forja:blocks/pararrayos"
+}

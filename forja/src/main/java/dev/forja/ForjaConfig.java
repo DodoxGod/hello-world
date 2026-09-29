@@ -97,6 +97,11 @@ public final class ForjaConfig {
 				if (read != null) {
 					current = read;
 				}
+				// The old default for what others do to a boss, never changed by hand, follows the new one
+				// (Andy, 2026-09-29: a third, not a half). Anything else somebody typed in is theirs.
+				if (current.combate != null && current.combate.jefeDanoAjeno == 0.5) {
+					current.combate.jefeDanoAjeno = 0.333;
+				}
 				// Written back so keys added in a newer version show up in an older file.
 				Files.writeString(path, GSON.toJson(current));
 				return;

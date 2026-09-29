@@ -1,0 +1,6 @@
+-d
+/tmp/claude-0/-home-user-hello-world/f10f6b52-b950-5f0d-a078-c763a4181aaa/scratchpad/jc
+-proc:none
+-Xmaxerrs
+100000
+@/tmp/claude-0/-home-user-hello-world/f10f6b52-b950-5f0d-a078-c763a4181aaa/scratchpad/srcs.txt

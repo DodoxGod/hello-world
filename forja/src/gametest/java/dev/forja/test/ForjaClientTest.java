@@ -142,6 +142,19 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// La forja reclama (FallenSmith.RECLAIM_*): four iron golems on the smith, and what is left of them.
+			if ("jefe_reclama".equals(solo)) {
+				checkAttackTimings();
+				filmReclaim(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
+			// The Pararrayos de estrellas (block/StarRodBlock) catching a meteorite of the shower.
+			if ("pararrayos".equals(solo)) {
+				filmStarRod(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("meteorito".equals(solo)) {
 				filmMeteor(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
@@ -9920,6 +9933,193 @@ public class ForjaClientTest implements FabricClientGameTest {
 		dev.forja.combat.CombatConfig.get().packChance = new dev.forja.combat.CombatConfig().packChance;
 	}
 
+	/**
+	 * La forja reclama (Andy, 2026-09-29): four iron golems go for the smith, and once three have hit him he
+	 * plants the hammer, the ring closes, they are dragged in and gone, with nothing on the floor after. Seen
+	 * from a corner above, four shots timed off the move's own count: the warning, the ring half closed, the
+	 * pull, and after. If the golems have not set it off by themselves in ten seconds, three of their blows
+	 * are dealt by hand, so the shots are of the move and not of a golem that wandered off.
+	 */
+	private static void filmReclaim(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		int px = x + 200;
+		int pz = z + 200;
+		server.runCommand("time set noon");
+		server.runCommand("weather clear");
+		server.runCommand("difficulty easy");
+		server.runCommand("gamemode spectator @a");
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d polished_blackstone_bricks", px - 18, y - 1, pz - 18, px + 18, y - 1, pz + 18));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", px - 18, y, pz - 18, px + 18, y + 12, pz + 18));
+		double camX = px + 12.5;
+		double camY = y + 8.0;
+		double camZ = pz + 12.5;
+		for (int tick = 0; tick < 20; tick++) {
+			server.runCommand(String.format(Locale.ROOT, "tp @a %.2f %.2f %.2f facing %.2f %.2f %.2f", camX, camY, camZ, px + 0.5, y + 1.0, pz + 0.5));
+			context.waitTicks(1);
+		}
+		context.runOnClient(mc -> {
+			mc.options.fov().set(70);
+			mc.gui.hud.getChat().clearMessages(false);
+			if (!mc.gui.hud.isHidden()) {
+				mc.gui.hud.toggle();
+			}
+		});
+		int[] cast = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			dev.forja.entity.FallenSmith smith = spawnSmith(level, px, y, pz);
+			int[] made = new int[5];
+			made[0] = smith.getId();
+			for (int i = 0; i < 4; i++) {
+				double angle = Math.PI / 4.0 + i * Math.PI / 2.0;
+				var golem = net.minecraft.world.entity.EntityTypes.IRON_GOLEM.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				check(golem != null, "an iron golem should be creatable");
+				golem.snapTo(px + 0.5 + Math.cos(angle) * 7.0, y, pz + 0.5 + Math.sin(angle) * 7.0, (float) Math.toDegrees(angle) + 90.0F, 0.0F);
+				golem.setPersistenceRequired();
+				level.addFreshEntity(golem);
+				golem.setTarget(smith);
+				made[i + 1] = golem.getId();
+			}
+			return made;
+		});
+		// Let them walk in and swing; the move goes off on its own once three of them have hit him.
+		boolean natural = false;
+		for (int wait = 0; wait < 40 && !natural; wait++) {
+			context.waitTicks(5);
+			natural = server.computeOnServer(s -> connection.getServerLevel().getEntity(cast[0]) instanceof dev.forja.entity.FallenSmith smith
+				&& smith.isReclaiming());
+		}
+		if (!natural) {
+			server.runOnServer(s -> {
+				ServerLevel level = connection.getServerLevel();
+				if (level.getEntity(cast[0]) instanceof dev.forja.entity.FallenSmith smith) {
+					for (int i = 1; i <= 3; i++) {
+						if (level.getEntity(cast[i]) instanceof net.minecraft.world.entity.LivingEntity golem) {
+							smith.invulnerableTime = 0;
+							smith.hurtServer(level, level.damageSources().mobAttack(golem), 3.0F);
+						}
+					}
+				}
+			});
+		}
+		log("la forja reclama: " + (natural ? "la disparan los gólems solos" : "golpes dados a mano tras 10 s"));
+		String[] shots = {"jefe_reclama_01_aviso", "jefe_reclama_02_anillo", "jefe_reclama_03_arrastre"};
+		int[] at = {dev.forja.entity.FallenSmith.RECLAIM_WINDUP - 4, dev.forja.entity.FallenSmith.RECLAIM_PULL + 2, 5};
+		for (int shot = 0; shot < shots.length; shot++) {
+			int wanted = at[shot];
+			for (int guard = 0; guard < 60; guard++) {
+				int left = server.computeOnServer(s -> connection.getServerLevel().getEntity(cast[0]) instanceof dev.forja.entity.FallenSmith smith
+					? smith.reclaimLeft() : 0);
+				if (left <= wanted) {
+					break;
+				}
+				context.waitTicks(1);
+			}
+			context.takeScreenshot(shots[shot]);
+		}
+		for (int guard = 0; guard < 60; guard++) {
+			boolean done = server.computeOnServer(s -> !(connection.getServerLevel().getEntity(cast[0]) instanceof dev.forja.entity.FallenSmith smith)
+				|| !smith.isReclaiming());
+			if (done) {
+				break;
+			}
+			context.waitTicks(1);
+		}
+		context.waitTicks(10);
+		context.takeScreenshot("jefe_reclama_04_despues");
+		String after = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			int golems = 0;
+			for (int i = 1; i < cast.length; i++) {
+				if (level.getEntity(cast[i]) != null) {
+					golems++;
+				}
+			}
+			net.minecraft.world.phys.AABB around = new net.minecraft.world.phys.AABB(new BlockPos(px, y, pz)).inflate(16.0);
+			int items = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, around).size();
+			int orbs = level.getEntitiesOfClass(net.minecraft.world.entity.ExperienceOrb.class, around).size();
+			return golems + "," + items + "," + orbs;
+		});
+		log("la forja reclama, después (gólems, objetos, orbes): " + after);
+		check(after.equals("0,0,0"), "La forja reclama should leave no golem, no item and no experience: " + after);
+		context.runOnClient(mc -> {
+			if (mc.gui.hud.isHidden()) {
+				mc.gui.hud.toggle();
+			}
+		});
+		server.runCommand("kill @e[type=!player]");
+		server.runCommand("gamemode survival @a");
+		server.runCommand("difficulty peaceful");
+	}
+
+	/**
+	 * The Pararrayos de estrellas: a meteorite of the shower aimed six blocks off comes down on the rod, the
+	 * warning ring already round the rod's foot, and leaves no crater. Seen low and from the side, so the fall
+	 * and the rod are both in the frame: the warning, the meteorite coming in, the strike and after.
+	 */
+	private static void filmStarRod(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		int px = x + 240;
+		int pz = z + 200;
+		server.runCommand("gamemode spectator @a");
+		server.runCommand("time set 13500");
+		server.runCommand("weather clear");
+		server.runOnServer(s -> dev.forja.world.WorldEvents.stop(connection.getServerLevel()));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d grass_block", px - 14, y - 1, pz - 14, px + 14, y - 1, pz + 14));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", px - 14, y, pz - 14, px + 14, y + 20, pz + 14));
+		// The rod on a short plinth, as it would be on a roof, and two lanterns to read it by at dusk.
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d polished_deepslate", px, y, pz, px, y + 1, pz));
+		server.runCommand(String.format(Locale.ROOT, "setblock %d %d %d forja:pararrayos", px, y + 2, pz));
+		server.runCommand(String.format(Locale.ROOT, "setblock %d %d %d lantern", px - 2, y, pz + 1));
+		server.runCommand(String.format(Locale.ROOT, "setblock %d %d %d lantern", px + 2, y, pz - 1));
+		double camX = px + 10.5;
+		double camY = y + 3.0;
+		double camZ = pz + 7.5;
+		for (int tick = 0; tick < 20; tick++) {
+			server.runCommand(String.format(Locale.ROOT, "tp @a %.2f %.2f %.2f facing %.2f %.2f %.2f", camX, camY, camZ, px + 0.5, y + 7.0, pz + 0.5));
+			context.waitTicks(1);
+		}
+		context.runOnClient(mc -> {
+			mc.options.fov().set(80);
+			mc.gui.hud.getChat().clearMessages(false);
+			if (!mc.gui.hud.isHidden()) {
+				mc.gui.hud.toggle();
+			}
+		});
+		BlockPos rod = new BlockPos(px, y + 2, pz);
+		BlockPos aim = new BlockPos(px - 6, y, pz - 2);
+		boolean drawn = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			boolean redirected = rod.equals(dev.forja.world.WorldEvents.drawnTo(level, aim));
+			dev.forja.world.WorldEvents.meteorForTest(level, aim);
+			return redirected;
+		});
+		check(drawn, "a meteorite aimed six blocks from the rod should be drawn onto it");
+		String[] shots = {"pararrayos_01_aviso", "pararrayos_02_cae", "pararrayos_03_impacto", "pararrayos_04_despues"};
+		int[] waits = {8, 18, 9, 30};
+		for (int shot = 0; shot < shots.length; shot++) {
+			context.waitTicks(waits[shot]);
+			context.runOnClient(mc -> mc.gui.hud.getChat().clearMessages(false));
+			context.takeScreenshot(shots[shot]);
+		}
+		String after = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var state = level.getBlockState(rod);
+			String wear = state.getBlock() instanceof dev.forja.block.StarRodBlock ? String.valueOf(state.getValue(dev.forja.block.StarRodBlock.DESGASTE)) : "roto";
+			boolean crater = level.getBlockState(aim.below()).is(Blocks.MAGMA_BLOCK) || level.getBlockState(aim.below()).is(Blocks.BASALT)
+				|| level.getBlockState(aim.below()).isAir();
+			return wear + "," + crater;
+		});
+		log("pararrayos, después (desgaste, cráter donde apuntaba): " + after);
+		check(after.equals("1,false"), "the rod should take the meteorite and wear by one, with no crater where it was aimed: " + after);
+		context.runOnClient(mc -> {
+			mc.options.fov().set(70);
+			if (mc.gui.hud.isHidden()) {
+				mc.gui.hud.toggle();
+			}
+		});
+		server.runCommand("kill @e[type=item]");
+		server.runCommand("gamemode survival @a");
+		server.runCommand("time set noon");
+	}
+
 	/** The class screens as a player meets them, and the Curandero with the lantern in hand and the mana bar up. */
 	private static void showClasses(ClientGameTestContext context, TestServerContext server, TestServerConnection connection) {
 		context.runOnClient(mc -> mc.gui.setScreen(new dev.forja.client.ClassChoiceScreen(false)));
@@ -10232,6 +10432,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			new Timing("nucleo_estelar", "gather", dev.forja.entity.StarCore.RELEASE_WINDUP),
 			new Timing("automata_de_forja", "vent", dev.forja.entity.ForgeAutomaton.EMBER_WINDUP),
 			new Timing("herrero_caido", "starcall", dev.forja.entity.FallenSmith.STARFALL_WINDUP),
+			new Timing("herrero_caido", "reclaim", dev.forja.entity.FallenSmith.RECLAIM_WINDUP),
 			new Timing("pavesa", "dive", dev.forja.entity.EmberWisp.DIVE_WINDUP),
 			new Timing("ascua_mayor", "dive", dev.forja.entity.GreaterEmber.DIVE_WINDUP)
 		);

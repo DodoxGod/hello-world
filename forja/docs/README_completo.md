@@ -477,12 +477,19 @@ el crisol tiene dos huecos, así que una tercera cosa sería una receta que nada
   fogonazo en cada golpe básico) y **morada**, con lenguas de fuego saliéndole por la abertura y por la
   chimenea del hombro, cuando llama a los aprendices, se refunde, tira meteoritos o baja de su último
   cuarto de vida. Por los agujeros de la placa se le ven las brasas de dentro.
+  Lo que no viene de un jugador le hace **un tercio**, y si las criaturas del mundo se le echan encima (3
+  distintas en 10 s, o gólems y wardens que le intentan quitar un 10 % de la vida) hace **La forja reclama**:
+  1,5 s de aviso, arrastra todo lo que no es de nadie a 12 bloques y lo deshace sin botín ni experiencia; nunca
+  a jugadores, mascotas ni aprendices; una vez cada 40 s. Su lluvia de estrellas tira una estrella por llamada,
+  cada 3 s, con 1 s de aviso.
 
 ## Eventos del cielo
 
 Nueve eventos (meteoritos, tormenta arcana, niebla de almas, aurora, luna de sangre, eclipse, ventisca,
 marea viva y **lluvia de pavesas**, que las trae tres veces más a menudo y ya avivadas). Cada uno trae una mejora que no existe en ningún otro sitio; con un **frasco de esencia** a
 cielo abierto te la quedas como orbe. Los meteoritos además dejan **hierro estelar** en un cráter.
+El **pararrayos de estrellas** atrae los meteoritos que iban a caer a 12 bloques o menos: no hay cráter, el
+hierro queda a sus pies y aguanta 4.
 
 ## Objetos que se llevan
 
@@ -701,7 +708,8 @@ JAVA_HOME="E:/IA/Claude/.tooling/jdk/jdk-25.0.4.1+1" ./gradlew build
   rasgos, los colores de las estadísticas, la lanza y el mazo con sus mejoras, el arco y la ballesta (disparan y
   tensa según el material), el escudo con Púas, Desarmar, los tooltips, las plantillas, la estrella de la Mesa de forja (forjar, mejorar y cambiar piezas), la guía, la armadura puesta, Lanzacabezas, Veta, el martillo, Fundición, Telequinesis, Multidisparo, Zancada, Ejecución, Nutrición, Purificación, Luz y Absorción.
   Guarda capturas en `build/run/clientGameTest/screenshots`.
-- Secciones sueltas del test con `FORJA_SOLO=`: `onda`, `cielo`, `libro`, `hud`, `meteorito`, `pantallas`
+- Secciones sueltas del test con `FORJA_SOLO=`: `onda`, `cielo`, `libro`, `hud`, `meteorito`, `jefe_reclama`,
+  `pararrayos`, `pantallas`
   (mesas, crisol, caja de moldeo, armario y tooltip) y `particulas`. Medio minuto cada una. Lo que se
   juzga a ojo tiene su foto o su GIF en `docs/mejoras_graficas/`, con el registro de cada cambio.
 - Las texturas de las pantallas salen todas de `tools/generate_assets.py` (`generate_gui_textures`,

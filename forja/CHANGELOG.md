@@ -1,5 +1,48 @@
 # Novedades
 
+## 2026-09-29 — el jefe contra los demás, y un pararrayos para los meteoritos
+
+- **Daño ajeno al jefe: un tercio.** Lo que no viene de un jugador (un gólem, un warden, otro monstruo) le hace
+  1/3 al Herrero Caído (`jefeDanoAjeno` = 0,333; antes 0,5). Tus mascotas y tus flechas siguen contando como tú.
+  Una `config/forja.json` que aún tenga el 0,5 de antes pasa sola a 0,333; cualquier otro valor escrito a mano se
+  respeta.
+- **Nuevo movimiento del Herrero: La forja reclama.** Cuando las criaturas del mundo se le echan encima:
+  - **Se dispara** si en los últimos **10 s** (200 ticks) le intentan pegar **3 criaturas distintas** que no son de
+    nadie, o si las grandes (**100 de vida o más**: gólem de hierro, devastador, warden, wither) le intentan quitar
+    entre todas **un 10 % de la vida** (32, contado ya al tercio: un warden en 3 golpes, un gólem en unos 7).
+  - **Aviso de 30 ticks (1,5 s):** abre los brazos, un anillo morado se cierra desde 12 bloques hasta sus pies y
+    suena la carga; los últimos **16 ticks** arrastra hacia él todo lo que puede llevarse; en el tick 30 clava el
+    martillo y lo que arrastró **desaparece**: sin botín, sin experiencia y sin muerte (se descarta, no se mata).
+  - **Alcance:** todo lo que no es de nadie a **12 bloques**, haya atacado o no.
+  - **Nunca:** jugadores, mascotas o animales con dueño (lobos, gatos, loros, caballos domados), lo que monta un
+    jugador, sus aprendices y el resto del bando de Forja, él mismo y el dragón. Un jugador con su perro no lo
+    verá nunca.
+  - **Enfriamiento: 40 s** (800 ticks). No empieza en mitad de un golpe suyo ni con la lluvia de estrellas en
+    camino; mientras dura no hace otra cosa.
+  - Animación propia (`reclaim`, 2,2 s, el martillo abajo justo en el tick 30), en la guía y probada:
+    `aCrowdOfGolemsIsReclaimed`, `aPlayersWolvesAreNeverReclaimed`, `aGolemPoundingHimAloneIsReclaimed`.
+    Capturas con `FORJA_SOLO=jefe_reclama`.
+- **Lluvia de estrellas del jefe (respuesta a tu pregunta):** cae **una** estrella por llamada. Cada 3 s (60 ticks),
+  en su último cuarto y con un objetivo, marca el sitio donde está el objetivo, alza el martillo y a los 20 ticks cae
+  un solo impacto: 9 de daño mágico a todo lo que esté en un cuadrado de 6×6 bloques centrado en la marca (3 a cada
+  lado; salvo su bando). Lo de "estrellas" es el dibujo: una lluvia de partículas sobre un único punto.
+- **Pararrayos de estrellas** (`forja:pararrayos`), para la **lluvia de meteoritos** (el evento del cielo, no el
+  jefe):
+  - Un meteorito que iba a caer a **12 bloques o menos** (en horizontal; el pararrayos puede estar hasta 6 bloques
+    más abajo o 24 más arriba, en un tejado) cae **sobre el pararrayos**. Se decide al aparecer, así que el anillo
+    de aviso del suelo y el mensaje del chat ya señalan el pararrayos.
+  - Al caer no abre cráter: el pararrayos se lo traga y deja el hierro estelar a sus pies. Si alguien lo quita
+    mientras cae, el meteorito cae ahí como cualquier otro.
+  - **Aguanta 4 meteoritos:** cada uno lo desgasta (se ve: el cristal se apaga y se agrieta, el cobre se pone
+    verde) y el cuarto lo rompe sin soltar nada. Quitado a mano conserva el desgaste.
+  - **Receta:** fragmento de amatista arriba, acero entre dos lingotes de cobre y un lingote de hierro abajo.
+  - **Más meteoritos:** antes solo caía uno por jugador al empezar el evento. Ahora, además, cada minuto del evento
+    (dura 5) cae otro cerca de cada jugador con un 50 % de probabilidad: uno seguro y dos más de media. El aviso es
+    el de siempre: la bola se ve caer 34 ticks (1,7 s) desde 48 bloques, un anillo marca el suelo donde va a dar y
+    el chat dice las coordenadas.
+  - Pruebas: `PararrayosGameTests` (lo atrae, se gasta y se rompe al cuarto, fuera de alcance no hace nada).
+    Capturas con `FORJA_SOLO=pararrayos`.
+
 ## 2026-09-29 — clases, farol de curación, castillo rehecho e IA de grupo
 
 - **Clases** (docs/CLASES.md): Guerrero, Asesino, Tanque, Mago, Curandero, Arquero y Herrero. Se elige una, se sube

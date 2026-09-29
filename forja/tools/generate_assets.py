@@ -3398,6 +3398,8 @@ PICKAXE_BLOCKS = [
     "forja:caja_de_moldeo", "forja:caja_de_moldeo_de_acero", "forja:caja_de_moldeo_de_damasco",
     "forja:mesa_de_losa", "forja:mesa_de_brasa", "forja:mesa_de_almas",
     "forja:montadora",
+    # The rod that catches the meteor shower's meteorites (block/StarRodBlock).
+    "forja:pararrayos",
     # The strainer stood on a table: it drops by hand too, the tag only makes a pickaxe quicker at it.
     "forja:colador",
     # The heat line.
@@ -5929,6 +5931,26 @@ SMITH_POINTED = {
     "cloak": R(6, 0, 0), "leg_right": R(6, 0, 0), "leg_left": R(-6, 0, 0),
 }
 
+# La forja reclama (FallenSmith.RECLAIM_WINDUP): both arms flung out wide over the floor as the ring starts to
+# close, held there with the frame thrown back, drawn in to the chest as everything is dragged towards him,
+# and the hammer driven down in front of him on the tick they are gone.
+SMITH_RECLAIM_SPREAD = {
+    "arm_right": R(-70, 0, -62), "arm_left": R(-70, 0, 62), "body": R(-10, 0, 0), "head": R(-18, 0, 0),
+    "cloak": R(-6, 0, 0), "leg_right": R(4, 0, 10), "leg_left": R(4, 0, -10),
+}
+SMITH_RECLAIM_HELD = {
+    "arm_right": R(-84, 0, -70), "arm_left": R(-84, 0, 70), "body": R(-16, 0, 0, p=(0, 0.5, 0)), "head": R(-28, 0, 0),
+    "cloak": R(-10, 0, 0), "leg_right": R(4, 0, 12), "leg_left": R(4, 0, -12),
+}
+SMITH_RECLAIM_GATHER = {
+    "arm_right": R(-128, 0, -18), "arm_left": R(-96, 0, 24), "body": R(-8, 0, 0), "head": R(-12, 0, 0),
+    "cloak": R(-4, 0, 0), "leg_right": R(6, 0, 8), "leg_left": R(6, 0, -8),
+}
+SMITH_RECLAIM_DOWN = {
+    "arm_right": R(-40, 0, -2), "arm_left": R(-24, 0, 16), "body": R(26, 0, 0, p=(0, -2, -1)), "head": R(20, 0, 0),
+    "cloak": R(12, 0, 0), "leg_right": R(-14, 0, 6), "leg_left": R(12, 0, -6),
+}
+
 
 def generate_boss_assets():
     """The Fallen Smith: bigger, lopsided, half wrecked, and moving like something wound up rather than alive."""
@@ -6044,6 +6066,12 @@ def generate_boss_assets():
             # down to point at it AT 1.0 s — FallenSmith.STARFALL_WINDUP, 20 ticks — as the stars land.
             "starcall": clip(1.6, [(0, SMITH_REST), (0.4, SMITH_SKYWARD), (0.9, SMITH_SKYWARD_HIGH), (1.0, SMITH_SKYWARD_HIGH),
                                    (1.1, SMITH_POINTED), (1.6, SMITH_REST)]),
+            # La forja reclama: arms out while the ring closes, drawn in when the pull starts (0.7 s, the last
+            # FallenSmith.RECLAIM_PULL ticks) and the hammer down AT 1.5 s, FallenSmith.RECLAIM_WINDUP, 30 ticks,
+            # on the tick everything he pulled in is gone.
+            "reclaim": clip(2.2, [(0, SMITH_REST), (0.3, SMITH_RECLAIM_SPREAD), (0.7, SMITH_RECLAIM_HELD),
+                                  (1.35, SMITH_RECLAIM_GATHER), (1.5, SMITH_RECLAIM_DOWN), (1.8, SMITH_RECLAIM_DOWN),
+                                  (2.2, SMITH_REST)]),
             # The fire while he is still holding back: it breathes, and the violet is not there at all.
             "fire_calm": {
                 "loop": True,
@@ -6531,6 +6559,7 @@ def generate_fallen_forge():
     generate_crucible_assets()
     generate_melt_tank_assets()
     generate_assembler_assets()
+    generate_star_rod_assets()
     write_fallen_forge()
     write_json(DATA / "worldgen/template_pool/fragua_caida/inicio.json", {
         "elements": [{
@@ -10204,6 +10233,150 @@ def generate_assembler_assets():
         "key": {"A": "forja:acero", "P": "minecraft:piston", "R": "minecraft:redstone",
                 "M": "forja:mesa_de_forja_mayor", "H": "minecraft:hopper"},
         "result": {"id": "forja:montadora", "count": 1},
+    })
+
+
+def generate_star_rod_assets():
+    """Pararrayos de estrellas (block/StarRodBlock): a copper foot, a brass collar, a steel shaft and a cube of
+    star glass on top, the colour of the meteor shower's sky.
+
+    One 16x16 sheet per wear (desgaste 0 to 3), laid out for the model's four boxes:
+      * star glass, sides [0, 0, 4, 4] and top [0, 4, 4, 8];
+      * steel shaft, sides [5, 0, 7, 9] and ends [5, 9, 7, 11];
+      * brass collar, sides [8, 0, 12, 1] and top [8, 1, 12, 5];
+      * copper foot, sides [0, 12, 8, 14] and top and bottom [8, 8, 16, 16].
+    Every meteorite it takes dims the glass and cracks it, scorches the steel and turns more of the copper green.
+    """
+    import random as _random
+
+    folder = ASSETS / "textures/block"
+    copper, copper_light, copper_dark = (192, 108, 74), (232, 150, 108), (122, 62, 42)
+    verdigris, verdigris_dark = (84, 170, 140), (52, 120, 98)
+    brass, brass_light, brass_dark = (206, 162, 80), (240, 206, 120), (120, 86, 34)
+    steel, steel_light, steel_dark = (146, 150, 160), (206, 210, 220), (74, 78, 88)
+    glass, glass_light, glass_deep = (191, 232, 255), (250, 254, 255), (104, 160, 214)
+    spent_glass = (120, 132, 146)
+
+    def mix(a, b, t):
+        return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+    def px(img, x, y, colour):
+        img.putpixel((x, y), tuple(colour) + (255,))
+
+    for wear in range(4):
+        rng = _random.Random(94117 + wear * 31)
+        dim = wear / 3.0
+        img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+        g_mid = mix(glass, spent_glass, dim * 0.8)
+        g_hi = mix(glass_light, spent_glass, dim * 0.6)
+        g_lo = mix(glass_deep, (70, 78, 90), dim * 0.8)
+
+        # Star glass, sides: a bright facet up and left, the deep blue down and right, and the star in it.
+        for y in range(4):
+            for x in range(4):
+                shade = g_hi if x + y <= 1 else g_lo if x + y >= 5 else g_mid
+                px(img, x, y, shade)
+        px(img, 1, 1, g_hi)
+        px(img, 2, 2, mix(g_hi, (255, 255, 255), 0.5 * (1 - dim)))
+        # Star glass, top: a four-pointed star cut into it.
+        for y in range(4, 8):
+            for x in range(4):
+                px(img, x, y, g_mid)
+        for x, y in ((1, 5), (2, 5), (1, 6), (2, 6)):
+            px(img, x, y, g_hi)
+        for x, y in ((0, 4), (3, 4), (0, 7), (3, 7)):
+            px(img, x, y, g_lo)
+        # The cracks the meteorites leave in the glass: one more each time.
+        cracks = [((0, 2), (1, 3)), ((3, 0), (2, 1)), ((1, 4), (2, 7))][:wear]
+        for (x0, y0), (x1, y1) in cracks:
+            steps = max(abs(x1 - x0), abs(y1 - y0))
+            for i in range(steps + 1):
+                t = i / max(1, steps)
+                px(img, round(x0 + (x1 - x0) * t), round(y0 + (y1 - y0) * t), (40, 44, 52))
+
+        # Steel shaft: lit edge, dark edge, a brass band every third texel, scorched with wear.
+        for y in range(9):
+            px(img, 5, y, steel_light)
+            px(img, 6, y, steel_dark if y % 3 else steel)
+        for y in (2, 5, 8):
+            px(img, 5, y, brass_light)
+            px(img, 6, y, brass_dark)
+        for y in range(9, 11):
+            px(img, 5, y, steel)
+            px(img, 6, y, steel_dark)
+        for _ in range(wear * 2):
+            x, y = rng.choice([(5, 0), (6, 1), (5, 3), (6, 4), (5, 6), (6, 7)])
+            px(img, x, y, mix(img.getpixel((x, y))[:3], (30, 28, 30), 0.7))
+
+        # Brass collar.
+        for x in range(8, 12):
+            px(img, x, 0, brass_light if x < 10 else brass)
+        for y in range(1, 5):
+            for x in range(8, 12):
+                edge = x in (8, 11) or y in (1, 4)
+                px(img, x, y, brass_dark if edge else brass)
+        px(img, 9, 2, brass_light)
+
+        # Copper foot: sides and a riveted top, going green one patch per meteorite.
+        for x in range(8):
+            px(img, x, 12, copper_light)
+            px(img, x, 13, copper_dark if x in (0, 7) else copper)
+        for y in range(8, 16):
+            for x in range(8, 16):
+                edge = x in (8, 15) or y in (8, 15)
+                g = rng.randint(-8, 8)
+                base = copper_dark if edge else tuple(max(0, min(255, c + g)) for c in copper)
+                px(img, x, y, base)
+        for x, y in ((9, 9), (14, 9), (9, 14), (14, 14)):
+            px(img, x, y, brass_light)
+        for x, y in ((11, 11), (12, 11), (11, 12), (12, 12)):
+            px(img, x, y, copper_dark)
+        patches = [[(10, 13), (10, 14), (11, 14)], [(13, 9), (13, 10), (14, 10)], [(2, 13), (3, 13), (9, 10)]]
+        for patch in patches[:wear]:
+            for x, y in patch:
+                px(img, x, y, verdigris if (x + y) % 2 else verdigris_dark)
+        if wear:
+            px(img, 5 + wear, 13, verdigris_dark)
+        img.save(folder / f"pararrayos_{wear}.png")
+
+        def box(frm, to, side, top, bottom=None):
+            faces = {d: {"uv": side, "texture": "#rod"} for d in ("north", "south", "east", "west")}
+            faces["up"] = {"uv": top, "texture": "#rod"}
+            faces["down"] = {"uv": bottom or top, "texture": "#rod"}
+            return {"from": frm, "to": to, "faces": faces}
+
+        write_json(ASSETS / f"models/block/pararrayos_{wear}.json", {
+            "parent": "minecraft:block/block",
+            "textures": {"rod": f"forja:block/pararrayos_{wear}", "particle": f"forja:block/pararrayos_{wear}"},
+            "elements": [
+                box([4, 0, 4], [12, 2, 12], [0, 12, 8, 14], [8, 8, 16, 16]),
+                box([6, 2, 6], [10, 3, 10], [8, 0, 12, 1], [8, 1, 12, 5]),
+                box([7, 3, 7], [9, 12, 9], [5, 0, 7, 9], [5, 9, 7, 11]),
+                box([6, 12, 6], [10, 16, 10], [0, 0, 4, 4], [0, 4, 4, 8]),
+            ],
+        })
+    write_json(ASSETS / "blockstates/pararrayos.json", {"variants": {
+        f"desgaste={wear}": {"model": f"forja:block/pararrayos_{wear}"} for wear in range(4)
+    }})
+    write_json(ASSETS / "items/pararrayos.json", {"model": {"type": "minecraft:model", "model": "forja:block/pararrayos_0"}})
+    # It keeps its wear when taken down, or a rod near its end would be mended by breaking it and putting it back.
+    write_json(DATA / "loot_table/blocks/pararrayos.json", {
+        "type": "minecraft:block",
+        "pools": [{"rolls": 1.0, "bonus_rolls": 0.0,
+                   "entries": [{"type": "minecraft:item", "name": "forja:pararrayos",
+                                "functions": [{"function": "minecraft:copy_state", "block": "forja:pararrayos",
+                                               "properties": ["desgaste"]}]}],
+                   "conditions": [{"condition": "minecraft:survives_explosion"}]}],
+        "random_sequence": "forja:blocks/pararrayos",
+    })
+    # Copper for the rod, as a lightning rod has, and an iron foot; steel for the shaft that has to take a
+    # meteorite; an amethyst shard for the glass that draws it.
+    write_json(DATA / "recipe/pararrayos.json", {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "pattern": [" G ", "CAC", " I "],
+        "key": {"G": "minecraft:amethyst_shard", "A": "forja:acero", "C": "minecraft:copper_ingot", "I": "minecraft:iron_ingot"},
+        "result": {"id": "forja:pararrayos", "count": 1},
     })
 
 

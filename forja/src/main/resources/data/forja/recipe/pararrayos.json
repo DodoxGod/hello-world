@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " G ",
+    "CAC",
+    " I "
+  ],
+  "key": {
+    "G": "minecraft:amethyst_shard",
+    "A": "forja:acero",
+    "C": "minecraft:copper_ingot",
+    "I": "minecraft:iron_ingot"
+  },
+  "result": {
+    "id": "forja:pararrayos",
+    "count": 1
+  }
+}

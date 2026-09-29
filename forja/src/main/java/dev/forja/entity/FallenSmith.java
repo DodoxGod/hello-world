@@ -99,6 +99,8 @@ public class FallenSmith extends Monster implements GeoEntity {
 	private static final RawAnimation CALL = RawAnimation.begin().thenPlay("call");
 	/** The hammer raised to the sky for STARFALL_WINDUP, and pulled down as the stars fall. */
 	private static final RawAnimation STARCALL = RawAnimation.begin().thenPlay("starcall");
+	/** La forja reclama: the hammer held out over the floor while everything round him is dragged in (RECLAIM_WINDUP). */
+	private static final RawAnimation RECLAIM = RawAnimation.begin().thenPlay("reclaim");
 	// The fire runs on its own controller, so it can burn however it likes while he does something else.
 	private static final RawAnimation FIRE_CALM = RawAnimation.begin().thenLoop("fire_calm");
 	private static final RawAnimation FIRE_RAGE = RawAnimation.begin().thenLoop("fire_rage");
@@ -152,6 +154,34 @@ public class FallenSmith extends Monster implements GeoEntity {
 	/** How far round the marked spot the shower catches you. */
 	public static final double STARFALL_RADIUS = 3.0;
 
+	/**
+	 * La forja reclama: what he does when the world's own creatures gang up on him (Andy, 2026-09-29: "si
+	 * varios golems lo atacan, que haga una animación, atraiga a todos los mobs y los mate sin que suelten
+	 * nada").
+	 *
+	 * <p>It goes off when, within the last {@link #RECLAIM_WINDOW} ticks, either {@link #RECLAIM_CROWD}
+	 * different creatures that are nobody's have tried to hurt him, or the heavy ones among them (anything
+	 * with {@link #RECLAIM_HEAVY_HEALTH} health or more: an iron golem, a ravager, a warden, a wither) have
+	 * between them tried to take {@link #RECLAIM_HEAVY_SHARE} of his health, counted after
+	 * {@code jefeDanoAjeno}: a warden gets there in three blows and a golem in about seven. A player, a
+	 * player's pet (anything tamed or owned: wolves, cats, parrots, horses), his apprentices and the rest
+	 * of Forja's own side never count and are never taken, so a player with a dog never sees it.
+	 *
+	 * <p>Then: {@link #RECLAIM_WINDUP} ticks with the hammer out over the floor, a ring of violet closing
+	 * in on him and the sound of it gathering; for the last {@link #RECLAIM_PULL} of them everything that
+	 * can be taken within {@link #RECLAIM_RADIUS} blocks is dragged towards him; and on the last tick it is
+	 * gone. Discarded, not killed: no loot, no experience, no death. Not again for {@link #RECLAIM_COOLDOWN}
+	 * ticks.
+	 */
+	public static final int RECLAIM_WINDUP = 30;
+	public static final int RECLAIM_PULL = 16;
+	public static final int RECLAIM_COOLDOWN = 800;
+	public static final double RECLAIM_RADIUS = 12.0;
+	public static final int RECLAIM_WINDOW = 200;
+	public static final int RECLAIM_CROWD = 3;
+	public static final double RECLAIM_HEAVY_HEALTH = 100.0;
+	public static final float RECLAIM_HEAVY_SHARE = 0.10F;
+
 	/** The backhand: close range, fast, and the one he punishes you with for standing next to him. */
 	public static final int STRIKE_COOLDOWN = 90;
 	public static final double STRIKE_REACH = 4.5;
@@ -188,6 +218,15 @@ public class FallenSmith extends Monster implements GeoEntity {
 	/** Ticks until the stars he has called come down, and where; 0 when none are coming. */
 	private int starfall;
 	private Vec3 starfallAt = Vec3.ZERO;
+	/** Ticks left of La forja reclama (0 when it is not under way), and how long until it can come again. */
+	private int reclaim;
+	private int reclaimCooldown;
+
+	/** One try at hurting him by something that can be reclaimed, for the RECLAIM_WINDOW count. */
+	private record Blow(java.util.UUID who, int at, float damage, boolean heavy) {
+	}
+
+	private final java.util.ArrayDeque<Blow> blows = new java.util.ArrayDeque<>();
 
 	public FallenSmith(EntityType<? extends FallenSmith> type, Level level) {
 		super(type, level);
@@ -388,6 +427,13 @@ public class FallenSmith extends Monster implements GeoEntity {
 		// One of ours is kept off him by the truce further down; it must not turn him round either.
 		if (source.getEntity() instanceof LivingEntity attacker && !dev.forja.world.Truce.blocks(this, source)) {
 			this.answer(attacker);
+			// Counted as tried, not as landed: three golems swinging on the same tick are three, even if
+			// the hurt cooldown lets only one of them through.
+			if (reclaimable(attacker)) {
+				this.forgetOldBlows();
+				this.blows.addLast(new Blow(attacker.getUUID(), this.tickCount,
+					damage * dev.forja.difficulty.Bosses.othersShare(source), attacker.getMaxHealth() >= RECLAIM_HEAVY_HEALTH));
+			}
 		}
 		if (this.reforging > 0 && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
 			level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 1.0F, 1.8F);
@@ -432,6 +478,19 @@ public class FallenSmith extends Monster implements GeoEntity {
 			// used to sit paused for the whole reforge and then land, out of nowhere, as he came out.
 			this.windup.cancel();
 			this.reforge(level);
+			return;
+		}
+		// La forja reclama: while it is under way it is all he does.
+		if (this.reclaim > 0) {
+			this.rollReclaim(level);
+			return;
+		}
+		if (this.reclaimCooldown > 0) {
+			this.reclaimCooldown--;
+		}
+		// Not over a blow of his own or a shower on its way: those finish first, and the count waits.
+		if (this.reclaimCooldown == 0 && !this.windup.charging() && this.starfall == 0 && this.wave == 0 && this.gangedUp()) {
+			this.startReclaim(level);
 			return;
 		}
 		float share = this.getHealth() / this.getMaxHealth();
@@ -854,6 +913,145 @@ public class FallenSmith extends Monster implements GeoEntity {
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.HOSTILE, 2.0F, 1.2F);
 	}
 
+	/**
+	 * Whether something may be taken by La forja reclama: a creature that belongs to nobody. Never a player
+	 * (not a Mob at all), never anything tamed or owned, never one of his apprentices or anything else on
+	 * Forja's side, never him, and never the dragon, whose fight is not his to end.
+	 */
+	public static boolean reclaimable(net.minecraft.world.entity.Entity entity) {
+		if (!(entity instanceof Mob mob) || !mob.isAlive() || mob instanceof FallenSmith) {
+			return false;
+		}
+		if (dev.forja.difficulty.Bosses.fromPlayer(mob)
+			|| mob instanceof net.minecraft.world.entity.OwnableEntity owned && owned.getOwnerReference() != null) {
+			return false;
+		}
+		if (dev.forja.world.Apprentices.isApprentice(mob) || dev.forja.world.Truce.ours(mob)
+			|| mob instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon) {
+			return false;
+		}
+		// Somebody riding it is somebody's.
+		for (net.minecraft.world.entity.Entity rider : mob.getPassengers()) {
+			if (rider instanceof Player) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/** Drops the blows older than RECLAIM_WINDOW, so the count only ever holds the last ten seconds. */
+	private void forgetOldBlows() {
+		while (!this.blows.isEmpty() && this.tickCount - this.blows.peekFirst().at() > RECLAIM_WINDOW) {
+			this.blows.removeFirst();
+		}
+	}
+
+	/** The RECLAIM_WINDOW count: three of them, or the heavy ones having tried for a tenth of him. */
+	private boolean gangedUp() {
+		this.forgetOldBlows();
+		if (this.blows.isEmpty()) {
+			return false;
+		}
+		java.util.Set<java.util.UUID> who = new java.util.HashSet<>();
+		float heavy = 0.0F;
+		for (Blow blow : this.blows) {
+			who.add(blow.who());
+			if (blow.heavy()) {
+				heavy += blow.damage();
+			}
+		}
+		return who.size() >= RECLAIM_CROWD || heavy >= this.getMaxHealth() * RECLAIM_HEAVY_SHARE;
+	}
+
+	/** Whether La forja reclama is under way, for the tests and the footage. */
+	public boolean isReclaiming() {
+		return this.reclaim > 0;
+	}
+
+	/** Ticks left of La forja reclama, 0 when it is not under way: what the footage times its shots by. */
+	public int reclaimLeft() {
+		return this.reclaim;
+	}
+
+	/** Ticks until La forja reclama can come again. */
+	public int reclaimCooldown() {
+		return this.reclaimCooldown;
+	}
+
+	/** La forja reclama, from its first tick: he plants the hammer, and the room starts to close in on him. */
+	public void startReclaim(ServerLevel level) {
+		this.reclaim = RECLAIM_WINDUP;
+		this.reclaimCooldown = RECLAIM_COOLDOWN;
+		this.blows.clear();
+		this.windup.cancel();
+		this.getNavigation().stop();
+		this.triggerAnim("boss", "reclaim");
+		this.lightForge(RECLAIM_WINDUP + RAGE_TICKS);
+		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.HOSTILE, 3.0F, 0.5F);
+		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.HOSTILE, 3.0F, 0.6F);
+	}
+
+	/** Everything within RECLAIM_RADIUS that La forja reclama takes. */
+	public List<Mob> reclaimed(ServerLevel level) {
+		return level.getEntitiesOfClass(Mob.class, this.getBoundingBox().inflate(RECLAIM_RADIUS),
+			mob -> reclaimable(mob) && mob.distanceToSqr(this) <= RECLAIM_RADIUS * RECLAIM_RADIUS);
+	}
+
+	/** One tick of it: the ring closing in, then the pull, then nothing left. */
+	private void rollReclaim(ServerLevel level) {
+		this.reclaim--;
+		this.getNavigation().stop();
+		this.setDeltaMovement(this.getDeltaMovement().multiply(0.0, 1.0, 0.0));
+		Vec3 heart = this.position().add(0.0, this.getBbHeight() * 0.45, 0.0);
+		List<Mob> caught = this.reclaimed(level);
+		if (this.reclaim > 0) {
+			// The ring on the floor, closing from the edge of his reach to his feet over the whole warning,
+			// every mote in it already moving in: the reach is the thing to read.
+			double ring = RECLAIM_RADIUS * this.reclaim / (double) RECLAIM_WINDUP;
+			for (int i = 0; i < 16; i++) {
+				double angle = i * Math.PI / 8.0 + this.reclaim * 0.15;
+				double px = this.getX() + Math.cos(angle) * ring;
+				double pz = this.getZ() + Math.sin(angle) * ring;
+				level.sendParticles(VIOLET, px, this.getY() + 0.2, pz, 1, 0.05, 0.05, 0.05, 0.0);
+				level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, px, this.getY() + 0.3, pz, 0,
+					this.getX() - px, 0.0, this.getZ() - pz, 0.06);
+			}
+			// A thread from each of them to him: they are marked from the first tick.
+			for (Mob mob : caught) {
+				Vec3 from = mob.position().add(0.0, mob.getBbHeight() * 0.5, 0.0);
+				Vec3 in = heart.subtract(from);
+				level.sendParticles(ParticleTypes.REVERSE_PORTAL, from.x, from.y, from.z, 3, 0.2, 0.3, 0.2, 0.02);
+				level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, from.x, from.y, from.z, 0, in.x, in.y, in.z, 0.08);
+				if (this.reclaim <= RECLAIM_PULL) {
+					double distance = Math.max(0.5, in.length());
+					double pull = Math.min(0.9, distance * 0.14);
+					mob.getNavigation().stop();
+					mob.setDeltaMovement(in.x / distance * pull, 0.12, in.z / distance * pull);
+					mob.hurtMarked = true;
+				}
+			}
+			if (this.reclaim == RECLAIM_PULL) {
+				level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.CHAIN_BREAK, SoundSource.HOSTILE, 3.0F, 0.4F);
+			}
+			return;
+		}
+		// Gone: discarded rather than killed, so nothing drops, no experience comes out and no death is dealt.
+		for (Mob mob : caught) {
+			Vec3 at = mob.position().add(0.0, mob.getBbHeight() * 0.5, 0.0);
+			level.sendParticles(ParticleTypes.SOUL, at.x, at.y, at.z, 16, mob.getBbWidth() * 0.4, mob.getBbHeight() * 0.35, mob.getBbWidth() * 0.4, 0.04);
+			level.sendParticles(dev.forja.registry.ModParticles.CENIZA, at.x, at.y, at.z, 24, mob.getBbWidth() * 0.5, mob.getBbHeight() * 0.4, mob.getBbWidth() * 0.5, 0.03);
+			level.sendParticles(VIOLET, at.x, at.y, at.z, 10, 0.3, 0.4, 0.3, 0.02);
+			mob.discard();
+		}
+		Shockwave.burst(level, this.position(), 4.0, 12, Shockwave.VIOLET);
+		level.sendParticles(dev.forja.registry.ModParticles.CHISPA, this.getX(), this.getY() + 0.3, this.getZ(), 40, 0.8, 0.2, 0.8, 0.4);
+		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 4.0F, 0.4F);
+		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.SOUL_ESCAPE.value(), SoundSource.HOSTILE, 3.0F, 0.5F);
+		if (this.getTarget() != null && !this.getTarget().isAlive()) {
+			this.setTarget(null);
+		}
+	}
+
 	/** The warning: the ring on the floor where they will land, and the light gathering over it. */
 	private void rollStarfall(ServerLevel level) {
 		this.starfall--;
@@ -906,6 +1104,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 	public void remove(RemovalReason reason) {
 		this.bar.removeAllPlayers();
 		this.windup.cancel();
+		this.reclaim = 0;
 		super.remove(reason);
 	}
 
@@ -964,7 +1163,8 @@ public class FallenSmith extends Monster implements GeoEntity {
 			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER).death(DEATH)
 			.state(smith -> smith.entityData.get(DATA_REFORGING) ? REFORGE : null))
 			.triggerableAnim("slam", SLAM).triggerableAnim("roar", ROAR).triggerableAnim("strike", STRIKE).triggerableAnim("hook", HOOK)
-			.triggerableAnim("swing", SWING).triggerableAnim("call", CALL).triggerableAnim("starcall", STARCALL));
+			.triggerableAnim("swing", SWING).triggerableAnim("call", CALL).triggerableAnim("starcall", STARCALL)
+				.triggerableAnim("reclaim", RECLAIM));
 		// The fire is its own controller: it only touches the two bones the flames hang off, so it can
 		// keep burning through a swing, a roar or a reforge without any of them fighting over a bone. It goes
 		// back to burning after a flash, too: it used to stop dead on the flash's last frame.

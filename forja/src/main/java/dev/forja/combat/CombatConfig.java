@@ -205,8 +205,9 @@ public final class CombatConfig {
 	 * del jefe éste lo mata y ni siquiera tienes que pelear"). A warden's boom, an iron golem, another
 	 * monster: this share of the blow. A player's pet or arrow counts as the player and is not touched, and
 	 * neither is damage with no attacker behind it (lava, a fall, an upgrade's lightning). 1 turns it off.
+	 * A third since 2026-09-29 (Andy: "que sea 1/3"); it was a half.
 	 */
-	public double jefeDanoAjeno = 0.5;
+	public double jefeDanoAjeno = 0.333;
 	/** Chance a hostile mob spawns a veteran or an elite, before the multipliers (difficulty, distance, depth, nights, gear, adaptive). */
 	public double veteranChance = 0.12;
 	public double eliteChance = 0.03;

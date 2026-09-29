@@ -291,6 +291,25 @@ public final class ModBlocks {
 			vessel));
 	}
 
+	/**
+	 * Pararrayos de estrellas: draws a meteorite of the shower onto itself instead of letting it dig its
+	 * crater somewhere else. See block/StarRodBlock.
+	 */
+	public static final Block PARARRAYOS = register(
+		"pararrayos",
+		new dev.forja.block.StarRodBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.COLOR_ORANGE)
+				.strength(3.0F, 6.0F)
+				.sound(SoundType.COPPER)
+				.requiresCorrectToolForDrops()
+				.noOcclusion()
+				// The star glass at the top still has some of the sky in it.
+				.lightLevel(state -> 7 - state.getValue(dev.forja.block.StarRodBlock.DESGASTE) * 2)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("pararrayos")))
+		)
+	);
+
 	private ModBlocks() {
 	}
 
