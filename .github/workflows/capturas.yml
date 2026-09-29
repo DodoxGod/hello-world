@@ -2,21 +2,15 @@ name: Capturas de Forja
 
 # Runs one section of the client game test (FORJA_SOLO) under a virtual display and prints the
 # screenshots as contact sheets encoded in the log, so a session without access to the game can
-# look at them. Start it by hand (workflow_dispatch) with the section name.
+# look at them. It runs on a push whose commit message carries "[capturas:SECTION]" or
+# "[capturas:SECTION:FILTER]", e.g. "[capturas:castillo]".
 on:
-  workflow_dispatch:
-    inputs:
-      solo:
-        description: "Sección de ForjaClientTest (FORJA_SOLO), p. ej. castillo, mundo, animaciones"
-        required: true
-        default: castillo
-      filtro:
-        description: "Solo las capturas cuyo nombre contenga esto (vacío = todas)"
-        required: false
-        default: ""
+  push:
+    branches: ["claude/**"]
 
 jobs:
   capturas:
+    if: contains(github.event.head_commit.message, '[capturas:')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     defaults:
@@ -29,6 +23,14 @@ jobs:
           distribution: temurin
           java-version: 25
       - uses: gradle/actions/setup-gradle@v4
+      - name: Sección pedida
+        env:
+          MSG: ${{ github.event.head_commit.message }}
+        run: |
+          SPEC=$(printf '%s' "$MSG" | grep -oE '\[capturas:[^]]+\]' | head -1 | sed 's/^\[capturas://; s/\]$//')
+          echo "FORJA_SOLO=${SPEC%%:*}" >> "$GITHUB_ENV"
+          case "$SPEC" in *:*) echo "FILTRO=${SPEC#*:}" >> "$GITHUB_ENV";; *) echo "FILTRO=" >> "$GITHUB_ENV";; esac
+          echo "Sección: $SPEC"
       - name: Pantalla virtual y OpenGL por software
         run: |
           sudo apt-get update -qq
@@ -36,7 +38,6 @@ jobs:
           pip install -q pillow
       - name: Prueba de cliente
         env:
-          FORJA_SOLO: ${{ inputs.solo }}
           LIBGL_ALWAYS_SOFTWARE: "1"
           MESA_GL_VERSION_OVERRIDE: "4.6"
         run: |
@@ -47,8 +48,6 @@ jobs:
           exit ${STATUS:-0}
       - name: Hojas de contactos en el registro
         if: always()
-        env:
-          FILTRO: ${{ inputs.filtro }}
         run: |
           python3 - <<'EOF'
           import base64, glob, io, os
@@ -85,5 +84,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: capturas-${{ inputs.solo }}
+          name: capturas
           path: forja/**/screenshots/**/*.png
