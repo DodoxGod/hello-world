@@ -62,7 +62,7 @@ public final class BastionGround {
 	public static boolean suitable(Structure.GenerationContext context) {
 		int x0 = context.chunkPos().getMinBlockX();
 		int z0 = context.chunkPos().getMinBlockZ();
-		long key = context.seed() * 31L + context.chunkPos().toLong();
+		long key = context.seed() * 31L + (((long) x0 << 32) ^ (z0 & 0xffffffffL));
 		Boolean known = KNOWN.get(key);
 		if (known != null) {
 			return known;

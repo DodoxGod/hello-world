@@ -255,8 +255,8 @@ public final class ObsV3 {
 		o[i++] = spell == ForgeType.BACULO ? 1.0 : 0.0;
 		o[i++] = spell == ForgeType.GRIMORIO ? 1.0 : 0.0;
 		o[i++] = !bow && !crossbow && spell == null ? 1.0 : 0.0;
-		MobMind self = MobAi.mind(mob);
-		o[i++] = ObsM1.clip(reach(held, self == null ? 1 : self.reachVersion) / 6.0, 0.0, 2.0);
+		MobMind reader = MobAi.mind(mob);
+		o[i++] = ObsM1.clip(reach(held, reader == null ? 1 : reader.reachVersion) / 6.0, 0.0, 2.0);
 		List<Mob> side = new ArrayList<>();
 		for (Mob other : ObsM1.allies(mob)) {
 			if (other.getTarget() == target && other.distanceTo(target) <= ALLY_RANGE) {
