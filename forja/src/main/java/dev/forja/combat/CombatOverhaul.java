@@ -19,6 +19,8 @@ public final class CombatOverhaul {
 	public static void register() {
 		// Registers the synced stamina attachment now, on both sides, before any player joins.
 		java.util.Objects.requireNonNull(Stamina.VALUE);
+		java.util.Objects.requireNonNull(Stamina.RESERVE);
+		KillFlow.register();
 		PayloadTypeRegistry.serverboundPlay().register(DodgePayload.TYPE, DodgePayload.STREAM_CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(ChargePayload.TYPE, ChargePayload.STREAM_CODEC);
 		ServerPlayNetworking.registerGlobalReceiver(ChargePayload.TYPE,

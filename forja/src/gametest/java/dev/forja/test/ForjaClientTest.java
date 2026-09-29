@@ -166,6 +166,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			if ("mana".equals(solo)) {
+				playMana(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("castillo".equals(solo)) {
 				filmBastion(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
@@ -10874,6 +10879,177 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.waitTicks(20);
 	}
 
+	/**
+	 * The mana bar, played in survival with real clicks (FORJA_SOLO=mana). Andy, 2026-09-28: "¿podrías hacer una
+	 * barra de maná?", with "maná y un enfriamiento corto" for the staff and the tome, kills flowing in "un máximo
+	 * de 3 % de maná por cada 5 ticks", and upgrades for max mana. No bar before the first magic weapon; a staff
+	 * in the hand, cast until empty (the bar drains, and flashes when a cast is refused); it fills again by
+	 * itself; three kills leave a pale stretch that flows in, on the stamina bar too; Reserva on four pieces
+	 * doubles the max; and F1 hides it.
+	 */
+	private static void playMana(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		dev.forja.combat.CombatConfig cfg = dev.forja.combat.CombatConfig.get();
+		int px = x + 30;
+		int pz = z + 30;
+		server.runCommand("time set noon");
+		server.runCommand("weather clear");
+		server.runCommand("difficulty easy");
+		server.runCommand("gamemode survival @a");
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d smooth_stone", px - 8, y - 1, pz - 16, px + 8, y - 1, pz + 4));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", px - 8, y, pz - 16, px + 8, y + 6, pz + 4));
+		tp(server, px + 0.5, y, pz + 0.5, 180.0F, 8.0F);
+		server.runOnServer(s -> connection.getServerPlayer().getInventory().clearContent());
+		context.waitTicks(30);
+		quiet(context);
+
+		// ---- no magic yet: no bar
+		boolean[] asleep = {server.computeOnServer(s -> !dev.forja.magic.Mana.awake(connection.getServerPlayer())),
+			context.computeOnClient(mc -> !dev.forja.magic.Mana.awake(mc.player))};
+		check(asleep[0] && asleep[1], "a smith who never held a staff has no mana bar (server " + asleep[0] + ", client " + asleep[1] + ")");
+		context.takeScreenshot(TestScreenshotOptions.of("mana_00_sin_magia").disableCounterPrefix().withSize(960, 540));
+
+		// ---- a staff in the hand: the bar is there, full, with its number
+		server.runOnServer(s -> {
+			ServerPlayer player = connection.getServerPlayer();
+			ItemStack staff = Assembler.create(ForgeType.BACULO, List.of(AMATISTA, HIERRO, MADERA), connection.getServerLevel().registryAccess());
+			player.getInventory().setItem(0, staff);
+			player.getInventory().setSelectedSlot(0);
+			player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetHeldSlotPacket(0));
+		});
+		context.runOnClient(mc -> mc.player.getInventory().setSelectedSlot(0));
+		context.waitTicks(25);
+		quiet(context);
+		float[] start = context.computeOnClient(mc -> new float[] {dev.forja.magic.Mana.awake(mc.player) ? 1.0F : 0.0F,
+			dev.forja.magic.Mana.value(mc.player), dev.forja.magic.Mana.max(mc.player)});
+		check(start[0] == 1.0F, "holding a staff wakes the bar on the client");
+		check(Math.abs(start[1] - start[2]) < 0.5F && Math.abs(start[2] - cfg.manaMax) < 0.01F, "and it starts full: " + start[1] + "/" + start[2]);
+		context.takeScreenshot(TestScreenshotOptions.of("mana_01_baculo_en_mano").disableCounterPrefix().withSize(960, 540));
+
+		// ---- cast until it is empty, one click a spell
+		float tap = cfg.manaBoltCost;
+		int casts = 0;
+		float before = start[1];
+		for (int guard = 0; guard < 40; guard++) {
+			float have = server.computeOnServer(s -> dev.forja.magic.Mana.value(connection.getServerPlayer()));
+			if (have < tap) {
+				break;
+			}
+			context.getInput().pressKey(options -> options.keyUse);
+			context.waitTicks(dev.forja.magic.Spellcasting.BOLT_COOLDOWN + 1);
+			casts++;
+			if (casts == 5) {
+				context.takeScreenshot(TestScreenshotOptions.of("mana_02_gastando").disableCounterPrefix().withSize(960, 540));
+			}
+		}
+		float empty = server.computeOnServer(s -> dev.forja.magic.Mana.value(connection.getServerPlayer()));
+		log("mana: " + casts + " proyectiles con clic dejan la barra de " + before + " en " + empty);
+		check(casts >= 10, "a full bar should throw at least ten bolts, threw " + casts);
+		check(empty < tap, "and be left with less than a bolt's worth, " + empty);
+		float seen = context.computeOnClient(mc -> dev.forja.magic.Mana.value(mc.player));
+		check(Math.abs(seen - empty) < 1.5F, "the client sees the same bar: " + seen + " against " + empty);
+		int denied = server.computeOnServer(s -> dev.forja.magic.Mana.denied(connection.getServerPlayer()));
+		int bolts = server.computeOnServer(s -> connection.getServerLevel().getEntitiesOfClass(dev.forja.entity.MagicBolt.class,
+			connection.getServerPlayer().getBoundingBox().inflate(40.0)).size());
+		context.getInput().pressKey(options -> options.keyUse);
+		context.waitTicks(3);
+		context.takeScreenshot(TestScreenshotOptions.of("mana_03_vacia_destello").disableCounterPrefix().withSize(960, 540));
+		int[] refused = server.computeOnServer(s -> new int[] {dev.forja.magic.Mana.denied(connection.getServerPlayer()),
+			connection.getServerLevel().getEntitiesOfClass(dev.forja.entity.MagicBolt.class, connection.getServerPlayer().getBoundingBox().inflate(40.0)).size()});
+		int clientDenied = context.computeOnClient(mc -> mc.player.getAttached(dev.forja.magic.Mana.STATE).denied());
+		check(refused[0] == denied + 1 && clientDenied == refused[0], "the click on an empty bar is refused and the client is told: "
+			+ denied + " -> " + refused[0] + ", client " + clientDenied);
+		check(refused[1] <= bolts, "and no bolt leaves (" + bolts + " -> " + refused[1] + ")");
+		context.waitTicks(8);
+		context.takeScreenshot(TestScreenshotOptions.of("mana_03b_vacia_latiendo").disableCounterPrefix().withSize(960, 540));
+
+		// ---- it comes back by itself, quicker once the casting has stopped
+		float low = server.computeOnServer(s -> dev.forja.magic.Mana.value(connection.getServerPlayer()));
+		context.waitTicks(cfg.manaIdleDelayTicks + 20);
+		float later = server.computeOnServer(s -> dev.forja.magic.Mana.value(connection.getServerPlayer()));
+		float least = (cfg.manaRegenPerTick * cfg.manaIdleDelayTicks + cfg.manaIdleRegenPerTick * 20) * 0.8F;
+		log("mana: tres segundos quieto, de " + low + " a " + later);
+		check(later - low >= least, "three quiet seconds should bring back at least " + least + ", brought " + (later - low));
+		context.takeScreenshot(TestScreenshotOptions.of("mana_04_regenerando").disableCounterPrefix().withSize(960, 540));
+
+		// ---- three kills with the staff: the pale stretch after the mana, on the stamina bar too, flowing in
+		server.runOnServer(s -> {
+			ServerPlayer player = connection.getServerPlayer();
+			dev.forja.magic.Mana.set(player, 30.0F);
+			dev.forja.combat.Stamina.trySpend(player, 70.0F);
+		});
+		for (int far : new int[] {4, 6, 8}) {
+			server.runCommand(String.format(Locale.ROOT,
+				"summon minecraft:husk %d.5 %d %d.5 {NoAI:1b,PersistenceRequired:1b,Health:1.0f,Rotation:[0f,0f],Tags:[\"forja_diana\"]}", px, y, pz - far));
+		}
+		// A husk may spawn with a shield (CombatConfig.shieldChance), and a raised one stops the bolt.
+		server.runCommand("item replace entity @e[tag=forja_diana] weapon.offhand with air");
+		server.runCommand("item replace entity @e[tag=forja_diana] weapon.mainhand with air");
+		server.runOnServer(s -> connection.getServerLevel().getEntitiesOfClass(net.minecraft.world.entity.monster.zombie.Husk.class,
+			new net.minecraft.world.phys.AABB(new BlockPos(px, y, pz)).inflate(12.0)).forEach(husk -> husk.setHealth(1.0F)));
+		context.waitTicks(10);
+		for (int shot = 0; shot < 3; shot++) {
+			context.getInput().pressKey(options -> options.keyUse);
+			context.waitTicks(dev.forja.magic.Spellcasting.BOLT_COOLDOWN + 1);
+		}
+		context.waitTicks(2);
+		quiet(context);
+		// Alive ones: a husk that has just died lies there for its death throes.
+		int left = server.computeOnServer(s -> connection.getServerLevel().getEntitiesOfClass(net.minecraft.world.entity.monster.zombie.Husk.class,
+			new net.minecraft.world.phys.AABB(new BlockPos(px, y, pz)).inflate(12.0), net.minecraft.world.entity.LivingEntity::isAlive).size());
+		float[] pool = context.computeOnClient(mc -> new float[] {dev.forja.magic.Mana.pending(mc.player), dev.forja.magic.Mana.value(mc.player),
+			dev.forja.combat.Stamina.pending(mc.player)});
+		log("mana: quedan " + left + " momias; esperando " + pool[0] + " de maná (barra " + pool[1] + ") y " + pool[2] + " de estamina");
+		context.takeScreenshot(TestScreenshotOptions.of("mana_05_muertes_esperando").disableCounterPrefix().withSize(960, 540));
+		check(left == 0, "three bolts should have killed the three husks, " + left + " left");
+		check(pool[0] > 5.0F && pool[2] > 5.0F, "the kills should be waiting to flow into both bars: mana " + pool[0] + ", stamina " + pool[2]);
+		context.waitTicks(12);
+		float[] flowing = context.computeOnClient(mc -> new float[] {dev.forja.magic.Mana.pending(mc.player), dev.forja.magic.Mana.value(mc.player)});
+		check(flowing[0] < pool[0] && flowing[1] > pool[1], "and flow in: pending " + pool[0] + " -> " + flowing[0] + ", bar " + pool[1] + " -> " + flowing[1]);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("mana_06_fluyendo").disableCounterPrefix().withSize(960, 540));
+
+		// ---- Reserva on four pieces: the max grows, and the number says so
+		server.runOnServer(s -> {
+			ServerPlayer player = connection.getServerPlayer();
+			var registries = connection.getServerLevel().registryAccess();
+			for (EquipmentSlot slot : new EquipmentSlot[] {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+				ForgeType type = switch (slot) {
+					case HEAD -> ForgeType.CASCO;
+					case CHEST -> ForgeType.PECHERA;
+					case LEGS -> ForgeType.GREBAS;
+					default -> ForgeType.BOTAS;
+				};
+				ItemStack piece = Assembler.create(type, List.of(dev.forja.material.ForgeMaterial.AMATISTA, CUERO), registries);
+				player.setItemSlot(slot, UpgradeRecipes.upgraded(piece, type, Upgrade.RESERVA, 100, registries));
+			}
+		});
+		context.waitTicks(15);
+		float grown = context.computeOnClient(mc -> dev.forja.magic.Mana.max(mc.player));
+		float expectedMax = cfg.manaMax + 4 * Upgrade.manaReserve(1.0F) + dev.forja.magic.Mana.AMETHYST_SET_MANA;
+		log("mana: con Reserva en las cuatro piezas de amatista la barra llega a " + grown);
+		check(Math.abs(grown - expectedMax) < 0.5F, "Reserva on four amethyst pieces should take the bar to " + expectedMax + ", got " + grown);
+		quiet(context);
+		context.takeScreenshot(TestScreenshotOptions.of("mana_07_armadura_reserva").disableCounterPrefix().withSize(960, 540));
+
+		// ---- F1: nothing of the mod's over the hotbar
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_F1);
+		context.waitTicks(3);
+		check(context.computeOnClient(mc -> mc.gui.hud.isHidden()), "F1 should hide the interface");
+		context.takeScreenshot(TestScreenshotOptions.of("mana_08_f1").disableCounterPrefix().withSize(960, 540));
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_F1);
+		context.waitTicks(3);
+
+		server.runCommand("kill @e[tag=forja_diana]");
+		server.runOnServer(s -> {
+			ServerPlayer player = connection.getServerPlayer();
+			player.getInventory().clearContent();
+			for (EquipmentSlot slot : new EquipmentSlot[] {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+				player.setItemSlot(slot, ItemStack.EMPTY);
+			}
+		});
+		server.runCommand("difficulty peaceful");
+	}
+
 	/** A staff or a tome of plain diamond, with these upgrades at these percentages. */
 	private static ItemStack magicWeapon(net.minecraft.core.HolderLookup.Provider registries, ForgeType type, Object... upgrades) {
 		ItemStack made = Assembler.create(type, type == ForgeType.BACULO ? List.of(DIAMANTE, HIERRO, MADERA) : List.of(DIAMANTE, HIERRO, HIERRO), registries);
@@ -10919,7 +11095,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 			int tome = dev.forja.magic.Spellcasting.cooldown(quickTome, ForgeType.GRIMORIO);
 			log("mejoras magicas: Conjuro veloz deja la espera del baculo en " + fast + " de " + slow + " tics y la del grimorio en " + tome
 				+ " de " + dev.forja.magic.Spellcasting.TOME_COOLDOWN + "; Tinta indeleble, la runa en " + dev.forja.magic.Spellcasting.runeTicks(quickTome) + " tics");
-			check(slow == 14 && fast == 8 && tome == 42, "Conjuro veloz should take two fifths off the wait: " + slow + " -> " + fast + ", tome " + tome);
+			// The mana bar cut the waits (a bolt 6 ticks, an area 20); Conjuro veloz still takes two fifths off them.
+			check(slow == 6 && fast == 4 && tome == 12, "Conjuro veloz should take two fifths off the wait: " + slow + " -> " + fast + ", tome " + tome);
 			check(dev.forja.magic.Spellcasting.runeTicks(quickTome) == 240, "Tinta indeleble at a hundred should double the rune's six seconds");
 			for (Upgrade upgrade : List.of(Upgrade.CONJURO_VELOZ, Upgrade.SOBRECARGA, Upgrade.RESONANCIA)) {
 				check(upgrade.appliesTo(ForgeType.BACULO) && upgrade.appliesTo(ForgeType.GRIMORIO) && !upgrade.appliesTo(ForgeType.ESPADA), upgrade + " is for the staff and the tome alone");

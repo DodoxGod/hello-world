@@ -39,6 +39,7 @@ public final class CombatClient {
 		});
 		CombatAnims.register();
 		HudElementRegistry.attachElementAfter(VanillaHudElements.AIR_BAR, dev.forja.Forja.id("barra_estamina"), new StaminaHud());
+		HudElementRegistry.attachElementAfter(VanillaHudElements.ARMOR_BAR, dev.forja.Forja.id("barra_mana"), new ManaHud());
 		HudElementRegistry.attachElementAfter(VanillaHudElements.CROSSHAIR, dev.forja.Forja.id("barra_postura"), new PostureHud());
 		HudElementRegistry.attachElementAfter(VanillaHudElements.CROSSHAIR, dev.forja.Forja.id("barra_carga"), new ChargeHud());
 	}
@@ -95,7 +96,7 @@ public final class CombatClient {
 	private static void tryDodge(LocalPlayer player) {
 		CombatRules rules = CombatAnims.rules();
 		if (!rules.enabled() || !rules.dodge() || dodgeCooldown > 0 || !player.onGround() || player.isSpectator()) return;
-		if (!player.isCreative() && rules.stamina() && player.getAttachedOrElse(Stamina.VALUE, rules.staminaMax()) < rules.dodgeCost()) return;
+		if (!player.isCreative() && rules.stamina() && player.getAttachedOrElse(Stamina.VALUE, Stamina.max(player)) < Stamina.cost(player, rules.dodgeCost())) return;
 		if (!ClientPlayNetworking.canSend(DodgePayload.TYPE)) return;
 
 		Vec2 input = player.input.getMoveVector();
@@ -106,7 +107,8 @@ public final class CombatClient {
 		double sin = Math.sin(yaw);
 		double cos = Math.cos(yaw);
 		Vec3 dir = new Vec3(sideways * cos - forward * sin, 0.0, forward * cos + sideways * sin).normalize();
-		player.setDeltaMovement(dir.x * rules.dodgeStrength(), rules.dodgeLift(), dir.z * rules.dodgeStrength());
+		double strength = rules.dodgeStrength() * Stamina.dodgeReach(player);
+		player.setDeltaMovement(dir.x * strength, rules.dodgeLift(), dir.z * strength);
 		dodgeCooldown = rules.dodgeCooldownTicks();
 		ClientPlayNetworking.send(new DodgePayload((float) dir.x, (float) dir.z));
 	}

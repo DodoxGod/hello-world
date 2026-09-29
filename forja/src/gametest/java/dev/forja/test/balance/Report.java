@@ -990,7 +990,7 @@ public final class Report {
 			reasons.add("Afilado +3 en cada golpe");
 		}
 		if (magic) {
-			reasons.add("hechizo de " + f(e.build.spellDamage, 1) + " cada " + e.build.spellCooldown + " ticks, sin estamina y atravesando armadura");
+			reasons.add("hechizo de " + f(e.build.spellDamage, 1) + " cada " + e.build.spellCooldown + " ticks mientras dura el maná, sin estamina y atravesando armadura");
 		} else if (!e.build.charges) {
 			reasons.add("no puede cargar golpes");
 		}

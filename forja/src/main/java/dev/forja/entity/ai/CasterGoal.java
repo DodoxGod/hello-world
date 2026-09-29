@@ -183,7 +183,7 @@ public final class CasterGoal extends Goal {
 		ItemStack staff = this.mob.getMainHandItem();
 		this.mob.swing(InteractionHand.MAIN_HAND);
 		Spellcasting.cast(level, this.mob, staff, ForgeType.BACULO, null);
-		this.cooldown = Spellcasting.cooldown(staff, ForgeType.BACULO);
+		this.cooldown = Spellcasting.monsterCooldown(staff, ForgeType.BACULO);
 		CombatStats.record(this.mob, BOLT);
 	}
 
@@ -213,7 +213,7 @@ public final class CasterGoal extends Goal {
 		ItemStack tome = this.mob.getMainHandItem();
 		this.mob.swing(InteractionHand.MAIN_HAND);
 		Spellcasting.cast(level, this.mob, tome, ForgeType.GRIMORIO, at);
-		this.cooldown = Spellcasting.cooldown(tome, ForgeType.GRIMORIO);
+		this.cooldown = Spellcasting.monsterCooldown(tome, ForgeType.GRIMORIO);
 		CombatStats.record(this.mob, TOME_OPENED);
 	}
 

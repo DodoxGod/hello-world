@@ -292,8 +292,9 @@ public final class ObsV3 {
 		o[i++] = tome.isEmpty() ? 0.0 : 1.0;
 		o[i++] = thrown(main) || thrown(off) ? 1.0 : 0.0;
 		o[i++] = !crossbowHeld.isEmpty() && CrossbowItem.isCharged(crossbowHeld) ? 1.0 : 0.0;
-		o[i++] = staff.isEmpty() ? 0.0 : ObsM1.clip(waitLeft(target, staff, ForgeType.BACULO) / (double) Spellcasting.BOLT_COOLDOWN, 0.0, 2.0);
-		o[i++] = tome.isEmpty() ? 0.0 : ObsM1.clip(waitLeft(target, tome, ForgeType.GRIMORIO) / (double) Spellcasting.TOME_COOLDOWN, 0.0, 2.0);
+		// Over the old waits (a player's are shorter since the mana bar), so the scale the networks learned stays put.
+		o[i++] = staff.isEmpty() ? 0.0 : ObsM1.clip(waitLeft(target, staff, ForgeType.BACULO) / (double) Spellcasting.MONSTER_BOLT_COOLDOWN, 0.0, 2.0);
+		o[i++] = tome.isEmpty() ? 0.0 : ObsM1.clip(waitLeft(target, tome, ForgeType.GRIMORIO) / (double) Spellcasting.MONSTER_TOME_COOLDOWN, 0.0, 2.0);
 		double drawn = target.isUsingItem() && target.getUseItem().getItem() instanceof BowItem
 			? target.getTicksUsingItem() * dev.forja.item.ForgedItems.ForgedBowItem.drawSpeed(target.getUseItem()) : 0.0;
 		o[i++] = ObsM1.clip(drawn / 20.0, 0.0, 2.0);

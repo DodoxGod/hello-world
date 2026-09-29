@@ -228,7 +228,48 @@ public enum Upgrade implements StringRepresentable {
 	/** Vortice: every bite of the rune drags what stands on it towards the middle. */
 	VORTICE(0x8A5AC8, t -> t == GRIMORIO, combo(20, Items.COBWEB, Items.ENDER_PEARL)),
 	/** Santuario: the reader's own rune mends them while they stand on it. */
-	SANTUARIO(0xFFD86B, t -> t == GRIMORIO, single(10, Items.GLISTERING_MELON_SLICE));
+	SANTUARIO(0xFFD86B, t -> t == GRIMORIO, single(10, Items.GLISTERING_MELON_SLICE)),
+	// ---------------------------------------------------------------- mana (magic/Mana)
+	/**
+	 * Andy, 2026-09-28: "mejoras que tengan que ver con el maná" — on the magic weapons, on armour, and "algunas
+	 * armas melee deben poder tener mejoras de magia, éstas usarán maná". And "deben existir mejoras que aumenten
+	 * maná máximo y regeneración de maná": Reserva and Flujo. Last in the list because upgrades go over the wire
+	 * by their place in it.
+	 */
+	/** Concentracion: every spell of this staff or tome costs less mana. */
+	CONCENTRACION(0x5A7BFF, Upgrade::isMagic, single(4, Items.LAPIS_LAZULI), single(36, Items.LAPIS_BLOCK)),
+	/** Sifon: a spell that lands on something gives back part of what it cost. */
+	SIFON(0x8A6BFF, Upgrade::isMagic, combo(20, Items.GHAST_TEAR, Items.LAPIS_LAZULI)),
+	/** Descarga: a full charge pours the whole bar into one spell, and every drop of it hits. */
+	DESCARGA(0xE070FF, Upgrade::isMagic, combo(20, Items.FIRE_CHARGE, Items.LAPIS_BLOCK)),
+	/** Meditacion: the bar fills faster while the staff or the tome is in the hand. */
+	MEDITACION(0xB8A8FF, Upgrade::isMagic, single(4, Items.CANDLE), single(15, Items.POPPED_CHORUS_FRUIT)),
+	/** Reserva: more mana, piece by piece. */
+	RESERVA(0x4F6BE8, Upgrade::isArmor, single(4, Items.LAPIS_LAZULI), single(36, Items.LAPIS_BLOCK)),
+	/** Flujo: mana comes back faster, piece by piece. */
+	FLUJO(0x9F7BFF, Upgrade::isArmor, single(5, Items.AMETHYST_SHARD), single(20, Items.AMETHYST_BLOCK)),
+	/** Filo arcano: a blade that spends mana on every blow, for magic on top of the steel. */
+	FILO_ARCANO(0x7FA8FF, Upgrade::isEdged, combo(20, Items.LAPIS_LAZULI, Items.AMETHYST_SHARD)),
+	/** Estallido arcano: a charged blow held to the full bursts round what it hit. */
+	ESTALLIDO_ARCANO(0xC080FF, Upgrade::isEdged, combo(20, Items.LAPIS_LAZULI, Items.WIND_CHARGE)),
+	/** Paso arcano: a dodge with the blade in hand becomes a blink, further, for mana. */
+	PASO_ARCANO(0x6FE0FF, Upgrade::isEdged, combo(20, Items.LAPIS_LAZULI, Items.ENDER_PEARL)),
+	// ---------------------------------------------------------------- stamina (combat/Stamina)
+	/**
+	 * Andy, 2026-09-28: "también deben existir mejoras que te den más stamina, distancia de lunge/esquive, etc.".
+	 * Aguante and Fuelle on any piece, adding up; the dodge on the boots, which are what push off; the lunge on
+	 * the greaves; and Soltura, the cheaper moves, on any piece, the best one counting.
+	 */
+	/** Aguante: more stamina, piece by piece. */
+	AGUANTE(0xE8B04A, Upgrade::isArmor, single(4, Items.COOKED_BEEF)),
+	/** Fuelle: the breath comes back faster, piece by piece. */
+	FUELLE(0xD08A5A, Upgrade::isArmor, single(4, Items.LEATHER)),
+	/** Quiebro: the dodge carries further. */
+	QUIEBRO(0x7FE0B0, t -> t == BOTAS, single(10, Items.RABBIT_FOOT)),
+	/** Impulso: the gauntlets' Embestida throws you further. */
+	IMPULSO(0xFFA05A, t -> t == GREBAS, single(8, Items.PISTON)),
+	/** Soltura: jumps, dodges and the weapons' special moves cost less stamina. */
+	SOLTURA(0xB0E0A0, Upgrade::isArmor, single(6, Items.HONEYCOMB));
 
 	public static final Codec<Upgrade> CODEC = StringRepresentable.fromEnum(Upgrade::values);
 
@@ -295,6 +336,15 @@ public enum Upgrade implements StringRepresentable {
 
 	private static boolean isMagic(ForgeType type) {
 		return type == BACULO || type == GRIMORIO;
+	}
+
+	/**
+	 * The melee weapons that take magic (Filo arcano, Estallido arcano, Paso arcano): the ones with an edge or a
+	 * point — sword, dagger, greatsword, scythe and spear. Runes are cut into steel along an edge; a mace, a
+	 * hammer, a flail or a pair of gauntlets are about weight, and already have their own moves for stamina.
+	 */
+	public static boolean isEdged(ForgeType type) {
+		return type == ESPADA || type == DAGA || type == ESPADON || type == GUADANA || type == LANZA;
 	}
 
 	private static boolean isBow(ForgeType type) {
@@ -801,6 +851,87 @@ public enum Upgrade implements StringRepresentable {
 		return 0.5F * f;
 	}
 
+	// ------------------------------------------------------------------ mana
+
+	/** Concentracion: the share of every spell's mana that it saves. */
+	public static float manaDiscount(float f) {
+		return 0.35F * f;
+	}
+
+	/** Sifon: the share of a spell's mana it gives back when the spell lands on something. */
+	public static float siphonShare(float f) {
+		return 0.5F * f;
+	}
+
+	/** Descarga: the extra damage of a poured spell for every ten points of mana poured beyond its cost. */
+	public static float dumpBonus(float f) {
+		return 0.25F * f;
+	}
+
+	/** Meditacion: how much faster mana comes back with the staff or the tome in the hand. */
+	public static float meditationRegen(float f) {
+		return 0.6F * f;
+	}
+
+	/** Reserva: mana each piece adds to the bar. */
+	public static float manaReserve(float f) {
+		return 25.0F * f;
+	}
+
+	/** Flujo: how much faster mana comes back, each piece. */
+	public static float manaFlow(float f) {
+		return 0.25F * f;
+	}
+
+	/** Filo arcano: what one blow costs, and the share of it that comes again as magic. */
+	public static final float ARCANE_EDGE_COST = 5.0F;
+
+	public static float arcaneShare(float f) {
+		return 0.4F * f;
+	}
+
+	/** Estallido arcano: what the burst costs, how far it reaches, and the share of the blow it deals round the target. */
+	public static final float ARCANE_BURST_COST = 20.0F;
+	public static final double ARCANE_BURST_RADIUS = 3.0;
+
+	public static float arcaneBurstShare(float f) {
+		return 0.6F * f;
+	}
+
+	/** Paso arcano: what the blink costs, and how much further than a dodge it carries. */
+	public static final float BLINK_COST = 15.0F;
+
+	public static float blinkBoost(float f) {
+		return 0.8F * f;
+	}
+
+	// ------------------------------------------------------------------ stamina
+
+	/** Aguante: stamina each piece adds to the bar. */
+	public static float enduranceBonus(float f) {
+		return 15.0F * f;
+	}
+
+	/** Fuelle: how much faster stamina comes back, each piece. */
+	public static float bellowsRegen(float f) {
+		return 0.2F * f;
+	}
+
+	/** Quiebro: how much further the dodge carries. */
+	public static float dodgeBoost(float f) {
+		return 0.5F * f;
+	}
+
+	/** Impulso: how much further the gauntlets' Embestida throws you. */
+	public static float lungeBoost(float f) {
+		return 0.6F * f;
+	}
+
+	/** Soltura: the share of the stamina a jump, a dodge or a special move no longer costs. */
+	public static float easeShare(float f) {
+		return 0.35F * f;
+	}
+
 	/** What the upgrade does at this percentage, for tooltips and the forge screen. */
 	public Component effect(int percent) {
 		float f = percent / 100.0F;
@@ -905,6 +1036,20 @@ public enum Upgrade implements StringRepresentable {
 			case VORTICE -> Component.translatable(key, number(vortexDrag(f)));
 			// two bites a second, two points to the heart: the number is the same either way
 			case SANTUARIO -> Component.translatable(key, number(sanctuaryHeal(f)));
+			case CONCENTRACION -> Component.translatable(key, pct(manaDiscount(f)));
+			case SIFON -> Component.translatable(key, pct(siphonShare(f)));
+			case DESCARGA -> Component.translatable(key, pct(dumpBonus(f)));
+			case MEDITACION -> Component.translatable(key, pct(meditationRegen(f)));
+			case RESERVA -> Component.translatable(key, number(manaReserve(f)));
+			case FLUJO -> Component.translatable(key, pct(manaFlow(f)));
+			case FILO_ARCANO -> Component.translatable(key, number(ARCANE_EDGE_COST), pct(arcaneShare(f)));
+			case ESTALLIDO_ARCANO -> Component.translatable(key, number(ARCANE_BURST_COST), pct(arcaneBurstShare(f)), number((float) ARCANE_BURST_RADIUS));
+			case PASO_ARCANO -> Component.translatable(key, number(BLINK_COST), pct(blinkBoost(f)));
+			case AGUANTE -> Component.translatable(key, number(enduranceBonus(f)));
+			case FUELLE -> Component.translatable(key, pct(bellowsRegen(f)));
+			case QUIEBRO -> Component.translatable(key, pct(dodgeBoost(f)));
+			case IMPULSO -> Component.translatable(key, pct(lungeBoost(f)));
+			case SOLTURA -> Component.translatable(key, pct(easeShare(f)));
 			default -> Component.empty();
 		};
 	}

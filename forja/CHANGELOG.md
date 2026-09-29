@@ -1,5 +1,50 @@
 # Novedades
 
+## 2026-09-28 — barra de maná, y mejoras de maná y de estamina
+
+- **Maná.** El báculo y el grimorio gastan maná de una barra azul y violeta encima de los corazones (enfrente de
+  la de estamina, sin tapar corazones, armadura, aire, la vida de la montura ni la barra del jefe). Tiene 100. Solo
+  sale si alguna vez has llevado algo que usa maná, y entonces mientras lo llevas en la mano o la barra no está
+  llena; con F1 o en creativo no se ve. Con un arma mágica en la mano enseña el número (maná/máximo) y una muesca
+  donde dejaría la barra el hechizo más barato.
+- **Maná y un enfriamiento corto**, como pidió Andy: un proyectil del báculo cuesta 8 y la espera baja de 14 a 6
+  tics; un área del grimorio cuesta 30 y la espera baja de 70 a 20. Una carga llena cuesta un 25 % más y pega un
+  50 % más (cargar ahorra, tocar gasta deprisa). Se pelea a ráfagas: vacías la barra y esperas a que vuelva.
+  Sin maná bastante el hechizo no sale: un chisporroteo y la barra destella en rojo (nada en el chat). Si sueltas
+  una carga que la barra no paga, sale tan fuerte como el maná alcanza.
+- **Vuelve solo, con el tiempo:** 6 por segundo mientras sigues lanzando y 20 por segundo a partir de 2 s sin
+  lanzar (una barra vacía se llena en unos 7 s de calma).
+- **Matar recupera, al maná y a la estamina,** pero como mucho un 3 % de la barra cada 5 tics: lo que vale cada
+  muerte espera en un tramo claro al final de la barra y va entrando. Al maná, 8 + 0,4 por punto de vida máxima
+  de la víctima (hasta un 30 % de la barra); a la estamina, 10 + 0,5 por punto (hasta un 40 %). Lo que no cabe se
+  pierde. Los dos números y el ritmo están en la config de combate (`killFlowShare`, `killFlowEveryTicks`...).
+- Al morir vuelves con la barra llena. El maná se guarda con el jugador (salir y entrar no la llena).
+- Los monstruos con báculo o grimorio no usan maná y esperan lo de siempre entre hechizos (14 y 70 tics).
+- **Mejoras de maná** (cada una con su receta en la mesa, su orbe al desarmar y su línea en la guía):
+  - Báculo y grimorio: **Concentración** (lapislázuli / bloque de lapislázuli): los hechizos cuestan hasta un 35 %
+    menos. **Sifón** (lágrima de ghast + lapislázuli): si el hechizo alcanza algo, devuelve hasta la mitad de lo
+    que costó, una vez por hechizo. **Descarga** (carga ígnea + bloque de lapislázuli): con la carga llena vuelca
+    toda la barra en el hechizo, +25 % de daño por cada 10 de maná de más, y sale grande. **Meditación** (vela /
+    fruta coral reventada): en la mano, el maná vuelve hasta un 60 % más rápido.
+  - Armadura, pieza a pieza y sumando: **Reserva** (lapislázuli / bloque): +25 de maná máximo por pieza (+100 con
+    las cuatro). **Flujo** (fragmento / bloque de amatista): el maná vuelve un 25 % más rápido por pieza.
+    Conjuntos: cuatro piezas de amatista suman +40 de maná máximo (además del +1 de daño) y cuatro de eco hacen
+    que vuelva un 40 % más rápido.
+  - Armas de filo (espada, daga, espadón, guadaña y lanza): **Filo arcano** (lapislázuli + amatista): cada golpe
+    gasta 5 de maná y suma hasta un 40 % del golpe como daño mágico. **Estallido arcano** (lapislázuli + carga de
+    viento): el golpe cargado a tope gasta 20 y estalla, hasta un 60 % del golpe a todo lo que hay a 3 bloques del
+    objetivo. **Paso arcano** (lapislázuli + perla de ender): esquivar con ella en la mano gasta 15 y te lleva
+    hasta un 80 % más lejos, con 3 tics más de invulnerabilidad. Con la barra vacía no hacen nada.
+- **Mejoras de estamina:** **Aguante** (filete cocinado, armadura): +15 de estamina máxima por pieza. **Fuelle**
+  (cuero, armadura): la estamina vuelve un 20 % más rápido por pieza. **Quiebro** (pata de conejo, botas): la
+  esquiva llega un 50 % más lejos. **Impulso** (pistón, grebas): la embestida de los guanteletes te lleva un 60 %
+  más lejos, y su golpe alcanza lo mismo. **Soltura** (panal, armadura; cuenta la mejor pieza): saltar, esquivar y
+  los ataques especiales cuestan un 35 % menos de estamina.
+- La guía tiene un capítulo nuevo, **Maná y estamina**, con todos los números sacados del código. El informe de
+  equilibrio simula la barra (ráfaga hasta vaciarla y descanso); el báculo sin mejoras pasa de 20,5 a 42,9 de daño
+  por segundo en ráfaga y de 16,2 a 17,9 sostenido; al 100 % la ráfaga sube (87 → 165) y lo sostenido baja
+  (76 → 53), que es lo que se buscaba: golpes fuertes y luego esperar.
+
 ## 2026-09-28 — el Molde Roto da estocadas
 
 - Con una lanza, un tridente o una daga copiados ya no los alza sobre la cabeza: durante el aviso los recoge a la

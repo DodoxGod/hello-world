@@ -609,6 +609,7 @@ public class GuideBookScreen extends Screen {
 		this.chapter("sinergias", this.synergiesChapter());
 		this.chapter("pactos", this.pactsChapter());
 		this.chapter("combate", this.combatChapter());
+		this.chapter("mana", this.manaChapter());
 		this.chapter("accesorios", this.trinketsChapter());
 		this.chapter("eventos", this.eventsChapter());
 		this.chapter("encargos", this.commissionsChapter());
@@ -677,7 +678,7 @@ public class GuideBookScreen extends Screen {
 	static {
 		SECTIONS.put("taller", List.of("primeros_pasos", "siguiente_paso", "mesas", "objetos", "piezas", "materiales", "rasgos", "aleaciones", "fundicion", "temple", "herrero", "tecnicas"));
 		SECTIONS.put("mejoras", List.of("mejoras", "potencial", "maestria", "sinergias", "pactos"));
-		SECTIONS.put("pelear", List.of("combate", "accesorios"));
+		SECTIONS.put("pelear", List.of("combate", "mana", "accesorios"));
 		SECTIONS.put("mundo", List.of("eventos", "encargos", "amenazas", "bestiario", "mundo"));
 		SECTIONS.put("referencia", List.of("mi_taller", "estadisticas"));
 	}
@@ -704,6 +705,7 @@ public class GuideBookScreen extends Screen {
 			case "pactos" -> new ItemStack(Items.ROTTEN_FLESH);
 			case "potencial" -> new ItemStack(dev.forja.registry.ModItems.FUNDENTE_MAESTRO);
 			case "combate" -> Assembler.create(ForgeType.ESPADA, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.HIERRO));
+			case "mana" -> new ItemStack(Items.LAPIS_LAZULI);
 			case "accesorios" -> new ItemStack(ModItems.CINTURON);
 			case "eventos" -> new ItemStack(ModItems.JARRA);
 			case "encargos" -> new ItemStack(Items.EMERALD);
@@ -1287,6 +1289,59 @@ public class GuideBookScreen extends Screen {
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.caballo.titulo")));
 		body.add(new Text(Component.translatable("gui.forja.libro.caballo"), INK_SOFT));
 		return body;
+	}
+
+	/**
+	 * Maná y estamina: the blue bar the staff and the tome spend, what it costs and how it comes back, what
+	 * kills give both bars, and every upgrade that grows either. Every number is read from the code, so the
+	 * page cannot go on saying eight after the bolt has been made to cost ten.
+	 */
+	private List<Element> manaChapter() {
+		dev.forja.combat.CombatConfig cfg = dev.forja.combat.CombatConfig.get();
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libro.mana.intro"), INK));
+		body.add(new IconRow(List.of(
+			Assembler.create(ForgeType.BACULO, List.of(ForgeMaterial.AMATISTA, ForgeMaterial.HIERRO, ForgeMaterial.MADERA)),
+			Assembler.create(ForgeType.GRIMORIO, List.of(ForgeMaterial.AMATISTA, ForgeMaterial.HIERRO, ForgeMaterial.ORO)),
+			new ItemStack(Items.LAPIS_LAZULI))));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.mana.costes.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libro.mana.costes", number(cfg.manaMax), number(cfg.manaBoltCost),
+			dev.forja.magic.Spellcasting.BOLT_COOLDOWN, dev.forja.magic.Spellcasting.MONSTER_BOLT_COOLDOWN, number(cfg.manaTomeCost),
+			dev.forja.magic.Spellcasting.TOME_COOLDOWN, dev.forja.magic.Spellcasting.MONSTER_TOME_COOLDOWN,
+			Math.round(cfg.manaChargeExtra * 100), Math.round(dev.forja.magic.Spellcasting.CHARGE_BONUS * 100)), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.mana.vacio"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.mana.vuelve.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libro.mana.vuelve", number(cfg.manaRegenPerTick * 20.0F),
+			number(cfg.manaIdleDelayTicks / 20.0F), number(cfg.manaIdleRegenPerTick * 20.0F)), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.mana.muertes", Math.round(cfg.killFlowShare * 100), cfg.killFlowEveryTicks,
+			number(cfg.killManaBase), number(cfg.killManaPerHealth), Math.round(cfg.killManaCapShare * 100),
+			number(cfg.killStaminaBase), number(cfg.killStaminaPerHealth), Math.round(cfg.killStaminaCapShare * 100)), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.mana.muerte_propia"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.mana.mejoras")));
+		for (Upgrade upgrade : List.of(Upgrade.CONCENTRACION, Upgrade.SIFON, Upgrade.DESCARGA, Upgrade.MEDITACION, Upgrade.RESERVA, Upgrade.FLUJO,
+			Upgrade.FILO_ARCANO, Upgrade.ESTALLIDO_ARCANO, Upgrade.PASO_ARCANO)) {
+			this.manaUpgrade(body, upgrade);
+		}
+		body.add(new Text(Component.translatable("gui.forja.libro.mana.conjuntos", number(dev.forja.magic.Mana.AMETHYST_SET_MANA),
+			Math.round(dev.forja.magic.Mana.ECHO_SET_REGEN * 100)), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.mana.filo"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.estamina.mejoras")));
+		for (Upgrade upgrade : List.of(Upgrade.AGUANTE, Upgrade.FUELLE, Upgrade.QUIEBRO, Upgrade.IMPULSO, Upgrade.SOLTURA)) {
+			this.manaUpgrade(body, upgrade);
+		}
+		body.add(new Text(Component.translatable("gui.forja.libro.mana.monstruos"), INK_SOFT));
+		return body;
+	}
+
+	/** One upgrade of the mana chapter: its name and recipe, where it goes and what it does at a hundred. */
+	private void manaUpgrade(List<Element> body, Upgrade upgrade) {
+		body.add(new UpgradeEntry(upgrade));
+		body.add(new Text(Component.translatable("gui.forja.libro.mana.linea",
+			Component.translatable("gui.forja.guia.para." + GuideText.category(upgrade)), upgrade.effect(100)), INK_SOFT));
+	}
+
+	private static String number(float value) {
+		return value == Math.floor(value) ? String.valueOf((int) value) : String.format(java.util.Locale.ROOT, "%.1f", value);
 	}
 
 	/**

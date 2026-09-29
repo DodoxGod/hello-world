@@ -87,6 +87,46 @@ public final class CombatConfig {
 	/** Extra damage of a riposte against a staggered foe, as a share of the blow (1.0 = double). */
 	public double riposteStaggeredExtra = 2.0;
 
+	// --- Kills feed the bars (combat/KillFlow) ------------------------------------------------------
+	/**
+	 * Andy, 2026-09-28: "al matar recuperas un máximo de 3 % de maná por cada 5 ticks", and then "matar también
+	 * debe regenerar stamina, con el mismo límite". A kill does not refill a bar at once: what it is worth waits
+	 * in a pending pool (the lighter stretch on the bar) and flows in at most this share of the bar's max every
+	 * {@link #killFlowEveryTicks} ticks, so a whole room cleared in a second still takes its time to arrive.
+	 */
+	public float killFlowShare = 0.03F;
+	public int killFlowEveryTicks = 5;
+	/** What one kill is worth to the stamina bar: this, plus this much per point of the victim's max health, up to a share of the bar. */
+	public float killStaminaBase = 10F;
+	public float killStaminaPerHealth = 0.5F;
+	public float killStaminaCapShare = 0.4F;
+
+	// --- Mana (magic/Mana) --------------------------------------------------------------------------
+	/**
+	 * Andy, 2026-09-28: "¿podrías hacer una barra de maná?", and for the staff and the tome, "maná y un
+	 * enfriamiento corto": every spell costs mana and the wait between two is cut a lot, so you can burst until
+	 * the bar is empty and then wait for it to fill again. Mana comes back "solo, con el tiempo" — slowly while
+	 * you keep casting, much faster once you have left it alone for {@link #manaIdleDelayTicks} — and with kills.
+	 */
+	public boolean mana = true;
+	public float manaMax = 100F;
+	/** Per tick while spells keep coming (6 a second). */
+	public float manaRegenPerTick = 0.3F;
+	/** After this long without a spell, the quick regeneration takes over. */
+	public int manaIdleDelayTicks = 40;
+	/** Per tick once you have stopped casting (20 a second: an empty bar is whole again in about seven seconds). */
+	public float manaIdleRegenPerTick = 1.0F;
+	/** What a tap of the staff costs: a bolt is cheap, twelve of them in a full bar. */
+	public float manaBoltCost = 8F;
+	/** What a tap of the tome costs: an area and a rune, three of them in a full bar. */
+	public float manaTomeCost = 30F;
+	/** A full charge costs this share more than a tap, for half again the damage: holding the spell is the thrifty way. */
+	public float manaChargeExtra = 0.25F;
+	/** What one kill is worth to the mana bar: this, plus this much per point of the victim's max health, up to a share of the bar. */
+	public float killManaBase = 8F;
+	public float killManaPerHealth = 0.4F;
+	public float killManaCapShare = 0.3F;
+
 	// --- Charged strike, finisher, combos, counter, weapon guard ----------------------------------
 	/** Keep the attack button held after a swing to charge a heavy blow; let go to strike. */
 	public boolean chargedAttack = true;

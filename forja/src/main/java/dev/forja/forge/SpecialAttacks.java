@@ -65,7 +65,8 @@ public final class SpecialAttacks {
 			return InteractionResult.PASS;
 		}
 		// Stamina as well as wear, and not without it, like the dodge.
-		float stamina = stamina(type);
+		// Less with Soltura on the armour.
+		float stamina = dev.forja.combat.Stamina.cost(player, stamina(type));
 		if (!dev.forja.combat.Stamina.canAfford(player, stamina)) {
 			return InteractionResult.FAIL;
 		}
@@ -187,13 +188,15 @@ public final class SpecialAttacks {
 	 */
 	private static void charge(ServerLevel level, Player player, ItemStack weapon, InteractionHand hand) {
 		net.minecraft.world.phys.Vec3 look = player.getLookAngle();
-		player.setDeltaMovement(look.x * CHARGE_PUSH, Math.max(0.25, look.y * 0.4), look.z * CHARGE_PUSH);
+		// Impulso on the greaves: the legs throw you further, and the fist reaches as far as they carry it.
+		double push = chargePush(player);
+		player.setDeltaMovement(look.x * push, Math.max(0.25, look.y * 0.4), look.z * push);
 		player.hurtMarked = true;
 		player.resetFallDistance();
 		float damage = attackDamage(player, weapon) * CHARGE_DAMAGE;
 		List<LivingEntity> ahead = level.getEntitiesOfClass(
 			LivingEntity.class,
-			player.getBoundingBox().expandTowards(look.scale(3.0)).inflate(1.0),
+			player.getBoundingBox().expandTowards(look.scale(3.0 * push / CHARGE_PUSH)).inflate(1.0),
 			other -> other != player && other.isAlive()
 		);
 		LivingEntity first = null;
@@ -211,6 +214,12 @@ public final class SpecialAttacks {
 		}
 		level.sendParticles(ParticleTypes.CRIT, player.getX(), player.getY(1.0), player.getZ(), 18, 0.3, 0.3, 0.3, 0.2);
 		spend(weapon, player, hand, first == null ? 1 : 3);
+	}
+
+	/** How hard the gauntlets' Embestida throws this player: {@link #CHARGE_PUSH}, and more with Impulso on the greaves. */
+	public static double chargePush(LivingEntity player) {
+		float impulse = dev.forja.upgrade.Upgrades.fraction(player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.LEGS), dev.forja.upgrade.Upgrade.IMPULSO);
+		return CHARGE_PUSH * (1.0 + dev.forja.upgrade.Upgrade.lungeBoost(impulse));
 	}
 
 	private static List<LivingEntity> around(ServerLevel level, Player player, double range) {

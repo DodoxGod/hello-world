@@ -9,6 +9,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
@@ -102,11 +103,40 @@ public final class ChargedStrike {
 			} finally {
 				STRIKING.remove(player);
 			}
+			if (paid) {
+				arcaneBurst(player, living, share, cfg);
+			}
 		} else {
 			player.attack(target);
 		}
 		player.level().playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.PLAYER_ATTACK_STRONG,
 			SoundSource.PLAYERS, 1.0F, 0.7F);
+	}
+
+	/**
+	 * Estallido arcano: a charged blow held all the way, with the blade's mana to pay for it, bursts round what it
+	 * hit — everything else within reach of the target takes a share of the blow as magic. Short of a full
+	 * charge, or with too little in the bar, nothing: the upgrade does nothing without mana.
+	 */
+	public static void arcaneBurst(ServerPlayer player, LivingEntity target, double share, CombatConfig cfg) {
+		ItemStack weapon = player.getMainHandItem();
+		float burst = dev.forja.upgrade.Upgrade.arcaneBurstShare(dev.forja.upgrade.Upgrades.fraction(weapon, dev.forja.upgrade.Upgrade.ESTALLIDO_ARCANO));
+		if (burst <= 0.0F || share < 1.0 - 1.0E-6 || !dev.forja.magic.Mana.trySpend(player, dev.forja.upgrade.Upgrade.ARCANE_BURST_COST)) {
+			return;
+		}
+		net.minecraft.server.level.ServerLevel level = player.level();
+		float blow = (float) (player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) * (1.0 + cfg.chargeDamageBonus));
+		double radius = dev.forja.upgrade.Upgrade.ARCANE_BURST_RADIUS;
+		for (LivingEntity near : level.getEntitiesOfClass(LivingEntity.class, target.getBoundingBox().inflate(radius),
+			other -> other != player && other != target && other.isAlive() && !other.isAlliedTo(player) && other.distanceToSqr(target) <= radius * radius)) {
+			dev.forja.upgrade.CombatUpgrades.sideDamage(level, near, level.damageSources().indirectMagic(player, player), blow * burst);
+			level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANTED_HIT, near.getX(), near.getY(0.6), near.getZ(), 8, 0.3, 0.4, 0.3, 0.1);
+		}
+		dev.forja.entity.Shockwave.burst(level, target.position(), radius, 8, dev.forja.upgrade.Upgrade.ESTALLIDO_ARCANO.color, 0.5F);
+		level.sendParticles(new net.minecraft.core.particles.DustParticleOptions(dev.forja.upgrade.Upgrade.ESTALLIDO_ARCANO.color, 1.3F),
+			target.getX(), target.getY(0.5), target.getZ(), 30, radius * 0.4, 0.3, radius * 0.4, 0.0);
+		level.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 1.2F, 0.7F);
+		level.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 0.6F, 1.3F);
 	}
 
 	/**

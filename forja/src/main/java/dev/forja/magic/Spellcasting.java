@@ -45,9 +45,22 @@ import net.minecraft.world.phys.Vec3;
  * weapons without a line of code between them, which is how the rest of the mod works too.
  */
 public final class Spellcasting {
-	public static final int BOLT_COOLDOWN = 14;
+	/**
+	 * The wait after a player's spell. Andy, 2026-09-28, asked how the magic weapons should go with the mana bar:
+	 * "maná y un enfriamiento corto" — each spell costs mana and the wait is cut a lot (a bolt from 14 ticks to
+	 * 6, an area from 70 to 20), so a fight is a burst until the bar is empty and then a pause while it fills.
+	 * Six and not five: at five the staff's burst killed the balance report's mobs faster than anything else
+	 * by a wide margin (docs/EQUILIBRIO.md), and a spell every six ticks is still one a click.
+	 */
+	public static final int BOLT_COOLDOWN = 6;
 	public static final double BOLT_SPEED = 1.5;
-	public static final int TOME_COOLDOWN = 70;
+	public static final int TOME_COOLDOWN = 20;
+	/**
+	 * The wait after a monster's spell (entity/ai/CasterGoal): the old one. Monsters spend no mana, so the wait
+	 * is all that holds them back, and a skeleton throwing four bolts a second would be a different game.
+	 */
+	public static final int MONSTER_BOLT_COOLDOWN = 14;
+	public static final int MONSTER_TOME_COOLDOWN = 70;
 	/** "un área 5 bloques delante del jugador". */
 	public static final double TOME_DISTANCE = 5.0;
 	public static final double RUNE_REACH = 3.0;
@@ -214,10 +227,47 @@ public final class Spellcasting {
 		return Math.max(3.0F, 5.0F + core.attackDamageBonus);
 	}
 
-	/** The wait after a spell, in ticks: the weapon's own, less what Conjuro veloz takes off it. */
+	/** The wait after a player's spell, in ticks: the weapon's own, less what Conjuro veloz takes off it. */
 	public static int cooldown(ItemStack stack, ForgeType type) {
-		int wait = type == ForgeType.BACULO ? BOLT_COOLDOWN : TOME_COOLDOWN;
+		return hasted(stack, type == ForgeType.BACULO ? BOLT_COOLDOWN : TOME_COOLDOWN);
+	}
+
+	/** The wait after a monster's spell: the old, longer one, as a monster pays no mana. */
+	public static int monsterCooldown(ItemStack stack, ForgeType type) {
+		return hasted(stack, type == ForgeType.BACULO ? MONSTER_BOLT_COOLDOWN : MONSTER_TOME_COOLDOWN);
+	}
+
+	private static int hasted(ItemStack stack, int wait) {
 		return Math.max(2, Math.round(wait * (1.0F - Upgrade.castHaste(Upgrades.fraction(stack, Upgrade.CONJURO_VELOZ)))));
+	}
+
+	/**
+	 * What a spell of this weapon costs in mana: the tap's price, a quarter more at a full charge (for half again
+	 * the damage, so holding the spell is the thrifty way to cast), less what Concentración saves.
+	 */
+	public static float manaCost(ItemStack stack, ForgeType type, float charge) {
+		dev.forja.combat.CombatConfig cfg = dev.forja.combat.CombatConfig.get();
+		return tapCost(stack, type) * (1.0F + cfg.manaChargeExtra * Math.max(0.0F, Math.min(1.0F, charge)));
+	}
+
+	/** The price of a tap, which is the least a spell of this weapon can cost. */
+	public static float tapCost(ItemStack stack, ForgeType type) {
+		dev.forja.combat.CombatConfig cfg = dev.forja.combat.CombatConfig.get();
+		float base = type == ForgeType.BACULO ? cfg.manaBoltCost : cfg.manaTomeCost;
+		return base * (1.0F - Upgrade.manaDiscount(Upgrades.fraction(stack, Upgrade.CONCENTRACION)));
+	}
+
+	/**
+	 * How far a charge can be paid for with {@code mana}: the charge itself if there is enough, and otherwise as
+	 * far as the mana goes. A spell gathered past what the bar holds leaves as strong as the bar could make it.
+	 */
+	public static float affordableCharge(ItemStack stack, ForgeType type, float charge, float mana) {
+		float extra = dev.forja.combat.CombatConfig.get().manaChargeExtra;
+		float tap = tapCost(stack, type);
+		if (manaCost(stack, type, charge) <= mana || extra <= 0.0F || tap <= 0.0F) {
+			return charge;
+		}
+		return Math.max(0.0F, Math.min(charge, (mana / tap - 1.0F) / extra));
 	}
 
 	/** How long a rune laid with this tome lasts, in ticks. */
@@ -258,6 +308,11 @@ public final class Spellcasting {
 			return InteractionResult.PASS;
 		}
 		if (player.getCooldowns().isOnCooldown(stack)) {
+			return InteractionResult.FAIL;
+		}
+		// Not even a tap's worth in the bar: a fizzle and a flash of the bar, and the arm stays down.
+		if (!Mana.canAfford(player, tapCost(stack, type))) {
+			Mana.deny(player);
 			return InteractionResult.FAIL;
 		}
 		// Held, not thrown: the spell leaves when the button is let go (release).
@@ -321,7 +376,27 @@ public final class Spellcasting {
 		InteractionHand hand = player.getUsedItemHand();
 		if (level instanceof ServerLevel server) {
 			stopGathering(caster);
-			cast(server, player, stack, type, null, chargeShare(type, held));
+			float charge = chargeShare(type, held);
+			boolean free = Mana.exempt(player);
+			float mana = free ? Float.MAX_VALUE : Mana.value(player);
+			if (mana + 1.0E-4F < tapCost(stack, type)) {
+				// Spent between the press and the release (a blade's Filo arcano, a blink): nothing leaves.
+				Mana.deny(player);
+				return false;
+			}
+			charge = affordableCharge(stack, type, charge, mana);
+			float cost = manaCost(stack, type, charge);
+			// Descarga: a full charge pours the whole bar in, and every ten points past the price hit harder.
+			float pour = 0.0F;
+			float dump = Upgrade.dumpBonus(Upgrades.fraction(stack, Upgrade.DESCARGA));
+			if (dump > 0.0F && charge >= 1.0F) {
+				float poured = Mana.spendAll(player) - cost;
+				pour = Math.max(0.0F, poured) / 10.0F * dump;
+			} else {
+				Mana.trySpend(player, cost);
+			}
+			Mana.cast(player, cost);
+			cast(server, player, stack, type, null, charge, pour);
 			player.getCooldowns().addCooldown(stack, cooldown(stack, type));
 			stack.hurtAndBreak(1, player, hand.asEquipmentSlot());
 		}
@@ -357,6 +432,15 @@ public final class Spellcasting {
 
 	/** The same, gathered for a while first: {@code charge} from 0 (a tap) to 1 (full). */
 	public static void cast(ServerLevel server, LivingEntity caster, ItemStack stack, ForgeType type, @org.jspecify.annotations.Nullable Vec3 at, float charge) {
+		cast(server, caster, stack, type, at, charge, 0.0F);
+	}
+
+	/**
+	 * The same with a bar poured into it (Descarga): {@code pour} is the extra share of damage the poured mana
+	 * buys, and a poured spell comes out big, the way Sobrecarga's does.
+	 */
+	public static void cast(ServerLevel server, LivingEntity caster, ItemStack stack, ForgeType type, @org.jspecify.annotations.Nullable Vec3 at, float charge,
+		float pour) {
 		ForgedParts parts = stack.get(ModComponents.PARTS);
 		if (parts == null || !casts(type)) {
 			return;
@@ -365,6 +449,14 @@ public final class Spellcasting {
 		boolean big = overcharged(server, caster, stack, core.color);
 		float power = (big ? 1.0F + Upgrade.overchargeBonus(Upgrades.fraction(stack, Upgrade.SOBRECARGA)) : 1.0F)
 			* (1.0F + CHARGE_BONUS * Math.max(0.0F, Math.min(1.0F, charge)));
+		if (pour > 0.0F) {
+			power *= 1.0F + pour;
+			big = true;
+			// The bar going out of the hand at once: a deep chime and a ring of the núcleo's colour.
+			server.playSound(null, caster.getX(), caster.getY(), caster.getZ(), SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), SoundSource.PLAYERS, 0.8F, 1.3F);
+			Shockwave.burst(server, caster.position(), 1.6, 8, Upgrade.DESCARGA.color, 0.4F);
+			server.sendParticles(new DustParticleOptions(Upgrade.DESCARGA.color, 1.4F), caster.getX(), caster.getY(1.0), caster.getZ(), 24, 0.5, 0.6, 0.5, 0.02);
+		}
 		float echo = Upgrade.echoShare(Upgrades.fraction(stack, Upgrade.RESONANCIA));
 		if (type == ForgeType.BACULO) {
 			volley(server, caster, core, stack, power, big, true);

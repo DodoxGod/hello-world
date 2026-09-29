@@ -75,6 +75,8 @@ public final class Fight {
 	/** Switches for the outlier measurements: each one turns one rule of the mod off to see what it is worth. */
 	public static final class Options {
 		public boolean stamina = true;
+		/** The mana bar (magic/Mana): off, a staff or a tome casts every time its wait is over, as it did before the bar. */
+		public boolean mana = true;
 		public boolean iframes = true;
 		public boolean cap = true;
 		public boolean posture = true;
@@ -93,6 +95,7 @@ public final class Fight {
 		public Options copy() {
 			Options copy = new Options();
 			copy.stamina = this.stamina;
+			copy.mana = this.mana;
 			copy.iframes = this.iframes;
 			copy.cap = this.cap;
 			copy.posture = this.posture;
@@ -182,6 +185,9 @@ public final class Fight {
 	private int procTick;
 	private double procs;
 	private int casts;
+	/** The mana bar, as magic/Mana keeps it: what there is, and when the last spell was paid for. */
+	private double mana;
+	private int lastCast;
 	private final List<double[]> runes = new ArrayList<>();
 	private final List<double[]> pending = new ArrayList<>();
 	// counters
@@ -258,7 +264,9 @@ public final class Fight {
 	public static List<Policy> policies(Build build) {
 		List<Policy> policies = new ArrayList<>();
 		if (dev.forja.magic.Spellcasting.casts(build.type)) {
+			// Two ways with a bar of mana: cast whenever a tap is paid for, or burst it empty and rest till it is full.
 			policies.add(new Policy(build.spellCooldown, Charge.NONE, Breath.SPAM));
+			policies.add(new Policy(build.spellCooldown, Charge.NONE, Breath.REST));
 			return policies;
 		}
 		double delay = 20.0 / Math.max(0.05, build.attackSpeed);
@@ -323,6 +331,8 @@ public final class Fight {
 		this.procTick = -1;
 		this.procs = 0;
 		this.casts = 0;
+		this.mana = this.cfg.manaMax;
+		this.lastCast = -100000;
 		this.runes.clear();
 		this.pending.clear();
 		this.swings = 0;
@@ -355,7 +365,9 @@ public final class Fight {
 			}
 			this.tickStamina();
 			if (magic) {
-				if (this.t >= nextCast) {
+				this.tickMana();
+				if (this.t >= nextCast && !(resting = this.manaless(policy, resting))) {
+					this.payMana();
 					this.cast();
 					nextCast = this.t + Math.max(1, this.build.spellCooldown);
 				}
@@ -447,6 +459,40 @@ public final class Fight {
 		if (this.t - this.lastSpend >= this.cfg.staminaRegenDelayTicks && this.stamina < this.cfg.staminaMax) {
 			double penalty = Math.min(0.9, Math.max(0.0, this.options.armorWeight) * this.cfg.regenPenaltyPerWeight);
 			this.stamina = Math.min(this.cfg.staminaMax, this.stamina + this.cfg.staminaRegenPerTick * (1.0 - penalty));
+		}
+	}
+
+	/** What a tap of this build's staff or tome costs (magic/Spellcasting.tapCost). */
+	private double tapCost() {
+		return dev.forja.magic.Spellcasting.tapCost(this.build.stack, this.build.type);
+	}
+
+	/** magic/Mana's regeneration: slow while spells keep coming, quick once they have stopped. */
+	private void tickMana() {
+		if (!this.options.mana) {
+			this.mana = this.cfg.manaMax;
+			return;
+		}
+		double rate = this.t - this.lastCast >= this.cfg.manaIdleDelayTicks ? this.cfg.manaIdleRegenPerTick : this.cfg.manaRegenPerTick;
+		this.mana = Math.min(this.cfg.manaMax, this.mana + rate);
+	}
+
+	/** Whether the caster holds back for want of mana: SPAM casts whenever a tap is paid for, REST empties the bar and waits for it full. */
+	private boolean manaless(Policy policy, boolean resting) {
+		if (!this.options.mana) {
+			return false;
+		}
+		double tap = this.tapCost();
+		return switch (policy.breath()) {
+			case SPAM, WAIT -> this.mana < tap;
+			case REST -> resting ? this.mana < this.cfg.manaMax : this.mana < tap;
+		};
+	}
+
+	private void payMana() {
+		if (this.options.mana) {
+			this.mana -= this.tapCost();
+			this.lastCast = this.t;
 		}
 	}
 

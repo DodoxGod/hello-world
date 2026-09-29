@@ -173,6 +173,10 @@ public final class GuideText {
 		if (accepted.stream().allMatch(t -> t.kind == ForgeType.Kind.TOOL)) {
 			return accepted.size() == 6 ? "herramientas" : "algunas_herramientas";
 		}
+		// Sword, dagger, greatsword, scythe (and the spear): the blades Filo arrasador and the magic of the edge go on.
+		if (accepted.stream().allMatch(Upgrade::isEdged)) {
+			return "armas_de_filo";
+		}
 		if (accepted.stream().allMatch(t -> t.kind == ForgeType.Kind.WEAPON || t == ForgeType.HACHA)) {
 			return "armas";
 		}

@@ -247,6 +247,10 @@ public final class CombatUpgrades {
 				}
 
 				ItemStack weapon = weaponOf(source, attacker);
+				// Sifón: a spell that finds its mark gives back part of what it cost, once a spell.
+				if (spell && attacker instanceof Player caster) {
+					dev.forja.magic.Mana.onSpellLanded(caster, weapon);
+				}
 				TraitEffects.onHit(level, attacker, victim, source, weapon);
 				if ((melee || spell) && weapon.has(ModComponents.PARTS) && !weapon.isBroken()) {
 					onWeaponHit(level, attacker, victim, weapon, damageTaken);
@@ -752,6 +756,15 @@ public final class CombatUpgrades {
 			}
 		}
 
+		// Filo arcano: the edge spends mana on every blow for magic on top of the steel. An empty bar, plain steel.
+		float arcane = Upgrade.arcaneShare(Upgrades.fraction(weapon, Upgrade.FILO_ARCANO));
+		if (arcane > 0.0F && victim.isAlive() && attacker instanceof Player caster && dev.forja.magic.Mana.trySpend(caster, Upgrade.ARCANE_EDGE_COST)) {
+			extraDamage(level, victim, level.damageSources().indirectMagic(attacker, attacker), damage * arcane);
+			level.sendParticles(new net.minecraft.core.particles.DustParticleOptions(Upgrade.FILO_ARCANO.color, 0.9F),
+				victim.getX(), victim.getY(0.6), victim.getZ(), 8, 0.3, 0.4, 0.3, 0.0);
+			level.sendParticles(ParticleTypes.ENCHANTED_HIT, victim.getX(), victim.getY(0.6), victim.getZ(), 6, 0.3, 0.3, 0.3, 0.1);
+		}
+
 		// Pacto de sed: the blow feeds on you as much as on them.
 		float hunger = Upgrade.thirstHunger(Upgrades.fraction(weapon, Upgrade.PACTO_DE_SED));
 		if (hunger > 0.0F && attacker instanceof net.minecraft.server.level.ServerPlayer thirsty) {
@@ -834,6 +847,24 @@ public final class CombatUpgrades {
 			}
 			level.sendParticles(ParticleTypes.SWEEP_ATTACK, victim.getX(), victim.getY(0.5), victim.getZ(), 3, 1.2, 0.2, 1.2, 0.0);
 			level.playSound(null, victim.getX(), victim.getY(), victim.getZ(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.0F, 0.6F);
+		}
+	}
+
+	/**
+	 * Damage something of the player's does to the side of a blow (Estallido arcano): it lands whole, but no
+	 * upgrade answers it, the way no upgrade answers the lightning Tormenta calls.
+	 */
+	public static void sideDamage(ServerLevel level, LivingEntity victim, DamageSource source, float amount) {
+		if (!victim.isAlive() || amount <= 0.0F) {
+			return;
+		}
+		boolean before = EXTRA_DAMAGE.get();
+		EXTRA_DAMAGE.set(true);
+		try {
+			victim.invulnerableTime = 0;
+			victim.hurtServer(level, source, amount);
+		} finally {
+			EXTRA_DAMAGE.set(before);
 		}
 	}
 
