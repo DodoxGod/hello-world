@@ -82,6 +82,13 @@ public final class MobMind {
 	 * observation (ObsV4), which is the only reader.
 	 */
 	public long waitingSince = Long.MIN_VALUE / 2;
+	/**
+	 * A blaze driven by its own network (red_blaze_v1, Andy 2026-09-29): its last decision, null whenever anything
+	 * else drives it; the ticks of charge it holds for its next burst; and the vertical speed BlazePilot last set.
+	 */
+	public BlazeDecision blaze;
+	public int blazeCharge;
+	public double blazeVy;
 
 	MobMind(Mob mob) {
 		this.mob = mob;

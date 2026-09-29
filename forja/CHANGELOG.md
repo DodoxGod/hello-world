@@ -1,5 +1,27 @@
 # Novedades
 
+## 2026-09-29 — el blaze tiene su propia red (contrato `red_blaze_v1`)
+
+- **Contrato nuevo** (Andy lo aprobó): `docs/red_blaze_contrato.json`, versión 1, explicado en
+  `docs/red_blaze_contrato.md`. 65 entradas y 22 salidas; no toca los contratos v3 ni v4.
+- **Lo que ve la red del blaze:** su vida, su altura sobre el suelo y la del jugador, la carga y la ráfaga, al jugador
+  (distancia, altura, velocidad, escudo, arco, si le alcanza con la espada, si lo ve), sus bolas en vuelo (cuántas y
+  cuánto fallan), los otros blazes y los aliados de tierra, y el techo, el agua y las paredes de alrededor.
+- **Lo que hace:** moverse en horizontal, subir, bajar o mantener la altura, cargar y disparar la ráfaga, elegir a qué
+  distancia pelear y una táctica (acosar, rodear por arriba, retirarse, esperar).
+  - Para volar, mientras manda la red, el mod fija su velocidad vertical cada tick y la cambia poco a poco: "mantener"
+    lo deja flotando. No sube bajo un techo ni a más de 10 bloques del suelo, ni baja a menos de 1.
+  - La ráfaga es la de siempre (3 bolas, 6 ticks entre ellas, 60 de espera), pero antes tiene que cargar 20 ticks
+    (se ven llamas), cada bola necesita ver al jugador y apunta con adelanto.
+- **Dónde va:** `config/forja/redes_v4/red_blaze.json` o `config/forja/redes/red_blaze.json`, con
+  `"formato": "red_blaze_v1"`. Con otro formato se rechaza y el blaze pelea con sus reglas. Sin red, nada cambia.
+- **Pruebas:** `BlazeGameTests`:
+  - los nombres de las entradas, los bloques y las cabezas son los del contrato;
+  - la observación tiene 65 números válidos;
+  - una red de prueba maneja un blaze 40 ticks: decide, sube cuando se le pide y dispara solo viendo al jugador;
+  - tras un muro no dispara;
+  - una red con otro formato se rechaza.
+
 ## 2026-09-29 — respuestas de Andy: castillo más llano y el precio de Baluarte
 
 - **Sitio del castillo más llano** (Andy: "más llano"): el desnivel máximo bajo el plano pasa de 24 a 14 bloques

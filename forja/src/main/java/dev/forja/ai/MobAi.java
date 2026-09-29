@@ -38,6 +38,8 @@ public final class MobAi {
 	/** The "formato" of a v4 mob network, and the file name reserved for the v4 captain in redes_v4. */
 	public static final String V4_FORMAT = ObsV4.FORMAT;
 	public static final String V4_CAPTAIN = "capitan";
+	/** The "formato" of the blaze's own network (docs/red_blaze_contrato.json): the only one a blaze accepts. */
+	public static final String BLAZE_FORMAT = ObsBlaze.FORMAT;
 
 	private static final Map<Mob, MobMind> MINDS = new WeakHashMap<>();
 	/** Networks by family file name ("cuerpo", "forja_tanque"...), and why the ones that were refused were. */
@@ -152,6 +154,11 @@ public final class MobAi {
 			readV4(V4_CAPTAIN);
 		}
 		for (String family : families()) {
+			// The blaze has a contract of its own (red_blaze_v1), in either folder, whatever iaContrato says.
+			if (MobFamily.BLAZE.file.equals(family)) {
+				loadBlaze();
+				continue;
+			}
 			// v4 first (docs/red_mob_v4_diseno.md §1.6): with "auto" or "v4", a v4 file that fits takes the family over.
 			// One that does not fit is logged and the family carries on with its v3 file below, or the rules.
 			if (contract() != Contract.V3) {
@@ -181,6 +188,41 @@ public final class MobAi {
 			}
 		}
 		loaded = true;
+	}
+
+	/**
+	 * The blaze's network (Andy, 2026-09-29): red_blaze.json from redes_v4, or else from redes, with "formato":
+	 * "red_blaze_v1" and ObsBlaze's inputs (see {@link #checkBlaze}). Any other file there (a v3 or v4 mob network) is
+	 * refused with its reason in {@link #problems()}, and the blaze keeps to its rules: vanilla's own goals.
+	 */
+	private static void loadBlaze() {
+		String family = MobFamily.BLAZE.file;
+		for (Path folder : new Path[] {netFolderV4(), netFolder()}) {
+			Path file = folder.resolve("red_" + family + ".json");
+			if (!Files.exists(file)) {
+				continue;
+			}
+			try {
+				NetBrain net = NetBrain.load(file);
+				String problem = checkBlaze(net);
+				if (problem == null) {
+					NETS.put(family, net);
+					NET_PROBLEMS.remove(family);
+					Forja.LOGGER.info("Red del blaze cargada: {} ({} ticks por decisión)", file, net.ticksPerDecision);
+					return;
+				}
+				NET_PROBLEMS.put(family, problem);
+				Forja.LOGGER.warn("Red del blaze {} descartada, el blaze sigue con las reglas: {}", file, problem);
+			} catch (Exception failure) {
+				NET_PROBLEMS.put(family, String.valueOf(failure.getMessage()));
+				Forja.LOGGER.warn("No se pudo leer la red del blaze {}", file, failure);
+			}
+		}
+	}
+
+	/** Why a network cannot drive a blaze, or null: the red_blaze_v1 contract, exactly (BlazeBrain.check). */
+	public static String checkBlaze(NetBrain net) {
+		return BlazeBrain.check(net);
 	}
 
 	/**
@@ -428,6 +470,7 @@ public final class MobAi {
 		}
 		if (target == null) {
 			mind.networked = false;
+			mind.blaze = null;
 			mind.decision = Decision.APPROACH;
 			mind.wantsRun = false;
 			return;
@@ -441,6 +484,11 @@ public final class MobAi {
 			return;
 		}
 		mind.decidedAt = now;
+		if (net != null && BLAZE_FORMAT.equals(net.format)) {
+			thinkBlaze(mind, target, net);
+			return;
+		}
+		mind.blaze = null;
 		if (net == null) {
 			mind.networked = false;
 			mind.decision = RuleBrain.decide(mind, target);
@@ -474,6 +522,32 @@ public final class MobAi {
 		mind.lastLogits = logits;
 		AiStats.count(mob, mind.decision);
 		AiRecorder.record(mind, target, obs, mask, now);
+	}
+
+	/**
+	 * A blaze network's decision (red_blaze_v1): ObsBlaze's 65 inputs, its own mask and heads, carried out by BlazePilot
+	 * (from TacticGoal). mind.decision gets the same decision in the ground mobs' terms, for what counts and shows them.
+	 */
+	private static void thinkBlaze(MobMind mind, Player target, NetBrain net) {
+		Mob mob = mind.mob;
+		if (mind.memory == null || mind.memory.length != net.memory) {
+			mind.resetMemory(net.memory);
+		}
+		float[] obs = ObsBlaze.build(mob, target, mind);
+		boolean[] mask = BlazeBrain.mask(mob, mind, target);
+		float[] logits = net.forward(obs, mind.memory);
+		double temperature = CombatConfig.get().iaTemperatura * ForjaDifficulty.current().temperature * Threat.of(mob).temperature();
+		if (mind.blaze == null) {
+			// taking over from the rules: its vertical speed starts from the one it has
+			mind.blazeVy = mob.getDeltaMovement().y;
+		}
+		mind.blaze = BlazeBrain.sample(logits, temperature, mind.random, mask);
+		mind.decision = mind.blaze.asDecision();
+		mind.wantsRun = false;
+		mind.networked = true;
+		mind.lastObs = obs;
+		mind.lastLogits = logits;
+		AiStats.count(mob, mind.decision);
 	}
 
 	/** When each mob last called for help, so a fight does not turn into a shouting match. */

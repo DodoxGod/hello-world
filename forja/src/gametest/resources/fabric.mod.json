@@ -36,7 +36,8 @@
 			"dev.forja.test.AccionesGameTests",
 			"dev.forja.test.ArmaduraGameTests",
 			"dev.forja.test.PercepcionGameTests",
-			"dev.forja.test.RedV4GameTests"
+			"dev.forja.test.RedV4GameTests",
+			"dev.forja.test.BlazeGameTests"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"

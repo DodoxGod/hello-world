@@ -159,6 +159,11 @@ public final class TacticGoal extends Goal {
 			this.toLastKnown();
 			return;
 		}
+		// A blaze on its own network (red_blaze_v1) flies and fires by its own executor, in 3D.
+		if (this.mind.networked && this.mind.blaze != null) {
+			BlazePilot.tick(this.mob, this.mind, target);
+			return;
+		}
 		Decision decision = this.mind.decision;
 		// Defense: shield up (held while asked), or a dodge to the side.
 		if (decision.defense() == 1 || decision.tactic() == Tactic.CUBRIRSE) {
@@ -419,33 +424,17 @@ public final class TacticGoal extends Goal {
 	}
 
 	/**
-	 * The blaze's "usar", for when a red_blaze.json exists (docs/red_mob_blaze.md): a burst of three small
-	 * fireballs a few ticks apart, as vanilla's blaze throws them, then a long wait. Within 16 and in sight.
+	 * The blaze's "usar" when the rules send it into a tactic (docs/red_mob_blaze.md): a burst of three small
+	 * fireballs a few ticks apart, as vanilla's blaze throws them, then a long wait. Within 16 and in sight to start.
+	 * The burst itself is BlazePilot.burst, shared with the blaze's own network (red_blaze_v1).
 	 */
 	private void fireballs(Player target, boolean use) {
-		if (!(this.mob.level() instanceof ServerLevel level)) {
-			return;
-		}
 		boolean inBurst = this.mind.draw > 0;
 		if (!inBurst && (!use || this.mind.cooldown > 0 || this.mob.distanceTo(target) >= 16.0
 			|| !ObsM1.sees(this.mob, target.getX(), target.getEyeY(), target.getZ()))) {
 			return;
 		}
-		// draw counts the burst's ticks: a shot on 1, 1 + GAP and 1 + 2 GAP, then the cooldown
-		int tick = ++this.mind.draw;
-		if ((tick - 1) % BLAZE_BURST_GAP == 0) {
-			Vec3 from = new Vec3(this.mob.getX(), this.mob.getY(0.5) + 0.5, this.mob.getZ());
-			Vec3 aim = new Vec3(target.getX(), target.getY(0.5), target.getZ()).subtract(from).normalize();
-			var ball = new net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball(level, this.mob, aim);
-			ball.snapTo(from.x, from.y, from.z, this.mob.getYRot(), this.mob.getXRot());
-			level.addFreshEntity(ball);
-			level.playSound(null, this.mob.getX(), this.mob.getY(), this.mob.getZ(), net.minecraft.sounds.SoundEvents.BLAZE_SHOOT,
-				net.minecraft.sounds.SoundSource.HOSTILE, 1.0F, 1.0F);
-		}
-		if (tick >= 1 + (BLAZE_BURST - 1) * BLAZE_BURST_GAP) {
-			this.mind.draw = 0;
-			this.mind.cooldown = BLAZE_COOLDOWN;
-		}
+		BlazePilot.burst(this.mob, this.mind, target, false, false);
 	}
 
 	/**
