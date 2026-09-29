@@ -66,7 +66,7 @@
 
 - **Clases** (docs/CLASES.md): Guerrero, Asesino, Tanque, Mago, Curandero, Arquero y Herrero. Se elige una, se sube
   de nivel (hasta 15) con experiencia de su estilo de pelea y cada nivel da un punto para su árbol de talentos. Se
-  puede cambiar con el Emblema del olvido: conserva el nivel y devuelve los puntos.
+  puede cambiar con el Medallón del olvido, que se forja: se vuelve a empezar en el nivel 1 (decisión A de Andy).
 - **Farol de curación:** cualquiera puede usarlo; un toque lanza un rayo que cura al primer aliado, cargado suelta un
   anillo que cura a todos los aliados cerca (y a ti a la mitad). Gasta maná: 12 por toque, un 25 % más cargado. El
   Curandero cura más con él, y su báculo y su grimorio curan a los aliados (1/10 del daño) en vez de herir.
