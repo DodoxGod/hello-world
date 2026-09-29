@@ -30,8 +30,8 @@ import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Magic that mends instead of hurting (docs/CLASES.md): the healing lantern, anyone's, and the Curandero's
- * rule for the staff and the tome.
+ * Magic that mends (docs/CLASES.md): the healing lantern, anyone's, and the Curandero's rule for the staff
+ * and the tome, which mend allies as well as hurting foes.
  *
  * <p>The <b>lantern</b> (ForgeType.FAROL) is Andy's A3 drawing, the crook with a cage hanging from it: a tap
  * sends a beam that mends the first ally along it, a charge lets out a ring round the reader that mends every
@@ -44,7 +44,8 @@ public final class Healing {
 	/**
 	 * Andy: "cambia el daño de las armas mágicas por curación (sólo cura 1/10 parte del daño)". A Curandero's
 	 * bolt and rune mend an ally by a tenth of what they would have hurt a foe for — no more, whatever the
-	 * class's healing talents say — and do not hurt monsters at all.
+	 * class's healing talents say. Andy (2026-09-29): they also hurt foes, at a third (clase/ClassDamage); the
+	 * tenth is of the whole bite, before that third.
 	 */
 	public static final float MAGIC_HEAL_SHARE = 0.1F;
 	/** What a Curandero's staff or tome mends the Curandero, as a share of what it mended an ally. */
@@ -84,7 +85,7 @@ public final class Healing {
 		return RING_REACH + RING_GROWTH * charge;
 	}
 
-	/** Whether this caster's staff and tome heal instead of hurting: a Curandero player. */
+	/** Whether this caster's staff and tome mend the allies they reach (and hurt the rest at a third): a Curandero player. */
 	public static boolean converts(@Nullable Object caster) {
 		return caster instanceof Player player && ClassEffects.is(player, PlayerClass.CURANDERO);
 	}

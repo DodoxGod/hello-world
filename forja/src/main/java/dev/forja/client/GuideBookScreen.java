@@ -708,7 +708,7 @@ public class GuideBookScreen extends Screen {
 			case "combate" -> Assembler.create(ForgeType.ESPADA, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.HIERRO));
 			case "mana" -> new ItemStack(Items.LAPIS_LAZULI);
 			case "accesorios" -> new ItemStack(ModItems.CINTURON);
-			case "clases" -> new ItemStack(ModItems.EMBLEMA_DEL_OLVIDO);
+			case "clases" -> dev.forja.forge.Relic.MEDALLON_DEL_OLVIDO.create(dev.forja.forge.Relic.MEDALLON_DEL_OLVIDO.defaultMaterials());
 			case "eventos" -> new ItemStack(ModItems.JARRA);
 			case "encargos" -> new ItemStack(Items.EMERALD);
 			case "amenazas" -> new ItemStack(Items.CROSSBOW);
@@ -1685,7 +1685,9 @@ public class GuideBookScreen extends Screen {
 	 */
 	private List<Element> classesChapter() {
 		List<Element> body = new ArrayList<>();
-		body.add(new Text(Component.translatable("gui.forja.libro.clases.intro"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libro.clases.intro", dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_TREE),
+			dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_1),
+			dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_2)), INK));
 		body.add(new ClassButton());
 		body.add(new Text(Component.translatable("gui.forja.libro.clases.niveles", dev.forja.clase.ClassProgress.MAX_LEVEL,
 			dev.forja.clase.ClassProgress.POINTS_PER_LEVEL, dev.forja.clase.Talent.COST[1], dev.forja.clase.Talent.COST[2],
@@ -1705,13 +1707,26 @@ public class GuideBookScreen extends Screen {
 				numbers.append(clazz.base.get(i).stat().plain(clazz.base.get(i).value()));
 			}
 			body.add(new Text(numbers, INK_SOFT));
+			// Andy's damage factors (clase/ClassDamage), multiplied on top of everything above.
+			body.add(new Text(Component.translatable("gui.forja.libro.clases.dano",
+				dev.forja.clase.ClassDamage.format(clazz.damageFactor(dev.forja.clase.ClassDamage.Blow.MELEE)),
+				dev.forja.clase.ClassDamage.format(clazz.damageFactor(dev.forja.clase.ClassDamage.Blow.PROJECTILE)),
+				dev.forja.clase.ClassDamage.format(clazz.damageFactor(dev.forja.clase.ClassDamage.Blow.MAGIC))), INK_SOFT));
 			body.add(new Text(Component.translatable("gui.forja.libro.clases.habilidades", clazz.firstSkill.displayName(),
-				clazz.secondSkill().displayName()), INK_SOFT));
+				dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_1), clazz.secondSkill().displayName(),
+				dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_2)), INK_SOFT));
 		}
 		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("item.forja.emblema_del_olvido")));
-		body.add(new Crafting(new Item[] {Items.GOLD_INGOT, Items.GHAST_TEAR, Items.GOLD_INGOT, Items.DIAMOND, Items.ECHO_SHARD, Items.DIAMOND,
-			Items.GOLD_INGOT, Items.AMETHYST_SHARD, Items.GOLD_INGOT}, new ItemStack(ModItems.EMBLEMA_DEL_OLVIDO)));
+		// The Medallón del olvido is forged, not crafted (forge/Relic): its three parts, then the medallion.
+		dev.forja.forge.Relic medallion = dev.forja.forge.Relic.MEDALLON_DEL_OLVIDO;
+		body.add(new SubHeader(medallion.displayName()));
+		List<ItemStack> medallionRow = new ArrayList<>();
+		for (int slot = 0; slot < medallion.slots.size(); slot++) {
+			medallionRow.add(Assembler.createPart(medallion.slots.get(slot), medallion.defaultMaterials().get(slot)));
+		}
+		medallionRow.add(medallion.create(medallion.defaultMaterials()));
+		body.add(new IconRow(medallionRow));
+		body.add(new Text(Component.translatable("gui.forja.libro.clases.medallon", medallion.core.displayName()), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.clases.cambio"), INK));
 		body.add(new Divider());
 		body.add(new SubHeader(Component.translatable("item.forja.farol")));

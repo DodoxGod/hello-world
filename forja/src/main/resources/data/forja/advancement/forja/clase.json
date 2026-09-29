@@ -2,7 +2,7 @@
   "parent": "forja:forja/guia",
   "display": {
     "icon": {
-      "id": "forja:emblema_del_olvido"
+      "id": "forja:medallon_del_olvido"
     },
     "title": {
       "translate": "advancements.forja.clase.title"

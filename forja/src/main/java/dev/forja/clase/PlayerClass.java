@@ -36,15 +36,16 @@ public enum PlayerClass {
 		ActiveSkill.PROVOCAR),
 	/** Magic: the staff and the tome, harder and sooner, for health and stamina. */
 	MAGO(0x4F7FE8, () -> Assembler.create(ForgeType.BACULO, List.of(ForgeMaterial.AMATISTA, ForgeMaterial.ORO, ForgeMaterial.MADERA)),
-		List.of(MAX_HEALTH.of(-0.10F), STAMINA_MAX.of(-0.10F), MELEE_DAMAGE.of(-0.10F), SPELL_DAMAGE.of(0.15F), SPELL_COOLDOWN.of(-0.15F),
+		List.of(MAX_HEALTH.of(-0.10F), STAMINA_MAX.of(-0.10F), SPELL_DAMAGE.of(0.15F), SPELL_COOLDOWN.of(-0.15F),
 			MANA_MAX.of(0.25F), MANA_REGEN.of(0.20F)),
 		ActiveSkill.NOVA_ARCANA),
 	/**
-	 * Andy: "cambia el daño de las armas mágicas por curación (sólo cura 1/10 parte del daño)". The rule
-	 * itself lives in magic/Healing; here are only its numbers.
+	 * Andy: "cambia el daño de las armas mágicas por curación (sólo cura 1/10 parte del daño)", and later
+	 * (2026-09-29): its magic hurts foes at a third and still mends allies. The rule lives in magic/Healing and
+	 * the damage factors (melee x0.5, magic x1/3) in {@link ClassDamage}; here are only its other numbers.
 	 */
 	CURANDERO(0x5CC46A, () -> Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.ESMERALDA, ForgeMaterial.ORO, ForgeMaterial.MADERA)),
-		List.of(MELEE_DAMAGE.of(-0.15F), HEALING.of(0.50F), MANA_MAX.of(0.15F), STAMINA_REGEN.of(0.10F)),
+		List.of(HEALING.of(0.50F), MANA_MAX.of(0.15F), STAMINA_REGEN.of(0.10F)),
 		ActiveSkill.PULSO_SANADOR),
 	/** Bows and crossbows, mobility, dodge. */
 	ARQUERO(0x8DBF4A, () -> Assembler.create(ForgeType.ARCO, Assembler.defaultMaterials(ForgeType.ARCO)),
@@ -106,6 +107,11 @@ public enum PlayerClass {
 			}
 		}
 		return total;
+	}
+
+	/** What this class does to the damage of one kind of blow, multiplied on top (Andy's factors, {@link ClassDamage}). */
+	public float damageFactor(ClassDamage.Blow blow) {
+		return ClassDamage.factor(this, blow);
 	}
 
 	/** The talents of this class, in tree order. */

@@ -590,17 +590,19 @@ public final class Spellcasting {
 		ServerLevel level = rune.level;
 		Vec3 at = rune.at;
 		double reach = rune.reach;
-		// A Curandero's tome mends its allies a tenth of the bite and leaves monsters alone (magic/Healing).
-		if (Healing.converts(caster)) {
+		// A Curandero's tome mends its allies a tenth of the whole bite (magic/Healing), and still bites everything
+		// else, at a third: the class's factor goes on where the blow lands (clase/ClassDamage).
+		boolean heals = Healing.converts(caster);
+		if (heals) {
 			Healing.runeHeal(level, at, reach, caster, damage, rune.colour);
-			return;
 		}
 		AABB box = new AABB(at, at).inflate(reach, 2.0, reach);
 		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, box,
 			other -> other.isAlive() && other != caster && !spares(rune.spareMonsters, other))) {
 			double dx = victim.getX() - at.x;
 			double dz = victim.getZ() - at.z;
-			if (dx * dx + dz * dz > reach * reach || (caster != null && victim.isAlliedTo(caster))) {
+			if (dx * dx + dz * dz > reach * reach || (caster != null && victim.isAlliedTo(caster))
+				|| (heals && Healing.ally(caster, victim))) {
 				continue;
 			}
 			Vec3 moving = victim.getDeltaMovement();

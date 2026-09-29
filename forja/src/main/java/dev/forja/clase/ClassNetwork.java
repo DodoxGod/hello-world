@@ -1,7 +1,6 @@
 package dev.forja.clase;
 
 import dev.forja.Forja;
-import dev.forja.registry.ModItems;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -102,8 +101,9 @@ public final class ClassNetwork {
 	}
 
 	/**
-	 * The first class is free. After that the change costs an Emblema del olvido, taken from the hand or the
-	 * bag (not in creative); without one, nothing happens and the player is told why.
+	 * The first class is free. After that the change costs a Medallón del olvido (or one of the old crafted
+	 * Emblemas del olvido), taken from the hand or the bag (not in creative); without one, nothing happens and
+	 * the player is told why. On your own class it only empties the tree (ClassProgress.choose).
 	 */
 	public static boolean tryChoose(ServerPlayer player, PlayerClass chosen) {
 		if (ClassProgress.clazz(player) != null && !player.isCreative()) {
@@ -121,13 +121,13 @@ public final class ClassNetwork {
 	private static ItemStack findEmblem(ServerPlayer player) {
 		for (InteractionHand hand : InteractionHand.values()) {
 			ItemStack held = player.getItemInHand(hand);
-			if (held.is(ModItems.EMBLEMA_DEL_OLVIDO)) {
+			if (held.getItem() instanceof dev.forja.item.OblivionEmblemItem) {
 				return held;
 			}
 		}
 		var inventory = player.getInventory();
 		for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
-			if (inventory.getItem(slot).is(ModItems.EMBLEMA_DEL_OLVIDO)) {
+			if (inventory.getItem(slot).getItem() instanceof dev.forja.item.OblivionEmblemItem) {
 				return inventory.getItem(slot);
 			}
 		}

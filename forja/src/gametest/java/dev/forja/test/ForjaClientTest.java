@@ -10122,6 +10122,31 @@ public class ForjaClientTest implements FabricClientGameTest {
 
 	/** The class screens as a player meets them, and the Curandero with the lantern in hand and the mana bar up. */
 	private static void showClasses(ClientGameTestContext context, TestServerContext server, TestServerConnection connection) {
+		// Andy (2026-09-29): K, V and B are only defaults. The three class keys are KeyMappings in the Forja
+		// category, listed in Controls (options.keyMappings is what that screen lists), with those defaults.
+		String keys = context.computeOnClient(mc -> {
+			StringBuilder wrong = new StringBuilder();
+			String[] names = {dev.forja.clase.ClassProgress.KEY_TREE, dev.forja.clase.ClassProgress.KEY_SKILL_1, dev.forja.clase.ClassProgress.KEY_SKILL_2};
+			int[] defaults = {org.lwjgl.glfw.GLFW.GLFW_KEY_K, org.lwjgl.glfw.GLFW.GLFW_KEY_V, org.lwjgl.glfw.GLFW.GLFW_KEY_B};
+			for (int i = 0; i < names.length; i++) {
+				net.minecraft.client.KeyMapping found = null;
+				for (net.minecraft.client.KeyMapping mapping : mc.options.keyMappings) {
+					if (mapping.getName().equals(names[i])) {
+						found = mapping;
+					}
+				}
+				if (found == null) {
+					wrong.append(names[i]).append(" is not in Controls; ");
+				} else if (found.getCategory() != dev.forja.client.ClassClient.CATEGORY) {
+					wrong.append(names[i]).append(" is not in the Forja category; ");
+				} else if (found.getDefaultKey().getValue() != defaults[i]) {
+					wrong.append(names[i]).append(" defaults to ").append(found.getDefaultKey().getValue()).append("; ");
+				}
+			}
+			return wrong.toString();
+		});
+		check(keys.isEmpty(), "the class keys should be rebindable KeyMappings in the Forja category: " + keys);
+		log("class keys: K, V and B are KeyMappings in the Forja category");
 		context.runOnClient(mc -> mc.gui.setScreen(new dev.forja.client.ClassChoiceScreen(false)));
 		context.waitTicks(10);
 		context.takeScreenshot("clases_01_elegir");
@@ -10142,6 +10167,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 		server.runOnServer(s -> {
 			net.minecraft.server.level.ServerPlayer player = connection.getServerPlayer();
 			dev.forja.clase.ClassProgress.choose(player, dev.forja.clase.PlayerClass.CURANDERO);
+			// A change starts at level 1 now (docs/CLASES.md, A); the tree is shown with some points to spend.
+			dev.forja.clase.ClassProgress.setLevel(player, 8);
 			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, dev.forja.forge.Assembler.create(dev.forja.forge.ForgeType.FAROL,
 				java.util.List.of(dev.forja.material.ForgeMaterial.ESMERALDA, dev.forja.material.ForgeMaterial.ORO, dev.forja.material.ForgeMaterial.MADERA),
 				s.registryAccess()));

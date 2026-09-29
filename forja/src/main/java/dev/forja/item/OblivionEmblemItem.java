@@ -9,9 +9,11 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 
 /**
- * The Emblema del olvido (docs/CLASES.md): what changing class costs. Used, it opens the class choice in its
- * "change" form; the emblem is spent only when a class is actually chosen there (clase/ClassNetwork), so
- * closing the screen costs nothing. Choosing the class you already have empties its tree.
+ * What changing class costs (docs/CLASES.md): the Medallón del olvido, forged at the star from parts
+ * (forge/Relic), and the old crafted Emblema del olvido, which has no recipe any more but still works. Used,
+ * it opens the class choice in its "change" form; it is spent only when a class is actually chosen there
+ * (clase/ClassNetwork), so closing the screen costs nothing. Choosing the class you already have empties its
+ * tree and keeps the level; any other class starts again at level 1.
  */
 public class OblivionEmblemItem extends Item {
 	public OblivionEmblemItem(Item.Properties properties) {

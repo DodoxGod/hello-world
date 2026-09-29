@@ -60,7 +60,8 @@ public final class ClassEvents {
 			ServerPlayer player = handler.player;
 			ClassAttributes.sync(player);
 			if (ClassProgress.clazz(player) == null) {
-				player.sendSystemMessage(Component.translatable("gui.forja.clase.aviso").withColor(0xFFF0C070));
+				player.sendSystemMessage(Component.translatable("gui.forja.clase.aviso", ClassProgress.key(ClassProgress.KEY_GUIDE),
+					ClassProgress.key(ClassProgress.KEY_TREE)).withColor(0xFFF0C070));
 			}
 		});
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> ClassEffects.forget(handler.getPlayer()));

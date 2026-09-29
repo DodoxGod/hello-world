@@ -132,18 +132,21 @@ public class MagicBolt extends Projectile {
 				return;
 			}
 			AABB box = new AABB(at, at).inflate(this.big ? 0.6 : 0.35);
-			// A Curandero's bolt goes through monsters and mends the first ally it meets (magic/Healing).
-			if (dev.forja.magic.Healing.converts(this.getOwner()) && this.getOwner() instanceof LivingEntity healer) {
+			// A Curandero's bolt mends the first ally it meets (a tenth of its bite, magic/Healing) and hurts
+			// anything else like anyone's bolt — at a third, which the class's factor sees to where it lands
+			// (clase/ClassDamage). It never hurts an ally.
+			LivingEntity healer = dev.forja.magic.Healing.converts(this.getOwner()) && this.getOwner() instanceof LivingEntity living ? living : null;
+			if (healer != null) {
 				LivingEntity ally = dev.forja.magic.Healing.allyIn(level, box, healer);
 				if (ally != null) {
 					dev.forja.magic.Healing.spellHeal(level, healer, ally, this.damage);
 					this.burst(level, at);
 					return;
 				}
-				continue;
 			}
 			for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, box,
-				other -> other.isAlive() && other != this.getOwner() && !Spellcasting.spares(this.spareMonsters, other))) {
+				other -> other.isAlive() && other != this.getOwner() && !Spellcasting.spares(this.spareMonsters, other)
+					&& (healer == null || !dev.forja.magic.Healing.ally(healer, other)))) {
 				if (this.insistent) {
 					victim.invulnerableTime = 0;
 				}

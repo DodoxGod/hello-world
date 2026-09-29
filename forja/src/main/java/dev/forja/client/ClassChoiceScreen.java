@@ -3,6 +3,7 @@ package dev.forja.client;
 import java.util.List;
 
 import dev.forja.clase.ActiveSkill;
+import dev.forja.clase.ClassDamage;
 import dev.forja.clase.ClassNetwork;
 import dev.forja.clase.ClassProgress;
 import dev.forja.clase.ClassStat;
@@ -18,8 +19,8 @@ import net.minecraft.sounds.SoundEvents;
 /**
  * The class choice (docs/CLASES.md): the seven classes down the left, and on the right the one pointed at —
  * what it is, its base numbers and its two skills, all read from the enums the game plays by. The first time
- * it comes from the guide or the K key and costs nothing; opened by the Emblema del olvido it is a change,
- * and says what it costs before anything is spent.
+ * it comes from the guide or the class key (K by default) and costs nothing; opened by the Medallón del olvido
+ * it is a change, and says what it costs before anything is spent.
  */
 public class ClassChoiceScreen extends Screen {
 	static final int LIST_X = 8;
@@ -43,6 +44,24 @@ public class ClassChoiceScreen extends Screen {
 
 	public boolean change() {
 		return this.change;
+	}
+
+	/** "Daño: cuerpo a cuerpo ×0,7 · magia ×1/3", with only the kinds of blow the class changes; null if none. */
+	static @org.jspecify.annotations.Nullable Component damageFactors(PlayerClass clazz) {
+		net.minecraft.network.chat.MutableComponent line = null;
+		for (ClassDamage.Blow blow : ClassDamage.Blow.values()) {
+			float factor = clazz.damageFactor(blow);
+			if (Math.abs(factor - 1.0F) < 1.0E-4F) {
+				continue;
+			}
+			Component part = Component.translatable("gui.forja.clase.golpe", blow.displayName(), ClassDamage.format(factor));
+			if (line == null) {
+				line = Component.translatable("gui.forja.clase.dano").append(" ").append(part);
+			} else {
+				line.append(" · ").append(part);
+			}
+		}
+		return line;
 	}
 
 	public PlayerClass selected() {
@@ -110,7 +129,14 @@ public class ClassChoiceScreen extends Screen {
 			int row = i < half ? i : i - half;
 			ClassGui.small(g, this.font, base.get(i).line(), x + PAGE_X + column * (width / 2), lineY + row * 7, 0xFFFFFFFF);
 		}
-		lineY += half * 7 + 5;
+		lineY += half * 7;
+		// Andy's damage factors (clase/ClassDamage), only the ones that are not x1.
+		Component factors = ClassChoiceScreen.damageFactors(clazz);
+		if (factors != null) {
+			ClassGui.small(g, this.font, factors, x + PAGE_X, lineY, 0xFFE0533D);
+			lineY += 7;
+		}
+		lineY += 5;
 		ClassGui.small(g, this.font, Component.translatable("gui.forja.clase.habilidades"), x + PAGE_X, lineY, ClassGui.GOLD);
 		lineY += 9;
 		for (int slot = 1; slot <= 2; slot++) {

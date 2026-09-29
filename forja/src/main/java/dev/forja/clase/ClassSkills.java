@@ -99,8 +99,9 @@ public final class ClassSkills {
 	public static boolean use(ServerPlayer player, int slot, boolean ignoreWait) {
 		ActiveSkill skill = skill(player, slot);
 		if (skill == null) {
-			player.sendOverlayMessage(Component.translatable(slot == 1 || ClassProgress.clazz(player) == null
-				? "gui.forja.habilidad.sin_clase" : "gui.forja.habilidad.sin_aprender"));
+			player.sendOverlayMessage(slot == 1 || ClassProgress.clazz(player) == null
+				? Component.translatable("gui.forja.habilidad.sin_clase", ClassProgress.key(ClassProgress.KEY_TREE))
+				: Component.translatable("gui.forja.habilidad.sin_aprender"));
 			return false;
 		}
 		int wait = waiting(player, slot);

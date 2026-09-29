@@ -2171,27 +2171,34 @@ GUI.update({
     "gui.forja.clase.habilidad_1": ("I · %s %s", "I · %s %s"),
     "gui.forja.clase.habilidad_2": ("II · %s %s · del árbol", "II · %s %s · from the tree"),
     "gui.forja.clase.tecla": ("[%s]", "[%s]"),
-    "gui.forja.clase.coste_cambio": ("Cambiar gasta el Emblema del olvido. Conservas nivel y experiencia; los talentos se borran y recuperas todos los puntos.",
-                                     "Changing spends the Emblem of Oblivion. You keep your level and experience; your talents are wiped and every point comes back."),
+    "gui.forja.clase.coste_cambio": ("Cambiar gasta el Medallón del olvido y la nueva clase empieza en el nivel 1. Tu misma clase solo reinicia los talentos y conserva el nivel.",
+                                     "Changing spends the Medallion of Oblivion and the new class starts at level 1. Your own class only resets your talents and keeps your level."),
     "gui.forja.clase.boton_elegir": ("Elegir", "Choose"),
     "gui.forja.clase.boton_cambiar": ("Cambiar", "Change"),
-    "gui.forja.clase.elegida": ("Tu clase ahora es %s. Tu árbol de talentos está en la tecla K.", "Your class is now %s. Your talent tree is on the K key."),
-    "gui.forja.clase.cambiada": ("Cambiaste de clase: ahora eres %s. Todos tus puntos vuelven a estar libres.",
-                                 "You changed class: you are now %s. All your points are free again."),
+    "gui.forja.clase.elegida": ("Tu clase ahora es %s. Tu árbol de talentos está en la tecla %s.", "Your class is now %s. Your talent tree is on the %s key."),
+    "gui.forja.clase.cambiada": ("Cambiaste de clase: ahora eres %s y empiezas en el nivel 1.",
+                                 "You changed class: you are now %s, starting from level 1."),
+    "gui.forja.clase.reiniciada": ("Sigues siendo %s: tus talentos se borran y todos tus puntos vuelven. Conservas el nivel.",
+                                   "You are still %s: your talents are wiped and every point comes back. You keep your level."),
+    "gui.forja.clase.dano": ("Daño:", "Damage:"),
+    "gui.forja.clase.golpe": ("%s %s", "%s %s"),
+    "gui.forja.clase.golpe.melee": ("cuerpo a cuerpo", "melee"),
+    "gui.forja.clase.golpe.projectile": ("proyectiles", "projectiles"),
+    "gui.forja.clase.golpe.magic": ("magia", "magic"),
     "gui.forja.clase.sube": ("%s sube al nivel %s · puntos sin gastar: %s", "%s reaches level %s · unspent points: %s"),
-    "gui.forja.clase.aviso": ("Aún no tienes clase. Elige una en el capítulo «Clases» de la guía (G) o con la tecla K.",
-                              "You have no class yet. Pick one in the guide's \"Classes\" chapter (G) or with the K key."),
-    "gui.forja.clase.falta_emblema": ("Para cambiar de clase necesitas un Emblema del olvido", "You need an Emblem of Oblivion to change class"),
+    "gui.forja.clase.aviso": ("Aún no tienes clase. Elige una en el capítulo «Clases» de la guía (%s) o con la tecla %s.",
+                              "You have no class yet. Pick one in the guide's \"Classes\" chapter (%s) or with the %s key."),
+    "gui.forja.clase.falta_emblema": ("Para cambiar de clase necesitas un Medallón del olvido", "You need a Medallion of Oblivion to change class"),
     "gui.forja.clase.nivel": ("Nivel %s · %s/%s de experiencia", "Level %s · %s/%s XP"),
     "gui.forja.clase.nivel_maximo": ("Nivel %s · máximo", "Level %s · max"),
     "gui.forja.clase.puntos": ("Puntos: %s", "Points: %s"),
     "gui.forja.clase.toast.nivel": ("%s · nivel %s", "%s · level %s"),
-    "gui.forja.clase.toast.punto": ("+%s punto de talento (K)", "+%s talent point (K)"),
+    "gui.forja.clase.toast.punto": ("+%s punto de talento (%s)", "+%s talent point (%s)"),
     "gui.forja.clase.toast.maximo": ("¡Nivel máximo alcanzado!", "Max level reached!"),
-    "gui.forja.clase.toast.elegida": ("Clase elegida. Tu árbol: K", "Class chosen. Your tree: K"),
+    "gui.forja.clase.toast.elegida": ("Clase elegida. Tu árbol: %s", "Class chosen. Your tree: %s"),
     "gui.forja.habilidad.espera": ("Espera: %s s", "Cooldown: %s s"),
     "gui.forja.habilidad.esperando": ("%s aún no está lista: %s s", "%s is not ready yet: %s s"),
-    "gui.forja.habilidad.sin_clase": ("No tienes clase: elige una con la tecla K", "You have no class: pick one with the K key"),
+    "gui.forja.habilidad.sin_clase": ("No tienes clase: elige una con la tecla %s", "You have no class: pick one with the %s key"),
     "gui.forja.habilidad.sin_aprender": ("Aún no has aprendido tu segunda habilidad: está al final de tu árbol",
                                          "You have not learned your second skill yet: it is at the bottom of your tree"),
     "gui.forja.habilidad.sin_objetivo": ("No hay ningún monstruo a la vista", "No monster in sight"),
@@ -2220,9 +2227,14 @@ GUI.update({
     "key.forja.clase_arbol": ("Árbol de clase / elegir clase", "Class tree / choose class"),
     "key.forja.habilidad_1": ("Habilidad de clase I", "Class skill I"),
     "key.forja.habilidad_2": ("Habilidad de clase II", "Class skill II"),
-    "item.forja.emblema_del_olvido": ("Emblema del olvido", "Emblem of Oblivion"),
-    "item.forja.emblema_del_olvido.desc": ("Clic derecho: cambia de clase. Conservas el nivel; los talentos se olvidan y los puntos vuelven.",
-                                           "Right-click: change class. You keep your level; talents are forgotten and the points come back."),
+    # The old crafted emblem: no recipe any more, kept so the ones already made still work.
+    "item.forja.emblema_del_olvido": ("Emblema del olvido (antiguo)", "Emblem of Oblivion (old)"),
+    "item.forja.emblema_del_olvido.desc": ("Clic derecho: cambia de clase (empiezas en el nivel 1). Ya no se fabrica: ahora se forja el Medallón del olvido.",
+                                           "Right-click: change class (you start at level 1). No longer made: forge the Medallion of Oblivion instead."),
+    "item.forja.medallon_del_olvido": ("Medallón del olvido", "Medallion of Oblivion"),
+    "item.forja.medallon_del_olvido.desc": ("Clic derecho: cambia de clase y empiezas en el nivel 1. En tu misma clase, reinicia los talentos.",
+                                            "Right-click: change class, starting at level 1. On your own class, resets your talents."),
+    "gui.forja.reliquia.nucleo": ("%s pide un núcleo de %s", "%s needs a %s core"),
     "advancements.forja.clase.title": ("Un camino propio", "A Path of Your Own"),
     "advancements.forja.clase.description": ("Elige tu primera clase", "Choose your first class"),
     "gui.forja.libro.cap.clases": ("Clases", "Classes"),
@@ -2230,13 +2242,13 @@ GUI.update({
     "gui.forja.libro.clases.boton_arbol": ("Ver tu árbol", "See your tree"),
     "gui.forja.libro.clases.intro": (
         "Una **clase** es tu forma de pelear (o de forjar). Elegir la primera es gratis: con el botón de aquí "
-        "abajo o con la tecla **K**. Sin clase juegas como siempre, sin bonos ni penalizaciones. La clase, el "
-        "nivel y los talentos **sobreviven a la muerte**. Cada clase trae una habilidad (**V**) y guarda otra al "
-        "final de su árbol (**B**).",
+        "abajo o con la tecla **%s**. Sin clase juegas como siempre, sin bonos ni penalizaciones. La clase, el "
+        "nivel y los talentos **sobreviven a la muerte**. Cada clase trae una habilidad (**%s**) y guarda otra al "
+        "final de su árbol (**%s**). Las tres teclas se cambian en Controles, en «Forja: clases».",
         "A **class** is your way of fighting (or of forging). The first one is free: with the button below or "
-        "with the **K** key. Without a class you play as always, with no bonuses and no drawbacks. Your class, "
-        "level and talents **survive death**. Each class comes with one skill (**V**) and keeps another at the "
-        "bottom of its tree (**B**).",
+        "with the **%s** key. Without a class you play as always, with no bonuses and no drawbacks. Your class, "
+        "level and talents **survive death**. Each class comes with one skill (**%s**) and keeps another at the "
+        "bottom of its tree (**%s**). All three keys can be changed in Controls, under \"Forja: Classes\".",
     ),
     "gui.forja.libro.clases.niveles": (
         "Nivel máximo %s, y cada nivel da %s punto para el árbol. Cada clase tiene tres ramas: sus nodos "
@@ -2260,28 +2272,40 @@ GUI.update({
         "the Mage, health healed on others for the Healer, arrows that hit (more the farther they fly) for the "
         "Archer. The Smith levels up by forging.",
     ),
-    "gui.forja.libro.clases.habilidades": ("Habilidades: **%s** (V) y **%s** (B, del árbol).", "Skills: **%s** (V) and **%s** (B, from the tree)."),
+    "gui.forja.libro.clases.habilidades": ("Habilidades: **%s** (%s) y **%s** (%s, del árbol).", "Skills: **%s** (%s) and **%s** (%s, from the tree)."),
+    "gui.forja.libro.clases.dano": ("**Daño:** cuerpo a cuerpo %s · proyectiles %s · magia %s. Se multiplica encima de todo lo demás.",
+                                    "**Damage:** melee %s · projectiles %s · magic %s. It multiplies on top of everything else."),
+    "gui.forja.libro.clases.medallon": (
+        "Se **forja** en la estrella de cualquier mesa de forja, como un arma: un **núcleo de %s**, un engaste y "
+        "una cadena, cortados en la mesa de piezas, y un golpe de martillo. El engaste y la cadena pueden ser de "
+        "cualquier material y le dan su color. No tiene estadísticas ni se desgasta: se gasta al cambiar.",
+        "It is **forged** on the star of any forge table, like a weapon: a **%s core**, a setting and a chain, cut "
+        "at the parts table, and one hammer stroke. The setting and the chain can be any material and give it its "
+        "colour. It has no stats and does not wear: it is spent when you change.",
+    ),
     "gui.forja.libro.clases.cambio": (
-        "**Cambiar de clase** cuesta un Emblema del olvido: clic derecho abre la elección y el emblema se gasta "
-        "solo al confirmar. Conservas el nivel y la experiencia; los talentos se borran y **todos los puntos "
-        "vuelven**. Elegir tu misma clase sirve para repartir los puntos de nuevo. El fragmento de eco de las "
-        "ciudades antiguas es lo que lo hace caro.",
-        "**Changing class** costs an Emblem of Oblivion: right-click opens the choice and the emblem is spent "
-        "only when you confirm. You keep your level and experience; your talents are wiped and **every point "
-        "comes back**. Picking your own class again lets you spend your points anew. The echo shard from the "
-        "ancient cities is what makes it dear.",
+        "**Cambiar de clase** cuesta un Medallón del olvido: clic derecho abre la elección y el medallón se "
+        "gasta solo al confirmar. La clase nueva **empieza en el nivel 1**, sin experiencia ni talentos. Elegir "
+        "tu misma clase no es un cambio: conservas el nivel, los talentos se borran y **todos los puntos "
+        "vuelven**. Los fragmentos de eco de las ciudades antiguas son lo que lo hacen caro. Los Emblemas del "
+        "olvido de antes siguen sirviendo, pero ya no se fabrican.",
+        "**Changing class** costs a Medallion of Oblivion: right-click opens the choice and the medallion is "
+        "spent only when you confirm. The new class **starts at level 1**, with no experience and no talents. "
+        "Picking your own class is not a change: you keep your level, your talents are wiped and **every point "
+        "comes back**. The echo shards from the ancient cities are what make it dear. The old Emblems of "
+        "Oblivion still work, but are no longer made.",
     ),
     "gui.forja.libro.farol.curandero": (
         "Cualquiera puede usar el farol, pero en manos de un **Curandero** cura un 50%% más, y sus talentos "
         "(Manos cálidas, Milagro) lo suben más aún; Renuevo, Bendición, Purificar y Vínculo también van en "
         "sus curas. Además, mientras eres Curandero, el proyectil del báculo y el área y la runa del grimorio "
-        "**curan** a los aliados que tocan una décima parte del daño que harían, y al Curandero un tercio de "
-        "lo que curan a los demás; no dañan a los monstruos.",
+        "**curan** a los aliados que tocan una décima parte de su daño, y al Curandero un tercio de lo que "
+        "curan a los demás; a los monstruos sí los dañan, pero a un **tercio**.",
         "Anyone can use the lantern, but in a **Healer's** hands it heals 50%% more, and their talents (Warm "
         "Hands, Miracle) raise it further; Renewal, Blessing, Cleanse and Bond ride on their heals too. What's "
         "more, while you are a Healer the staff's bolt and the tome's area and rune **heal** the allies they "
-        "touch for a tenth of the damage they would deal, and the Healer for a third of what they heal others; "
-        "they do not hurt monsters.",
+        "touch for a tenth of their damage, and the Healer for a third of what they heal others; they do hurt "
+        "monsters, but at a **third**.",
     ),
     # Not read yet: "gui.forja.libro.farol" is the caged ember wisp's text in the bestiary, and the classes
     # chapter asks for the same key with four numbers. This is the lantern's text for when it gets its own key.
@@ -2302,28 +2326,28 @@ GUI.update({
 # name, motto, description, the three branches
 CLASSES = {
     "guerrero": (("Guerrero", "Warrior"), ("Cuerpo a cuerpo y aguante", "Melee and endurance"),
-                 ("Aguanta, para y rompe. Algo más de vida y de daño, mucha más estamina, más daño de postura y una ventana de parada más generosa.",
-                  "Endure, parry, break. A little more health and damage, much more stamina, more posture damage and a more forgiving parry window."),
+                 ("Aguanta, para y rompe. Algo más de vida y de daño, mucha más estamina, más daño de postura y una ventana de parada más generosa. La magia le sale floja (×0,4).",
+                  "Endure, parry, break. A little more health and damage, much more stamina, more posture damage and a more forgiving parry window. Magic comes out weak (×0.4)."),
                  (("Aguante", "Endurance"), ("Guardia", "Guard"), ("Quebranto", "Breaker"))),
     "asesino": (("Asesino", "Assassin"), ("Más estamina, más esquiva, menos vida", "More stamina, more dodge, less health"),
-                ("Más estamina, más esquiva, un poquito más de daño, bastante menos vida. Esquiva más lejos, más seguido y más barato, y castiga por la espalda.",
-                 "More stamina, more dodge, a little more damage, a lot less health. Dodges farther, more often and for less, and punishes from behind."),
+                ("Más estamina, más esquiva, un poquito más de daño, bastante menos vida. Esquiva más lejos, más seguido y más barato, y castiga por la espalda. La magia le sale floja (×0,4).",
+                 "More stamina, more dodge, a little more damage, a lot less health. Dodges farther, more often and for less, and punishes from behind. Magic comes out weak (×0.4)."),
                 (("Sombra", "Shadow"), ("Filo", "Edge"), ("Sigilo", "Stealth"))),
     "tanque": (("Tanque", "Tank"), ("Mucha vida, poca prisa", "Lots of health, no hurry"),
-               ("Mucha vida, estamina normal, menos movilidad, esquiva más corta y más lento. A cambio, armadura, aguante al empuje y un escudo que cansa menos.",
-                "Lots of health, normal stamina, less mobility, shorter dodges and slower feet. In return: armor, knockback resistance and a shield that tires you less."),
+               ("Mucha vida, estamina normal, menos movilidad, esquiva más corta y más lento, y todo su daño ×0,67. A cambio, armadura, aguante al empuje y un escudo que cansa menos.",
+                "Lots of health, normal stamina, less mobility, shorter dodges and slower feet, and all its damage ×0.67. In return: armor, knockback resistance and a shield that tires you less."),
                (("Muralla", "Rampart"), ("Coraza", "Plating"), ("Firmeza", "Steadfast"))),
     "mago": (("Mago", "Mage"), ("Báculo y grimorio", "Staff and tome"),
-             ("La magia, más fuerte y más seguido: más daño de hechizos, menos espera, más maná y más rápido de recuperar. Lo paga en vida, estamina y daño cuerpo a cuerpo.",
-              "Magic, harder and sooner: more spell damage, shorter cooldowns, more mana that refills faster. Paid for in health, stamina and melee damage."),
+             ("La magia, más fuerte y más seguido: más daño de hechizos, menos espera, más maná y más rápido de recuperar. Lo paga en vida, estamina y daño cuerpo a cuerpo (×0,7).",
+              "Magic, harder and sooner: more spell damage, shorter cooldowns, more mana that refills faster. Paid for in health, stamina and melee damage (×0.7)."),
              (("Arcano", "Arcane"), ("Flujo", "Flow"), ("Égida", "Aegis"))),
-    "curandero": (("Curandero", "Healer"), ("Su magia cura, no hiere", "Their magic heals, not harms"),
-                  ("Las armas mágicas cambian el daño por curación: el báculo y el grimorio curan a los aliados 1/10 del daño que harían (y al curandero, un tercio de eso) y no dañan a los monstruos. Cura un 50 % más con todo, y su arma es el farol.",
-                   "Magic weapons trade damage for healing: the staff and the tome heal allies for 1/10 of the damage they would deal (and the healer for a third of that) and do not hurt monsters. Heals 50 % more with everything, and the lantern is their weapon."),
+    "curandero": (("Curandero", "Healer"), ("Su magia cura y apenas hiere", "Their magic heals, and barely harms"),
+                  ("El báculo y el grimorio curan a los aliados 1/10 de su daño (y al curandero, un tercio de eso) y dañan a los monstruos a un tercio (×1/3). Cuerpo a cuerpo, la mitad (×0,5). Cura un 50 % más con todo, y su arma es el farol.",
+                   "The staff and the tome heal allies for 1/10 of their damage (and the healer for a third of that) and hurt monsters at a third (×1/3). In melee, half (×0.5). Heals 50 % more with everything, and the lantern is their weapon."),
                   (("Sanación", "Healing"), ("Amparo", "Shelter"), ("Fe", "Faith"))),
     "arquero": (("Arquero", "Archer"), ("Arco, ballesta y buenas piernas", "Bow, crossbow and quick feet"),
-                ("Cazador a distancia: más daño de proyectiles, tensado más rápido, más velocidad y mejor esquiva, y cae mejor. Un poco menos de vida.",
-                 "A hunter at range: more projectile damage, faster draw, more speed and better dodges, and lands softer. A little less health."),
+                ("Cazador a distancia: más daño de proyectiles, tensado más rápido, más velocidad y mejor esquiva, y cae mejor. Un poco menos de vida, y cuerpo a cuerpo pega menos (×0,7).",
+                 "A hunter at range: more projectile damage, faster draw, more speed and better dodges, and lands softer. A little less health, and weaker in melee (×0.7)."),
                 (("Puntería", "Aim"), ("Tensión", "Draw"), ("Viento", "Wind"))),
     "herrero": (("Herrero", "Smith"), ("El que forja", "The one who forges"),
                 ("Sube de nivel forjando. Golpe perfecto más fácil, más potencial en lo que forja, reparaciones que rinden más y mina más rápido.",

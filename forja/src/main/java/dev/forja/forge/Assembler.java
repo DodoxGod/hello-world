@@ -504,7 +504,13 @@ public final class Assembler {
 		List<PartType> types = looseParts.stream().map(s -> ((PartItem) s.getItem()).type).toList();
 		ForgeType type = ForgeType.match(types);
 		if (type == null) {
-			return new Result(ItemStack.EMPTY, ForgeType.missingFor(types));
+			// Not gear, but maybe a relic (the Medallón del olvido): the same star, the same parts, no stats.
+			Relic relic = Relic.match(types);
+			if (relic != null) {
+				return new Result(relic.assemble(looseParts), null);
+			}
+			List<PartType> missing = ForgeType.missingFor(types);
+			return new Result(ItemStack.EMPTY, missing != null ? missing : Relic.missingFor(types));
 		}
 
 		ForgeMaterial[] materials = new ForgeMaterial[type.slots.size()];

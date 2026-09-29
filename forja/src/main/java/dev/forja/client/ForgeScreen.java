@@ -655,6 +655,10 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 				} else if (pointsUsed && !gear.isEmpty() && !gear.has(ModComponents.PARTS)) {
 					// What an alloy, a melt or a fusion left in the middle blocks the star until it is taken out.
 					lines.wrap(this.font, Component.translatable("gui.forja.centro.ocupado", gear.getHoverName()), 0xFFFFB347);
+				} else if (onlyParts && gear.isEmpty() && dev.forja.forge.Relic.wrongCore(this.starItems()) != null) {
+					// The medallion's three parts, but its núcleo is not echo: say which stone it wants.
+					dev.forja.forge.Relic relic = dev.forja.forge.Relic.wrongCore(this.starItems());
+					lines.wrap(this.font, Component.translatable("gui.forja.reliquia.nucleo", relic.displayName(), relic.core.displayName()), BAD);
 				} else if (onlyParts) {
 					// Loose parts that make nothing, or that have no place on the piece in the middle: this used to
 					// say the items "do not upgrade this piece", with no piece there to upgrade.
@@ -733,6 +737,15 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 		this.drawSwing(g, x, y);
 		this.drawHeat(g, x, y, mouseX, mouseY);
 		this.drawBurst(g, x, y);
+	}
+
+	/** What lies on the star's points, empty ones included. */
+	private List<ItemStack> starItems() {
+		List<ItemStack> items = new java.util.ArrayList<>();
+		for (int i = 0; i < ForgeMenu.STAR_COUNT; i++) {
+			items.add(this.menu.getSlot(ForgeMenu.STAR_FIRST + i).getItem());
+		}
+		return items;
 	}
 
 	/** Whether any point of the star holds something like that. */

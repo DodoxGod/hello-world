@@ -523,6 +523,18 @@ public class ForgeMenu extends AbstractContainerMenu {
 				for (int i = 0; i < STAR_COUNT; i++) {
 					this.star.removeItem(i, 1);
 				}
+				if (performed == Action.FORGE && !result.has(ModComponents.PARTS)) {
+					// A relic (forge/Relic, the Medallón del olvido): the same press, but it is not gear, so no
+					// signature, potential, Maestria, heat or quench — the parts go in and the relic comes out.
+					this.center.setItem(0, result);
+					this.playSound(quality >= 2 ? SoundEvents.ANVIL_LAND : SoundEvents.ANVIL_USE);
+					this.particles(ParticleTypes.ENCHANT, 30);
+					this.particles(ParticleTypes.SCULK_SOUL, 8);
+					dev.forja.forge.SmithLevel.award(player, dev.forja.forge.SmithLevel.XP_FORGE);
+					dev.forja.forge.SmithRecord.add(player, dev.forja.forge.SmithRecord.FORGED);
+					this.updateResults();
+					return;
+				}
 				if (performed == Action.FORGE) {
 					// A piece leaves the star signed, still hot, and already broken in by a practised smith.
 					dev.forja.forge.Quality.sign(result, player);
@@ -791,7 +803,8 @@ public class ForgeMenu extends AbstractContainerMenu {
 				inputs.add(point.copyWithCount(1));
 			}
 		}
-		return Assembler.evaluate(inputs, this.level.registryAccess()).stack().has(ModComponents.PARTS);
+		// A relic (forge/Relic) is a set too, though it has no parts component: it is forged, not melted.
+		return !Assembler.evaluate(inputs, this.level.registryAccess()).stack().isEmpty();
 	}
 
 	/** What one unit of a material looks like as an item, alloys and tagged materials included. */

@@ -1,6 +1,6 @@
 """Assets of the class system (docs/CLASES.md): the texture the two class screens, the toast and the HUD are
-drawn from, and the Emblema del olvido. Called from generate_assets.py after the models are written, the way
-castillo.py is, and handed that module so it can borrow its helpers.
+drawn from, the old Emblema del olvido and the forged Medallón del olvido. Called from generate_assets.py after
+the models are written, the way castillo.py is, and handed that module so it can borrow its helpers.
 
 Where every piece sits in textures/gui/clases.png is mirrored in client/ClassGui.java; move one, move both.
 """
@@ -231,16 +231,79 @@ def emblem(ga):
                   {"parent": "minecraft:item/generated", "textures": {"layer0": "forja:item/emblema_del_olvido"}})
     ga.write_json(ga.ASSETS / "items/emblema_del_olvido.json",
                   {"model": {"type": "minecraft:model", "model": "forja:item/emblema_del_olvido"}})
-    ga.write_json(ga.DATA / "recipe/emblema_del_olvido.json", {
-        "type": "minecraft:crafting_shaped",
-        "category": "misc",
-        "pattern": ["GTG", "DED", "GAG"],
-        "key": {"G": "minecraft:gold_ingot", "T": "minecraft:ghast_tear", "D": "minecraft:diamond",
-                "E": "minecraft:echo_shard", "A": "minecraft:amethyst_shard"},
-        "result": {"id": "forja:emblema_del_olvido"},
-    })
+    # No recipe any more (Andy, 2026-09-29): the old emblem is kept only so the ones already made still work.
+    # What changes class now is forged: the Medallón del olvido, below.
+    old_recipe = ga.DATA / "recipe/emblema_del_olvido.json"
+    if old_recipe.exists():
+        old_recipe.unlink()
+
+
+# The Medallón del olvido (forge/Relic): a núcleo set in an engaste, hung from a chain. One letter per part, as
+# the staff, the tome and the lantern are drawn (generate_assets.drawn): G the núcleo, E the engaste, C the
+# chain; 'g' is a glint on the núcleo.
+MEDALLION = [
+    ".CC.........CC..",
+    "..CC.......CC...",
+    "...CC.....CC....",
+    "....CC...CC.....",
+    ".....CCECC......",
+    ".....EEEEE......",
+    "...EEEGGGEEE....",
+    "...EGgGGGGGE....",
+    "..EGGGGGGGGGE...",
+    "..EGGGGGGGGGE...",
+    "..EGGGGGGGGGE...",
+    "..EGGGGGGGGGE...",
+    "...EGGGGGGGE....",
+    "...EEEGGGEEE....",
+    ".....EEEEE......",
+    "................",
+]
+# The closed eye of the old emblem, across the núcleo: the lid, and the lashes under it.
+MEDALLION_LID = [(4, 9), (5, 10), (6, 10), (7, 10), (8, 10), (9, 10), (10, 9)]
+MEDALLION_LASHES = [(5, 11), (7, 11), (9, 11)]
+
+
+def medallion_layers(ga):
+    """The three grayscale layers, núcleo, engaste and chain, which the item tints with its parts' materials."""
+    pixels = ga.drawn(MEDALLION, {"G": 0, "E": 1, "C": 2})
+    for (x, y), (label, level) in list(pixels.items()):
+        if label == 0 and MEDALLION[y][x] == "G":
+            # The stone is a dome lit from the upper left, darker to the lower right and at its rim.
+            rim = MEDALLION[y][x - 1] != "G" and MEDALLION[y][x - 1] != "g" or MEDALLION[y][x + 1] != "G"
+            shade = 205 - 11 * ((x - 7) + (y - 9.5)) - (24 if rim else 0)
+            pixels[(x, y)] = (0, int(max(96, min(236, shade))))
+        elif label == 2:
+            # Links: every other pair of pixels along the chain catches the light.
+            pixels[(x, y)] = (2, 236 if ((x + y) // 2) % 2 == 0 else 140)
+    for at in MEDALLION_LID:
+        pixels[at] = (0, 255)
+    for at in MEDALLION_LASHES:
+        pixels[at] = (0, 96)
+    return ga.normalized_layers(pixels, 3)
+
+
+def medallion(ga):
+    folder = ga.ASSETS / "textures/item/medallon_del_olvido"
+    folder.mkdir(parents=True, exist_ok=True)
+    for index, image in enumerate(medallion_layers(ga)):
+        image.save(folder / f"{index}.png")
+        ga.write_json(ga.ASSETS / f"models/item/medallon_del_olvido/{index}.json",
+                      {"parent": "minecraft:item/generated", "textures": {"layer0": f"forja:item/medallon_del_olvido/{index}"}})
+    # Tinted like a forged piece: layer i takes the colour of the part in slot i (forge/Relic.create), and a
+    # stack with no colours (a command, a recipe viewer) shows echo, gold and iron.
+    defaults = [ga.MATERIAL_COLORS["eco"], ga.MATERIAL_COLORS["oro"], ga.MATERIAL_COLORS["hierro"]]
+    ga.write_json(ga.ASSETS / "items/medallon_del_olvido.json", {"model": {
+        "type": "minecraft:composite",
+        "models": [{
+            "type": "minecraft:model",
+            "model": f"forja:item/medallon_del_olvido/{index}",
+            "tints": [{"type": "minecraft:custom_model_data", "index": index, "default": defaults[index]}],
+        } for index in range(3)],
+    }})
 
 
 def generate(ga):
     class_gui(ga)
     emblem(ga)
+    medallion(ga)

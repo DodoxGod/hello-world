@@ -1,0 +1,40 @@
+{
+  "model": {
+    "type": "minecraft:composite",
+    "models": [
+      {
+        "type": "minecraft:model",
+        "model": "forja:item/medallon_del_olvido/0",
+        "tints": [
+          {
+            "type": "minecraft:custom_model_data",
+            "index": 0,
+            "default": 2788500
+          }
+        ]
+      },
+      {
+        "type": "minecraft:model",
+        "model": "forja:item/medallon_del_olvido/1",
+        "tints": [
+          {
+            "type": "minecraft:custom_model_data",
+            "index": 1,
+            "default": 16767037
+          }
+        ]
+      },
+      {
+        "type": "minecraft:model",
+        "model": "forja:item/medallon_del_olvido/2",
+        "tints": [
+          {
+            "type": "minecraft:custom_model_data",
+            "index": 2,
+            "default": 15000804
+          }
+        ]
+      }
+    ]
+  }
+}

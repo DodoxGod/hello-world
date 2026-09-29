@@ -4630,7 +4630,7 @@ ADVANCEMENTS = {
     # Taking one alive is harder than killing it: the catch only works while it is fed.
     "farol": ("pavesa", "forja:farol_de_pavesa", "challenge", None),
     # A class taken (docs/CLASES.md), from the guide, the K key or the emblem.
-    "clase": ("guia", "forja:emblema_del_olvido", "task", None),
+    "clase": ("guia", "forja:medallon_del_olvido", "task", None),
     # The two steps of the guide's path (ForjaPath) that nothing marked. Holding anything that came out
     # of the foundry: a part from a casting box, clean or rough, or a whole tool off a casting table,
     # whose mask has every one of its slots cast (a table makes tools of two to six parts).

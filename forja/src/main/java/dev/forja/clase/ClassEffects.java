@@ -150,7 +150,11 @@ public final class ClassEffects {
 	/**
 	 * What the attacker's class does to a blow: melee (backstab, a nearly dead foe, a staggered one, the
 	 * skills' next-hit bonuses, a smith's own tools), arrows (their damage, the head, the distance) and the
-	 * death mark on anything. Spells are scaled where they are cast (magic/Spellcasting).
+	 * death mark on anything — all of which add up — and then, multiplied on top, the class's own factor for
+	 * that kind of blow ({@link ClassDamage}: melee, projectile, magic). The spell bonuses of the class and its
+	 * talents are put on where the spell is cast (magic/Spellcasting, {@link #spellDamageMultiplier}); the
+	 * factor for magic is put on here, where the spell lands, so a Curandero's bolt hurts at a third while the
+	 * ally it reaches is still mended a tenth of the bolt's whole bite (magic/Healing).
 	 */
 	public static float dealt(DamageSource source, LivingEntity target, boolean staggered, boolean head) {
 		if (!(source.getEntity() instanceof Player attacker) || attacker == target || ClassProgress.clazz(attacker) == null) {
@@ -159,7 +163,9 @@ public final class ClassEffects {
 		float bonus = 0.0F;
 		long now = attacker.level().getGameTime();
 		Buffs buffs = BUFFS.get(attacker.getUUID());
-		boolean melee = source.getDirectEntity() == attacker;
+		ClassDamage.Blow blow = ClassDamage.of(source, attacker);
+		// A spell cast from the hand (the Nova arcana) names the caster as what struck; it is still not a blow of the hand.
+		boolean melee = blow == ClassDamage.Blow.MELEE;
 		if (melee) {
 			if (behind(target, attacker)) {
 				bonus += stat(attacker, ClassStat.BACKSTAB);
@@ -203,7 +209,8 @@ public final class ClassEffects {
 		if (buffs != null && buffs.markedUntil >= now && target.getUUID().equals(buffs.marked)) {
 			bonus += ActiveSkill.MARCA_DE_MUERTE.numbers[2];
 		}
-		return Math.max(0.0F, 1.0F + bonus);
+		float factor = blow == null ? 1.0F : ClassDamage.factor(attacker, blow);
+		return Math.max(0.0F, 1.0F + bonus) * factor;
 	}
 
 	/** Hammers, maces, pickaxes and axes: what a smith's arm is used to (Brazo de herrero). */
@@ -249,6 +256,11 @@ public final class ClassEffects {
 
 	// ------------------------------------------------------------------ magic (magic/Spellcasting, magic/Healing)
 
+	/**
+	 * The class's and its talents' spell bonus (SPELL_DAMAGE, added up), put on where a spell is cast. The
+	 * class's factor for magic ({@link ClassDamage}) is not in here: it goes on where the spell lands, in
+	 * {@link #dealt}.
+	 */
 	public static float spellDamageMultiplier(@Nullable LivingEntity caster) {
 		return caster instanceof Player player ? multiplier(player, ClassStat.SPELL_DAMAGE, 0.1F) : 1.0F;
 	}

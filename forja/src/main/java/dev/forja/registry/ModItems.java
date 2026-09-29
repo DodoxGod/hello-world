@@ -122,8 +122,13 @@ public final class ModItems {
 	public static Item CORAZON_DE_FORJA;
 	public static Item FRAGUA_APAGADA;
 	public static Item CINTURON;
-	/** What changing class costs (clase/ClassNetwork, docs/CLASES.md). */
+	/**
+	 * What changing class used to cost, from a crafting table. Kept only so the ones already made still work;
+	 * it has no recipe any more and is not in the creative tab (docs/CLASES.md).
+	 */
 	public static Item EMBLEMA_DEL_OLVIDO;
+	/** What changing class costs: forged at the star from a núcleo of echo, an engaste and a chain (forge/Relic). */
+	public static Item MEDALLON_DEL_OLVIDO;
 
 	/** The ingot of one alloy, by its id. */
 	public static Item alloy(String id) {
@@ -265,6 +270,10 @@ public final class ModItems {
 			new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.RARE)
 				.component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(
 					java.util.List.of(net.minecraft.network.chat.Component.translatable("item.forja.emblema_del_olvido.desc")))));
+		MEDALLON_DEL_OLVIDO = register("medallon_del_olvido", dev.forja.item.OblivionEmblemItem::new,
+			new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.RARE)
+				.component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(
+					java.util.List.of(net.minecraft.network.chat.Component.translatable("item.forja.medallon_del_olvido.desc")))));
 
 		Registry.register(
 			BuiltInRegistries.CREATIVE_MODE_TAB,
@@ -399,7 +408,7 @@ public final class ModItems {
 		stacks.add(new ItemStack(HUEVO_MOLDE_ROTO));
 		stacks.add(new ItemStack(HUEVO_GUARDIAN));
 		stacks.add(new ItemStack(CINTURON));
-		stacks.add(new ItemStack(EMBLEMA_DEL_OLVIDO));
+		stacks.add(dev.forja.forge.Relic.MEDALLON_DEL_OLVIDO.create(dev.forja.forge.Relic.MEDALLON_DEL_OLVIDO.defaultMaterials()));
 		stacks.add(new ItemStack(HIERRO_ESTELAR));
 		for (Item ingot : ALLOYS.values()) {
 			stacks.add(new ItemStack(ingot));

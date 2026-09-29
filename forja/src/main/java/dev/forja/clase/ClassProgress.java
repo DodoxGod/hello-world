@@ -24,6 +24,22 @@ public final class ClassProgress {
 	/** "Cada nivel da puntos": one per level, the first included. */
 	public static final int POINTS_PER_LEVEL = 1;
 
+	/**
+	 * The class keys (Andy, 2026-09-29: K, V and B by default, rebindable). client/ClassClient registers a
+	 * KeyMapping under each name in the Forja category, and every text that names one of them does it with
+	 * {@link #key}, which the client fills with whatever the player has bound — never with a letter.
+	 */
+	public static final String KEY_TREE = "key.forja.clase_arbol";
+	public static final String KEY_SKILL_1 = "key.forja.habilidad_1";
+	public static final String KEY_SKILL_2 = "key.forja.habilidad_2";
+	/** The guide's key (client/ForjaClient), named in the reminder to pick a class. */
+	public static final String KEY_GUIDE = "key.forja.guia";
+
+	/** A key as the player has it bound, for a text: resolved on the client, so it follows the Controls screen. */
+	public static Component key(String name) {
+		return Component.keybind(name);
+	}
+
 	public static final AttachmentType<ClassData> DATA = AttachmentRegistry.create(Forja.id("clase"), builder -> builder
 		.persistent(ClassData.CODEC)
 		.copyOnDeath()
@@ -76,17 +92,28 @@ public final class ClassProgress {
 
 	/**
 	 * Takes a class. The first time is free; after that it is a change, which the caller has paid for (the
-	 * Emblema del olvido, or a command). A change keeps the level and experience and gives every point back.
+	 * Medallón del olvido, or a command). Andy (2026-09-29): a change does not keep the level — the new class
+	 * starts at level 1 with no experience, like the first one; only the count of changes is carried over.
 	 */
 	public static void choose(ServerPlayer player, PlayerClass chosen) {
 		ClassData before = data(player);
+		if (before.playerClass() == chosen) {
+			// The medallion on your own class is not a change: the tree is emptied and the level stays.
+			resetTalents(player);
+			player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.8F, 1.2F);
+			player.sendSystemMessage(Component.translatable("gui.forja.clase.reiniciada", chosen.displayName()));
+			// The choice screen moves on to the emptied tree, as after a change.
+			ClassNetwork.toast(player, ClassNetwork.Toast.CHOSEN, chosen, before.level());
+			return;
+		}
 		boolean change = before.playerClass() != null;
-		int level = change ? Math.max(1, before.level()) : 1;
-		int xp = change ? before.xp() : 0;
+		int level = 1;
+		int xp = 0;
 		set(player, new ClassData(chosen.id(), level, xp, 0, 0L, 0L, before.changes() + (change ? 1 : 0)));
 		ClassEffects.forget(player);
 		player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.8F, 1.2F);
-		player.sendSystemMessage(Component.translatable(change ? "gui.forja.clase.cambiada" : "gui.forja.clase.elegida", chosen.displayName()));
+		player.sendSystemMessage(change ? Component.translatable("gui.forja.clase.cambiada", chosen.displayName())
+			: Component.translatable("gui.forja.clase.elegida", chosen.displayName(), key(KEY_TREE)));
 		ClassNetwork.toast(player, ClassNetwork.Toast.CHOSEN, chosen, level);
 		dev.forja.ForjaAdvancements.award(player, "clase");
 	}

@@ -29,10 +29,10 @@ public class ClassToast implements Toast {
 		if (kind == ClassNetwork.Toast.LEVEL) {
 			this.title = Component.translatable("gui.forja.clase.toast.nivel", clazz.displayName(), level);
 			this.text = level >= ClassProgress.MAX_LEVEL ? Component.translatable("gui.forja.clase.toast.maximo")
-				: Component.translatable("gui.forja.clase.toast.punto", ClassProgress.POINTS_PER_LEVEL);
+				: Component.translatable("gui.forja.clase.toast.punto", ClassProgress.POINTS_PER_LEVEL, ClassProgress.key(ClassProgress.KEY_TREE));
 		} else {
 			this.title = clazz.displayName();
-			this.text = Component.translatable("gui.forja.clase.toast.elegida");
+			this.text = Component.translatable("gui.forja.clase.toast.elegida", ClassProgress.key(ClassProgress.KEY_TREE));
 		}
 	}
 

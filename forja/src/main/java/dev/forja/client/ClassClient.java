@@ -22,9 +22,9 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The client half of the classes: the three keys (K the tree, or the choice with no class yet; V and B the
- * two skills), what the server says (a toast, the emblem's change screen), and the two skills beside the
- * hotbar with their waits.
+ * The client half of the classes: the three keys (by default K the tree, or the choice with no class yet; V and
+ * B the two skills; all rebindable in Controls under "Forja: clases"), what the server says (a toast, the
+ * medallion's change screen), and the two skills beside the hotbar with their waits.
  */
 public final class ClassClient {
 	public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(Forja.id("clases"));
@@ -36,11 +36,14 @@ public final class ClassClient {
 	}
 
 	public static void register() {
-		TREE = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.forja.clase_arbol", InputConstants.Type.KEYSYM,
+		// K, V and B are only the defaults (Andy, 2026-09-29): all three are KeyMappings in the Forja category, so
+		// they are rebound in Controls, and nothing anywhere compares a key code with them. Texts name them with
+		// ClassProgress.key, which follows the binding.
+		TREE = KeyMappingHelper.registerKeyMapping(new KeyMapping(ClassProgress.KEY_TREE, InputConstants.Type.KEYSYM,
 			org.lwjgl.glfw.GLFW.GLFW_KEY_K, CATEGORY));
-		SKILL_1 = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.forja.habilidad_1", InputConstants.Type.KEYSYM,
+		SKILL_1 = KeyMappingHelper.registerKeyMapping(new KeyMapping(ClassProgress.KEY_SKILL_1, InputConstants.Type.KEYSYM,
 			org.lwjgl.glfw.GLFW.GLFW_KEY_V, CATEGORY));
-		SKILL_2 = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.forja.habilidad_2", InputConstants.Type.KEYSYM,
+		SKILL_2 = KeyMappingHelper.registerKeyMapping(new KeyMapping(ClassProgress.KEY_SKILL_2, InputConstants.Type.KEYSYM,
 			org.lwjgl.glfw.GLFW.GLFW_KEY_B, CATEGORY));
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (TREE.consumeClick()) {
@@ -84,7 +87,7 @@ public final class ClassClient {
 			return;
 		}
 		if (ClassProgress.clazz(client.player) == null) {
-			client.gui.hud.setOverlayMessage(Component.translatable("gui.forja.habilidad.sin_clase"), false);
+			client.gui.hud.setOverlayMessage(Component.translatable("gui.forja.habilidad.sin_clase", ClassProgress.key(ClassProgress.KEY_TREE)), false);
 			return;
 		}
 		if (ClientPlayNetworking.canSend(ClassNetwork.Action.TYPE)) {
