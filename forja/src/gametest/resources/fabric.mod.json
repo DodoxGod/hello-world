@@ -20,7 +20,8 @@
 			"dev.forja.test.BalanceGameTests",
 			"dev.forja.test.MaterialesGameTests",
 			"dev.forja.test.MesaGameTests",
-			"dev.forja.test.FundicionGameTests"
+			"dev.forja.test.FundicionGameTests",
+			"dev.forja.test.MontadoraGameTests"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"

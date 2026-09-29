@@ -950,6 +950,20 @@ GUI = {
     "gui.forja.libro.fundicion.paso7.frio": (
         "Las tres cuelan igual: cambian en qué metal aguantan y, sobre todo, en guardar el calor. Cada colada gasta %s de calor y una mesa fría no empieza ninguna; la que empieza con las últimas brasas cuaja antes de tiempo y sale BASTA (-%s%% en todo). Ponle un farol de pavesa debajo y se acabó el problema.",
         "All three pour the same: they differ in the metal they will take and, above all, in holding heat. Each pour spends %s heat and a cold table starts none; one started on the last of it sets early and comes out ROUGH (-%s%% on everything). Put a wisp lantern under it and the problem goes away."),
+    "gui.forja.libro.fundicion.paso8": ("8. La fundición sin manos", "8. A foundry that runs itself"),
+    "gui.forja.libro.fundicion.paso8.desc": (
+        "Nada de esto necesita que estés delante. Una tolva encima del crisol le mete la mena y otra al lado las ascuas; la cuba, con un farol debajo, no cuaja nunca; el caño cuela a través del colador sobre el molde, la mesa se calienta con un farol AL LADO y una tolva debajo se lleva cada pieza a un cofre. Mientras haya metal y calor, la mesa vuelve a colar sola.",
+        "None of this needs you standing there. A hopper on top of the crucible feeds it ore and one beside it embers; the tank, on a lantern, never sets; the spout pours through the strainer onto the mould, the table is kept hot by a lantern BESIDE it and a hopper underneath takes every part to a chest. As long as there is metal and heat, the table pours again by itself."),
+    "gui.forja.libro.fundicion.paso9": ("9. La montadora", "9. The assembler"),
+    "gui.forja.libro.fundicion.paso9.desc": (
+        "La estrella de la mesa de forja sin el herrero. Las piezas le entran por tolva, por arriba o por los lados, y monta lo mismo que la mesa, con la misma regla; la pieza sale por abajo. Calidad normal siempre: nunca perfecta, sin firma, con el potencial de un golpe decente. Mejoras, reparaciones, cambios de piezas y técnicas siguen siendo cosa tuya, en la mesa.",
+        "The forge table's star without the smith. Parts go in by hopper, from the top or the sides, and it builds what the table builds, by the same rule; the piece comes out underneath. Always a plain press: never perfect, unsigned, with the potential of a decent strike. Upgrades, repairs, swaps and techniques are still yours, at the table."),
+    "gui.forja.libro.fundicion.paso9.calor": (
+        "Pide calor como la mesa: al menos una fogata, debajo o AL LADO (debajo va la tolva). Con calor templado tarda %s s por pieza; caliente, %s s; con lava o un farol, %s s. Un comparador marca 15 cuando hay una pieza esperando y sube de 1 a 14 mientras monta.",
+        "It wants heat like the table: at least a campfire, under it or BESIDE it (the hopper goes underneath). Warm, it takes %s s a piece; hot, %s s; on lava or a lantern, %s s. A comparator reads 15 while a piece is waiting and climbs from 1 to 14 while it works."),
+    "gui.forja.libro.fundicion.paso9.marco": (
+        "Sin marco, cada punta de la estrella lleva una clase de pieza, como en la mesa. Con un MARCO en el centro sabe qué montar: sólo acepta las piezas de eso, las busca donde estén y nunca se atasca; así saca también espadones, que llevan dos hojas.",
+        "With no frame each point of the star takes one kind of part, as at the table. With a FRAME in the centre it knows what to build: it only takes that piece's parts, finds them wherever they lie and never jams; that is also how it makes greatswords, which take two blades."),
     "gui.forja.libro.fundicion.blanca": ("Y para qué todo esto", "And what all this is for"),
     "gui.forja.libro.fundicion.blanca.desc": (
         "El crisol de obsidiana es lo único del mod que llega a forja blanca. No hay bloque que dé ese calor a una mesa, ni técnica que lo lea. Estas tres aleaciones se hacen ahí o no se hacen.",
@@ -1733,6 +1747,22 @@ GUI = {
     "gui.forja.mesa_colada.colando_de": ("Colando en %s · %s%%", "Pouring %s · %s%%"),
     "gui.forja.mesa_colada.colando": ("Está colando: espera a que cuaje",
                                        "It is pouring: wait for it to set"),
+    # ---- the assembler (block/entity/AssemblerMachineBlockEntity, client/AssemblerMachineScreen)
+    "block.forja.montadora": ("Montadora", "Assembler"),
+    "gui.forja.montadora.hara": ("Montará: %s", "Will make: %s"),
+    "gui.forja.montadora.marco": ("El marco pide: %s", "The frame asks for: %s"),
+    "gui.forja.montadora.estrella": ("Pon piezas en la estrella, o un marco en el centro",
+                                     "Put parts on the star, or a frame in the centre"),
+    "gui.forja.montadora.calor": ("Calor %s · %s s por pieza", "%s heat · %s s a piece"),
+    "gui.forja.montadora.calor_frio": ("Calor %s: le falta fuego", "%s heat: it needs a fire"),
+    "gui.forja.montadora.montando": ("Montando · %s%%", "Assembling · %s%%"),
+    "gui.forja.montadora.frio": ("Tiene todo menos calor: una fogata debajo o al lado", "It has all but heat: a campfire under or beside it"),
+    "gui.forja.montadora.llena": ("Espera a que saquen la pieza hecha", "Waiting for the finished piece to be taken"),
+    "gui.forja.montadora.nada": ("Estas piezas no montan nada", "These parts make nothing"),
+    "gui.forja.montadora.talabarteria": ("Las bardas son cosa de la talabartería", "Barding is the saddlery's work"),
+    "gui.forja.montadora.faltan": ("Faltan: %s", "Missing: %s"),
+    "gui.forja.montadora.vacia": ("Siempre calidad normal: lo perfecto es tuyo",
+                                  "Always a plain press: perfect is yours"),
     "block.forja.crisol_de_barro": ("Crisol de barro", "Clay Crucible"),
     "block.forja.crisol_de_hierro": ("Crisol de hierro", "Iron Crucible"),
     "block.forja.crisol_de_obsidiana": ("Crisol de obsidiana", "Obsidian Crucible"),

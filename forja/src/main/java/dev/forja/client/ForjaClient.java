@@ -48,6 +48,7 @@ public final class ForjaClient implements ClientModInitializer {
 		MenuScreens.register(ModMenus.CAJA, CastingBoxScreen::new);
 		MenuScreens.register(ModMenus.ARMARIO, CabinetScreen::new);
 		MenuScreens.register(ModMenus.EXTRACCION, ExtractionScreen::new);
+		MenuScreens.register(ModMenus.MONTADORA, AssemblerMachineScreen::new);
 		net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(
 			dev.forja.block.entity.ModBlockEntities.CUBA, MeltTankRenderer::new);
 		net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(

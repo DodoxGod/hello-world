@@ -85,6 +85,16 @@ public final class ModBlockEntities {
 		new BlockEntityType<>(StrainerBlockEntity::new, java.util.Set.of(ModBlocks.COLADOR))
 	);
 
+	private static final ResourceKey<BlockEntityType<?>> MONTADORA_KEY =
+		ResourceKey.create(Registries.BLOCK_ENTITY_TYPE, Forja.id("montadora"));
+
+	/** The assembler: the forge star without the smith. */
+	public static final BlockEntityType<AssemblerMachineBlockEntity> MONTADORA = Registry.register(
+		BuiltInRegistries.BLOCK_ENTITY_TYPE,
+		MONTADORA_KEY,
+		new BlockEntityType<>(AssemblerMachineBlockEntity::new, java.util.Set.of(ModBlocks.MONTADORA))
+	);
+
 	private ModBlockEntities() {
 	}
 

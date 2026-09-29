@@ -3186,6 +3186,29 @@ def generate_gui_textures():
     gui_inset(px, 110, 18, 201, 85)
     forge.save(folder / "mesa_de_forja.png")
 
+    # The assembler: the forge table's star in the same place (so the table's lit star, estrella_viva,
+    # lies over it exactly), the frame in its centre, and a channel out to the finished piece. The text
+    # to the right of the star is written by the screen on the bare stone.
+    machine = gui_panel(15)
+    px = machine.load()
+    for i in range(5):
+        a, b = centers[i], centers[(i + 2) % 5]
+        gui_line(px, (a[0] + 1, a[1] + 1), (b[0] + 1, b[1] + 1), light, 2)
+        gui_line(px, a, b, engrave, 2)
+    for k in range(360):
+        for radius, color in ((41, light), (40, engrave)):
+            x = round(cx + radius * math.cos(math.radians(k)))
+            y = round(cy + radius * math.sin(math.radians(k)))
+            if 4 < x < GUI_W - 5 and 16 < y < 104:
+                px[x, y] = color
+    for x, y in STAR_POINTS:
+        gui_slot(px, x - 1, y - 1)
+    gui_big_slot(px, STAR_CENTER[0] - 5, STAR_CENTER[1] - 5)
+    # The channel the screen fills as a piece is assembled (client/AssemblerMachineScreen CHANNEL_*).
+    gui_inset(px, 101, 53, 143, 60)
+    gui_big_slot(px, 143, 42)
+    machine.save(folder / "montadora.png")
+
     # Forge table, Tecnicas tab: the bare panel, since the three rows are drawn by the screen.
     gui_panel(15).save(folder / "mesa_de_forja_tecnicas.png")
 
@@ -3344,6 +3367,7 @@ PICKAXE_BLOCKS = [
     "forja:conducto_de_colada", "forja:conducto_de_acero", "forja:conducto_de_damasco",
     "forja:caja_de_moldeo", "forja:caja_de_moldeo_de_acero", "forja:caja_de_moldeo_de_damasco",
     "forja:mesa_de_losa", "forja:mesa_de_brasa", "forja:mesa_de_almas",
+    "forja:montadora",
     # The strainer stood on a table: it drops by hand too, the tag only makes a pickaxe quicker at it.
     "forja:colador",
 ]
@@ -6286,6 +6310,7 @@ def generate_fallen_forge():
     generate_slag_texture()
     generate_crucible_assets()
     generate_melt_tank_assets()
+    generate_assembler_assets()
     write_fallen_forge()
     write_json(DATA / "worldgen/template_pool/fragua_caida/inicio.json", {
         "elements": [{
@@ -8901,6 +8926,122 @@ def generate_crucible_assets():
         "pattern": ["OAO", "OCO", "OOO"],
         "key": {"O": "forja:obsidiacero", "A": "forja:corazon_de_forja", "C": "forja:crisol_de_hierro"},
         "result": {"id": "forja:crisol_de_obsidiana", "count": 1},
+    })
+
+
+def generate_assembler_assets():
+    """La montadora: a steel press over a forge star.
+
+    Riveted steel plate like the iron crucible, because it is foundry work of the same order; a window in
+    each side where you see the piston over the anvil; and on top the star the forge table has, engraved
+    in brass round the piston's head. Lit, the star and the window take the colour of hot steel, which is
+    how you tell from across the workshop that it is working.
+    """
+    import math
+    import random as _random
+
+    rng = _random.Random(52611)
+    folder = ASSETS / "textures/block"
+    steel, light, mid, dark = (118, 120, 128), (190, 192, 202), (140, 142, 150), (60, 62, 70)
+    brass, brass_dark = (206, 162, 80), (120, 86, 34)
+    hot, hot_light = (255, 132, 40), (255, 214, 140)
+
+    def plate():
+        img = forge_grain(Image.new("RGBA", (16, 16)), steel, rng, 7)
+        for i in range(16):
+            for x, y in ((i, 0), (0, i)):
+                img.putpixel((x, y), light + (255,))
+            for x, y in ((i, 15), (15, i)):
+                img.putpixel((x, y), dark + (255,))
+        for x, y in ((1, 1), (14, 1), (1, 14), (14, 14)):
+            img.putpixel((x, y), brass + (255,))
+        return img
+
+    for lit in (False, True):
+        side = plate()
+        # The window: the piston rod coming down onto an anvil, and what lies on it.
+        for y in range(3, 13):
+            for x in range(4, 12):
+                edge = x in (4, 11) or y in (3, 12)
+                side.putpixel((x, y), (dark if edge else (28, 26, 30)) + (255,))
+        for y in range(4, 7):
+            for x in range(7, 9):
+                side.putpixel((x, y), mid + (255,))
+        for x in range(5, 11):
+            side.putpixel((x, 7), light + (255,))
+        # The anvil: face, waist, foot.
+        for x in range(5, 11):
+            side.putpixel((x, 9), (hot if lit else mid) + (255,))
+        for x in range(7, 9):
+            side.putpixel((x, 10), dark + (255,))
+        for x in range(6, 10):
+            side.putpixel((x, 11), mid + (255,))
+        if lit:
+            side.putpixel((6, 8), hot_light + (255,))
+            side.putpixel((9, 8), hot_light + (255,))
+            side.putpixel((8, 8), hot + (255,))
+        forge_rivets(side, 13, brass, brass_dark, step=5, start=3)
+        suffix = "_lit" if lit else ""
+        side.save(folder / f"montadora_side{suffix}.png")
+
+        top = plate()
+        points = [(7.5 + 6.2 * math.cos(math.radians(-90 + 72 * k)), 7.5 + 6.2 * math.sin(math.radians(-90 + 72 * k)))
+                  for k in range(5)]
+        # The tips of the star glow brightest when it is lit, where the parts lie.
+        points_lit = {(round(x), round(y)) for x, y in points}
+        engraved = set()
+        for k in range(5):
+            (x0, y0), (x1, y1) = points[k], points[(k + 2) % 5]
+            for step in range(40):
+                t = step / 39
+                engraved.add((round(x0 + (x1 - x0) * t), round(y0 + (y1 - y0) * t)))
+        # Cut into the plate: the shadow of the cut below and right of it, then the brass (or the hot steel).
+        for x, y in engraved:
+            if (x + 1, y + 1) not in engraved and x < 15 and y < 15:
+                top.putpixel((x + 1, y + 1), ((150, 60, 16) if lit else brass_dark) + (255,))
+        for x, y in engraved:
+            top.putpixel((x, y), ((hot_light if (x, y) in points_lit else hot) if lit else brass) + (255,))
+        # The piston's head in the middle of the star.
+        for y in range(6, 10):
+            for x in range(6, 10):
+                ring = x in (6, 9) or y in (6, 9)
+                top.putpixel((x, y), (dark if ring else light) + (255,))
+        top.save(folder / f"montadora_top{suffix}.png")
+        write_json(ASSETS / f"models/block/montadora{suffix}.json", {
+            "parent": "minecraft:block/cube_bottom_top",
+            "textures": {
+                "top": f"forja:block/montadora_top{suffix}",
+                "bottom": "forja:block/montadora_bottom",
+                "side": f"forja:block/montadora_side{suffix}",
+                "particle": f"forja:block/montadora_side{suffix}",
+            },
+        })
+    bottom = plate()
+    # Where the finished piece drops out, into the hopper underneath.
+    for y in range(5, 11):
+        for x in range(5, 11):
+            bottom.putpixel((x, y), ((24, 22, 26) if 5 < x < 10 and 5 < y < 10 else dark) + (255,))
+    bottom.save(folder / "montadora_bottom.png")
+    write_json(ASSETS / "blockstates/montadora.json", {"variants": {
+        "lit=false": {"model": "forja:block/montadora"},
+        "lit=true": {"model": "forja:block/montadora_lit"},
+    }})
+    write_json(ASSETS / "items/montadora.json", {"model": {"type": "minecraft:model", "model": "forja:block/montadora"}})
+    write_json(DATA / "loot_table/blocks/montadora.json", {
+        "type": "minecraft:block",
+        "pools": [{"rolls": 1.0, "bonus_rolls": 0.0, "entries": [{"type": "minecraft:item", "name": "forja:montadora"}],
+                   "conditions": [{"condition": "minecraft:survives_explosion"}]}],
+        "random_sequence": "forja:blocks/montadora",
+    })
+    # A greater forge table, because it builds what the greater table builds; steel to frame it, a piston
+    # for the arm that is not there, redstone to drive it and a hopper for the finished piece.
+    write_json(DATA / "recipe/montadora.json", {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "pattern": ["APA", "RMR", "AHA"],
+        "key": {"A": "forja:acero", "P": "minecraft:piston", "R": "minecraft:redstone",
+                "M": "forja:mesa_de_forja_mayor", "H": "minecraft:hopper"},
+        "result": {"id": "forja:montadora", "count": 1},
     })
 
 

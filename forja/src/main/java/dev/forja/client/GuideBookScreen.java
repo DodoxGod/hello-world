@@ -1125,7 +1125,31 @@ public class GuideBookScreen extends Screen {
 			dev.forja.block.entity.CastingTableBlockEntity.SPEND,
 			Math.round(-dev.forja.forge.Quality.ROUGH_PENALTY * 100)), 0xFF9A3412));
 
-		// 8. And what the whole thing is for at the top end.
+		// 8. The whole line with nobody at it (docs/FUNDICION_V2.md, part C): hoppers in, hoppers out.
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.fundicion.paso8")));
+		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.paso8.desc"), INK));
+		body.add(new IconRow(List.of(
+			new ItemStack(Items.HOPPER), new ItemStack(Items.RAW_IRON), new ItemStack(ModItems.ASCUA),
+			new ItemStack(ModItems.FAROL_DE_PAVESA), new ItemStack(Items.CHEST)
+		)));
+
+		// 9. The assembler: the forge star without the smith, and always a plain press.
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.fundicion.paso9")));
+		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.paso9.desc"), INK));
+		body.add(new IconRow(List.of(
+			Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.HIERRO), Assembler.createPart(PartType.MANGO, ForgeMaterial.MADERA),
+			Assembler.createPart(PartType.ATADURA, ForgeMaterial.CUERO), new ItemStack(ModItems.MONTADORA),
+			Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO))
+		)));
+		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.paso9.calor",
+			dev.forja.block.entity.AssemblerMachineBlockEntity.WORK_TEMPLADA / 20.0F,
+			dev.forja.block.entity.AssemblerMachineBlockEntity.WORK_CALIENTE / 20.0F,
+			dev.forja.block.entity.AssemblerMachineBlockEntity.WORK_FUNDIDA / 20.0F), INK_SOFT));
+		body.add(new IconRow(List.of(dev.forja.item.CastingFrameItem.of(ForgeType.ESPADON), new ItemStack(ModItems.MONTADORA),
+			new ItemStack(Items.COMPARATOR))));
+		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.paso9.marco"), INK_SOFT));
+
+		// 10. And what the whole thing is for at the top end.
 		body.add(new Divider());
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.fundicion.blanca")));
 		body.add(new Text(Component.translatable("gui.forja.libro.fundicion.blanca.desc"), INK));

@@ -211,10 +211,16 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			if ("montadora".equals(solo)) {
+				playAssembler(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("fundicion".equals(solo)) {
 				// The survival flow with real clicks, then every older foundry check, so a change to the
 				// foundry is looked at whole in one run.
 				checkFoundrySurvival(context, server, connection, x, y, z);
+				playAssembler(context, server, connection, x, y, z);
 				checkCrucibles(context, server, connection, x, y, z);
 				checkFoundryAlloys(context, server, connection, x, y, z);
 				checkCastingTables(context, server, connection, x, y, z);
@@ -5856,6 +5862,265 @@ public class ForjaClientTest implements FabricClientGameTest {
 			}
 			level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
 				new net.minecraft.world.phys.AABB(potAt).inflate(12.0)).forEach(net.minecraft.world.entity.Entity::discard);
+			connection.getServerPlayer().getInventory().clearContent();
+		});
+	}
+
+	// ------------------------------------------------------------------ the assembler (FORJA_SOLO=montadora)
+
+	/** The menu slot a hotbar slot is shown in on the assembler's screen (seven slots of its own first). */
+	private static int machineHotbar(int column) {
+		return dev.forja.block.entity.AssemblerMachineBlockEntity.SIZE + 27 + column;
+	}
+
+	/** And the menu slot of a main-inventory slot (9..35). */
+	private static int machineInventory(int slot) {
+		return dev.forja.block.entity.AssemblerMachineBlockEntity.SIZE + slot - 9;
+	}
+
+	/**
+	 * La montadora, played with the mouse (FORJA_SOLO=montadora). Andy, 2026-09-28: "una máquina que monta
+	 * herramientas con calidad normal (el golpe perfecto sigue siendo del jugador)".
+	 *
+	 * <p>A right click opens it. A stick shift-clicked is refused; a pick head, a handle and a binding
+	 * shift-clicked go on the star, the screen names the pickaxe it will make and shows it as a ghost in the
+	 * output; the star glows and the channel fills while it works, and the pickaxe comes out a plain press,
+	 * unsigned, taken by shift-click. A frame in the centre and one pile of two blades make a greatsword. With
+	 * the lantern beside it taken away, the screen says it lacks heat. Then, outside, hoppers feed it parts
+	 * from the top and a comparator beside it lights a lamp while it works, which is looked at from outside.
+	 */
+	private static void playAssembler(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		int px = x + 150;
+		int pz = z + 44;
+		// There first, so the chunks are loaded when the floor is laid (a fill in an unloaded chunk does nothing).
+		tp(server, px + 0.5, y + 1, pz + 2.6, 180.0F, 20.0F);
+		context.waitTicks(20);
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d stone_bricks", px - 5, y - 2, pz - 5, px + 5, y - 1, pz + 5));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", px - 5, y, pz - 5, px + 5, y + 4, pz + 5));
+		server.runCommand("time set noon");
+		server.runCommand("weather clear 1000000");
+		server.runCommand("gamemode survival @a");
+		BlockPos machineAt = new BlockPos(px, y + 1, pz);
+		BlockPos lanternAt = machineAt.east();
+		BlockPos hopperOut = machineAt.below();
+		BlockPos chestAt = hopperOut.west();
+		BlockPos comparatorAt = machineAt.north();
+		BlockPos lampAt = comparatorAt.north();
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			// A plinth for now; the hopper and the chest go in for the part played outside, by hoppers alone.
+			level.setBlockAndUpdate(hopperOut, Blocks.STONE_BRICKS.defaultBlockState());
+			level.setBlockAndUpdate(machineAt, dev.forja.registry.ModBlocks.MONTADORA.defaultBlockState());
+			level.setBlockAndUpdate(lanternAt, dev.forja.registry.ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+			level.setBlockAndUpdate(comparatorAt.below(), Blocks.STONE_BRICKS.defaultBlockState());
+			level.setBlockAndUpdate(comparatorAt, Blocks.COMPARATOR.defaultBlockState()
+				.setValue(net.minecraft.world.level.block.ComparatorBlock.FACING, net.minecraft.core.Direction.SOUTH));
+			level.setBlockAndUpdate(lampAt.below(), Blocks.STONE_BRICKS.defaultBlockState());
+			level.setBlockAndUpdate(lampAt, Blocks.REDSTONE_LAMP.defaultBlockState());
+			ServerPlayer player = connection.getServerPlayer();
+			player.getInventory().clearContent();
+			player.getInventory().setItem(0, new ItemStack(Items.STICK, 8));
+			player.getInventory().setItem(1, Assembler.createPart(PartType.CABEZA_PICO, HIERRO));
+			player.getInventory().setItem(2, Assembler.createPart(PartType.MANGO, MADERA));
+			player.getInventory().setItem(3, Assembler.createPart(PartType.ATADURA, CUERO));
+			player.getInventory().setItem(4, dev.forja.item.CastingFrameItem.of(ForgeType.ESPADON));
+			player.getInventory().setItem(5, Assembler.createPart(PartType.HOJA, DIAMANTE).copyWithCount(2));
+			player.getInventory().setItem(6, Assembler.createPart(PartType.MANGO, MADERA));
+			player.getInventory().setItem(7, Assembler.createPart(PartType.GUARDA, ORO));
+			player.getInventory().setSelectedSlot(8);
+		});
+		// Standing south of it, looking at it.
+		tp(server, px + 0.5, y + 1, pz + 2.6, 180.0F, 20.0F);
+		context.waitTicks(10);
+		quiet(context);
+
+		openByHand(context, machineAt);
+		check(context.computeOnClient(mc -> mc.gui.screen() instanceof dev.forja.client.AssemblerMachineScreen),
+			"a right click should open the assembler");
+		String off = context.computeOnClient(mc -> slotsOffTheirSquares(mc, "textures/gui/montadora.png"));
+		log("montadora: huecos fuera de su cuadro en el panel: " + off);
+		check("[]".equals(off), "every slot of the assembler should sit on a square of its panel: " + off);
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(3);
+		context.takeScreenshot(TestScreenshotOptions.of("montadora_00_vacia").disableCounterPrefix());
+
+		// A stick, by hand and by shift-click: it stays with the player (a shift-click only hops it between
+		// the player's own rows, as with anything the container will not take).
+		clickSlot(context, machineHotbar(0));
+		clickSlot(context, 0);
+		clickSlot(context, machineHotbar(0));
+		shiftClickSlot(context, machineHotbar(0));
+		int sticks = server.computeOnServer(s -> {
+			var machine = (dev.forja.block.entity.AssemblerMachineBlockEntity) connection.getServerLevel().getBlockEntity(machineAt);
+			int inside = 0;
+			for (int i = 0; i < dev.forja.block.entity.AssemblerMachineBlockEntity.SIZE; i++) {
+				inside += machine.getItem(i).is(Items.STICK) ? 1 : 0;
+			}
+			return inside > 0 ? -1 : connection.getServerPlayer().getInventory().countItem(Items.STICK)
+				+ (connection.getServerPlayer().containerMenu.getCarried().is(Items.STICK) ? connection.getServerPlayer().containerMenu.getCarried().getCount() : 0);
+		});
+		log("montadora: el palo no entra, le quedan al jugador " + sticks);
+		check(sticks == 8, "a stick must not go on the assembler's star, and must stay with the player, got " + sticks);
+
+		// The pickaxe's three parts, by shift-click. The lantern is beside it, so it starts at once: the
+		// screen is looked at while it works.
+		shiftClickSlot(context, machineHotbar(1));
+		shiftClickSlot(context, machineHotbar(2));
+		shiftClickSlot(context, machineHotbar(3));
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(12);
+		String[] says = context.computeOnClient(mc -> {
+			if (!(mc.player.containerMenu instanceof dev.forja.menu.AssemblerMachineMenu menu)) {
+				return new String[] {"-", "-1", "0"};
+			}
+			var plan = dev.forja.block.entity.AssemblerMachineBlockEntity.plan(menu.points(), menu.frame(), mc.level.registryAccess());
+			return new String[] {plan.type() == null ? "-" : plan.type().name(), String.valueOf(menu.job()), String.valueOf(menu.progress())};
+		});
+		log("montadora: la pantalla dice que hará " + says[0] + ", trabajo " + says[1] + ", " + says[2]);
+		check("PICO".equals(says[0]), "the screen should say it will make a pickaxe, says " + says[0]);
+		check(Integer.parseInt(says[1]) == dev.forja.block.entity.AssemblerMachineBlockEntity.JOB_WORKING,
+			"with a lantern beside it, it should be working, job " + says[1]);
+		context.takeScreenshot(TestScreenshotOptions.of("montadora_01_montando_pico").disableCounterPrefix());
+		context.waitTicks(dev.forja.block.entity.AssemblerMachineBlockEntity.WORK_FUNDIDA);
+		context.takeScreenshot(TestScreenshotOptions.of("montadora_02_pico_hecho").disableCounterPrefix());
+		int comparatorWaiting = server.computeOnServer(s -> {
+			var comparator = (net.minecraft.world.level.block.entity.ComparatorBlockEntity) connection.getServerLevel().getBlockEntity(comparatorAt);
+			return comparator == null ? -1 : comparator.getOutputSignal();
+		});
+		// The hopper underneath is quicker than any hand: the pickaxe may already be on its way to the chest.
+		check(comparatorWaiting == 15, "with the pickaxe waiting in it, the comparator should read 15, reads " + comparatorWaiting);
+		// Taken out by shift-click, into the player's hands.
+		shiftClickSlot(context, dev.forja.block.entity.AssemblerMachineBlockEntity.SLOT_OUTPUT);
+		int[] pick = server.computeOnServer(s -> {
+			int at = findInInventory(connection, stack -> stack.get(ModComponents.PARTS) != null
+				&& stack.get(ModComponents.PARTS).type() == ForgeType.PICO);
+			ItemStack made = at < 0 ? ItemStack.EMPTY : connection.getServerPlayer().getInventory().getItem(at);
+			var machine = (dev.forja.block.entity.AssemblerMachineBlockEntity) connection.getServerLevel().getBlockEntity(machineAt);
+			return new int[] {at, dev.forja.forge.Quality.perfect(made) ? 1 : 0, dev.forja.forge.Quality.smith(made) == null ? 0 : 1,
+				made.getOrDefault(ModComponents.POTENCIAL, -1),
+				machine.getItem(dev.forja.block.entity.AssemblerMachineBlockEntity.SLOT_OUTPUT).isEmpty() ? 1 : 0};
+		});
+		log("montadora: pico en la mano " + (pick[0] >= 0) + ", perfecto " + (pick[1] > 0) + ", firmado " + (pick[2] > 0)
+			+ ", potencial " + pick[3] + " · comparador con la pieza esperando " + comparatorWaiting);
+		check(pick[0] >= 0 && pick[4] > 0, "a shift-click should have taken the pickaxe out into the player's inventory");
+		check(pick[1] == 0 && pick[2] == 0, "a plain press: never perfect, and signed by nobody");
+		check(pick[3] == dev.forja.forge.Potential.atForge(dev.forja.block.entity.AssemblerMachineBlockEntity.QUALITY, null, null, false),
+			"with a plain press's potential, got " + pick[3]);
+
+		// A frame in the centre, and a greatsword from one pile of two blades.
+		shiftClickSlot(context, machineHotbar(4));
+		shiftClickSlot(context, machineHotbar(5));
+		shiftClickSlot(context, machineHotbar(6));
+		shiftClickSlot(context, machineHotbar(7));
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(8);
+		String greatsays = context.computeOnClient(mc -> {
+			if (!(mc.player.containerMenu instanceof dev.forja.menu.AssemblerMachineMenu menu)) {
+				return "-";
+			}
+			var plan = dev.forja.block.entity.AssemblerMachineBlockEntity.plan(menu.points(), menu.frame(), mc.level.registryAccess());
+			return (plan.type() == null ? "-" : plan.type().name()) + " / hojas en una punta " + menu.points().stream()
+				.filter(stack -> stack.getItem() == ModItems.part(PartType.HOJA)).mapToInt(ItemStack::getCount).max().orElse(0);
+		});
+		log("montadora: con el marco dice " + greatsays);
+		check(greatsays.startsWith("ESPADON") && greatsays.endsWith("2"), "with the frame and one pile of two blades it should make a greatsword: " + greatsays);
+		context.takeScreenshot(TestScreenshotOptions.of("montadora_03_marco_espadon").disableCounterPrefix());
+		context.waitTicks(dev.forja.block.entity.AssemblerMachineBlockEntity.WORK_FUNDIDA + 30);
+		context.takeScreenshot(TestScreenshotOptions.of("montadora_03b_espadon_hecho").disableCounterPrefix());
+		shiftClickSlot(context, dev.forja.block.entity.AssemblerMachineBlockEntity.SLOT_OUTPUT);
+		int greatswords = server.computeOnServer(s -> {
+			var inventory = connection.getServerPlayer().getInventory();
+			int found = 0;
+			for (int i = 0; i < 36; i++) {
+				var parts = inventory.getItem(i).get(ModComponents.PARTS);
+				if (parts != null && parts.type() == ForgeType.ESPADON && !dev.forja.forge.Quality.perfect(inventory.getItem(i))) {
+					found++;
+				}
+			}
+			return found;
+		});
+		log("montadora: espadones hechos " + greatswords);
+		check(greatswords == 1, "one plain greatsword should have been made, found " + greatswords);
+
+		// The lantern taken away, the pickaxe's parts again: it has everything but heat, and says so.
+		server.runOnServer(s -> {
+			connection.getServerLevel().removeBlock(lanternAt, false);
+			var inventory = connection.getServerPlayer().getInventory();
+			inventory.setItem(1, Assembler.createPart(PartType.CABEZA_PICO, HIERRO));
+			inventory.setItem(2, Assembler.createPart(PartType.MANGO, MADERA));
+			inventory.setItem(3, Assembler.createPart(PartType.ATADURA, CUERO));
+		});
+		context.waitTicks(3);
+		// Out comes the frame first (shift-click), or the machine would only take a greatsword's parts.
+		shiftClickSlot(context, dev.forja.block.entity.AssemblerMachineBlockEntity.SLOT_FRAME);
+		shiftClickSlot(context, machineHotbar(1));
+		shiftClickSlot(context, machineHotbar(2));
+		shiftClickSlot(context, machineHotbar(3));
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(25);
+		int coldJob = context.computeOnClient(mc -> mc.player.containerMenu instanceof dev.forja.menu.AssemblerMachineMenu menu ? menu.job() : -1);
+		log("montadora: sin el farol, trabajo " + coldJob);
+		check(coldJob == dev.forja.block.entity.AssemblerMachineBlockEntity.JOB_COLD, "with no heat it should say it lacks heat, job " + coldJob);
+		context.takeScreenshot(TestScreenshotOptions.of("montadora_04_sin_calor").disableCounterPrefix());
+		context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE);
+		context.waitTicks(5);
+
+		// ---- outside: the lantern back, a hopper on top with parts for three more pickaxes, and the
+		// comparator lighting the lamp while it works. Looked at from outside, as a spectator.
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			// The pickaxe's parts left from the cold try come out first, so what the chest counts is the hopper's.
+			var machine = (dev.forja.block.entity.AssemblerMachineBlockEntity) level.getBlockEntity(machineAt);
+			machine.clearContent();
+			level.setBlockAndUpdate(hopperOut, Blocks.HOPPER.defaultBlockState()
+				.setValue(net.minecraft.world.level.block.HopperBlock.FACING, net.minecraft.core.Direction.WEST));
+			level.setBlockAndUpdate(chestAt, Blocks.CHEST.defaultBlockState());
+			level.setBlockAndUpdate(lanternAt, dev.forja.registry.ModBlocks.FAROL_DE_PAVESA.defaultBlockState());
+			level.setBlockAndUpdate(machineAt.above(), Blocks.HOPPER.defaultBlockState()
+				.setValue(net.minecraft.world.level.block.HopperBlock.FACING, net.minecraft.core.Direction.DOWN));
+			var top = (net.minecraft.world.Container) level.getBlockEntity(machineAt.above());
+			top.setItem(0, Assembler.createPart(PartType.CABEZA_PICO, DIAMANTE).copyWithCount(3));
+			top.setItem(1, Assembler.createPart(PartType.MANGO, MADERA).copyWithCount(3));
+			top.setItem(2, Assembler.createPart(PartType.ATADURA, CUERO).copyWithCount(3));
+		});
+		server.runCommand("gamemode spectator @a");
+		tp(server, px + 3.2, y + 2.6, pz + 3.2, 135.0F, 28.0F);
+		// A hopper hands on one item every eight ticks, heads first: the first whole set is in by the ninth.
+		context.waitTicks(76);
+		quiet(context);
+		int[] outside = server.computeOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			var machine = (dev.forja.block.entity.AssemblerMachineBlockEntity) level.getBlockEntity(machineAt);
+			return new int[] {machine.job(), level.getBlockState(machineAt).getValue(dev.forja.block.AssemblerMachineBlock.LIT) ? 1 : 0,
+				level.getBlockState(lampAt).getValue(net.minecraft.world.level.block.RedstoneLampBlock.LIT) ? 1 : 0};
+		});
+		log("montadora: fuera, trabajo " + outside[0] + ", encendida " + (outside[1] > 0) + ", lámpara del comparador " + (outside[2] > 0));
+		context.takeScreenshot(TestScreenshotOptions.of("montadora_05_taller_trabajando").disableCounterPrefix());
+		check(outside[1] > 0, "fed by the hopper, the assembler should be working and lit");
+		check(outside[2] > 0, "and the comparator beside it should light the lamp");
+		context.waitTicks(3 * (dev.forja.block.entity.AssemblerMachineBlockEntity.WORK_FUNDIDA + 20) + 60);
+		int chestPicks = server.computeOnServer(s -> {
+			var chest = (net.minecraft.world.Container) connection.getServerLevel().getBlockEntity(chestAt);
+			int found = 0;
+			for (int i = 0; i < chest.getContainerSize(); i++) {
+				var parts = chest.getItem(i).get(ModComponents.PARTS);
+				if (parts != null && parts.type() == ForgeType.PICO && parts.material(0) == DIAMANTE) {
+					found += chest.getItem(i).getCount();
+				}
+			}
+			return found;
+		});
+		log("montadora: picos de diamante en el cofre, montados de tolva: " + chestPicks);
+		check(chestPicks == 3, "three diamond pickaxes should have gone from the hopper, through the assembler, to the chest, found " + chestPicks);
+		context.takeScreenshot(TestScreenshotOptions.of("montadora_06_taller_parada").disableCounterPrefix());
+		server.runCommand("gamemode survival @a");
+		server.runOnServer(s -> {
+			ServerLevel level = connection.getServerLevel();
+			for (BlockPos at : List.of(machineAt.above(), machineAt, lanternAt, hopperOut, chestAt, comparatorAt, lampAt)) {
+				level.removeBlock(at, false);
+			}
+			level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+				new net.minecraft.world.phys.AABB(machineAt).inflate(8.0)).forEach(net.minecraft.world.entity.Entity::discard);
 			connection.getServerPlayer().getInventory().clearContent();
 		});
 	}

@@ -467,6 +467,14 @@ public final class Assembler {
 		return result;
 	}
 
+	/**
+	 * Whether this is a part something can be assembled from: a cut or cast part that knows its metal.
+	 * The one rule for what the forge star forges with and what the assembler takes in.
+	 */
+	public static boolean loosePart(ItemStack stack) {
+		return stack.getItem() instanceof PartItem && stack.has(ModComponents.MATERIAL);
+	}
+
 	private static Result evaluate(List<ItemStack> inputs) {
 		ItemStack forged = ItemStack.EMPTY;
 		List<ItemStack> looseParts = new ArrayList<>();
@@ -479,7 +487,7 @@ public final class Assembler {
 					return Result.EMPTY;
 				}
 				forged = input;
-			} else if (input.getItem() instanceof PartItem && input.has(ModComponents.MATERIAL)) {
+			} else if (loosePart(input)) {
 				looseParts.add(input);
 			} else {
 				return Result.EMPTY;

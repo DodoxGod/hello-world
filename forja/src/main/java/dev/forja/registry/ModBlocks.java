@@ -195,6 +195,23 @@ public final class ModBlocks {
 		)
 	);
 
+	/**
+	 * La montadora: the forge star without the smith. Parts in by hopper, the finished piece out
+	 * underneath, always at a plain press (see block/entity/AssemblerMachineBlockEntity).
+	 */
+	public static final Block MONTADORA = register(
+		"montadora",
+		new dev.forja.block.AssemblerMachineBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.METAL)
+				.strength(4.0F, 8.0F)
+				.sound(SoundType.METAL)
+				.requiresCorrectToolForDrops()
+				.lightLevel(state -> state.getValue(dev.forja.block.AssemblerMachineBlock.LIT) ? 9 : 0)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("montadora")))
+		)
+	);
+
 	/** The workshop's drawer: a chest that only takes what a smith makes. */
 	public static final Block ARMARIO_DE_PIEZAS = register(
 		"armario_de_piezas",

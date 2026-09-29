@@ -1,5 +1,22 @@
 # Novedades
 
+## 2026-09-28 — la montadora y la fundición sin manos
+
+- Nuevo bloque: la **montadora**. Es la estrella de la mesa de forja sin el herrero: las piezas le entran por
+  tolva (por arriba o por los lados) y monta lo mismo que la mesa, con la misma regla; la pieza sale por abajo.
+  Siempre calidad normal: nunca perfecta ni obra maestra, sin firma, con el potencial de un golpe decente. Las
+  mejoras, reparaciones, cambios de piezas y técnicas siguen siendo a mano, en la mesa.
+- Pide calor: al menos una fogata, debajo o al lado (debajo suele ir la tolva). Más calor, más rápido: 5 s por
+  pieza templada, 3 s caliente, 2 s con lava o un farol de pavesa.
+- Un marco de colada en el centro le dice qué montar: solo acepta las piezas de eso, las busca donde estén y no
+  se atasca, y así también saca espadones (dos hojas de la misma pila). Sin marco, una pieza de cada clase por
+  punta, como en la mesa. Las bardas siguen siendo de la talabartería.
+- Da señal a un comparador: 15 con una pieza esperando, de 1 a 14 mientras monta. Al romperla suelta todo.
+- Receta: acero, pistón, redstone, una mesa de forja mayor y una tolva.
+- Comprobado que toda la fundición funciona sin tocar nada: mena por tolva al crisol, ascuas de lado, cuba sobre
+  un farol, caño por el colador a la mesa con molde, tolva debajo y montadora hasta el cofre.
+- La guía (capítulo de fundición) explica la fundición sin manos y la montadora.
+
 ## 2026-09-28 — la colada cae por el colador
 
 - Las piezas ya no se cuelan dentro de la caja de moldeo: el molde se pone encima de una mesa de colada, igual

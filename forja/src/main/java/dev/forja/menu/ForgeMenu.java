@@ -1010,7 +1010,9 @@ public class ForgeMenu extends AbstractContainerMenu {
 		}
 		// What the table is standing on decides what it can melt; the server reads it, the client is told.
 		this.access.execute((level, pos) -> {
-			this.heat.set(dev.forja.forge.Alloys.heatUnder(level, pos).ordinal());
+			// heatAt, not heatUnder: the fire under the table today, and the heat pipes of part B when they
+			// come (docs/FUNDICION_V2.md), through the one hook the assembler reads too.
+			this.heat.set(dev.forja.forge.Alloys.heatAt(level, pos).ordinal());
 			// A forge on its own is a forge; with the parts table and the saddlery around it, it is a workshop.
 			boolean parts = false;
 			boolean saddlery = false;

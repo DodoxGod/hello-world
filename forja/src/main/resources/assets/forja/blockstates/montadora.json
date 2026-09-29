@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "forja:block/montadora"
+    },
+    "lit=true": {
+      "model": "forja:block/montadora_lit"
+    }
+  }
+}

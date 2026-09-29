@@ -45,7 +45,7 @@ public class ForjaJadePlugin implements IWailaPlugin {
 			if (!(accessor.getBlock() instanceof ForgeTableBlock table) || table.station != Station.FORJA) {
 				return;
 			}
-			Alloys.Heat heat = Alloys.heatUnder(accessor.getLevel(), accessor.getPosition());
+			Alloys.Heat heat = Alloys.heatAt(accessor.getLevel(), accessor.getPosition());
 			tooltip.add(Component.translatable("gui.forja.jade.calor", heat.displayName()));
 		}
 

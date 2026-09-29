@@ -56,6 +56,12 @@ public final class ModMenus {
 		new MenuType<>(dev.forja.menu.ExtractionMenu::new, FeatureFlags.VANILLA_SET)
 	);
 
+	/** The assembler: the forge star's five points, a frame in the centre, and the finished piece. */
+	public static final MenuType<dev.forja.menu.AssemblerMachineMenu> MONTADORA = Registry.register(
+		BuiltInRegistries.MENU, Forja.id("montadora"),
+		new MenuType<>(dev.forja.menu.AssemblerMachineMenu::new, FeatureFlags.VANILLA_SET)
+	);
+
 	private ModMenus() {
 	}
 

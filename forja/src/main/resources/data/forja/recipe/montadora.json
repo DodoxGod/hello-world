@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "APA",
+    "RMR",
+    "AHA"
+  ],
+  "key": {
+    "A": "forja:acero",
+    "P": "minecraft:piston",
+    "R": "minecraft:redstone",
+    "M": "forja:mesa_de_forja_mayor",
+    "H": "minecraft:hopper"
+  },
+  "result": {
+    "id": "forja:montadora",
+    "count": 1
+  }
+}

@@ -164,20 +164,76 @@ public final class Alloys {
 
 	/** The heat of the table at this position, read off the block right under it. */
 	public static Heat heatUnder(Level level, BlockPos pos) {
-		BlockState below = level.getBlockState(pos.below());
+		return heatOf(level.getBlockState(pos.below()));
+	}
+
+	/** How hot one block burns, on the tables' scale: what a table standing on it would read. */
+	public static Heat heatOf(BlockState block) {
 		// A caged wisp burns as hot as lava and does not set the workshop on fire.
-		if (below.is(Blocks.LAVA) || below.is(Blocks.LAVA_CAULDRON) || below.is(dev.forja.registry.ModBlocks.FAROL_DE_PAVESA)) {
+		if (block.is(Blocks.LAVA) || block.is(Blocks.LAVA_CAULDRON) || block.is(dev.forja.registry.ModBlocks.FAROL_DE_PAVESA)) {
 			return Heat.FUNDIDA;
 		}
-		if (below.is(Blocks.MAGMA_BLOCK) || below.is(Blocks.SOUL_FIRE) || below.is(Blocks.SOUL_CAMPFIRE)
-			|| (below.is(Blocks.BLAST_FURNACE) && below.getOptionalValue(BlockStateProperties.LIT).orElse(false))) {
+		if (block.is(Blocks.MAGMA_BLOCK) || block.is(Blocks.SOUL_FIRE) || block.is(Blocks.SOUL_CAMPFIRE)
+			|| (block.is(Blocks.BLAST_FURNACE) && block.getOptionalValue(BlockStateProperties.LIT).orElse(false))) {
 			return Heat.CALIENTE;
 		}
-		if (below.is(Blocks.FIRE) || (below.getBlock() instanceof CampfireBlock && below.getOptionalValue(CampfireBlock.LIT).orElse(false))
-			|| (below.is(Blocks.FURNACE) && below.getOptionalValue(BlockStateProperties.LIT).orElse(false))) {
+		if (block.is(Blocks.FIRE) || (block.getBlock() instanceof CampfireBlock && block.getOptionalValue(CampfireBlock.LIT).orElse(false))
+			|| (block.is(Blocks.FURNACE) && block.getOptionalValue(BlockStateProperties.LIT).orElse(false))) {
 			return Heat.TEMPLADA;
 		}
 		return Heat.FRIA;
+	}
+
+	/**
+	 * Something other than a fire underneath that can keep a forge hot: the heat pipes of the second
+	 * foundry (docs/FUNDICION_V2.md, part B) will register one of these, and every block that asks
+	 * {@link #heatAt} — the forge tables and the assembler — takes whichever is hotter.
+	 */
+	@FunctionalInterface
+	public interface HeatSource {
+		/** The heat this source brings to a forge standing at that position; FRIA if none. */
+		Heat heatAt(Level level, BlockPos pos);
+	}
+
+	private static final List<HeatSource> SOURCES = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+	/** Adds a way of heating a forge besides the fire under it. Called once, at startup. */
+	public static void addHeatSource(HeatSource source) {
+		SOURCES.add(source);
+	}
+
+	/**
+	 * The heat a forge at this position works with: the block under it, or whatever a registered
+	 * {@link HeatSource} brings it, the best of them. With no source registered yet this is exactly
+	 * {@link #heatUnder}, so nothing that already worked reads a different heat.
+	 */
+	public static Heat heatAt(Level level, BlockPos pos) {
+		Heat best = heatUnder(level, pos);
+		for (HeatSource source : SOURCES) {
+			Heat brought = source.heatAt(level, pos);
+			if (brought.ordinal() > best.ordinal()) {
+				best = brought;
+			}
+		}
+		return best;
+	}
+
+	/**
+	 * The hottest of the four blocks beside this position.
+	 *
+	 * <p>For the assembler: its finished piece leaves through a hopper underneath, the way everything in
+	 * the foundry is emptied, so the fire under a forge table has nowhere to go under it. It warms from the
+	 * side instead, the way the casting tables always have.
+	 */
+	public static Heat heatBeside(Level level, BlockPos pos) {
+		Heat best = Heat.FRIA;
+		for (net.minecraft.core.Direction side : net.minecraft.core.Direction.Plane.HORIZONTAL) {
+			Heat here = heatOf(level.getBlockState(pos.relative(side)));
+			if (here.ordinal() > best.ordinal()) {
+				best = here;
+			}
+		}
+		return best;
 	}
 
 	/**
