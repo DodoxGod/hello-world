@@ -57,6 +57,9 @@ public class GreaterEmber extends Monster implements GeoEntity {
 	private static final RawAnimation FLY = RawAnimation.begin().thenLoop("fly");
 	private static final RawAnimation DIVE = RawAnimation.begin().thenPlay("dive");
 	private static final RawAnimation SPLIT = RawAnimation.begin().thenPlay("split");
+	private static final RawAnimation STRIKE = RawAnimation.begin().thenPlay("strike");
+	private static final RawAnimation WINDUP = RawAnimation.begin().thenPlayAndHold("windup");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
 
 	private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 	private final dev.forja.entity.ai.Windup windup = new dev.forja.entity.ai.Windup();
@@ -149,6 +152,11 @@ public class GreaterEmber extends Monster implements GeoEntity {
 		if (distance < DIVE_MIN || distance > DIVE_MAX || !this.hasLineOfSight(target)) {
 			return;
 		}
+		this.diveAt(level, target);
+	}
+
+	/** Starts a dive at {@code target} now, whatever the distance and the cooldown. */
+	public void diveAt(ServerLevel level, LivingEntity target) {
 		this.diveCooldown = DIVE_COOLDOWN;
 		this.triggerAnim("ascua", "dive");
 		Vec3 aim = target.position().add(0.0, target.getBbHeight() * 0.5, 0.0).subtract(this.position()).normalize();
@@ -166,6 +174,15 @@ public class GreaterEmber extends Monster implements GeoEntity {
 			this.hurtMarked = true;
 			world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.BLAZE_SHOOT, SoundSource.HOSTILE, 1.4F, 0.8F);
 		});
+	}
+
+	/** Its plain blow comes out of its wind-up as it is swung, whether or not it lands (see MobMoves). */
+	@Override
+	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
+		super.swing(hand, updateSelf);
+		if (this.level() instanceof ServerLevel) {
+			this.triggerAnim("ascua", "strike");
+		}
 	}
 
 	private void rollDive(ServerLevel level) {
@@ -228,9 +245,10 @@ public class GreaterEmber extends Monster implements GeoEntity {
 
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<GreaterEmber>("ascua", test ->
-			test.setAndContinue(test.isMoving() ? FLY : IDLE)
-		).triggerableAnim("dive", DIVE).triggerableAnim("split", SPLIT));
+		// No death clip: it dies by coming apart (split, triggered as it dies).
+		controllers.add(MobMoves.controller("ascua", MobMoves.Clips.<GreaterEmber>of(IDLE, FLY)
+			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER))
+			.triggerableAnim("dive", DIVE).triggerableAnim("split", SPLIT).triggerableAnim("strike", STRIKE));
 	}
 
 	@Override

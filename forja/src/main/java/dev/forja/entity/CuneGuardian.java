@@ -97,6 +97,11 @@ public class CuneGuardian extends Monster implements GeoEntity {
 
 	private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
 	private static final RawAnimation WALK = RawAnimation.begin().thenLoop("walk");
+	private static final RawAnimation STRIKE = RawAnimation.begin().thenPlay("strike");
+	private static final RawAnimation WINDUP = RawAnimation.begin().thenPlayAndHold("windup");
+	private static final RawAnimation RUN = RawAnimation.begin().thenLoop("run");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
+	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
 	private static final RawAnimation STAMP = RawAnimation.begin().thenPlay("stamp");
 	private static final RawAnimation UNSEALED = RawAnimation.begin().thenPlay("unsealed");
 
@@ -424,11 +429,21 @@ public class CuneGuardian extends Monster implements GeoEntity {
 		return SoundEvents.DEEPSLATE_BRICKS_HIT;
 	}
 
+	/** Its plain blow comes out of its wind-up as it is swung, whether or not it lands (see MobMoves). */
+	@Override
+	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
+		super.swing(hand, updateSelf);
+		if (this.level() instanceof ServerLevel) {
+			this.triggerAnim("cuno", "strike");
+		}
+	}
+
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<CuneGuardian>("cuno", test ->
-			GeoGait.walk(test, WALK, IDLE)
-		).triggerableAnim("stamp", STAMP).triggerableAnim("unsealed", UNSEALED));
+		controllers.add(MobMoves.controller("cuno", MobMoves.Clips.<CuneGuardian>of(IDLE, WALK).run(RUN)
+			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER).death(DEATH))
+			.triggerableAnim("stamp", STAMP).triggerableAnim("unsealed", UNSEALED)
+			.triggerableAnim("strike", STRIKE));
 	}
 
 	@Override

@@ -222,19 +222,29 @@ public final class CombatPoses {
 	 * lean is in world directions: a lean of (x, z) moves the top of the head towards +x, +z.
 	 */
 	public static void applyLean(Pose pose, PoseStack poseStack) {
+		applyLean(pose, poseStack, 1.0F);
+	}
+
+	/**
+	 * The same, only {@code share} as far: a giant rocking back nine degrees at every blow looks like a
+	 * wardrobe, not like a boss (the mod's own monsters, GeoEntityRendererMixin).
+	 */
+	public static void applyLean(Pose pose, PoseStack poseStack, float share) {
 		if (pose == null || pose.still()) {
 			return;
 		}
-		float degrees = (float) Math.sqrt(pose.leanX() * pose.leanX() + pose.leanZ() * pose.leanZ());
+		float full = (float) Math.sqrt(pose.leanX() * pose.leanX() + pose.leanZ() * pose.leanZ());
+		float degrees = share * full;
 		if (degrees > 0.01F) {
 			// Turning about the axis (z, 0, -x) by a positive angle carries straight up towards (x, 0, z).
-			float axisX = pose.leanZ() / degrees;
-			float axisZ = -pose.leanX() / degrees;
+			float axisX = pose.leanZ() / full;
+			float axisZ = -pose.leanX() / full;
 			poseStack.mulPose(new Quaternionf().rotationAxis((float) Math.toRadians(degrees), axisX, 0.0F, axisZ));
 		}
 		if (pose.squash() != 1.0F) {
-			float widen = 1.0F + (1.0F - pose.squash()) * 0.5F;
-			poseStack.scale(widen, pose.squash(), widen);
+			float squash = 1.0F - (1.0F - pose.squash()) * share;
+			float widen = 1.0F + (1.0F - squash) * 0.5F;
+			poseStack.scale(widen, squash, widen);
 		}
 	}
 

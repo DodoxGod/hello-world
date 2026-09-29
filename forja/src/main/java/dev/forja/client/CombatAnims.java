@@ -275,6 +275,23 @@ public final class CombatAnims {
 		return idle <= 0.0 ? state.posture : (float) Math.max(0.0, state.posture - idle * state.postureDrain);
 	}
 
+	/** A warning's drawn pose is held this long past its end, until the swing it warned of takes over. */
+	private static final double WARNING_HOLD = 3.0;
+
+	/**
+	 * How many ticks the warning an entity is giving of a blow lasts, while it gives it (and for a moment
+	 * after, until the swing takes over); 0 when it is not warning of one. For the mod's own monsters, whose
+	 * wind-up clip is stretched to it (entity.MobMoves).
+	 */
+	public static float warning(int entityId, float partialTick) {
+		State state = STATES.get(entityId);
+		if (state == null || state.telegraphAt == State.NEVER) {
+			return 0.0F;
+		}
+		double since = now(partialTick) - state.telegraphAt;
+		return since >= 0.0 && since <= state.telegraphTicks + WARNING_HOLD ? state.telegraphTicks : 0.0F;
+	}
+
 	/** How much of a stagger is left, 1 at its start and 0 at its end; -1 when not staggered. */
 	public static float staggerLeft(int entityId, float partialTick) {
 		State state = STATES.get(entityId);

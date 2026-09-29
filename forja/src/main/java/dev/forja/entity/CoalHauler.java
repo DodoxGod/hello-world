@@ -65,6 +65,11 @@ public class CoalHauler extends Monster implements GeoEntity {
 
 	private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
 	private static final RawAnimation WALK = RawAnimation.begin().thenLoop("walk");
+	private static final RawAnimation STRIKE = RawAnimation.begin().thenPlay("strike");
+	private static final RawAnimation WINDUP = RawAnimation.begin().thenPlayAndHold("windup");
+	private static final RawAnimation RUN = RawAnimation.begin().thenLoop("run");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
+	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
 	private static final RawAnimation PRIME = RawAnimation.begin().thenPlay("prime");
 
 	private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
@@ -250,11 +255,21 @@ public class CoalHauler extends Monster implements GeoEntity {
 		return SoundEvents.HOGLIN_HURT;
 	}
 
+	/** Its plain blow comes out of its wind-up as it is swung, whether or not it lands (see MobMoves). */
+	@Override
+	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
+		super.swing(hand, updateSelf);
+		if (this.level() instanceof ServerLevel) {
+			this.triggerAnim("cargador", "strike");
+		}
+	}
+
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<CoalHauler>("cargador", test ->
-			GeoGait.walk(test, WALK, IDLE)
-		).triggerableAnim("prime", PRIME));
+		controllers.add(MobMoves.controller("cargador", MobMoves.Clips.<CoalHauler>of(IDLE, WALK).run(RUN)
+			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER).death(DEATH))
+			.triggerableAnim("prime", PRIME)
+			.triggerableAnim("strike", STRIKE));
 	}
 
 	@Override

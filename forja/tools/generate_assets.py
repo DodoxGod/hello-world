@@ -5584,6 +5584,86 @@ def bone(*parts):
     return merged
 
 
+# ---------------------------------------------------------------------------- whole-pose clips
+
+# The monsters' fight clips (Andy, 2026-09-28: "haz animaciones para los mobs del mod que las
+# necesitan") are written as whole poses rather than as channels: a wind-up, a blow, a stagger, a death.
+# Each keyframe is a picture of the whole body, which is the only way to keep twenty channels agreeing
+# with each other. entity.MobMoves says when each is played:
+#
+#   windup   the warning before a plain blow, drawn at the end of the clip and held: the code stretches it
+#            to the warning it actually gives (CombatFeedback.telegraph), so it lasts WINDUP seconds here.
+#   <blow>   triggered on the swing, and it starts FROM the drawn pose of the windup: the warning was the
+#            wind-up, so the blow itself is only the contact and the recovery.
+#   stagger  looped while its posture is broken.
+#   death    held from the moment it dies; the renderers no longer tip it over on its side.
+#   run      looped at a run, where the walk sped up does not read as running.
+WINDUP = 0.4
+
+
+def R(x, y, z, p=None, s=None):
+    """One bone's part of a pose: its turn, and where it has moved to and how big it is, if either."""
+    part = {"rotation": [x, y, z]}
+    if p is not None:
+        part["position"] = list(p)
+    if s is not None:
+        part["scale"] = list(s)
+    return part
+
+
+def P(x, y, z, s=None):
+    """A bone moved (and scaled) but not turned."""
+    part = {"position": [x, y, z]}
+    if s is not None:
+        part["scale"] = list(s)
+    return part
+
+
+def clip(length, keys, loop=False):
+    """A clip from whole poses: `keys` is [(time, {bone: part})]. A bone a pose leaves out is at rest in it."""
+    names = []
+    for _, pose in keys:
+        for name in pose:
+            if name not in names:
+                names.append(name)
+    bones = {}
+    for name in names:
+        channels = {}
+        for channel, rest in (("rotation", [0, 0, 0]), ("position", [0, 0, 0]), ("scale", [1, 1, 1])):
+            values = [(t, list(pose.get(name, {}).get(channel, rest))) for t, pose in keys]
+            # A channel that never leaves its rest says nothing, and would only make the file longer.
+            if any(value != rest for _, value in values):
+                channels[channel] = {str(float(t)): value for t, value in values}
+        if channels:
+            bones[name] = channels
+    return {"loop": loop, "animation_length": length, "bones": bones}
+
+
+# A death has to be over well inside the second a body lies there before it goes (vanilla removes it at 20
+# ticks), and it only starts once the client sees the health gone: each is squeezed into this, keeping its shape.
+DEATH = 0.7
+
+
+def death_clip(length, keys):
+    """A death clip, written at any length, played in DEATH seconds and held."""
+    squeeze = DEATH / keys[-1][0]
+    return clip(DEATH, [(round(t * squeeze, 3), pose) for t, pose in keys])
+
+
+def blend(a, b, share):
+    """A pose part of the way from `a` to `b`, for the in-betweens of a loop."""
+    out = {}
+    for name in set(a) | set(b):
+        part = {}
+        for channel, rest in (("rotation", [0, 0, 0]), ("position", [0, 0, 0]), ("scale", [1, 1, 1])):
+            if channel in a.get(name, {}) or channel in b.get(name, {}):
+                x = a.get(name, {}).get(channel, rest)
+                y = b.get(name, {}).get(channel, rest)
+                part[channel] = [round(u + (v - u) * share, 3) for u, v in zip(x, y)]
+        out[name] = part
+    return out
+
+
 # ---------------------------------------------------------------------------- the fallen smith
 
 # Half wrecked and twice the weight: the right side carries the hammer and an anvil-horned pauldron,
@@ -5733,6 +5813,50 @@ def coals(hot, length, pulse=False):
     return out
 
 
+# The Fallen Smith's poses for his fight clips (see clip()). His rest is his idle's first frame.
+SMITH_REST = {"body": R(2, 0, 0), "head": R(6, 0, 0), "arm_right": R(0, 0, -4), "cloak": R(0, 0, 1)}
+SMITH_DRAWN = {
+    "arm_right": R(-120, 0, -10), "body": R(-10, 8, 0), "head": R(-4, 4, 0), "arm_left": R(-16, 0, 14),
+    "cloak": R(-6, 0, 4), "leg_right": R(8, 0, 0), "leg_left": R(-8, 0, 0),
+}
+SMITH_SWUNG = {
+    "arm_right": R(-50, 0, -2), "body": R(14, -6, 0, p=(0, -1, -1)), "head": R(14, -4, 0), "arm_left": R(10, 0, 8),
+    "cloak": R(8, 0, 0), "leg_right": R(8, 0, 0), "leg_left": R(-8, 0, 0),
+}
+SMITH_SWUNG_SETTLE = {
+    "arm_right": R(-44, 0, -3), "body": R(11, -4, 0, p=(0, -0.8, -0.8)), "head": R(12, -3, 0), "arm_left": R(8, 0, 6),
+    "cloak": R(6, 0, 0), "leg_right": R(6, 0, 0), "leg_left": R(-6, 0, 0),
+}
+SMITH_REEL = {
+    "body": R(12, 0, -5, p=(0, -2, 0)), "head": R(22, -12, 8), "arm_right": R(12, 0, -10), "arm_left": R(16, 0, 16),
+    "cloak": R(6, 0, 6), "leg_right": R(-5, 0, 0), "leg_left": R(5, 0, 0),
+}
+SMITH_REEL_OTHER = {
+    "body": R(10, 0, 5, p=(0, -1.6, 0)), "head": R(18, 12, -8), "arm_right": R(6, 0, -2), "arm_left": R(22, 0, 6),
+    "cloak": R(4, 0, -6), "leg_right": R(5, 0, 0), "leg_left": R(-5, 0, 0),
+}
+SMITH_FORGE_UP = {
+    "body": R(22, 0, 0, p=(0, -9, -2)), "head": R(18, 0, 0), "arm_right": R(-110, 0, -6), "arm_left": R(-30, 0, 10),
+    "leg_right": R(-60, 0, 0), "leg_left": R(45, 0, 0), "cloak": R(10, 0, 0),
+}
+SMITH_FORGE_HIT = {
+    "body": R(28, 0, 0, p=(0, -10, -2.5)), "head": R(24, 0, 0), "arm_right": R(-66, 0, -4), "arm_left": R(-30, 0, 10),
+    "leg_right": R(-60, 0, 0), "leg_left": R(45, 0, 0), "cloak": R(14, 0, 0),
+}
+SMITH_SAG = {
+    "body": R(12, 0, 0, p=(0, -3, 0)), "head": R(26, 0, 0), "arm_right": R(16, 0, -8), "arm_left": R(20, 0, 14),
+    "cloak": R(6, 0, 0),
+}
+SMITH_KNEEL = {
+    "body": R(26, 0, -4, p=(0, -12, -4)), "head": R(30, 0, -6), "arm_right": R(-55, 0, -14), "arm_left": R(10, 0, 20),
+    "leg_right": R(-60, 0, 4), "leg_left": R(-50, 0, -4), "cloak": R(14, 0, 0),
+}
+SMITH_DOWN = {
+    "body": R(62, 0, -8, p=(0, -20, -8)), "head": R(30, 0, -10), "arm_right": R(-120, 0, -20), "arm_left": R(-110, 0, 30),
+    "leg_right": R(-80, 0, 8), "leg_left": R(-74, 0, -8), "cloak": R(20, 0, 0),
+}
+
+
 def generate_boss_assets():
     """The Fallen Smith: bigger, lopsided, half wrecked, and moving like something wound up rather than alive."""
     atlas = (512, 256)
@@ -5826,6 +5950,18 @@ def generate_boss_assets():
                     "arm_left": rot(stepped([(0, [0, 0, 4]), (0.5, [-46, 0, 38]), (1.7, [-42, 0, 42]), (2.2, [0, 0, 4])], hold=0.12)),
                 },
             },
+            # His plain blow, not the backhand: while he warns the hammer goes up over him and the frame
+            # leans back under it (windup), and on the swing it comes down in front of him.
+            "windup": clip(WINDUP, [(0, SMITH_REST), (WINDUP, SMITH_DRAWN)]),
+            "swing": clip(1.0, [(0, SMITH_DRAWN), (0.15, SMITH_SWUNG), (0.4, SMITH_SWUNG_SETTLE), (1.0, SMITH_REST)]),
+            # Broken off his stance he rocks on his heels, the hammer dragging and the head gone slack.
+            "stagger": clip(1.6, [(0, SMITH_REEL), (0.8, SMITH_REEL_OTHER), (1.6, SMITH_REEL)], loop=True),
+            # Back at the forge, down on one knee, working the hammer on it for as long as he reforges:
+            # the one moment in the fight he is not looking at you, which is the whole point of it.
+            "reforge": clip(1.2, [(0, SMITH_FORGE_UP), (0.3, SMITH_FORGE_HIT), (0.5, SMITH_FORGE_HIT), (1.2, SMITH_FORGE_UP)],
+                            loop=True),
+            # The last of him: the hammer drops, the knees go, and he comes down onto his face.
+            "death": death_clip(1.0, [(0, SMITH_REST), (0.3, SMITH_SAG), (0.65, SMITH_KNEEL), (1.0, SMITH_DOWN)]),
             # The fire while he is still holding back: it breathes, and the violet is not there at all.
             "fire_calm": {
                 "loop": True,
@@ -6451,6 +6587,52 @@ AUTOMATON_BONES = [
 ]
 
 
+# The automaton's poses for its fight clips (see clip()).
+AUTO_REST = {"arm_right": R(0, 0, -2), "arm_left": R(0, 0, 2)}
+AUTO_DRAWN = {
+    "arm_right": R(-112, 0, -10), "body": R(-8, 10, 0, p=(0, 0.4, 0.6)), "head": R(-6, 6, 0),
+    "arm_left": R(-14, 0, 8), "leg_right": R(8, 0, 0), "leg_left": R(-8, 0, 0),
+}
+AUTO_SMASHED = {
+    "arm_right": R(42, 0, 0), "body": R(14, -8, 0, p=(0, -0.6, -0.8)), "head": R(10, -4, 0),
+    "arm_left": R(10, 0, 4), "leg_right": R(8, 0, 0), "leg_left": R(-8, 0, 0),
+}
+AUTO_SMASHED_SETTLE = {
+    "arm_right": R(34, 0, 0), "body": R(11, -6, 0, p=(0, -0.5, -0.6)), "head": R(8, -3, 0),
+    "arm_left": R(8, 0, 4), "leg_right": R(6, 0, 0), "leg_left": R(-6, 0, 0),
+}
+AUTO_REEL = {
+    "body": R(8, 0, -5, p=(0, -0.8, 0)), "head": R(16, -12, 8), "arm_right": R(10, 0, -4), "arm_left": R(6, 0, 12),
+    "leg_right": R(-4, 0, 0), "leg_left": R(4, 0, 0),
+}
+AUTO_REEL_OTHER = {
+    "body": R(6, 0, 5, p=(0, -0.6, 0)), "head": R(12, 12, -10), "arm_right": R(4, 0, -12), "arm_left": R(10, 0, 4),
+    "leg_right": R(4, 0, 0), "leg_left": R(-4, 0, 0),
+}
+_AUTO_STRIDE = {
+    "leg_right": R(-26, 0, 0), "leg_left": R(24, 0, 0), "arm_right": R(22, 0, -4), "arm_left": R(-22, 0, 4),
+    "body": R(8, -4, 0), "head": R(-6, 4, 0),
+}
+_AUTO_STRIDE_OTHER = {
+    "leg_right": R(24, 0, 0), "leg_left": R(-26, 0, 0), "arm_right": R(-22, 0, -4), "arm_left": R(22, 0, 4),
+    "body": R(8, 4, 0), "head": R(-6, -4, 0),
+}
+_AUTO_UP = blend(_AUTO_STRIDE, _AUTO_STRIDE_OTHER, 0.5)
+_AUTO_UP["body"]["position"] = [0, 1.0, 0]
+AUTO_RUN = [(0, _AUTO_STRIDE), (0.275, _AUTO_UP), (0.55, _AUTO_STRIDE_OTHER), (0.825, _AUTO_UP), (1.1, _AUTO_STRIDE)]
+AUTO_SAG = {
+    "body": R(6, 0, 0, p=(0, -1.5, 0)), "head": R(24, 0, 0), "arm_right": R(8, 0, -8), "arm_left": R(8, 0, 8),
+}
+AUTO_BUCKLE = {
+    "body": R(30, 0, 4, p=(0, -3, -1)), "head": R(30, 0, 6), "arm_right": R(-40, 0, -14), "arm_left": R(-36, 0, 16),
+    "leg_right": R(8, 0, 0), "leg_left": R(6, 0, 0),
+}
+AUTO_DOWN = {
+    "body": R(72, 0, 6, p=(0, -6, -3)), "head": R(30, 10, 10), "arm_right": R(-150, 0, -24), "arm_left": R(-140, 0, 28),
+    "leg_right": R(14, 0, 4), "leg_left": R(10, 0, -4),
+}
+
+
 def generate_automaton_assets():
     """The automaton: the same machine, built properly, and moving as slowly as its weight deserves."""
     atlas = (128, 128)
@@ -6487,15 +6669,10 @@ def generate_automaton_assets():
                     ),
                 },
             },
-            "smash": {
-                "loop": False,
-                "animation_length": 1.6,
-                "bones": {
-                    "arm_right": rot([(0, [0, 0, -2]), (0.5, [-105, 0, -8]), (0.85, [-108, 0, -8]),
-                                      (1.0, [40, 0, 0]), (1.6, [0, 0, -2])]),
-                    "body": rot([(0, [0, 0, 0]), (0.5, [-8, 0, 0]), (1.0, [14, 0, 0]), (1.6, [0, 0, 0])]),
-                },
-            },
+            # The plain blow: the right fist goes up behind the head while it warns (windup), and comes
+            # down through whatever is in front of it the moment it swings, the whole frame behind it.
+            "windup": clip(WINDUP, [(0, AUTO_REST), (WINDUP, AUTO_DRAWN)]),
+            "smash": clip(0.9, [(0, AUTO_DRAWN), (0.12, AUTO_SMASHED), (0.35, AUTO_SMASHED_SETTLE), (0.9, AUTO_REST)]),
             # Coz de escoria: both arms go up together and stay up while the wedge on the floor grows,
             # then come down as one. They LAND AT 1.8 s — ForgeAutomaton.SLAG_WINDUP, 36 ticks. The move
             # asked for an animation called "coz" from the day it was written and there never was one:
@@ -6518,17 +6695,19 @@ def generate_automaton_assets():
             },
             # Venting: it settles back on its heels, the belly opens and something comes out of it. Slow
             # on the wind-up on purpose, because it is the only thing it can do to you at a distance.
+            # The ember leaves it AT 0.7 s — ForgeAutomaton.EMBER_WINDUP, 14 ticks — on the thrust
+            # forward; it used to spit six ticks before the thrust, still leaning back.
             "vent": {
                 "loop": False,
-                "animation_length": 1.8,
+                "animation_length": 1.5,
                 "bones": {
                     "body": bone(
-                        rot([(0, [0, 0, 0]), (0.6, [-16, 0, 0]), (1.0, [10, 0, 0]), (1.8, [0, 0, 0])]),
-                        pos([(0, [0, 0, 0]), (0.6, [0, 0, 1.5]), (1.0, [0, 0, -1.0]), (1.8, [0, 0, 0])]),
+                        rot([(0, [0, 0, 0]), (0.5, [-16, 0, 0]), (0.7, [10, 0, 0]), (1.5, [0, 0, 0])]),
+                        pos([(0, [0, 0, 0]), (0.5, [0, 0, 1.5]), (0.7, [0, 0, -1.0]), (1.5, [0, 0, 0])]),
                     ),
-                    "head": rot([(0, [0, 0, 0]), (0.6, [-12, 0, 0]), (1.0, [8, 0, 0]), (1.8, [0, 0, 0])]),
-                    "arm_right": rot([(0, [0, 0, -2]), (0.6, [24, 0, -14]), (1.8, [0, 0, -2])]),
-                    "arm_left": rot([(0, [0, 0, 2]), (0.6, [24, 0, 14]), (1.8, [0, 0, 2])]),
+                    "head": rot([(0, [0, 0, 0]), (0.5, [-12, 0, 0]), (0.7, [8, 0, 0]), (1.5, [0, 0, 0])]),
+                    "arm_right": rot([(0, [0, 0, -2]), (0.5, [24, 0, -14]), (0.7, [10, 0, -8]), (1.5, [0, 0, -2])]),
+                    "arm_left": rot([(0, [0, 0, 2]), (0.5, [24, 0, 14]), (0.7, [10, 0, 8]), (1.5, [0, 0, 2])]),
                 },
             },
             # The steam purge: everything opens at once and it drops back down.
@@ -6544,6 +6723,12 @@ def generate_automaton_assets():
                     "arm_left": rot([(0, [0, 0, 2]), (0.15, [0, 0, 40]), (1.2, [0, 0, 2])]),
                 },
             },
+            # Knocked off its balance it shudders from one foot to the other, arms loose, head lolling.
+            "stagger": clip(1.4, [(0, AUTO_REEL), (0.7, AUTO_REEL_OTHER), (1.4, AUTO_REEL)], loop=True),
+            # Its run is a lumbering jog: short, heavy strides and the fists pumping low.
+            "run": clip(1.1, AUTO_RUN, loop=True),
+            # The fire goes out of it: it sags, the knees go, and it falls on its face.
+            "death": death_clip(1.0, [(0, AUTO_REST), (0.25, AUTO_SAG), (0.6, AUTO_BUCKLE), (1.0, AUTO_DOWN)]),
         },
     })
 
@@ -6583,6 +6768,263 @@ CUNE_PALETTE = {
     "dark": ((92, 94, 102), (120, 122, 130), (58, 60, 66)),
     "gold": ((186, 146, 56), (216, 180, 84), (122, 94, 32)),
     "star": ((38, 46, 88), (58, 70, 120), (24, 28, 54), (196, 224, 255)),
+}
+
+
+# Poses for the fight clips of the walking anvil, the striker, the tongs, the quencher, the coal hauler,
+# the die guardian and the star core (see clip()). An empty pose is the model at rest.
+ANVIL_DRAWN = {
+    "body": R(-14, 0, 0, p=(0, 1, 1)), "head": R(-10, 0, 0), "leg_fr": R(-34, 0, 0), "leg_fl": R(-34, 0, 0),
+    "leg_br": R(10, 0, 0), "leg_bl": R(10, 0, 0),
+}
+ANVIL_SLAMMED = {
+    "body": R(12, 0, 0, p=(0, -0.8, -1)), "head": R(16, 0, 0, p=(0, -0.5, 0)), "leg_fr": R(16, 0, 0), "leg_fl": R(16, 0, 0),
+    "leg_br": R(-8, 0, 0), "leg_bl": R(-8, 0, 0),
+}
+ANVIL_REEL = {
+    "body": R(0, 0, 8, p=(0, -0.6, 0)), "head": R(0, 10, -6), "leg_fr": R(0, 0, 14), "leg_bl": R(0, 0, -14),
+}
+ANVIL_REEL_OTHER = {
+    "body": R(0, 0, -8, p=(0, -0.6, 0)), "head": R(0, -10, 6), "leg_fl": R(0, 0, -14), "leg_br": R(0, 0, 14),
+}
+_ANVIL_STRIDE = {
+    "leg_fr": R(-32, 0, 0), "leg_bl": R(-32, 0, 0), "leg_fl": R(32, 0, 0), "leg_br": R(32, 0, 0),
+    "body": R(4, 0, 5), "head": R(0, 0, -3),
+}
+_ANVIL_STRIDE_OTHER = {
+    "leg_fr": R(32, 0, 0), "leg_bl": R(32, 0, 0), "leg_fl": R(-32, 0, 0), "leg_br": R(-32, 0, 0),
+    "body": R(4, 0, -5), "head": R(0, 0, 3),
+}
+_ANVIL_UP = blend(_ANVIL_STRIDE, _ANVIL_STRIDE_OTHER, 0.5)
+_ANVIL_UP["body"]["position"] = [0, 0.8, 0]
+ANVIL_RUN = [(0, _ANVIL_STRIDE), (0.175, _ANVIL_UP), (0.35, _ANVIL_STRIDE_OTHER), (0.525, _ANVIL_UP), (0.7, _ANVIL_STRIDE)]
+ANVIL_WOBBLE = {"body": R(0, 0, 10, p=(0, -0.6, 0)), "head": R(0, 0, -6), "leg_fr": R(0, 0, -20), "leg_br": R(0, 0, -20)}
+ANVIL_DOWN = {
+    "body": R(0, 0, 4, p=(0, -2.8, 0)), "head": R(0, 0, -6, p=(0, -0.2, 0)),
+    "leg_fr": R(0, 0, -80), "leg_br": R(0, 0, -80), "leg_fl": R(0, 0, 80), "leg_bl": R(0, 0, 80),
+}
+ANVIL_BOUNCE = {
+    "body": R(0, 0, 2, p=(0, -2.2, 0)), "head": R(0, 0, -3, p=(0, 0.2, 0)),
+    "leg_fr": R(0, 0, -76), "leg_br": R(0, 0, -76), "leg_fl": R(0, 0, 76), "leg_bl": R(0, 0, 76),
+}
+STRIKER_DRAWN = {
+    "arm_left": R(40, 0, 16), "body": R(-4, -16, 0), "head": R(0, -8, 0), "frame": R(-4, 0, 0), "ram": P(0, 2, 0),
+    "leg_right": R(-10, 0, 0), "leg_left": R(10, 0, 0),
+}
+STRIKER_PUNCH = {
+    "arm_left": R(-88, 0, -4), "body": R(8, 18, 0, p=(0, 0, -0.8)), "head": R(6, 10, 0), "frame": R(6, 0, 0),
+    "ram": P(0, -1, 0), "leg_right": R(-10, 0, 0), "leg_left": R(10, 0, 0),
+}
+STRIKER_REEL = {
+    "body": R(8, 6, -6, p=(0, -0.6, 0)), "head": R(16, 14, -10), "arm_left": R(10, 0, 10), "frame": R(0, 0, 8),
+    "ram": P(0, -2, 0), "leg_right": R(-5, 0, 0), "leg_left": R(5, 0, 0),
+}
+STRIKER_REEL_OTHER = {
+    "body": R(8, -6, 6, p=(0, -0.6, 0)), "head": R(16, -14, 10), "arm_left": R(14, 0, -6), "frame": R(0, 0, -6),
+    "ram": P(0, -1, 0), "leg_right": R(5, 0, 0), "leg_left": R(-5, 0, 0),
+}
+_STRIKER_STRIDE = {
+    "leg_right": R(-36, 0, 0), "leg_left": R(34, 0, 0), "arm_left": R(30, 0, 4), "body": R(8, 4, 0), "frame": R(4, 0, 0),
+}
+_STRIKER_STRIDE_OTHER = {
+    "leg_right": R(34, 0, 0), "leg_left": R(-36, 0, 0), "arm_left": R(-30, 0, 4), "body": R(8, -4, 0), "frame": R(-4, 0, 0),
+}
+_STRIKER_UP = blend(_STRIKER_STRIDE, _STRIKER_STRIDE_OTHER, 0.5)
+_STRIKER_UP["body"]["position"] = [0, 1.0, 0]
+_STRIKER_UP["ram"] = P(0, -1.2, 0)
+STRIKER_RUN = [(0, _STRIKER_STRIDE), (0.2, _STRIKER_UP), (0.4, _STRIKER_STRIDE_OTHER), (0.6, _STRIKER_UP), (0.8, _STRIKER_STRIDE)]
+STRIKER_RAM_DOWN = {
+    "ram": P(0, -6, 0), "frame": R(6, 0, -10), "body": R(8, 0, -6, p=(0, -1, 0)), "head": R(20, 0, 0),
+    "arm_left": R(10, 0, 6),
+}
+STRIKER_TOPPLE = {
+    "ram": P(0, -6, 0), "frame": R(8, 0, -20), "body": R(30, 0, -20, p=(0, -4, -1)), "head": R(24, 0, 6),
+    "arm_left": R(-20, 0, 14), "leg_right": R(-20, 0, 6), "leg_left": R(-20, 0, -6),
+}
+STRIKER_DOWN = {
+    "ram": P(0, -6, 0), "frame": R(10, 0, -30), "body": R(70, 0, -24, p=(0, -8, -2)), "head": R(30, 0, 10),
+    "arm_left": R(-60, 0, 20), "leg_right": R(10, 0, 6), "leg_left": R(10, 0, -6),
+}
+TONGS_DRAWN = {
+    "arm_right": R(-26, 0, -16), "arm_left": R(-26, 0, 16), "fore_right": R(28, 0, 0), "fore_left": R(28, 0, 0),
+    "body": R(-8, 0, 0, p=(0, 0.4, 0.8)), "head": R(-8, 0, 0),
+}
+TONGS_PINCH = {
+    "arm_right": R(30, 0, 12), "arm_left": R(30, 0, -12), "fore_right": R(-36, 0, 0), "fore_left": R(-36, 0, 0),
+    "body": R(14, 0, 0, p=(0, 0, -1)), "head": R(12, 0, 0),
+}
+TONGS_HOLD = {
+    "arm_right": R(34, 0, 12), "arm_left": R(34, 0, -12), "fore_right": R(-38, 0, 0), "fore_left": R(-38, 0, 0),
+    "body": R(-4, 0, 0, p=(0, 0, 0.6)), "head": R(10, 0, 0), "leg_right": R(-14, 0, 0), "leg_left": R(14, 0, 0),
+}
+TONGS_HOLD_OTHER = {
+    "arm_right": R(30, 0, 8), "arm_left": R(30, 0, -8), "fore_right": R(-34, 3, 0), "fore_left": R(-34, -3, 0),
+    "body": R(-8, 0, 0, p=(0, 0, 1)), "head": R(6, 0, 0), "leg_right": R(-16, 0, 0), "leg_left": R(16, 0, 0),
+}
+TONGS_REEL = {
+    "body": R(18, 8, 8), "head": R(20, 16, 0), "arm_right": R(20, 0, -4), "arm_left": R(12, 0, 8),
+    "fore_right": R(20, 0, 0), "fore_left": R(10, 0, 0),
+}
+TONGS_REEL_OTHER = {
+    "body": R(16, -8, -8), "head": R(18, -16, 0), "arm_right": R(12, 0, -8), "arm_left": R(20, 0, 4),
+    "fore_right": R(10, 0, 0), "fore_left": R(20, 0, 0),
+}
+_TONGS_STRIDE = {
+    "leg_right": R(-36, 0, 0), "leg_left": R(36, 0, 0), "body": R(14, 4, 0), "arm_right": R(-12, 0, 0),
+    "arm_left": R(4, 0, 0),
+}
+_TONGS_STRIDE_OTHER = {
+    "leg_right": R(36, 0, 0), "leg_left": R(-36, 0, 0), "body": R(14, -4, 0), "arm_right": R(4, 0, 0),
+    "arm_left": R(-12, 0, 0),
+}
+_TONGS_UP = blend(_TONGS_STRIDE, _TONGS_STRIDE_OTHER, 0.5)
+_TONGS_UP["body"]["position"] = [0, 0.8, 0]
+TONGS_RUN = [(0, _TONGS_STRIDE), (0.15, _TONGS_UP), (0.3, _TONGS_STRIDE_OTHER), (0.45, _TONGS_UP), (0.6, _TONGS_STRIDE)]
+TONGS_FOLDING = {
+    "body": R(20, 0, 0, p=(0, -2, 0)), "arm_right": R(20, 0, -20), "arm_left": R(20, 0, 20),
+    "fore_right": R(30, 0, 0), "fore_left": R(30, 0, 0), "head": R(20, 0, 0),
+}
+TONGS_FOLDED = {
+    "body": R(70, 0, 10, p=(0, -6, -2)), "arm_right": R(40, 0, -40), "arm_left": R(40, 0, 40),
+    "fore_right": R(60, 0, 0), "fore_left": R(60, 0, 0), "head": R(30, 0, 20),
+    "leg_right": R(-30, 0, 10), "leg_left": R(-30, 0, -10),
+}
+QUENCH_REST = {"head": R(6, 0, 0), "body": R(0, 0, 1)}
+QUENCH_REEL = {
+    "body": R(-8, 0, 6, p=(0, -0.6, 0)), "head": R(20, 12, -8), "arm_right": R(10, 0, -10), "arm_left": R(14, 0, 4),
+    "stack": R(0, 0, 10),
+}
+QUENCH_REEL_OTHER = {
+    "body": R(-6, 0, -6, p=(0, -0.4, 0)), "head": R(18, -12, 8), "arm_right": R(14, 0, -4), "arm_left": R(10, 0, 10),
+    "stack": R(0, 0, -10),
+}
+_QUENCH_STRIDE = {
+    "leg_right": R(-38, 0, 0), "leg_left": R(36, 0, 0), "arm_right": R(34, 0, 0), "arm_left": R(-34, 0, 0),
+    "body": R(8, 0, 3), "head": R(-4, 0, 0), "stack": R(0, 0, 6),
+}
+_QUENCH_STRIDE_OTHER = {
+    "leg_right": R(36, 0, 0), "leg_left": R(-38, 0, 0), "arm_right": R(-34, 0, 0), "arm_left": R(34, 0, 0),
+    "body": R(8, 0, -3), "head": R(-4, 0, 0), "stack": R(0, 0, -6),
+}
+_QUENCH_UP = blend(_QUENCH_STRIDE, _QUENCH_STRIDE_OTHER, 0.5)
+_QUENCH_UP["body"]["position"] = [0, 0.8, 0]
+QUENCH_RUN = [(0, _QUENCH_STRIDE), (0.15, _QUENCH_UP), (0.3, _QUENCH_STRIDE_OTHER), (0.45, _QUENCH_UP), (0.6, _QUENCH_STRIDE)]
+QUENCH_TIP = {
+    "body": R(-12, 0, 6, p=(0, -1, 0)), "head": R(-10, 0, 0), "arm_right": R(-40, 0, -30), "arm_left": R(-40, 0, 30),
+    "leg_right": R(-10, 0, 0), "leg_left": R(6, 0, 0),
+}
+QUENCH_DOWN = {
+    "body": R(-78, 0, 10, p=(0, -7, 4)), "head": R(-20, 0, 10), "arm_right": R(-70, 0, -50), "arm_left": R(-60, 0, 50),
+    "leg_right": R(-64, 0, 6), "leg_left": R(-56, 0, -6), "stack": R(-20, 0, 10),
+}
+QUENCH_BOUNCE = {
+    "body": R(-72, 0, 8, p=(0, -6, 3.5)), "head": R(-24, 0, 12), "arm_right": R(-66, 0, -46), "arm_left": R(-56, 0, 46),
+    "leg_right": R(-70, 0, 6), "leg_left": R(-60, 0, -6), "stack": R(-24, 0, 12),
+}
+HAULER_DRAWN = {
+    "body": R(-10, 0, 0, p=(0, 1, 1.4)), "head": R(-22, 0, 0), "leg_fr": R(-24, 0, 0), "leg_fl": R(-24, 0, 0),
+    "leg_br": R(10, 0, 0), "leg_bl": R(10, 0, 0), "smoke": P(0, 0, 0, s=(1.3, 1.8, 1.3)),
+}
+HAULER_BUTT = {
+    "body": R(12, 0, 0, p=(0, -0.6, -2.2)), "head": R(26, 0, 0), "leg_fr": R(18, 0, 0), "leg_fl": R(18, 0, 0),
+    "leg_br": R(-12, 0, 0), "leg_bl": R(-12, 0, 0), "smoke": P(0, 0, 0, s=(1.6, 2.4, 1.6)),
+}
+HAULER_REEL = {
+    "body": R(0, 0, 8, p=(0, -0.5, 0)), "head": R(10, 16, 0), "smoke": P(0, 0, 0, s=(0.8, 0.6, 0.8)),
+    "leg_fr": R(0, 0, 12), "leg_bl": R(0, 0, -12),
+}
+HAULER_REEL_OTHER = {
+    "body": R(0, 0, -8, p=(0, -0.5, 0)), "head": R(10, -16, 0), "smoke": P(0, 0, 0, s=(0.9, 0.8, 0.9)),
+    "leg_fl": R(0, 0, -12), "leg_br": R(0, 0, 12),
+}
+_HAULER_REACH = {
+    "leg_fr": R(-30, 0, 0), "leg_fl": R(-30, 0, 0), "leg_br": R(24, 0, 0), "leg_bl": R(24, 0, 0),
+    "body": R(-5, 0, 0, p=(0, 0.8, 0)), "head": R(-6, 0, 0), "smoke": P(0, 0, 0, s=(1.2, 1.7, 1.2)),
+}
+_HAULER_GATHER = {
+    "leg_fr": R(26, 0, 0), "leg_fl": R(26, 0, 0), "leg_br": R(-28, 0, 0), "leg_bl": R(-28, 0, 0),
+    "body": R(6, 0, 0, p=(0, 0, 0)), "head": R(8, 0, 0), "smoke": P(0, 0, 0, s=(1.0, 2.2, 1.0)),
+}
+HAULER_RUN = [(0, _HAULER_REACH), (0.25, _HAULER_GATHER), (0.5, _HAULER_REACH)]
+HAULER_SWELL = {"body": P(0, 0.6, 0, s=(1.2, 1.25, 1.2)), "smoke": P(0, 0, 0, s=(2, 3, 2)), "head": R(-16, 0, 0)}
+HAULER_BURST = {
+    "body": P(0, -2, 0, s=(1.1, 0.7, 1.15)), "smoke": P(0, 0, 0, s=(0.1, 0.1, 0.1)), "head": R(30, 0, 0, p=(0, -2, -1)),
+    "leg_fr": R(0, 0, 50), "leg_br": R(0, 0, 50), "leg_fl": R(0, 0, -50), "leg_bl": R(0, 0, -50),
+}
+CUNE_DRAWN = {
+    "arm_right": R(-96, 24, -12), "body": R(-4, 18, 0), "head": R(-6, 10, 0), "arm_left": R(-20, 0, 10),
+    "leg_right": R(10, 0, 0), "leg_left": R(-10, 0, 0),
+}
+CUNE_HIT = {
+    "arm_right": R(-40, -20, 4), "body": R(8, -18, 0, p=(0, -0.4, -0.6)), "head": R(6, -12, 0, p=(0, -0.6, -0.6)),
+    "arm_left": R(12, 0, 6), "leg_right": R(10, 0, 0), "leg_left": R(-10, 0, 0),
+}
+CUNE_REEL = {
+    "head": R(10, 12, 10, p=(1, -1, 0)), "body": R(4, 0, -5), "arm_right": R(12, 0, -8), "arm_left": R(6, 0, 12),
+    "leg_right": R(-4, 0, 0), "leg_left": R(4, 0, 0),
+}
+CUNE_REEL_OTHER = {
+    "head": R(12, -12, -10, p=(-1, -1, 0)), "body": R(4, 0, 5), "arm_right": R(6, 0, -12), "arm_left": R(12, 0, 8),
+    "leg_right": R(4, 0, 0), "leg_left": R(-4, 0, 0),
+}
+_CUNE_STRIDE = {
+    "leg_right": R(-26, 0, 0), "leg_left": R(26, 0, 0), "arm_right": R(18, 0, 0), "arm_left": R(-18, 0, 0),
+    "body": R(6, 0, 0), "head": R(0, 0, 3, p=(0, -0.4, 0.6)),
+}
+_CUNE_STRIDE_OTHER = {
+    "leg_right": R(26, 0, 0), "leg_left": R(-26, 0, 0), "arm_right": R(-18, 0, 0), "arm_left": R(18, 0, 0),
+    "body": R(6, 0, 0), "head": R(0, 0, -3, p=(0, -0.4, 0.6)),
+}
+_CUNE_UP = blend(_CUNE_STRIDE, _CUNE_STRIDE_OTHER, 0.5)
+_CUNE_UP["body"]["position"] = [0, 0.8, 0]
+_CUNE_UP["head"]["position"] = [0, -1.0, 0.8]
+CUNE_RUN = [(0, _CUNE_STRIDE), (0.25, _CUNE_UP), (0.5, _CUNE_STRIDE_OTHER), (0.75, _CUNE_UP), (1.0, _CUNE_STRIDE)]
+CUNE_TIP = {"body": R(8, 0, 0, p=(0, -1, 0)), "head": R(20, 0, 10, p=(0, 1, -1)), "arm_right": R(10, 0, -10), "arm_left": R(10, 0, 10)}
+CUNE_FALLING = {
+    "head": R(70, 0, 30, p=(2, -4, -8)), "body": R(20, 0, -8, p=(0, -3, 0)), "arm_right": R(20, 0, -20),
+    "arm_left": R(20, 0, 20), "leg_right": R(-10, 0, 4), "leg_left": R(-10, 0, -4),
+}
+CUNE_OFF = {
+    "head": R(90, 0, 40, p=(3, -8, -12)), "body": R(30, 0, -10, p=(0, -4, -1)), "arm_right": R(30, 0, -24),
+    "arm_left": R(26, 0, 24), "leg_right": R(-40, 0, 8), "leg_left": R(-40, 0, -8),
+}
+CORE_GATHER_START = {"core": P(0, 0, 0, s=(1.1, 1.1, 1.1)), "shards": P(0, 0, 0, s=(1.35, 1.35, 1.35)), "ring": R(0, 22, 0)}
+CORE_GATHER_MID = {
+    "core": R(0, 180, 0, s=(1.3, 1.3, 1.3)), "shards": R(0, -540, 0, s=(1.55, 1.55, 1.55)),
+    "ring": R(0, 202, 0, s=(1.05, 1, 1.05)),
+}
+CORE_GATHER_SHAKE = {
+    "core": R(0, 240, 0, p=(0.3, 0, 0), s=(1.36, 1.36, 1.36)), "shards": R(0, -720, 0, s=(1.6, 1.6, 1.6)),
+    "ring": R(0, 262, 0, s=(1.08, 1, 1.08)),
+}
+CORE_GATHER_SHAKE_OTHER = {
+    "core": R(0, 300, 0, p=(-0.3, 0.2, 0), s=(1.4, 1.4, 1.4)), "shards": R(0, -900, 0, s=(1.65, 1.65, 1.65)),
+    "ring": R(0, 322, 0, s=(1.1, 1, 1.1)),
+}
+CORE_GATHER_FULL = {
+    "core": R(0, 360, 0, s=(1.45, 1.45, 1.45)), "shards": R(0, -1080, 0, s=(1.7, 1.7, 1.7)),
+    "ring": R(0, 382, 0, s=(1.12, 1, 1.12)),
+}
+CORE_EMPTIED = {"core": P(0, 0, 0, s=(0.7, 0.7, 0.7)), "shards": R(0, 60, 0, s=(0.5, 0.5, 0.5)), "ring": R(0, 22, 0)}
+CORE_SETTLED = {"shards": R(0, 180, 0), "ring": R(0, 22, 0)}
+CORE_SPENT = {
+    "core": R(18, 0, 0, p=(0, -2, 0)), "shards": R(0, 10, 0, p=(0, -5, 0), s=(0.65, 0.65, 0.65)),
+    "ring": R(12, 22, 0, p=(0, -1, 0)), "root": P(0, -1, 0),
+}
+CORE_SPENT_LOW = {
+    "core": R(22, 0, 0, p=(0, -2.6, 0)), "shards": R(0, 20, 0, p=(0, -5.5, 0), s=(0.62, 0.62, 0.62)),
+    "ring": R(14, 22, 0, p=(0, -1.3, 0)), "root": P(0, -1.4, 0),
+}
+CORE_REEL = {"root": R(14, 0, 12), "shards": R(0, 90, 0, s=(1.2, 1.2, 1.2)), "ring": R(20, 22, 0)}
+CORE_REEL_OTHER = {"root": R(-14, 0, -12), "shards": R(0, -90, 0, s=(1.2, 1.2, 1.2)), "ring": R(-20, 22, 0)}
+CORE_CRACK = {"core": P(0, 0, 0, s=(1.6, 1.6, 1.6)), "shards": R(0, -360, 0, s=(1.6, 1.6, 1.6)), "ring": R(0, 22, 0, s=(1.3, 1, 1.3))}
+CORE_SHATTER = {
+    "core": P(0, 0, 0, s=(0.2, 0.2, 0.2)), "shards": R(0, -540, 0, p=(0, -3, 0), s=(1.9, 1.9, 1.9)),
+    "ring": R(40, 22, 0, p=(0, -3, 0)),
+}
+CORE_GONE = {
+    "core": P(0, 0, 0, s=(0.05, 0.05, 0.05)), "shards": R(0, -600, 0, p=(0, -8, 0), s=(0.1, 0.1, 0.1)),
+    "ring": R(55, 22, 0, p=(0, -4, 0)),
 }
 
 
@@ -6646,6 +7088,15 @@ def generate_cune_guardian_assets():
                     "leg_left": rot([(0, [0, 0, 0]), (1.7, [-8, 0, 0]), (2.0, [6, 0, 0]), (3.0, [0, 0, 0])]),
                 },
             },
+            # Its plain blow had no clip: the right fist goes back and round while it warns and comes
+            # through in a hook, the die turning into it.
+            "windup": clip(WINDUP, [(0, {}), (WINDUP, CUNE_DRAWN)]),
+            "strike": clip(0.9, [(0, CUNE_DRAWN), (0.12, CUNE_HIT), (0.35, blend(CUNE_HIT, {}, 0.25)), (0.9, {})]),
+            # Rocked, the die is too heavy for it: the head lurches one way and the body the other.
+            "stagger": clip(1.6, [(0, CUNE_REEL), (0.8, CUNE_REEL_OTHER), (1.6, CUNE_REEL)], loop=True),
+            "run": clip(1.0, CUNE_RUN, loop=True),
+            # The die comes off: it tips forward off the shoulders and the body sags under where it was.
+            "death": death_clip(1.2, [(0, {}), (0.35, CUNE_TIP), (0.8, CUNE_FALLING), (1.2, CUNE_OFF)]),
             # The seals going: it comes apart a little and stops ticking. Played once, when the last
             # lantern goes out, and it is the only thing that says the fight has actually started.
             "unsealed": {
@@ -6656,7 +7107,8 @@ def generate_cune_guardian_assets():
                         rot([(0, [0, 0, 0]), (0.3, [-8, 0, 5]), (0.7, [6, 0, -4]), (1.8, [0, 0, 0])]),
                         pos([(0, [0, 0, 0]), (0.3, [0, 1.5, 0]), (0.7, [0, -1, 0]), (1.8, [0, 0, 0])]),
                     ),
-                    "shoulders": rot([(0, [0, 0, 0]), (0.4, [0, 0, 3]), (0.9, [0, 0, -3]), (1.8, [0, 0, 0])]),
+                    # The body: there never was a "shoulders" bone, so this line of the clip did nothing.
+                    "body": rot([(0, [0, 0, 0]), (0.4, [0, 0, 3]), (0.9, [0, 0, -3]), (1.8, [0, 0, 0])]),
                     "arm_right": rot([(0, [0, 0, 0]), (0.4, [-14, 0, 0]), (1.8, [0, 0, 0])]),
                     "arm_left": rot([(0, [0, 0, 0]), (0.4, [-14, 0, 0]), (1.8, [0, 0, 0])]),
                 },
@@ -6980,6 +7432,14 @@ def generate_hauler_assets():
                     "smoke": scale([(0, [1.2, 1.4, 1.2]), (0.5, [1.0, 1.9, 1.0]), (1.0, [1.2, 1.4, 1.2])]),
                 },
             },
+            # Its plain blow had no clip: it rocks back on its haunches while it warns and butts you.
+            "windup": clip(WINDUP, [(0, {}), (WINDUP, HAULER_DRAWN)]),
+            "strike": clip(0.8, [(0, HAULER_DRAWN), (0.1, HAULER_BUTT), (0.3, blend(HAULER_BUTT, {}, 0.3)), (0.8, {})]),
+            "stagger": clip(1.0, [(0, HAULER_REEL), (0.5, HAULER_REEL_OTHER), (1.0, HAULER_REEL)], loop=True),
+            # A gallop: the front legs together, then the back.
+            "run": clip(0.5, HAULER_RUN, loop=True),
+            # Killed before its fuse is lit it still goes up (CoalHauler.die): it swells and bursts.
+            "death": death_clip(1.0, [(0, {}), (0.15, HAULER_SWELL), (0.4, HAULER_BURST), (1.0, HAULER_BURST)]),
             # The fuse: it plants its feet, swells, and the stacks blow. Blast at 1.8s = 36 ticks.
             "prime": {
                 "loop": False,
@@ -7102,6 +7562,12 @@ def generate_quencher_assets():
                     "stack": rot([(0, [0, 0, 3]), (0.5, [0, 0, -3]), (1.0, [0, 0, 3])]),
                 },
             },
+            "stagger": clip(1.0, [(0, QUENCH_REEL), (0.5, QUENCH_REEL_OTHER), (1.0, QUENCH_REEL)], loop=True),
+            # He runs to keep his distance (AvoidEntityGoal, and MobSprint when he is badly hurt): short
+            # hurried steps under the tank, the arms pumping.
+            "run": clip(0.6, QUENCH_RUN, loop=True),
+            # The weight on his back takes him over backwards.
+            "death": death_clip(1.0, [(0, QUENCH_REST), (0.3, QUENCH_TIP), (0.7, QUENCH_DOWN), (0.85, QUENCH_BOUNCE), (1.0, QUENCH_DOWN)]),
             # The purge: he braces, the tank shakes harder and harder, and it lets go at 1.1s = 22
             # ticks, which is where DOUSE_WINDUP puts the oil on the ground.
             "douse": {
@@ -7198,19 +7664,21 @@ def generate_star_core_assets():
                     "ring": rot([(0, [0, 0, 0]), (1.2, [0, 180, 0])]),
                 },
             },
-            # Letting go: everything snaps back in as the beam leaves.
-            "release": {
-                "loop": False,
-                "animation_length": 0.9,
-                "bones": {
-                    "core": scale([(0, [1.25, 1.25, 1.25]), (0.2, [1.5, 1.5, 1.5]),
-                                   (0.35, [0.7, 0.7, 0.7]), (0.9, [1, 1, 1])]),
-                    "shards": bone(
-                        scale([(0, [1.4, 1.4, 1.4]), (0.35, [0.5, 0.5, 0.5]), (0.9, [1, 1, 1])]),
-                        rot([(0, [0, 0, 0]), (0.9, [0, 180, 0])]),
-                    ),
-                },
-            },
+            # Gathering: the warning before the beam (StarCore.release). The core swells and shakes, the
+            # shards fly out and spin up, as full as it gets AT 0.9 s — RELEASE_WINDUP, 18 ticks. The warning
+            # is shorter as it breaks up; the beam then cuts it short. It used to snap in at 0.35 s, a
+            # dozen ticks before anything left it, so the tell said "over" while the danger was still coming.
+            "gather": clip(0.9, [(0, CORE_GATHER_START), (0.45, CORE_GATHER_MID), (0.6, CORE_GATHER_SHAKE),
+                                 (0.7, CORE_GATHER_SHAKE_OTHER), (0.8, CORE_GATHER_SHAKE), (0.9, CORE_GATHER_FULL)]),
+            # Letting go: everything snaps back in as the beam leaves, on the beam's own tick.
+            "release": clip(0.6, [(0, CORE_GATHER_FULL), (0.1, CORE_EMPTIED), (0.6, CORE_SETTLED)]),
+            # Spent (StarCore.SPENT_TICKS), the window it can be hurt in: the shards fall in against the
+            # stone, the ring stops and tips, the core hangs lower. The comment in the code promised this
+            # and nothing drew it: a spent core looked exactly like an empty one.
+            "spent": clip(1.6, [(0, CORE_SPENT), (0.8, CORE_SPENT_LOW), (1.6, CORE_SPENT)], loop=True),
+            "stagger": clip(1.0, [(0, CORE_REEL), (0.5, CORE_REEL_OTHER), (1.0, CORE_REEL)], loop=True),
+            # Breaking: it flares, the shards fly off, the ring drops, and the stone goes out.
+            "death": death_clip(0.9, [(0, {}), (0.2, CORE_CRACK), (0.6, CORE_SHATTER), (0.9, CORE_GONE)]),
         },
     })
 
@@ -7469,6 +7937,15 @@ def generate_walking_anvil_assets():
                     ),
                 },
             },
+            # Its plain blow had no clip: it rears up on its hind legs while it warns and brings the whole
+            # anvil down on you.
+            "windup": clip(WINDUP, [(0, {}), (WINDUP, ANVIL_DRAWN)]),
+            "strike": clip(0.8, [(0, ANVIL_DRAWN), (0.1, ANVIL_SLAMMED), (0.3, blend(ANVIL_SLAMMED, {}, 0.3)), (0.8, {})]),
+            "stagger": clip(1.0, [(0, ANVIL_REEL), (0.5, ANVIL_REEL_OTHER), (1.0, ANVIL_REEL)], loop=True),
+            # Running: four stubby legs going as fast as they can, the anvil rolling on top of them.
+            "run": clip(0.7, ANVIL_RUN, loop=True),
+            # The legs give out from under it, all four at once, and the anvil lands on the floor.
+            "death": death_clip(0.9, [(0, {}), (0.3, ANVIL_WOBBLE), (0.55, ANVIL_DOWN), (0.7, ANVIL_BOUNCE), (0.9, ANVIL_DOWN)]),
             # Welding: it plants itself, the seam flares and the weld goes out to whatever it is mending.
             "weld": {
                 "loop": False,
@@ -7562,6 +8039,14 @@ def generate_striker_assets():
                                  (0.9, [0, 0.7, 0]), (1.2, [0, 0, 0])]),
                 },
             },
+            # Its plain blow had no clip, and the ram is its special: the free fist is drawn back while it
+            # warns, the body turned away from you, and thrown straight out.
+            "windup": clip(WINDUP, [(0, {}), (WINDUP, STRIKER_DRAWN)]),
+            "strike": clip(0.8, [(0, STRIKER_DRAWN), (0.1, STRIKER_PUNCH), (0.3, blend(STRIKER_PUNCH, {}, 0.25)), (0.8, {})]),
+            "stagger": clip(1.2, [(0, STRIKER_REEL), (0.6, STRIKER_REEL_OTHER), (1.2, STRIKER_REEL)], loop=True),
+            "run": clip(0.8, STRIKER_RUN, loop=True),
+            # The ram drops for the last time, the frame drags it over, and it goes down on its face.
+            "death": death_clip(1.0, [(0, {}), (0.3, STRIKER_RAM_DOWN), (0.65, STRIKER_TOPPLE), (1.0, STRIKER_DOWN)]),
             # The drop. Long, because it is the whole mob: the ram winds up to the top of its frame,
             # hangs there, and comes down at 1.9s — which is 38 ticks, and what the code waits for.
             "drop": {
@@ -7665,6 +8150,17 @@ def generate_tongs_assets():
                     "arm_left": rot([(0, [-8, 0, 0]), (0.45, [4, 0, 0]), (0.9, [-8, 0, 0])]),
                 },
             },
+            # Its plain blow had no clip: the arms open wide and the jaws gape while it warns, and it snaps
+            # them shut on you.
+            "windup": clip(WINDUP, [(0, {}), (WINDUP, TONGS_DRAWN)]),
+            "strike": clip(0.7, [(0, TONGS_DRAWN), (0.1, TONGS_PINCH), (0.3, blend(TONGS_PINCH, {}, 0.25)), (0.7, {})]),
+            # Holding someone (Tongs.HELD_TICKS): arms out and clamped, braced back against them. It used to
+            # let go of its pose the moment the grab ended and stand there while its victim was held.
+            "hold": clip(0.5, [(0, TONGS_HOLD), (0.25, TONGS_HOLD_OTHER), (0.5, TONGS_HOLD)], loop=True),
+            "stagger": clip(1.0, [(0, TONGS_REEL), (0.5, TONGS_REEL_OTHER), (1.0, TONGS_REEL)], loop=True),
+            "run": clip(0.6, TONGS_RUN, loop=True),
+            # It folds up, the way tongs do when you put them down.
+            "death": death_clip(0.9, [(0, {}), (0.3, TONGS_FOLDING), (0.9, TONGS_FOLDED)]),
             # The grab: everything that was folded goes out at once. Contact is at 0.9s, 18 ticks.
             "grab": {
                 "loop": False,
@@ -7726,6 +8222,76 @@ ASCUA_PALETTE = {
 }
 
 
+# Poses for the fight clips of the small ones (see clip()): the wisp, the greater ember, the slag and
+# the rust swarm. Their rests are their idles' first frames.
+WISP_REST = {"wing_right": R(0, 0, 8), "wing_left": R(0, 0, -8)}
+WISP_DRAWN = {
+    "root": R(-26, 0, 0, p=(0, 1.5, 1.5)), "fire": P(0, 0.5, 0.5, s=(1.25, 1.3, 1.25)),
+    "wing_right": R(0, 0, -50), "wing_left": R(0, 0, 50), "cage": P(0, 0, 0, s=(1.05, 0.95, 1.05)),
+}
+WISP_STRUCK = {
+    "root": R(36, 0, 0, p=(0, -0.5, -3)), "fire": P(0, 0, -2, s=(1.5, 1.5, 1.5)),
+    "wing_right": R(0, 0, 40), "wing_left": R(0, 0, -40), "cage": P(0, 0, 0, s=(0.85, 0.85, 0.85)),
+}
+WISP_REEL = {
+    "root": R(16, 0, 14, p=(0, -1, 0)), "fire": P(0, 0, 0, s=(0.8, 0.75, 0.8)),
+    "wing_right": R(0, 0, 40), "wing_left": R(0, 0, -10),
+}
+WISP_REEL_OTHER = {
+    "root": R(-10, 0, -16, p=(0, -0.4, 0)), "fire": P(0, 0, 0, s=(1.05, 1.1, 1.05)),
+    "wing_right": R(0, 0, -6), "wing_left": R(0, 0, -40),
+}
+WISP_FLARE = {
+    "fire": P(0, 0.6, 0, s=(1.8, 1.9, 1.8)), "cage": P(0, 0, 0, s=(1.1, 1.1, 1.1)),
+    "wing_right": R(0, 0, -60), "wing_left": R(0, 0, 60),
+}
+WISP_OUT = {
+    "root": R(40, 0, 30, p=(0, -4, 0)), "fire": P(0, 0, 0, s=(0.05, 0.05, 0.05)), "cage": P(0, 0, 0, s=(0.9, 0.9, 0.9)),
+    "wing_right": R(0, 0, 80), "wing_left": R(0, 0, -80),
+}
+ASCUA_REST = {"wing_right": R(0, 0, 12), "wing_left": R(0, 0, -12)}
+ASCUA_DRAWN = {
+    "root": R(-24, 0, 0, p=(0, 2, 2)), "fire": P(0, 0, 0, s=(1.3, 1.35, 1.3)), "cage": P(0, 0, 0, s=(1.06, 0.94, 1.06)),
+    "wing_right": R(0, 0, -40), "wing_left": R(0, 0, 40),
+}
+ASCUA_STRUCK = {
+    "root": R(34, 0, 0, p=(0, -1, -4)), "fire": P(0, 0, -2, s=(1.6, 1.6, 1.6)), "cage": P(0, 0, 0, s=(0.9, 1.1, 0.9)),
+    "wing_right": R(0, 0, 50), "wing_left": R(0, 0, -50),
+}
+ASCUA_REEL = {
+    "root": R(14, 0, 12, p=(0, -1.5, 0)), "fire": P(0, 0, 0, s=(0.85, 0.8, 0.85)), "cage": R(0, 20, 0),
+    "wing_right": R(0, 0, 44), "wing_left": R(0, 0, -6),
+}
+ASCUA_REEL_OTHER = {
+    "root": R(-8, 0, -14, p=(0, -0.6, 0)), "fire": P(0, 0, 0, s=(1.1, 1.15, 1.1)), "cage": R(0, -20, 0),
+    "wing_right": R(0, 0, 4), "wing_left": R(0, 0, -44),
+}
+SLAG_DRAWN = {
+    "body": P(0, 0, 1.2, s=(1.12, 0.84, 1.1)), "head": R(-14, 0, 0, p=(0, -1.2, 1.6)),
+}
+SLAG_SLAMMED = {
+    "body": P(0, 0.4, -2.2, s=(0.9, 1.14, 0.94)), "head": R(24, 0, 0, p=(0, 1.2, -3)),
+}
+SLAG_SLAMMED_SETTLE = {
+    "body": P(0, 0, -1.6, s=(1.08, 0.9, 1.06)), "head": R(12, 0, 0, p=(0, -0.4, -2)),
+}
+SLAG_REEL = {
+    "body": R(0, 0, 6, s=(1.08, 0.9, 1.02)), "head": R(0, 20, 10, p=(1.2, -0.6, 0)),
+}
+SLAG_REEL_OTHER = {
+    "body": R(0, 0, -6, s=(0.96, 1.06, 1.04)), "head": R(0, -20, -10, p=(-1.2, 0.2, 0)),
+}
+RUST_REARED = {"body": R(-26, 0, 0, p=(0, 0.6, 0.6)), "head": R(-20, 0, 0), "tail": R(16, 0, 0)}
+RUST_BIT = {"body": R(20, 0, 0, p=(0, 0, -1)), "head": R(24, 0, 0), "tail": R(-10, 0, 0)}
+RUST_BIT_SETTLE = {"body": R(12, 0, 0, p=(0, 0, -0.6)), "head": R(14, 0, 0), "tail": R(-6, 0, 0)}
+RUST_REEL = {"body": R(0, 18, 10), "head": R(10, -20, 0), "tail": R(0, -20, 0)}
+RUST_REEL_OTHER = {"body": R(0, -18, -10), "head": R(10, 20, 0), "tail": R(0, 20, 0)}
+RUST_FLIPPING = {"body": R(0, 0, 90, p=(0, 3, 0)), "head": R(-10, 0, 0), "tail": R(10, 0, 0)}
+RUST_ON_BACK = {"body": R(0, 0, 180, p=(0, 3.5, 0)), "head": R(-14, 0, 0), "tail": R(14, 0, 0)}
+RUST_KICK = {"body": R(0, 0, 180, p=(0, 3.5, 0)), "head": R(-14, 0, 0), "tail": R(14, 0, 0), "legs": R(0, 0, 22)}
+RUST_KICK_OTHER = {"body": R(0, 0, 180, p=(0, 3.5, 0)), "head": R(-14, 0, 0), "tail": R(14, 0, 0), "legs": R(0, 0, -22)}
+
+
 def generate_greater_ember_assets():
     atlas = (128, 128)
     uvs = write_geo("ascua_mayor", ASCUA_CUBES, ASCUA_BONES, atlas, (2, 1.5, 0.75))
@@ -7782,6 +8348,10 @@ def generate_greater_ember_assets():
                     "fire": scale([(0, [1, 1, 1]), (0.35, [1.9, 1.9, 1.9]), (1.0, [0.2, 0.2, 0.2])]),
                 },
             },
+            # The wisp's blow, heavier: it rears and swells while it warns, and rams the cage into you.
+            "windup": clip(WINDUP, [(0, ASCUA_REST), (WINDUP, ASCUA_DRAWN)]),
+            "strike": clip(0.7, [(0, ASCUA_DRAWN), (0.12, ASCUA_STRUCK), (0.7, ASCUA_REST)]),
+            "stagger": clip(1.0, [(0, ASCUA_REEL), (0.5, ASCUA_REEL_OTHER), (1.0, ASCUA_REEL)], loop=True),
         },
     })
 
@@ -7853,6 +8423,12 @@ def generate_living_slag_assets():
                     "head": pos([(0, [0, 0, 0]), (0.3, [0, -0.5, -0.6]), (0.6, [0, 0.4, 0.3]), (1.0, [0, 0, 0])]),
                 },
             },
+            # Its plain blow had no clip: it draws itself back and down while it warns, and slops forward
+            # onto you, the top of it arriving last.
+            "windup": clip(WINDUP, [(0, {}), (WINDUP, SLAG_DRAWN)]),
+            "strike": clip(0.7, [(0, SLAG_DRAWN), (0.1, SLAG_SLAMMED), (0.25, SLAG_SLAMMED_SETTLE), (0.7, {})]),
+            # Knocked about it wobbles like something that has not set yet.
+            "stagger": clip(1.0, [(0, SLAG_REEL), (0.5, SLAG_REEL_OTHER), (1.0, SLAG_REEL)], loop=True),
             # Splitting: it swells until the crust cannot hold and comes apart.
             "split": {
                 "loop": False,
@@ -7943,16 +8519,15 @@ def generate_rustbug_assets():
                     "tail": rot([(0, [0, -6, 0]), (0.25, [0, 6, 0]), (0.5, [0, -6, 0])]),
                 },
             },
-            # The bite: it rears, the jaws open, and it comes down on whatever it is standing on.
-            "bite": {
-                "loop": False,
-                "animation_length": 0.6,
-                "bones": {
-                    "body": rot([(0, [0, 0, 0]), (0.2, [-28, 0, 0]), (0.35, [18, 0, 0]), (0.6, [0, 0, 0])]),
-                    "head": rot([(0, [0, 0, 0]), (0.2, [-18, 0, 0]), (0.35, [22, 0, 0]), (0.6, [0, 0, 0])]),
-                    "tail": rot([(0, [0, 0, 0]), (0.2, [20, 0, 0]), (0.6, [0, 0, 0])]),
-                },
-            },
+            # The bite: it rears while it warns (windup), the jaws open, and it comes down on whatever it is
+            # standing on the moment it bites.
+            "windup": clip(WINDUP, [(0, {}), (WINDUP, RUST_REARED)]),
+            "bite": clip(0.5, [(0, RUST_REARED), (0.08, RUST_BIT), (0.2, RUST_BIT_SETTLE), (0.5, {})]),
+            # Dazed, it spins on the spot, the head and the tail swinging the other way.
+            "stagger": clip(0.6, [(0, RUST_REEL), (0.3, RUST_REEL_OTHER), (0.6, RUST_REEL)], loop=True),
+            # It flips onto its back and its legs go on for a moment.
+            "death": death_clip(0.8, [(0, {}), (0.2, RUST_FLIPPING), (0.4, RUST_ON_BACK), (0.55, RUST_KICK), (0.7, RUST_KICK_OTHER),
+                                (0.8, RUST_ON_BACK)]),
         },
     })
 
@@ -8081,6 +8656,14 @@ def generate_wisp_assets():
                                       (0.9, [0, 0, -26]), (1.05, [0, 0, 46]), (1.2, [0, 0, -26])]),
                 },
             },
+            # Its plain blow had no clip at all: it rears back and the fire gathers while it warns, and it
+            # butts the cage into you, the fire thrown ahead of it.
+            "windup": clip(WINDUP, [(0, WISP_REST), (WINDUP, WISP_DRAWN)]),
+            "strike": clip(0.55, [(0, WISP_DRAWN), (0.1, WISP_STRUCK), (0.55, WISP_REST)]),
+            # Knocked out of the air, near enough: it lurches, the fire gutters and one wing stops beating.
+            "stagger": clip(0.8, [(0, WISP_REEL), (0.4, WISP_REEL_OTHER), (0.8, WISP_REEL)], loop=True),
+            # A light going out gets brighter first: it flares, and then it gutters and drops.
+            "death": death_clip(0.9, [(0, WISP_REST), (0.15, WISP_FLARE), (0.8, WISP_OUT), (0.9, WISP_OUT)]),
         },
     })
 
@@ -10075,6 +10658,71 @@ HOLLOW_BONES = [
 ]
 
 
+# The Coraza's poses for its fight clips (see clip()). Its rest is its idle's first frame.
+HOLLOW_REST = {"arm_right": R(0, 0, -6), "arm_left": R(0, 0, 6), "head": R(0, 0, 0, p=(0, 0.5, 0)), "body": R(0, 2, 0)}
+# Sword up and back over the right shoulder, the chest turned away from the blow to come, the off hand
+# up and out, and the helm lifted off the neck: whatever is inside is gathering itself.
+HOLLOW_DRAWN = {
+    "arm_right": R(-128, 14, -8), "sword": R(-24, 0, 0, p=(0, -1.2, 0)),
+    "body": R(-6, 18, 0), "hips": R(0, -6, 0), "head": R(-8, 14, -4, p=(0, 1.4, 0.4)),
+    "arm_left": R(-24, 0, 14, p=(1, 0.4, 0)), "leg_right": R(12, 0, 0), "leg_left": R(-12, 0, 0),
+}
+HOLLOW_CUT = {
+    "arm_right": R(40, -14, -6), "sword": R(26, 0, 0), "body": R(8, -20, 0, p=(0, 1.0, 0)), "hips": R(0, 10, 0),
+    "head": R(10, -22, 0, p=(0, 2.6, -0.8)), "arm_left": R(12, 0, 8, p=(1.2, 0.4, 0)),
+    "leg_right": R(12, 0, 0), "leg_left": R(-12, 0, 0),
+}
+HOLLOW_CUT_SETTLE = {
+    "arm_right": R(28, -8, -6), "sword": R(18, 0, 0), "body": R(6, -14, 0, p=(0, 0.4, 0)), "hips": R(0, 6, 0),
+    "head": R(4, -12, 0, p=(0, 1.4, -0.3)), "arm_left": R(6, 0, 8, p=(0.6, 0.2, 0)),
+    "leg_right": R(8, 0, 0), "leg_left": R(-8, 0, 0),
+}
+HOLLOW_REEL = {
+    "body": R(10, 6, -6, p=(0, -0.6, 0)), "head": R(18, -14, 12, p=(1.2, 1.6, 0.4)), "hips": R(0, -6, 4),
+    "arm_right": R(14, 0, -2), "arm_left": R(10, 0, 4), "sword": R(22, 0, 0, p=(0, -1.4, 0)),
+    "leg_right": R(-6, 0, 0), "leg_left": R(8, 0, 0),
+}
+HOLLOW_REEL_OTHER = {
+    "body": R(12, -6, 6, p=(0, -0.8, 0)), "head": R(22, 16, -14, p=(-1.2, 1.2, 0.2)), "hips": R(0, 6, -4),
+    "arm_right": R(8, 0, -12), "arm_left": R(16, 0, 10), "sword": R(34, 0, 0, p=(0, -1.8, 0)),
+    "leg_right": R(8, 0, 0), "leg_left": R(-6, 0, 0),
+}
+_HOLLOW_STRIDE = {
+    "leg_right": R(-40, 0, 0), "leg_left": R(38, 0, 0), "arm_right": R(34, 0, -8), "arm_left": R(-34, 0, 8),
+    "body": R(10, -7, 0), "hips": R(0, 8, 0), "head": R(-6, 8, 0, p=(0, 1.2, 0.8)), "sword": R(-18, 0, 0),
+}
+_HOLLOW_STRIDE_OTHER = {
+    "leg_right": R(38, 0, 0), "leg_left": R(-40, 0, 0), "arm_right": R(-30, 0, -8), "arm_left": R(34, 0, 8),
+    "body": R(10, 7, 0), "hips": R(0, -8, 0), "head": R(-6, -8, 0, p=(0, 1.2, 0.8)), "sword": R(14, 0, 0),
+}
+# Up off the ground between the strides: the body high, the helm dropping onto it.
+_HOLLOW_AIRBORNE = blend(_HOLLOW_STRIDE, _HOLLOW_STRIDE_OTHER, 0.5)
+_HOLLOW_AIRBORNE["body"]["position"] = [0, 1.2, 0]
+_HOLLOW_AIRBORNE["head"]["position"] = [0, 0.4, 0.6]
+HOLLOW_RUN = [(0, _HOLLOW_STRIDE), (0.175, _HOLLOW_AIRBORNE), (0.35, _HOLLOW_STRIDE_OTHER), (0.525, _HOLLOW_AIRBORNE),
+              (0.7, _HOLLOW_STRIDE)]
+HOLLOW_LET_GO = {
+    "head": R(-20, 0, -4, p=(0, 4.5, 0)), "body": R(-6, 0, 0, p=(0, 0.8, 0)),
+    "arm_right": R(-10, 0, -22), "arm_left": R(-10, 0, 22), "sword": R(10, 0, 0),
+}
+HOLLOW_FALLING = {
+    "body": R(35, 0, -10, p=(0, -6, -2)), "head": R(50, 30, 20, p=(1, -2, -3)), "hips": R(20, 0, 6, p=(0, -3, 0)),
+    "arm_right": R(-30, 0, -50), "arm_left": R(-20, 0, 55), "sword": R(40, 0, 0),
+    "leg_right": R(0, 0, -14), "leg_left": R(0, 0, 14),
+}
+HOLLOW_HEAP = {
+    "body": R(80, 0, -18, p=(0, -13, -4)), "head": R(70, 40, 30, p=(2, -4, -2)), "hips": R(30, 0, 10, p=(0, -6, 0)),
+    "arm_right": R(-40, 0, -70), "arm_left": R(-30, 0, 72), "sword": R(60, 0, 20),
+    "leg_right": R(-10, 0, -30), "leg_left": R(-10, 0, 30),
+}
+# Getting up: the plate stacked back on the legs, the helm still coming up off the floor.
+HOLLOW_GATHER = {
+    "body": R(30, 0, -6, p=(0, -5, -1)), "head": R(30, 20, 10, p=(1, -2, -2)), "hips": R(10, 0, 4, p=(0, -2, 0)),
+    "arm_right": R(-10, 0, -30), "arm_left": R(-10, 0, 30), "sword": R(20, 0, 0),
+    "leg_right": R(-4, 0, -8), "leg_left": R(-4, 0, 8),
+}
+
+
 def generate_hollow_assets():
     """Coraza vacia: plate held up by whatever is inside it, and it does not hold it very tightly."""
     atlas = (128, 128)
@@ -10140,28 +10788,11 @@ def generate_hollow_assets():
                     "sword": pos([(0, [0, 0.4, 0]), (0.7, [0, -0.4, 0]), (1.4, [0, 0.4, 0])]),
                 },
             },
-            # The swing: the suit comes apart for a moment and what is inside shows through.
-            "cut": {
-                "loop": False,
-                "animation_length": 0.9,
-                "bones": {
-                    "arm_right": rot([(0, [0, 0, -6]), (0.2, [-115, 18, -6]), (0.5, [35, -12, -6]), (0.9, [0, 0, -6])]),
-                    "sword": bone(
-                        rot([(0, [0, 0, 0]), (0.2, [-30, 0, 0]), (0.5, [24, 0, 0]), (0.9, [0, 0, 0])]),
-                        pos([(0, [0, 0, 0]), (0.2, [0, -1.5, 0]), (0.9, [0, 0, 0])]),
-                    ),
-                    "body": bone(
-                        rot([(0, [0, 2, 0]), (0.4, [0, -18, 0]), (0.9, [0, 2, 0])]),
-                        pos([(0, [0, 0, 0]), (0.25, [0, 1.4, 0]), (0.9, [0, 0, 0])]),
-                    ),
-                    "hips": rot([(0, [0, 0, 0]), (0.4, [0, 10, 0]), (0.9, [0, 0, 0])]),
-                    "head": bone(
-                        pos([(0, [0, 0.5, 0]), (0.25, [0, 2.8, 0]), (0.9, [0, 0.5, 0])]),
-                        rot([(0, [0, 0, 0]), (0.25, [-12, -24, 0]), (0.9, [0, 0, 0])]),
-                    ),
-                    "arm_left": pos([(0, [0, 0, 0]), (0.25, [1.4, 0.5, 0]), (0.9, [0, 0, 0])]),
-                },
-            },
+            # The swing. The warning before it is the wind-up (the sword goes up and back over the shoulder
+            # and the chest turns away), so the blow starts drawn: through in two ticks, the suit coming
+            # apart for a moment as it goes, and back together.
+            "windup": clip(WINDUP, [(0, HOLLOW_REST), (WINDUP, HOLLOW_DRAWN)]),
+            "cut": clip(0.75, [(0, HOLLOW_DRAWN), (0.1, HOLLOW_CUT), (0.3, HOLLOW_CUT_SETTLE), (0.75, HOLLOW_REST)]),
             # The lunge: whatever is inside goes first and the plate is dragged after it, so every piece
             # trails a little and the helm arrives last of all.
             # It is played from the moment it decides, and it does not GO until 1.65 s —
@@ -10215,6 +10846,18 @@ def generate_hollow_assets():
                     "sword": pos([(0, [0, 0, 0]), (0.35, [-1.4, 1.6, 0]), (1.6, [0, 0, 0])]),
                 },
             },
+            # Nothing is holding it up properly any more: the helm drifts off the neck, the chest slumps
+            # and the sword hangs, rocking from one side to the other until whatever is inside gets a grip.
+            "stagger": clip(1.2, [(0, HOLLOW_REEL), (0.6, HOLLOW_REEL_OTHER), (1.2, HOLLOW_REEL)], loop=True),
+            # Running, the plate is flung along after it: long strides, the arms thrown, the helm late.
+            "run": clip(0.7, HOLLOW_RUN, loop=True),
+            # What leaves it leaves upwards, and the plate it was holding up falls in a heap.
+            "death": death_clip(1.0, [(0, HOLLOW_REST), (0.18, HOLLOW_LET_GO), (0.55, HOLLOW_FALLING), (1.0, HOLLOW_HEAP)]),
+            # Playing dead (ai.ForjaTraits, HOLLOW_FEIGN_TICKS): the same fall, held as long as it lies there...
+            "feign": clip(3.0, [(0, HOLLOW_REST), (0.18, HOLLOW_LET_GO), (0.55, HOLLOW_FALLING), (0.9, HOLLOW_HEAP),
+                                (3.0, HOLLOW_HEAP)]),
+            # ...and the plate pulling itself back together behind you, piece by piece, the helm last.
+            "rise": clip(1.1, [(0, HOLLOW_HEAP), (0.45, HOLLOW_GATHER), (0.8, HOLLOW_LET_GO), (1.1, HOLLOW_REST)]),
         },
     })
 

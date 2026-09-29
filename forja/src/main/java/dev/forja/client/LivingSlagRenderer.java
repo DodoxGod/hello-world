@@ -1,6 +1,5 @@
 package dev.forja.client;
 
-import com.geckolib.renderer.GeoEntityRenderer;
 import dev.forja.entity.LivingSlag;
 import dev.forja.registry.ModEntities;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -12,7 +11,7 @@ import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
  * <p>One model, three sizes: a half is the same lump smaller rather than a second model, which is
  * both cheaper and right — it is the same stuff, there is just less of it.
  */
-public class LivingSlagRenderer extends GeoEntityRenderer<LivingSlag, LivingEntityRenderState> {
+public class LivingSlagRenderer extends MobGeoRenderer<LivingSlag> {
 	public LivingSlagRenderer(EntityRendererProvider.Context context) {
 		super(context, ModEntities.ESCORIA);
 		this.withRenderLayer(new com.geckolib.renderer.layer.builtin.AutoGlowingGeoLayer<>(this));

@@ -1,5 +1,46 @@
 # Novedades
 
+## 2026-09-28 — animaciones para los monstruos del mod
+
+- **Arreglo de base: los monstruos se quedaban congelados.** Tras su primer golpe o su primer especial, todos los
+  monstruos del mod (y el fuego del Herrero tras su primer destello) se quedaban para siempre en su pose de
+  reposo: GeckoLib deja la animación disparada como la del controlador y no vuelve a preguntar. Ahora cada
+  controlador vuelve a lo suyo (andar, correr, quieto...) al acabar; la prueba del cliente lo comprueba en cada
+  monstruo, andando tras el golpe y tras sus especiales.
+- **Aviso y golpe de verdad.** Antes de un golpe normal avisaban solo con partículas y el golpe se animaba después
+  de hacer el daño (o no se animaba). Ahora, mientras avisan, cogen impulso (una pose que llega a su punto justo en
+  el tick del golpe, dure lo que dure el aviso) y al golpear sueltan el golpe desde ahí, acierten o no.
+- **Aturdidos, heridos y muertos.** Con la postura rota se tambalean (animación propia); al recibir un golpe
+  retroceden y se inclinan como los de vanilla; y al morir tienen su propia muerte en vez de caerse de lado.
+- **Correr.** Coraza, Autómata, Percutor, Tenaza, Templador, Cargador, Yunque andante y Guardián tienen carrera
+  propia (zancada larga, brazos), no solo el andar acelerado.
+- Por monstruo:
+  - **Herrero Caído**: aviso (martillo arriba) y golpe; tambaleo; muerte (de rodillas y de bruces); **reforja**:
+    arrodillado martilleando en la forja mientras se cura (antes no se veía nada: el cliente no sabía que
+    reforjaba). Su fuego vuelve a arder tras cada destello.
+  - **Autómata de Forja**: aviso y puñetazo; tambaleo; carrera; muerte (se apaga y cae de bruces). El escupitajo
+    de ascua sale ahora en el empujón adelante (a los 14 ticks), no seis ticks antes.
+  - **Coraza Vacía**: aviso y tajo; tambaleo; carrera; muerte (la armadura se desmonta en un montón). **Se hace la
+    muerta** de verdad (antes se quedaba de pie "muerta") y **se levanta** pieza a pieza cuando reaparece.
+  - **Pavesa** y **Ascua Mayor**: su golpe normal no tenía animación: ahora se echan atrás y embisten; tambaleo;
+    la Pavesa se aviva y se apaga al morir (la Ascua sigue partiéndose).
+  - **Herrumbre**: aviso y mordisco; tambaleo; muere patas arriba pataleando.
+  - **Escoria Viviente**: aviso y golpe (se echa atrás y se desploma encima); tambaleo.
+  - **Yunque Andante**: aviso (se encabrita) y golpe; tambaleo; carrera; muerte (se le abren las patas).
+  - **Percutor**: aviso y puñetazo con el brazo libre; tambaleo; carrera; muerte (el martinete cae y lo tumba).
+  - **Tenaza**: aviso (pinzas abiertas) y pellizco; **sujeta** a quien atrapa con las pinzas cerradas mientras lo
+    tiene (antes soltaba la pose al instante); tambaleo; carrera; muerte (se pliega).
+  - **Templador**: tambaleo; carrera (huye); muerte (el depósito lo tumba de espaldas).
+  - **Núcleo Estelar**: la descarga ahora **se carga** hasta el tick del rayo y **suelta** en el rayo (antes se
+    encogía a los 7 ticks, antes de que saliera nada); **agotado** se ve (fragmentos caídos, anillo parado);
+    tambaleo; muerte (estalla).
+  - **Guardián del Cuño**: aviso y gancho; tambaleo; carrera; muerte (se le cae el troquel). Su animación de
+    "desellado" movía un hueso que no existe; ahora mueve el cuerpo.
+  - **Cargador de Carbón**: aviso y cabezazo; tambaleo; galope; muerte (se hincha y revienta).
+- El Molde Roto no se ha tocado aquí.
+- Rendimiento: un solo controlador por monstruo, clips creados una vez, sin crear objetos por fotograma en los
+  controladores.
+
 ## 2026-09-28 — el Herrero Caído se defiende
 
 - El Herrero Caído ya pelea contra lo que le pegue, no solo contra jugadores: un warden, un gólem, lobos, otro

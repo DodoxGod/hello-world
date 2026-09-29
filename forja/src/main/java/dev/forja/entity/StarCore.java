@@ -73,7 +73,16 @@ public class StarCore extends Monster implements GeoEntity {
 
 	private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
 	private static final RawAnimation CHARGED = RawAnimation.begin().thenLoop("charged");
+	/** The warning before the beam, as full as it gets on the tick the beam would leave at full health. */
+	private static final RawAnimation GATHER = RawAnimation.begin().thenPlay("gather");
+	/** The beam leaving, on its own tick (a broken core warns for less, and the beam cuts the gather short). */
 	private static final RawAnimation RELEASE = RawAnimation.begin().thenPlay("release");
+	private static final RawAnimation SPENT = RawAnimation.begin().thenLoop("spent");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
+	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
+	/** Whether it is spent (see {@link #spent()}), for the client, which draws it hanging open. */
+	private static final EntityDataAccessor<Boolean> DATA_SPENT =
+		SynchedEntityData.defineId(StarCore.class, EntityDataSerializers.BOOLEAN);
 
 	/** The two ends of the colour it is drawn in: cold blue when empty, white-hot when full. */
 	public static final int COLD = 0x6E8CC8;
@@ -107,6 +116,7 @@ public class StarCore extends Monster implements GeoEntity {
 	protected void defineSynchedData(SynchedEntityData.Builder builder) {
 		super.defineSynchedData(builder);
 		builder.define(DATA_CHARGE, 0.0F);
+		builder.define(DATA_SPENT, false);
 	}
 
 	@Override
@@ -197,9 +207,9 @@ public class StarCore extends Monster implements GeoEntity {
 		level.sendParticles(ParticleTypes.CRIT, this.getX(), this.getY(0.9), this.getZ(), 10, 0.3, 0.3, 0.3, 0.1);
 	}
 
-	/** Whether it is in the window where it can be hurt. Read by the client for the cracked look. */
+	/** Whether it is in the window where it can be hurt. Read on both sides: the client draws it hanging open. */
 	public boolean spent() {
-		return this.spent > 0;
+		return this.level().isClientSide() ? this.entityData.get(DATA_SPENT) : this.spent > 0;
 	}
 
 	/** The blow disappearing into it. */
@@ -233,6 +243,9 @@ public class StarCore extends Monster implements GeoEntity {
 		}
 		if (this.spent > 0) {
 			this.spent--;
+			if (this.spent == 0) {
+				this.entityData.set(DATA_SPENT, false);
+			}
 			// Hanging open, and obviously so: the shards fall in against the stone and the ring stops.
 			if (this.tickCount % 3 == 0) {
 				level.sendParticles(ParticleTypes.SMOKE, this.getX(), this.getY(1.0), this.getZ(), 2, 0.25, 0.3, 0.25, 0.01);
@@ -273,7 +286,7 @@ public class StarCore extends Monster implements GeoEntity {
 			return;
 		}
 		float held = this.entityData.get(DATA_CHARGE);
-		this.triggerAnim("nucleo", "release");
+		this.triggerAnim("nucleo", "gather");
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.BEACON_POWER_SELECT, SoundSource.HOSTILE, 1.8F, 0.7F);
 		// The warning shortens as it breaks up: half its length at the end (idea 50).
 		int warning = Math.max(RELEASE_WINDUP / 2, Math.round(RELEASE_WINDUP * (0.5F + 0.5F * this.getHealth() / this.getMaxHealth())));
@@ -291,6 +304,8 @@ public class StarCore extends Monster implements GeoEntity {
 	/** The beam arriving. */
 	private void beam(ServerLevel level, LivingEntity owed, float held) {
 		this.entityData.set(DATA_CHARGE, 0.0F);
+		this.entityData.set(DATA_SPENT, true);
+		this.triggerAnim("nucleo", "release");
 		// Everything it had is gone, and so is the thing that was keeping it safe.
 		this.spent = SPENT_TICKS;
 		if (!owed.isAlive() || this.distanceTo(owed) > RELEASE_RANGE + 4.0) {
@@ -340,10 +355,11 @@ public class StarCore extends Monster implements GeoEntity {
 
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<StarCore>("nucleo", test ->
-			// The second tell: past a third full the shards swing out and the whole thing speeds up.
-			test.setAndContinue(!test.animatable().spent() && test.animatable().charge() > 0.33F ? CHARGED : IDLE)
-		).triggerableAnim("release", RELEASE));
+		// The second tell: past a third full the shards swing out and the whole thing speeds up. It never
+		// walks: idle is its walk too.
+		controllers.add(MobMoves.controller("nucleo", MobMoves.Clips.<StarCore>of(IDLE, IDLE).stagger(STAGGER).death(DEATH)
+			.state(core -> core.spent() ? SPENT : core.charge() > 0.33F ? CHARGED : null))
+			.triggerableAnim("gather", GATHER).triggerableAnim("release", RELEASE));
 	}
 
 	@Override

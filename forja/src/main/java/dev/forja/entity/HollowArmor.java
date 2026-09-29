@@ -78,6 +78,13 @@ public class HollowArmor extends Monster implements GeoEntity {
 	private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
 	private static final RawAnimation WALK = RawAnimation.begin().thenLoop("walk");
 	private static final RawAnimation CUT = RawAnimation.begin().thenPlay("cut");
+	private static final RawAnimation WINDUP = RawAnimation.begin().thenPlayAndHold("windup");
+	private static final RawAnimation RUN = RawAnimation.begin().thenLoop("run");
+	private static final RawAnimation STAGGER = RawAnimation.begin().thenLoop("stagger");
+	private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("death");
+	/** Playing dead, as long as ai.ForjaTraits has it lie there, and getting up again behind you. */
+	private static final RawAnimation FEIGN = RawAnimation.begin().thenPlay("feign");
+	private static final RawAnimation RISE = RawAnimation.begin().thenPlay("rise");
 	private static final RawAnimation DASH = RawAnimation.begin().thenPlay("dash");
 	private static final RawAnimation WAIL = RawAnimation.begin().thenPlay("wail");
 
@@ -152,10 +159,23 @@ public class HollowArmor extends Monster implements GeoEntity {
 			&& super.canBeAffected(effect);
 	}
 
+	/** The blow comes out of its wind-up as it is swung, whether or not it lands (see MobMoves). */
 	@Override
-	public boolean doHurtTarget(ServerLevel level, net.minecraft.world.entity.Entity target) {
-		this.triggerAnim("coraza", "cut");
-		return super.doHurtTarget(level, target);
+	public void swing(net.minecraft.world.InteractionHand hand, boolean updateSelf) {
+		super.swing(hand, updateSelf);
+		if (this.level() instanceof ServerLevel) {
+			this.triggerAnim("coraza", "cut");
+		}
+	}
+
+	/** It drops as if broken (ai.ForjaTraits plays dead with it) ... */
+	public void feignDeath() {
+		this.triggerAnim("coraza", "feign");
+	}
+
+	/** ... and pulls itself back together wherever it gets up. */
+	public void rise() {
+		this.triggerAnim("coraza", "rise");
 	}
 
 	@Override
@@ -402,9 +422,10 @@ public class HollowArmor extends Monster implements GeoEntity {
 
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(new AnimationController<HollowArmor>("coraza", test ->
-			GeoGait.walk(test, WALK, IDLE)
-		).triggerableAnim("cut", CUT).triggerableAnim("dash", DASH).triggerableAnim("wail", WAIL));
+		controllers.add(MobMoves.controller("coraza", MobMoves.Clips.<HollowArmor>of(IDLE, WALK).run(RUN)
+			.windup(WINDUP, MobMoves.WINDUP_TICKS).stagger(STAGGER).death(DEATH))
+			.triggerableAnim("cut", CUT).triggerableAnim("dash", DASH).triggerableAnim("wail", WAIL)
+			.triggerableAnim("feign", FEIGN).triggerableAnim("rise", RISE));
 	}
 
 	@Override
