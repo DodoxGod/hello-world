@@ -28,6 +28,12 @@ WALL_REACH = 3
 FAR_WALL = 6
 # how high a chain may go looking for something to hang from: the foundry is open to its ridge, thirty up
 CHAIN_REACH = 32
+# chain lanterns stand at least this far apart (horizontally, on the same storey): aimed at every dark floor, a
+# great hall grew a forest of them (the second pass's screenshots, 2026-09-29), where a few light it as well
+CHAIN_SPACING = 7
+# a lamp post standing in the middle of a room is the last resort, and Andy found them ugly: none. A floor that no
+# wall, ceiling or niche can light stays dimmer, never dark (NEED is well above the monsters' 0).
+POSTS = False
 # how far into the dark a light is aimed from the first dark floor met, nearest last
 AIM = (3, 2, 0)
 
@@ -207,6 +213,7 @@ def light(world):
     solid, taken, lit = grid.solid, grid.taken, grid.light
     sx, sy = grid.sx, grid.sy
     hung = {"sconce": 0, "chain": 0, "niche": 0, "floor": 0, "post": 0}
+    chains = []
 
     def free(i):
         return not solid[i] and not taken[i]
@@ -281,7 +288,8 @@ def light(world):
                     if _holds(world.name(x, y + up, z)):
                         top = up
                     break
-            if top is not None and top >= 3:
+            crowded = any(abs(cx - x) < CHAIN_SPACING and abs(cz - z) < CHAIN_SPACING and abs(cy - y) <= 3 for cx, cy, cz in chains)
+            if top is not None and top >= 3 and not crowded:
                 # never more than five over the floor however high the roof, and under a low one (the ice house's
                 # dome) straight under it, over the head
                 drop = min(top - 1, max(3, min(top - 7, 5)))
@@ -290,6 +298,7 @@ def light(world):
                         place(x, y + k, z, "iron_chain", {"axis": "y", "waterlogged": "false"})
                     source = place(x, y + drop, z, lamp, {"hanging": "true", "waterlogged": "false"})
                     hung["chain"] += 1
+                    chains.append((x, y, z))
         if source is None:
             # a low passage has neither the height for a bracket nor a ceiling to hang from: the lantern goes
             # into the wall, in a niche cut at shoulder height - if the wall is thick enough to keep it
@@ -315,7 +324,7 @@ def light(world):
             # a room too low for a post (the ice house): the lantern stands on the floor
             source = place(x, y, z, lamp, {"hanging": "false", "waterlogged": "false"})
             hung["floor"] += 1
-        if source is None and free(i) and free(i + sy) and free(i + 2 * sy):
+        if source is None and free(i) and free(i + sy) and free(i + 2 * sy) and POSTS:
             place(x, y, z, "polished_blackstone_brick_wall" if y < 0 else "deepslate_brick_wall")
             place(x, y + 1, z, "polished_blackstone_brick_wall" if y < 0 else "deepslate_brick_wall")
             source = place(x, y + 2, z, lamp, {"hanging": "false", "waterlogged": "false"})
