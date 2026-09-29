@@ -81,8 +81,8 @@ Todas están apagadas con `mobActionsV4 = false` en `config/forja.json`. Romper 
 | `breakLight` / `nearestLight` | Rompe una antorcha o un farol a 2,5 bloques de sus ojos. `nearestLight` busca la luz más cercana al jugador | `mobActionsV4` y `mobsBreakLights` (apagada) | `breakLightOnlyWithTheFlag` |
 | `raiseShieldSmart` | Sube el escudo si la amenaza le apunta con un arco o una ballesta tensos, o prepara un golpe cerca. Si no, lo baja. Usa `MobDefense.raise`, así que la guardia rota sigue abajo | `mobActionsV4` | `shieldUpAgainstADrawnBow` |
 
-Luces: todas las antorchas (normal, de pared, de almas, de redstone, de cobre) y todos los faroles (normal, de
-almas, de cobre en todas sus edades). No cuentan el farol marino ni la calabaza iluminada.
+Luces: solo antorchas (normal, de pared, de almas y de almas de pared), y solo con la regla `mobGriefing`
+activada (Andy). Un farol no se rompe nunca.
 
 Pendiente para el contrato v4: las salidas de la red que elijan estas acciones y las entradas que las hagan
 posibles (qué lleva en la mano izquierda, armas en el suelo, luces cerca del jugador).
@@ -96,9 +96,9 @@ posibles (qué lleva en la mano izquierda, armas en el suelo, luces cerca del ju
    Lo único que no hacen los mobs es construir (pilares, torres) ni cavar: eso ya se quitó con `MovementGoals.Builder`.
    La frase del asedio ("¡Asedio! Vienen a por tu forja") no promete nada de eso y no se toca; solo se corrigió el
    comentario de `WorldFights.siege`, que aún decía que los zombis cavan y trepan.
-2. **Luces: solo antorchas** (`torch`, `wall_torch`, `soul_torch`, `soul_wall_torch` y las de cobre si existen) y
-   **solo con la regla `mobGriefing` activada**. Es para M3; aún no está hecho. Ojo: `MobActions.breakLight` cuenta
-   hoy también faroles y antorchas de redstone, y habrá que recortarlo al hacer M3.
+2. **Luces: solo antorchas** (`torch`, `wall_torch`, `soul_torch`, `soul_wall_torch`) y **solo con la regla
+   `mobGriefing` activada**. `MobActions.isLight`/`breakLight` ya lo cumplen; decidir cuándo romperlas es de la v4
+   (M3).
 3. **Una base cerrada del todo es segura**, como en vanilla: ningún cambio de la IA abre camino a través de bloques.
 
 **Hecho:**
