@@ -1200,6 +1200,7 @@
   "gui.forja.parada_tarde": "Un poco tarde...",
   "gui.forja.parada_apresurada": "Demasiado pronto: sube el escudo a tiempo",
   "key.forja.esquivar": "Esquivar",
+  "gui.forja.arena_bloqueada": "No puedes construir ni romper nada mientras el Herrero Caído siga en pie",
   "gui.forja.asedio": "¡Asedio! Vienen a por tu forja",
   "gui.forja.robado": "Te han robado: %s",
   "gui.forja.nemesis": "%s ha vuelto",

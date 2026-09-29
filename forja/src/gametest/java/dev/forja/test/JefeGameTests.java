@@ -256,4 +256,16 @@ public class JefeGameTests {
 			restore.run();
 		});
 	}
+
+	/** With the smith up nobody breaks or builds near him; once he is gone the ground is free again. */
+	@GameTest(maxTicks = 40)
+	public void theArenaIsLockedWhileTheSmithStands(GameTestHelper helper) {
+		FallenSmith smith = stillSmith(helper, new BlockPos(2, 1, 2));
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(2, 1, 6));
+		var level = helper.getLevel();
+		helper.assertTrue(dev.forja.world.BossArena.locked(level, player), "con el herrero vivo, la arena debería estar cerrada");
+		smith.discard();
+		helper.assertFalse(dev.forja.world.BossArena.locked(level, player), "sin el herrero, se debería poder construir");
+		helper.succeed();
+	}
 }

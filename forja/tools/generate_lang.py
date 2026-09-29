@@ -2082,6 +2082,8 @@ GUI.update({
     "gui.forja.parada_tarde": ("Un poco tarde...", "A little late..."),
     "gui.forja.parada_apresurada": ("Demasiado pronto: sube el escudo a tiempo", "Too soon: raise the shield with timing"),
     "key.forja.esquivar": ("Esquivar", "Dodge"),
+    "gui.forja.arena_bloqueada": ("No puedes construir ni romper nada mientras el Herrero Caído siga en pie",
+                                  "You cannot build or break anything while the Fallen Smith still stands"),
     "gui.forja.asedio": ("¡Asedio! Vienen a por tu forja", "A siege! They are coming for your forge"),
     "gui.forja.robado": ("Te han robado: %s", "Stolen from you: %s"),
     "gui.forja.nemesis": ("%s ha vuelto", "%s is back"),

@@ -1200,6 +1200,7 @@
   "gui.forja.parada_tarde": "A little late...",
   "gui.forja.parada_apresurada": "Too soon: raise the shield with timing",
   "key.forja.esquivar": "Dodge",
+  "gui.forja.arena_bloqueada": "You cannot build or break anything while the Fallen Smith still stands",
   "gui.forja.asedio": "A siege! They are coming for your forge",
   "gui.forja.robado": "Stolen from you: %s",
   "gui.forja.nemesis": "%s is back",

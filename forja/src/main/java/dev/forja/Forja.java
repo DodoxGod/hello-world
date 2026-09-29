@@ -73,6 +73,7 @@ public final class Forja implements ModInitializer {
 		dev.forja.world.ForjaVillages.register();
 		dev.forja.world.Elites.register();
 		dev.forja.world.Apprentices.register();
+		dev.forja.world.BossArena.register();
 		dev.forja.world.Commissions.register();
 		dev.forja.world.WorldEvents.register();
 		dev.forja.world.ForgeRaiders.register();
