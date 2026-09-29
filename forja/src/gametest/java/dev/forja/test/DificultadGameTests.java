@@ -214,6 +214,15 @@ public class DificultadGameTests {
 			if (ticks[0] >= 120) {
 				StringBuilder where = new StringBuilder();
 				pack.forEach(z -> where.append(String.format(java.util.Locale.ROOT, " %.1f", z.getX() - player.getX())));
+				Zombie first = pack.get(0);
+				MobMind mind = MobAi.mind(first);
+				where.append("; primero: ").append(mind == null ? "sin mente" : "táctica " + mind.decision.tactic() + ", quiere correr "
+					+ mind.wantsRun + ", corre " + mind.running + ", rodeo " + mind.rodeo + ", aguante " + mind.stamina + ", hueco "
+					+ mind.ringAngle + ", objetivo de la mente " + (mind.target == player));
+				where.append(", objetivo ").append(first.getTarget() == player).append(", navegación hecha ").append(first.getNavigation().isDone())
+					.append(", velocidad ").append(first.getAttributeValue(Attributes.MOVEMENT_SPEED)).append(", movimiento del jugador ")
+					.append(MobSprint.motion(player)).append(", metas ").append(((dev.forja.mixin.MobGoalsAccess) first).forjaGoals().getAvailableGoals().stream()
+						.filter(net.minecraft.world.entity.ai.goal.WrappedGoal::isRunning).map(g -> g.getGoal().getClass().getSimpleName()).toList());
 				CombatConfig.get().packChance = packs;
 				pack.forEach(Mob::discard);
 				helper.fail("en 6 s ningún zombi le adelantó (distancias en x:" + where + ")");
