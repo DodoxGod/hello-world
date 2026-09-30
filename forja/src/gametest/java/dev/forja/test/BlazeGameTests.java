@@ -193,6 +193,23 @@ public class BlazeGameTests {
 		}
 	}
 
+	/**
+	 * Starts a flight once its ground ticks entities. The framework waits for the chunks under a test's own box before
+	 * it starts it, not for the ground laid round it; a blaze spawned on ground still loading stood frozen where it was
+	 * put until the chunk came up (a vanilla blaze that never fired, a trained one that never rose into its band), and
+	 * under load that took long enough (90 ticks and more) to fail the test. The body gets the tick it started on.
+	 */
+	private static void flight(GameTestHelper helper, java.util.function.LongConsumer body) {
+		floor(helper, net.minecraft.world.level.block.Blocks.STONE);
+		openBox(helper);
+		helper.startSequence()
+			.thenWaitUntil(() -> helper.assertTrue(TestChunks.ticking(helper, FLOOR_FROM, FLOOR_TO), "el suelo del vuelo todavía no actualiza entidades"))
+			.thenExecute(() -> body.accept(helper.getTick()));
+	}
+
+	/** What a flight may wait for its ground, on top of its own length. */
+	private static final int FLIGHT_WAIT = 400;
+
 	private static final int FLOOR_FROM = -10;
 	private static final int FLOOR_TO = 18;
 
@@ -240,52 +257,54 @@ public class BlazeGameTests {
 	 * Two blazes, a zombie beside the player and a fireball in the air: each blaze's observation is 324 finite numbers
 	 * within the contract's scales, and the blaze's own inputs read what is there.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 60)
+	@GameTest(environment = ARENA, padding = 16, maxTicks = 60 + FLIGHT_WAIT)
 	public void blazeObservationHas324FiniteInputs(GameTestHelper helper) {
-		CombatGameTests.TestPlayer player = player(helper, new BlockPos(6, 1, 3));
-		Blaze blaze = helper.spawn(EntityTypes.BLAZE, new BlockPos(1, 4, 3));
-		Blaze other = helper.spawn(EntityTypes.BLAZE, new BlockPos(1, 4, 6));
-		Mob zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(7, 1, 3));
-		for (Mob mob : new Mob[] {blaze, other, zombie}) {
-			mob.setNoAi(true);
-		}
-		helper.runAfterDelay(10, () -> {
-			zombie.setTarget(player);
-			SmallFireball ball = new SmallFireball(helper.getLevel(), other, new Vec3(1.0, 0.0, 0.0));
-			ball.setPos(player.getX() - 3.0, player.getY(0.5), player.getZ());
-			ball.setNoGravity(true);
-			helper.getLevel().addFreshEntity(ball);
-			List<String> names = ObsBlaze.names();
-			for (Mob mob : new Mob[] {blaze, other}) {
-				MobMind mind = MobAi.mind(mob);
-				helper.assertTrue(mind != null, "el blaze debería tener cerebro");
-				float[] obs = ObsBlaze.build(mob, player, mind);
-				helper.assertTrue(obs.length == ObsBlaze.SIZE, "la observación del blaze debería tener 324 entradas: " + obs.length);
-				for (int i = 0; i < obs.length; i++) {
-					helper.assertTrue(Float.isFinite(obs[i]), "la entrada " + i + " (" + names.get(i) + ") no es finita: " + obs[i]);
-					helper.assertTrue(Math.abs(obs[i]) <= 3.0F, "la entrada " + i + " (" + names.get(i) + ") se sale de su escala: " + obs[i]);
-				}
-				double height = ObsBlaze.heightOverGround(mob);
-				helper.assertTrue(height > 2.0 && height < 4.5, "el blaze está a unos 3 bloques del suelo: " + height);
-				helper.assertTrue(Math.abs(obs[names.indexOf("yo_altura_suelo/5")] - height / 5.0) < 1.0E-4, "yo_altura_suelo/5");
-				helper.assertTrue(Math.abs(obs[names.indexOf("jug_altura_suelo/5")]) < 1.0E-4, "el jugador pisa el suelo");
-				helper.assertTrue(obs[names.indexOf("aliados_junto_jug/5")] == 0.2F, "un zombi junto al jugador: " + obs[names.indexOf("aliados_junto_jug/5")]);
-				helper.assertTrue(obs[names.indexOf("aliado_suelo_dist_jug/8")] < 0.2F, "el zombi está a un bloque del jugador");
-				helper.assertTrue(obs[names.indexOf("bola0_presente")] == 1.0F, "la bola en el aire debería verse");
-				helper.assertTrue(obs[names.indexOf("bola0_mia")] == (mob == other ? 1.0F : 0.0F), "bola0_mia es de quien la tiró");
-				helper.assertTrue(obs[names.indexOf("bola0_t_cercano/20")] > 0.0F && obs[names.indexOf("bola0_fallo/2")] < 0.1F,
-					"la bola va derecha al jugador: " + obs[names.indexOf("bola0_t_cercano/20")] + ", " + obs[names.indexOf("bola0_fallo/2")]);
-				helper.assertTrue(obs[names.indexOf("bola1_presente")] == 0.0F, "solo hay una bola");
-				helper.assertTrue(obs[names.indexOf("rafaga_lista")] == 1.0F && obs[names.indexOf("rafaga_cargando")] == 0.0F,
-					"quieto, sin espera y viéndolo, la ráfaga está lista");
-				helper.assertTrue(obs[names.indexOf("tipo_zombie")] == 0.0F && obs[names.indexOf("yo_fuego")] == 0.0F
-					&& obs[names.indexOf("yo_arco/20")] == 0.0F, "el blaze no está en los tipos, ni arde, ni tensa un arco");
-				helper.assertTrue(obs[names.indexOf("obj_distancia/16")] > 0.0F && obs[names.indexOf("yo_ve_obj")] == 1.0F,
-					"el jugador está a la vista");
+		flight(helper, began -> {
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(6, 1, 3));
+			Blaze blaze = helper.spawn(EntityTypes.BLAZE, new BlockPos(1, 4, 3));
+			Blaze other = helper.spawn(EntityTypes.BLAZE, new BlockPos(1, 4, 6));
+			Mob zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(7, 1, 3));
+			for (Mob mob : new Mob[] {blaze, other, zombie}) {
+				mob.setNoAi(true);
 			}
-			ball.discard();
-			cleanUp(helper, blaze, other, zombie);
-			helper.succeed();
+			helper.runAfterDelay(10, () -> {
+				zombie.setTarget(player);
+				SmallFireball ball = new SmallFireball(helper.getLevel(), other, new Vec3(1.0, 0.0, 0.0));
+				ball.setPos(player.getX() - 3.0, player.getY(0.5), player.getZ());
+				ball.setNoGravity(true);
+				helper.getLevel().addFreshEntity(ball);
+				List<String> names = ObsBlaze.names();
+				for (Mob mob : new Mob[] {blaze, other}) {
+					MobMind mind = MobAi.mind(mob);
+					helper.assertTrue(mind != null, "el blaze debería tener cerebro");
+					float[] obs = ObsBlaze.build(mob, player, mind);
+					helper.assertTrue(obs.length == ObsBlaze.SIZE, "la observación del blaze debería tener 324 entradas: " + obs.length);
+					for (int i = 0; i < obs.length; i++) {
+						helper.assertTrue(Float.isFinite(obs[i]), "la entrada " + i + " (" + names.get(i) + ") no es finita: " + obs[i]);
+						helper.assertTrue(Math.abs(obs[i]) <= 3.0F, "la entrada " + i + " (" + names.get(i) + ") se sale de su escala: " + obs[i]);
+					}
+					double height = ObsBlaze.heightOverGround(mob);
+					helper.assertTrue(height > 2.0 && height < 4.5, "el blaze está a unos 3 bloques del suelo: " + height);
+					helper.assertTrue(Math.abs(obs[names.indexOf("yo_altura_suelo/5")] - height / 5.0) < 1.0E-4, "yo_altura_suelo/5");
+					helper.assertTrue(Math.abs(obs[names.indexOf("jug_altura_suelo/5")]) < 1.0E-4, "el jugador pisa el suelo");
+					helper.assertTrue(obs[names.indexOf("aliados_junto_jug/5")] == 0.2F, "un zombi junto al jugador: " + obs[names.indexOf("aliados_junto_jug/5")]);
+					helper.assertTrue(obs[names.indexOf("aliado_suelo_dist_jug/8")] < 0.2F, "el zombi está a un bloque del jugador");
+					helper.assertTrue(obs[names.indexOf("bola0_presente")] == 1.0F, "la bola en el aire debería verse");
+					helper.assertTrue(obs[names.indexOf("bola0_mia")] == (mob == other ? 1.0F : 0.0F), "bola0_mia es de quien la tiró");
+					helper.assertTrue(obs[names.indexOf("bola0_t_cercano/20")] > 0.0F && obs[names.indexOf("bola0_fallo/2")] < 0.1F,
+						"la bola va derecha al jugador: " + obs[names.indexOf("bola0_t_cercano/20")] + ", " + obs[names.indexOf("bola0_fallo/2")]);
+					helper.assertTrue(obs[names.indexOf("bola1_presente")] == 0.0F, "solo hay una bola");
+					helper.assertTrue(obs[names.indexOf("rafaga_lista")] == 1.0F && obs[names.indexOf("rafaga_cargando")] == 0.0F,
+						"quieto, sin espera y viéndolo, la ráfaga está lista");
+					helper.assertTrue(obs[names.indexOf("tipo_zombie")] == 0.0F && obs[names.indexOf("yo_fuego")] == 0.0F
+						&& obs[names.indexOf("yo_arco/20")] == 0.0F, "el blaze no está en los tipos, ni arde, ni tensa un arco");
+					helper.assertTrue(obs[names.indexOf("obj_distancia/16")] > 0.0F && obs[names.indexOf("yo_ve_obj")] == 1.0F,
+						"el jugador está a la vista");
+				}
+				ball.discard();
+				cleanUp(helper, blaze, other, zombie);
+				helper.succeed();
+			});
 		});
 	}
 
@@ -371,38 +390,40 @@ public class BlazeGameTests {
 	 * The trained network flies a blaze that starts a block off the ground: it rises into its band (2 to 5 over the
 	 * ground) and stays there.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 320)
+	@GameTest(environment = ARENA, padding = 16, maxTicks = 320 + FLIGHT_WAIT)
 	public void trainedBlazeHoversInItsBand(GameTestHelper helper) {
-		CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
-		keepAlive(helper, player);
-		Blaze blaze = blaze(helper, new BlockPos(4, 1, 14), player, trainedNet(helper));
-		MobMind mind = MobAi.mind(blaze);
-		int[] counted = {0, 0, 0};
-		double[] extremes = {Double.MAX_VALUE, -Double.MAX_VALUE};
-		helper.onEachTick(() -> {
-			if (helper.getTick() < 60 || !blaze.isAlive()) {
-				return;
-			}
-			double height = ObsBlaze.heightOverGround(blaze);
-			counted[0]++;
-			if (height >= BlazePilot.MIN_HEIGHT - 0.25 && height <= BlazePilot.MAX_HEIGHT + 0.25) {
-				counted[1]++;
-			}
-			if (BlazePilot.drives(blaze)) {
-				counted[2]++;
-			}
-			extremes[0] = Math.min(extremes[0], height);
-			extremes[1] = Math.max(extremes[1], height);
-		});
-		helper.runAfterDelay(300, () -> {
-			helper.assertTrue(counted[2] > counted[0] * 0.9, "la red debería llevar al blaze: " + counted[2] + " de " + counted[0]);
-			double share = counted[1] / (double) Math.max(1, counted[0]);
-			Forja.LOGGER.info("[blaze] banda de vuelo: {} de {} ticks entre 2 y 5 (alturas {} a {})", counted[1], counted[0],
-				String.format(Locale.ROOT, "%.2f", extremes[0]), String.format(Locale.ROOT, "%.2f", extremes[1]));
-			helper.assertTrue(share >= 0.9, "el blaze debería flotar entre 2 y 5 bloques del suelo: " + counted[1] + " de " + counted[0]
-				+ " ticks (alturas de " + extremes[0] + " a " + extremes[1] + ")");
-			cleanUp(helper, blaze);
-			helper.succeed();
+		flight(helper, began -> {
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+			keepAlive(helper, player);
+			Blaze blaze = blaze(helper, new BlockPos(4, 1, 14), player, trainedNet(helper));
+			MobMind mind = MobAi.mind(blaze);
+			int[] counted = {0, 0, 0};
+			double[] extremes = {Double.MAX_VALUE, -Double.MAX_VALUE};
+			helper.onEachTick(() -> {
+				if (helper.getTick() - began < 60 || !blaze.isAlive()) {
+					return;
+				}
+				double height = ObsBlaze.heightOverGround(blaze);
+				counted[0]++;
+				if (height >= BlazePilot.MIN_HEIGHT - 0.25 && height <= BlazePilot.MAX_HEIGHT + 0.25) {
+					counted[1]++;
+				}
+				if (BlazePilot.drives(blaze)) {
+					counted[2]++;
+				}
+				extremes[0] = Math.min(extremes[0], height);
+				extremes[1] = Math.max(extremes[1], height);
+			});
+			helper.runAfterDelay(300, () -> {
+				helper.assertTrue(counted[2] > counted[0] * 0.9, "la red debería llevar al blaze: " + counted[2] + " de " + counted[0]);
+				double share = counted[1] / (double) Math.max(1, counted[0]);
+				Forja.LOGGER.info("[blaze] banda de vuelo: {} de {} ticks entre 2 y 5 (alturas {} a {})", counted[1], counted[0],
+					String.format(Locale.ROOT, "%.2f", extremes[0]), String.format(Locale.ROOT, "%.2f", extremes[1]));
+				helper.assertTrue(share >= 0.9, "el blaze debería flotar entre 2 y 5 bloques del suelo: " + counted[1] + " de " + counted[0]
+					+ " ticks (alturas de " + extremes[0] + " a " + extremes[1] + ")");
+				cleanUp(helper, blaze);
+				helper.succeed();
+			});
 		});
 	}
 
@@ -410,46 +431,48 @@ public class BlazeGameTests {
 	 * The trained network fires bursts of three: each starts with 20 ticks of warning (the blaze visibly charged, as
 	 * vanilla's is), then three fireballs six ticks apart, then its rest.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 420)
+	@GameTest(environment = ARENA, padding = 16, maxTicks = 420 + FLIGHT_WAIT)
 	public void trainedBlazeFiresTelegraphedBursts(GameTestHelper helper) {
-		CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
-		keepAlive(helper, player);
-		Blaze blaze = blaze(helper, new BlockPos(4, 3, 14), player, trainedNet(helper));
-		Bursts bursts = watchBursts(helper, blaze);
-		helper.runAfterDelay(400, () -> {
-			Forja.LOGGER.info("[blaze] ráfagas: cargas en {}, bolas en {}", bursts.charges, bursts.shots);
-			helper.assertTrue(bursts.charges.size() >= 2, "en 400 ticks debería cargar al menos dos ráfagas: " + bursts.charges);
-			helper.assertTrue(bursts.shots.size() >= 6, "y soltar al menos 6 bolas: " + bursts.shots);
-			helper.assertTrue(bursts.chargedTicks >= 15, "mientras carga debería verse encendido (el aviso): " + bursts.chargedTicks + " ticks");
-			// every shot belongs to the last charge before it: the first 20 ticks after it, then 6 and 6 more
-			for (int k = 0; k < bursts.shots.size(); k++) {
-				long shot = bursts.shots.get(k);
-				long charge = Long.MIN_VALUE;
+		flight(helper, began -> {
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+			keepAlive(helper, player);
+			Blaze blaze = blaze(helper, new BlockPos(4, 3, 14), player, trainedNet(helper));
+			Bursts bursts = watchBursts(helper, blaze);
+			helper.runAfterDelay(400, () -> {
+				Forja.LOGGER.info("[blaze] ráfagas: cargas en {}, bolas en {}", bursts.charges, bursts.shots);
+				helper.assertTrue(bursts.charges.size() >= 2, "en 400 ticks debería cargar al menos dos ráfagas: " + bursts.charges);
+				helper.assertTrue(bursts.shots.size() >= 6, "y soltar al menos 6 bolas: " + bursts.shots);
+				helper.assertTrue(bursts.chargedTicks >= 15, "mientras carga debería verse encendido (el aviso): " + bursts.chargedTicks + " ticks");
+				// every shot belongs to the last charge before it: the first 20 ticks after it, then 6 and 6 more
+				for (int k = 0; k < bursts.shots.size(); k++) {
+					long shot = bursts.shots.get(k);
+					long charge = Long.MIN_VALUE;
+					for (long c : bursts.charges) {
+						if (c < shot) {
+							charge = c;
+						}
+					}
+					helper.assertTrue(charge != Long.MIN_VALUE, "la bola del tick " + shot + " salió sin aviso");
+					long after = shot - charge;
+					helper.assertTrue(Math.abs(after - 20) <= 1 || Math.abs(after - 26) <= 1 || Math.abs(after - 32) <= 1,
+						"las bolas salen 20, 26 y 32 ticks después de empezar a cargar: " + after + " (cargas " + bursts.charges + ", bolas " + bursts.shots + ")");
+				}
+				int complete = 0;
 				for (long c : bursts.charges) {
-					if (c < shot) {
-						charge = c;
+					int n = 0;
+					for (long shot : bursts.shots) {
+						if (shot > c && shot - c <= 33) {
+							n++;
+						}
+					}
+					if (n == 3) {
+						complete++;
 					}
 				}
-				helper.assertTrue(charge != Long.MIN_VALUE, "la bola del tick " + shot + " salió sin aviso");
-				long after = shot - charge;
-				helper.assertTrue(Math.abs(after - 20) <= 1 || Math.abs(after - 26) <= 1 || Math.abs(after - 32) <= 1,
-					"las bolas salen 20, 26 y 32 ticks después de empezar a cargar: " + after + " (cargas " + bursts.charges + ", bolas " + bursts.shots + ")");
-			}
-			int complete = 0;
-			for (long c : bursts.charges) {
-				int n = 0;
-				for (long shot : bursts.shots) {
-					if (shot > c && shot - c <= 33) {
-						n++;
-					}
-				}
-				if (n == 3) {
-					complete++;
-				}
-			}
-			helper.assertTrue(complete >= 1, "al menos una ráfaga completa de 3: " + bursts.charges + " / " + bursts.shots);
-			cleanUp(helper, blaze);
-			helper.succeed();
+				helper.assertTrue(complete >= 1, "al menos una ráfaga completa de 3: " + bursts.charges + " / " + bursts.shots);
+				cleanUp(helper, blaze);
+				helper.succeed();
+			});
 		});
 	}
 
@@ -467,64 +490,66 @@ public class BlazeGameTests {
 	 * A blaze told to fire with a lead of 1.5 at a player walking to and fro across its line aims ahead of them every
 	 * time; the trained network, against the same player, aims ahead on average.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 420)
+	@GameTest(environment = ARENA, padding = 16, maxTicks = 420 + FLIGHT_WAIT)
 	public void blazeLeadsAMovingTarget(GameTestHelper helper) {
-		CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
-		keepAlive(helper, player);
-		float[] bias = new float[BlazeBrain.OUTPUTS];
-		bias[BlazeBrain.MOVE_AT] = 8.0F;
-		bias[BlazeBrain.VERTICAL_AT] = 8.0F;
-		bias[BlazeBrain.USE_AT] = 8.0F;
-		bias[BlazeBrain.LEAD_AT + 3] = 8.0F;
-		bias[BlazeBrain.RETREAT_AT] = -8.0F;
-		Blaze told = blaze(helper, new BlockPos(4, 3, 14), player, NetBrain.fromJson(fakeBlaze(21L, bias)));
-		Blaze own = blaze(helper, new BlockPos(4, 3, -6), player, trainedNet(helper));
-		Vec3 start = player.position();
-		double speed = 0.2;
-		Vec3[] velocity = {Vec3.ZERO};
-		Map<Blaze, List<Double>> ahead = new HashMap<>();
-		Map<Blaze, List<Double>> leads = new HashMap<>();
-		Set<Integer> seen = new HashSet<>();
-		// Which way the player was walking, tick by tick: a ball is judged against the way they went when it was thrown.
-		Map<Long, Double> phases = new HashMap<>();
-		helper.onEachTick(() -> {
-			long t = helper.getTick();
-			// to and fro along x, 12 blocks each way: across the told blaze's line (it is to the south, +z)
-			double phase = (t % 120) < 60 ? 1.0 : -1.0;
-			phases.put(t, phase);
-			double offset = (t % 120) < 60 ? (t % 60) * speed : (60 - t % 60) * speed;
-			Vec3 at = start.add(offset - 6.0, 0.0, 0.0);
-			velocity[0] = new Vec3(phase * speed, 0.0, 0.0);
-			player.setPos(at.x, at.y, at.z);
-			player.setKnownMovement(velocity[0]);
-			for (Blaze blaze : new Blaze[] {told, own}) {
-				MobMind mind = MobAi.mind(blaze);
-				for (SmallFireball ball : fireballsOf(helper, blaze)) {
-					// A ball thrown about the tick the player turned round was aimed ahead of where they were going
-					// before the turn, and read against the new way it came out behind them (-2.5 among 3 to 4.6).
-					// Which way the blaze saw them go is not known then, so that ball is left out.
-					long thrown = t - ball.tickCount;
-					boolean sameWay = phases.getOrDefault(thrown - 1, phase) == phase && phases.getOrDefault(thrown, phase) == phase;
-					if (seen.add(ball.getId()) && sameWay) {
-						ahead.computeIfAbsent(blaze, b -> new ArrayList<>()).add(aheadOf(ball, new Vec3(at.x, player.getY(0.5), at.z), velocity[0]));
-						leads.computeIfAbsent(blaze, b -> new ArrayList<>()).add(mind.blaze == null ? -1.0 : mind.blaze.leadFactor());
+		flight(helper, began -> {
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+			keepAlive(helper, player);
+			float[] bias = new float[BlazeBrain.OUTPUTS];
+			bias[BlazeBrain.MOVE_AT] = 8.0F;
+			bias[BlazeBrain.VERTICAL_AT] = 8.0F;
+			bias[BlazeBrain.USE_AT] = 8.0F;
+			bias[BlazeBrain.LEAD_AT + 3] = 8.0F;
+			bias[BlazeBrain.RETREAT_AT] = -8.0F;
+			Blaze told = blaze(helper, new BlockPos(4, 3, 14), player, NetBrain.fromJson(fakeBlaze(21L, bias)));
+			Blaze own = blaze(helper, new BlockPos(4, 3, -6), player, trainedNet(helper));
+			Vec3 start = player.position();
+			double speed = 0.2;
+			Vec3[] velocity = {Vec3.ZERO};
+			Map<Blaze, List<Double>> ahead = new HashMap<>();
+			Map<Blaze, List<Double>> leads = new HashMap<>();
+			Set<Integer> seen = new HashSet<>();
+			// Which way the player was walking, tick by tick: a ball is judged against the way they went when it was thrown.
+			Map<Long, Double> phases = new HashMap<>();
+			helper.onEachTick(() -> {
+				long t = helper.getTick();
+				// to and fro along x, 12 blocks each way: across the told blaze's line (it is to the south, +z)
+				double phase = (t % 120) < 60 ? 1.0 : -1.0;
+				phases.put(t, phase);
+				double offset = (t % 120) < 60 ? (t % 60) * speed : (60 - t % 60) * speed;
+				Vec3 at = start.add(offset - 6.0, 0.0, 0.0);
+				velocity[0] = new Vec3(phase * speed, 0.0, 0.0);
+				player.setPos(at.x, at.y, at.z);
+				player.setKnownMovement(velocity[0]);
+				for (Blaze blaze : new Blaze[] {told, own}) {
+					MobMind mind = MobAi.mind(blaze);
+					for (SmallFireball ball : fireballsOf(helper, blaze)) {
+						// A ball thrown about the tick the player turned round was aimed ahead of where they were going
+						// before the turn, and read against the new way it came out behind them (-2.5 among 3 to 4.6).
+						// Which way the blaze saw them go is not known then, so that ball is left out.
+						long thrown = t - ball.tickCount;
+						boolean sameWay = phases.getOrDefault(thrown - 1, phase) == phase && phases.getOrDefault(thrown, phase) == phase;
+						if (seen.add(ball.getId()) && sameWay) {
+							ahead.computeIfAbsent(blaze, b -> new ArrayList<>()).add(aheadOf(ball, new Vec3(at.x, player.getY(0.5), at.z), velocity[0]));
+							leads.computeIfAbsent(blaze, b -> new ArrayList<>()).add(mind.blaze == null ? -1.0 : mind.blaze.leadFactor());
+						}
 					}
 				}
-			}
-		});
-		helper.runAfterDelay(400, () -> {
-			List<Double> toldAhead = ahead.getOrDefault(told, List.of());
-			List<Double> ownAhead = ahead.getOrDefault(own, List.of());
-			Forja.LOGGER.info("[blaze] adelanto: mandado a 1,5 {} ; la red {} con factores {}", fmt(toldAhead), fmt(ownAhead), leads.get(own));
-			helper.assertTrue(toldAhead.size() >= 3, "el blaze mandado debería disparar al menos una ráfaga: " + toldAhead);
-			for (double a : toldAhead) {
-				helper.assertTrue(a > 0.3, "con adelanto 1,5 cada bola debería ir por delante del jugador: " + fmt(toldAhead));
-			}
-			helper.assertTrue(ownAhead.size() >= 3, "la red debería disparar al jugador que se mueve: " + ownAhead);
-			double mean = ownAhead.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-			helper.assertTrue(mean > 0.0, "la red debería apuntar por delante del jugador, de media: " + fmt(ownAhead));
-			cleanUp(helper, told, own);
-			helper.succeed();
+			});
+			helper.runAfterDelay(400, () -> {
+				List<Double> toldAhead = ahead.getOrDefault(told, List.of());
+				List<Double> ownAhead = ahead.getOrDefault(own, List.of());
+				Forja.LOGGER.info("[blaze] adelanto: mandado a 1,5 {} ; la red {} con factores {}", fmt(toldAhead), fmt(ownAhead), leads.get(own));
+				helper.assertTrue(toldAhead.size() >= 3, "el blaze mandado debería disparar al menos una ráfaga: " + toldAhead);
+				for (double a : toldAhead) {
+					helper.assertTrue(a > 0.3, "con adelanto 1,5 cada bola debería ir por delante del jugador: " + fmt(toldAhead));
+				}
+				helper.assertTrue(ownAhead.size() >= 3, "la red debería disparar al jugador que se mueve: " + ownAhead);
+				double mean = ownAhead.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+				helper.assertTrue(mean > 0.0, "la red debería apuntar por delante del jugador, de media: " + fmt(ownAhead));
+				cleanUp(helper, told, own);
+				helper.succeed();
+			});
 		});
 	}
 
@@ -540,58 +565,62 @@ public class BlazeGameTests {
 	 * The trained network keeps a blaze in its fight: within the 16 blocks its burst needs most of the time, and out of
 	 * the player's reach almost always.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 420)
+	@GameTest(environment = ARENA, padding = 16, maxTicks = 420 + FLIGHT_WAIT)
 	public void trainedBlazeKeepsItsEngagementRange(GameTestHelper helper) {
-		CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
-		keepAlive(helper, player);
-		Blaze blaze = blaze(helper, new BlockPos(4, 3, 13), player, trainedNet(helper));
-		int[] counted = {0, 0, 0};
-		double[] sum = {0.0};
-		helper.onEachTick(() -> {
-			if (helper.getTick() < 40 || !blaze.isAlive()) {
-				return;
-			}
-			double d = blaze.distanceTo(player);
-			counted[0]++;
-			sum[0] += d;
-			if (d < BlazePilot.FIRE_RANGE) {
-				counted[1]++;
-			}
-			if (ObsBlaze.hitDistance(player, blaze, 0.0) <= dev.forja.ai.Reach.player(player)) {
-				counted[2]++;
-			}
-		});
-		helper.runAfterDelay(400, () -> {
-			double within = counted[1] / (double) Math.max(1, counted[0]);
-			double reached = counted[2] / (double) Math.max(1, counted[0]);
-			double mean = sum[0] / Math.max(1, counted[0]);
-			Forja.LOGGER.info("[blaze] distancia: media {}, {} de los ticks a < 16, {} al alcance de la espada",
-				String.format(Locale.ROOT, "%.2f", mean), String.format(Locale.ROOT, "%.2f", within), String.format(Locale.ROOT, "%.2f", reached));
-			helper.assertTrue(within >= 0.85, "debería pasar casi todo el combate a menos de 16: " + within + " (media " + mean + ")");
-			helper.assertTrue(reached <= 0.1, "casi nunca al alcance de la espada: " + reached);
-			cleanUp(helper, blaze);
-			helper.succeed();
+		flight(helper, began -> {
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+			keepAlive(helper, player);
+			Blaze blaze = blaze(helper, new BlockPos(4, 3, 13), player, trainedNet(helper));
+			int[] counted = {0, 0, 0};
+			double[] sum = {0.0};
+			helper.onEachTick(() -> {
+				if (helper.getTick() - began < 40 || !blaze.isAlive()) {
+					return;
+				}
+				double d = blaze.distanceTo(player);
+				counted[0]++;
+				sum[0] += d;
+				if (d < BlazePilot.FIRE_RANGE) {
+					counted[1]++;
+				}
+				if (ObsBlaze.hitDistance(player, blaze, 0.0) <= dev.forja.ai.Reach.player(player)) {
+					counted[2]++;
+				}
+			});
+			helper.runAfterDelay(400, () -> {
+				double within = counted[1] / (double) Math.max(1, counted[0]);
+				double reached = counted[2] / (double) Math.max(1, counted[0]);
+				double mean = sum[0] / Math.max(1, counted[0]);
+				Forja.LOGGER.info("[blaze] distancia: media {}, {} de los ticks a < 16, {} al alcance de la espada",
+					String.format(Locale.ROOT, "%.2f", mean), String.format(Locale.ROOT, "%.2f", within), String.format(Locale.ROOT, "%.2f", reached));
+				helper.assertTrue(within >= 0.85, "debería pasar casi todo el combate a menos de 16: " + within + " (media " + mean + ")");
+				helper.assertTrue(reached <= 0.1, "casi nunca al alcance de la espada: " + reached);
+				cleanUp(helper, blaze);
+				helper.succeed();
+			});
 		});
 	}
 
 	/** Without a network the blaze is vanilla's: no executor, vanilla's own fireballs. */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 200)
+	@GameTest(environment = ARENA, padding = 16, maxTicks = 200 + FLIGHT_WAIT)
 	public void blazeWithoutNetworkStaysVanilla(GameTestHelper helper) {
-		helper.assertTrue(MobAi.net("blaze") == null, "las pruebas no llevan red del blaze en la carpeta: " + MobAi.net("blaze"));
-		CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
-		keepAlive(helper, player);
-		Blaze blaze = blaze(helper, new BlockPos(4, 3, 12), player, null);
-		MobMind mind = MobAi.mind(blaze);
-		Set<Integer> balls = new HashSet<>();
-		helper.onEachTick(() -> {
-			fireballsOf(helper, blaze).forEach(ball -> balls.add(ball.getId()));
-			helper.assertTrue(!BlazePilot.drives(blaze) && mind.blaze == null, "sin red, el ejecutor del blaze no debería actuar");
-		});
-		helper.runAfterDelay(180, () -> {
-			helper.assertTrue(mind.blazeState == null, "sin red no hay estado de ráfaga del mod");
-			helper.assertTrue(!balls.isEmpty(), "el blaze de vanilla debería haber disparado en 180 ticks");
-			cleanUp(helper, blaze);
-			helper.succeed();
+		flight(helper, began -> {
+			helper.assertTrue(MobAi.net("blaze") == null, "las pruebas no llevan red del blaze en la carpeta: " + MobAi.net("blaze"));
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+			keepAlive(helper, player);
+			Blaze blaze = blaze(helper, new BlockPos(4, 3, 12), player, null);
+			MobMind mind = MobAi.mind(blaze);
+			Set<Integer> balls = new HashSet<>();
+			helper.onEachTick(() -> {
+				fireballsOf(helper, blaze).forEach(ball -> balls.add(ball.getId()));
+				helper.assertTrue(!BlazePilot.drives(blaze) && mind.blaze == null, "sin red, el ejecutor del blaze no debería actuar");
+			});
+			helper.runAfterDelay(180, () -> {
+				helper.assertTrue(mind.blazeState == null, "sin red no hay estado de ráfaga del mod");
+				helper.assertTrue(!balls.isEmpty(), "el blaze de vanilla debería haber disparado en 180 ticks");
+				cleanUp(helper, blaze);
+				helper.succeed();
+			});
 		});
 	}
 
@@ -599,60 +628,62 @@ public class BlazeGameTests {
 	 * What it costs: a decision (ObsBlaze, mask, forward, sample) every 2 ticks plus the executor every tick, per
 	 * blaze, at most 0.1 ms a tick.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 60)
+	@GameTest(environment = ARENA, padding = 16, maxTicks = 60 + FLIGHT_WAIT)
 	public void blazeNetworkCostsLittle(GameTestHelper helper) {
-		CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
-		keepAlive(helper, player);
-		NetBrain net = trainedNet(helper);
-		Blaze blaze = blaze(helper, new BlockPos(4, 3, 13), player, net);
-		Mob zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(5, 1, 4));
-		zombie.setNoAi(true);
-		helper.runAfterDelay(20, () -> {
-			MobMind mind = MobAi.mind(blaze);
-			float[] memory = new float[net.memory];
-			RandomSource random = RandomSource.create(7L);
-			int rounds = 7;
-			int per = 300;
-			double[] decisions = new double[rounds];
-			double[] pilots = new double[rounds];
-			for (int warm = 0; warm < 400; warm++) {
-				float[] obs = ObsBlaze.build(blaze, player, mind);
-				boolean[] mask = BlazeBrain.mask(blaze, mind, player);
-				BlazeBrain.sample(net.forward(obs, memory), 1.0, random, mask);
-			}
-			BlazeDecision still = new BlazeDecision(3, BlazeDecision.HOLD, false, 0, false);
-			for (int r = 0; r < rounds; r++) {
-				long t0 = System.nanoTime();
-				for (int k = 0; k < per; k++) {
+		flight(helper, began -> {
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+			keepAlive(helper, player);
+			NetBrain net = trainedNet(helper);
+			Blaze blaze = blaze(helper, new BlockPos(4, 3, 13), player, net);
+			Mob zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(5, 1, 4));
+			zombie.setNoAi(true);
+			helper.runAfterDelay(20, () -> {
+				MobMind mind = MobAi.mind(blaze);
+				float[] memory = new float[net.memory];
+				RandomSource random = RandomSource.create(7L);
+				int rounds = 7;
+				int per = 300;
+				double[] decisions = new double[rounds];
+				double[] pilots = new double[rounds];
+				for (int warm = 0; warm < 400; warm++) {
 					float[] obs = ObsBlaze.build(blaze, player, mind);
 					boolean[] mask = BlazeBrain.mask(blaze, mind, player);
 					BlazeBrain.sample(net.forward(obs, memory), 1.0, random, mask);
 				}
-				decisions[r] = (System.nanoTime() - t0) / (double) per;
-				BlazeDecision saved = mind.blaze;
-				mind.blaze = still;
-				Vec3 at = blaze.position();
-				Vec3 moving = blaze.getDeltaMovement();
-				t0 = System.nanoTime();
-				for (int k = 0; k < per; k++) {
-					BlazePilot.tick(blaze, mind, player);
+				BlazeDecision still = new BlazeDecision(3, BlazeDecision.HOLD, false, 0, false);
+				for (int r = 0; r < rounds; r++) {
+					long t0 = System.nanoTime();
+					for (int k = 0; k < per; k++) {
+						float[] obs = ObsBlaze.build(blaze, player, mind);
+						boolean[] mask = BlazeBrain.mask(blaze, mind, player);
+						BlazeBrain.sample(net.forward(obs, memory), 1.0, random, mask);
+					}
+					decisions[r] = (System.nanoTime() - t0) / (double) per;
+					BlazeDecision saved = mind.blaze;
+					mind.blaze = still;
+					Vec3 at = blaze.position();
+					Vec3 moving = blaze.getDeltaMovement();
+					t0 = System.nanoTime();
+					for (int k = 0; k < per; k++) {
+						BlazePilot.tick(blaze, mind, player);
+					}
+					pilots[r] = (System.nanoTime() - t0) / (double) per;
+					blaze.setPos(at);
+					blaze.setDeltaMovement(moving);
+					mind.blaze = saved;
 				}
-				pilots[r] = (System.nanoTime() - t0) / (double) per;
-				blaze.setPos(at);
-				blaze.setDeltaMovement(moving);
-				mind.blaze = saved;
-			}
-			java.util.Arrays.sort(decisions);
-			java.util.Arrays.sort(pilots);
-			double decision = decisions[rounds / 2] / 1.0E6;
-			double pilot = pilots[rounds / 2] / 1.0E6;
-			double perTick = decision / net.ticksPerDecision + pilot;
-			Forja.LOGGER.info("[blaze] coste: decisión {} ms, ejecutor {} ms, por tick {} ms",
-				String.format(Locale.ROOT, "%.4f", decision), String.format(Locale.ROOT, "%.4f", pilot), String.format(Locale.ROOT, "%.4f", perTick));
-			helper.assertTrue(perTick <= 0.1, "un blaze con red debería costar ≤ 0,1 ms por tick: " + perTick + " ms (decisión "
-				+ decision + ", ejecutor " + pilot + ")");
-			cleanUp(helper, blaze, zombie);
-			helper.succeed();
+				java.util.Arrays.sort(decisions);
+				java.util.Arrays.sort(pilots);
+				double decision = decisions[rounds / 2] / 1.0E6;
+				double pilot = pilots[rounds / 2] / 1.0E6;
+				double perTick = decision / net.ticksPerDecision + pilot;
+				Forja.LOGGER.info("[blaze] coste: decisión {} ms, ejecutor {} ms, por tick {} ms",
+					String.format(Locale.ROOT, "%.4f", decision), String.format(Locale.ROOT, "%.4f", pilot), String.format(Locale.ROOT, "%.4f", perTick));
+				helper.assertTrue(perTick <= 0.1, "un blaze con red debería costar ≤ 0,1 ms por tick: " + perTick + " ms (decisión "
+					+ decision + ", ejecutor " + pilot + ")");
+				cleanUp(helper, blaze, zombie);
+				helper.succeed();
+			});
 		});
 	}
 
@@ -662,14 +693,18 @@ public class BlazeGameTests {
 	 * lists (a fake player), so a ball flies through it: the hit is worked out from the ball's path each tick, and the
 	 * ball is taken out there. The network must land some.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 620)
+	@GameTest(environment = ARENA, padding = 16, maxTicks = 620 + FLIGHT_WAIT)
 	public void blazeDamageWithTheNetwork(GameTestHelper helper) {
-		hitsOverTime(helper, trainedNet(helper), "red");
+		flight(helper, began -> {
+			hitsOverTime(helper, trainedNet(helper), "red");
+		});
 	}
 
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 620)
+	@GameTest(environment = ARENA, padding = 16, maxTicks = 620 + FLIGHT_WAIT)
 	public void blazeDamageVanilla(GameTestHelper helper) {
-		hitsOverTime(helper, null, "vanilla");
+		flight(helper, began -> {
+			hitsOverTime(helper, null, "vanilla");
+		});
 	}
 
 	private static void hitsOverTime(GameTestHelper helper, NetBrain net, String label) {

@@ -23,11 +23,14 @@ repetir pasaban. Cada una tenía su causa, y ninguna era la carga:
   salto atrás antes de la prueba; el esqueleto salía de élite o se ponía a hacer especiales a mitad del tiro
   cargado; la sala oscura de la antorcha se salía de los trozos que se actualizan y el zombi se quedaba congelado; un
   blaze disparaba justo cuando el jugador se daba la vuelta.
+- **Los blazes, congelados:** su suelo de vuelo se sale de la caja de la prueba, y un trozo recién forzado tarda en
+  actualizar entidades (con la máquina cargada, 90 tics y más). El blaze nacía ahí y se quedaba quieto: el de vanilla
+  no disparaba, el entrenado no subía a su banda. Ahora el vuelo empieza cuando su suelo ya actualiza entidades.
 - **Rendimiento v4:** la horda medida no era de 30. Los creepers explotaban y los esqueletos y arañas caían del
   borde de la plataforma (está 24 bloques en el aire): la ventana empezaba con 30 y acababa con 19. Ahora hay borde,
   los creepers no llegan a explotar, los mobs tienen semillas fijas, la red se calienta 300 ticks y el tope se
   compara con la mediana de 10 trozos, corregida por una calibración que mide cuánto más lenta va la máquina. Con la
-  horda entera y la red ya caliente mide entre 1,4 y 1,9 ms (tope 2,5).
+  horda entera y la red ya caliente mide entre 1,4 y 2,1 ms (tope 2,5).
 - Para cazar una prueba: `FORJA_PRUEBAS='forja-test:*torch*' ./gradlew runGametest`, y con `FORJA_VERIFICAR=1`
   corre 400 copias a la vez.
 

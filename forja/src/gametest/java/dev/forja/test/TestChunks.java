@@ -42,6 +42,23 @@ final class TestChunks {
 		}
 	}
 
+	/**
+	 * Whether every chunk under (from, from) to (to, to) ticks its entities by now: a chunk just forced takes some ticks
+	 * to come up, more under load.
+	 */
+	static boolean ticking(GameTestHelper helper, int from, int to) {
+		BlockPos a = helper.absolutePos(new BlockPos(from, 0, from));
+		BlockPos c = helper.absolutePos(new BlockPos(to, 0, to));
+		for (int cx = Math.min(a.getX(), c.getX()) >> 4; cx <= Math.max(a.getX(), c.getX()) >> 4; cx++) {
+			for (int cz = Math.min(a.getZ(), c.getZ()) >> 4; cz <= Math.max(a.getZ(), c.getZ()) >> 4; cz++) {
+				if (!helper.getLevel().areEntitiesActuallyLoadedAndTicking(new ChunkPos(cx, cz))) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 	/** Lets go of the chunks this test forced, and only those. */
 	static void release(GameTestHelper helper) {
 		List<ChunkPos> mine = FORCED.remove(helper);
