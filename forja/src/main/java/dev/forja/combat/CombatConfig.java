@@ -440,6 +440,19 @@ public final class CombatConfig {
 	 * the orders whatever this says.
 	 */
 	public boolean iaCapitanReglas = true;
+	/**
+	 * The rules captain's pincer (its rule 5: the player backing away → PINZA). Measured in the mod 2026-09-30
+	 * (docs/red_mob_v4_mod_estado.md): with it the captain does about 14 more damage a minute than without, so it stays.
+	 */
+	public boolean iaCapitanPinza = true;
+	/**
+	 * One more turn on a player (Aggression.maxAttackers) while iaGrupoGrandeMin or more monsters fight them (the
+	 * Squad's count), captain or not. Measured in the mod 2026-09-30 (docs/red_mob_v4_mod_estado.md): a little more
+	 * damage in every mode (+9 a minute with a captain), so it is on.
+	 */
+	public boolean iaTurnoGrupoGrande = true;
+	/** How many make a big group (iaTurnoGrupoGrande). */
+	public int iaGrupoGrandeMin = 6;
 
 	public double postureFactor(DamageKind kind) {
 		return switch (kind) {

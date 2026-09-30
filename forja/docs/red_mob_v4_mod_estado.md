@@ -282,7 +282,8 @@ casi siempre (97 % de las pasadas) y los grupos casi no hacían daño. Causas, e
 **Las reglas nuevas** (`Captain.rules`), en este orden:
 1. jugador en pilar o torre → ASEDIO;
 2. moral del grupo < 0,3 → RETIRADA;
-3. **jugador expuesto** (usando un objeto, cargando un golpe, aturdido, con < 30 % de vida, o con un miembro a ≤ 6 a
+3. **jugador expuesto** (usando un objeto, cargando un golpe, tambaleándose —lentitud II o más, ver "Qué tambalea al
+   jugador" abajo—, con < 30 % de vida, o con un miembro a ≤ 6 a
    más de 120° de su mirada), con ≥ 2 de cuerpo a cuerpo a < 10 y sin carga en los últimos 100 ticks tras el turno extra
    de la anterior → **CARGA con cuenta 0** (todos al ataque ya, grito y +1 turno 40 ticks);
 4. noche, luz del jugador < 7 y nadie lo percibe → EMBOSCADA;
@@ -324,6 +325,86 @@ peleas. Pruebas aparte: sin la pinza, 74,8 (la pinza aporta poco, dentro del rui
 
 **Lo que el simulador tiene que copiar:** estas reglas nuevas en `CaptainRules` (y medir otra vez contra el "experto");
 la imitación de la red del capitán debería partir de ellas y no de las de §3.4.
+
+### El anillo libre del mod se atascaba (30-09, segunda tanda; responde a `mod_spec_capitan.md`)
+
+El simulador no reprodujo la ganancia del capitán (sin capitán 249, capitán nuevo 255) y apuntó a un fallo del mod: sin
+capitán, solo 37,5 de daño por minuto. `CapitanMedidaGameTests` apunta ahora, por pelea, cuántos mobs hay a ≤ 3,5 del
+jugador y cuántos turnos hay ocupados, y con `FORJA_CAPITAN_TRAZA=<archivo>` escribe cada tick de las 2 primeras peleas,
+mob por mob (distancia, táctica, turno, aviso, corre, aturdido y metas que corren).
+
+**Lo que se vio (sin capitán, antes del arreglo):** turno libre el **96 %** de los ticks, 0,25 turnos ocupados de 2 de
+media, 1,1 mobs a ≤ 3,5. De los mobs sin turno a ≤ 6 del jugador con un turno libre:
+- ~20–26 % en **RODEAR**: el modo rodeo (`MobSprint.rodeo`) los mandaba a su hueco del anillo cada vez que el jugador se
+  alejaba de ellos, **aunque tuvieran turno libre**. Contra un jugador que se mueve, casi todo el grupo daba vueltas;
+- ~10–13 % en **RETIRARSE**: la regla de la postura (> 0,7) los apartaba aunque pudieran golpear;
+- ~5–9 % en **FLANQUEAR**: el flanqueador rodeaba hasta la espalda antes de golpear, con turno libre;
+- el relevo (ESPERAR tras golpear) también se aplicaba con turno libre;
+- **sin capitán**, además, el élite reta a **duelo** (idea 96): el 29 % de los ticks, 3 o más mobs esperando mirando.
+  Con capitán no pasa (un capitán que manda a más de 3 no reta). El simulador no tiene duelos.
+
+**El arreglo (`RuleBrain`): un turno libre se usa.** El rodeo, el flanqueo, la retirada por postura y el relevo solo se
+aplican a un mob que **no** tiene turno libre (`hasTurn` = tiene uno o hay uno libre). Con turno libre, va al ataque.
+Probado con `aFreeTurnIsUsedAgainstAPlayerOnTheMove`.
+
+Por separado (24 peleas por modo, antes del arreglo) se midió qué más frena al grupo en el mod:
+- **sin el aviso** de 8 ticks (`telegraph` apagado): sin capitán 133, capitán 204. **Es lo que más frena**: el mob se
+  queda quieto 8 ticks y el golpe solo llega si el jugador sigue a ≤ 2,0 de centro a centro (`Reach.landing`); el
+  jugador de guion se mueve 2/3 del tiempo a 0,15–0,18 por tick y se sale;
+- **sin el empuje** de los golpes del jugador de guion (su golpe de 5 cada 16 ticks empuja al mob como en vanilla):
+  sin capitán 63,5, capitán 94. El empuje saca al mob del alcance durante su aviso.
+El aviso y el empuje son del juego (decisión de Andy: un golpe avisado que el jugador esquiva no llega), no se tocan.
+**Pregunta para el simulador:** ¿su copia del jugador de guion empuja al mob al golpearlo, y el mob del simulador pierde
+el golpe si el jugador se aleja durante el aviso? Si no, eso explica la mayor parte de 249 contra ~70.
+
+**Un turno más con grupos grandes** (`iaTurnoGrupoGrande`, activado; `iaGrupoGrandeMin` = 6): con 6 o más mobs a por el
+mismo jugador (la cuenta del `Squad`, con o sin capitán), `Aggression.maxAttackers` + 1. Prueba `aBigGroupGetsOneMoreTurn`.
+
+**Medida tras el arreglo** (160 peleas por modo, dos tandas de 80; mismo guion; "muerto" = 20 de daño en 30 s):
+
+| Modo | Turno de grupo grande | Daño/min | Muerto en 30 s | Tiempo a 20 | Turnos ocupados (de 2–3) |
+|---|---|---|---|---|---|
+| sin capitán (antes del arreglo, 80) | no | 37,5 ± 3,0 | 36/80 | 16,8 s | 0,25 |
+| capitán sin órdenes (antes, 80) | no | 38,8 ± 2,7 | 36/80 | 14,9 s | 0,25 |
+| capitán nuevo (antes, 80) | no | 77,7 ± 3,2 | 71/80 | 13,3 s | 0,47 |
+| sin capitán | no | 67,9 ± 2,4 | 127/160 | 14,0 s | 0,40 |
+| capitán sin órdenes | no | 68,9 ± 2,2 | 140/160 | 14,4 s | 0,42 |
+| capitán nuevo | no | 105,2 ± 2,8 | 160/160 | 11,7 s | 0,56 |
+| **sin capitán** | **sí** | **70,6 ± 2,6** | 129/160 | 13,2 s | 0,42 |
+| **capitán sin órdenes** | **sí** | **72,9 ± 2,6** | 138/160 | 13,4 s | 0,43 |
+| **capitán nuevo** | **sí** | **114,2 ± 3,0** | 159/160 | 11,1 s | 0,60 |
+
+- El arreglo del anillo: sin capitán **+81 %** (37,5 → 67,9). El capitán nuevo también sube (77,7 → 105,2).
+- El turno de grupo grande: capitán +9,0, sin capitán +2,7, sin órdenes +4,0 (todas a favor, la del capitán clara; el
+  tiempo hasta 20 de daño baja en los tres). **Activado.**
+- Capitán nuevo contra sin capitán, pareado: +37,3 ± 3,8 (gana 128/160) sin el turno de grupo; +43,6 ± 3,7 (131/160) con él.
+
+**La pinza (regla 5), 80 peleas más:**
+
+| Turno de grupo grande | Capitán con pinza (160) | Capitán sin pinza (80) | Pareado contra sin capitán, con / sin pinza |
+|---|---|---|---|
+| no | 105,2 ± 2,8 | 91,1 ± 3,1 | +37,3 / +29,5 |
+| sí | 114,2 ± 3,0 | 100,4 ± 4,8 | +43,6 / +31,2 |
+
+En el mod la pinza **gana** (+14 de daño por minuto en las dos tandas), al revés que en el simulador (−8 %): se queda
+(`iaCapitanPinza`, activada). Con el anillo arreglado, el jugador que se aleja deja atrás a los que no tienen turno, y la
+pinza los manda por los lados en vez de detrás de él.
+
+**Qué tambalea al jugador (para el simulador).** Los jugadores **no tienen barra de postura** (`Posture` los deja
+fuera: la estamina hace ese papel), así que `Posture.isStaggered(jugador)` nunca era verdad y la regla 3 del capitán
+no lo veía nunca. Ahora "tambaleándose" = lentitud II o más (`Captain.reeling`). En el juego eso lo ponen:
+- la **parada con escudo** de un mob (el escudo subido hace ≤ `PARRY_TICKS`): lentitud II y debilidad I 30 ticks, y un
+  empujón de 0,6 hacia atrás (+0,2 arriba); el mob queda con su contraataque listo (aviso de 4);
+- la **embestida con agarre** del zombi (`LUNGE`): lentitud II `lungeGrabTicks` (30);
+- la **carga del bruto** (`CHARGE`): lentitud III 40 ticks y empujón 1,2 (+0,45 arriba);
+- el **empujón del escudo** del Molde Roto (`ThrownHead`): lentitud VI, debilidad III y fatiga III, 30 ticks.
+Lo que no pone lentitud pero también castiga: el **golpe de escudo** (`ShieldPlay`, 4 ticks: empuje 0,8 + 0,15, −15 de
+estamina, corta la carga), la estamina baja (< 25: un turno más en `Aggression`) y el golpe cansado. La aproximación del
+simulador (lentitud + debilidad tras la parada de un mob) coincide con el caso principal; que añada la embestida, la
+carga y el empujón del Molde si los tiene.
+
+**Lo que el simulador tiene que copiar de esta tanda:** "un turno libre se usa" (rodeo, flanqueo, retirada por postura
+y relevo solo sin turno libre), el turno de grupo grande (≥ 6 → +1) y "tambaleándose" = lentitud II o más.
 
 ## M6: el vector de mundo W (452–467, `WorldMemory`)
 

@@ -219,8 +219,10 @@ public final class RuleBrain {
 			}
 			return Decision.tactic(Tactic.RETIRARSE);
 		}
-		// Its balance nearly gone: back off to get it back (idea 35), if it is not alone.
-		if (dev.forja.combat.Posture.fill(mob) > 0.7 && ObsM1.allies(mob).size() >= 1 && distance < 6.0 && mind.windup == 0) {
+		// Its balance nearly gone: back off to get it back (idea 35), if it is not alone and has no turn to use. A free
+		// turn is used (2026-09-30): the group's blows were few because those that could strike stepped aside instead
+		// (see "a free turn is used" in docs/red_mob_v4_mod_estado.md).
+		if (dev.forja.combat.Posture.fill(mob) > 0.7 && !hasTurn && ObsM1.allies(mob).size() >= 1 && distance < 6.0 && mind.windup == 0) {
 			return Decision.tactic(Tactic.RETIRARSE);
 		}
 		// Arrows coming (the player drawing a bow): shield bearers cover as they come on (idea 40); the rest
@@ -259,12 +261,12 @@ public final class RuleBrain {
 		if (!hasTurn && mob.getHealth() < mob.getMaxHealth() * 0.4F && ObsM1.allies(mob).size() >= 2 && distance < 6.0) {
 			return Decision.tactic(Tactic.REAGRUPARSE);
 		}
-		// The relay: having just struck, make room for the next one if anyone is waiting.
-		if (now - mind.lastStrike < RELAY_TICKS && mind.othersWaiting && distance < 3.0 + Reach.actionExtra(mob)) {
+		// The relay: having just struck, make room for the next one if anyone is waiting (and no turn is free for it).
+		if (now - mind.lastStrike < RELAY_TICKS && !hasTurn && mind.othersWaiting && distance < 3.0 + Reach.actionExtra(mob)) {
 			return Decision.tactic(Tactic.ESPERAR);
 		}
-		// The pincer: the flanker goes round behind before it swings.
-		if (mind.role == SquadRole.FLANCO && Math.abs(Squad.wrap(Squad.angle(mob, target) - Squad.facing(target))) < FLANK_DONE) {
+		// The pincer: the flanker goes round behind before it swings, while it has no turn to use.
+		if (mind.role == SquadRole.FLANCO && !hasTurn && Math.abs(Squad.wrap(Squad.angle(mob, target) - Squad.facing(target))) < FLANK_DONE) {
 			return Decision.tactic(Tactic.FLANQUEAR);
 		}
 		// The shield wall, and a hurt shield bearer's guard (ideas 15 and 37): without a turn, covered. The smart shield
@@ -278,8 +280,9 @@ public final class RuleBrain {
 		// (a big group's): there it walked in from its slot, was told to circle, and walked back out.
 		boolean squad = !Double.isNaN(mind.ringAngle) && ObsM1.allies(mob).size() >= 1;
 		// The surround mode (MobSprint.rodeo): the player backing away, a pack member goes round to its slot,
-		// running, instead of trailing after them in a line (Andy, 2026-09-29).
-		if (squad && distance < MobSprint.RODEO_RANGE && MobSprint.rodeo(mind)) {
+		// running, instead of trailing after them in a line (Andy, 2026-09-29). Not one with a turn free: it goes in (against
+		// a player on the move the whole group went round and round and hardly struck).
+		if (squad && distance < MobSprint.RODEO_RANGE && !hasTurn && MobSprint.rodeo(mind)) {
 			return Decision.tactic(Tactic.RODEAR);
 		}
 		double circle = Math.max(CIRCLE_RANGE, squad ? Math.max(SPREAD_RANGE, mind.ringRadius + 2.0) : 0.0);

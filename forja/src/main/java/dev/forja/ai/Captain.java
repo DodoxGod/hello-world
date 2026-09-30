@@ -150,6 +150,26 @@ public final class Captain {
 		return g != null && now - g.blowAt <= MORALE_BLOW;
 	}
 
+	/**
+	 * How many fight this player, as the last Squad pass counted them (captain or not); 0 when no group has been seen
+	 * fighting them lately.
+	 */
+	public static int groupSize(Player player, long now) {
+		Group g = group(player);
+		return g == null || now - g.seenAt > FORGET ? 0 : g.members.size();
+	}
+
+	/**
+	 * The player reeling from a blow. Players have no balance bar (Posture leaves them out: stamina plays that part), so
+	 * "staggered" never held for one; what staggers a player in the game is slowness II or more from a monster: a mob's
+	 * shield parry (slowness II and weakness I, 30 ticks, shoved back 0.6), a zombie's lunge grab (slowness II, 30), a
+	 * brute's charge (slowness III, 40), the Broken Mould's shield shove (slowness VI, weakness III, 30).
+	 */
+	public static boolean reeling(Player player) {
+		net.minecraft.world.effect.MobEffectInstance slow = player.getEffect(net.minecraft.world.effect.MobEffects.SLOWNESS);
+		return slow != null && slow.getAmplifier() >= 1;
+	}
+
 	/** Whether the synchronized charge's extra turn is on for this player (Aggression.maxAttackers). */
 	public static boolean chargeTurn(Player player, long now) {
 		Group g = group(player);
@@ -325,7 +345,8 @@ public final class Captain {
 	 * <ul>
 	 *   <li>the player up a pillar or in a tower → ASEDIO;</li>
 	 *   <li>the group's morale under 0.3 → RETIRADA;</li>
-	 *   <li>the player exposed (using an item, charging a blow, staggered, under 30 % health, or with one of them behind,
+	 *   <li>the player exposed (using an item, charging a blow, reeling ({@link #reeling}), under 30 % health, or with one
+	 *   of them behind,
 	 *   within 6 and more than 120 degrees off their look) with at least two that fight up close within 10, and no charge
 	 *   in the last {@link #CHARGE_REST} ticks after the last one's extra turn → CARGA at once (countdown 0): all in, with
 	 *   one more turn for 2 s;</li>
@@ -362,7 +383,7 @@ public final class Captain {
 		double morale = captainMind == null ? 1.0 : groupMorale(captainMind, player, now);
 		Player real = Perception.real(player);
 		boolean exposed = player.isUsingItem() || dev.forja.combat.ChargedStrike.isCharging(player)
-			|| dev.forja.combat.Posture.isStaggered(player, now) || real.getHealth() < real.getMaxHealth() * 0.3F || backTurned;
+			|| reeling(real) || real.getHealth() < real.getMaxHealth() * 0.3F || backTurned;
 		boolean rested = now >= g.lastChargeAt + CHARGE_TURN_TICKS + CHARGE_REST;
 		// the player backing away from the group's middle
 		Vec3 moving = MobSprint.motion(player);
@@ -380,7 +401,7 @@ public final class Captain {
 			c.count = 0;
 		} else if (night && Lights.playerLight(player) < 7 && !seen) {
 			c.order = Order.EMBOSCADA;
-		} else if (backing) {
+		} else if (backing && dev.forja.combat.CombatConfig.get().iaCapitanPinza) {
 			c.formation = Formation.PINZA;
 		}
 		// A charge under way goes through: the rules do not call it off before its extra turn is over.

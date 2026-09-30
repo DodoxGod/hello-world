@@ -1,5 +1,26 @@
 # Novedades
 
+## 2026-09-30 — Los grupos sin capitán ya no dan vueltas: un turno libre se usa
+
+- **El fallo:** contra un jugador que se mueve, los monstruos sin turno daban vueltas hasta su hueco del anillo, el
+  flanqueador rodeaba hasta la espalda, y los que tenían la postura cargada o acababan de golpear se apartaban. Lo
+  hacían **aunque tuvieran un turno libre para atacar**. Los turnos estaban libres el 96 % del tiempo.
+- **Ahora:** quien tiene un turno libre va a por el jugador. Rodear, flanquear, apartarse por la postura y ceder el
+  sitio tras golpear quedan para los que esperan turno.
+- **Medido en el mod** (8 contra el jugador de prueba, 160 peleas):
+  - sin capitán, de 37,5 a **70,6** de daño por minuto;
+  - con el capitán de reglas, de 77,7 a **114,2**.
+- **Opción nueva `iaTurnoGrupoGrande`** (activada): con 6 o más monstruos a por el mismo jugador, un turno más. El
+  número se cambia con `iaGrupoGrandeMin`.
+- **Opción nueva `iaCapitanPinza`** (activada): la pinza del capitán cuando el jugador se aleja. En el mod suma unos 14
+  de daño por minuto.
+- **Arreglado:** el capitán cargaba "con el jugador aturdido", pero los jugadores no tienen barra de postura y eso no
+  pasaba nunca. Ahora cuenta como aturdido quien tiene lentitud II o más, como la que deja la parada con escudo de un
+  monstruo.
+- **Pruebas:** 3 nuevas.
+- **La medida del capitán** ahora cuenta cuántos monstruos llegan al jugador y cuántos turnos se usan. Con
+  `FORJA_CAPITAN_TRAZA=<archivo>` escribe cada tick, monstruo por monstruo.
+
 ## 2026-09-30 — El capitán de reglas ya ayuda, y el paso v4c del simulador
 
 - **El capitán de reglas empeoraba a su grupo.** Mandaba CERCAR casi siempre: los de delante y de los lados esperaban

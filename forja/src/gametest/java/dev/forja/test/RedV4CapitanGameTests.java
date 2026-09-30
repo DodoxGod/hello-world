@@ -340,6 +340,118 @@ public class RedV4CapitanGameTests {
 		});
 	}
 
+	/**
+	 * A free turn is used (2026-09-30): a zombie behind a player who walks away from it, away from its ring slot (the
+	 * surround mode, MobSprint.rodeo), goes in while a turn on them is free, and only goes round to its slot when every turn is
+	 * taken. Against a player on the move the whole group used to go round and round and hardly strike.
+	 */
+	@GameTest(padding = 24, maxTicks = 80)
+	public void aFreeTurnIsUsedAgainstAPlayerOnTheMove(GameTestHelper helper) {
+		floor(helper, 32);
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(12, 1, 16));
+		List<Mob> mobs = new ArrayList<>();
+		for (int k = 0; k < 5; k++) {
+			Zombie zombie = zombie(helper, new BlockPos(6, 1, 13 + k));
+			for (dev.forja.ai.Personality.Trait trait : dev.forja.ai.Personality.Trait.values()) {
+				zombie.removeTag(dev.forja.ai.Personality.TRAIT_TAG + trait.name().toLowerCase(java.util.Locale.ROOT));
+			}
+			zombie.addTag(dev.forja.ai.Personality.TRAIT_TAG + "agresivo");
+			mobs.add(zombie);
+		}
+		Vec3[] at = {player.position()};
+		helper.onEachTick(() -> {
+			// walking away along +x
+			at[0] = at[0].add(0.15, 0.0, 0.0);
+			player.setPos(at[0].x, at[0].y, at[0].z);
+			player.setHealth(player.getMaxHealth());
+			dev.forja.ai.MobSprint.motion(player);
+			for (Mob mob : mobs) {
+				mob.setTarget(player);
+				mob.setHealth(mob.getMaxHealth());
+			}
+		});
+		helper.runAfterDelay(40, () -> {
+			Mob behind = mobs.stream().min(java.util.Comparator.comparingDouble(Mob::getX)).orElseThrow();
+			MobMind mind = MobAi.mind(behind);
+			for (Mob mob : mobs) {
+				dev.forja.combat.AttackTokens.release(player, mob);
+			}
+			// its slot on its own side (no going round first) but well out, 3 beyond it: the player walking away from it,
+			// the surround mode wants it there
+			double side = Math.atan2(behind.getZ() - player.getZ(), behind.getX() - player.getX());
+			double radius = behind.distanceTo(player) + 3.0;
+			mind.ringAngle = side;
+			mind.ringRadius = radius;
+			mind.role = dev.forja.ai.SquadRole.RESERVA;
+			mind.lastStrike = Long.MIN_VALUE / 2;
+			helper.assertTrue(dev.forja.ai.MobSprint.rodeo(mind), "el modo rodeo lo pide (jugador alejándose, hueco por delante)");
+			dev.forja.ai.Decision free = dev.forja.ai.RuleBrain.decide(mind, player);
+			helper.assertTrue(free.tactic() == Tactic.ACERCARSE, "con un turno libre, va a por él: " + free.tactic());
+			int max = Aggression.maxAttackers(behind, player);
+			int taken = 0;
+			for (Mob mob : mobs) {
+				if (mob != behind && taken < max && dev.forja.combat.AttackTokens.tryAcquire(player, mob, max)) {
+					taken++;
+				}
+			}
+			helper.assertTrue(taken == max, "los turnos, todos ocupados: " + taken + " de " + max);
+			mind.ringAngle = side;
+			mind.ringRadius = radius;
+			dev.forja.ai.Decision busy = dev.forja.ai.RuleBrain.decide(mind, player);
+			helper.assertTrue(busy.tactic() == Tactic.RODEAR, "sin turno libre, rodea hasta su hueco: " + busy.tactic());
+			for (Mob mob : mobs) {
+				dev.forja.combat.AttackTokens.release(player, mob);
+			}
+			clear(helper, 32);
+			helper.succeed();
+		});
+	}
+
+	/**
+	 * A big group (iaTurnoGrupoGrande, on): with 6 or more fighting one player (the Squad's count) the player allows one
+	 * more turn; with 5, not.
+	 */
+	@GameTest(padding = 16, maxTicks = 60)
+	public void aBigGroupGetsOneMoreTurn(GameTestHelper helper) {
+		floor(helper, 16);
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(8, 1, 8));
+		List<Mob> mobs = new ArrayList<>();
+		for (int k = 0; k < 6; k++) {
+			mobs.add(zombie(helper, new BlockPos(2 + 2 * k, 1, 2)));
+		}
+		hold(helper, player, mobs);
+		int[] six = {0};
+		helper.runAfterDelay(22, () -> {
+			long now = helper.getLevel().getGameTime();
+			helper.assertTrue(Captain.groupSize(player, now) == 6, "el grupo cuenta 6: " + Captain.groupSize(player, now));
+			six[0] = Aggression.maxAttackers(player);
+			mobs.get(5).discard();
+		});
+		helper.runAfterDelay(45, () -> {
+			long now = helper.getLevel().getGameTime();
+			helper.assertTrue(Captain.groupSize(player, now) == 5, "ahora 5: " + Captain.groupSize(player, now));
+			int five = Aggression.maxAttackers(player);
+			boolean on = CombatConfig.get().iaTurnoGrupoGrande;
+			helper.assertTrue(six[0] == five + (on ? 1 : 0), "con 6, un turno más (" + on + "): " + six[0] + " / " + five);
+			clear(helper, 16);
+			helper.succeed();
+		});
+	}
+
+	/** What staggers a player (they have no balance bar): slowness II or more from a monster, as a mob's parry leaves. */
+	@GameTest(maxTicks = 10)
+	public void aPlayerReelsFromSlownessTwo(GameTestHelper helper) {
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(2, 1, 2));
+		helper.assertFalse(Captain.reeling(player), "sin nada, no");
+		player.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.SLOWNESS, 30, 0));
+		helper.assertFalse(Captain.reeling(player), "lentitud I, no");
+		player.removeAllEffects();
+		player.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.SLOWNESS, 30, 1));
+		helper.assertTrue(Captain.reeling(player), "lentitud II (la parada de un mob), sí");
+		helper.assertFalse(dev.forja.combat.Posture.isStaggered(player, helper.getLevel().getGameTime()), "la postura nunca aturde a un jugador");
+		helper.succeed();
+	}
+
 	/** A group led by nobody but a veteran has no captain (Andy's decision 4). */
 	@GameTest(padding = 16, maxTicks = 40)
 	public void aVeteranNeverLeads(GameTestHelper helper) {

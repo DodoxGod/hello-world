@@ -41,7 +41,10 @@ public final class Aggression {
 		int extra = gearTurns(player);
 		// The captain's synchronized charge (v4, M5): one more turn for 2 s after its shout.
 		int charge = Captain.chargeTurn(player, player.level().getGameTime()) ? 1 : 0;
-		return Math.max(1, Math.min(base + 2 + extra, turns + extra) + charge);
+		// A big group (2026-09-30, iaTurnoGrupoGrande): one more turn when iaGrupoGrandeMin or more fight this player.
+		CombatConfig cfg = CombatConfig.get();
+		int big = cfg.iaTurnoGrupoGrande && Captain.groupSize(player, player.level().getGameTime()) >= cfg.iaGrupoGrandeMin ? 1 : 0;
+		return Math.max(1, Math.min(base + 2 + extra, turns + extra) + charge + big);
 	}
 
 	/**

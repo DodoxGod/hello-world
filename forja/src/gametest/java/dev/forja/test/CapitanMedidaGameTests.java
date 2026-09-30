@@ -50,22 +50,32 @@ public class CapitanMedidaGameTests {
 	static final int SWING = 16;
 	static final double PLAYER_REACH = 3.5;
 
+	/** With FORJA_CAPITAN_TRAZA=<file>, every tick of the first fights of each mode, mob by mob, goes to it. */
+	static final int TRACED = 2;
+	static final int MAX_FIGHTS = 100;
+
+	/** Whether FORJA_CAPITAN_ABLACION (a comma list) names this switch. */
+	static boolean ablation(String name) {
+		String list = System.getenv("FORJA_CAPITAN_ABLACION");
+		return list != null && java.util.Arrays.asList(list.split(",")).contains(name);
+	}
+
 	static int fights() {
 		String n = System.getenv("FORJA_CAPITAN_N");
 		return n == null || n.isBlank() ? 8 : Integer.parseInt(n.trim());
 	}
 
-	@GameTest(environment = "forja-test:capitan_medida", padding = 32, maxTicks = 40 * (FIGHT + GAP) + 200)
+	@GameTest(environment = "forja-test:capitan_medida", padding = 32, maxTicks = MAX_FIGHTS * (FIGHT + GAP) + 200)
 	public void measureNoCaptain(GameTestHelper helper) {
 		measure(helper, CaptainBrain.Mode.SIN_CAPITAN);
 	}
 
-	@GameTest(environment = "forja-test:capitan_medida", padding = 32, maxTicks = 40 * (FIGHT + GAP) + 200)
+	@GameTest(environment = "forja-test:capitan_medida", padding = 32, maxTicks = MAX_FIGHTS * (FIGHT + GAP) + 200)
 	public void measureFreeCaptain(GameTestHelper helper) {
 		measure(helper, CaptainBrain.Mode.LIBRE);
 	}
 
-	@GameTest(environment = "forja-test:capitan_medida", padding = 32, maxTicks = 40 * (FIGHT + GAP) + 200)
+	@GameTest(environment = "forja-test:capitan_medida", padding = 32, maxTicks = MAX_FIGHTS * (FIGHT + GAP) + 200)
 	public void measureRulesCaptain(GameTestHelper helper) {
 		measure(helper, CaptainBrain.Mode.REGLAS);
 	}
@@ -76,8 +86,18 @@ public class CapitanMedidaGameTests {
 			helper.succeed();
 			return;
 		}
-		int fights = Math.min(40, fights());
+		int fights = Math.min(MAX_FIGHTS, fights());
 		CombatConfig.get().veteranChance = 0.0;
+		// FORJA_CAPITAN_ABLACION: switches for looking for what slows the group down (they apply to every mode at once)
+		if (ablation("sinaviso")) {
+			CombatConfig.get().telegraph = false;
+		}
+		if (ablation("sinpostura")) {
+			CombatConfig.get().posture = false;
+		}
+		// the variants measured for the defaults: set either way (the run's config file keeps whatever it had)
+		CombatConfig.get().iaTurnoGrupoGrande = !ablation("sinturno");
+		CombatConfig.get().iaCapitanPinza = !ablation("sinpinza");
 		CombatConfig.get().eliteChance = 0.0;
 		CombatConfig.get().shieldChance = 0.0;
 		dev.forja.ForjaConfig.get().baculos = 0.0F;
@@ -171,6 +191,10 @@ public class CapitanMedidaGameTests {
 		double[] strafe = {1.0};
 		Map<Captain.Order, Integer> orders = new EnumMap<>(Captain.Order.class);
 		boolean[] done = {false};
+		// ticks summed: mobs within reach, turns taken, ticks with a turn free, ticks
+		double[] watch = new double[4];
+		String traced = System.getenv("FORJA_CAPITAN_TRAZA");
+		Path trace = traced == null || traced.isBlank() ? null : Path.of(traced.trim());
 		Vec3 low = helper.absoluteVec(new Vec3(4, 1, 4));
 		Vec3 high = helper.absoluteVec(new Vec3(SIZE - 4, 1, SIZE - 4));
 		return () -> {
@@ -194,12 +218,44 @@ public class CapitanMedidaGameTests {
 			List<Mob> alive = mobs.stream().filter(Entity::isAlive).toList();
 			if (t >= FIGHT || alive.isEmpty()) {
 				done[0] = true;
-				finish(helper, mode, seed, out, mobs, taken[0], killedAt[0], t, orders, player);
+				finish(helper, mode, seed, out, mobs, taken[0], killedAt[0], t, orders, player, watch);
 				return true;
 			}
 			Captain.Group g = Captain.group(player);
 			Captain.Order order = g == null || g.captain == null ? Captain.Order.NINGUNA : g.command.order;
 			orders.merge(order, 1, Integer::sum);
+			// where the free ring stalls: how many are within reach of the player, and how many turns are taken
+			int near = 0;
+			for (Mob mob : alive) {
+				near += mob.distanceTo(player) <= PLAYER_REACH ? 1 : 0;
+			}
+			int held = dev.forja.combat.AttackTokens.held(player);
+			int max = dev.forja.ai.Aggression.maxAttackers(player);
+			watch[0] += near;
+			watch[1] += held;
+			watch[2] += held < max ? 1 : 0;
+			watch[3]++;
+			if (trace != null && seed <= TRACED) {
+				StringBuilder row = new StringBuilder(String.format(Locale.ROOT, "%s\t%d\t%d\t%d\t%d/%d\t%.2f,%.2f\t%s", mode.name().toLowerCase(Locale.ROOT),
+					seed, t, near, held, max, player.getX() - low.x, player.getZ() - low.z, order.name().toLowerCase(Locale.ROOT)));
+				for (Mob mob : alive) {
+					dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
+					StringBuilder goals = new StringBuilder();
+					((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals().getAvailableGoals().stream().filter(w -> w.isRunning())
+						.forEach(w -> goals.append(w.getGoal().getClass().getSimpleName(), 0, Math.min(5, w.getGoal().getClass().getSimpleName().length())).append('+'));
+					row.append(String.format(Locale.ROOT, "\t%s:%.1f:%s:%s%s%s%s:%s", mob.getType().toShortString().substring(0, 3), mob.distanceTo(player),
+						mind == null ? "-" : mind.decision.tactic().name().toLowerCase(Locale.ROOT),
+						dev.forja.combat.AttackTokens.holds(player, mob) ? "T" : "", mind != null && mind.windup > 0 ? "W" : "",
+						mind != null && mind.running ? "R" : "", dev.forja.combat.Posture.isStaggered(mob, helper.getLevel().getGameTime()) ? "S" : "",
+						goals));
+				}
+				row.append('\n');
+				try {
+					Files.writeString(trace, row, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+				} catch (java.io.IOException failure) {
+					throw new RuntimeException(failure);
+				}
+			}
 			for (Mob mob : alive) {
 				if (mob.getTarget() != player) {
 					mob.setTarget(player);
@@ -254,7 +310,11 @@ public class CapitanMedidaGameTests {
 				player.setYRot(yaw);
 				player.setYHeadRot(yaw);
 				if (t % SWING == 0 && Math.sqrt(best) <= PLAYER_REACH) {
+					Vec3 before = nearest.getDeltaMovement();
 					nearest.hurtServer(helper.getLevel(), helper.getLevel().damageSources().playerAttack(player), PLAYER_DAMAGE);
+					if (ablation("sinempuje")) {
+						nearest.setDeltaMovement(before);
+					}
 				}
 			}
 			return false;
@@ -262,7 +322,7 @@ public class CapitanMedidaGameTests {
 	}
 
 	private static void finish(GameTestHelper helper, CaptainBrain.Mode mode, int seed, Path out, List<Mob> mobs, double taken, long killedAt,
-		long ticks, Map<Captain.Order, Integer> orders, Player player) {
+		long ticks, Map<Captain.Order, Integer> orders, Player player, double[] watch) {
 		int dead = (int) mobs.stream().filter(m -> !m.isAlive()).count();
 		StringBuilder o = new StringBuilder();
 		int total = orders.values().stream().mapToInt(Integer::intValue).sum();
@@ -270,8 +330,9 @@ public class CapitanMedidaGameTests {
 			o.append(o.isEmpty() ? "" : ",").append(e.getKey().name().toLowerCase(Locale.ROOT)).append('=')
 				.append(String.format(Locale.ROOT, "%.2f", e.getValue() / (double) Math.max(1, total)));
 		}
-		String line = String.format(Locale.ROOT, "%s\t%d\t%.1f\t%d\t%d\t%d\t%s%n", mode.name().toLowerCase(Locale.ROOT), seed,
-			taken * 60.0 * 20.0 / Math.max(1, ticks), killedAt, dead, ticks, o);
+		double n = Math.max(1.0, watch[3]);
+		String line = String.format(Locale.ROOT, "%s\t%d\t%.1f\t%d\t%d\t%d\t%s\t%.2f\t%.2f\t%.2f%n", mode.name().toLowerCase(Locale.ROOT), seed,
+			taken * 60.0 * 20.0 / Math.max(1, ticks), killedAt, dead, ticks, o, watch[0] / n, watch[1] / n, watch[2] / n);
 		try {
 			Files.writeString(out, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 		} catch (java.io.IOException failure) {
