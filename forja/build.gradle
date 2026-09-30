@@ -80,10 +80,20 @@ fabricApi {
 	}
 }
 
-// FORJA_FILTRO=<selector> ./gradlew runGametest: only the server game tests the selector matches (Fabric's
-// fabric-api.gametest.filter), e.g. the captain's measurement, which is long.
-if (System.getenv("FORJA_FILTRO") != null) {
-	tasks.matching { it.name.equalsIgnoreCase("runGametest") }.configureEach {
-		jvmArgs "-Dfabric-api.gametest.filter=" + System.getenv("FORJA_FILTRO")
+// To chase one test on its own (the server run only): FORJA_PRUEBAS picks the tests by vanilla's selector
+// ('forja-test:*torch*'), and FORJA_VERIFICAR=1 runs each of them 400 times side by side (vanilla's verify: 100 per
+// rotation), which is how a test that only fails now and then is caught in the act.
+loom.runs.configureEach { run ->
+	if (run.name.equalsIgnoreCase("gameTest")) {
+		if (System.getenv("FORJA_PRUEBAS")) {
+			run.property("fabric-api.gametest.filter", System.getenv("FORJA_PRUEBAS"))
+		}
+		if (System.getenv("FORJA_VERIFICAR")) {
+			run.property("fabric-api.gametest.verify", "true")
+		}
+		// FORJA_FILTRO: the same selector under the name the captain's measurement uses.
+		if (System.getenv("FORJA_FILTRO")) {
+			run.property("fabric-api.gametest.filter", System.getenv("FORJA_FILTRO"))
+		}
 	}
 }

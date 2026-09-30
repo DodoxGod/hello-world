@@ -222,8 +222,8 @@ public class AiGameTests {
 	/** Four zombies on one player get four different slots on the ring, a quarter turn apart, and a flanker. */
 	@GameTest(maxTicks = 60)
 	public void squadSpreadsRoundThePlayer(GameTestHelper helper) {
-		// Other tests' players stand next door: no monster of this one may be handed to them.
-		CombatConfig.get().iaRepartirObjetivos = false;
+		// Other tests' players stand next door: no monster of this one may be handed to them (off for every test:
+		// TestDefaults).
 		CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
 		java.util.List<Zombie> zombies = new java.util.ArrayList<>();
 		int[][] at = {{1, 1}, {2, 1}, {1, 2}, {7, 7}};
@@ -249,7 +249,6 @@ public class AiGameTests {
 				}
 			}
 			helper.assertTrue(flankers == 1, "con 3 o más debería haber un flanco, hay " + flankers);
-			CombatConfig.get().iaRepartirObjetivos = true;
 			helper.succeed();
 		});
 	}

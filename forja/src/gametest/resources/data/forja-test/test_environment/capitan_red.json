@@ -1,4 +1,6 @@
 {
   "type": "minecraft:all_of",
-  "definitions": []
+  "definitions": [
+    "forja-test:estable"
+  ]
 }

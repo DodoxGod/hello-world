@@ -5,6 +5,9 @@
 	"name": "Forja client test",
 	"environment": "*",
 	"entrypoints": {
+		"main": [
+			"dev.forja.test.TestDefaults"
+		],
 		"fabric-gametest": [
 			"dev.forja.test.CombatGameTests",
 			"dev.forja.test.AiGameTests",
