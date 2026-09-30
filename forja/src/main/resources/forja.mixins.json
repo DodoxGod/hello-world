@@ -12,6 +12,7 @@
 		"JigsawStructureMixin",
 		"LivingEntityMixin",
 		"CombatArmorMixin",
+		"CraftingMenuMixin",
 		"MeleeAttackGoalMixin",
 		"RangedBowAttackGoalMixin",
 		"RangedCrossbowAttackGoalMixin",
@@ -34,6 +35,7 @@
 		"BlazeMixin",
 		"EnderManAccess",
 		"PiglinAiMixin",
+		"PlayerAdvancementsMixin",
 		"PlayerAffinityMixin",
 		"PlayerGlideMixin",
 		"StructureTemplatePoolAccess"

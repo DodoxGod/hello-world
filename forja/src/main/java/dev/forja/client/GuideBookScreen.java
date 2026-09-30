@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import dev.forja.ForjaPath;
+import dev.forja.GuideBooks;
 import dev.forja.forge.Assembler;
 import dev.forja.forge.ForgeStats;
 import dev.forja.forge.ForgeType;
@@ -41,6 +42,11 @@ import org.jspecify.annotations.Nullable;
  * its five sections, a <b>strip along the foot</b> of the pages showing where you are in the whole of
  * it (and taking you anywhere in it with a click), and a <b>way back</b> — right click, or backspace —
  * to wherever you jumped from.
+ *
+ * <p>And then it was cut up (docs/LIBROS_GUIA.md). Andy: "Ver un libro que tiene más de 200 páginas termina
+ * asustando". The same screen now lays out whichever {@link GuideBooks.Book} it is given: a short book with its own
+ * cover, tabs and chapters, the library G opens (the shelf, the path and the catalogue), or the old tome, kept for
+ * creative. A link to a chapter in another book opens that book when the reader carries it.
  */
 public class GuideBookScreen extends Screen {
 	private static final int PAGE_W = 150;
@@ -86,9 +92,30 @@ public class GuideBookScreen extends Screen {
 	private Set<String> pathDone = Set.of();
 	/** Set by the client test to lay the book out for a given progress instead of the player's own. */
 	private @Nullable Set<String> forcedDone;
+	/** Which book this is: its cover, its tabs and its chapters. */
+	private final GuideBooks.Book book;
+	/** A chapter to open at, when the book was opened from a link in another. */
+	private @Nullable String openAt;
 
+	/** The whole guide in one volume: the creative tome, and what the older client tests read. */
 	public GuideBookScreen() {
-		super(Component.translatable("item.forja.guia_de_forja"));
+		this(GuideBooks.Book.TOMO);
+	}
+
+	public GuideBookScreen(GuideBooks.Book book) {
+		super(book.title());
+		this.book = book;
+	}
+
+	/** A book opened at one of its chapters, for a link from another book. */
+	public GuideBookScreen(GuideBooks.Book book, String chapter) {
+		this(book);
+		this.openAt = chapter;
+	}
+
+	/** Which book this screen is showing. */
+	public GuideBooks.Book book() {
+		return this.book;
 	}
 
 	// ------------------------------------------------------------------ layout
@@ -117,7 +144,18 @@ public class GuideBookScreen extends Screen {
 			.bounds(this.width / 2 - 104, top + BOOK_H + 3, 100, 20).build());
 		this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> this.onClose())
 			.bounds(this.width / 2 + 4, top + BOOK_H + 3, 100, 20).build());
+		if (this.openAt != null) {
+			this.goToPage(this.chapterPage(this.openAt));
+			this.openAt = null;
+		}
+		BookMemory.opened(this.book);
 		this.updateButtons();
+	}
+
+	@Override
+	public void removed() {
+		super.removed();
+		BookMemory.save();
 	}
 
 	/**
@@ -327,53 +365,41 @@ public class GuideBookScreen extends Screen {
 		if (found == null) {
 			return -1;
 		}
-		int index = 0;
-		for (List<String> keys : SECTIONS.values()) {
-			if (keys.contains(found)) {
+		return this.sectionOf(found);
+	}
+
+	private int sectionOf(String chapterKey) {
+		List<GuideBooks.Section> sections = this.book.sections;
+		for (int index = 0; index < sections.size(); index++) {
+			if (sections.get(index).chapters().contains(chapterKey)) {
 				return index;
 			}
-			index++;
 		}
 		return -1;
 	}
 
-	private int sectionOf(String chapterKey) {
-		int index = 0;
-		for (List<String> keys : SECTIONS.values()) {
-			if (keys.contains(chapterKey)) {
-				return index;
-			}
-			index++;
-		}
-		return -1;
+	/** The tab colour of a section: one of the five painted on the book's texture, or -1 for none. */
+	private int sectionColour(int section) {
+		return section < 0 ? -1 : this.book.sections.get(section).colour();
 	}
 
 	/** The first page of a section: of whichever of its chapters comes first in the book. */
 	private int sectionPage(int section) {
-		int index = 0;
-		for (List<String> keys : SECTIONS.values()) {
-			if (index++ == section) {
-				int first = Integer.MAX_VALUE;
-				for (String key : keys) {
-					Chapter chapter = this.chapters.get(key);
-					if (chapter != null) {
-						first = Math.min(first, chapter.page);
-					}
-				}
-				return first == Integer.MAX_VALUE ? 0 : first;
+		if (section < 0 || section >= this.book.sections.size()) {
+			return 0;
+		}
+		int first = Integer.MAX_VALUE;
+		for (String key : this.book.sections.get(section).chapters()) {
+			Chapter chapter = this.chapters.get(key);
+			if (chapter != null) {
+				first = Math.min(first, chapter.page);
 			}
 		}
-		return 0;
+		return first == Integer.MAX_VALUE ? 0 : first;
 	}
 
 	private String sectionKey(int section) {
-		int index = 0;
-		for (String key : SECTIONS.keySet()) {
-			if (index++ == section) {
-				return key;
-			}
-		}
-		return "";
+		return section < 0 || section >= this.book.sections.size() ? "" : this.book.sections.get(section).key();
 	}
 
 	private int tabX() {
@@ -386,7 +412,7 @@ public class GuideBookScreen extends Screen {
 
 	/** The section whose tab is under the mouse, or -1. */
 	private int tabAt(double mouseX, double mouseY) {
-		for (int section = 0; section < SECTIONS.size(); section++) {
+		for (int section = 0; section < this.book.sections.size(); section++) {
 			if (mouseX >= this.tabX() && mouseX < this.tabX() + 22 && mouseY >= this.tabY(section) && mouseY < this.tabY(section) + TAB_H) {
 				return section;
 			}
@@ -489,7 +515,12 @@ public class GuideBookScreen extends Screen {
 
 	/** A book as a reader with exactly these forja/ advancements done would see it, for the client test. */
 	public static GuideBookScreen showing(Set<String> done) {
-		GuideBookScreen book = new GuideBookScreen();
+		return showing(GuideBooks.Book.TOMO, done);
+	}
+
+	/** One of the books as a reader with exactly these forja/ advancements done would see it, for the client test. */
+	public static GuideBookScreen showing(GuideBooks.Book which, Set<String> done) {
+		GuideBookScreen book = new GuideBookScreen(which);
 		book.forcedDone = done;
 		return book;
 	}
@@ -524,8 +555,60 @@ public class GuideBookScreen extends Screen {
 		return false;
 	}
 
+	/**
+	 * Where the sign on the cover is, for the client test to click: under the emblem and the title, whose height
+	 * now depends on how many lines the book's name takes.
+	 */
+	public double[] pathSignPoint() {
+		if (this.pages.isEmpty()) {
+			this.build();
+		}
+		int y = 0;
+		for (Element element : this.pages.getFirst()) {
+			if (element instanceof PathSign) {
+				return this.contentPoint(0, 40, y + 8);
+			}
+			y += element.height();
+		}
+		return this.contentPoint(0, 40, 88);
+	}
+
+	/**
+	 * Links that go nowhere, as "page:chapter": a chapter link or a step of the path whose chapter no book has.
+	 * A link to another book is fine, and so is one to a book not written yet (it says so); a key nobody has is not.
+	 */
+	public List<String> brokenLinks() {
+		if (this.pages.isEmpty()) {
+			this.build();
+		}
+		List<String> broken = new ArrayList<>();
+		for (int i = 0; i < this.pages.size(); i++) {
+			for (Element element : this.pages.get(i)) {
+				String target = element instanceof ChapterLink link ? link.chapter
+					: element instanceof PathRow row ? row.step.chapter : null;
+				if (target != null && !this.chapters.containsKey(target) && GuideBooks.bookOf(target) == null) {
+					broken.add(i + ":" + target);
+				}
+			}
+		}
+		return broken;
+	}
+
+	/** The chapters this book printed, in order, for the client test. */
+	public List<String> chapterKeys() {
+		if (this.pages.isEmpty()) {
+			this.build();
+		}
+		List<String> keys = new ArrayList<>(this.chapters.keySet());
+		keys.sort(java.util.Comparator.comparingInt(key -> this.chapters.get(key).page));
+		return keys;
+	}
+
 	/** First page of a chapter by key (mesas, objetos, piezas, materiales, rasgos, mejoras, estadisticas). */
 	public int chapterPage(String key) {
+		if (this.pages.isEmpty()) {
+			this.build();
+		}
 		Chapter chapter = this.chapters.get(key);
 		return chapter == null ? 0 : chapter.page;
 	}
@@ -557,75 +640,21 @@ public class GuideBookScreen extends Screen {
 	private void build() {
 		this.pathDone = this.forcedDone != null ? this.forcedDone : PathClient.done();
 		ForjaPath.Step next = ForjaPath.next(this.pathDone::contains);
-		List<Element> cover = new ArrayList<>();
-		cover.add(new Emblem(
-			Assembler.create(ForgeType.MARTILLO, List.of(ForgeMaterial.DAMASCO, ForgeMaterial.MADERA, ForgeMaterial.ORO)),
-			new ItemStack(ModItems.CORAZON_DE_FORJA)));
-		cover.add(new Title(Component.translatable("item.forja.guia_de_forja")));
-		// Until the path is walked, the first thing under the title is where to go next.
-		if (next != null) {
-			cover.add(new PathSign(next));
-		}
-		cover.add(new IconRow(List.of(
-			new ItemStack(ModItems.MESA_DE_PIEZAS),
-			Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.DIAMANTE),
-			new ItemStack(ModItems.MESA_DE_FORJA),
-			Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.DIAMANTE, ForgeMaterial.PIEDRA, ForgeMaterial.ORO))
-		)));
-		cover.add(new IconRow(List.of(
-			Assembler.create(ForgeType.MANGUAL, List.of(ForgeMaterial.DAMASCO, ForgeMaterial.DAMASCO, ForgeMaterial.OBSIDIACERO)),
-			Assembler.create(ForgeType.ALAS, List.of(ForgeMaterial.ORO, ForgeMaterial.CUERO)),
-			dev.forja.item.Talisman.CUARZO.create(),
-			new ItemStack(ModItems.CORAZON_DE_FORJA)
-		)));
-		cover.add(new Divider());
-		cover.add(new Text(Component.translatable("gui.forja.libro.intro"), INK));
-		cover.add(new Spacer(4));
-		cover.add(new Text(Component.translatable("gui.forja.libro.pasos"), INK_SOFT));
+		List<Element> cover = this.book == GuideBooks.Book.TOMO ? this.tomeCover(next) : this.bookCover(next);
 		// The chapters are laid out first, into their own list, because until the index has been broken
 		// into pages nobody knows how many pages come before them.
 		List<List<Element>> body = new ArrayList<>();
 		this.sink = body;
-
-		this.chapter("primeros_pasos", this.firstStepsChapter());
-		this.chapter("siguiente_paso", this.nextStepChapter());
-		List<Element> tables = new ArrayList<>(this.tablesChapter());
-		tables.add(new Divider());
-		tables.addAll(this.cabinetEntry());
-		this.chapter("mesas", tables);
-		this.chapter("objetos", this.recipesChapter());
-		this.chapter("piezas", this.partsChapter());
-		this.chapter("materiales", this.materialsChapter());
-		this.chapter("rasgos", this.traitsChapter());
-		this.chapter("mejoras", this.upgradesChapter());
-		this.chapter("potencial", this.potentialChapter());
-		this.chapter("maestria", this.masteryChapter());
-		this.chapter("aleaciones", this.alloysChapter());
-		this.chapter("fundicion", this.foundryChapter());
-		this.chapter("temple", this.quenchChapter());
-		this.chapter("herrero", this.smithChapter());
-		this.chapter("tecnicas", this.techniquesChapter());
-		this.chapter("mi_taller", this.myWorkshopChapter());
-		this.chapter("sinergias", this.synergiesChapter());
-		this.chapter("pactos", this.pactsChapter());
-		this.chapter("combate", this.combatChapter());
-		this.chapter("mana", this.manaChapter());
-		this.chapter("accesorios", this.trinketsChapter());
-		this.chapter("clases", this.classesChapter());
-		this.chapter("eventos", this.eventsChapter());
-		this.chapter("encargos", this.commissionsChapter());
-		this.chapter("amenazas", this.threatsChapter());
-		this.chapter("bestiario", this.bestiaryChapter());
-		this.chapter("mundo", this.worldChapter());
-		this.chapter("cementerio", this.graveyardChapter());
-		this.chapter("estadisticas", this.statsChapter());
+		for (String key : this.book.chapters()) {
+			this.chapter(key, this.body(key));
+		}
 
 		// Twenty chapters is too many for a flat list, so the index is grouped.
 		List<Element> index = new ArrayList<>();
 		index.add(new Header(Component.translatable("gui.forja.libro.indice")));
-		for (Map.Entry<String, List<String>> section : SECTIONS.entrySet()) {
-			index.add(new SubHeader(Component.translatable("gui.forja.libro.seccion." + section.getKey())));
-			for (String key : section.getValue()) {
+		for (GuideBooks.Section section : this.book.sections) {
+			index.add(new SubHeader(Component.translatable("gui.forja.libro.seccion." + section.key())));
+			for (String key : section.chapters()) {
 				Chapter chapter = this.chapters.get(key);
 				if (chapter != null) {
 					index.add(new IndexEntry(chapter, chapterIcon(key)));
@@ -648,6 +677,90 @@ public class GuideBookScreen extends Screen {
 		this.pages.addAll(body);
 	}
 
+	/** The old guide's title page, for the tome that keeps it whole. */
+	private List<Element> tomeCover(ForjaPath.@Nullable Step next) {
+		List<Element> cover = new ArrayList<>();
+		cover.add(new Emblem(
+			Assembler.create(ForgeType.MARTILLO, List.of(ForgeMaterial.DAMASCO, ForgeMaterial.MADERA, ForgeMaterial.ORO)),
+			new ItemStack(ModItems.CORAZON_DE_FORJA)));
+		cover.add(new Title(this.font, this.book.title()));
+		// Until the path is walked, the first thing under the title is where to go next.
+		if (next != null) {
+			cover.add(new PathSign(next));
+		}
+		cover.add(new IconRow(List.of(
+			new ItemStack(ModItems.MESA_DE_PIEZAS),
+			Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.DIAMANTE),
+			new ItemStack(ModItems.MESA_DE_FORJA),
+			Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.DIAMANTE, ForgeMaterial.PIEDRA, ForgeMaterial.ORO))
+		)));
+		cover.add(new IconRow(List.of(
+			Assembler.create(ForgeType.MANGUAL, List.of(ForgeMaterial.DAMASCO, ForgeMaterial.DAMASCO, ForgeMaterial.OBSIDIACERO)),
+			Assembler.create(ForgeType.ALAS, List.of(ForgeMaterial.ORO, ForgeMaterial.CUERO)),
+			dev.forja.item.Talisman.CUARZO.create(),
+			new ItemStack(ModItems.CORAZON_DE_FORJA)
+		)));
+		cover.add(new Divider());
+		cover.add(new Text(Component.translatable("gui.forja.libro.intro"), INK));
+		cover.add(new Spacer(4));
+		cover.add(new Text(Component.translatable("gui.forja.libro.pasos"), INK_SOFT));
+		return cover;
+	}
+
+	/** Every chapter's pages by its key: the same chapter can be printed in more than one book. */
+	private List<Element> body(String key) {
+		return switch (key) {
+			case "primeros_pasos" -> this.firstStepsChapter();
+			case "siguiente_paso" -> this.nextStepChapter();
+			case "mesas" -> {
+				List<Element> tables = new ArrayList<>(this.tablesChapter());
+				tables.add(new Divider());
+				tables.addAll(this.cabinetEntry());
+				yield tables;
+			}
+			case "objetos" -> this.recipesChapter();
+			case "piezas" -> this.partsChapter();
+			case "materiales" -> this.materialsChapter();
+			case "rasgos" -> this.traitsChapter();
+			case "mejoras" -> this.upgradesChapter();
+			case "potencial" -> this.potentialChapter();
+			case "maestria" -> this.masteryChapter();
+			case "aleaciones" -> this.alloysChapter();
+			case "fundicion" -> this.foundryChapter();
+			case "temple" -> this.quenchChapter();
+			case "herrero" -> this.smithChapter();
+			case "tecnicas" -> this.techniquesChapter();
+			case "mi_taller" -> this.myWorkshopChapter();
+			case "sinergias" -> this.synergiesChapter();
+			case "pactos" -> this.pactsChapter();
+			case "combate" -> this.combatChapter();
+			case "mana" -> this.manaChapter();
+			case "accesorios" -> this.trinketsChapter();
+			case "clases" -> this.classesChapter();
+			case "eventos" -> this.eventsChapter();
+			case "encargos" -> this.commissionsChapter();
+			case "amenazas" -> this.threatsChapter();
+			case "bestiario" -> this.bestiaryChapter();
+			case "mundo" -> this.worldChapter();
+			case "cementerio" -> this.graveyardChapter();
+			case "estadisticas" -> this.statsChapter();
+			case "mesa_mayor" -> this.greaterTableChapter();
+			// The notebook, book I and the library (docs/LIBROS_GUIA.md): further down, under "the books".
+			case "bienvenida" -> this.welcomeChapter();
+			case "primeras_mesas" -> this.firstTablesChapter();
+			case "teclas" -> this.keysChapter();
+			case "estanteria" -> this.shelfChapter();
+			case "yunque_sabes" -> this.anvilRecapChapter();
+			case "cortar" -> this.cuttingChapter();
+			case "estrella" -> this.starChapter();
+			case "mejorar" -> this.improvingChapter();
+			case "desarmar" -> this.salvageChapter();
+			case "yunque_siguiente" -> this.anvilNextChapter();
+			case "catalogo" -> this.catalogueChapter();
+			default -> throw new IllegalArgumentException("no chapter " + key);
+		};
+	}
+
 	/**
 	 * Break a run of elements into pages that fit.
 	 *
@@ -660,6 +773,14 @@ public class GuideBookScreen extends Screen {
 		int used = 0;
 		for (int i = 0; i < body.size(); i++) {
 			Element element = body.get(i);
+			if (element instanceof PageBreak) {
+				if (!page.isEmpty()) {
+					out.add(page);
+					page = new ArrayList<>();
+					used = 0;
+				}
+				continue;
+			}
 			// A section title keeps company with the element under it.
 			int needed = element.height() + (element instanceof SubHeader && i + 1 < body.size() ? body.get(i + 1).height() : 0);
 			if (used + needed > CONTENT_H && !page.isEmpty()) {
@@ -672,17 +793,6 @@ public class GuideBookScreen extends Screen {
 		}
 		out.add(page);
 		return out;
-	}
-
-	/** The index, in sections: what the chapters are about rather than the order they were written in. */
-	private static final Map<String, List<String>> SECTIONS = new LinkedHashMap<>(Map.of());
-
-	static {
-		SECTIONS.put("taller", List.of("primeros_pasos", "siguiente_paso", "mesas", "objetos", "piezas", "materiales", "rasgos", "aleaciones", "fundicion", "temple", "herrero", "tecnicas"));
-		SECTIONS.put("mejoras", List.of("mejoras", "potencial", "maestria", "sinergias", "pactos"));
-		SECTIONS.put("pelear", List.of("combate", "mana", "accesorios", "clases"));
-		SECTIONS.put("mundo", List.of("eventos", "encargos", "amenazas", "bestiario", "mundo", "cementerio"));
-		SECTIONS.put("referencia", List.of("mi_taller", "estadisticas"));
 	}
 
 	/** Something to put beside each chapter in the index, so the page reads at a glance. */
@@ -717,6 +827,18 @@ public class GuideBookScreen extends Screen {
 			case "mundo" -> new ItemStack(Items.FILLED_MAP);
 			case "cementerio" -> new ItemStack(ModItems.PERLA_DE_ORICALCO);
 			case "estadisticas" -> new ItemStack(Items.PAPER);
+			case "mesa_mayor" -> new ItemStack(ModItems.MESA_DE_FORJA_MAYOR);
+			case "bienvenida" -> new ItemStack(ModItems.GUIA_DE_FORJA);
+			case "primeras_mesas" -> new ItemStack(ModItems.MESA_DE_PIEZAS);
+			case "teclas" -> new ItemStack(Items.LEVER);
+			case "estanteria" -> new ItemStack(Items.BOOKSHELF);
+			case "yunque_sabes" -> new ItemStack(Items.WRITABLE_BOOK);
+			case "cortar" -> Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.PIEDRA);
+			case "estrella" -> new ItemStack(ModItems.MESA_DE_FORJA);
+			case "mejorar" -> new ItemStack(Items.SUGAR);
+			case "desarmar" -> new ItemStack(Items.GRINDSTONE);
+			case "yunque_siguiente" -> new ItemStack(Items.COMPASS);
+			case "catalogo" -> new ItemStack(Items.BOOK);
 			default -> ItemStack.EMPTY;
 		};
 	}
@@ -739,6 +861,331 @@ public class GuideBookScreen extends Screen {
 		body.add(new IconRow(List.of(new ItemStack(ModItems.MENSULA_ESTELAR), new ItemStack(ModItems.PERLA_DE_ORICALCO))));
 		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.portal"), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.vuelta"), INK_SOFT));
+		return body;
+	}
+
+	// ------------------------------------------------------------------ the books (docs/LIBROS_GUIA.md)
+
+	/**
+	 * The cover of one of the short books, the notebook and the library: its mark, its name, where the path is
+	 * when the book carries it, how long it is and how much of it has been read, its own steps of the path, a
+	 * way back to where the reader left off, and a paragraph on what it is for.
+	 */
+	private List<Element> bookCover(ForjaPath.@Nullable Step next) {
+		List<Element> cover = new ArrayList<>();
+		cover.add(new Emblem(this.emblemOver(), this.emblemUnder()));
+		cover.add(new Title(this.font, this.book.title()));
+		if (next != null && this.book.chapters().contains("siguiente_paso")) {
+			cover.add(new PathSign(next));
+		}
+		cover.add(new BookInfo());
+		List<ForjaPath.Step> own = stepsOf(this.book);
+		if (!own.isEmpty()) {
+			cover.add(new BookSteps(own));
+		}
+		if (BookMemory.bookmark(this.book) > 1) {
+			cover.add(new BookmarkLink(BookMemory.bookmark(this.book)));
+		}
+		cover.add(new Divider());
+		cover.add(new Text(Component.translatable("gui.forja.libros." + this.book.key() + ".portada"), INK));
+		return cover;
+	}
+
+	private ItemStack emblemOver() {
+		return switch (this.book) {
+			case CUADERNO -> Assembler.create(ForgeType.MARTILLO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO));
+			case YUNQUE -> new ItemStack(ModItems.MESA_DE_FORJA);
+			case BIBLIOTECA -> new ItemStack(Items.BOOKSHELF);
+			default -> new ItemStack(Items.BOOK);
+		};
+	}
+
+	private ItemStack emblemUnder() {
+		return switch (this.book) {
+			case CUADERNO -> new ItemStack(ModItems.PLANTILLA);
+			case YUNQUE -> Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO));
+			case BIBLIOTECA -> new ItemStack(ModItems.GUIA_DE_FORJA);
+			default -> new ItemStack(ModItems.GUIA_DE_FORJA);
+		};
+	}
+
+	/** The steps of the path whose chapter is in this book, in order. */
+	private static List<ForjaPath.Step> stepsOf(GuideBooks.Book book) {
+		List<ForjaPath.Step> own = new ArrayList<>();
+		for (ForjaPath.Step step : ForjaPath.STEPS) {
+			if (GuideBooks.bookOf(step.chapter) == book) {
+				own.add(step);
+			}
+		}
+		return own;
+	}
+
+	/**
+	 * Whether the reader can open this book from here: they carry it (the library needs the notebook), or they
+	 * are in creative, where every written book is on hand. A book not written yet cannot be opened by anyone.
+	 */
+	boolean canRead(GuideBooks.Book target) {
+		if (!target.ready) {
+			return false;
+		}
+		var player = this.minecraft.player;
+		if (player == null) {
+			return false;
+		}
+		if (player.isCreative()) {
+			return true;
+		}
+		Item item = target == GuideBooks.Book.BIBLIOTECA ? ModItems.GUIA_DE_FORJA : target.item();
+		if (item == null) {
+			return false;
+		}
+		for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+			if (player.getInventory().getItem(slot).is(item)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Go to a chapter: in this book, a jump; in another the reader has, that book opened at it. False, and
+	 * nothing happens, when the chapter is in a book they do not carry or that is not written yet.
+	 */
+	public boolean openChapter(String key) {
+		if (this.chapters.containsKey(key)) {
+			this.jumpTo(this.chapterPage(key));
+			return true;
+		}
+		GuideBooks.Book target = GuideBooks.bookOf(key);
+		if (target != null && this.canRead(target)) {
+			this.minecraft.gui.setScreen(new GuideBookScreen(target, key));
+			return true;
+		}
+		return false;
+	}
+
+	/** Where a book the reader does not have comes from: its recipe and when it is learned, for a tooltip. */
+	List<Component> whereToGet(GuideBooks.Book target) {
+		List<Component> lines = new ArrayList<>();
+		lines.add(target.title().copy().withColor(0xFFE9A8));
+		if (!target.ready) {
+			lines.add(Component.translatable("gui.forja.libros.carta.pronto", target.when()));
+		} else {
+			lines.add(Component.translatable("gui.forja.libros.receta", new ItemStack(Items.BOOK).getHoverName(),
+				new ItemStack(target.ingredient.get()).getHoverName()));
+			lines.add(target.unlock == null || this.pathDone.contains(target.unlock)
+				? Component.translatable("gui.forja.libros.carta.hazlo")
+				: Component.translatable("gui.forja.libros.carta.aprende", target.when()));
+		}
+		return lines;
+	}
+
+	/** Pages of each written book, counted the first time a card asks, for the covers of the others. */
+	private static final Map<GuideBooks.Book, Integer> PAGES = new java.util.EnumMap<>(GuideBooks.Book.class);
+	private static final Set<GuideBooks.Book> COUNTING = java.util.EnumSet.noneOf(GuideBooks.Book.class);
+
+	/** How many pages a book has, or -1 while it is not written or is being counted (a card on its own shelf). */
+	static int pagesOf(GuideBooks.Book target) {
+		if (!target.ready) {
+			return -1;
+		}
+		Integer known = PAGES.get(target);
+		if (known != null) {
+			return known;
+		}
+		if (!COUNTING.add(target)) {
+			return -1;
+		}
+		try {
+			int pages = new GuideBookScreen(target).pageCount();
+			PAGES.put(target, pages);
+			return pages;
+		} finally {
+			COUNTING.remove(target);
+		}
+	}
+
+	/** About twenty-five seconds a page, rounded up to whole minutes. */
+	private static int minutes(int pages) {
+		return Math.max(1, (pages * 25 + 59) / 60);
+	}
+
+	/** The notebook's first page: what Forja is, in a few lines, and why this book is short. */
+	private List<Element> welcomeChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.bienvenida"), INK));
+		body.add(new IconRow(List.of(
+			Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.PIEDRA), Assembler.createPart(PartType.MANGO, ForgeMaterial.MADERA),
+			Assembler.createPart(PartType.ATADURA, ForgeMaterial.CUERO),
+			Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.PIEDRA, ForgeMaterial.MADERA, ForgeMaterial.CUERO)))));
+		body.add(new Text(Component.translatable("gui.forja.libros.bienvenida.crece"), INK_SOFT));
+		body.add(new Divider());
+		body.add(new Text(Component.translatable("gui.forja.libros.bienvenida.libros"), INK));
+		return body;
+	}
+
+	/** The two tables and the template, with their recipes, and the first step of the path. */
+	private List<Element> firstTablesChapter() {
+		Item planks = Items.OAK_PLANKS;
+		Item iron = Items.IRON_INGOT;
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libro.mesa_piezas"), INK));
+		body.add(new Crafting(new Item[] {iron, iron, iron, planks, Items.GRINDSTONE, planks, planks, null, planks}, new ItemStack(ModItems.MESA_DE_PIEZAS)));
+		body.add(new Text(Component.translatable("gui.forja.libro.plantilla"), INK));
+		body.add(new Crafting(new Item[] {Items.STICK, planks, null, planks, Items.STICK, null, null, null, null}, new ItemStack(ModItems.PLANTILLA, 2)));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.PLANTILLA), engravedTemplate(PartType.CABEZA_PICO),
+			Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.PIEDRA))));
+		body.add(new Text(Component.translatable("gui.forja.libro.mesa_forja"), INK));
+		body.add(new Crafting(new Item[] {iron, iron, iron, planks, Items.CRAFTING_TABLE, planks, planks, null, planks}, new ItemStack(ModItems.MESA_DE_FORJA)));
+		body.add(new Divider());
+		body.add(new SubHeader(ForjaPath.Step.PLANTILLA.title()));
+		body.add(new Text(ForjaPath.Step.PLANTILLA.description(), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.primeras_mesas.yunque"), INK_SOFT));
+		body.add(new BookCard(GuideBooks.Book.YUNQUE));
+		return body;
+	}
+
+	/** The mod's keys, named the way the controls are bound now. */
+	private List<Element> keysChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.teclas.intro"), INK_SOFT));
+		body.add(new SubHeader(keyName(ForjaClient.GUIDE_KEY, "G")));
+		body.add(new Text(Component.translatable("gui.forja.libros.teclas.g"), INK));
+		body.add(new SubHeader(keyName(CombatClient.DODGE_KEY, "Alt")));
+		body.add(new Text(Component.translatable("gui.forja.libros.teclas.esquivar"), INK));
+		body.add(new SubHeader(keyName(ClassClient.TREE, "K")));
+		body.add(new Text(Component.translatable("gui.forja.libros.teclas.clases",
+			keyName(ClassClient.SKILL_1, "V"), keyName(ClassClient.SKILL_2, "B")), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.teclas.cambiar"), INK_SOFT));
+		return body;
+	}
+
+	private static Component keyName(net.minecraft.client.@Nullable KeyMapping key, String fallback) {
+		return key == null ? Component.literal(fallback) : key.getTranslatedKeyMessage();
+	}
+
+	/** Every book on the shelf, with its recipe and when it is learned: in the notebook, and in the library. */
+	private List<Element> shelfChapter() {
+		List<Element> body = new ArrayList<>();
+		boolean library = this.book == GuideBooks.Book.BIBLIOTECA;
+		body.add(new Text(Component.translatable(library ? "gui.forja.libros.estanteria.biblioteca" : "gui.forja.libros.estanteria.intro"), INK));
+		for (GuideBooks.Book target : GuideBooks.SHELF) {
+			if (target == GuideBooks.Book.CUADERNO && !library) {
+				continue;
+			}
+			body.add(new BookCard(target));
+		}
+		if (!library) {
+			body.add(new Divider());
+			body.add(new Text(Component.translatable("gui.forja.libros.estanteria.perdido"), INK_SOFT));
+			body.add(new BookCard(GuideBooks.Book.CUADERNO));
+		}
+		return body;
+	}
+
+	/** Book I opens on what the notebook already said, for whoever opens it out of order. */
+	private List<Element> anvilRecapChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.yunque_sabes"), INK));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.MESA_DE_PIEZAS), new ItemStack(ModItems.MESA_DE_FORJA), engravedTemplate(PartType.CABEZA_PICO))));
+		body.add(new ChapterLink("primeras_mesas"));
+		body.add(new Text(Component.translatable("gui.forja.libros.yunque_sabes.ruta"), INK_SOFT));
+		return body;
+	}
+
+	/** Cutting parts: what the bench cuts, what a part costs and says, and where the rest of them are listed. */
+	private List<Element> cuttingChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libro.paso2"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libro.piezas_intro"), INK_SOFT));
+		for (PartType part : List.of(PartType.CABEZA_PICO, PartType.HOJA, PartType.MANGO, PartType.ATADURA)) {
+			body.add(new Part(part));
+		}
+		body.add(new Text(Component.translatable("gui.forja.libros.cortar.rasgo"), INK));
+		body.add(new ChapterLink("piezas"));
+		return body;
+	}
+
+	/** The star: forging, the hammer's centre, and the name every piece carries. */
+	private List<Element> starChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libro.paso3"), INK));
+		for (ForgeType type : List.of(ForgeType.PICO, ForgeType.HACHA, ForgeType.ESPADA)) {
+			body.add(new Recipe(type));
+		}
+		body.add(new ChapterLink("objetos"));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.perfecta.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libro.perfecta"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.firma.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libro.firma", Math.round(dev.forja.forge.Quality.AFFINITY_BONUS * 100)), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.historia.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libro.historia"), INK_SOFT));
+		return body;
+	}
+
+	/** Upgrading at the first table: what goes on the points, how far this table takes it, books and orbs. */
+	private List<Element> improvingChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libro.paso4"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libro.mejoras_intro"), INK_SOFT));
+		for (Upgrade upgrade : List.of(Upgrade.FILO, Upgrade.EFICIENCIA, Upgrade.FORTUNA, Upgrade.PROTECCION)) {
+			body.add(new UpgradeEntry(upgrade));
+		}
+		body.add(new Text(Component.translatable("gui.forja.libros.mejorar.tope", dev.forja.menu.Station.FORJA.capacity(),
+			dev.forja.menu.Station.FORJA_MAYOR.capacity()), INK));
+		body.add(new IconRow(List.of(new ItemStack(Items.ENCHANTED_BOOK), dev.forja.item.UpgradeOrbItem.create(Upgrade.FILO, 40))));
+		body.add(new Text(Component.translatable("gui.forja.libros.mejorar.libros"), INK));
+		body.add(new ChapterLink("mejoras"));
+		return body;
+	}
+
+	/** Taking apart, orbs, broken gear and repair: nothing forged is ever simply lost. */
+	private List<Element> salvageChapter() {
+		ItemStack broken = Assembler.create(ForgeType.ESPADA, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.HIERRO));
+		broken.setDamageValue(broken.getMaxDamage());
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.desarmar"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.mundo.orbes.titulo")));
+		body.add(new IconRow(List.of(dev.forja.item.UpgradeOrbItem.create(Upgrade.FILO, 40),
+			dev.forja.item.UpgradeOrbItem.create(Upgrade.FORTUNA, 25), dev.forja.item.UpgradeOrbItem.create(Upgrade.PROTECCION, 30))));
+		body.add(new Text(Component.translatable("gui.forja.libro.mundo.orbes"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.mundo.rotos.titulo")));
+		body.add(new IconRow(List.of(broken)));
+		body.add(new Text(Component.translatable("gui.forja.libro.mundo.rotos"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.reparar"), INK_SOFT));
+		return body;
+	}
+
+	/** The last page of book I: the two books that come after it, and the path. */
+	private List<Element> anvilNextChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.yunque_siguiente"), INK));
+		body.add(new BookCard(GuideBooks.Book.COMBATE));
+		body.add(new BookCard(GuideBooks.Book.FUNDICION));
+		body.add(new ChapterLink("siguiente_paso"));
+		return body;
+	}
+
+	/** The library's separator: what follows is to look things up in, not to read. */
+	private List<Element> catalogueChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.catalogo"), INK));
+		body.add(new IconRow(List.of(Assembler.create(ForgeType.ESPADA, Assembler.defaultMaterials(ForgeType.ESPADA)),
+			Assembler.createPart(PartType.HOJA, ForgeMaterial.HIERRO), new ItemStack(Items.IRON_INGOT),
+			dev.forja.item.UpgradeOrbItem.create(Upgrade.FILO, 60))));
+		body.add(new Text(Component.translatable("gui.forja.libros.catalogo.como"), INK_SOFT));
+		return body;
+	}
+
+	/** The greater table: what it makes that the first does not, and its recipe round damascus. */
+	private List<Element> greaterTableChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libro.mesa_mayor", dev.forja.menu.Station.FORJA_MAYOR.capacity()), INK));
+		Item stone = Items.POLISHED_BLACKSTONE;
+		Item damascus = ModItems.alloy("damasco");
+		body.add(new Crafting(new Item[] {stone, Items.GOLD_INGOT, stone, damascus, ModItems.MESA_DE_FORJA, damascus, stone, stone, stone},
+			new ItemStack(ModItems.MESA_DE_FORJA_MAYOR)));
+		body.add(new Text(ForjaPath.Step.MESA_MAYOR.description(), INK_SOFT));
 		return body;
 	}
 
@@ -850,7 +1297,9 @@ public class GuideBookScreen extends Screen {
 			body.add(new Text(Component.translatable("gui.forja.camino.completo.desc"), INK));
 			body.add(new ChapterLink("eventos"));
 		}
-		body.add(new Divider());
+		// The whole path on a page of its own: ten steps and their heading fill one, and split over a turn they
+		// are a list whose last lines nobody sees.
+		body.add(new PageBreak());
 		body.add(new SubHeader(Component.translatable("gui.forja.camino.titulo")));
 		body.add(new Text(Component.translatable("gui.forja.camino.intro", ForjaPath.STEPS.size()), INK_SOFT));
 		for (ForjaPath.Step step : ForjaPath.STEPS) {
@@ -1524,13 +1973,10 @@ public class GuideBookScreen extends Screen {
 		body.add(new Text(Component.translatable("gui.forja.libro.saqueadores", dev.forja.world.ForgeRaiders.BAND), INK));
 		body.add(new Divider());
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.herrero_caido.titulo")));
-		body.add(new IconRow(List.of(new ItemStack(ModItems.FRAGUA_APAGADA), new ItemStack(ModItems.CORAZON_DE_FORJA))));
+		// No offering any more: the dead forge is the frame of the portal to his world (docs/HERRERO_DIMENSION.md).
+		body.add(new IconRow(List.of(new ItemStack(ModItems.FRAGUA_APAGADA), new ItemStack(ModItems.PERLA_DE_ORICALCO),
+			new ItemStack(ModItems.CORAZON_DE_FORJA))));
 		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido"), INK));
-		List<ItemStack> offering = new ArrayList<>();
-		for (dev.forja.block.DeadForgeBlock.Offering piece : dev.forja.block.DeadForgeBlock.OFFERING) {
-			offering.add(new ItemStack(piece.item().get(), piece.count()));
-		}
-		body.add(new IconRow(offering));
 		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_fases", Math.round(dev.forja.entity.FallenSmith.HEALTH),
 			dev.forja.entity.FallenSmith.EMBERS), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_defensa"), INK_SOFT));
@@ -1926,18 +2372,18 @@ public class GuideBookScreen extends Screen {
 		// The tabs first, so that the cover lies over the end of each and they come out from under it.
 		int open = this.currentSection();
 		int pointed = this.tabAt(mouseX, mouseY);
-		for (int section = 0; section < SECTIONS.size(); section++) {
+		for (int section = 0; section < this.book.sections.size(); section++) {
 			boolean lit = section == open || section == pointed;
 			g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, BOOK, this.tabX(), this.tabY(section),
-				section * 24.0F, lit ? 234.0F : 212.0F, lit ? 22 : 18, TAB_H, 512, 256);
+				this.sectionColour(section) * 24.0F, lit ? 234.0F : 212.0F, lit ? 22 : 18, TAB_H, 512, 256);
 		}
 		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, BOOK, left - OVERHANG, top - OVERHANG,
 			0.0F, 0.0F, BOOK_W + OVERHANG * 2, BOOK_H + OVERHANG * 2, 512, 256);
 		// The ribbon, out of the foot of the spine, in the gap between the two buttons.
 		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, BOOK, left + 4 + PAGE_W + 1, top + BOOK_H + OVERHANG - 2,
 			130.0F, 212.0F, 4, 24, 512, 256);
-		for (int section = 0; section < SECTIONS.size(); section++) {
-			ItemStack icon = chapterIcon(SECTIONS.get(this.sectionKey(section)).get(0));
+		for (int section = 0; section < this.book.sections.size(); section++) {
+			ItemStack icon = chapterIcon(this.book.sections.get(section).chapters().get(0));
 			boolean lit = section == open || section == pointed;
 			g.pose().pushMatrix();
 			g.pose().translate(this.tabX() + (lit ? 8 : 5), this.tabY(section) + 5);
@@ -1957,6 +2403,7 @@ public class GuideBookScreen extends Screen {
 				element.draw(this, g, x, y, mouseX, mouseY);
 				y += element.height();
 			}
+			BookMemory.saw(this.book, page, this.pages.size());
 			String number = String.valueOf(page + 1);
 			this.small(g, Component.literal(number), this.pageX(side) + PAGE_W / 2 - Math.round(this.font.width(number) * SMALL / 2), top + BOOK_H - 19, INK_SOFT);
 		}
@@ -1983,7 +2430,7 @@ public class GuideBookScreen extends Screen {
 			int end = i + 1 < keys.size() ? this.chapters.get(keys.get(i + 1)).page : this.pages.size();
 			int x0 = from + Math.round((to - from) * (start / (float) total));
 			int x1 = Math.min(to, from + Math.round((to - from) * (end / (float) total)));
-			int section = this.sectionOf(keys.get(i));
+			int section = this.sectionColour(this.sectionOf(keys.get(i)));
 			int colour = section < 0 ? 0xFF9A8868 : SECTION_COLOURS[section];
 			// A pixel of paper between chapters, so the strip also says how many there are and how long.
 			g.fill(x0, y, Math.max(x0 + 1, x1 - 1), y + 3, colour & 0x00FFFFFF | 0xC0000000);
@@ -2475,6 +2922,18 @@ public class GuideBookScreen extends Screen {
 		}
 	}
 
+	/** Not drawn: the next element starts a new page (see flow). */
+	private static final class PageBreak extends Element {
+		@Override
+		int height() {
+			return 0;
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+		}
+	}
+
 	private static final class Spacer extends Element {
 		private final int size;
 
@@ -2492,39 +2951,61 @@ public class GuideBookScreen extends Screen {
 		}
 	}
 
+	/**
+	 * The book's name on its cover, a third larger than the text, on as many lines as it takes: one title per
+	 * book now, and "El Cementerio entre Estrellas" is half as wide again as the page at that size.
+	 */
 	private static final class Title extends Element {
-		@Override
-		int widest(Font font) {
-			return font.width(this.text);
+		private static final float SCALE = 1.3F;
+		private final List<FormattedCharSequence> lines;
+
+		Title(Font font, Component text) {
+			this.lines = font.split(text, (int) Math.floor(CONTENT_W / SCALE));
 		}
 
-		private final Component text;
-
-		Title(Component text) {
-			this.text = text;
+		@Override
+		int widest(Font font) {
+			int widest = 0;
+			for (FormattedCharSequence line : this.lines) {
+				widest = Math.max(widest, Math.round(font.width(line) * SCALE));
+			}
+			return widest;
 		}
 
 		@Override
 		int height() {
-			return 22;
+			return 22 + (this.lines.size() - 1) * 12;
 		}
 
 		@Override
 		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
-			float scale = 1.3F;
-			int width = Math.round(screen.font.width(this.text) * scale);
-			g.pose().pushMatrix();
-			g.pose().translate(x + (CONTENT_W - width) / 2.0F, y + 3);
-			g.pose().scale(scale, scale);
-			g.text(screen.font, this.text, 0, 0, 0xFF6B2A0E, false);
-			g.pose().popMatrix();
+			for (int i = 0; i < this.lines.size(); i++) {
+				int width = Math.round(screen.font.width(this.lines.get(i)) * SCALE);
+				g.pose().pushMatrix();
+				g.pose().translate(x + (CONTENT_W - width) / 2.0F, y + 3 + i * 12);
+				g.pose().scale(SCALE, SCALE);
+				g.text(screen.font, this.lines.get(i), 0, 0, 0xFF6B2A0E, false);
+				g.pose().popMatrix();
+			}
 		}
 	}
 
 	private static final class Header extends Element {
+		/** Room for the name between the two studs at the ends of the banner. */
+		private static final int ROOM = CONTENT_W - 22;
+
+		/**
+		 * The chapter's name is written smaller when it does not fit, as the section titles are. "El Cementerio
+		 * entre Estrellas" was 149 pixels on a page of 140 and ran off the banner, and the client test said so.
+		 */
+		private float scale(Font font) {
+			int width = font.width(this.text);
+			return width <= ROOM ? 1.0F : ROOM / (float) width;
+		}
+
 		@Override
 		int widest(Font font) {
-			return font.width(this.text);
+			return Math.round(font.width(this.text) * this.scale(font));
 		}
 
 		private final Component text;
@@ -2551,8 +3032,13 @@ public class GuideBookScreen extends Screen {
 			}
 			g.fill(x + 6, y + 5, x + 9, y + 8, INK_SOFT);
 			g.fill(x + CONTENT_W - 9, y + 5, x + CONTENT_W - 6, y + 8, INK_SOFT);
-			int width = screen.font.width(this.text);
-			g.text(screen.font, this.text, x + (CONTENT_W - width) / 2, y + 3, INK, false);
+			float scale = this.scale(screen.font);
+			float width = screen.font.width(this.text) * scale;
+			g.pose().pushMatrix();
+			g.pose().translate(x + (CONTENT_W - width) / 2.0F, y + 3 + (1.0F - scale) * 4.0F);
+			g.pose().scale(scale, scale);
+			g.text(screen.font, this.text, 0, 0, INK, false);
+			g.pose().popMatrix();
 		}
 	}
 
@@ -3189,19 +3675,39 @@ public class GuideBookScreen extends Screen {
 		private final String chapter;
 		private final Component name;
 		private final int laidOut;
+		/** The book the chapter is in, when it is not this one. */
+		private final GuideBooks.@Nullable Book elsewhere;
 
 		ChapterLink(String chapter) {
 			this.chapter = chapter;
 			this.name = Component.translatable("gui.forja.libro.cap." + chapter);
-			this.laidOut = this.lines(999).size();
+			this.elsewhere = GuideBookScreen.this.book.chapters().contains(chapter) ? null : GuideBooks.bookOf(chapter);
+			this.laidOut = this.elsewhere != null ? this.elsewhereLines().size() : this.lines(999).size();
 		}
 
 		private List<FormattedCharSequence> lines(int page) {
 			return GuideBookScreen.this.font.split(Component.translatable("gui.forja.camino.leer", this.name, page), WRAP - 12);
 		}
 
+		/** "Léelo en «capítulo», en «libro»", or, for a book still to be written, where it will be. */
+		private List<FormattedCharSequence> elsewhereLines() {
+			GuideBooks.Book book = this.elsewhere;
+			String key = book != null && book.ready ? "gui.forja.camino.leer_libro" : "gui.forja.camino.leer_pronto";
+			return GuideBookScreen.this.font.split(Component.translatable(key, this.name,
+				book == null ? GuideBooks.Book.TOMO.title() : book.title()), WRAP - 12);
+		}
+
 		private List<FormattedCharSequence> shown() {
-			return this.lines(GuideBookScreen.this.chapterPage(this.chapter) + 1);
+			return this.elsewhere != null ? this.elsewhereLines() : this.lines(GuideBookScreen.this.chapterPage(this.chapter) + 1);
+		}
+
+		@Override
+		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
+			GuideBooks.Book book = this.elsewhere;
+			if (book == null || GuideBookScreen.this.canRead(book)) {
+				return null;
+			}
+			return GuideBookScreen.this.whereToGet(book);
 		}
 
 		@Override
@@ -3241,8 +3747,7 @@ public class GuideBookScreen extends Screen {
 
 		@Override
 		boolean click(GuideBookScreen screen) {
-			screen.jumpTo(screen.chapterPage(this.chapter));
-			return true;
+			return screen.openChapter(this.chapter);
 		}
 	}
 
@@ -3307,7 +3812,7 @@ public class GuideBookScreen extends Screen {
 
 		@Override
 		int height() {
-			return 12;
+			return 11;
 		}
 
 		@Override
@@ -3317,8 +3822,8 @@ public class GuideBookScreen extends Screen {
 
 		@Override
 		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
-			if (over(mouseX, mouseY, x - 2, y, CONTENT_W + 4, 12)) {
-				g.fill(x - 2, y, x + CONTENT_W + 2, y + 12, PAPER_SHADE);
+			if (over(mouseX, mouseY, x - 2, y, CONTENT_W + 4, 11)) {
+				g.fill(x - 2, y, x + CONTENT_W + 2, y + 11, PAPER_SHADE);
 			}
 			if (this.done) {
 				// A filled box with a tick knocked out of it.
@@ -3354,12 +3859,323 @@ public class GuideBookScreen extends Screen {
 
 		@Override
 		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
-			return List.of(this.title.copy().withColor(0xFFE9A8), this.description);
+			GuideBooks.Book in = GuideBooks.bookOf(this.step.chapter);
+			return in == null ? List.of(this.title.copy().withColor(0xFFE9A8), this.description)
+				: List.of(this.title.copy().withColor(0xFFE9A8), this.description,
+					Component.translatable("gui.forja.libros.en_libro", in.title()).withColor(0xC9A96A));
 		}
 
 		@Override
 		boolean click(GuideBookScreen screen) {
-			screen.jumpTo(screen.chapterPage(this.step.chapter));
+			return screen.openChapter(this.step.chapter);
+		}
+	}
+
+	// ------------------------------------------------------------------ elements of the books
+
+	/**
+	 * One book of the shelf: its cover in small, its name and what it is about, and then either "open it" (the
+	 * reader carries it; a click opens it) or how to make it — its recipe drawn, and when the recipe is learned.
+	 * A red seal marks a book carried and never opened; a thin bar, how much of it has been read.
+	 */
+	private final class BookCard extends Element {
+		private final GuideBooks.Book target;
+		private final boolean readable;
+		private final boolean known;
+		private final boolean fresh;
+		private final ItemStack cover;
+		private final ItemStack ingredient;
+		private final Component name;
+		private final Component motto;
+		private final List<FormattedCharSequence> status;
+
+		BookCard(GuideBooks.Book target) {
+			this.target = target;
+			this.readable = GuideBookScreen.this.canRead(target);
+			this.known = target.unlock == null || GuideBookScreen.this.pathDone.contains(target.unlock);
+			this.fresh = this.readable && target != GuideBookScreen.this.book && !BookMemory.wasOpened(target);
+			Item item = target.item();
+			this.cover = item != null ? new ItemStack(item) : new ItemStack(Items.BOOK);
+			this.ingredient = new ItemStack(target.ingredient.get());
+			this.name = Component.literal(target.numeral() + " · ").append(target.title());
+			this.motto = target.motto();
+			int pages = target == GuideBookScreen.this.book ? -1 : pagesOf(target);
+			Component line;
+			if (!target.ready) {
+				line = Component.translatable("gui.forja.libros.carta.pronto", target.when());
+			} else if (this.readable) {
+				line = pages > 0
+					? Component.translatable("gui.forja.libros.carta.abrir", pages, minutes(pages))
+					: Component.translatable("gui.forja.libros.carta.tienes");
+			} else if (this.known) {
+				line = Component.translatable("gui.forja.libros.carta.hazlo");
+			} else {
+				line = Component.translatable("gui.forja.libros.carta.aprende", target.when());
+			}
+			this.status = GuideBookScreen.this.font.split(line, WRAP);
+		}
+
+		private int statusY() {
+			return 26;
+		}
+
+		private int recipeY() {
+			return this.statusY() + this.status.size() * 8 + 1;
+		}
+
+		@Override
+		int height() {
+			return this.recipeY() + 18;
+		}
+
+		@Override
+		int widest(Font font) {
+			int widest = 26 + Math.round(font.width(this.name) * fitScale(font, this.name, CONTENT_W - 26, 1.0F));
+			for (FormattedCharSequence line : this.status) {
+				widest = Math.max(widest, Math.round(font.width(line) * SMALL));
+			}
+			return widest;
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			int colour = 0xFF000000 | this.target.colour;
+			boolean hovered = this.readable && over(mouseX, mouseY, x - 2, y, CONTENT_W + 4, this.height() - 2);
+			if (hovered) {
+				g.fill(x - 2, y, x + CONTENT_W + 2, y + this.height() - 2, PAPER_SHADE);
+			}
+			// The cover in small: its leather, a gilt edge, the book itself on it.
+			g.fill(x, y + 2, x + 22, y + 24, colour);
+			g.fill(x, y + 2, x + 22, y + 3, 0xFFD6B05A);
+			g.fill(x, y + 23, x + 22, y + 24, 0xFFD6B05A);
+			g.fill(x, y + 2, x + 1, y + 24, 0x60000000);
+			g.item(this.cover, x + 3, y + 5);
+			float scale = fitScale(screen.font, this.name, CONTENT_W - 26, 1.0F);
+			g.pose().pushMatrix();
+			g.pose().translate(x + 26, y + 3 + (1.0F - scale) * 4.0F);
+			g.pose().scale(scale, scale);
+			g.text(screen.font, this.name, 0, 0, this.target.ready ? 0xFF6B2A0E : INK_SOFT, false);
+			g.pose().popMatrix();
+			float mottoScale = fitScale(screen.font, this.motto, CONTENT_W - 26, SMALL);
+			g.pose().pushMatrix();
+			g.pose().translate(x + 26, y + 14);
+			g.pose().scale(mottoScale, mottoScale);
+			g.text(screen.font, this.motto, 0, 0, INK_SOFT, false);
+			g.pose().popMatrix();
+			int ink = this.readable ? 0xFF000000 | GuideText.RUBRIC : this.known && this.target.ready ? INK : INK_SOFT;
+			for (int i = 0; i < this.status.size(); i++) {
+				screen.small(g, this.status.get(i), x, y + this.statusY() + i * 8, ink);
+			}
+			// The recipe, drawn: a book and the ingredient make the book. A tick when it is learned, a lock when not.
+			int row = y + this.recipeY();
+			smallItem(g, new ItemStack(Items.BOOK), x + 2, row + 2);
+			screen.small(g, Component.literal("+"), x + 16, row + 5, INK_SOFT);
+			smallItem(g, this.ingredient, x + 22, row + 2);
+			screen.small(g, Component.literal("="), x + 36, row + 5, INK_SOFT);
+			smallItem(g, this.cover, x + 42, row + 2);
+			if (this.target.ready && this.known) {
+				g.fill(x + 57, row + 4, x + 64, row + 11, 0xFF5E7A34);
+				g.fill(x + 58, row + 7, x + 59, row + 8, PAPER);
+				g.fill(x + 59, row + 8, x + 60, row + 9, PAPER);
+				g.fill(x + 60, row + 7, x + 61, row + 8, PAPER);
+				g.fill(x + 61, row + 6, x + 62, row + 7, PAPER);
+			} else {
+				g.fill(x + 58, row + 7, x + 63, row + 11, INK_SOFT);
+				g.fill(x + 59, row + 4, x + 60, row + 7, INK_SOFT);
+				g.fill(x + 61, row + 4, x + 62, row + 7, INK_SOFT);
+				g.fill(x + 59, row + 4, x + 62, row + 5, INK_SOFT);
+			}
+			// How much of it has been read, when it can be read at all.
+			if (this.readable) {
+				int pages = pagesOf(this.target);
+				float read = pages > 0 ? BookMemory.readShare(this.target, pages) : 0.0F;
+				int left = x + 70;
+				int right = x + CONTENT_W - 2;
+				g.fill(left, row + 6, right, row + 9, PAPER_SHADE);
+				g.fill(left, row + 6, left + Math.round((right - left) * read), row + 9, 0xFF5E7A34);
+			}
+			if (this.fresh) {
+				g.fill(x + CONTENT_W - 9, y + 1, x + CONTENT_W - 1, y + 9, 0xFFB02020);
+				g.fill(x + CONTENT_W - 6, y + 2, x + CONTENT_W - 4, y + 6, 0xFFFFE0C0);
+				g.fill(x + CONTENT_W - 6, y + 7, x + CONTENT_W - 4, y + 8, 0xFFFFE0C0);
+			}
+			g.fill(x + 6, y + this.height() - 2, x + CONTENT_W - 6, y + this.height() - 1, PAPER_SHADE);
+		}
+
+		@Override
+		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
+			int row = y + this.recipeY();
+			if (over(mouseX, mouseY, x + 22, row + 2, 12, 12)) {
+				return this.ingredient;
+			}
+			if (over(mouseX, mouseY, x, y + 2, 22, 22) || over(mouseX, mouseY, x + 42, row + 2, 12, 12)) {
+				return this.target.ready ? (Object) this.cover : GuideBookScreen.this.whereToGet(this.target);
+			}
+			return this.readable ? null : GuideBookScreen.this.whereToGet(this.target);
+		}
+
+		@Override
+		boolean click(GuideBookScreen screen) {
+			if (!this.readable || this.target == screen.book) {
+				return false;
+			}
+			screen.minecraft.gui.setScreen(new GuideBookScreen(this.target));
+			return true;
+		}
+	}
+
+	/** Under the title: which book, how many pages, about how long, and a bar of how much has been read. */
+	private final class BookInfo extends Element {
+		private Component line(int pages) {
+			GuideBooks.Book book = GuideBookScreen.this.book;
+			String where = book == GuideBooks.Book.CUADERNO ? "gui.forja.libros.info.cuaderno"
+				: book == GuideBooks.Book.BIBLIOTECA ? "gui.forja.libros.info.biblioteca" : "gui.forja.libros.info.libro";
+			return Component.translatable(where, book.numeral(), pages, minutes(pages));
+		}
+
+		@Override
+		int height() {
+			return 20;
+		}
+
+		@Override
+		int widest(Font font) {
+			Component line = this.line(GuideBookScreen.this.pages.size());
+			return Math.round(font.width(line) * fitScale(font, line, CONTENT_W, SMALL));
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			int pages = screen.pages.size();
+			Component line = this.line(pages);
+			float scale = fitScale(screen.font, line, CONTENT_W, SMALL);
+			int width = Math.round(screen.font.width(line) * scale);
+			g.pose().pushMatrix();
+			g.pose().translate(x + (CONTENT_W - width) / 2.0F, y + 2);
+			g.pose().scale(scale, scale);
+			g.text(screen.font, line, 0, 0, INK_SOFT, false);
+			g.pose().popMatrix();
+			float read = BookMemory.readShare(screen.book, pages);
+			Component share = Component.translatable("gui.forja.libros.leido", Math.round(read * 100));
+			int shareWidth = Math.round(screen.font.width(share) * SMALL);
+			int left = x + 10;
+			int right = x + CONTENT_W - 14 - shareWidth;
+			g.fill(left, y + 12, right, y + 15, PAPER_SHADE);
+			g.fill(left, y + 12, left + Math.round((right - left) * read), y + 15, 0xFF5E7A34);
+			screen.small(g, share, right + 4, y + 11, INK_SOFT);
+		}
+	}
+
+	/** The steps of the path this book teaches, each with its tick: "Tus pasos aquí: 2 de 4". */
+	private final class BookSteps extends Element {
+		private final List<ForjaPath.Step> steps;
+
+		BookSteps(List<ForjaPath.Step> steps) {
+			this.steps = steps;
+		}
+
+		private Component line() {
+			int done = 0;
+			for (ForjaPath.Step step : this.steps) {
+				done += GuideBookScreen.this.pathDone.contains(step.advancement()) ? 1 : 0;
+			}
+			return Component.translatable("gui.forja.libros.pasos_aqui", done, this.steps.size());
+		}
+
+		@Override
+		int height() {
+			return 26;
+		}
+
+		@Override
+		int widest(Font font) {
+			return Math.max(Math.round(font.width(this.line()) * SMALL), this.steps.size() * 20);
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			Component line = this.line();
+			int width = Math.round(screen.font.width(line) * SMALL);
+			screen.small(g, line, x + (CONTENT_W - width) / 2, y + 1, INK_SOFT);
+			int total = this.steps.size() * 20 - 4;
+			int iconX = x + (CONTENT_W - total) / 2;
+			for (ForjaPath.Step step : this.steps) {
+				boolean done = screen.pathDone.contains(step.advancement());
+				g.fill(iconX - 1, y + 9, iconX + 17, y + 25, done ? 0x505E7A34 : 0x30806848);
+				g.item(step.icon(), iconX, y + 9);
+				if (done) {
+					g.fill(iconX + 11, y + 19, iconX + 17, y + 25, 0xFF5E7A34);
+					g.fill(iconX + 12, y + 22, iconX + 13, y + 23, PAPER);
+					g.fill(iconX + 13, y + 23, iconX + 14, y + 24, PAPER);
+					g.fill(iconX + 14, y + 22, iconX + 15, y + 23, PAPER);
+					g.fill(iconX + 15, y + 21, iconX + 16, y + 22, PAPER);
+				}
+				iconX += 20;
+			}
+		}
+
+		@Override
+		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
+			int total = this.steps.size() * 20 - 4;
+			int iconX = x + (CONTENT_W - total) / 2;
+			for (ForjaPath.Step step : this.steps) {
+				if (over(mouseX, mouseY, iconX, y + 9, 16, 16)) {
+					return List.of(step.title().copy().withColor(0xFFE9A8), Component.literal(step.description().getString().replace("**", "")));
+				}
+				iconX += 20;
+			}
+			return null;
+		}
+
+		@Override
+		boolean click(GuideBookScreen screen) {
+			for (ForjaPath.Step step : this.steps) {
+				if (!screen.pathDone.contains(step.advancement())) {
+					return screen.openChapter(step.chapter);
+				}
+			}
+			return false;
+		}
+	}
+
+	/** "Seguir leyendo en la página N": back to where the reader left this book. */
+	private final class BookmarkLink extends Element {
+		private final int page;
+
+		BookmarkLink(int page) {
+			this.page = page;
+		}
+
+		private Component line() {
+			return Component.translatable("gui.forja.libros.seguir", this.page + 1);
+		}
+
+		@Override
+		int height() {
+			return 12;
+		}
+
+		@Override
+		int widest(Font font) {
+			return 9 + Math.round(font.width(this.line()) * SMALL);
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			boolean hovered = over(mouseX, mouseY, x - 2, y, CONTENT_W + 4, 11);
+			if (hovered) {
+				g.fill(x - 2, y, x + CONTENT_W + 2, y + 11, PAPER_SHADE);
+			}
+			int ink = hovered ? 0xFF6B2A0E : 0xFF000000 | GuideText.RUBRIC;
+			// A ribbon's end, for a bookmark.
+			g.fill(x + 2, y + 1, x + 6, y + 8, ink);
+			g.fill(x + 3, y + 8, x + 5, y + 9, PAPER);
+			screen.small(g, this.line(), x + 9, y + 2, ink);
+		}
+
+		@Override
+		boolean click(GuideBookScreen screen) {
+			screen.jumpTo(Math.min(this.page, screen.pages.size() - 1));
 			return true;
 		}
 	}

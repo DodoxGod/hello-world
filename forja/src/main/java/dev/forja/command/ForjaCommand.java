@@ -54,6 +54,8 @@ import static dev.forja.material.ForgeMaterial.VARA_DE_BLAZE;
 public final class ForjaCommand {
 	private static final String KIT_TAG = "forja_kit_noche";
 	private static final String GUIDE_TAG = "forja_guia_recibida";
+	/** Set once the player has been told the guide became a shelf of books (docs/LIBROS_GUIA.md, 3.4). */
+	private static final String BOOKS_TAG = "forja_libros_v1";
 
 	private ForjaCommand() {
 	}
@@ -237,12 +239,19 @@ public final class ForjaCommand {
 					}))))
 		));
 
-		// Everyone gets the guide the first time they join, so the tables explain themselves.
+		// Everyone gets the starter notebook the first time they join, so the tables explain themselves. It is the
+		// only book given: the rest are crafted, from recipes the player's advancements teach (GuideBooks).
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			ServerPlayer player = handler.getPlayer();
+			boolean hadTheOldGuide = player.entityTags().contains(GUIDE_TAG);
 			if (player.addTag(GUIDE_TAG) && !player.getInventory().add(new ItemStack(ModItems.GUIA_DE_FORJA))) {
 				player.drop(new ItemStack(ModItems.GUIA_DE_FORJA), false);
 			}
+			// Once, for whoever had the single guide before it became a shelf of books: what changed and where to look.
+			if (player.addTag(BOOKS_TAG) && hadTheOldGuide) {
+				player.sendSystemMessage(Component.translatable("gui.forja.libros.aviso_mundo_viejo").withColor(0xE8C77A));
+			}
+			dev.forja.GuideBooks.catchUp(player);
 		});
 
 		// In the dev client every player gets the kit once, so new gear can be tried right away.

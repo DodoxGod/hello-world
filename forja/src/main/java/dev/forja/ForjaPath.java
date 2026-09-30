@@ -15,7 +15,7 @@ import net.minecraft.world.item.Items;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The first hours, in order: nine of the mod's own advancements lined up the way the code makes you
+ * The first hours, in order: ten of the mod's own advancements lined up the way the code makes you
  * reach them, for the guide's "Siguiente paso" page and for the line in chat when one of them is done.
  *
  * <p>The order is not a matter of taste. A part needs an engraved template, and the bench cuts only
@@ -23,7 +23,8 @@ import org.jspecify.annotations.Nullable;
  * the quench comes straight after it. The first bench takes an upgrade half way. A sword already parries.
  * The crucible and the casting box are made of pewter, which is an alloy, and a mould of refractory
  * steel, which only a hot table melts. And the greater table is built round damascus, which wants lava
- * under the table and netherite scrap on it. PathGameTests reads every one of those facts back out of
+ * under the table and netherite scrap on it. The last step, the first technique, came with the books
+ * (docs/LIBROS_GUIA.md, Andy's answer 5): it opens at the smith's third level and is where book IV begins. PathGameTests reads every one of those facts back out of
  * the code, so if one of them changes it is a test that breaks and not a newcomer.
  *
  * <p>The next step is the first one not done yet, not the one after the furthest: a skipped step is a
@@ -31,17 +32,18 @@ import org.jspecify.annotations.Nullable;
  */
 public final class ForjaPath {
 	public enum Step {
-		PLANTILLA("mesas"),
-		PIEZA("piezas"),
-		FORJA("objetos"),
+		PLANTILLA("primeras_mesas"),
+		PIEZA("cortar"),
+		FORJA("estrella"),
 		TEMPLE("temple"),
-		MEJORA("mejoras"),
+		MEJORA("mejorar"),
 		PARADA("combate"),
 		ALEACION("aleaciones"),
 		COLADA("fundicion"),
-		MESA_MAYOR("mesas");
+		MESA_MAYOR("mesa_mayor"),
+		TECNICA("tecnicas");
 
-		/** The guide chapter that explains it, by the book's own chapter key. */
+		/** The guide chapter that explains it, by chapter key; GuideBooks.bookOf says which book that is in. */
 		public final String chapter;
 
 		Step(String chapter) {
@@ -69,6 +71,7 @@ public final class ForjaPath {
 				case TEMPLE -> Component.translatable(key, dev.forja.forge.Temple.HOT_TICKS / 20);
 				case MEJORA -> Component.translatable(key, dev.forja.menu.Station.FORJA.capacity());
 				case COLADA -> Component.translatable(key, dev.forja.block.entity.CastingBoxBlockEntity.MOULD_COST);
+				case TECNICA -> Component.translatable(key, dev.forja.forge.Technique.levelFor(1));
 				default -> Component.translatable(key);
 			};
 		}
@@ -85,6 +88,7 @@ public final class ForjaPath {
 				case ALEACION -> new ItemStack(ModItems.alloy("bronce"));
 				case COLADA -> new ItemStack(ModItems.CAJA_DE_MOLDEO);
 				case MESA_MAYOR -> new ItemStack(ModItems.MESA_DE_FORJA_MAYOR);
+				case TECNICA -> new ItemStack(Items.BLAST_FURNACE);
 			};
 		}
 	}
@@ -140,13 +144,15 @@ public final class ForjaPath {
 		return after == null || after.ordinal() > before.ordinal();
 	}
 
-	/** The line in chat: the new next step and where the book explains it, or the end of the path. */
+	/** The line in chat: the new next step, the chapter that explains it and the book that chapter is in, or the end of the path. */
 	public static Component hint(@Nullable Step next) {
 		if (next == null) {
 			return Component.translatable("gui.forja.camino.pista.completo").withColor(0xE8C77A);
 		}
+		GuideBooks.Book book = GuideBooks.bookOf(next.chapter);
 		return Component.translatable("gui.forja.camino.pista",
 			next.title().copy().withColor(0xFFE9A8),
-			Component.translatable("gui.forja.libro.cap." + next.chapter)).withColor(0xC9A96A);
+			Component.translatable("gui.forja.libro.cap." + next.chapter),
+			book == null ? GuideBooks.Book.TOMO.title() : book.title()).withColor(0xC9A96A);
 	}
 }

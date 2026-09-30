@@ -74,6 +74,10 @@ public final class ModItems {
 	public static Item MESA_DE_PIEZAS;
 	public static Item MESA_DE_FORJA_MAYOR;
 	public static Item GUIA_DE_FORJA;
+	/** Book I of the guide (GuideBooks): the workshop of the first hours. */
+	public static Item LIBRO_YUNQUE;
+	/** The whole guide in one volume, as it was before the books: creative only. */
+	public static Item TOMO_DE_FORJA;
 	public static Item PLANTILLA;
 	public static Item ORBE_DE_MEJORA;
 	/** The blank bar that mends gear in the gear's own metal. See item/TemperIngotItem. */
@@ -233,7 +237,10 @@ public final class ModItems {
 			new Item.Properties().useBlockDescriptionPrefix().rarity(net.minecraft.world.item.Rarity.RARE));
 		MESA_DE_TALABARTERIA = register("mesa_de_talabarteria", p -> new BlockItem(ModBlocks.MESA_DE_TALABARTERIA, p), new Item.Properties().useBlockDescriptionPrefix());
 		MESA_DE_FORJA = register("mesa_de_forja", p -> new BlockItem(ModBlocks.MESA_DE_FORJA, p), new Item.Properties().useBlockDescriptionPrefix());
-		GUIA_DE_FORJA = register("guia_de_forja", GuideBookItem::new, new Item.Properties().stacksTo(1));
+		GUIA_DE_FORJA = register("guia_de_forja", p -> new GuideBookItem(dev.forja.GuideBooks.Book.CUADERNO, p), new Item.Properties().stacksTo(1));
+		LIBRO_YUNQUE = register("libro_yunque", p -> new GuideBookItem(dev.forja.GuideBooks.Book.YUNQUE, p), new Item.Properties().stacksTo(1));
+		TOMO_DE_FORJA = register("tomo_de_forja", p -> new GuideBookItem(dev.forja.GuideBooks.Book.TOMO, p),
+			new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC));
 		PLANTILLA = register("plantilla", TemplateItem::new, new Item.Properties().stacksTo(16));
 		LINGOTE_DE_TEMPLE = register("lingote_de_temple", dev.forja.item.TemperIngotItem::new, new Item.Properties().stacksTo(16));
 		PLACA_HUECA = register("placa_hueca", Item::new, new Item.Properties().rarity(net.minecraft.world.item.Rarity.UNCOMMON));
@@ -402,6 +409,8 @@ public final class ModItems {
 		stacks.add(new ItemStack(MESA_DE_FORJA));
 		stacks.add(new ItemStack(MESA_DE_TALABARTERIA));
 		stacks.add(new ItemStack(GUIA_DE_FORJA));
+		stacks.add(new ItemStack(LIBRO_YUNQUE));
+		stacks.add(new ItemStack(TOMO_DE_FORJA));
 		stacks.add(new ItemStack(PLANTILLA));
 		stacks.add(new ItemStack(LINGOTE_DE_TEMPLE));
 		stacks.add(new ItemStack(YUNQUE_PORTATIL));

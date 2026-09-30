@@ -62,7 +62,9 @@ public class PathGameTests {
 			helper.assertTrue(step.number() == step.ordinal() + 1, "el paso " + step + " se numera " + step.number());
 		}
 		helper.assertTrue(ForjaPath.of("roto") == null && ForjaPath.of("guia") == null, "roto y guia no son pasos del camino");
-		helper.assertTrue(ForjaPath.STEPS.size() == 9, "el camino tiene " + ForjaPath.STEPS.size() + " pasos, no 9");
+		// Nine up to the greater table, and the first technique after it (docs/LIBROS_GUIA.md, Andy's answer 5).
+		helper.assertTrue(ForjaPath.STEPS.size() == 10, "el camino tiene " + ForjaPath.STEPS.size() + " pasos, no 10");
+		helper.assertTrue(ForjaPath.STEPS.getLast() == Step.TECNICA, "el último paso debería ser la primera técnica");
 		helper.succeed();
 	}
 
@@ -76,7 +78,7 @@ public class PathGameTests {
 		assertNext(helper, Set.of("plantilla", "pieza", "forja", "mejora", "parada", "aleacion"), Step.TEMPLE);
 		// Advancements off the path change nothing.
 		assertNext(helper, Set.of("guia", "roto", "desarmar", "plantilla"), Step.PIEZA);
-		// Only the greater table missing.
+		// Only the greater table missing, and then only the technique.
 		Set<String> allButLast = new HashSet<>();
 		for (Step step : ForjaPath.STEPS) {
 			if (step != Step.MESA_MAYOR) {
@@ -84,6 +86,9 @@ public class PathGameTests {
 			}
 		}
 		assertNext(helper, allButLast, Step.MESA_MAYOR);
+		allButLast.add(Step.MESA_MAYOR.advancement());
+		allButLast.remove(Step.TECNICA.advancement());
+		assertNext(helper, allButLast, Step.TECNICA);
 		// Walked in order, each step points at the one after it and the count keeps up.
 		Set<String> walked = new HashSet<>();
 		for (int i = 0; i < ForjaPath.STEPS.size(); i++) {
@@ -110,11 +115,11 @@ public class PathGameTests {
 		helper.assertTrue(ForjaPath.worthAHint(Step.PLANTILLA, Step.PIEZA), "la primera plantilla debería señalar la pieza");
 		helper.assertTrue(!ForjaPath.worthAHint(Step.TEMPLE, Step.TEMPLE), "un paso hecho a destiempo no dice nada");
 		helper.assertTrue(!ForjaPath.worthAHint(Step.PIEZA, Step.PLANTILLA), "hacia atrás (un logro revocado) no dice nada");
-		helper.assertTrue(ForjaPath.worthAHint(Step.MESA_MAYOR, null), "el final del camino se anuncia");
+		helper.assertTrue(ForjaPath.worthAHint(Step.TECNICA, null), "el final del camino se anuncia");
 		helper.assertTrue(!ForjaPath.worthAHint(null, null), "después del final, silencio");
 
 		List<Step> played = List.of(Step.PLANTILLA, Step.PIEZA, Step.FORJA, Step.MEJORA, Step.PARADA, Step.TEMPLE,
-			Step.ALEACION, Step.MESA_MAYOR, Step.COLADA);
+			Step.ALEACION, Step.MESA_MAYOR, Step.COLADA, Step.TECNICA);
 		Set<String> done = new HashSet<>();
 		Step before = ForjaPath.next(done::contains);
 		List<String> said = new ArrayList<>();
@@ -127,18 +132,21 @@ public class PathGameTests {
 			before = after;
 		}
 		// The quench was missed, so the upgrade and the parry say nothing; doing it jumps straight to the
-		// alloy; the greater table before the foundry says nothing; the foundry ends the path.
-		List<String> expected = List.of("pieza", "forja", "temple", "aleacion", "colada", "fin");
+		// alloy; the greater table before the foundry says nothing; the foundry points at the technique, which ends
+		// the path.
+		List<String> expected = List.of("pieza", "forja", "temple", "aleacion", "colada", "tecnica", "fin");
 		helper.assertTrue(said.equals(expected), "la partida desordenada dijo " + said + ", debía decir " + expected);
 
-		// The line itself names the step and the chapter that explains it.
+		// The line itself names the step, the chapter that explains it and the book that chapter is in.
 		Component hint = ForjaPath.hint(Step.PIEZA);
 		helper.assertTrue(hint.getContents() instanceof TranslatableContents line && line.getKey().equals("gui.forja.camino.pista")
-			&& line.getArgs().length == 2
+			&& line.getArgs().length == 3
 			&& line.getArgs()[0] instanceof Component title && title.getContents() instanceof TranslatableContents titleKey
 			&& titleKey.getKey().equals("gui.forja.camino.pieza")
 			&& line.getArgs()[1] instanceof Component chapter && chapter.getContents() instanceof TranslatableContents chapterKey
-			&& chapterKey.getKey().equals("gui.forja.libro.cap.piezas"), "la pista no nombra el paso y su capítulo: " + hint);
+			&& chapterKey.getKey().equals("gui.forja.libro.cap.cortar")
+			&& line.getArgs()[2] instanceof Component book && book.getContents() instanceof TranslatableContents bookKey
+			&& bookKey.getKey().equals("gui.forja.libros.yunque.titulo"), "la pista no nombra el paso, su capítulo y su libro: " + hint);
 		helper.assertTrue(ForjaPath.hint(null).getContents() instanceof TranslatableContents end && end.getKey().equals("gui.forja.camino.pista.completo"),
 			"el final del camino no tiene su propia línea");
 		helper.succeed();

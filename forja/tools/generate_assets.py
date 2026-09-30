@@ -3033,25 +3033,10 @@ def generate_cabinet_textures():
 
 
 def generate_guide_texture():
-    """The guide book: vanilla's book with a deep red cover and a small hammer stamped on it."""
-    book = vanilla("item/book.png")
-    out = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-    for y in range(16):
-        for x in range(16):
-            r, g, b, a = book.getpixel((x, y))
-            if not a:
-                continue
-            if r > g + 15:
-                lum = luminance((r, g, b, a))
-                out.putpixel((x, y), (min(255, lum * 2 + 40), lum // 2, lum // 3, 255))
-            else:
-                out.putpixel((x, y), (r, g, b, a))
-    for pos, color in (((7, 5), (200, 200, 208)), ((8, 5), (200, 200, 208)), ((9, 5), (150, 150, 158)),
-                       ((8, 6), (120, 84, 48)), ((7, 7), (120, 84, 48)), ((6, 8), (96, 64, 36))):
-        out.putpixel(pos, color + (255,))
-    path = ASSETS / "textures/item/guia_de_forja.png"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    out.save(path)
+    """The guide's books (docs/LIBROS_GUIA.md): textures, models and recipes live in tools/libros.py."""
+    import libros
+
+    libros.generate(vanilla("item/book.png"))
 
 
 # ---------------------------------------------------------------- table screens and templates

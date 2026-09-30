@@ -243,7 +243,8 @@ GUI = {
     "container.forja.mesa_de_forja": ("Mesa de forja", "Forge Table"),
     "block.forja.mesa_de_piezas": ("Mesa de piezas", "Parts Table"),
     "container.forja.mesa_de_piezas": ("Mesa de piezas", "Parts Table"),
-    "item.forja.guia_de_forja": ("Guía de forja", "Forge Guide"),
+    # The single guide became the first of the books (docs/LIBROS_GUIA.md); the item kept its id.
+    "item.forja.guia_de_forja": ("Cuaderno del aprendiz", "Apprentice's Notebook"),
     "item.forja.plantilla": ("Plantilla base", "Blank Template"),
     "item.forja.plantilla.de": ("Plantilla de %s", "%s Template"),
     "item.forja.orbe_de_mejora": ("Orbe de mejora", "Upgrade Orb"),
@@ -279,7 +280,7 @@ GUI = {
     "advancements.forja.saqueadores.title": ("Sin capitán", "No Captain"),
     "advancements.forja.saqueadores.description": ("Mata al capitán de una banda de saqueadores de forja", "Kill the captain of a band of forge raiders"),
     "advancements.forja.herrero_caido.title": ("El Herrero Caído", "The Fallen Smith"),
-    "advancements.forja.herrero_caido.description": ("Despierta y derrota al Herrero Caído en su fragua del Nether", "Wake and beat the Fallen Smith in his forge in the Nether"),
+    "advancements.forja.herrero_caido.description": ("Derrota al Herrero Caído en el Cementerio entre Estrellas", "Beat the Fallen Smith in the Graveyard Among the Stars"),
     "advancements.forja.corazon.title": ("Corazón de forja", "Forge Heart"),
     "advancements.forja.corazon.description": ("Forja algo con el corazón del Herrero", "Forge something out of the Smith's heart"),
     "advancements.forja.aleacion.title": ("Dos metales", "Two Metals"),
@@ -353,7 +354,7 @@ GUI = {
     "advancements.forja.plantilla.title": ("Molde a medida", "Made to Measure"),
     "advancements.forja.plantilla.description": ("Graba una plantilla en la Mesa de piezas", "Engrave a template at the Parts Table"),
     "advancements.forja.guia.title": ("Lectura obligada", "Required Reading"),
-    "advancements.forja.guia.description": ("Abre la Guía de forja", "Open the Forge Guide"),
+    "advancements.forja.guia.description": ("Abre un libro de la forja", "Open a forge book"),
     "advancements.forja.pieza.title": ("Primera pieza", "First Part"),
     "advancements.forja.pieza.description": ("Corta una pieza con una plantilla", "Cut a part with a template"),
     "advancements.forja.desarmar.title": ("Nada se pierde", "Nothing Goes to Waste"),
@@ -549,12 +550,14 @@ GUI = {
     "gui.forja.libro.paso2.titulo": ("2. Corta las piezas", "2. Cut the parts"),
     "gui.forja.libro.paso2": (
         "Pon la plantilla grabada y el material en la mesa de piezas: corta lo que se talla (madera, "
-        "piedra, hueso, cuero, amatista, cuarzo, prismarina...). El metal no se corta, se funde en el "
-        "crisol y se cuela en la caja de moldeo (capítulo Fundición). Cada pieza cuesta una cantidad "
+        "piedra, hueso, cuero, amatista, cuarzo, prismarina...). El metal no se corta: se funde en el "
+        "crisol y se cuela en una mesa de colada, con el molde que prepara la caja de moldeo (libro La "
+        "fundición). Cada pieza cuesta una cantidad "
         "distinta y cada material lleva su rasgo; la pieza sale con sus números ya escritos.",
         "Put the engraved template and the material on the parts table: it cuts what can be carved "
-        "(wood, stone, bone, leather, amethyst, quartz, prismarine...). Metal is not cut but melted in the "
-        "crucible and poured into the casting box (Foundry chapter). Each part costs a different amount "
+        "(wood, stone, bone, leather, amethyst, quartz, prismarine...). Metal is not cut: it is melted in "
+        "the crucible and cast on a casting table, in the mould the casting box makes (book The Foundry). "
+        "Each part costs a different amount "
         "and every material carries its own trait; the part comes out with its numbers already on it.",
     ),
     "gui.forja.libro.paso3.titulo": ("3. Fórjalo en la estrella", "3. Forge it on the star"),
@@ -597,8 +600,8 @@ GUI = {
     "gui.forja.libro.cap.siguiente_paso": ("Siguiente paso", "Next Step"),
     "gui.forja.camino.titulo": ("El camino del herrero", "The smith's path"),
     "gui.forja.camino.intro": (
-        "%s pasos hasta la mesa mayor. Se marcan solos; pulsa uno para ir a su capítulo.",
-        "%s steps to the greater table. They tick themselves off; click one for its chapter.",
+        "%s pasos, hasta tu primera técnica. Se marcan solos; pulsa uno para ir a él.",
+        "%s steps, up to your first technique. They tick themselves off; click one to go to it.",
     ),
     "gui.forja.camino.paso": ("Paso %s de %s", "Step %s of %s"),
     "gui.forja.camino.leer": ("Léelo en «%s», pág. %s", "Read it in %s, p. %s"),
@@ -610,8 +613,8 @@ GUI = {
         "You know what it takes to fend for yourself. What is left is out there: events, commissions, "
         "raiders and, at the end, the Fallen Smith.",
     ),
-    "gui.forja.camino.pista": ("Siguiente paso: %s. Lo explica «%s», en la guía de forja.",
-                               "Next step: %s. The forge guide explains it under %s."),
+    "gui.forja.camino.pista": ("Siguiente paso: %s. Lo explica «%s», en «%s».",
+                               "Next step: %s. \"%s\" explains it, in \"%s\"."),
     "gui.forja.camino.pista.completo": ("Has recorrido el camino del herrero: el resto de la guía es tuyo.",
                                         "You have walked the smith's path: the rest of the guide is yours."),
     "gui.forja.camino.plantilla": ("Graba una plantilla", "Engrave a template"),
@@ -701,8 +704,8 @@ GUI = {
     "gui.forja.libro.mana.intro": ("El báculo y el grimorio gastan **maná**: la barra azul y violeta encima de los corazones, frente a la de estamina. Solo aparece cuando llevas en la mano algo que usa maná o cuando la barra no está llena, y nunca si aún no has tenido un arma mágica. Una muesca en su borde marca lo que cuesta el hechizo más barato del arma que llevas.",
                                    "The staff and the tome spend **mana**: the blue and violet bar above the hearts, across from the stamina bar. It only shows while something that uses mana is in your hand or the bar is not full, and never before you have had a magic weapon. A notch on its lip marks what the cheapest spell of the weapon in your hand costs."),
     "gui.forja.libro.mana.costes.titulo": ("Lo que cuesta", "What it costs"),
-    "gui.forja.libro.mana.costes": ("La barra tiene %s de maná. Un proyectil del báculo cuesta %s y la espera es de %s tics (antes %s); un área del grimorio cuesta %s y espera %s tics (antes %s). Una carga llena cuesta un %s%% más y pega un %s%% más: cargar es la forma de ahorrar, tocar la de gastar deprisa. Se pelea a ráfagas: vacías la barra y esperas a que vuelva.",
-                                    "The bar holds %s mana. A staff bolt costs %s and the wait is %s ticks (it was %s); a tome's area costs %s and waits %s ticks (it was %s). A full charge costs %s%% more and hits %s%% harder: charging is how you save, tapping how you spend fast. You fight in bursts: empty the bar and wait for it to come back."),
+    "gui.forja.libro.mana.costes": ("La barra tiene %1$s de maná. Un proyectil del báculo cuesta %2$s y la espera es de %3$s tics; un área del grimorio cuesta %5$s y espera %6$s tics. Una carga llena cuesta un %8$s%% más y pega un %9$s%% más: cargar es la forma de ahorrar, tocar la de gastar deprisa. Se pelea a ráfagas: vacías la barra y esperas a que vuelva.",
+                                    "The bar holds %1$s mana. A staff bolt costs %2$s and the wait is %3$s ticks; a tome's area costs %5$s and waits %6$s ticks. A full charge costs %8$s%% more and hits %9$s%% harder: charging is how you save, tapping how you spend fast. You fight in bursts: empty the bar and wait for it to come back."),
     "gui.forja.libro.mana.vacio": ("Sin maná bastante el hechizo no sale: un chisporroteo y la barra destella en rojo. Si soltaste una carga más grande de lo que la barra paga, sale tan fuerte como el maná alcanza.",
                                    "Without enough mana the spell does not come out: a fizzle and a red flash of the bar. Let go of a charge bigger than the bar can pay for and it leaves as strong as the mana allows."),
     "gui.forja.libro.mana.vuelve.titulo": ("Cómo vuelve", "How it comes back"),
@@ -863,38 +866,37 @@ GUI = {
         "bronze forever and never touch netherite; the obsidian one melts anything.",
     ),
     "gui.forja.libro.cuba": (
-        "Y el almacén: la **cuba de colada**, cristal y bronce. Dos que se tocan son **un solo depósito**, "
-        "y cada una cabe %s. Se llena por la cuba más baja y se saca por la más alta, así que el nivel "
-        "sube y baja por el cristal como lo haría de verdad. **Un depósito, un metal.** El crisol que "
-        "tenga pegada una cuba **vuelca en ella**, y si saca de ella sus ingredientes **cuela al doble de "
-        "velocidad**, porque el metal ya está líquido. Por abajo empuja un montón por segundo a lo que "
-        "tenga debajo.",
-        "And the store: the **melt tank**, glass and bronze. Two touching are **one bank**, and each holds "
-        "%s. It fills from the lowest tank and drains from the highest, so the level rises and falls "
-        "through the glass the way it would for real. **One bank, one metal.** A crucible with a tank "
-        "against it **pours into it**, and one that takes its ingredients back out of it **pours in half "
-        "the time**, because the metal is already molten. Underneath it pushes a stack a second into "
-        "whatever is there.",
+        "Y el almacén: la **cuba de colada**, cristal y bronce, de %s cada una. Las que se tocan y llevan "
+        "el mismo metal (o ninguno) se funden en **un solo depósito**, con un solo nivel que sube por el "
+        "cristal. **Un depósito, un metal.** El crisol vuelca en los depósitos de su red de uno en uno, y "
+        "si saca de una cuba sus ingredientes **cuela al doble de velocidad**, porque el metal ya está "
+        "líquido. Todo esto lo cuenta paso a paso «Montar una fundición».",
+        "And the store: the **melt tank**, glass and bronze, holding %s each. Tanks that touch and carry the "
+        "same metal (or none) merge into **one bank**, with a single level rising through the glass. **One "
+        "bank, one metal.** The crucible pours into the banks of its network one at a time, and one that "
+        "takes its ingredients out of a tank **pours in half the time**, because the metal is already "
+        "molten. \"Building a foundry\" goes through all of it step by step.",
     ),
     "gui.forja.libro.caja.titulo": ("La caja de moldeo", "The Casting Box"),
     "gui.forja.libro.caja": (
-        "Aquí termina la línea. Mete una **pieza acabada** en la caja con **acero refractario** al lado: "
+        "Aquí se preparan los moldes. Mete una **pieza acabada** en la caja con **acero refractario** al lado: "
         "el acero se vuelca sobre ella, **la pieza se destruye** y sale su **molde**. Es lo único del mod "
         "que rompe a propósito algo que hiciste, y debe serlo — un molde vale una pieza porque a partir "
         "de ahí no vuelves a cortar esa pieza a mano.",
-        "The line ends here. Put a **finished part** in the box with **refractory steel** beside it: the "
+        "This is where moulds are made. Put a **finished part** in the box with **refractory steel** beside it: the "
         "steel is poured over it, **the part is destroyed** and its **mould** comes out. It is the only "
         "thing in the mod that deliberately breaks something you made, and it should be — a mould is "
         "worth a part because from then on you never cut that part by hand again.",
     ),
     "gui.forja.libro.caja.colar": (
-        "Con el molde dentro, la caja **cuela la pieza con el metal de las cubas** que alcance (pegadas o "
-        "por conducto), gastando lo que cuesta la pieza. El molde no se gasta. Y no hace falta plantilla, "
-        "ni mesa: mena al crisol, colada a las cubas, cubas a la caja, piezas por abajo.",
-        "With the mould in it, the box **casts the part out of the metal in whatever tanks it reaches** "
-        "(touching or down a pipe), spending what the part costs. The mould is not used up. No template "
-        "and no table: ore into the crucible, melt into the tanks, tanks into the box, parts out of the "
-        "bottom.",
+        "La caja no cuela: el molde va encima de una **mesa de colada**, bajo un colador, y es la mesa la "
+        "que se llena con el metal que le cae de un caño o le da una cuba al lado, gastando lo que cuesta "
+        "la pieza. El molde no se gasta. Sin plantilla y sin cortar nada: mena al crisol, colada a las "
+        "cubas, cubas a la mesa, piezas por abajo.",
+        "The box does not cast: the mould goes on top of a **casting table**, under a strainer, and it is the "
+        "table that fills with the metal falling from a spout or given by a tank beside it, spending what "
+        "the part costs. The mould is not used up. No template and nothing cut: ore into the crucible, melt "
+        "into the tanks, tanks to the table, parts out of the bottom.",
     ),
     "gui.forja.libro.caja.niveles": (
         "Y hay tres, según de qué esté hecha, porque un molde de barro revienta con lo duro: **barro** "
@@ -934,11 +936,11 @@ GUI = {
                                            "He brings %s raiders in forged gear. He leaves his legend at Maestria 10 and two to four upgrade orbs."),
     "gui.forja.libro.yunque": ("Su yunque también se queda: puesto junto a una mesa de forja vale por las otras dos, así que un taller completo cabe en dos bloques.",
                                "His anvil stays too: set next to a forge table it is worth the other two, so a whole workshop fits in two blocks."),
-    "gui.forja.libro.bestiario.herrero": ("%s de vida y tres fases. Suelta el corazón de forja (que además repara cualquier pieza por completo en la estrella) y una leyenda.",
-                                           "%s health and three stages. He leaves the forge heart (which also puts any piece back together at the star) and a legend."),
+    "gui.forja.libro.bestiario.herrero": ("%s de vida y tres tramos, que se parten a dos tercios y a un tercio. Suelta su corazón de forja (que además repara cualquier pieza por completo en la estrella), una leyenda, el martillo del maestro, su yunque la primera vez y una Estrella forjada para cada uno que peleó.",
+                                           "%s health and three stages, split at two thirds and one third. He leaves his forge heart (which also puts any piece back together at the star), a legend, the master's hammer, his anvil the first time and a Forged Star for everyone who fought."),
 
-    "gui.forja.libro.aleaciones_intro": ("Dos metales en las puntas de la estrella no hacen nada sobre piedra. La mesa funde con el calor que tiene debajo: pon una fogata, un bloque de magma o lava bajo ella y los mismos ingredientes te darán cosas distintas. Hay %s aleaciones: las más duras solo salen sobre lava, y las tres mejores solo en el crisol de obsidiana.",
-                                         "Two metals on the points of the star do nothing on bare stone. The table melts with the heat under it: put a campfire, a magma block or lava beneath it and the same ingredients give you different things. There are %s alloys: the hardest only come off lava, and the best three only out of the obsidian crucible."),
+    "gui.forja.libro.aleaciones_intro": ("Dos metales en las puntas de la estrella no hacen nada sobre piedra. La mesa funde con el calor que tiene debajo: pon una fogata, un bloque de magma o lava bajo ella y los mismos ingredientes te darán cosas distintas. Hay %s aleaciones: las más duras solo salen sobre lava, y las tres mejores solo a forja blanca, en el crisol de obsidiana o con aliento de forja por un tubo.",
+                                         "Two metals on the points of the star do nothing on bare stone. The table melts with the heat under it: put a campfire, a magma block or lava beneath it and the same ingredients give you different things. There are %s alloys: the hardest only come off lava, and the best three only at white heat, in the obsidian crucible or with forge breath down a pipe."),
     "gui.forja.libro.aleacion_linea": ("%s, %s por tanda", "%s, %s per batch"),
     "gui.forja.libro.aleaciones_comparar": ("Durabilidad de una espada entera", "Durability of a whole sword"),
     "gui.forja.libro.fundir_piezas": (
@@ -1142,10 +1144,10 @@ GUI = {
     "gui.forja.libro.encargos_como": ("Agáchate y usa sobre él con la mano vacía para oír el encargo, y otra vez llevando la pieza para entregarla. Cambia cada día y cada Forjador pide lo suyo.",
                                        "Crouch and use on him with an empty hand to hear the order, and again holding the piece to hand it in. It changes with the day, and every Forjador asks for his own thing."),
 
-    "gui.forja.libro.elites.titulo": ("Élites", "Elites"),
-    "gui.forja.libro.elites": ("Uno de cada cien monstruos sale de élite: con nombre, brillando a través de las paredes, x%2$s de vida y una leyenda en la mano. Mata a uno y suelta una sola pieza de lo que llevaba, elegida al azar.",
-                               "One monster in a hundred comes up an elite: named, glowing through walls, x%2$s health and a legend in hand. Kill one and it gives up a single piece of what it carried, chosen at random."),
-    "gui.forja.libro.insignias": ("Los que vienen más duros llevan su rango sobre la cabeza: un galón de bronce el veterano (sobrevivió a tres peleas, o ya nació curtido), dos de plata la élite, dos de oro bajo una estrella el campeón.",
+    "gui.forja.libro.elites.titulo": ("Campeones", "Champions"),
+    "gui.forja.libro.elites": ("%1$s de cada cien monstruos sale de campeón: con nombre, brillando a través de las paredes, x%2$s de vida y una leyenda en la mano. Mata a uno y suelta su leyenda, y nada más.",
+                               "%1$s monsters in a hundred come up a champion: named, glowing through walls, x%2$s health and a legend in hand. Kill one and it gives up its legend, and nothing else."),
+    "gui.forja.libro.insignias": ("Los que vienen más duros llevan su rango sobre la cabeza: un galón de bronce el veterano (sobrevivió a tres peleas, o ya nació curtido), dos de plata la élite, dos de oro bajo una estrella el campeón. Veteranos y élites son monstruos corrientes que vinieron más fuertes: atraviesan parte de tu armadura y sueltan una o dos cosas de más.",
                                   "The ones that come tougher wear their rank over their heads: one bronze chevron for a veteran (it survived three fights, or came seasoned), two silver for an elite, two gold under a star for a champion."),
     "gui.forja.libro.automata.titulo": ("Autómata de forja", "Forge automaton"),
     "gui.forja.libro.automata": ("Piedra, hierro y un horno encendido en la barriga, cuidando lo que quedó de los talleres viejos. %s de vida, no se le empuja y no le hacen nada el fuego ni el veneno. Cuando cae se deshace en las piezas de las que está hecho. Hay uno en cada forja abandonada y dos en la fragua del Nether.",
@@ -1157,10 +1159,10 @@ GUI = {
     "gui.forja.libro.saqueadores": ("Si llevas equipo forjado encima, de noche puede venir a buscarte una banda: %s saqueadores con equipo forjado y un capitán con una leyenda a maestría 10. Si cae el capitán, suelta su leyenda y varios orbes de mejora.",
                                      "If you are carrying forged gear, at night a band may come looking for you: %s raiders in forged gear and a captain with a legend at Maestria 10. If the captain falls, he leaves his legend and a handful of upgrade orbs."),
     "gui.forja.libro.herrero_caido.titulo": ("El Herrero Caído", "The Fallen Smith"),
-    "gui.forja.libro.herrero_caido": ("En el Nether hay una fragua-fortaleza de blackstone con canales de lava, sus dos mesas y, en el centro, su fragua apagada. Es el único sitio donde existe ese bloque. Pon la mano en ella llevando la ofrenda y el Herrero se levanta.",
-                                       "Somewhere in the Nether there is a forge-fortress of blackstone with lava channels, his two tables and, in the middle, his dead forge. That block exists nowhere else. Put your hand on it carrying the offering and the Smith rises."),
-    "gui.forja.libro.herrero_caido_fases": ("%s de vida, mangual de damasco y armadura de obsidiacero. Bajo tres cuartos llama a sus aprendices; a la mitad se reforja y nada le entra hasta que le apagues las %s brasas; bajo un cuarto te tira el cielo encima. Suelta su corazón de forja, el mejor material del mod, y una leyenda.",
-                                             "%s health, a damascus flail and obsidian steel plate. Under three quarters he calls his apprentices; at half he reforges and nothing touches him until you put out his %s embers; under a quarter he brings the sky down on you. He leaves his forge heart, the best material in the mod, and a legend."),
+    "gui.forja.libro.herrero_caido": ("Ya no se le despierta con una ofrenda. Su fragua apagada es el marco de un portal, en la Forja Profunda del Bastión: con una perla de oricalco en cada una de sus cuatro ménsulas lleva a su propio mundo, el Cementerio entre Estrellas, y allí el Herrero baja del cielo en cuanto llegas. La fragua de la vieja ruina del Nether se abre en un marco igual.",
+                                       "He is no longer woken with an offering. His dead forge is the frame of a portal, in the Bastion's Deep Forge: with an orichalcum pearl on each of its four brackets it leads to his own world, the Graveyard Among the Stars, and there the Smith comes down from the sky as soon as you arrive. The forge in the old Nether ruin opens into the same kind of frame."),
+    "gui.forja.libro.herrero_caido_fases": ("%s de vida, mangual de damasco y armadura de obsidiacero. A dos tercios y a un tercio clava el martillo, se vuelve intocable un momento y suelta una onda, y sus aprendices salen de la tierra en anillos a su alrededor. A la mitad se reforja: es inmortal mientras ardan sus brasas estelares (%s, y una más por cada jugador de más), y solo las apaga la colada de un brasero volcado de un golpe o de un flechazo. Suelta su corazón de forja, el mejor material del mod, una leyenda y una Estrella forjada para cada uno.",
+                                             "%s health, a damascus flail and obsidian steel plate. At two thirds and at one third he drives his hammer in, cannot be touched for a moment and sends out a wave, and his apprentices rise out of the ground in rings around him. At half he reforges: he is immortal while his star embers burn (%s, and one more for every extra player), and only the pour of a brazier, knocked over with a blow or an arrow, puts them out. He leaves his forge heart, the best material in the mod, a legend and a Forged Star for everyone."),
     "gui.forja.libro.herrero_caido_defensa": ("No te lo va a matar otro: si algo más le pega (un warden, un gólem, otro monstruo) se da la vuelta y lo pelea con todo, sus aprendices se le echan encima, y lo que no venga de un jugador le hace un tercio. Tus lobos y tus flechas cuentan como tú. Si le pegas mientras pelea con otra cosa, vuelve a por ti.",
                                                "Nothing else is going to kill him for you: if something else hits him (a warden, a golem, another monster) he turns round and fights it with everything he has, his apprentices go for it, and whatever does not come from a player only does a third. Your wolves and your arrows count as you. Hit him while he is fighting something else and he comes back for you."),
     "gui.forja.libro.herrero_caido_reclama": ("La forja reclama: si en %s s le pegan tres criaturas que no son de nadie, o un gólem, un warden o algo igual de grande le intenta quitar una décima parte de la vida, abre los brazos, arrastra hacia sí todo lo que no es de nadie a %s bloques y lo deshace: no suelta nada ni da experiencia. A los jugadores, sus mascotas y sus aprendices no los toca. Como mucho una vez cada %s s.",
@@ -1349,8 +1351,8 @@ GUI = {
     "gui.forja.libro.mundo.botin": ("En llanuras, bosques y otros biomas de aldea hay forjas abandonadas con las dos mesas, un cofre de plantillas grabadas, equipo y orbes, y un Herrero ermitaño con quien comerciar. Los cofres de herreros guardan plantillas y equipo forjado; mazmorras, minas, fortalezas, templos y portales en ruinas esconden plantillas grabadas y equipo gastado con mejoras; los bastiones, armas de netherita.",
                                     "Plains, forests and other village biomes hide abandoned forges with both tables, a chest of engraved templates, gear and orbs, and a Hermit Smith to trade with. Smith chests hold templates and forged gear; dungeons, mineshafts, strongholds, temples and ruined portals hide engraved templates and worn gear with upgrades; bastions, netherite weapons."),
     "gui.forja.libro.mundo.monstruos.titulo": ("Monstruos", "Monsters"),
-    "gui.forja.libro.mundo.monstruos": ("Zombis, esqueletos y vindicadores a veces llevan armadura o armas forjadas en lugar de las normales. El enderman esquiva el 34 % de los golpes teletransportándose; tras una esquiva así pasa 7 segundos sin poder repetirla.",
-                                        "Zombies, skeletons and vindicators sometimes wear forged armor or carry forged weapons instead of plain ones. An enderman dodges 34% of blows by teleporting away; after such a dodge it cannot do it again for 7 seconds."),
+    "gui.forja.libro.mundo.monstruos": ("Zombis, esqueletos y vindicadores a veces llevan armadura o armas forjadas en lugar de las normales, y las usan: los esqueletos con arco forjado y los saqueadores con ballesta forjada disparan de verdad, y algunos esqueletos llevan báculo y algunos zombis grimorio. El enderman esquiva el 34 % de los golpes teletransportándose; tras una esquiva así pasa 7 segundos sin poder repetirla.",
+                                        "Zombies, skeletons and vindicators sometimes wear forged armor or carry forged weapons instead of plain ones, and use them: skeletons with a forged bow and pillagers with a forged crossbow really shoot, and some skeletons carry a staff and some zombies a tome. An enderman dodges 34% of blows by teleporting away; after such a dodge it cannot do it again for 7 seconds."),
     "gui.forja.libro.mundo.aldeanos.titulo": ("Aldeanos", "Villagers"),
     "gui.forja.libro.mundo.aldeanos": ("Los herreros venden plantillas base, plantillas grabadas de su oficio y, en nivel 4, orbes de Eficiencia, Filo o Protección. El herrero de herramientas maestro vende un mapa hacia una forja abandonada. Un aldeano que toma una Mesa de piezas se vuelve Forjador: plantillas, kits de reparación, orbes y el mapa de forja.",
                                        "Smiths sell blank templates, engraved templates of their trade and, at level 4, Efficiency, Sharpness or Protection orbs. A master toolsmith sells a map to an abandoned forge. A villager who claims a Parts Table becomes a Forgesmith: templates, repair kits, orbs and the forge map."),
@@ -1361,7 +1363,8 @@ GUI = {
                                     "Parts Table: put in an engraved template and material, and take the part. Salvage gives back a gear's parts (a badly worn head or plate is lost) and its upgrades as orbs with half the percentage."),
     "gui.forja.libro.mesa_forja": ("Mesa de forja: una estrella de cinco puntas. Piezas en las puntas y Forjar: la herramienta sale al centro. Con una herramienta al centro, ingredientes en las puntas la mejoran, piezas le cambian esas partes, su material la repara y los libros encantados y orbes de mejora se vuelven mejoras. Lo forjado no desaparece al gastarse: queda roto y sin efectos hasta repararlo.",
                                    "Forge Table: a five-pointed star. Parts on the points and Forge: the gear appears in the center. With gear in the center, ingredients on the points upgrade it, parts swap those parts, its material repairs it and enchanted books and upgrade orbs turn into upgrades. Forged gear never vanishes when worn out: it stays broken and powerless until repaired."),
-    "gui.forja.libro.receta_libro": ("Esta guía: un libro y un lingote de hierro.", "This guide: a book and an iron ingot."),
+    "gui.forja.libro.receta_libro": ("El Cuaderno del aprendiz, por si lo pierdes: un libro y un lingote de hierro.",
+                                     "The Apprentice's Notebook, in case you lose it: a book and an iron ingot."),
     "gui.forja.libro.objetos_intro": ("Las piezas que pongas deciden qué objeto sale. Pasa el ratón encima para ver sus estadísticas.",
                                       "The parts you put in decide what comes out. Hover to see the stats."),
     "gui.forja.libro.piezas_intro": ("Cada pieza cuesta material. La cabeza, hoja o placa decide lo principal; mango, atadura y forro suman.",
@@ -1586,7 +1589,8 @@ GUI = {
         "what they have taken off other smiths. The Forjador sells the map.",
     ),
     "key.forja.guia": ("Abrir la guía de forja", "Open the forge guide"),
-    "gui.forja.sin_libro": ("No llevas la guía de forja", "You are not carrying the forge guide"),
+    "gui.forja.sin_libro": ("Lleva el Cuaderno del aprendiz para abrir la biblioteca, o un libro de la forja en la mano",
+                            "Carry the Apprentice's Notebook to open the library, or hold a forge book"),
     "gui.forja.taller.completo": ("Taller completo: mejoras más rendidoras y ventana de martillo más ancha",
                                   "Whole workshop: upgrades go further and the hammer window is wider"),
     "gui.forja.taller.suelto": ("Mesa suelta: pon cerca la mesa de piezas y la de talabartería",
@@ -2595,6 +2599,11 @@ SKILLS = {
                       ("Durante %s s tus golpes cuerpo a cuerpo prenden fuego %s s y hacen un %s más",
                        "For %s s your melee blows set fire for %s s and deal %s more")),
 }
+
+
+# The guide's books (docs/LIBROS_GUIA.md) keep their texts in their own file.
+from lang_libros import BOOKS  # noqa: E402
+GUI.update(BOOKS)
 
 
 def build(index):

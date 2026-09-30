@@ -25,9 +25,13 @@ public final class CombatClient {
 	private CombatClient() {
 	}
 
+	/** The dodge key (left Alt by default), for the notebook's page of keys, which names whatever it is bound to. */
+	public static @org.jspecify.annotations.Nullable KeyMapping DODGE_KEY;
+
 	public static void register() {
 		KeyMapping dodge = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.forja.esquivar",
 			com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT, KeyMapping.Category.MOVEMENT));
+		DODGE_KEY = dodge;
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (dodgeCooldown > 0) dodgeCooldown--;
 			while (dodge.consumeClick()) {

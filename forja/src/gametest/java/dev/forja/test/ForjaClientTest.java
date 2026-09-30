@@ -189,6 +189,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 				checkEverythingIsNamed(context);
 				checkGuideBook(context);
 				checkSmithPath(context, server);
+				checkBooks(context, server);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
@@ -322,6 +323,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			checkEverythingIsNamed(context);
 			checkGuideBook(context);
 			checkSmithPath(context, server);
+			checkBooks(context, server);
 			checkLoot(server, connection);
 			checkAbandonedForge(context, server, connection, x, y, z);
 			checkNewUpgrades(context, server, connection, x, y, z);
@@ -1034,9 +1036,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.waitTicks(5);
 		String[] book = context.computeOnClient(mc -> {
 			GuideBookScreen guide = (GuideBookScreen) mc.gui.screen();
+			// Every step's chapter is in a book: the one it names when that one is written, the tome while it is not.
 			StringBuilder missing = new StringBuilder();
 			for (dev.forja.ForjaPath.Step step : steps) {
-				if (guide.chapterPage(step.chapter) <= 0) {
+				dev.forja.GuideBooks.Book in = dev.forja.GuideBooks.bookOf(step.chapter);
+				GuideBookScreen where = new GuideBookScreen(in != null && in.ready ? in : dev.forja.GuideBooks.Book.TOMO);
+				if (in == null || where.chapterPage(step.chapter) <= 0) {
 					missing.append(step.chapter).append(' ');
 				}
 			}
@@ -1050,8 +1055,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.takeScreenshot("forja_04a_libro_portada_camino");
 		int[] jumped = context.computeOnClient(mc -> {
 			GuideBookScreen guide = (GuideBookScreen) mc.gui.screen();
-			// The sign sits under the emblem (58) and the title (22) on the first page.
-			boolean clicked = guide.clickAt(guide.contentPoint(0, 40, 88));
+			// The sign sits under the emblem and the title on the first page, wherever the title's lines leave it.
+			boolean clicked = guide.clickAt(guide.pathSignPoint());
 			return new int[] {clicked ? 1 : 0, guide.openSpread(), guide.chapterPage("siguiente_paso") / 2};
 		});
 		check(jumped[0] == 1 && jumped[1] == jumped[2], "the sign on the cover should open the next step's page, got spread " + jumped[1] + " instead of " + jumped[2]);
@@ -1073,17 +1078,24 @@ public class ForjaClientTest implements FabricClientGameTest {
 		String sweep = context.computeOnClient(mc -> {
 			StringBuilder wrong = new StringBuilder();
 			java.util.Set<String> done = new java.util.HashSet<>();
-			for (int i = 0; i <= steps.size(); i++) {
-				GuideBookScreen guide = GuideBookScreen.showing(java.util.Set.copyOf(done));
-				String expected = i < steps.size() ? "portada:" + steps.get(i).advancement() : "completo";
+			for (int i = 0; i <= steps.size() * 3 + 2; i++) {
+				// The tome, the notebook and the library all carry the path: each of them, at every point of it.
+				dev.forja.GuideBooks.Book which = i <= steps.size() ? dev.forja.GuideBooks.Book.TOMO
+					: i <= steps.size() * 2 + 1 ? dev.forja.GuideBooks.Book.CUADERNO : dev.forja.GuideBooks.Book.BIBLIOTECA;
+				if (i == steps.size() + 1 || i == steps.size() * 2 + 2) {
+					done.clear();
+				}
+				int at = done.size();
+				GuideBookScreen guide = GuideBookScreen.showing(which, java.util.Set.copyOf(done));
+				String expected = at < steps.size() ? "portada:" + steps.get(at).advancement() : "completo";
 				String layout = guide.overflowingPages() + " " + guide.wideElements() + " " + guide.elidedElements() + " " + guide.rawKeys();
-				if (!guide.shownStep().equals(expected) || (i < steps.size() && !guide.nextStepOnOnePage()) || !guide.pathListOnOnePage()
+				if (!guide.shownStep().equals(expected) || (at < steps.size() && !guide.nextStepOnOnePage()) || !guide.pathListOnOnePage()
 					|| !layout.equals("[] [] [] []")) {
-					wrong.append(i).append(": ").append(guide.shownStep()).append(" linked ").append(guide.nextStepOnOnePage())
+					wrong.append(which).append(' ').append(at).append(": ").append(guide.shownStep()).append(" linked ").append(guide.nextStepOnOnePage())
 						.append(" list ").append(guide.pathListOnOnePage()).append(' ').append(layout).append("; ");
 				}
-				if (i < steps.size()) {
-					done.add(steps.get(i).advancement());
+				if (at < steps.size()) {
+					done.add(steps.get(at).advancement());
 				}
 			}
 			return wrong.toString();
@@ -1119,6 +1131,122 @@ public class ForjaClientTest implements FabricClientGameTest {
 		server.runCommand("clear @a forja:guia_de_forja 1");
 		context.waitTicks(5);
 		log("camino: " + (context.computeOnClient(mc -> dev.forja.client.PathClient.hintsShown) - start) + " lineas en el chat por todo el camino");
+	}
+
+	/**
+	 * The guide's books (docs/LIBROS_GUIA.md), from the client: every book, the library and the tome lay out
+	 * cleanly (nothing off the page, nothing cut, no raw keys, every chapter on its page, no link to nowhere); G opens
+	 * the library with the notebook carried and the book in hand without it; a link into another book opens that
+	 * book at the chapter; and pictures of every spread of the notebook, book I and the library, for the contact
+	 * sheets in Forja_capturas_mejoras/libros.
+	 */
+	private static void checkBooks(ClientGameTestContext context, TestServerContext server) {
+		java.util.Set<String> before = context.computeOnClient(mc -> new java.util.HashSet<>(dev.forja.client.PathClient.done()));
+		// A smith a few steps in, carrying the notebook and book I, so the cards show both states.
+		server.runCommand("clear @a forja:guia_de_forja");
+		server.runCommand("clear @a forja:libro_yunque");
+		server.runCommand("clear @a forja:tomo_de_forja");
+		server.runCommand("gamemode survival @a");
+		for (dev.forja.ForjaPath.Step step : dev.forja.ForjaPath.STEPS) {
+			server.runCommand("advancement revoke @a only forja:forja/" + step.advancement());
+		}
+		for (String step : List.of("plantilla", "pieza", "forja")) {
+			server.runCommand("advancement grant @a only forja:forja/" + step);
+		}
+		server.runCommand("give @a forja:guia_de_forja");
+		server.runCommand("give @a forja:libro_yunque");
+		context.waitFor(mc -> dev.forja.client.PathClient.done().contains("forja") && !dev.forja.client.PathClient.done().contains("temple"), 200);
+		context.waitTicks(10);
+
+		// Layout, every book: what the tome has always been checked for, and links.
+		String layout = context.computeOnClient(mc -> {
+			StringBuilder report = new StringBuilder();
+			for (dev.forja.GuideBooks.Book which : List.of(dev.forja.GuideBooks.Book.CUADERNO, dev.forja.GuideBooks.Book.YUNQUE,
+				dev.forja.GuideBooks.Book.BIBLIOTECA, dev.forja.GuideBooks.Book.TOMO)) {
+				GuideBookScreen book = new GuideBookScreen(which);
+				String problems = book.overflowingPages() + " " + book.wideElements() + " " + book.elidedElements() + " " + book.rawKeys()
+					+ " " + book.misplacedChapters() + " " + book.brokenLinks();
+				StringBuilder pages = new StringBuilder();
+				for (String key : book.chapterKeys()) {
+					pages.append(key).append('=').append(book.chapterPage(key) + 1).append(' ');
+				}
+				log("libros: " + which + " " + book.pageCount() + " paginas · " + pages.toString().trim());
+				if (!problems.equals("[] [] [] [] [] []")) {
+					report.append(which).append(' ').append(problems).append("; ");
+				}
+			}
+			return report.toString();
+		});
+		check(layout.isEmpty(), "every book must lay out cleanly (overflow, wide, cut, raw keys, misplaced, broken links): " + layout);
+
+		// G: with the notebook carried, the library; without it, the book in hand; without either, nothing.
+		String keys = context.computeOnClient(mc -> String.valueOf(dev.forja.client.ForjaClient.guideKeyOpens(mc.player)));
+		check(keys.equals("BIBLIOTECA"), "with the notebook carried G should open the library, it opens " + keys);
+		context.getInput().pressKey(options -> dev.forja.client.ForjaClient.GUIDE_KEY);
+		context.waitForScreen(GuideBookScreen.class);
+		String opened = context.computeOnClient(mc -> ((GuideBookScreen) mc.gui.screen()).book().name());
+		check(opened.equals("BIBLIOTECA"), "pressing G with the notebook should open the library, opened " + opened);
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+		server.runCommand("clear @a forja:guia_de_forja");
+		server.runCommand("item replace entity @a weapon.mainhand with forja:libro_yunque");
+		context.waitFor(mc -> mc.player.getMainHandItem().is(dev.forja.registry.ModItems.LIBRO_YUNQUE)
+			&& !mc.player.getInventory().contains(new net.minecraft.world.item.ItemStack(dev.forja.registry.ModItems.GUIA_DE_FORJA)), 100);
+		String inHand = context.computeOnClient(mc -> String.valueOf(dev.forja.client.ForjaClient.guideKeyOpens(mc.player)));
+		check(inHand.equals("YUNQUE"), "without the notebook G should open the book in hand, it opens " + inHand);
+		server.runCommand("clear @a forja:libro_yunque");
+		context.waitFor(mc -> !mc.player.getInventory().contains(new net.minecraft.world.item.ItemStack(dev.forja.registry.ModItems.LIBRO_YUNQUE)), 100);
+		String none = context.computeOnClient(mc -> String.valueOf(dev.forja.client.ForjaClient.guideKeyOpens(mc.player)));
+		check(none.equals("null"), "with no book at all G should open nothing, it opens " + none);
+		server.runCommand("give @a forja:guia_de_forja");
+		server.runCommand("give @a forja:libro_yunque");
+		context.waitFor(mc -> mc.player.getInventory().contains(new net.minecraft.world.item.ItemStack(dev.forja.registry.ModItems.LIBRO_YUNQUE)), 100);
+
+		// A link into another book: book I's first chapter points back at the notebook's tables.
+		String crossed = context.computeOnClient(mc -> {
+			GuideBookScreen anvil = new GuideBookScreen(dev.forja.GuideBooks.Book.YUNQUE);
+			mc.gui.setScreen(anvil);
+			boolean went = anvil.openChapter("primeras_mesas");
+			GuideBookScreen now = (GuideBookScreen) mc.gui.screen();
+			return went + " " + now.book() + " " + now.openSpread() + " " + now.chapterPage("primeras_mesas") / 2;
+		});
+		context.waitTicks(3);
+		String[] cross = crossed.split(" ");
+		check(cross[0].equals("true") && cross[1].equals("CUADERNO") && cross[2].equals(cross[3]),
+			"a link from book I to the notebook's tables should open the notebook there, got " + crossed);
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+
+		// Pictures: every spread of the notebook, book I and the library, cover first.
+		for (dev.forja.GuideBooks.Book which : List.of(dev.forja.GuideBooks.Book.CUADERNO, dev.forja.GuideBooks.Book.YUNQUE,
+			dev.forja.GuideBooks.Book.BIBLIOTECA)) {
+			int pages = context.computeOnClient(mc -> {
+				GuideBookScreen book = new GuideBookScreen(which);
+				mc.gui.setScreen(book);
+				mc.gui.toastManager().clear();
+				return book.pageCount();
+			});
+			context.waitForScreen(GuideBookScreen.class);
+			// The library's catalogue is the old reference tables, photographed with the tome; three spreads of it will do.
+			int spreads = which == dev.forja.GuideBooks.Book.BIBLIOTECA ? Math.min((pages + 1) / 2, 8) : (pages + 1) / 2;
+			for (int spread = 0; spread < spreads; spread++) {
+				int page = spread * 2;
+				context.runOnClient(mc -> {
+					((GuideBookScreen) mc.gui.screen()).goToPage(page);
+					mc.gui.toastManager().clear();
+				});
+				context.getInput().setCursorPos(0, 0);
+				context.waitTicks(4);
+				context.takeScreenshot(TestScreenshotOptions.of(String.format(Locale.ROOT, "forja_libros_%s_%02d", which.key(), spread)).disableCounterPrefix());
+			}
+			context.runOnClient(mc -> mc.gui.setScreen(null));
+			context.waitTicks(2);
+		}
+
+		// And the player is left as they were.
+		for (dev.forja.ForjaPath.Step step : dev.forja.ForjaPath.STEPS) {
+			server.runCommand("advancement " + (before.contains(step.advancement()) ? "grant" : "revoke") + " @a only forja:forja/" + step.advancement());
+		}
+		server.runCommand("clear @a forja:libro_yunque");
+		context.waitTicks(5);
 	}
 
 	/** The translation keys of a path hint and of its first argument, space separated. */

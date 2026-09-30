@@ -91,7 +91,7 @@ public final class ForjaClient implements ClientModInitializer {
 			}),
 			dev.forja.registry.ModBlocks.TUBO_DE_CALOR, dev.forja.registry.ModBlocks.CALDERA,
 			dev.forja.registry.ModBlocks.DEPOSITO_DE_CALOR);
-		GuideBookItem.opener = () -> Minecraft.getInstance().gui.setScreen(new GuideBookScreen());
+		GuideBookItem.opener = book -> Minecraft.getInstance().gui.setScreen(new GuideBookScreen(book));
 		// The mod's own three. A particle needs its behaviour registered on the client and its sprites
 		// listed in assets/forja/particles; the registry hands over the loaded sprite set here.
 		SkyMood.register();
@@ -153,8 +153,12 @@ public final class ForjaClient implements ClientModInitializer {
 		);
 	}
 
+	/** The guide's key (G by default), for the notebook's page of keys, which names whatever it is bound to. */
+	public static net.minecraft.client.@org.jspecify.annotations.Nullable KeyMapping GUIDE_KEY;
+
 	/**
-	 * A key for the guide: with the book anywhere in the bag, one press opens it. The book is where the
+	 * A key for the guide (Andy, 2026-09-29): with the starter notebook anywhere in the bag, it opens the library
+	 * (every book, the path and the catalogue); without it, the Forja book in either hand. The book is where the
 	 * mod explains itself, so reaching it should not mean digging through the inventory first.
 	 */
 	private static void registerGuideKey() {
@@ -162,22 +166,38 @@ public final class ForjaClient implements ClientModInitializer {
 			new net.minecraft.client.KeyMapping("key.forja.guia", com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM,
 				org.lwjgl.glfw.GLFW.GLFW_KEY_G, net.minecraft.client.KeyMapping.Category.INVENTORY)
 		);
+		GUIDE_KEY = key;
 		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (key.consumeClick()) {
 				if (client.player == null || client.gui.screen() != null) {
 					continue;
 				}
-				boolean carried = false;
-				for (int slot = 0; slot < client.player.getInventory().getContainerSize(); slot++) {
-					carried |= client.player.getInventory().getItem(slot).getItem() instanceof GuideBookItem;
-				}
-				if (carried) {
-					client.gui.setScreen(new GuideBookScreen());
+				dev.forja.GuideBooks.@org.jspecify.annotations.Nullable Book book = guideKeyOpens(client.player);
+				if (book != null) {
+					client.gui.setScreen(new GuideBookScreen(book));
 				} else {
 					client.gui.hud.setOverlayMessage(Component.translatable("gui.forja.sin_libro"), false);
 				}
 			}
 		});
+	}
+
+	/**
+	 * What G opens for this player: the library with the starter notebook in the bag, else the Forja book held in
+	 * either hand, else nothing. Public for the client test.
+	 */
+	public static dev.forja.GuideBooks.@org.jspecify.annotations.Nullable Book guideKeyOpens(net.minecraft.world.entity.player.Player player) {
+		for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+			if (player.getInventory().getItem(slot).getItem() instanceof GuideBookItem guide && guide.book == dev.forja.GuideBooks.Book.CUADERNO) {
+				return dev.forja.GuideBooks.Book.BIBLIOTECA;
+			}
+		}
+		for (net.minecraft.world.InteractionHand hand : net.minecraft.world.InteractionHand.values()) {
+			if (player.getItemInHand(hand).getItem() instanceof GuideBookItem guide) {
+				return guide.book;
+			}
+		}
+		return null;
 	}
 
 	/**

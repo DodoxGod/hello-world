@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:book",
+    "forja:plantilla"
+  ],
+  "result": {
+    "id": "forja:libro_yunque"
+  }
+}

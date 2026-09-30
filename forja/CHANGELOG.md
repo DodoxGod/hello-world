@@ -1,5 +1,59 @@
 # Novedades
 
+## 2026-09-29 — La guía se parte en libros (primera entrega: el Cuaderno, El yunque y la biblioteca)
+
+Andy: "Ver un libro que tiene más de 200 páginas termina asustando". El diseño completo está en
+`docs/LIBROS_GUIA.md`.
+
+- **Cuaderno del aprendiz** (0). Es el objeto de la guía de siempre (`forja:guia_de_forja`), con nombre y portada
+  nuevos.
+  - Se da al entrar por primera vez y se vuelve a hacer con un libro y un lingote de hierro.
+  - Cuenta de qué va Forja, las dos primeras mesas, las teclas (G, Alt, K, V y B, con el nombre de la tecla que
+    tengas puesta) y el camino del herrero.
+  - Enseña cada libro con su receta dibujada y cuándo se aprende.
+- **El yunque** (I), un libro nuevo: cortar piezas, la estrella y el martillo perfecto, temple, mejorar en la
+  primera mesa, desarmar, orbes y reparar. Se fabrica con un libro y una plantilla.
+- **Todos los libros se fabrican.** La receta de cada uno se aprende con un logro de Forja (El yunque, al grabar
+  la primera plantilla). Hasta entonces la mesa de crafteo no la hace (`CraftingMenuMixin`). En los mundos viejos,
+  las recetas que ya tocan se enseñan al entrar.
+- **La biblioteca.** Con el Cuaderno encima, **G** abre la biblioteca:
+  - una tarjeta por libro, con su progreso y su receta;
+  - el camino del herrero;
+  - el **catálogo** (objetos y piezas, materiales y rasgos, mejoras y colores), separado en pestañas.
+
+  Sin el Cuaderno, G abre el libro de la forja que tengas en la mano.
+- **El camino del herrero** tiene 10 pasos: el último es elegir tu primera técnica. La pista del chat dice el
+  capítulo y el libro. Un enlace a un capítulo de otro libro abre ese libro si lo llevas encima.
+- **Para que asuste menos**, cada portada enseña:
+  - las páginas y los minutos de lectura;
+  - una barra de lo leído;
+  - tus pasos de ese libro;
+  - "Seguir leyendo".
+
+  Un sello rojo marca el libro que llevas y no has abierto. Lo leído se guarda en `config/forja/libros_leidos.json`.
+- **Tomo completo de la forja**: la guía entera en un volumen, como antes, solo en creativo.
+- **Textos corregidos:**
+  - El Herrero Caído ya no se invoca con una ofrenda en el Nether. Se describen el portal y la pelea nueva, y el
+    logro también.
+  - El monstruo con una leyenda en la mano es el **campeón**, no la élite. La proporción sale de la configuración,
+    y se explican los veteranos y las élites.
+  - Se cuela en la mesa de colada, no en la caja de moldeo.
+  - Las cubas se describen como depósitos que se llenan de uno en uno.
+  - Las tres mejores aleaciones también salen con aliento de forja.
+  - El maná ya no enseña los números de antes.
+  - El bestiario dice todo lo que suelta el Herrero, y los monstruos del mundo que llevan báculo, grimorio, arco o
+    ballesta.
+- **Arreglo:** el título "El Cementerio entre Estrellas" no cabía en su página (149 px en 140) y la prueba del libro
+  fallaba. Los títulos de capítulo se escriben más pequeños cuando no caben, y el de la portada se parte en líneas.
+- **Pruebas:**
+  - `LibrosGameTests` (nuevo): recetas de un libro y un ingrediente, la mesa que no da un libro sin aprender, la
+    receta que llega con su logro y al entrar, solo el Cuaderno al entrar, y cada paso del camino con su libro.
+  - `PathGameTests`, para 10 pasos y la pista con libro.
+  - En el cliente (`FORJA_SOLO=libro`), `checkBooks`: maquetación y enlaces de cada libro, G con y sin el
+    Cuaderno, un enlace entre libros, y fotos de cada doble página.
+- **Los libros II a VII** vienen en las próximas entregas. Hasta entonces, lo suyo se lee en el tomo de creativo, y
+  el Cuaderno los enseña como "en preparación".
+
 ## 2026-09-29 — El blaze con su red entrenada (red_blaze_v1 del simulador)
 
 - **Contrato:** `docs/red_blaze_contrato.json` es ahora el del simulador, copiado tal cual. Tiene 324 entradas (las
