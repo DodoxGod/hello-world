@@ -169,8 +169,14 @@ public class AccionesGameTests {
 		boolean brokeOff = MobActions.breakLight(zombie, helper.absolutePos(torch));
 		boolean torchStayed = helper.getBlockState(torch).is(Blocks.TORCH);
 		CombatConfig.get().mobsBreakLights = true;
+		// mobGriefing is one rule for the whole test world, and another test turns it off for a while: set here, on
+		// this tick, and put back (nothing else runs between these lines)
+		var rules = helper.getLevel().getGameRules();
+		boolean griefing = rules.get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING);
+		rules.set(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING, true, helper.getLevel().getServer());
 		boolean brokeOn = MobActions.breakLight(zombie, helper.absolutePos(torch));
 		boolean brokeLantern = MobActions.breakLight(zombie, helper.absolutePos(lantern));
+		rules.set(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING, griefing, helper.getLevel().getServer());
 		CombatConfig.get().mobsBreakLights = lightsBefore;
 		CombatConfig.get().mobActionsV4 = before;
 		helper.assertTrue(helper.absolutePos(soulTorch).equals(nearest), "la luz más cercana al jugador es la antorcha de almas, dio " + nearest);
