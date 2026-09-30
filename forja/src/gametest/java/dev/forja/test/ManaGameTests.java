@@ -133,13 +133,13 @@ public class ManaGameTests {
 		CombatConfig cfg = CombatConfig.get();
 		ItemStack staff = staff(helper);
 		ItemStack tome = forged(helper, ForgeType.GRIMORIO);
-		helper.assertTrue(Spellcasting.cooldown(staff, ForgeType.BACULO) == 6 && Spellcasting.cooldown(tome, ForgeType.GRIMORIO) == 20,
-			"las esperas del jugador son 6 y 20 tics: " + Spellcasting.cooldown(staff, ForgeType.BACULO) + ", " + Spellcasting.cooldown(tome, ForgeType.GRIMORIO));
+		helper.assertTrue(Spellcasting.cooldown(staff, ForgeType.BACULO) == 10 && Spellcasting.cooldown(tome, ForgeType.GRIMORIO) == 20,
+			"las esperas del jugador son 10 y 20 tics: " + Spellcasting.cooldown(staff, ForgeType.BACULO) + ", " + Spellcasting.cooldown(tome, ForgeType.GRIMORIO));
 		helper.assertTrue(Spellcasting.monsterCooldown(staff, ForgeType.BACULO) == 14 && Spellcasting.monsterCooldown(tome, ForgeType.GRIMORIO) == 70,
 			"los monstruos no pagan maná y esperan lo de antes, 14 y 70");
 		ItemStack quick = staff(helper, Upgrade.CONJURO_VELOZ, 100);
-		helper.assertTrue(Spellcasting.cooldown(quick, ForgeType.BACULO) == 4 && Spellcasting.monsterCooldown(quick, ForgeType.BACULO) == 8,
-			"Conjuro veloz quita dos quintos a las dos esperas");
+		helper.assertTrue(Spellcasting.cooldown(quick, ForgeType.BACULO) == 8 && Spellcasting.monsterCooldown(quick, ForgeType.BACULO) == 11,
+			"Conjuro veloz quita dos décimas a las dos esperas: " + Spellcasting.cooldown(quick, ForgeType.BACULO) + ", " + Spellcasting.monsterCooldown(quick, ForgeType.BACULO));
 		float full = Spellcasting.manaCost(staff, ForgeType.BACULO, 1.0F);
 		helper.assertTrue(Math.abs(full - cfg.manaBoltCost * (1.0F + cfg.manaChargeExtra)) < EPS, "una carga llena cuesta un cuarto más: " + full);
 		// A charge bigger than the bar pays for leaves as strong as the bar allows.
@@ -432,10 +432,10 @@ public class ManaGameTests {
 		var dumped = helper.getLevel().getEntitiesOfClass(dev.forja.entity.MagicBolt.class, helper.getBounds().inflate(32.0));
 		helper.assertTrue(dumped.size() == 1, "Descarga lanza un proyectil, vi " + dumped.size());
 		float poured = 100.0F - cfg.manaBoltCost * (1.0F + cfg.manaChargeExtra);
-		float expected = plainDamage * (1.0F + poured / 10.0F * 0.25F);
+		float expected = plainDamage * (1.0F + Math.min(Spellcasting.POUR_MOST, poured / 10.0F * 0.1F));
 		helper.assertTrue(Mana.value(player) < EPS, "Descarga vacía la barra: " + Mana.value(player));
 		helper.assertTrue(Math.abs(boltDamage(dumped.getFirst()) - expected) < 0.05F,
-			"y cada 10 de más pega un 25 % más: " + boltDamage(dumped.getFirst()) + ", esperado " + expected);
+			"y cada 10 de más pega un 10 % más, hasta el doble: " + boltDamage(dumped.getFirst()) + ", esperado " + expected);
 		clearBolts(helper);
 
 		// A tap with Descarga is a tap: the bar is not poured.

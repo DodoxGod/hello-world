@@ -124,7 +124,7 @@ armas arrojadas).
 cuerpo, de proyectiles, de hechizos, por la espalda, a la cabeza…) **se suman entre sí** y se aplican una vez,
 como siempre; el factor **multiplica encima**, al final:
 `daño = arma × (1 + suma de porcentajes) × factor`. Un Tanque con una flecha: `× 1 × 0,67`. Un Mago con
-Catalizador lanzando: `× (1 + 0,15 + 0,15) × 1`. Un Arquero con la espada: `× 1 × 0,7`. Tres detalles:
+Catalizador lanzando: `× (1 + 0,10 + 0,10) × 1`. Un Arquero con la espada: `× 1 × 0,7`. Tres detalles:
 
 - Los porcentajes de **daño cuerpo a cuerpo** son un modificador del atributo de ataque (`forja:clase_melee_damage`,
   ya estaban); el de **hechizos** se pone al lanzar (`Spellcasting`, `spellDamageMultiplier`); el de
@@ -143,7 +143,7 @@ Vida: 20 de base (10 corazones). Estamina: 100 de base (`CombatConfig.staminaMax
 | Guerrero | 22 (+10 %) | 120 (+20 %) | ×1 (+5 % de daño c/c) | ×1 | ×0,4 | regeneración de estamina +10 %, postura +15 %, parada +1 tick |
 | Asesino | 14 (−30 %) | 130 (+30 %) | ×1 (+10 % de daño c/c) | ×1 | ×0,4 | velocidad +5 %, esquiva: distancia +35 %, espera −30 %, coste −20 %, invulnerabilidad +2 ticks |
 | Tanque | 32 (+60 %) | 100 | ×0,67 | ×0,67 | ×0,67 | armadura +2, empuje +30 %, velocidad −12 %, distancia de esquiva −35 %, coste de esquiva +20 %, estamina al parar −25 % |
-| Mago | 18 (−10 %) | 90 (−10 %) | ×0,7 | ×1 | ×1 (+15 % de hechizos) | espera de hechizos −15 %, maná +25 %, regeneración de maná ×6 (+500 %) |
+| Mago | 18 (−10 %) | 90 (−10 %) | ×0,7 | ×1 | ×1 (+10 % de hechizos) | espera de hechizos −10 %, maná +25 %, regeneración de maná ×6 (+500 %) |
 | Curandero | 20 | 100 | ×0,5 | ×1 | ×1/3 (y cura 1/10 del daño entero a aliados) | curación +50 %, maná +15 %, regeneración de maná ×4 (+300 %), regeneración de estamina +10 % |
 | Arquero | 18 (−10 %) | 100 | ×0,7 | ×1 (+15 % de proyectiles) | ×1 | velocidad +8 %, tensado +10 %, esquiva +20 %, espera de esquiva −15 %, caída −25 % |
 | Herrero | 21 (+5 %) | 100 | ×1 | ×1 | ×1 | minado +15 %, ventana del golpe perfecto +0,01, potencial +5, reparación +25 % |
@@ -200,7 +200,7 @@ Espera 60 s.
 
 ### Mago — magia
 
-**Base:** vida −10 %, estamina máxima −10 %, daño de hechizos +15 %, espera de hechizos −15 %, maná máximo
+**Base:** vida −10 %, estamina máxima −10 %, daño de hechizos +10 %, espera de hechizos −10 %, maná máximo
 +25 %, regeneración de maná ×6 (+500 %: sin clase mágica el maná vuelve lentísimo, ver *El maná por clase*). **Factor de daño:** cuerpo a cuerpo ×0,7
 (sustituye el −10 % cuerpo a cuerpo de antes).
 **Habilidad I — Nova arcana (V):** un anillo de 5 bloques a tu alrededor: 6 de daño mágico (con tu bono de
@@ -208,8 +208,8 @@ hechizos) a los monstruos hostiles, y los empuja. Espera 20 s.
 
 | Rama | Nivel 1 | Nivel 2 | Nivel 3 |
 |---|---|---|---|
-| Arcano | Núcleo afinado: daño de hechizos +10 % | Sobrecarga arcana: la carga completa vale +25 % más | Catalizador: daño de hechizos +15 % |
-| Flujo | Mente clara: espera −10 %, regeneración de maná +100 % (×7 en total) | Canalización: tiempo de carga −25 %, maná máximo +30 % | Economía arcana: coste de maná −25 %, espera −10 % |
+| Arcano | Núcleo afinado: daño de hechizos +10 % | Sobrecarga arcana: la carga completa vale +25 % más | Catalizador: daño de hechizos +10 % |
+| Flujo | Mente clara: espera −5 %, regeneración de maná +100 % (×7 en total) | Canalización: tiempo de carga −25 %, maná máximo +30 % | Economía arcana: coste de maná −25 % |
 | Égida | Barrera: daño mágico recibido −25 % | Paso etéreo: distancia de esquiva +20 %, espera de esquiva −10 % | Égida: cada 30 s ganas 4 de absorción |
 
 **Habilidad II — Concentración (B):** 8 s con la espera de los hechizos a la mitad (y, con maná, sin coste).
@@ -278,17 +278,17 @@ la media luna (`docs/arma_magica/variantes_baculo.py`): un cayado del que cuelga
 - **Piezas:** núcleo + cadena + mango (ninguna pieza nueva: la cadena es el gancho y la jaula). Se forja en
   cualquier mesa de forja, como las demás armas. El **núcleo decide el color y la fuerza**, como en el báculo.
 - **Toque (clic derecho corto) — Bálsamo:** un rayo del color del núcleo hasta 16 bloques; cura al primer aliado
-  que toca `2 + 0,75 × daño del núcleo` (núcleo de hierro: 3,5; de diamante: 4,25; de netherita: 5).
+  que toca `1,5 + 0,6 × daño del núcleo` (núcleo de hierro: 2,7; de diamante: 3,3; de netherita: 3,9).
   **No cura a quien lo usa.**
 - **Carga (mantener, 25 ticks) — Pulso:** un anillo de radio `4 + 2 × carga` alrededor tuyo; cura
-  `(2,5 + 0,75 × daño del núcleo) × (1 + 0,5 × carga)` a cada aliado dentro, y **a ti la mitad**.
+  `(2 + 0,6 × daño del núcleo) × (1 + 0,5 × carga)` a cada aliado dentro, y **a ti un 35 %** (`Healing.SELF_SHARE`).
   Una carga por debajo de un tercio sale como Bálsamo.
 - **Aliados:** jugadores, tus animales domados (lobos, gatos, loros, caballos...) y quien esté en tu equipo.
   **Nunca** a un monstruo hostil ni a animales ajenos.
 - **Espera:** 30 ticks. Pose de carga y partículas del núcleo como el báculo y el grimorio.
 - **Cualquiera puede usarlo.** El Curandero cura con él un 50 % más de base, y sus talentos de curación suben
   eso hasta +150 %; Renuevo, Bendición, Purificar y Vínculo también se aplican a sus curas.
-- **Maná:** gasta maná de la barra de `magic/Mana`: un toque cuesta `Healing.MANA_COST` = 12 y una carga llena un
+- **Maná:** gasta maná de la barra de `magic/Mana`: un toque cuesta `Healing.MANA_COST` = 15 y una carga llena un
   25 % más, como el báculo; `ClassEffects.spellCostMultiplier` lo abarata. Sin maná bastante no sale.
 - Como golpe es malo (0,5 de daño base, lento, contundente). Las mejoras de arma se le pueden poner, pero no
   afectan a la curación; las mejoras de magia (Conjuro veloz, Sobrecarga...) son solo de báculo y grimorio.
@@ -324,6 +324,15 @@ la media luna (`docs/arma_magica/variantes_baculo.py`): un cayado del que cuelga
   gritos alcanzan a otros jugadores. Nada daña a otro jugador que no dañara ya.
 - **Comandos (`/forja clase`)**: `elegir <clase>`, `nivel <n>`, `xp <n>`, `puntos` (desbloquea todo lo
   posible), `aprender <talento>`, `reiniciar`, `quitar`, `info`, `habilidad <1|2>` (sin espera).
+
+## La magia, en su sitio (Andy, 2026-09-30)
+
+Andy: las armas mágicas estaban rotas. Sin clase mágica la magia es un recurso para un momento; un Mago con sus
+talentos queda a la altura del cuerpo a cuerpo, sin pasarlo. Lo mide `docs/EQUILIBRIO.md` (*Magia frente al
+cuerpo a cuerpo*) y lo guarda la prueba `BalanceGameTests.magiaEnSuSitio`. Lo que cambió para el Mago: daño de
+hechizos +10 % de base (antes +15 %), espera −10 % (antes −15 %), Catalizador +10 % (antes +15 %), Mente clara
+espera −5 % (antes −10 %) y Economía arcana ya sólo abarata (antes también −10 % de espera). El farol cuesta 15
+de maná (antes 12), cura un poco menos y a quien lo usa sólo un 35 % del anillo (antes la mitad).
 
 ## El maná por clase (Andy, 2026-09-30)
 
@@ -365,7 +374,7 @@ Integración con el maná (hecha al unir la rama, 2026-09-29):
 
 1. ~~¿La conversión del Curandero cura también al que lanza?~~ **Decidido por Andy (2026-09-29):** sí, un tercio
    de lo que cura a los demás (`Healing.SELF_FROM_OTHERS`). El farol sigue curando al que lo usa a la mitad con la
-   carga. **Coste del farol:** 12 de maná por toque, confirmado.
+   carga. **Coste del farol:** 12 de maná por toque, confirmado (15 desde el 2026-09-30, con la magia en su sitio).
 
 **Decididas por Andy el 2026-09-29 (A–F):**
 

@@ -117,8 +117,13 @@ public class BalanceGameTests {
 				var result = bare.ttk.get(target.id);
 				if (target.hurtable() && result != null && result.killedShare < 0.999 && magic) {
 					// Andy, 2026-09-30: without a magic class mana comes back "lentísimo", so a bar is a few spells
-					// and a boss outlasts it. The magic weapons are held to what a Mago's bar does instead.
-					result = written.analysis.ttk(bare.build, target, Analysis.SEARCH_RUNS, Analysis.SEARCH_RUNS, null, mago(written.analysis.options));
+					// and a boss outlasts it. The magic weapons are held to what a Mago with its talents does instead;
+					// and a boss outlasting even a Mago's bar with a bare staff is the price of magic, not a fault.
+					result = written.analysis.ttk(bare.build, target, Analysis.SEARCH_RUNS, Analysis.SEARCH_RUNS, null,
+						Analysis.mago(written.analysis.options, true));
+					if (result.killedShare < 0.999 && target.boss) {
+						continue;
+					}
 				}
 				if (target.hurtable() && result != null && result.killedShare < 0.999) {
 					problems.add(type.id() + " sin mejoras no mata a " + target.id + " en " + (Analysis.MAX_TICKS / 20) + " s"
@@ -130,12 +135,78 @@ public class BalanceGameTests {
 		helper.succeed();
 	}
 
-	/** The fight options with a Mago's bar: how fast it fills and how deep it is, from the class's base numbers. */
-	static Fight.Options mago(Fight.Options base) {
-		Fight.Options options = base.copy();
-		options.manaRegen = 1.0 + dev.forja.clase.PlayerClass.MAGO.base(dev.forja.clase.ClassStat.MANA_REGEN);
-		options.manaMax = 1.0 + dev.forja.clase.PlayerClass.MAGO.base(dev.forja.clase.ClassStat.MANA_MAX);
-		return options;
+	/**
+	 * Andy, 2026-09-30: the magic weapons were broken. In every scenario (0, 50 and 100 %), measured on the balance
+	 * report's sample (Report.measureMagic):
+	 * <ul>
+	 *   <li>without a magic class the staff and the tome kill no sooner than the median melee weapon, and over a
+	 *       long fight do at most half its damage: magic is for the moment, not the weapon;</li>
+	 *   <li>a Mago with its talents kills no sooner than the quickest melee weapon and no later than 1.3 times the
+	 *       median (1.5 for the tome, whose area bites everything on the rune and is fought here one mob at a time):
+	 *       level with melee, not above it;</li>
+	 *   <li>and nothing magic takes a warden or the Herrero Caído apart clearly faster (a tenth) than the quickest melee
+	 *       weapon; with Enjambre on the staff it used to take a second.</li>
+	 * </ul>
+	 */
+	@GameTest(environment = ENVIRONMENT, maxTicks = 40)
+	public void magiaEnSuSitio(GameTestHelper helper) {
+		Report written = report(helper);
+		List<String> problems = new java.util.ArrayList<>();
+		for (Report.MagicRow row : written.magic) {
+			String at = " al " + row.scenario.label;
+			for (Object[] weapon : new Object[][] {{"báculo", row.staff, row.staffMago, row.staffSustained}, {"grimorio", row.tome, row.tomeMago, row.tomeSustained}}) {
+				String name = (String) weapon[0];
+				double plain = (Double) weapon[1];
+				double mage = (Double) weapon[2];
+				double sustained = (Double) weapon[3];
+				if (plain < row.median * MAGIC_PLAIN_FLOOR) {
+					problems.add(name + " sin clase" + at + " mata en " + fmt(plain) + " s, antes que la mediana cuerpo a cuerpo (" + fmt(row.median) + " s)");
+				}
+				if (sustained > row.meleeSustained * MAGIC_PLAIN_SUSTAINED) {
+					problems.add(name + " sin clase" + at + " sostiene " + fmt(sustained) + "/s, más de la mitad de la mediana (" + fmt(row.meleeSustained) + "/s)");
+				}
+				if (mage < row.fastest * MAGIC_MAGE_FLOOR) {
+					problems.add(name + " de Mago" + at + " mata en " + fmt(mage) + " s, antes que " + row.fastestMelee.id() + " (" + fmt(row.fastest) + " s)");
+				}
+				// The tome's area bites everything on the rune; against one mob at a time it is allowed to be slower.
+				double ceiling = "grimorio".equals(name) ? MAGIC_TOME_CEILING : MAGIC_MAGE_CEILING;
+				if (mage > row.median * ceiling) {
+					problems.add(name + " de Mago" + at + " mata en " + fmt(mage) + " s, más de " + ceiling + " veces la mediana (" + fmt(row.median) + " s)");
+				}
+			}
+		}
+		double[] melee = null;
+		for (var entry : written.bigFoes.entrySet()) {
+			if (entry.getKey().contains("cuerpo a cuerpo")) {
+				melee = entry.getValue();
+			}
+		}
+		if (melee != null) {
+			for (var entry : written.bigFoes.entrySet()) {
+				double[] ttk = entry.getValue();
+				for (int foe = 0; foe < 2; foe++) {
+					if (!Double.isNaN(ttk[foe]) && !Double.isNaN(melee[foe]) && ttk[foe] < melee[foe] * MAGIC_BIG_FLOOR) {
+						problems.add(entry.getKey() + " mata " + (foe == 0 ? "al warden" : "al Herrero Caído") + " en " + fmt(ttk[foe])
+							+ " s, antes que la más rápida cuerpo a cuerpo (" + fmt(melee[foe]) + " s)");
+					}
+				}
+			}
+		}
+		helper.assertTrue(problems.isEmpty(), String.join("; ", problems));
+		helper.succeed();
+	}
+
+	/** The band magiaEnSuSitio holds magic to, against melee. */
+	static final double MAGIC_PLAIN_FLOOR = 1.0;
+	static final double MAGIC_PLAIN_SUSTAINED = 0.5;
+	static final double MAGIC_MAGE_FLOOR = 1.0;
+	static final double MAGIC_MAGE_CEILING = 1.3;
+	static final double MAGIC_TOME_CEILING = 1.5;
+	/** Against the big ones a fully built Mago may come level with the quickest melee weapon, within a tenth. */
+	static final double MAGIC_BIG_FLOOR = 0.9;
+
+	private static String fmt(double value) {
+		return String.format(java.util.Locale.ROOT, "%.2f", value);
 	}
 
 	// ---------------------------------------------------------------- the model, held to the real code

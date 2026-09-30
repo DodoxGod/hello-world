@@ -237,7 +237,26 @@ public final class Findings {
 			this.allMobsGeo.put(type, base);
 		}
 
-		// Guard: a type that some other type beats against every mob in every scenario.
+		// Guard: a type that some other type beats against every mob in every scenario. The staff and the tome are
+		// judged as a Mago fights them: without the class they are meant to lose to melee (BalanceGameTests.magiaEnSuSitio).
+		Fight.Options mago = Analysis.mago(this.analysis.options, true);
+		for (ForgeType type : Analysis.TYPES) {
+			if (!dev.forja.magic.Spellcasting.casts(type)) {
+				continue;
+			}
+			Map<Analysis.Scenario, Map<String, Fight.Result>> byScenario = new EnumMap<>(Analysis.Scenario.class);
+			for (Analysis.Scenario scenario : Analysis.Scenario.values()) {
+				Build build = this.analysis.reports.get(type).best.get(scenario).build;
+				Map<String, Fight.Result> byTarget = new java.util.HashMap<>();
+				for (Target target : this.analysis.targets) {
+					if (target.hurtable()) {
+						byTarget.put(target.id, this.analysis.ttk(build, target, Analysis.SEARCH_RUNS, Analysis.SEARCH_RUNS, null, mago));
+					}
+				}
+				byScenario.put(scenario, byTarget);
+			}
+			this.magoTtk.put(type, byScenario);
+		}
 		for (ForgeType type : Analysis.TYPES) {
 			for (ForgeType other : Analysis.TYPES) {
 				if (other != type && this.beatsEverywhere(other, type)) {
@@ -311,13 +330,22 @@ public final class Findings {
 	}
 
 	/** Whether {@code a} kills every mob at least 2 % sooner than {@code b}, at 0, 50 and 100 %. */
+	/** The staff and the tome as a Mago with its talents fights them: what the domination guard reads for them. */
+	private final Map<ForgeType, Map<Analysis.Scenario, Map<String, Fight.Result>>> magoTtk = new EnumMap<>(ForgeType.class);
+
+	private Fight.Result ttk(ForgeType type, Analysis.Scenario scenario, Target target) {
+		Map<Analysis.Scenario, Map<String, Fight.Result>> mago = this.magoTtk.get(type);
+		if (mago != null) {
+			return mago.get(scenario).get(target.id);
+		}
+		return this.analysis.reports.get(type).best.get(scenario).ttk.get(target.id);
+	}
+
 	public boolean beatsEverywhere(ForgeType a, ForgeType b) {
 		for (Analysis.Scenario scenario : Analysis.Scenario.values()) {
-			Analysis.Evaluated x = this.analysis.reports.get(a).best.get(scenario);
-			Analysis.Evaluated y = this.analysis.reports.get(b).best.get(scenario);
 			for (Target target : this.analysis.targets) {
-				Fight.Result rx = x.ttk.get(target.id);
-				Fight.Result ry = y.ttk.get(target.id);
+				Fight.Result rx = this.ttk(a, scenario, target);
+				Fight.Result ry = this.ttk(b, scenario, target);
 				if (rx == null || ry == null) {
 					continue;
 				}

@@ -39,7 +39,7 @@ public enum PlayerClass {
 	 * "lentísimo si no tienes la clase", so the Mago's bar refills six times as fast as anyone else's.
 	 */
 	MAGO(0x4F7FE8, () -> Assembler.create(ForgeType.BACULO, List.of(ForgeMaterial.AMATISTA, ForgeMaterial.ORO, ForgeMaterial.MADERA)),
-		List.of(MAX_HEALTH.of(-0.10F), STAMINA_MAX.of(-0.10F), SPELL_DAMAGE.of(0.15F), SPELL_COOLDOWN.of(-0.15F),
+		List.of(MAX_HEALTH.of(-0.10F), STAMINA_MAX.of(-0.10F), SPELL_DAMAGE.of(0.10F), SPELL_COOLDOWN.of(-0.10F),
 			MANA_MAX.of(0.25F), MANA_REGEN.of(5.0F)),
 		ActiveSkill.NOVA_ARCANA),
 	/**

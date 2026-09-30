@@ -49,10 +49,11 @@ public final class Spellcasting {
 	 * The wait after a player's spell. Andy, 2026-09-28, asked how the magic weapons should go with the mana bar:
 	 * "maná y un enfriamiento corto" — each spell costs mana and the wait is cut a lot (a bolt from 14 ticks to
 	 * 6, an area from 70 to 20), so a fight is a burst until the bar is empty and then a pause while it fills.
-	 * Six and not five: at five the staff's burst killed the balance report's mobs faster than anything else
-	 * by a wide margin (docs/EQUILIBRIO.md), and a spell every six ticks is still one a click.
+	 * Andy, 2026-09-30: the magic weapons were broken, the staff killing everything in the balance report
+	 * (docs/EQUILIBRIO.md) three times as fast as melee. Ten ticks now, the same half second a mob stays
+	 * invulnerable after a blow; the tome stays at twenty, as its rune now lies alone.
 	 */
-	public static final int BOLT_COOLDOWN = 6;
+	public static final int BOLT_COOLDOWN = 10;
 	public static final double BOLT_SPEED = 1.5;
 	public static final int TOME_COOLDOWN = 20;
 	/**
@@ -76,6 +77,14 @@ public final class Spellcasting {
 	public static final double OVERCHARGE_REACH = 1.0;
 	/** Colapso: what a rune going out is worth, against its opening. */
 	public static final float COLLAPSE_SHARE = 0.75F;
+	/**
+	 * What each bite of a player's rune is worth against its opening, twice a second. Monsters' runes keep the
+	 * old quarter ({@link #MONSTER_BITE_SHARE}).
+	 */
+	public static final float BITE_SHARE = 0.15F;
+	public static final float MONSTER_BITE_SHARE = 0.25F;
+	/** Descarga: the most a poured bar adds to a spell, however deep the bar. */
+	public static final float POUR_MOST = 1.0F;
 	/**
 	 * "Las armas mágicas se cargan con golpe izquierdo en lugar de derecho": the right button is the magic,
 	 * so that is where the charge goes. Held, the spell gathers for this long; let go, it leaves, and a full
@@ -109,6 +118,8 @@ public final class Spellcasting {
 		final boolean collapses;
 		/** Laid by a monster: it leaves the other monsters alone, even once its reader is dead. */
 		boolean spareMonsters;
+		/** What a bite is worth against the opening: a player's rune {@link #BITE_SHARE}, a monster's more. */
+		float biteShare = BITE_SHARE;
 		int age;
 
 		Rune(ServerLevel level, Vec3 at, double reach, int ticks, float opening, int colour, UUID owner, ItemStack weapon, Shockwave mark) {
@@ -127,7 +138,7 @@ public final class Spellcasting {
 		}
 
 		float bite() {
-			return this.opening * 0.25F;
+			return this.opening * this.biteShare;
 		}
 	}
 
@@ -195,7 +206,11 @@ public final class Spellcasting {
 		Cast before = CASTING.get();
 		CASTING.set(new Cast(weapon, blow));
 		try {
-			float damage = weapon.isEmpty() ? base : net.minecraft.world.item.enchantment.EnchantmentHelper.modifyDamage(level, weapon, victim, source, base);
+			// What the enchantments add (Filo and the rest) counts at the share every upgrade on a spell counts at
+			// (CombatUpgrades.SPELL_EXTRA_SHARE): a flat +3 on a bolt of five is not the +3 on a blade of eight.
+			float damage = weapon.isEmpty() ? base
+				: base + (net.minecraft.world.item.enchantment.EnchantmentHelper.modifyDamage(level, weapon, victim, source, base) - base)
+					* dev.forja.upgrade.CombatUpgrades.SPELL_EXTRA_SHARE;
 			return victim.hurtServer(level, source, damage);
 		} finally {
 			if (before == null) {
@@ -219,14 +234,35 @@ public final class Spellcasting {
 		return parts.material(Math.max(0, slot));
 	}
 
-	/** What a bolt is worth when it lands: the core's bite, a gem of it being worth a little more loose than on a blade. */
+	/**
+	 * What a player's bolt is worth when it lands: the core's bite. Andy, 2026-09-30: the staff was the best weapon
+	 * in the game by far. Now a bolt every half second from the best núcleo kills about as fast as the typical
+	 * melee weapon of the same tier, a Mago's a little faster, and neither goes on for long without mana.
+	 */
 	public static float boltDamage(ForgeMaterial core) {
+		return Math.max(2.5F, 2.5F + core.attackDamageBonus * 0.5F);
+	}
+
+	/** What the tome's area does when it opens, and {@link #BITE_SHARE} of it again every half second on the rune. */
+	public static float areaDamage(ForgeMaterial core) {
+		return Math.max(3.0F, 4.0F + core.attackDamageBonus * 1.15F);
+	}
+
+	/** A monster's bolt and area: the old numbers, as a monster pays no mana and waits the old waits. */
+	public static float monsterBoltDamage(ForgeMaterial core) {
 		return Math.max(3.0F, 4.0F + core.attackDamageBonus * 0.9F);
 	}
 
-	/** What the tome's area does when it opens, and a quarter of it again every half second on the rune. */
-	public static float areaDamage(ForgeMaterial core) {
+	public static float monsterAreaDamage(ForgeMaterial core) {
 		return Math.max(3.0F, 5.0F + core.attackDamageBonus);
+	}
+
+	private static float boltDamage(ForgeMaterial core, LivingEntity caster) {
+		return caster instanceof Player ? boltDamage(core) : monsterBoltDamage(core);
+	}
+
+	private static float areaDamage(ForgeMaterial core, LivingEntity caster) {
+		return caster instanceof Player ? areaDamage(core) : monsterAreaDamage(core);
 	}
 
 	/** The wait after a player's spell, in ticks: the weapon's own, less what Conjuro veloz takes off it. */
@@ -395,12 +431,13 @@ public final class Spellcasting {
 			}
 			charge = affordableCharge(stack, type, charge, mana);
 			float cost = manaCost(stack, type, charge) * price;
-			// Descarga: a full charge pours the whole bar in, and every ten points past the price hit harder.
+			// Descarga: a full charge pours the whole bar in, and every ten points past the price hit harder, up to
+			// POUR_MOST: a bar deepened by four pieces of Reserva is not a spell four times over.
 			float pour = 0.0F;
 			float dump = Upgrade.dumpBonus(Upgrades.fraction(stack, Upgrade.DESCARGA));
 			if (dump > 0.0F && charge >= 1.0F) {
 				float poured = Mana.spendAll(player) - cost;
-				pour = Math.max(0.0F, poured) / 10.0F * dump;
+				pour = Math.min(POUR_MOST, Math.max(0.0F, poured) / 10.0F * dump);
 			} else {
 				Mana.trySpend(player, cost);
 			}
@@ -518,23 +555,31 @@ public final class Spellcasting {
 	}
 
 	/**
-	 * What leaves the staff: the bolt, and with Prisma one more either side of it (two with Enjambre), each
-	 * worth a share of the one in the middle. Buscador is on every one of them. An echo is the middle bolt
-	 * alone: it is the spell heard again, not cast again.
+	 * What leaves the staff: the bolt, and with Prisma one more either side of it (two with Enjambre). Buscador is
+	 * on every one of them. An echo is the middle bolt alone: it is the spell heard again, not cast again.
+	 *
+	 * <p>Andy, 2026-09-30, on Enjambre killing a warden in seconds: the spell's damage is <b>shared out</b> among the
+	 * bolts, not handed whole to each. A side bolt weighs {@link Upgrade#prismShare} of the middle one, and all of
+	 * them together are worth the one bolt the staff would have thrown alone: a fan covers more ground, it does not
+	 * hit one foe harder. The side bolts are not blows of the staff either (no Tormenta, no Vampirismo on each), so
+	 * five bolts are not five rolls of every upgrade. Every bolt goes through a mob's half second of invulnerability,
+	 * which is what lets the shares of a fan that all find the same foe add up to the whole spell and no more.
 	 */
 	private static void volley(ServerLevel level, LivingEntity player, ForgeMaterial core, ItemStack staff, float power, boolean big, boolean fan) {
-		float damage = boltDamage(core) * power;
+		float damage = boltDamage(core, player) * power;
 		float seek = (float) Math.toRadians(Upgrade.seekDegrees(Upgrades.fraction(staff, Upgrade.BUSCADOR)));
 		Vec3 look = aim(player);
-		MagicBolt bolt = new MagicBolt(level, player, look, core.color, damage, staff, seek, big);
-		level.addFreshEntity(fan ? bolt : bolt.insistent());
 		float prism = fan ? Upgrade.prismShare(Upgrades.fraction(staff, Upgrade.PRISMA)) : 0.0F;
-		if (prism > 0.0F) {
-			int pairs = Synergy.ENJAMBRE.active(staff) ? 2 : 1;
+		int pairs = prism > 0.0F ? (Synergy.ENJAMBRE.active(staff) ? 2 : 1) : 0;
+		float whole = 1.0F + 2 * pairs * prism;
+		MagicBolt bolt = new MagicBolt(level, player, look, core.color, damage / whole, staff, seek, big);
+		// A monster's middle bolt minds the invulnerability as it always did (entity/ai/CasterGoal's old waits).
+		level.addFreshEntity(player instanceof Player || pairs > 0 ? bolt.insistent() : bolt);
+		if (pairs > 0) {
 			for (int pair = 1; pair <= pairs; pair++) {
 				for (int side = -1; side <= 1; side += 2) {
 					Vec3 aside = look.yRot((float) Math.toRadians(side * pair * FAN_DEGREES));
-					level.addFreshEntity(new MagicBolt(level, player, aside, core.color, damage * prism, staff, seek, false));
+					level.addFreshEntity(new MagicBolt(level, player, aside, core.color, damage * prism / whole, staff, seek, false).insistent().aside());
 				}
 			}
 			if (pairs == 2) {
@@ -559,14 +604,26 @@ public final class Spellcasting {
 	}
 
 	private static Rune open(ServerLevel level, LivingEntity player, ForgeMaterial core, ItemStack tome, float power, boolean big, Vec3 at) {
-		float damage = areaDamage(core) * power;
+		float damage = areaDamage(core, player) * power;
 		double reach = RUNE_REACH + (big ? OVERCHARGE_REACH : 0.0);
 		int ticks = runeTicks(tome);
+		// Andy, 2026-09-30: runes laid one on another bit as many times over. A player's new rune puts out the
+		// last one they laid (quietly: that is not a Colapso), so one reader is one rune on the floor.
+		if (player instanceof Player) {
+			for (int index = RUNES.size() - 1; index >= 0; index--) {
+				Rune old = RUNES.get(index);
+				if (old.owner.equals(player.getUUID())) {
+					RUNES.remove(index);
+					old.mark.discard();
+				}
+			}
+		}
 		// The area, in the colour of the circle on the book, and the rune it leaves lying there.
 		Shockwave.burst(level, at, reach, 10, core.color, big ? 0.8F : 0.45F);
 		Shockwave mark = Shockwave.rune(level, at, reach, ticks, core.color);
 		Rune rune = new Rune(level, at, reach, ticks, damage, core.color, player.getUUID(), tome, mark);
 		rune.spareMonsters = player instanceof net.minecraft.world.entity.monster.Enemy;
+		rune.biteShare = player instanceof Player ? BITE_SHARE : MONSTER_BITE_SHARE;
 		RUNES.add(rune);
 		strike(rune, damage, player, true);
 		level.sendParticles(new DustParticleOptions(core.color, 1.6F), at.x, at.y + 0.4, at.z, big ? 70 : 40, reach * 0.5, 0.3, reach * 0.5, 0.0);
@@ -640,6 +697,15 @@ public final class Spellcasting {
 	/** How many runes are lying about, which is what the test asks. */
 	public static int runes() {
 		return RUNES.size();
+	}
+
+	/** How many runes this reader has lying about. */
+	public static int runesOf(UUID owner) {
+		int count = 0;
+		for (Rune rune : RUNES) {
+			count += rune.owner.equals(owner) ? 1 : 0;
+		}
+		return count;
 	}
 
 	/** How long the rune that has longest to go still has, in ticks. */

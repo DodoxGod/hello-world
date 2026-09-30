@@ -43,8 +43,9 @@ public class MagicBolt extends Projectile {
 	/**
 	 * Resonancia: an echo lands even on what is still flinching from the bolt it echoes. Without this the
 	 * echo of a bolt is worth nothing against the one thing it was aimed at — a hurt mob shrugs off any
-	 * lesser blow for half a second. Prisma's side bolts do not have it, the way three arrows of a
-	 * Multishot do not all count on one target: a fan is for a crowd.
+	 * lesser blow for half a second. Since 2026-09-30 a player's bolts all have it, and so do Prisma's side
+	 * bolts: the fan shares one spell's damage out among its bolts (Spellcasting.volley), so the shares of it
+	 * that find the same foe add up to that spell and no more.
 	 */
 	private boolean insistent;
 	/** Thrown by a monster: it flies through the others of its side instead of spending itself on them. */
@@ -52,6 +53,17 @@ public class MagicBolt extends Projectile {
 
 	public MagicBolt insistent() {
 		this.insistent = true;
+		return this;
+	}
+
+	/**
+	 * Prisma's side bolts (magic/Spellcasting.volley): their share of the spell lands, but not as a blow of the
+	 * staff, so the upgrades that answer a blow answer the middle bolt only.
+	 */
+	private boolean aside;
+
+	public MagicBolt aside() {
+		this.aside = true;
 		return this;
 	}
 
@@ -150,7 +162,7 @@ public class MagicBolt extends Projectile {
 				if (this.insistent) {
 					victim.invulnerableTime = 0;
 				}
-				Spellcasting.land(level, victim, level.damageSources().indirectMagic(this, this.getOwner()), this.damage, this.weapon, true);
+				Spellcasting.land(level, victim, level.damageSources().indirectMagic(this, this.getOwner()), this.damage, this.weapon, !this.aside);
 				this.burst(level, at);
 				return;
 			}

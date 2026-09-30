@@ -253,7 +253,9 @@ public final class CombatUpgrades {
 				}
 				TraitEffects.onHit(level, attacker, victim, source, weapon);
 				if ((melee || spell) && weapon.has(ModComponents.PARTS) && !weapon.isBroken()) {
-					onWeaponHit(level, attacker, victim, weapon, damageTaken);
+					// A spell never tires, never glances off armour and never waits out a mob's invulnerability, so
+					// what the upgrades add to it is worked out on a share of it (Andy, 2026-09-30: magic was broken).
+					onWeaponHit(level, attacker, victim, weapon, spell ? damageTaken * SPELL_EXTRA_SHARE : damageTaken);
 					if (weapon.get(ModComponents.PARTS).type().kind == ForgeType.Kind.WEAPON) {
 						// Gauntlets land far more blows than anything else, and they learn from every one of them.
 						Mastery.addExperience(attacker, weapon, weapon.get(ModComponents.PARTS).type() == ForgeType.GUANTELETES ? 2 : 1);
@@ -529,6 +531,12 @@ public final class CombatUpgrades {
 			level.playSound(null, defender.getX(), defender.getY(), defender.getZ(), SoundEvents.SLIME_JUMP, SoundSource.PLAYERS, 1.0F, 1.2F);
 		}
 	}
+
+	/**
+	 * The share of a spell's damage the upgrades' extras (Ejecución, Matagigantes, Crítico, Vampirismo...) are worked
+	 * out on: a bolt or a tome's opening carries every upgrade a blade would, at half its weight.
+	 */
+	public static final float SPELL_EXTRA_SHARE = 0.5F;
 
 	private static void onWeaponHit(ServerLevel level, LivingEntity attacker, LivingEntity victim, ItemStack weapon, float damage) {
 		Frenzy.onHit(attacker, weapon);

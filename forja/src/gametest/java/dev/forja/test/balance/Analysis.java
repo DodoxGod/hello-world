@@ -185,6 +185,32 @@ public final class Analysis {
 		return null;
 	}
 
+	/**
+	 * The fight as a Mago fights it (clase/PlayerClass.MAGO): the class's base numbers on the spells and the bar,
+	 * and with {@code talents} every talent of its tree that moves them (Núcleo afinado, Catalizador, Mente clara,
+	 * Canalización, Economía arcana), added up the way ClassEffects.stat adds them.
+	 */
+	public static Fight.Options mago(Fight.Options base, boolean talents) {
+		java.util.Map<dev.forja.clase.ClassStat, Double> sum = new java.util.EnumMap<>(dev.forja.clase.ClassStat.class);
+		for (dev.forja.clase.ClassStat.Mod mod : dev.forja.clase.PlayerClass.MAGO.base) {
+			sum.merge(mod.stat(), (double) mod.value(), Double::sum);
+		}
+		if (talents) {
+			for (dev.forja.clase.Talent talent : dev.forja.clase.PlayerClass.MAGO.talents()) {
+				for (dev.forja.clase.ClassStat.Mod mod : talent.mods) {
+					sum.merge(mod.stat(), (double) mod.value(), Double::sum);
+				}
+			}
+		}
+		Fight.Options options = base.copy();
+		options.spellDamage = Math.max(0.1, 1.0 + sum.getOrDefault(dev.forja.clase.ClassStat.SPELL_DAMAGE, 0.0));
+		options.spellCooldown = Math.max(0.1, 1.0 + sum.getOrDefault(dev.forja.clase.ClassStat.SPELL_COOLDOWN, 0.0));
+		options.spellCost = Math.max(0.0, 1.0 + sum.getOrDefault(dev.forja.clase.ClassStat.SPELL_COST, 0.0));
+		options.manaRegen = 1.0 + sum.getOrDefault(dev.forja.clase.ClassStat.MANA_REGEN, 0.0);
+		options.manaMax = 1.0 + sum.getOrDefault(dev.forja.clase.ClassStat.MANA_MAX, 0.0);
+		return options;
+	}
+
 	public static int percent(Upgrade upgrade, int potential) {
 		if (Potential.exempt(upgrade) || Potential.allOrNothing(upgrade)) {
 			return 100;

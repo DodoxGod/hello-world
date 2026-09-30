@@ -83,6 +83,13 @@ public final class Fight {
 		 */
 		public double manaRegen = 1.0;
 		public double manaMax = 1.0;
+		/**
+		 * The class on the spells themselves (clase/ClassEffects): what they hit for, how long the wait after them is
+		 * and what they cost, as multipliers. 1 for a player without a magic class.
+		 */
+		public double spellDamage = 1.0;
+		public double spellCooldown = 1.0;
+		public double spellCost = 1.0;
 		public boolean iframes = true;
 		public boolean cap = true;
 		public boolean posture = true;
@@ -104,6 +111,9 @@ public final class Fight {
 			copy.mana = this.mana;
 			copy.manaRegen = this.manaRegen;
 			copy.manaMax = this.manaMax;
+			copy.spellDamage = this.spellDamage;
+			copy.spellCooldown = this.spellCooldown;
+			copy.spellCost = this.spellCost;
 			copy.iframes = this.iframes;
 			copy.cap = this.cap;
 			copy.posture = this.posture;
@@ -377,7 +387,7 @@ public final class Fight {
 				if (this.t >= nextCast && !(resting = this.manaless(policy, resting))) {
 					this.payMana();
 					this.cast();
-					nextCast = this.t + Math.max(1, this.build.spellCooldown);
+					nextCast = this.t + this.spellWait();
 				}
 				this.tickRunes();
 			} else if (chargeAt >= 0) {
@@ -480,9 +490,17 @@ public final class Fight {
 		}
 	}
 
-	/** What a tap of this build's staff or tome costs (magic/Spellcasting.tapCost). */
+	/** What a tap of this build's staff or tome costs (magic/Spellcasting.tapCost), with the class's price. */
 	private double tapCost() {
-		return dev.forja.magic.Spellcasting.tapCost(this.build.stack, this.build.type);
+		return dev.forja.magic.Spellcasting.tapCost(this.build.stack, this.build.type) * this.options.spellCost;
+	}
+
+	/** The wait after a spell, with the class's (Spellcasting.release: never under 2 ticks). */
+	private int spellWait() {
+		if (this.options.spellCooldown == 1.0) {
+			return Math.max(1, this.build.spellCooldown);
+		}
+		return Math.max(2, (int) Math.round(this.build.spellCooldown * this.options.spellCooldown));
 	}
 
 	/** The bar's size: the base, times the class's (Options.manaMax). */
@@ -611,20 +629,40 @@ public final class Fight {
 		this.casts++;
 		float overcharge = this.build.fraction(Upgrade.SOBRECARGA);
 		boolean big = overcharge > 0.0F && this.casts % Upgrade.OVERCHARGE_EVERY == 0;
-		double power = big ? 1.0 + Upgrade.overchargeBonus(overcharge) : 1.0;
+		double power = (big ? 1.0 + Upgrade.overchargeBonus(overcharge) : 1.0) * this.options.spellDamage;
 		double echo = Upgrade.echoShare(this.build.fraction(Upgrade.RESONANCIA));
 		double opening = this.build.spellDamage * power;
 		if (this.build.type == ForgeType.BACULO) {
-			this.spellHit(opening, Source.BOLT, true);
+			this.volley(opening);
 			if (echo > 0) {
 				this.pending.add(new double[] {this.t + dev.forja.magic.Spellcasting.ECHO_BOLT_TICKS, this.build.spellDamage * power * echo, 0});
 			}
 		} else {
 			this.spellHit(opening, Source.AREA, true);
+			// One rune per reader: the new one puts the last one out (Spellcasting.open).
+			this.runes.clear();
 			this.runes.add(new double[] {0, opening, this.build.runeTicks});
 			if (echo > 0) {
 				this.pending.add(new double[] {this.t + dev.forja.magic.Spellcasting.ECHO_AREA_TICKS, opening * echo, 1});
 			}
+		}
+	}
+
+	/**
+	 * magic/Spellcasting.volley against one foe: the spell's damage shared out among the middle bolt and Prisma's
+	 * side bolts, which reach a single foe only when Buscador bends them onto it (without it they fly past). The
+	 * side bolts are not blows of the staff, so no upgrade answers them; every bolt goes through the invulnerability.
+	 */
+	private void volley(double opening) {
+		double prism = Upgrade.prismShare(this.build.fraction(Upgrade.PRISMA));
+		int sides = prism <= 0.0 ? 0 : this.build.synergy(Synergy.ENJAMBRE) ? 4 : 2;
+		double whole = 1.0 + sides * prism;
+		this.spellHit(opening / whole, Source.BOLT, true);
+		if (sides == 0 || this.build.fraction(Upgrade.BUSCADOR) <= 0.0F) {
+			return;
+		}
+		for (int side = 0; side < sides; side++) {
+			this.spellHit(opening * prism / whole, Source.BOLT, false);
 		}
 	}
 
@@ -650,7 +688,7 @@ public final class Fight {
 			}
 			if (((int) rune[0]) % dev.forja.magic.Spellcasting.RUNE_EVERY == 0) {
 				// A bite of the rune: the reader's, but not a blow, so no upgrade answers it.
-				this.spellHit(opening * 0.25, Source.AREA, false);
+				this.spellHit(opening * dev.forja.magic.Spellcasting.BITE_SHARE, Source.AREA, false);
 			}
 		}
 	}
@@ -659,12 +697,13 @@ public final class Fight {
 		if (this.dead()) {
 			return;
 		}
-		double raw = base + this.build.enchantBonus(this.target, this.level, this.probeSource, base);
+		double raw = base + this.build.enchantBonus(this.target, this.level, this.probeSource, base) * CombatUpgrades.SPELL_EXTRA_SHARE;
 		this.swings += blow ? 1 : 0;
 		double taken = this.hurt(raw, source, Blow.NONE, true);
 		this.mainDealt += taken;
 		if (taken > 0 && blow) {
-			this.onWeaponHit(taken, 1.0, 1.0);
+			// CombatUpgrades: a spell's extras are worked out on a share of it.
+			this.onWeaponHit(taken * CombatUpgrades.SPELL_EXTRA_SHARE, 1.0, 1.0);
 		}
 	}
 

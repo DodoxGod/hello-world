@@ -34,6 +34,7 @@
 			"dev.forja.test.AlcanceGameTests",
 			"dev.forja.test.EndermanGameTests",
 			"dev.forja.test.ManaGameTests",
+			"dev.forja.test.MagiaGameTests",
 			"dev.forja.test.HuevosGameTests",
 			"dev.forja.test.PararrayosGameTests",
 			"dev.forja.test.AccionesGameTests",

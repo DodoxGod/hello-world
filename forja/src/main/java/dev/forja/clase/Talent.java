@@ -73,10 +73,10 @@ public enum Talent {
 	// ---------------------------------------------------------------- Mago
 	MAGO_NUCLEO_AFINADO(PlayerClass.MAGO, 0, 1, () -> new ItemStack(Items.AMETHYST_SHARD), List.of(SPELL_DAMAGE.of(0.10F))),
 	MAGO_SOBRECARGA_ARCANA(PlayerClass.MAGO, 0, 2, () -> new ItemStack(Items.REDSTONE_BLOCK), List.of(CHARGE_BONUS.of(0.25F))),
-	MAGO_CATALIZADOR(PlayerClass.MAGO, 0, 3, () -> new ItemStack(Items.END_CRYSTAL), List.of(SPELL_DAMAGE.of(0.15F))),
-	MAGO_MENTE_CLARA(PlayerClass.MAGO, 1, 1, () -> new ItemStack(Items.GLOWSTONE_DUST), List.of(SPELL_COOLDOWN.of(-0.10F), MANA_REGEN.of(1.0F))),
+	MAGO_CATALIZADOR(PlayerClass.MAGO, 0, 3, () -> new ItemStack(Items.END_CRYSTAL), List.of(SPELL_DAMAGE.of(0.10F))),
+	MAGO_MENTE_CLARA(PlayerClass.MAGO, 1, 1, () -> new ItemStack(Items.GLOWSTONE_DUST), List.of(SPELL_COOLDOWN.of(-0.05F), MANA_REGEN.of(1.0F))),
 	MAGO_CANALIZACION(PlayerClass.MAGO, 1, 2, () -> new ItemStack(Items.LAPIS_LAZULI), List.of(SPELL_CHARGE.of(-0.25F), MANA_MAX.of(0.30F))),
-	MAGO_ECONOMIA(PlayerClass.MAGO, 1, 3, () -> new ItemStack(Items.EXPERIENCE_BOTTLE), List.of(SPELL_COST.of(-0.25F), SPELL_COOLDOWN.of(-0.10F))),
+	MAGO_ECONOMIA(PlayerClass.MAGO, 1, 3, () -> new ItemStack(Items.EXPERIENCE_BOTTLE), List.of(SPELL_COST.of(-0.25F))),
 	MAGO_BARRERA(PlayerClass.MAGO, 2, 1, () -> new ItemStack(Items.GLASS), List.of(MAGIC_TAKEN.of(-0.25F))),
 	MAGO_PASO_ETEREO(PlayerClass.MAGO, 2, 2, () -> new ItemStack(Items.CHORUS_FRUIT), List.of(DODGE_DISTANCE.of(0.20F), DODGE_COOLDOWN.of(-0.10F))),
 	/** Every {@code numbers[0]} seconds, {@code numbers[1]} absorption. */

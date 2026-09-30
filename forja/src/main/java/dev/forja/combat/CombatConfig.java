@@ -121,10 +121,10 @@ public final class CombatConfig {
 	public int manaIdleDelayTicks = 100;
 	/** Per tick once you have stopped casting (0.8 a second: an empty bar is whole again in about two minutes). */
 	public float manaIdleRegenPerTick = 0.04F;
-	/** What a tap of the staff costs: a bolt is cheap, twelve of them in a full bar. */
-	public float manaBoltCost = 8F;
-	/** What a tap of the tome costs: an area and a rune, three of them in a full bar. */
-	public float manaTomeCost = 30F;
+	/** What a tap of the staff costs: ten bolts in a full bar (eight until 2026-09-30, when magic was reined in). */
+	public float manaBoltCost = 10F;
+	/** What a tap of the tome costs: an area and a rune, five of them in a full bar (thirty until 2026-09-30). */
+	public float manaTomeCost = 20F;
 	/** A full charge costs this share more than a tap, for half again the damage: holding the spell is the thrifty way. */
 	public float manaChargeExtra = 0.25F;
 	/** What one kill is worth to the mana bar: this, plus this much per point of the victim's max health, up to a share of the bar. */

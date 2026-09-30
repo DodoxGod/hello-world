@@ -803,25 +803,28 @@ public enum Upgrade implements StringRepresentable {
 
 	// ------------------------------------------------------------------ staff and tome
 
-	/** Conjuro veloz: the share of the wait between two spells that goes. */
+	/** Conjuro veloz: the share of the wait between two spells that goes (a bit less since 2026-09-30). */
 	public static float castHaste(float f) {
-		return 0.4F * f;
+		return 0.2F * f;
 	}
 
 	/** Sobrecarga: which spell is the big one. */
 	public static final int OVERCHARGE_EVERY = 4;
 
-	/** And how much harder it hits: twice as hard at full. */
+	/** And how much harder it hits: half as hard again at full (it was twice, Andy 2026-09-30). */
 	public static float overchargeBonus(float f) {
-		return f;
-	}
-
-	/** Resonancia: the share of the spell its echo is worth. */
-	public static float echoShare(float f) {
 		return 0.5F * f;
 	}
 
-	/** Prisma: what each of the two side bolts is worth, against the one in the middle. */
+	/** Resonancia: the share of the spell its echo is worth (a half until 2026-09-30). */
+	public static float echoShare(float f) {
+		return 0.2F * f;
+	}
+
+	/**
+	 * Prisma: what each side bolt weighs against the one in the middle. The spell's damage is shared out by these
+	 * weights (magic/Spellcasting.volley): the fan is worth one bolt all told, spread wider.
+	 */
 	public static float prismShare(float f) {
 		return 0.6F * f;
 	}
@@ -863,9 +866,12 @@ public enum Upgrade implements StringRepresentable {
 		return 0.5F * f;
 	}
 
-	/** Descarga: the extra damage of a poured spell for every ten points of mana poured beyond its cost. */
+	/**
+	 * Descarga: the extra damage of a poured spell for every ten points of mana poured beyond its cost, up to
+	 * Spellcasting.POUR_MOST (it was a quarter a ten, and no ceiling, until 2026-09-30).
+	 */
 	public static float dumpBonus(float f) {
-		return 0.25F * f;
+		return 0.1F * f;
 	}
 
 	/**

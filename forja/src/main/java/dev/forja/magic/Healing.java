@@ -53,15 +53,19 @@ public final class Healing {
 
 	public static final int COOLDOWN = 30;
 	/** What a tap of the lantern costs in mana (magic/Mana); a full charge costs more, as a staff's does. */
-	public static final float MANA_COST = 12.0F;
+	public static final float MANA_COST = 15.0F;
 	public static final int CHARGE_TICKS = 25;
 	public static final double BEAM_REACH = 16.0;
 	/** A charge under this share leaves as the beam, not the ring. */
 	public static final float TAP_SHARE = 1.0F / 3.0F;
 	public static final double RING_REACH = 4.0;
 	public static final double RING_GROWTH = 2.0;
-	/** What the reader gets of their own ring. */
-	public static final float SELF_SHARE = 0.5F;
+	/**
+	 * What the reader gets of their own ring. Andy, 2026-09-30: the lantern was among the broken magic — with
+	 * mana back in seven seconds it was a heal a second forever. A third of the ring, and the mana it costs now
+	 * takes minutes to come back without a class.
+	 */
+	public static final float SELF_SHARE = 0.35F;
 	public static final float CHARGE_BONUS = 0.5F;
 
 	/** Curandero: health healed on others and not yet paid out as class experience (1 per 2). */
@@ -71,14 +75,14 @@ public final class Healing {
 	private Healing() {
 	}
 
-	/** What the beam mends: 2 and three quarters of the núcleo's bite. */
+	/** What the beam mends: 1.5 and six tenths of the núcleo's bite. */
 	public static float beamHeal(ForgeMaterial core) {
-		return 2.0F + 0.75F * core.attackDamageBonus;
+		return 1.5F + 0.6F * core.attackDamageBonus;
 	}
 
 	/** What the ring mends at no charge; a full charge is worth {@link #CHARGE_BONUS} more. */
 	public static float ringHeal(ForgeMaterial core) {
-		return 2.5F + 0.75F * core.attackDamageBonus;
+		return 2.0F + 0.6F * core.attackDamageBonus;
 	}
 
 	public static double ringReach(float charge) {

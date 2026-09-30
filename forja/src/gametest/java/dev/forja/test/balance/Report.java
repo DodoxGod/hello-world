@@ -43,6 +43,141 @@ public final class Report {
 	public void measureOutliers() {
 		this.findings.measure();
 		this.variants.measure(this.analysis);
+		this.measureMagic();
+	}
+
+	// ---------------------------------------------------------------- magic against melee (2026-09-30)
+
+	/** One scenario of the magic check: time to kill (s, geometric mean on the sample) and damage a second over 60 s. */
+	public static final class MagicRow {
+		public Analysis.Scenario scenario;
+		public ForgeType fastestMelee;
+		public double fastest;
+		public double median;
+		public double staff;
+		public double staffMago;
+		public double tome;
+		public double tomeMago;
+		public double meleeSustained;
+		public double staffSustained;
+		public double staffMagoSustained;
+		public double tomeSustained;
+		public double tomeMagoSustained;
+	}
+
+	/** Magic against melee in each scenario: what BalanceGameTests.magiaEnSuSitio holds magic to. */
+	public final List<MagicRow> magic = new ArrayList<>();
+	/** The big ones, a weapon and a class to its seconds to kill {warden, Herrero Caído} (NaN: not within the limit). */
+	public final Map<String, double[]> bigFoes = new java.util.LinkedHashMap<>();
+
+	private static double seconds(Fight.Result result) {
+		return result == null || result.killedShare < 0.999 ? Double.NaN : result.seconds();
+	}
+
+	/**
+	 * Andy, 2026-09-30: the magic weapons were broken. For a player without a magic class magic should be a tool
+	 * for the moment, not the best weapon; for a Mago with its talents, level with melee but not above it. Each
+	 * scenario's best staff and tome (chosen without a class) is fought again as a Mago with every talent that
+	 * moves a spell or the bar (Analysis.mago), and set against the melee types' best of the same scenario.
+	 */
+	private void measureMagic() {
+		Analysis an = this.analysis;
+		Fight.Options plain = an.options;
+		Fight.Options mago = Analysis.mago(plain, true);
+		for (Analysis.Scenario scenario : Analysis.Scenario.values()) {
+			MagicRow row = new MagicRow();
+			row.scenario = scenario;
+			Map<ForgeType, Double> melee = new java.util.EnumMap<>(ForgeType.class);
+			Map<ForgeType, Double> meleeSustained = new java.util.EnumMap<>(ForgeType.class);
+			row.fastest = Double.MAX_VALUE;
+			for (ForgeType type : Analysis.TYPES) {
+				if (dev.forja.magic.Spellcasting.casts(type)) {
+					continue;
+				}
+				Analysis.Evaluated best = an.reports.get(type).best.get(scenario);
+				melee.put(type, best.geo);
+				meleeSustained.put(type, best.sustained.dps());
+				if (best.geo < row.fastest) {
+					row.fastest = best.geo;
+					row.fastestMelee = type;
+				}
+			}
+			row.median = this.median(melee);
+			row.meleeSustained = this.median(meleeSustained);
+			Analysis.Evaluated staff = an.reports.get(ForgeType.BACULO).best.get(scenario);
+			Analysis.Evaluated tome = an.reports.get(ForgeType.GRIMORIO).best.get(scenario);
+			row.staff = staff.geo;
+			row.tome = tome.geo;
+			row.staffSustained = staff.sustained.dps();
+			row.tomeSustained = tome.sustained.dps();
+			row.staffMago = an.geo(staff.build, an.search, Analysis.FINAL_RUNS, mago);
+			row.tomeMago = an.geo(tome.build, an.search, Analysis.FINAL_RUNS, mago);
+			row.staffMagoSustained = an.dps(staff.build, 1200, 4, null, mago).dps();
+			row.tomeMagoSustained = an.dps(tome.build, 1200, 4, null, mago).dps();
+			this.magic.add(row);
+		}
+		// The big ones: a warden and the Herrero Caído, with the best staff at 100 % and Enjambre on it
+		// (Prisma and Buscador at 100 %), the best tome at 100 %, and the quickest melee weapon at 100 %.
+		Target warden = this.probe.measure(net.minecraft.world.entity.EntityTypes.WARDEN);
+		Target smith = an.target("forja:herrero_caido");
+		if (warden != null) {
+			Forja.LOGGER.info("equilibrio: warden vida {}, tope por golpe {}, por punto de rayo {}", warden.maxHealth, warden.cap,
+				java.util.Arrays.toString(warden.bolt));
+		}
+		Analysis.Evaluated staff = an.reports.get(ForgeType.BACULO).best.get(Analysis.Scenario.MAXIMO);
+		Map<Upgrade, Integer> swarm = new java.util.EnumMap<>(Upgrade.class);
+		swarm.putAll(staff.build.upgrades);
+		swarm.put(Upgrade.PRISMA, 100);
+		swarm.put(Upgrade.BUSCADOR, 100);
+		Build swarmStaff = an.build(ForgeType.BACULO, staff.build.materials, swarm);
+		Build tome = an.reports.get(ForgeType.GRIMORIO).best.get(Analysis.Scenario.MAXIMO).build;
+		MagicRow top = this.magic.getLast();
+		Build melee = an.reports.get(top.fastestMelee).best.get(Analysis.Scenario.MAXIMO).build;
+		java.util.function.BiFunction<Build, Fight.Options, double[]> fight = (build, options) -> new double[] {
+			warden == null ? Double.NaN : seconds(an.ttk(build, warden, Analysis.SEARCH_RUNS, 8, null, options)),
+			smith == null ? Double.NaN : seconds(an.ttk(build, smith, Analysis.SEARCH_RUNS, 8, null, options))};
+		this.bigFoes.put("báculo con Enjambre, sin clase", fight.apply(swarmStaff, plain));
+		this.bigFoes.put("báculo con Enjambre, Mago", fight.apply(swarmStaff, mago));
+		this.bigFoes.put("grimorio, sin clase", fight.apply(tome, plain));
+		this.bigFoes.put("grimorio, Mago", fight.apply(tome, mago));
+		this.bigFoes.put(top.fastestMelee.id() + " (la más rápida cuerpo a cuerpo)", fight.apply(melee, plain));
+	}
+
+	private void magicSection() {
+		CombatConfig cfg = CombatConfig.get();
+		this.line("## Magia frente al cuerpo a cuerpo");
+		this.line("");
+		this.line("Andy, 2026-09-30: la magia estaba rota. Sin clase mágica debe ser un recurso para un momento, no la mejor arma; "
+			+ "un Mago con sus talentos, a la altura del cuerpo a cuerpo pero no por encima. *Sin clase*: el maná vuelve a "
+			+ f(cfg.manaRegenPerTick * 20, 1) + "/s lanzando y " + f(cfg.manaIdleRegenPerTick * 20, 1) + "/s en calma. *Mago*: la clase "
+			+ "y todos los talentos que tocan los hechizos o la barra (Núcleo afinado, Catalizador, Mente clara, Canalización, Economía "
+			+ "arcana). El báculo y el grimorio son los mejores de cada escenario sin clase. Las pruebas (`magiaEnSuSitio`) exigen que, "
+			+ "sin clase, la magia no mate antes que la mediana cuerpo a cuerpo ni sostenga más de la mitad de su daño, y que el Mago "
+			+ "quede entre la más rápida cuerpo a cuerpo y 1,3 veces la mediana (1,5 el grimorio, cuyo área muerde a todo lo que pisa la runa "
+			+ "y aquí pelea contra un solo mob). Contra los grandes, nada mágico puede matar claramente (un 10 %) antes que la más rápida "
+			+ "cuerpo a cuerpo.");
+		this.line("");
+		this.table("Escenario", "C/c más rápida", "Mediana c/c", "Báculo sin clase", "Báculo Mago", "Grimorio sin clase", "Grimorio Mago");
+		for (MagicRow row : this.magic) {
+			this.row(row.scenario.label, row.fastestMelee.id() + " " + f(row.fastest, 2), f(row.median, 2),
+				f(row.staff, 2) + " (×" + f(row.staff / row.median, 2) + ")", f(row.staffMago, 2) + " (×" + f(row.staffMago / row.median, 2) + ")",
+				f(row.tome, 2) + " (×" + f(row.tome / row.median, 2) + ")", f(row.tomeMago, 2) + " (×" + f(row.tomeMago / row.median, 2) + ")");
+		}
+		this.line("");
+		this.line("TTK medio en segundos (entre paréntesis, frente a la mediana cuerpo a cuerpo). Daño por segundo sostenido en 60 s:");
+		this.line("");
+		this.table("Escenario", "Mediana c/c", "Báculo sin clase", "Báculo Mago", "Grimorio sin clase", "Grimorio Mago");
+		for (MagicRow row : this.magic) {
+			this.row(row.scenario.label, f(row.meleeSustained, 1), f(row.staffSustained, 1), f(row.staffMagoSustained, 1),
+				f(row.tomeSustained, 1), f(row.tomeMagoSustained, 1));
+		}
+		this.line("");
+		this.line("Los grandes, al 100 % (segundos para matar; «> 120» si no cae en dos minutos):");
+		this.line("");
+		this.table("Arma", "Warden", "Herrero Caído");
+		this.bigFoes.forEach((label, ttk) -> this.row(label, Double.isNaN(ttk[0]) ? "> 120" : f(ttk[0], 1),
+			Double.isNaN(ttk[1]) ? "> 120" : f(ttk[1], 1)));
+		this.line("");
 	}
 
 	// ---------------------------------------------------------------- small helpers
@@ -161,6 +296,7 @@ public final class Report {
 		this.line("");
 		this.method();
 		this.summary();
+		this.magicSection();
 		this.suspicions();
 		this.newFindings();
 		this.bestBuilds();

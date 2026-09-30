@@ -131,6 +131,13 @@ public final class ForjaConfig {
 				if (current.combate != null && current.combate.manaIdleDelayTicks == 40) {
 					current.combate.manaIdleDelayTicks = 100;
 				}
+				// The tome's price, with its rune alone on the floor now (Andy, 2026-09-30: the magic was broken).
+				if (current.combate != null && current.combate.manaTomeCost == 30.0F) {
+					current.combate.manaTomeCost = 20.0F;
+				}
+				if (current.combate != null && current.combate.manaBoltCost == 8.0F) {
+					current.combate.manaBoltCost = 10.0F;
+				}
 				migrateActions(current);
 				// Written back so keys added in a newer version show up in an older file.
 				Files.writeString(path, GSON.toJson(current));

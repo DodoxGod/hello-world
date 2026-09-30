@@ -1,5 +1,27 @@
 # Novedades
 
+## 2026-09-30 — La magia, en su sitio
+
+Andy: las armas mágicas estaban rotas (el báculo mataba tres veces más rápido que el cuerpo a cuerpo, y con
+Enjambre un warden caía en un segundo). Ahora, medido en `docs/EQUILIBRIO.md` (*Magia frente al cuerpo a cuerpo*):
+sin clase mágica la magia no mata antes que la mediana cuerpo a cuerpo y sostiene menos de una sexta parte de su
+daño; un Mago con sus talentos queda entre la más rápida y la mediana.
+
+- **Enjambre y Prisma reparten el hechizo** entre sus proyectiles en vez de copiarlo: los cinco de Enjambre juntos
+  hacen lo que uno solo. Los laterales no son golpes del arma (no tiran Tormenta ni Vampirismo cada uno).
+- **Báculo:** espera 10 ticks (antes 6), proyectil `2,5 + 0,5 × daño del núcleo` (antes `4 + 0,9 ×`), 10 de
+  maná (antes 8). Todos los proyectiles atraviesan la invulnerabilidad de medio segundo.
+- **Grimorio:** espera 20 ticks, área `4 + 1,15 × daño del núcleo`, mordisco de la runa al 15 % (antes 25 %),
+  20 de maná (antes 30) y **una runa por lector**: la nueva apaga la anterior (antes se amontonaban).
+- **Mejoras:** Sobrecarga +50 % al 100 (antes +100 %), Resonancia 20 % (antes 50 %), Conjuro veloz −20 % de
+  espera (antes −40 %), Descarga +10 % por cada 10 de maná y como mucho el doble (antes +25 % sin techo). Lo que
+  las mejoras de arma y los encantamientos añaden a un hechizo cuenta a la mitad.
+- **Farol:** 15 de maná, curas algo menores y a quien lo usa un 35 % del anillo (antes la mitad).
+- **Mago:** daño de hechizos +10 %, espera −10 %; Catalizador +10 %, Mente clara −5 % de espera, Economía arcana
+  sólo abarata. Los monstruos con báculo o grimorio siguen como estaban.
+- Pruebas: `MagiaGameTests` (Enjambre reparte, una runa por lector, los monstruos igual) y
+  `BalanceGameTests.magiaEnSuSitio`. El guardián de dominados juzga la magia con el Mago.
+
 ## 2026-09-30 — El maná vuelve lentísimo sin clase mágica
 
 Andy: "el sistema actual es igual a no tener maná, se debe regenerar lentísimo si no tienes la clase".
