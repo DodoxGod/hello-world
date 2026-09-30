@@ -78,6 +78,8 @@ public final class ModItems {
 	public static Item LIBRO_YUNQUE;
 	/** Book II: combat, stamina, magic, the enemies and the sky. */
 	public static Item LIBRO_COMBATE;
+	/** Book III: heat, alloys, the foundry line and the greater table. */
+	public static Item LIBRO_FUNDICION;
 	/** The whole guide in one volume, as it was before the books: creative only. */
 	public static Item TOMO_DE_FORJA;
 	public static Item PLANTILLA;
@@ -242,6 +244,7 @@ public final class ModItems {
 		GUIA_DE_FORJA = register("guia_de_forja", p -> new GuideBookItem(dev.forja.GuideBooks.Book.CUADERNO, p), new Item.Properties().stacksTo(1));
 		LIBRO_YUNQUE = register("libro_yunque", p -> new GuideBookItem(dev.forja.GuideBooks.Book.YUNQUE, p), new Item.Properties().stacksTo(1));
 		LIBRO_COMBATE = register("libro_combate", p -> new GuideBookItem(dev.forja.GuideBooks.Book.COMBATE, p), new Item.Properties().stacksTo(1));
+		LIBRO_FUNDICION = register("libro_fundicion", p -> new GuideBookItem(dev.forja.GuideBooks.Book.FUNDICION, p), new Item.Properties().stacksTo(1));
 		TOMO_DE_FORJA = register("tomo_de_forja", p -> new GuideBookItem(dev.forja.GuideBooks.Book.TOMO, p),
 			new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC));
 		PLANTILLA = register("plantilla", TemplateItem::new, new Item.Properties().stacksTo(16));
@@ -414,6 +417,7 @@ public final class ModItems {
 		stacks.add(new ItemStack(GUIA_DE_FORJA));
 		stacks.add(new ItemStack(LIBRO_YUNQUE));
 		stacks.add(new ItemStack(LIBRO_COMBATE));
+		stacks.add(new ItemStack(LIBRO_FUNDICION));
 		stacks.add(new ItemStack(TOMO_DE_FORJA));
 		stacks.add(new ItemStack(PLANTILLA));
 		stacks.add(new ItemStack(LINGOTE_DE_TEMPLE));

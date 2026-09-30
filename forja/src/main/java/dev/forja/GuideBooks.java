@@ -53,8 +53,11 @@ public final class GuideBooks {
 				new Section("combate_enemigos", 4, List.of("como_pelean", "rangos", "peleas_mundo", "dificultad")),
 				new Section("combate_cielo", 3, List.of("eventos")),
 				new Section("combate_bestiario", 0, List.of("bestiario", "combate_siguiente")))),
-		FUNDICION("libro_fundicion", 0x7A4A2A, "mejora", () -> Items.COPPER_INGOT, false, true,
-			List.of(new Section("taller", 0, List.of("aleaciones", "fundicion", "mesa_mayor")))),
+		// Book III: heat, the first alloys, the whole foundry line and the greater table at the end of it.
+		FUNDICION("libro_fundicion", 0x7A4A2A, "mejora", () -> Items.COPPER_INGOT, true, true,
+			List.of(new Section("fundicion_calor", 0, List.of("fundicion_sabes", "primeras_aleaciones")),
+				new Section("fundicion_linea", 4, List.of("fundicion")),
+				new Section("fundicion_mayor", 1, List.of("mesa_mayor", "fundicion_siguiente")))),
 		MESA_MAYOR("libro_mesa_mayor", 0x7850BE, "mesa_mayor", () -> ModItems.alloy("damasco"), false, true,
 			List.of(new Section("mejoras", 1, List.of("potencial", "maestria", "sinergias", "pactos")),
 				new Section("taller", 0, List.of("herrero", "tecnicas", "accesorios", "mi_taller")))),
@@ -68,7 +71,7 @@ public final class GuideBooks {
 		BIBLIOTECA(null, 0x8A6A3A, null, () -> Items.AIR, true, false,
 			List.of(new Section("estanteria", 0, List.of("estanteria", "siguiente_paso")),
 				new Section("catalogo_objetos", 4, List.of("catalogo", "objetos", "piezas")),
-				new Section("catalogo_materiales", 3, List.of("materiales", "rasgos")),
+				new Section("catalogo_materiales", 3, List.of("materiales", "rasgos", "catalogo_aleaciones")),
 				new Section("catalogo_mejoras", 1, List.of("probador", "mejoras", "estadisticas")))),
 		/** The whole guide in one volume, as it was: creative only (Andy's answer 6). */
 		TOMO("tomo_de_forja", 0x7A2A20, null, () -> Items.AIR, true, false,
@@ -165,6 +168,7 @@ public final class GuideBooks {
 				case CUADERNO -> ModItems.GUIA_DE_FORJA;
 				case YUNQUE -> ModItems.LIBRO_YUNQUE;
 				case COMBATE -> ModItems.LIBRO_COMBATE;
+				case FUNDICION -> ModItems.LIBRO_FUNDICION;
 				case TOMO -> ModItems.TOMO_DE_FORJA;
 				default -> null;
 			};

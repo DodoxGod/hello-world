@@ -808,6 +808,11 @@ public class GuideBookScreen extends Screen {
 			case "dificultad" -> this.difficultyChapter();
 			case "combate_siguiente" -> this.combatNextChapter();
 			case "probador" -> this.probeChapter();
+			// Book III.
+			case "fundicion_sabes" -> this.foundryRecapChapter();
+			case "primeras_aleaciones" -> this.firstAlloysChapter();
+			case "catalogo_aleaciones" -> this.alloyListChapter();
+			case "fundicion_siguiente" -> this.foundryNextChapter();
 			default -> throw new IllegalArgumentException("no chapter " + key);
 		};
 	}
@@ -901,6 +906,10 @@ public class GuideBookScreen extends Screen {
 			case "dificultad" -> new ItemStack(Items.SKELETON_SKULL);
 			case "combate_siguiente" -> new ItemStack(Items.COMPASS);
 			case "probador" -> new ItemStack(Items.SPYGLASS);
+			case "fundicion_sabes" -> new ItemStack(Items.WRITABLE_BOOK);
+			case "primeras_aleaciones" -> new ItemStack(ModItems.alloy("bronce"));
+			case "catalogo_aleaciones" -> new ItemStack(ModItems.alloy("acero"));
+			case "fundicion_siguiente" -> new ItemStack(Items.COMPASS);
 			default -> ItemStack.EMPTY;
 		};
 	}
@@ -958,6 +967,7 @@ public class GuideBookScreen extends Screen {
 			case CUADERNO -> Assembler.create(ForgeType.MARTILLO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO));
 			case YUNQUE -> new ItemStack(ModItems.MESA_DE_FORJA);
 			case COMBATE -> Assembler.create(ForgeType.ESPADA, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.HIERRO));
+			case FUNDICION -> new ItemStack(ModItems.CRISOL_DE_HIERRO);
 			case BIBLIOTECA -> new ItemStack(Items.BOOKSHELF);
 			default -> new ItemStack(Items.BOOK);
 		};
@@ -968,6 +978,7 @@ public class GuideBookScreen extends Screen {
 			case CUADERNO -> new ItemStack(ModItems.PLANTILLA);
 			case YUNQUE -> Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO));
 			case COMBATE -> Assembler.create(ForgeType.ESCUDO, Assembler.defaultMaterials(ForgeType.ESCUDO));
+			case FUNDICION -> new ItemStack(ModItems.alloy("bronce"));
 			case BIBLIOTECA -> new ItemStack(ModItems.GUIA_DE_FORJA);
 			default -> new ItemStack(ModItems.GUIA_DE_FORJA);
 		};
@@ -1661,6 +1672,90 @@ public class GuideBookScreen extends Screen {
 	/** Opens the picker, for the client test and the slot. */
 	public void openPicker() {
 		this.picking = true;
+	}
+
+	// ------------------------------------------------------------------ book III, La fundición
+
+	/** Book III opens on where book I left off: the first table, and what heat is about to change. */
+	private List<Element> foundryRecapChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.fundicion_sabes"), INK));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.MESA_DE_FORJA), new ItemStack(Items.CAMPFIRE), new ItemStack(Items.MAGMA_BLOCK),
+			new ItemStack(Items.LAVA_BUCKET))));
+		body.add(new ChapterLink("mejorar"));
+		return body;
+	}
+
+	/** Heat under the table and the first alloys: what a campfire makes, and melting parts back down. */
+	private List<Element> firstAlloysChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libro.aleaciones_intro", dev.forja.forge.Alloys.ALL.size()), INK));
+		for (dev.forja.forge.Alloys.Heat heat : dev.forja.forge.Alloys.Heat.values()) {
+			if (heat == dev.forja.forge.Alloys.Heat.FRIA) {
+				continue;
+			}
+			body.add(new Text(Component.translatable("gui.forja.libros.fundicion.calor_linea",
+				Component.translatable("gui.forja.libro.calor." + heat.id()), Component.translatable("gui.forja.libro.calor." + heat.id() + ".desc")), INK_SOFT));
+		}
+		body.add(new SubHeader(ForjaPath.Step.ALEACION.title()));
+		body.add(new Text(ForjaPath.Step.ALEACION.description(), INK));
+		this.alloyRecipes(body, dev.forja.forge.Alloys.Heat.TEMPLADA);
+		body.add(new ChapterLink("catalogo_aleaciones"));
+		body.add(new SubHeader(Component.translatable("gui.forja.fundir.titulo")));
+		body.add(new IconRow(List.of(Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.HIERRO), new ItemStack(Items.LAVA_BUCKET),
+			new ItemStack(Items.IRON_INGOT))));
+		body.add(new Text(Component.translatable("gui.forja.libro.fundir_piezas"), INK));
+		return body;
+	}
+
+	/** Every alloy at one heat: what goes in, what comes out and how much. */
+	private void alloyRecipes(List<Element> body, dev.forja.forge.Alloys.Heat heat) {
+		for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.ALL) {
+			if (recipe.heat() != heat) {
+				continue;
+			}
+			List<ItemStack> row = new ArrayList<>();
+			for (dev.forja.forge.Alloys.Part part : recipe.inputs()) {
+				row.add(new ItemStack(part.item().get(), part.count()));
+			}
+			row.add(recipe.result());
+			body.add(new IconRow(row));
+			body.add(new Text(Component.translatable("gui.forja.libro.aleacion_linea", recipe.displayName(), recipe.output()), INK));
+		}
+	}
+
+	/** The catalogue's alloys, one by one by heat, and how long a sword of each lasts. */
+	private List<Element> alloyListChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.catalogo.aleaciones"), INK_SOFT));
+		for (dev.forja.forge.Alloys.Heat heat : dev.forja.forge.Alloys.Heat.values()) {
+			if (heat == dev.forja.forge.Alloys.Heat.FRIA) {
+				continue;
+			}
+			body.add(new SubHeader(Component.translatable("gui.forja.libro.calor." + heat.id())));
+			body.add(new Text(Component.translatable("gui.forja.libro.calor." + heat.id() + ".desc"), INK_SOFT));
+			this.alloyRecipes(body, heat);
+			body.add(new Spacer(3));
+		}
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.aleaciones_comparar")));
+		List<Bar> durability = new ArrayList<>();
+		for (ForgeMaterial material : List.of(ForgeMaterial.HIERRO, ForgeMaterial.BRONCE, ForgeMaterial.ACERO,
+			ForgeMaterial.DAMASCO, ForgeMaterial.ACERO_ESTELAR, ForgeMaterial.OBSIDIACERO, ForgeMaterial.CORAZON)) {
+			ItemStack sword = Assembler.create(ForgeType.ESPADA, List.of(material, material, material));
+			durability.add(new Bar(material.displayName(), sword.getMaxDamage(), material.color, Component.literal(String.valueOf(sword.getMaxDamage()))));
+		}
+		body.add(new Bars(durability));
+		return body;
+	}
+
+	/** The last page of book III: the greater table's book and the world's, and the path. */
+	private List<Element> foundryNextChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.fundicion_siguiente"), INK));
+		body.add(new BookCard(GuideBooks.Book.MESA_MAYOR));
+		body.add(new BookCard(GuideBooks.Book.BASTION));
+		body.add(new ChapterLink("siguiente_paso"));
+		return body;
 	}
 
 	/** The cabinet, tucked into the chapter about the tables: it is workshop furniture, not a mechanic. */

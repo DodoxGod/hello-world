@@ -564,3 +564,31 @@ BOOKS.update({
     "gui.forja.libros.probador.pliegues": ("Pulsa un grupo para abrirlo: qué hace cada mejora, hasta dónde sube y su receta.",
                                            "Click a group to open it: what each upgrade does, how far it goes and its recipe."),
 })
+
+# ---- book III, La fundición
+BOOKS.update({
+    "item.forja.libro_fundicion": ("La fundición", "The Foundry"),
+    "item.forja.libro_combate": ("El arte del combate", "The Art of Combat"),
+    "gui.forja.libro.cap.fundicion_sabes": ("Lo que ya sabes", "What You Know"),
+    "gui.forja.libro.cap.primeras_aleaciones": ("Calor y primeras aleaciones", "Heat and First Alloys"),
+    "gui.forja.libro.cap.catalogo_aleaciones": ("Aleaciones", "Alloys"),
+    "gui.forja.libro.cap.fundicion_siguiente": ("Siguiente", "Next"),
+    "gui.forja.libro.seccion.fundicion_calor": ("El calor", "Heat"),
+    "gui.forja.libro.seccion.fundicion_linea": ("La línea de fundición", "The foundry line"),
+    "gui.forja.libro.seccion.fundicion_mayor": ("La mesa mayor", "The greater table"),
+    "gui.forja.libros.fundicion_sabes": (
+        "Hasta aquí la mesa de forja ha trabajado en frío: piezas cortadas, forjadas y mejoradas. Lo que pongas debajo de "
+        "ella cambia eso. Con calor, dos metales se vuelven uno, las piezas se funden y el metal se cuela. Es el camino "
+        "a las mejores aleaciones y a la mesa de forja mayor.",
+        "So far the forge table has worked cold: parts cut, forged and upgraded. What you put under it changes that. With "
+        "heat, two metals become one, parts melt back down and metal is cast. It is the road to the best alloys and to "
+        "the greater forge table."),
+    "gui.forja.libros.fundicion.calor_linea": ("**%s**: %s", "**%s**: %s"),
+    "gui.forja.libros.catalogo.aleaciones": ("Cada aleación, por el calor que pide: lo que entra, lo que sale y cuánto.",
+                                             "Every alloy, by the heat it asks for: what goes in, what comes out and how much."),
+    "gui.forja.libros.fundicion_siguiente": (
+        "Con la mesa mayor termina el camino del herrero que se aprende en el taller. Lo que viene: sacarle todo a una "
+        "pieza, y salir al mundo a buscar el castillo del Herrero.",
+        "With the greater table the part of the smith's path learned in the workshop ends. What comes next: getting "
+        "everything out of a piece, and going out into the world to find the Smith's castle."),
+})

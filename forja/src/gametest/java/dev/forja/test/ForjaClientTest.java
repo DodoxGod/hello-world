@@ -1166,17 +1166,31 @@ public class ForjaClientTest implements FabricClientGameTest {
 		for (String step : List.of("plantilla", "pieza", "forja")) {
 			server.runCommand("advancement grant @a only forja:forja/" + step);
 		}
-		server.runCommand("give @a forja:guia_de_forja");
-		server.runCommand("give @a forja:libro_yunque");
-		server.runCommand("give @a forja:libro_combate");
+		// Every written book in the bag, so each card says "open it".
+		for (dev.forja.GuideBooks.Book written : dev.forja.GuideBooks.SHELF) {
+			if (written.ready) {
+				server.runCommand("give @a forja:" + written.itemId);
+			}
+		}
 		context.waitFor(mc -> dev.forja.client.PathClient.done().contains("forja") && !dev.forja.client.PathClient.done().contains("temple"), 200);
 		context.waitTicks(10);
+
+		// Every written book has a name of its own in the language files: book II went out without one once.
+		String unnamed = context.computeOnClient(mc -> {
+			StringBuilder missing = new StringBuilder();
+			for (dev.forja.GuideBooks.Book book : dev.forja.GuideBooks.Book.values()) {
+				if (book.item() != null && !net.minecraft.locale.Language.getInstance().has("item.forja." + book.itemId)) {
+					missing.append(book.itemId).append(' ');
+				}
+			}
+			return missing.toString();
+		});
+		check(unnamed.isEmpty(), "every book item needs its name in the lang files: " + unnamed);
 
 		// Layout, every book: what the tome has always been checked for, and links.
 		String layout = context.computeOnClient(mc -> {
 			StringBuilder report = new StringBuilder();
-			for (dev.forja.GuideBooks.Book which : List.of(dev.forja.GuideBooks.Book.CUADERNO, dev.forja.GuideBooks.Book.YUNQUE,
-				dev.forja.GuideBooks.Book.COMBATE, dev.forja.GuideBooks.Book.BIBLIOTECA, dev.forja.GuideBooks.Book.TOMO)) {
+			for (dev.forja.GuideBooks.Book which : java.util.Arrays.stream(dev.forja.GuideBooks.Book.values()).filter(b -> b.ready).toList()) {
 				GuideBookScreen book = new GuideBookScreen(which);
 				String problems = book.overflowingPages() + " " + book.wideElements() + " " + book.elidedElements() + " " + book.rawKeys()
 					+ " " + book.misplacedChapters() + " " + book.brokenLinks();
@@ -1365,8 +1379,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			dev.forja.client.BookMemory.sawCreature("forja:automata_de_forja");
 			dev.forja.client.BookMemory.sawCreature("forja:pavesa");
 		});
-		for (dev.forja.GuideBooks.Book which : List.of(dev.forja.GuideBooks.Book.CUADERNO, dev.forja.GuideBooks.Book.YUNQUE,
-			dev.forja.GuideBooks.Book.COMBATE, dev.forja.GuideBooks.Book.BIBLIOTECA)) {
+		for (dev.forja.GuideBooks.Book which : java.util.Arrays.stream(dev.forja.GuideBooks.Book.values()).filter(b -> b.ready && b != dev.forja.GuideBooks.Book.TOMO).toList()) {
 			int pages = context.computeOnClient(mc -> {
 				GuideBookScreen book = new GuideBookScreen(which);
 				mc.gui.setScreen(book);
@@ -1394,8 +1407,11 @@ public class ForjaClientTest implements FabricClientGameTest {
 		for (dev.forja.ForjaPath.Step step : dev.forja.ForjaPath.STEPS) {
 			server.runCommand("advancement " + (before.contains(step.advancement()) ? "grant" : "revoke") + " @a only forja:forja/" + step.advancement());
 		}
-		server.runCommand("clear @a forja:libro_yunque");
-		server.runCommand("clear @a forja:libro_combate");
+		for (dev.forja.GuideBooks.Book written : dev.forja.GuideBooks.SHELF) {
+			if (written.ready && written != dev.forja.GuideBooks.Book.CUADERNO) {
+				server.runCommand("clear @a forja:" + written.itemId);
+			}
+		}
 		context.waitTicks(5);
 	}
 
