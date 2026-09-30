@@ -241,9 +241,21 @@ public class CapitanMedidaGameTests {
 	/** Every drop of a watched player's health, by the calls that made it (HealthDropMixin): amount and count. */
 	static final Map<String, double[]> DROPS = new java.util.TreeMap<>();
 
-	/** Whether this is a measured fight's player (HealthDropMixin). */
+	/**
+	 * Whether this is a measured fight's player (HealthDropMixin). setHealth also runs inside an entity's
+	 * constructor, before it has an id, and a WeakHashMap lookup hashes by that id: it threw there, which crashed
+	 * the client test on joining the world (creating the local player). So: nothing measured, nothing to look up;
+	 * and an entity without an id yet is never one being watched.
+	 */
 	public static boolean watching(net.minecraft.world.entity.LivingEntity entity) {
-		return entity instanceof Player p && DAMAGE.containsKey(p);
+		if (DAMAGE.isEmpty() || !(entity instanceof Player p)) {
+			return false;
+		}
+		try {
+			return DAMAGE.containsKey(p);
+		} catch (IllegalStateException noIdYet) {
+			return false;
+		}
 	}
 
 	/** A watched player's health went down by {@code amount}: counted, and filed under the calls that did it. */
