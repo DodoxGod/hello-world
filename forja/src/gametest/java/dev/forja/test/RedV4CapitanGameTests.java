@@ -565,6 +565,44 @@ public class RedV4CapitanGameTests {
 		helper.succeed();
 	}
 
+	/**
+	 * One wait after a blow, whichever path struck it (MobMind.nextBlowAt): with that wait still running, the melee goal
+	 * does not warn a new blow even when its own countdown is over. Before, a blow by TacticGoal was followed at once by a
+	 * warning from the melee goal (and the other way round): 1 gap in 9 between a mob's blows was under 20 ticks.
+	 */
+	@GameTest(padding = 16, maxTicks = 140)
+	public void oneWaitForBothPaths(GameTestHelper helper) {
+		floor(helper, 16);
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(8, 1, 8));
+		Zombie zombie = zombie(helper, new BlockPos(7, 1, 8));
+		Vec3 at = player.position();
+		long[] until = {0};
+		long[] first = {-1};
+		helper.onEachTick(() -> {
+			player.setPos(at.x, at.y, at.z);
+			player.setHealth(player.getMaxHealth());
+			player.invulnerableTime = 0;
+			zombie.setTarget(player);
+			zombie.setHealth(zombie.getMaxHealth());
+			long now = helper.getLevel().getGameTime();
+			MobMind mind = MobAi.mind(zombie);
+			if (mind != null && until[0] == 0) {
+				// as if the other path had just struck: 60 ticks to wait
+				until[0] = now + 60;
+				mind.nextBlowAt = until[0];
+			}
+			if (first[0] < 0 && dev.forja.combat.CombatStats.count(zombie, dev.forja.combat.CombatStats.WARNED) > 0) {
+				first[0] = now;
+			}
+		});
+		helper.runAfterDelay(130, () -> {
+			helper.assertTrue(first[0] >= until[0], "no avisa antes de que acabe la espera: aviso en " + first[0] + ", espera hasta " + until[0]);
+			helper.assertTrue(first[0] > 0, "y avisa cuando acaba");
+			clear(helper, 16);
+			helper.succeed();
+		});
+	}
+
 	/** A group led by nobody but a veteran has no captain (Andy's decision 4). */
 	@GameTest(padding = 16, maxTicks = 40)
 	public void aVeteranNeverLeads(GameTestHelper helper) {

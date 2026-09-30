@@ -70,6 +70,8 @@ public class CapitanMedidaGameTests {
 		final Map<Mob, long[]> lastEnd = new java.util.HashMap<>();
 		final Map<Mob, String> lastOutcome = new java.util.HashMap<>();
 		final Map<Mob, String> path = new java.util.HashMap<>();
+		/** Since each mob's last blow (landed, missed or feinted), until its next warned blow: what it did (sixth pass). */
+		final Map<Mob, GapTrack> gaps = new java.util.HashMap<>();
 		Player player;
 		long now;
 
@@ -79,6 +81,37 @@ public class CapitanMedidaGameTests {
 	}
 
 	static final Map<Entity, WarnLog> WARN_LOGS = new java.util.WeakHashMap<>();
+
+	/** One mob between two warned blows (sixth pass). */
+	static final class GapTrack {
+		final long from;
+		final String outcome;
+		final String path;
+		int waitMelee;
+		int waitMeleeStopped;
+		int waitTactic;
+		int waitAny;
+		int firstFree = -1;
+		int cut;
+		int cutRestart;
+		int otherTactic;
+		int inRangeFree;
+		boolean special;
+		boolean hop;
+		int prevWait = -1;
+		boolean prevRunning;
+		boolean prevHopReady = true;
+
+		GapTrack(long from, String outcome, String path) {
+			this.from = from;
+			this.outcome = outcome;
+			this.path = path;
+		}
+	}
+
+	static String gapBucket(long d) {
+		return d < 20 ? "<20" : d < 30 ? "20-29" : d < 40 ? "30-39" : d < 60 ? "40-59" : d < 90 ? "60-89" : d < 150 ? "90-149" : "150+";
+	}
 
 	static final String[] DELAY_BUCKETS = {"0", "1-2", "3-5", "6-10", "11-20", "21+"};
 
@@ -97,8 +130,37 @@ public class CapitanMedidaGameTests {
 				long now = mob.level().getGameTime();
 				log.add("inicio_" + path, 1);
 				log.path.put(mob, path.startsWith("especial:") ? "especial" : path);
+				GapTrack gt = log.gaps.get(mob);
 				if (path.startsWith("especial:")) {
+					if (gt != null) {
+						gt.special = true;
+					}
 					return;
+				}
+				if (gt != null) {
+					// the gap since its last blow, and what filled it
+					log.gaps.remove(mob);
+					long gap = now - gt.from;
+					String between = gt.special ? "especial" : gt.hop ? "salto_atras" : gt.otherTactic > 0 ? "otra_tactica" : "solo_acercarse";
+					log.add("hueco_n", 1);
+					log.add("hueco_suma", (int) gap);
+					log.add("hueco_" + gapBucket(gap), 1);
+					log.add("hueco_tras_" + gt.outcome + "_suma", (int) gap);
+					log.add("hueco_tras_" + gt.outcome + "_n", 1);
+					log.add("hueco_con_" + between + "_suma", (int) gap);
+					log.add("hueco_con_" + between + "_n", 1);
+					log.add("hueco_" + gt.path + "_a_" + path + "_n", 1);
+					if (gap < 20) {
+						log.add("corto_" + gt.path + "_a_" + path + "_n", 1);
+					}
+					log.add("hueco_espera_meta", gt.waitMelee);
+					log.add("hueco_espera_meta_parada", gt.waitMeleeStopped);
+					log.add("hueco_espera_tactica", gt.waitTactic);
+					log.add("hueco_esperando", gt.waitAny);
+					log.add("hueco_libre_a_su_alcance", gt.inRangeFree);
+					log.add("hueco_hasta_libre_suma", gt.firstFree < 0 ? (int) gap : gt.firstFree);
+					log.add("hueco_recortes", gt.cut);
+					log.add("hueco_recortes_reinicio", gt.cutRestart);
 				}
 				// distance at the start: centre to centre (flat) and the gap between the two boxes
 				double centre = Math.hypot(mob.getX() - log.player.getX(), mob.getZ() - log.player.getZ());
@@ -145,6 +207,9 @@ public class CapitanMedidaGameTests {
 				if (!"especial".equals(outcome)) {
 					log.lastEnd.put(mob, new long[] {mob.level().getGameTime()});
 					log.lastOutcome.put(mob, outcome);
+				}
+				if ("llega".equals(outcome) || "falla".equals(outcome) || "finta".equals(outcome)) {
+					log.gaps.put(mob, new GapTrack(mob.level().getGameTime(), outcome, log.path.getOrDefault(mob, "?")));
 				}
 			}
 		};
@@ -466,6 +531,54 @@ public class CapitanMedidaGameTests {
 						continue;
 					}
 					boolean inRange = mob.isWithinMeleeAttackRange(player);
+					// sixth pass: between two warned blows, where the wait counts down
+					GapTrack track = warns.gaps.get(mob);
+					if (track != null && mind != null) {
+						net.minecraft.world.entity.ai.goal.MeleeAttackGoal meleeGoal = null;
+						boolean meleeRunning = false;
+						boolean tacticRunning = false;
+						for (var wrapped : ((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals().getAvailableGoals()) {
+							if (wrapped.getGoal() instanceof net.minecraft.world.entity.ai.goal.MeleeAttackGoal m) {
+								meleeGoal = m;
+								meleeRunning = wrapped.isRunning();
+							}
+							tacticRunning |= wrapped.isRunning() && wrapped.getGoal() instanceof dev.forja.ai.TacticGoal;
+						}
+						int wait = meleeGoal == null ? 0 : ((dev.forja.test.mixin.MeleeGoalAccess) meleeGoal).forja$ticksUntilNextAttack();
+						boolean waiting = wait > 0 || mind.cooldown > 0;
+						if (wait > 0 && meleeRunning) {
+							track.waitMelee++;
+						} else if (wait > 0) {
+							track.waitMeleeStopped++;
+						}
+						if (mind.cooldown > 0 && tacticRunning) {
+							track.waitTactic++;
+						}
+						track.waitAny += waiting ? 1 : 0;
+						if (!waiting && track.firstFree < 0) {
+							track.firstFree = (int) (gt - track.from);
+						}
+						if (!waiting && inRange) {
+							track.inRangeFree++;
+						}
+						// the wait cut short: more than the one tick a running goal counts down
+						if (track.prevWait > 0 && wait < track.prevWait - 1) {
+							track.cut += track.prevWait - 1 - wait;
+							if (meleeRunning && !track.prevRunning) {
+								track.cutRestart += track.prevWait - 1 - wait;
+							}
+						}
+						track.prevWait = wait;
+						track.prevRunning = meleeRunning;
+						if (mind.decision.tactic() != dev.forja.ai.Tactic.ACERCARSE) {
+							track.otherTactic++;
+						}
+						boolean hopReady = dev.forja.ai.HopBack.ready(mob);
+						if (track.prevHopReady && !hopReady) {
+							track.hop = true;
+						}
+						track.prevHopReady = hopReady;
+					}
 					if (!inRange) {
 						warns.inRangeSince.remove(mob);
 						continue;

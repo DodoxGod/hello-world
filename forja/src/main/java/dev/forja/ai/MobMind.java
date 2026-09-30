@@ -56,6 +56,12 @@ public final class MobMind {
 	 * lands or misses (Andy: a warned blow is a commitment the player reads and answers).
 	 */
 	public boolean warning;
+	/**
+	 * When the wait after its last warned melee blow (landed, missed or feinted) is over, whichever path struck it:
+	 * vanilla's melee goal (MeleeAttackGoalMixin) or TacticGoal. One wait for both, counted in game time: before
+	 * (2026-09-30), each path had its own countdown, and a blow by one was followed at once by a warning from the other.
+	 */
+	public long nextBlowAt = Long.MIN_VALUE / 2;
 	/** Its breath for running (ai/MobSprint), whether it wants to run and whether it is running. */
 	public float stamina = MobSprint.MAX;
 	public boolean wantsRun;

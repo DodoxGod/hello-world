@@ -679,6 +679,70 @@ vanilla son distintas.
 
 Con la espera arreglada, el mod baja a 16,1 avisos por pelea sin capitán (el simulador, 12,8).
 
+### Sexta tanda (30-09): la espera entre golpes
+
+#### La regla exacta (código final de esta tanda)
+
+- **Cuánto:** tras cada golpe avisado de cuerpo a cuerpo que **llega, falla o es finta**, el mob no puede empezar otro
+  hasta `20 × (1 + 0,1 × kg)` ticks después. Es `resetAttackCooldown` con el peso (`Weight.INTERVAL_PER_KG`), igual por
+  los dos caminos: `Weight.interval(mob, MELEE_COOLDOWN 20)` en `TacticGoal`, y 10 tras una finta de red.
+- **Una sola espera, en tiempo de juego:** `MobMind.nextBlowAt` = el tick del golpe + la espera.
+  - La miran los dos caminos antes de empezar un aviso: la meta cuerpo a cuerpo (`MeleeAttackGoalMixin`) y
+    `TacticGoal.strike`.
+  - **Corre siempre:** con la meta en marcha, parada, en otra táctica o en un especial.
+  - La cuenta propia de la meta de vanilla (`ticksUntilNextAttack`) solo baja mientras la meta corre. Al volver a
+    empezar, `forja$keepTheWait` la pone a lo que queda por el reloj, así que en la práctica también es tiempo de juego.
+- **Nada la acorta ni la reinicia:**
+  - el salto atrás (`HopBack`), los especiales (la embestida tiene su propio enfriamiento de 100–200 y su turno) y los
+    turnos no la tocan;
+  - el contraataque (aviso de 4 tras bloquear con escudo) solo acorta el **aviso**, no la espera;
+  - un aviso **cortado** (aturdido, objetivo perdido) no pone espera.
+
+#### El fallo arreglado: dos esperas
+
+Antes de esta tanda cada camino tenía su propia cuenta: `ticksUntilNextAttack` en la meta de vanilla y `mind.cooldown`
+en `TacticGoal`. Un golpe de uno no hacía esperar al otro. Un 11–17 % de los huecos entre dos avisos del mismo mob
+duraban **menos de 20 ticks**: la mitad entre caminos distintos y la otra mitad entre dos avisos de vanilla (la meta
+empezaba de nuevo tras un aviso de táctica). Ahora hay una sola espera (`nextBlowAt`) y no queda ninguno por debajo de
+20. Prueba `oneWaitForBothPaths`: sin el arreglo, avisaba en el tick 5 con 60 de espera pendientes.
+
+#### Lo medido (160 peleas por modo, jugador en el mundo; antes → después del arreglo)
+
+| Medida | sin capitán | sin órdenes | capitán de reglas |
+|---|---|---|---|
+| daño/min | 165,3 → 166,3 | 172,9 → 173,3 | 197,3 → 188,2 |
+| hueco medio entre avisos del mismo mob (ticks) | 70,7 → 71,0 | 64,7 → 68,7 | 57,1 → 59,9 |
+| huecos < 20 ticks | 11 % → **0 %** | 14 % → **0 %** | 17 % → **0 %** |
+| 20–29 / 30–39 / 40–59 | 32 / 15 / 16 % | 31 / 15 / 15 % | 39 / 14 / 15 % |
+| 60–89 / 90–149 / 150+ | 12 / 14 / 12 % | 12 / 16 / 10 % | 10 / 14 / 8 % |
+| hueco tras un golpe que llega / falla / finta | 69 / 72 / 73 | 71 / 69 / 64 | 60 / 62 / 55 |
+
+Lo que sigue es del código final.
+
+**El hueco según lo que hizo el mob entre medias** (sin capitán; entre paréntesis, la parte de los huecos):
+- solo ir al ataque: **34 ticks** (16 %);
+- otra táctica en algún momento (rodear, esperar, retirarse…): 62 (25 %);
+- un salto atrás tras su golpe: 50 (37 %);
+- un especial, casi siempre la embestida: 140 (23 %).
+
+**Dónde se cuenta la espera** (por hueco, sin capitán):
+- ticks con espera pendiente: 31,7. De ellos, 13,8 con la meta de vanilla en marcha y 17,1 con la meta parada; en ese
+  rato su contador no baja, pero el reloj de `nextBlowAt` sí;
+- `TacticGoal` contando su propia espera: 0,3;
+- ticks "recortados" al volver a empezar la meta (el contador salta a lo que queda por el reloj): 6,1. **No es un
+  atajo**: es la espera en tiempo de juego;
+- acabada la espera, a su alcance y sin avisar: 1,4 ticks por hueco.
+
+**A su alcance y sin avisar** (sin capitán): esperando tras su golpe 30,1 %, avisando 43,1 %, sin meta con ACERCARSE
+13,2 %, el resto otras tácticas.
+
+**Para el simulador:**
+- la espera tras un golpe (llega, falla o finta) es de 20 × (1 + 0,1 × kg) ticks de juego y corre siempre, esté haciendo
+  lo que esté;
+- es una sola para los dos caminos, y ni el salto atrás, ni los especiales, ni los turnos la tocan;
+- si en el simulador solo cuenta mientras la meta está en marcha, se alarga: la meta está parada ~17 de los ~32 ticks de
+  espera. Eso explicaría su 47 % de "esperando" frente al 30 % del mod, y sus 85 ticks entre avisos frente a los 71.
+
 ## M6: el vector de mundo W (452–467, `WorldMemory`)
 
 - **Dónde:** un adjunto del jugador (se guarda con él y pasa la muerte), un vector por dimensión. `/forja ia mundo`

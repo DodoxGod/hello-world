@@ -1,5 +1,16 @@
 # Novedades
 
+## 2026-09-30 — Una sola espera entre golpes
+
+- **La espera tras un golpe ya no se salta cambiando de forma de atacar.** Un monstruo podía golpear de dos maneras
+  (su ataque normal o una táctica), y cada una llevaba su propia espera. Tras un golpe de una, la otra podía avisar al
+  instante: 1 de cada 9 veces, el siguiente aviso llegaba antes de 20 ticks. Ahora la espera es una sola y corre siempre.
+- **Medido en el mod** (160 peleas): ya no queda ningún aviso a menos de 20 ticks del anterior del mismo monstruo. El
+  daño por minuto queda igual sin capitán (166) y baja un poco con el capitán de reglas (197 → 188).
+- **La medida del capitán** ahora apunta, entre dos golpes de cada monstruo, cuánto espera, dónde corre la espera y qué
+  hace mientras.
+- **Pruebas:** 1 nueva.
+
 ## 2026-09-30 — La espera tras un golpe ya no se salta
 
 - **La espera tras un golpe se respeta.** Un monstruo de cuerpo a cuerpo espera un segundo tras cada golpe, y más si

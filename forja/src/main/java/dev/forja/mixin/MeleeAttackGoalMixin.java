@@ -125,6 +125,9 @@ abstract class MeleeAttackGoalMixin {
 			forja$reset();
 			return;
 		}
+		// the one wait after its last blow, whichever path struck it (MobMind.nextBlowAt)
+		dev.forja.ai.MobMind waiting = dev.forja.ai.MobAi.mind(mob);
+		if (waiting != null && mob.level().getGameTime() < waiting.nextBlowAt) return;
 		if (!canPerformAttack(target) || !AttackTokens.tryAcquire(target, mob, dev.forja.ai.Aggression.maxAttackers(mob, target))) return;
 		forja$windup = dev.forja.ai.MobDefense.windup(mob);
 		forja$windupTotal = forja$windup;
@@ -279,6 +282,10 @@ abstract class MeleeAttackGoalMixin {
 			ticksUntilNextAttack = Math.round(ticksUntilNextAttack * (1.0F + dev.forja.combat.Weight.INTERVAL_PER_KG * dev.forja.combat.Weight.carried(mob)));
 		}
 		forja$nextAttackAt = mob.level().getGameTime() + ticksUntilNextAttack;
+		dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
+		if (mind != null) {
+			mind.nextBlowAt = Math.max(mind.nextBlowAt, forja$nextAttackAt);
+		}
 	}
 
 	/** When the wait after its last blow is over (resetAttackCooldown): a restart of the goal does not cut it short. */

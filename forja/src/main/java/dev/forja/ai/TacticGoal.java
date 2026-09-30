@@ -354,7 +354,8 @@ public final class TacticGoal extends Goal {
 	private void strike(Player target) {
 		// Within the weapon's reach, not the body's: a flail or a lance strikes from further off, a fist or a
 		// sword from where it always did.
-		if (this.mind.cooldown > 0 || !Reach.reaches(this.mob, target)) {
+		// its own wait, and the one wait after any melee blow of its (MobMind.nextBlowAt: a vanilla blow counts too)
+		if (this.mind.cooldown > 0 || this.mob.level().getGameTime() < this.mind.nextBlowAt || !Reach.reaches(this.mob, target)) {
 			return;
 		}
 		if (!AttackTokens.tryAcquire(target, this.mob, Aggression.maxAttackers(this.mob, target))) {
@@ -391,6 +392,7 @@ public final class TacticGoal extends Goal {
 		if (this.mind.decision.feint() && this.mind.windup > this.mind.windupTotal / 2) {
 			this.mind.windup = 0;
 			this.mind.cooldown = MELEE_COOLDOWN / 2;
+			this.mind.nextBlowAt = Math.max(this.mind.nextBlowAt, this.mob.level().getGameTime() + this.mind.cooldown);
 			AttackTokens.release(target, this.mob);
 			this.struck = null;
 			dev.forja.combat.CombatStats.warnEnded(this.mob, "finta");
@@ -407,6 +409,7 @@ public final class TacticGoal extends Goal {
 		}
 		dev.forja.combat.CombatStats.warnEnded(this.mob, landed ? "llega" : "falla");
 		this.mind.cooldown = dev.forja.combat.Weight.interval(this.mob, MELEE_COOLDOWN);
+		this.mind.nextBlowAt = Math.max(this.mind.nextBlowAt, this.mob.level().getGameTime() + this.mind.cooldown);
 		this.mind.lastStrike = this.mob.level().getGameTime();
 		AttackTokens.release(target, this.mob);
 		this.struck = null;
