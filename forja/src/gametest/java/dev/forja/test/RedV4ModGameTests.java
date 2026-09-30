@@ -952,4 +952,231 @@ public class RedV4ModGameTests {
 		clear(helper, 8, 3);
 		helper.succeed();
 	}
+
+	// ---------------------------------------------------------------- the simulator's step v4c (docs/mod_spec_v4c.md)
+
+	/**
+	 * v4c, 1: a change of family mid-fight switches networks and starts the network's memory (GRU) afresh, as the
+	 * simulator does. A skeleton on the archer's network that takes up a sword runs the body's; its bow back, the archer's
+	 * again, each time with a fresh memory. And when the new family has no network (it fights by the rules while it holds
+	 * the blade), taking its bow back does not bring back the memory it had before. In a batch of its own (its
+	 * environment): the networks it loads are every mob's while they last.
+	 */
+	@GameTest(environment = "forja-test:familia_red", maxTicks = 120)
+	public void aChangeOfFamilySwitchesNetworkAndMemory(GameTestHelper helper) throws java.io.IOException {
+		floor(helper, 8);
+		CombatConfig cfg = CombatConfig.get();
+		String savedFolder = cfg.iaCarpetaRedes;
+		String savedContract = cfg.iaContrato;
+		String savedMode = cfg.iaModo;
+		java.nio.file.Path root = java.nio.file.Files.createTempDirectory("forja_familia");
+		java.nio.file.Path v3 = java.nio.file.Files.createDirectories(root.resolve("redes"));
+		java.nio.file.Path v4 = java.nio.file.Files.createDirectories(root.resolve("redes_v4"));
+		// the archer's network wants ESPERAR, the body's RODEAR: what the skeleton decides says which one ran
+		float[] archer = new float[NetBrain.V4_OUTPUTS];
+		archer[NetBrain.TACTIC_AT + Tactic.ESPERAR.ordinal()] = 30.0F;
+		float[] body = new float[NetBrain.V4_OUTPUTS];
+		body[NetBrain.TACTIC_AT + Tactic.RODEAR.ordinal()] = 30.0F;
+		com.google.gson.JsonObject archerNet = RedV4GameTests.fakeV4(41L, archer);
+		archerNet.addProperty("grupo", "arquero");
+		java.nio.file.Files.writeString(v4.resolve("red_arquero.json"), new com.google.gson.Gson().toJson(archerNet));
+		java.nio.file.Files.writeString(v4.resolve("red_cuerpo.json"), new com.google.gson.Gson().toJson(RedV4GameTests.fakeV4(42L, body)));
+		cfg.iaCarpetaRedes = v3.toAbsolutePath().toString();
+		cfg.iaContrato = "auto";
+		cfg.iaModo = "auto";
+		MobAi.reload();
+		helper.assertTrue(MobAi.net("arquero") != null && MobAi.net("cuerpo") != null, "las dos redes se cargan: " + MobAi.problems());
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(7, 1, 4));
+		hold(helper, player, player.position());
+		var skeleton = helper.spawn(EntityTypes.SKELETON, new BlockPos(1, 1, 4));
+		skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+		skeleton.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
+		helper.onEachTick(() -> skeleton.setTarget(player));
+		MobMind mind = mind(helper, skeleton);
+		float[][] memory = {null};
+		Runnable restore = () -> {
+			cfg.iaCarpetaRedes = savedFolder;
+			cfg.iaContrato = savedContract;
+			cfg.iaModo = savedMode;
+			MobAi.reload();
+		};
+		helper.runAfterDelay(10, () -> {
+			helper.assertTrue("arquero".equals(mind.family) && mind.networked && mind.decision.tactic() == Tactic.ESPERAR,
+				"con el arco, la red del arquero: " + mind.family + " " + mind.decision.tactic());
+			memory[0] = mind.memory;
+			skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+		});
+		helper.runAfterDelay(20, () -> {
+			helper.assertTrue("cuerpo".equals(mind.family) && mind.networked && mind.decision.tactic() == Tactic.RODEAR,
+				"con la espada, la red del cuerpo: " + mind.family + " " + mind.decision.tactic());
+			helper.assertTrue(mind.memory != memory[0], "y su memoria empieza de cero");
+			memory[0] = mind.memory;
+			skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+		});
+		helper.runAfterDelay(30, () -> {
+			helper.assertTrue("arquero".equals(mind.family) && mind.decision.tactic() == Tactic.ESPERAR,
+				"otra vez con el arco, la del arquero: " + mind.family + " " + mind.decision.tactic());
+			helper.assertTrue(mind.memory != memory[0], "otra vez desde cero");
+			// no body network now: with the blade it fights by the rules
+			try {
+				java.nio.file.Files.delete(v4.resolve("red_cuerpo.json"));
+			} catch (java.io.IOException failure) {
+				throw new RuntimeException(failure);
+			}
+			MobAi.reload();
+		});
+		helper.runAfterDelay(40, () -> {
+			helper.assertTrue(MobAi.net("cuerpo") == null, "ya no hay red de cuerpo");
+			helper.assertTrue("arquero".equals(mind.family) && mind.networked, "sigue con la red del arquero");
+			memory[0] = mind.memory;
+			skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+		});
+		helper.runAfterDelay(50, () -> {
+			helper.assertTrue("cuerpo".equals(mind.family) && !mind.networked, "con la espada y sin red de cuerpo, por reglas: " + mind.family);
+			skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+		});
+		helper.runAfterDelay(60, () -> {
+			try {
+				helper.assertTrue("arquero".equals(mind.family) && mind.networked, "con el arco, otra vez la red del arquero");
+				helper.assertTrue(mind.memory != null && mind.memory != memory[0], "y sin la memoria de antes de la espada");
+			} finally {
+				restore.run();
+			}
+			skeleton.discard();
+			clear(helper, 8, 3);
+			helper.succeed();
+		});
+	}
+
+	/**
+	 * v4c, 2: the spare can be a bow. A skeleton that takes its blade out of the spare (object 8) keeps its bow there, and
+	 * takes it back later; a bow it picked up from the floor, carried in the spare, is dropped for sure when it dies (one
+	 * it spawned with keeps vanilla's chance).
+	 */
+	@GameTest(maxTicks = 300)
+	public void aBowInTheSpareSlot(GameTestHelper helper) {
+		floor(helper, 8);
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(7, 1, 4));
+		hold(helper, player, player.position());
+		float[] bias = new float[NetBrain.V4_OUTPUTS];
+		bias[NetBrain.OBJECT_AT + MobItems.SWAP] = 30.0F;
+		NetBrain swapper = NetBrain.fromJson(RedV4GameTests.fakeV4(43L, bias));
+		// one that spawned with its bow (vanilla's 8.5 % chance to drop it) and a blade in the spare
+		var skeleton = helper.spawn(EntityTypes.SKELETON, new BlockPos(1, 1, 2));
+		skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+		skeleton.setDropChance(EquipmentSlot.MAINHAND, 0.085F);
+		skeleton.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
+		MobKit.setSpare(skeleton, new ItemStack(Items.IRON_SWORD), false, 0.0F);
+		MobMind mind = mind(helper, skeleton);
+		mind.override = swapper;
+		// one with empty hands that picks a bow up off the floor, and a blade in its spare
+		var picker = helper.spawn(EntityTypes.SKELETON, new BlockPos(1, 1, 6));
+		picker.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+		picker.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
+		Vec3 at = picker.position();
+		ItemEntity bow = new ItemEntity(helper.getLevel(), at.x, at.y, at.z, new ItemStack(Items.BOW));
+		bow.setDeltaMovement(Vec3.ZERO);
+		helper.getLevel().addFreshEntity(bow);
+		helper.assertTrue(GroundItems.gain(picker, bow.getItem()) > 0.0, "un arco le sirve a un esqueleto sin nada");
+		helper.assertTrue(GroundItems.take(picker, bow), "lo coge");
+		MobKit.setSpare(picker, new ItemStack(Items.IRON_SWORD), false, 0.0F);
+		MobMind pickerMind = mind(helper, picker);
+		pickerMind.override = swapper;
+		helper.onEachTick(() -> {
+			skeleton.setTarget(player);
+			picker.setTarget(player);
+			skeleton.setHealth(skeleton.getMaxHealth());
+			picker.setHealth(picker.getMaxHealth());
+		});
+		boolean[] drawn = {false};
+		boolean[] back = {false};
+		helper.onEachTick(() -> {
+			if (!drawn[0] && skeleton.getMainHandItem().is(Items.IRON_SWORD)) {
+				drawn[0] = true;
+				helper.assertTrue(MobKit.spare(skeleton).is(Items.BOW), "saca la hoja y guarda el arco en el repuesto: " + MobKit.spare(skeleton));
+				helper.assertTrue(dev.forja.ai.MobFamily.of(skeleton) == dev.forja.ai.MobFamily.CUERPO, "con la hoja, familia cuerpo");
+				helper.assertTrue(Math.abs(skeleton.getDropChances().byEquipment(EquipmentSlot.BODY) - 0.085F) < 1.0E-4
+					&& !skeleton.getDropChances().isPreserved(EquipmentSlot.BODY), "el arco de aparecer guarda su probabilidad de vanilla");
+			}
+			if (drawn[0] && !back[0] && skeleton.getMainHandItem().is(Items.BOW)) {
+				back[0] = true;
+				helper.assertTrue(MobKit.spare(skeleton).is(Items.IRON_SWORD), "y vuelve a sacar el arco: la hoja, al repuesto");
+			}
+		});
+		helper.succeedWhen(() -> {
+			helper.assertTrue(drawn[0] && back[0], "el arco va al repuesto y vuelve");
+			helper.assertTrue(picker.getMainHandItem().is(Items.IRON_SWORD) && MobKit.spare(picker).is(Items.BOW),
+				"el que cogió el arco lo guarda al sacar la hoja: " + picker.getMainHandItem() + " / " + MobKit.spare(picker));
+			ServerLevel level = helper.getLevel();
+			AABB around = picker.getBoundingBox().inflate(3.0);
+			level.getEntitiesOfClass(ItemEntity.class, around).forEach(Entity::discard);
+			picker.hurtServer(level, level.damageSources().genericKill(), 1000.0F);
+			List<ItemEntity> drops = level.getEntitiesOfClass(ItemEntity.class, around);
+			helper.assertTrue(drops.stream().anyMatch(e -> e.getItem().is(Items.BOW)), "al morir suelta el arco recogido del repuesto: " + drops);
+			skeleton.discard();
+			clear(helper, 8, 3);
+		});
+	}
+
+	/**
+	 * v4c, 3: only shooters take up bows. A bow is worth something only to a skeleton, a stray or a bogged (a crossbow only
+	 * to a pillager or a piglin); never to a zombie or a drowned, not even empty-handed; and vanilla's loot pickup leaves
+	 * a bow on the floor for a zombie, while a skeleton takes it.
+	 */
+	@GameTest(maxTicks = 100)
+	public void onlyShootersTakeUpBows(GameTestHelper helper) {
+		floor(helper, 8);
+		ItemStack bow = new ItemStack(Items.BOW);
+		ItemStack crossbow = new ItemStack(Items.CROSSBOW);
+		Zombie zombie = zombie(helper, new BlockPos(1, 1, 1));
+		zombie.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+		var drowned = helper.spawn(EntityTypes.DROWNED, new BlockPos(3, 1, 1));
+		drowned.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+		var skeleton = helper.spawn(EntityTypes.SKELETON, new BlockPos(5, 1, 1));
+		skeleton.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+		skeleton.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
+		var stray = helper.spawn(EntityTypes.STRAY, new BlockPos(7, 1, 1));
+		stray.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+		stray.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
+		var pillager = helper.spawn(EntityTypes.PILLAGER, new BlockPos(1, 1, 3));
+		pillager.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+		for (Mob mob : List.<Mob>of(zombie, drowned, skeleton, stray, pillager)) {
+			mob.setNoAi(true);
+		}
+		helper.assertTrue(GroundItems.gain(zombie, bow) <= 0.0 && GroundItems.gain(drowned, bow) <= 0.0,
+			"un arco no le vale a un zombi ni a un ahogado, ni con las manos vacías");
+		helper.assertTrue(GroundItems.gain(zombie, crossbow) <= 0.0, "ni una ballesta");
+		helper.assertTrue(GroundItems.gain(skeleton, bow) > 0.0 && GroundItems.gain(stray, bow) > 0.0, "a un esqueleto y a un stray sí");
+		helper.assertTrue(GroundItems.gain(skeleton, crossbow) <= 0.0, "una ballesta no le vale a un esqueleto (la usaría de palo)");
+		helper.assertTrue(GroundItems.gain(pillager, crossbow) > 0.0 && GroundItems.gain(pillager, bow) <= 0.0,
+			"al saqueador, la ballesta sí y el arco no");
+		for (Mob mob : List.<Mob>of(drowned, stray, pillager)) {
+			mob.discard();
+		}
+		// vanilla's loot pickup (called straight: no game rule, no timing): a zombie that can pick up loot leaves the bow
+		// on the floor; a skeleton takes it
+		Vec3 z = zombie.position();
+		ItemEntity forZombie = new ItemEntity(helper.getLevel(), z.x, z.y, z.z, new ItemStack(Items.BOW));
+		forZombie.setDeltaMovement(Vec3.ZERO);
+		helper.getLevel().addFreshEntity(forZombie);
+		((dev.forja.test.mixin.MobPickupInvoker) zombie).forja$pickUpItem(helper.getLevel(), forZombie);
+		helper.assertFalse(zombie.getMainHandItem().is(Items.BOW), "el zombi no coge el arco: " + zombie.getMainHandItem());
+		helper.assertTrue(forZombie.isAlive() && forZombie.getItem().is(Items.BOW), "el arco sigue en el suelo");
+		Vec3 s = skeleton.position();
+		ItemEntity forSkeleton = new ItemEntity(helper.getLevel(), s.x, s.y, s.z, new ItemStack(Items.BOW));
+		forSkeleton.setDeltaMovement(Vec3.ZERO);
+		helper.getLevel().addFreshEntity(forSkeleton);
+		((dev.forja.test.mixin.MobPickupInvoker) skeleton).forja$pickUpItem(helper.getLevel(), forSkeleton);
+		helper.assertTrue(skeleton.getMainHandItem().is(Items.BOW), "el esqueleto sí: " + skeleton.getMainHandItem());
+		// and a zombie picks up what it can use all the same (a sword)
+		ItemEntity sword = new ItemEntity(helper.getLevel(), z.x, z.y, z.z, new ItemStack(Items.IRON_SWORD));
+		sword.setDeltaMovement(Vec3.ZERO);
+		helper.getLevel().addFreshEntity(sword);
+		((dev.forja.test.mixin.MobPickupInvoker) zombie).forja$pickUpItem(helper.getLevel(), sword);
+		helper.assertTrue(zombie.getMainHandItem().is(Items.IRON_SWORD), "una espada sí la coge: " + zombie.getMainHandItem());
+		zombie.discard();
+		skeleton.discard();
+		clear(helper, 8, 3);
+		helper.succeed();
+	}
 }

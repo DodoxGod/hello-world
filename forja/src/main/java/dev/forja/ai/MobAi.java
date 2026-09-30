@@ -573,6 +573,15 @@ public final class MobAi {
 		if (mind.specials != null) {
 			mind.specials.hideV4 = net != null && !V4_FORMAT.equals(net.format);
 		}
+		// A change of family mid-fight (a skeleton that took up a blade runs the zombie's network, and its bow back the
+		// archer's) starts its memory afresh, as the simulator does (docs/mod_spec_v4c.md, 1). Checked whatever it thinks
+		// with now: an archer that fought by the rules while it held a blade (no network for bodies) and took its bow back
+		// does not pick up the memory it had before.
+		String family = familyOf(mob);
+		if (!family.equals(mind.family)) {
+			mind.family = family;
+			mind.memory = null;
+		}
 		if (net == null) {
 			mind.networked = false;
 			Decision decision = RuleBrain.decide(mind, target);
@@ -585,12 +594,6 @@ public final class MobAi {
 			retreat(mind, target, now);
 			AiStats.count(mob, mind.decision);
 			return;
-		}
-		// A change of family (a skeleton that took up a blade runs the zombie's network) starts its memory afresh.
-		String family = familyOf(mob);
-		if (!family.equals(mind.family)) {
-			mind.family = family;
-			mind.memory = null;
 		}
 		if (mind.memory == null || mind.memory.length != net.memory) {
 			mind.resetMemory(net.memory);

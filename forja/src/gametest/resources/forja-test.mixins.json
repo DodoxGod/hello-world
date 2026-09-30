@@ -7,6 +7,7 @@
 		"GoalsPerfMixin",
 		"HelpersCountMixin",
 		"MobAiPerfMixin",
+		"MobPickupInvoker",
 		"MovementPerfMixin",
 		"NetPerfMixin",
 		"ObsForjaPerfMixin",

@@ -97,6 +97,16 @@ public final class VanillaSpecials {
 	}
 
 	/** Shooting needs a bow in hand (a skeleton that lost it cannot loose anything). */
+	/** The bow or crossbow in its hands (the main hand first), or empty. */
+	static ItemStack launcher(Mob mob) {
+		for (ItemStack held : new ItemStack[] {mob.getMainHandItem(), mob.getOffhandItem()}) {
+			if (held.getItem() instanceof net.minecraft.world.item.BowItem || held.getItem() instanceof net.minecraft.world.item.CrossbowItem) {
+				return held;
+			}
+		}
+		return ItemStack.EMPTY;
+	}
+
 	static boolean holdsBow(Mob mob) {
 		return mob.getMainHandItem().getItem() instanceof net.minecraft.world.item.BowItem
 			|| mob.getOffhandItem().getItem() instanceof net.minecraft.world.item.BowItem;
@@ -251,7 +261,9 @@ public final class VanillaSpecials {
 
 		@Override
 		public boolean follow(Mob mob, Player target, SpecialRunner.Run run, int tick) {
-			if (tick == 5 && mob instanceof RangedAttackMob archer && sees(mob, target)) {
+			// still with its bow: it may have taken its blade out of the spare since it jumped (vanilla will not loose an
+			// arrow from anything else)
+			if (tick == 5 && mob instanceof RangedAttackMob archer && holdsBow(mob) && sees(mob, target)) {
 				archer.performRangedAttack(target, 0.8F);
 			}
 			return tick < 5;
@@ -286,7 +298,8 @@ public final class VanillaSpecials {
 		@Override
 		public void release(Mob mob, Player target, SpecialRunner.Run run) {
 			mob.stopUsingItem();
-			if (!(mob instanceof RangedAttackMob archer)) {
+			// the bow put away for a blade during the draw (a change of weapon): the volley is lost
+			if (!(mob instanceof RangedAttackMob archer) || !holdsBow(mob)) {
 				return;
 			}
 			for (int i = 0; i < 3; i++) {
@@ -584,7 +597,12 @@ public final class VanillaSpecials {
 			if (!(mob.level() instanceof ServerLevel level) || !sees(mob, target)) {
 				return;
 			}
-			ItemStack weapon = mob.getMainHandItem().isEmpty() ? new ItemStack(Items.BOW) : mob.getMainHandItem();
+			// fired from the bow or crossbow it holds; put away for a blade during the draw, the shot is lost (an arrow from
+			// anything else is refused by vanilla, and it crashed the server)
+			ItemStack weapon = launcher(mob);
+			if (weapon.isEmpty()) {
+				return;
+			}
 			net.minecraft.world.entity.projectile.arrow.Arrow arrow = new net.minecraft.world.entity.projectile.arrow.Arrow(level, mob,
 				new ItemStack(Items.ARROW), weapon.copy());
 			double dx = target.getX() - mob.getX();

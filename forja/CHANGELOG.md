@@ -1,5 +1,32 @@
 # Novedades
 
+## 2026-09-30 — El capitán de reglas ya ayuda, y el paso v4c del simulador
+
+- **El capitán de reglas empeoraba a su grupo.** Mandaba CERCAR casi siempre: los de delante y de los lados esperaban
+  a 6 bloques o más y nadie entraba, y la carga casi nunca llegaba. Con él, un grupo de 8 hacía 0,6 de daño por minuto
+  y sin él, 37,5.
+- **Capitán de reglas nuevo.** Solo da una orden cuando ayuda:
+  - **carga** en cuanto el jugador queda expuesto (de espaldas a uno del grupo, usando un objeto, cargando un golpe,
+    aturdido o con poca vida): todos entran a la vez, con el grito y un turno más durante 2 s, y luego 5 s de descanso;
+  - **pinza** si el jugador se aleja del grupo;
+  - **retirada** con la moral baja, **asedio** si se sube a un pilar y **emboscada** de noche a oscuras;
+  - si no, **nada**: el grupo pelea como sin capitán, con el anillo y los turnos.
+- **Medido en el mod:** 8 contra un jugador de prueba, 80 peleas. Con el capitán nuevo hacen 77,7 de daño por minuto
+  (sin capitán, 37,5) y "matan" en 30 s en 71 de 80 peleas (sin capitán, en 36). Las tablas están en
+  `docs/red_mob_v4_mod_estado.md`.
+- **Opción nueva `iaCapitanReglas`** (activada). Apagada, el capitán sigue ahí (polvo dorado, moral, el golpe de moral
+  si muere) pero no da órdenes. Una red de capitán (`red_capitan.json`) manda siempre, esté como esté la opción.
+- **Paso v4c del simulador:**
+  - un mob que cambia de familia en plena pelea (un esqueleto que saca la hoja o vuelve al arco) cambia de red y su
+    memoria vuelve a 0, también si entretanto peleó por reglas;
+  - el repuesto puede ser un arco, y se suelta al morir (el recogido, siempre);
+  - solo los tiradores cogen arcos del suelo: el arco, esqueletos, strays y bogged; la ballesta, saqueadores y piglins.
+    Un ahogado con la mano vacía ya no coge un arco, y un zombi que puede recoger botín tampoco.
+- **Arreglado:** un esqueleto que cambiaba el arco por la hoja durante la andanada, el salto atrás con tiro o la flecha
+  de empuje tumbaba el servidor. Ahora ese tiro se pierde.
+- **Pruebas:** 6 nuevas (3 del capitán y 3 del paso v4c), una rehecha (el capitán ya no forma un muro sin motivo) y la medida `CapitanMedidaGameTests`, que solo corre con
+  `FORJA_CAPITAN_MEDIR=<archivo>`. `FORJA_FILTRO='<selector>' ./gradlew runGametest` corre solo las pruebas que casan.
+
 ## 2026-09-30 — Los libros III a VII, la estantería del herrero y el atril
 
 La guía ya son ocho libros en la estantería. Cada uno se fabrica, y su receta se aprende con el progreso.

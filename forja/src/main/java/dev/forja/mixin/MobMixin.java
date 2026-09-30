@@ -1,11 +1,15 @@
 package dev.forja.mixin;
 
+import dev.forja.ai.GroundItems;
 import dev.forja.ai.Reach;
 import dev.forja.world.ForjaMobs;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.phys.AABB;
@@ -41,6 +45,18 @@ abstract class MobMixin {
 		AABB hitbox = ((LivingEntityAiAccess) target).forja$hitbox();
 		double min = Reach.min(held);
 		cir.setReturnValue(this.getAttackBoundingBox(Reach.actionOf(held)).intersects(hitbox) && (min <= 0.0 || !this.getAttackBoundingBox(min).intersects(hitbox)));
+	}
+
+	/**
+	 * Only shooters take up a bow (docs/mod_spec_v4c.md, 3): vanilla's loot pickup (a zombie that can pick up loot)
+	 * leaves a bow on the floor for anyone that cannot shoot it (GroundItems.canShoot), as RECOGER does.
+	 */
+	@Inject(method = "pickUpItem", at = @At("HEAD"), cancellable = true)
+	private void forja$onlyShootersTakeBows(ServerLevel level, ItemEntity entity, CallbackInfo ci) {
+		ItemStack stack = entity.getItem();
+		if (stack.getItem() instanceof BowItem && !GroundItems.canShoot((Mob) (Object) this, stack)) {
+			ci.cancel();
+		}
 	}
 
 	@Inject(method = "populateDefaultEquipmentEnchantments", at = @At("TAIL"))

@@ -30,8 +30,10 @@ import net.minecraft.world.phys.Vec3;
  *
  * <p><b>Value of a weapon</b> (one function, the simulator copies it): {@code damage × attack speed × (1 + 0.15 · extra
  * reach) × (1.3 if forged with upgrades)}, damage = 1 + its attack damage modifiers, speed = 4 + its attack speed
- * modifiers (an iron sword: 6 × 1.6 = 9.6). A bow is 3, a crossbow 3.8 ({@link #rangedValue}); they are worth anything
- * only to a mob that shoots (a skeleton, a pillager) or to a mob with nothing in its hand. Empty hands are worth 0.
+ * modifiers (an iron sword: 6 × 1.6 = 9.6). A bow is 3, a crossbow 3.8 ({@link #rangedValue}); each is worth
+ * anything only to the shooters that can use it ({@link #canShoot}): a bow to a skeleton, a stray or a bogged, a crossbow
+ * to a pillager or a piglin. To anyone else, empty-handed or not, 0: a zombie never takes up a bow (2026-09-30,
+ * docs/mod_spec_v4c.md, 3; a zombie that turned archer would be new, and Andy's call). Empty hands are worth 0.
  *
  * <p><b>mejora</b> = what the thing would be worth in its hands − what it holds now; a shield to a mob without one and
  * a free off hand 3; a consumable its kit has room for 1; a rod to a body without a spare 0.5. Only things with
@@ -115,13 +117,29 @@ public final class GroundItems {
 			|| mob.getType() == net.minecraft.world.entity.EntityTypes.PILLAGER || mob.getType() == net.minecraft.world.entity.EntityTypes.PIGLIN);
 	}
 
+	/**
+	 * Whether this mob shoots with this bow or crossbow: a bow only a skeleton, a stray or a bogged (their bow goal), a
+	 * crossbow only a pillager or a piglin (their crossbow goal). A skeleton with a crossbow, or a pillager with a bow,
+	 * would fight as a body with it in its hand (MobFamily.of, MobFamily.network), so it is worth nothing to them.
+	 */
+	public static boolean canShoot(Mob mob, ItemStack stack) {
+		if (!(mob instanceof RangedAttackMob)) {
+			return false;
+		}
+		if (stack.getItem() instanceof BowItem) {
+			return MobFamily.of(mob.getType()) == MobFamily.ARQUERO;
+		}
+		return stack.getItem() instanceof CrossbowItem
+			&& (mob.getType() == net.minecraft.world.entity.EntityTypes.PILLAGER || mob.getType() == net.minecraft.world.entity.EntityTypes.PIGLIN);
+	}
+
 	/** What a weapon is worth in this mob's hands (0 for one it cannot use). */
 	public static double valueFor(Mob mob, ItemStack stack) {
 		if (stack == null || stack.isEmpty()) {
 			return 0.0;
 		}
 		if (ranged(stack)) {
-			return shooter(mob) || mob.getMainHandItem().isEmpty() && mob instanceof RangedAttackMob ? rangedValue(stack) : 0.0;
+			return canShoot(mob, stack) ? rangedValue(stack) : 0.0;
 		}
 		// A shooter holding its bow does not trade it for a blade: the network it runs on is the archer's.
 		if (shooter(mob) && ranged(mob.getMainHandItem())) {
@@ -133,7 +151,7 @@ public final class GroundItems {
 	/** What it holds is worth, the same way. */
 	public static double heldValue(Mob mob) {
 		ItemStack held = mob.getMainHandItem();
-		return ranged(held) ? (shooter(mob) ? rangedValue(held) : 0.0) : meleeValue(held);
+		return ranged(held) ? (canShoot(mob, held) ? rangedValue(held) : 0.0) : meleeValue(held);
 	}
 
 	/** Block O's type of a thing on the floor, or -1 for nothing a mob wants. */

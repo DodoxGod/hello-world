@@ -200,10 +200,9 @@ mob, el radio se divide por 2.
 - **Quién:** el élite o campeón más fuerte del grupo (amenaza, luego vida máxima). **Nunca un veterano.** Un grupo sin
   élite ni campeón no tiene capitán. Grupo = los mobs cuyo objetivo es ese jugador (el del `Squad`).
 - **Cada 10 ticks** (con el `Squad`): la red `redes_v4/red_capitan.json` (formato `red_capitan_v4`, contrato
-  `red_capitan_v4_contrato.json`, 213 → 60) si la hay y encaja; si no, el **capitán de reglas** (diseño §3.4 con estos
-  detalles: "ocupado" = usando un objeto, cargando un golpe o alguien tiene turno sobre él; "de espaldas" = algún
-  miembro a ≤ 8 a más de 120° de su mirada; CARGA sigue hasta que acaba su turno extra; HOSTIGAR en MURO si hay
-  escudo, si no PINZA).
+  `red_capitan_v4_contrato.json`, 213 → 60) si la hay y encaja, diga lo que diga `iaCapitanReglas`; si no, el
+  **capitán de reglas nuevo** (30-09, ver "Capitán de reglas nuevo" abajo; el de diseño §3.4 empeoraba los grupos) con
+  `iaCapitanReglas` activado, y sin él un capitán que no da órdenes (miembros libres).
 - **Una orden sigue** (su edad y su cuenta atrás) mientras orden, formación y sector no cambien.
 - **Muere el capitán:** `sin_mando` = 1 y baja a 0 en 200 ticks; sin órdenes durante ese tiempo aunque quede otro
   élite; después otro élite puede mandar. Es un golpe de moral.
@@ -266,7 +265,65 @@ mob, el radio se divide por 2.
 - **furia (51)**: arriba.
 - **Reglas que obedecen:** RETIRADA → RETIRARSE; REAGRUPAR y ESCOLTA → FORMACION; EMBOSCADA → EMBOSCAR; ASEDIO →
   ASEDIAR; CARGA → FORMACION hasta el 0 y luego al ataque; CERCAR y HOSTIGAR → FORMACION; un arquero con puesto va a
-  él (a > 3) antes de tirar.
+  él (a > 3) antes de tirar, **salvo sin orden y en LIBRE** (entonces tira desde donde está, como sin capitán).
+
+### Capitán de reglas nuevo (30-09) y `iaCapitanReglas`
+
+**Por qué.** El simulador midió que el capitán de reglas de §3.4 empeoraba los grupos (8 con un élite contra el
+jugador "experto": sin capitán 121 de daño por minuto, capitán de reglas 111). En el mod era peor aún: mandaba CERCAR
+casi siempre (97 % de las pasadas) y los grupos casi no hacían daño. Causas, en el código:
+- CERCAR lleva los puestos de frente y flanco a ≥ 6 del jugador, y un miembro con CERCAR va a su puesto aunque tenga
+  turno: nadie entra;
+- la CARGA pedía el 60 % en su puesto y el jugador "ocupado" (usando un objeto, cargando un golpe o **con alguien que
+  tiene turno sobre él**, y nadie lo tenía porque nadie atacaba) o "de espaldas" (un miembro a ≤ 8 a más de 120° de
+  su mirada, y en sus puestos ninguno lo estaba). El grupo se quedaba parado en el anillo;
+- los arqueros perseguían su puesto de segunda línea, que se mueve con la mirada del jugador, en vez de tirar.
+
+**Las reglas nuevas** (`Captain.rules`), en este orden:
+1. jugador en pilar o torre → ASEDIO;
+2. moral del grupo < 0,3 → RETIRADA;
+3. **jugador expuesto** (usando un objeto, cargando un golpe, aturdido, con < 30 % de vida, o con un miembro a ≤ 6 a
+   más de 120° de su mirada), con ≥ 2 de cuerpo a cuerpo a < 10 y sin carga en los últimos 100 ticks tras el turno extra
+   de la anterior → **CARGA con cuenta 0** (todos al ataque ya, grito y +1 turno 40 ticks);
+4. noche, luz del jugador < 7 y nadie lo percibe → EMBOSCADA;
+5. el jugador se aleja del centro del grupo a > 0,08 bloques/tick (y a < 16) → **sin orden, en PINZA**: los que no
+   tienen turno rodean por los dos lados, los que lo tienen atacan;
+6. si no, **sin orden y LIBRE**: los miembros pelean como sin capitán (anillo y turnos).
+
+Las reglas ya no dan CERCAR ni HOSTIGAR (una red de capitán sí puede; para los miembros significan lo mismo que antes).
+Una carga en curso sigue hasta que acaba su turno extra.
+
+**El interruptor.** `iaCapitanReglas` (`CombatConfig`, **activado**). Apagado, el grupo conserva su capitán (el polvo
+dorado, la moral, el golpe de moral y `sin_mando` si muere, y no reta a duelos) pero sin órdenes: `orden_ninguna` = 1 y
+`formacion_libre` = 1, y los miembros pelean como sin capitán. `iaCapitan` apagado sigue quitando el capitán del todo.
+Una `red_capitan.json` cargada manda siempre, diga lo que diga `iaCapitanReglas`.
+
+**La medida en el mod** (`CapitanMedidaGameTests`, solo con `FORJA_CAPITAN_MEDIR=<archivo>`; `FORJA_CAPITAN_N` peleas por
+modo, 8 por defecto; `FORJA_FILTRO='forja-test:capitan_medida*' ./gradlew runGametest` corre solo esas). Grupo de 8:
+un zombi élite con espada de hierro, 3 zombis (uno con escudo), un husk, una araña y 2 esqueletos con arco, que llegan
+desde 11–14 bloques por un lado al azar. El jugador de prueba se queda quieto, se aleja del grupo (0,18/tick) o lo rodea
+(0,15/tick) por fases de 25–54 ticks con semilla, mira al mob más cercano y le pega 5 cada 16 ticks si está a ≤ 3,5. Se
+le devuelve la vida cada tick y se suma lo que pierde; "muerto" = 20 de daño acumulado. 600 ticks por pelea, las mismas
+40 semillas en cada modo (el azar de Minecraft no se fija, así que cada tanda varía unos ±5 de daño por minuto):
+
+| Capitán | Peleas | Daño/min | "Muerto" en 30 s | Tiempo hasta 20 de daño | Órdenes |
+|---|---|---|---|---|---|
+| sin capitán (`iaCapitan` apagado) | 40 | 37,5 ± 5,0 | 16/40 | 14,8 s | — |
+| capitán de reglas viejo (§3.4) | 40 | **0,6 ± 0,3** | 0/40 | — | CERCAR 97 %, CARGA 2 % |
+| capitán sin órdenes (`iaCapitanReglas` apagado) | 40 | 35,6 ± 4,0 | 16/40 | 16,5 s | — |
+
+| Capitán (tras el cambio; 2 tandas, 80 peleas) | Daño/min | "Muerto" en 30 s | Tiempo hasta 20 de daño | Órdenes |
+|---|---|---|---|---|
+| sin capitán | 37,5 ± 3,0 | 36/80 | 16,8 s | — |
+| capitán sin órdenes | 38,8 ± 2,7 | 36/80 | 14,9 s | — |
+| **capitán de reglas nuevo** | **77,7 ± 3,2** | **71/80** | **13,3 s** | CARGA 24 %, nada 76 % |
+
+Pareado por semilla, el capitán nuevo hace +39,6 ± 3,9 de daño por minuto más que sin capitán y gana en 70 de 80
+peleas. Pruebas aparte: sin la pinza, 74,8 (la pinza aporta poco, dentro del ruido); sin el turno extra de la carga,
+80,3 (la ventaja viene de que todos entren a la vez, no del turno de más). Por eso `iaCapitanReglas` va **activado**.
+
+**Lo que el simulador tiene que copiar:** estas reglas nuevas en `CaptainRules` (y medir otra vez contra el "experto");
+la imitación de la red del capitán debería partir de ellas y no de las de §3.4.
 
 ## M6: el vector de mundo W (452–467, `WorldMemory`)
 
@@ -296,6 +353,36 @@ mob, el radio se divide por 2.
 - **Olvido:** por cada día de juego (reloj del mundo / 24 000) que pasa, cada valor se acerca un 10 % a su valor inicial:
   `v ← inicial + 0,9^días·(v − inicial)`; el contador de muertes también se multiplica por 0,9^días.
 - La red del capitán ve el mismo vector (su bloque W).
+
+## v4c (30-09): lo que `mod_spec_v4c.md` pedía comprobar
+
+1. **Cambio de familia a mitad de pelea.** Ya cambiaba de red y ponía la memoria (GRU) a 0 cuando `MobAi.familyOf`
+   cambiaba por el arma de la mano, pero solo si la familia nueva tenía red. Arreglado: la familia se mira en cada
+   decisión, piense con red o con reglas. Un esqueleto con red de arquero que saca la hoja y no hay red de cuerpo pelea
+   por reglas; al volver al arco, su memoria empieza de 0 (antes recuperaba la de antes de la hoja). Prueba
+   `aChangeOfFamilySwitchesNetworkAndMemory`.
+   **Fallo encontrado de paso:** un esqueleto que cambiaba el arco por la hoja durante el aviso de la andanada, del salto
+   atrás con tiro o de la flecha de empuje **tumbaba el servidor** ("Invalid weapon firing an arrow"). Ahora el tiro se
+   pierde si ya no tiene arco (o ballesta, la flecha de empuje).
+2. **El repuesto puede ser un arco.** Ya lo era: el cambio de arma (objeto 8) intercambia mano y repuesto con cualquier
+   arma, un arco también, y la máscara se abre con una hoja o un arco (no con una caña). El arco del repuesto se suelta
+   al morir: el recogido siempre, el de aparecer con la probabilidad de vanilla. Prueba `aBowInTheSpareSlot`.
+3. **Arcos en el suelo solo para tiradores.** No se cumplía del todo: `GroundItems.valueFor` daba valor a un arco a
+   cualquier `RangedAttackMob` con la mano vacía (un **ahogado** lo habría cogido), y el recoger de vanilla (un zombi que
+   puede recoger botín) cogía arcos. Ahora (`GroundItems.canShoot`):
+   - un **arco** solo vale para esqueleto, stray y bogged;
+   - una **ballesta** solo para saqueador y piglin (un esqueleto con ballesta pelearía con ella de palo, y un saqueador
+     no dispara arcos);
+   - a los demás, 0, con la mano vacía o no;
+   - el recoger de vanilla deja los arcos en el suelo para quien no los puede usar (`MobMixin`).
+   Un zombi que coge un arco y pasa a arquero sigue sin existir (decisión de Andy pendiente). Prueba
+   `onlyShootersTakeUpBows`.
+   **El simulador tiene que copiar** el cambio de la ballesta: `mod_spec_v4c.md` decía que un arco o una ballesta
+   valían para un esqueleto o un stray; ahora la ballesta, solo para saqueador y piglin.
+
+El resto de `mod_spec_v4c.md` no pide nada nuevo al mod. `red_capitan.json` se carga desde
+`config/forja/redes_v4/red_capitan.json` como dice, y manda aunque `iaCapitanReglas` esté apagado (prueba
+`aCaptainNetworkGivesTheOrders`).
 
 ## Rendimiento
 
