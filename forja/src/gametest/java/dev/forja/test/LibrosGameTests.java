@@ -193,6 +193,27 @@ public class LibrosGameTests {
 		return found;
 	}
 
+	/**
+	 * The classes open with book V (Andy's answer 3): a player who has not opened it cannot take a class; opening the
+	 * book (using it) gives the advancement, and then the first class is taken.
+	 */
+	@GameTest
+	public void theClassesOpenWithTheirBook(GameTestHelper helper) {
+		ServerPlayer player = helper.makeMockServerPlayerInLevel();
+		AdvancementHolder read = helper.getLevel().getServer().getAdvancements().get(Forja.id("forja/" + GuideBooks.CLASSES_READ));
+		helper.assertTrue(read != null, "falta el logro forja/" + GuideBooks.CLASSES_READ);
+		player.getAdvancements().revoke(read, "done");
+		helper.assertTrue(dev.forja.clase.ClassProgress.clazz(player) == null, "el jugador de prueba no debería tener clase");
+		helper.assertTrue(!dev.forja.clase.ClassNetwork.tryChoose(player, dev.forja.clase.PlayerClass.GUERRERO)
+			&& dev.forja.clase.ClassProgress.clazz(player) == null, "sin abrir el libro de clases no se elige clase");
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.LIBRO_CLASES));
+		ModItems.LIBRO_CLASES.use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+		helper.assertTrue(player.getAdvancements().getOrStartProgress(read).isDone(), "abrir el libro de clases debería dar su logro");
+		helper.assertTrue(dev.forja.clase.ClassNetwork.tryChoose(player, dev.forja.clase.PlayerClass.GUERRERO)
+			&& dev.forja.clase.ClassProgress.clazz(player) == dev.forja.clase.PlayerClass.GUERRERO, "con el libro abierto la primera clase se elige");
+		helper.succeed();
+	}
+
 	/** Every step of the path is explained in a chapter some book has, and the books cover the whole path between them. */
 	@GameTest
 	public void everyStepHasItsBook(GameTestHelper helper) {

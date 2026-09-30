@@ -106,6 +106,11 @@ public final class ClassNetwork {
 	 * the player is told why. On your own class it only empties the tree (ClassProgress.choose).
 	 */
 	public static boolean tryChoose(ServerPlayer player, PlayerClass chosen) {
+		// The classes open with their book: until it has been read, no class is taken (GuideBooks.CLASSES_READ).
+		if (!dev.forja.GuideBooks.classesOpen(player)) {
+			player.sendOverlayMessage(Component.translatable("gui.forja.libros.clases.cerradas"));
+			return false;
+		}
 		if (ClassProgress.clazz(player) != null && !player.isCreative()) {
 			ItemStack emblem = findEmblem(player);
 			if (emblem.isEmpty()) {

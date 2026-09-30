@@ -63,8 +63,9 @@ public final class GuideBooks {
 			List.of(new Section("mayor_mejoras", 1, List.of("mayor_sabes", "potencial", "sinergias", "pactos")),
 				new Section("mayor_maestria", 0, List.of("maestria", "herrero", "tecnicas", "mi_taller")),
 				new Section("mayor_llevar", 3, List.of("accesorios", "mayor_siguiente")))),
-		CLASES("libro_clases", 0x3C7A4A, "parada", () -> Items.EMERALD, false, true,
-			List.of(new Section("pelear", 2, List.of("clases")))),
+		// Book V: the classes, which open the first time this book is opened (Andy's answer 3).
+		CLASES("libro_clases", 0x3C7A4A, "parada", () -> Items.EMERALD, true, true,
+			List.of(new Section("clases_elegir", 2, List.of("clases_sabes", "clases", "clases_siguiente")))),
 		BASTION("libro_bastion", 0x28827F, "ruina", () -> Items.MAP, false, true,
 			List.of(new Section("mundo", 3, List.of("mundo", "encargos")))),
 		CEMENTERIO("libro_cementerio", 0x342658, "portal", () -> ModItems.HIERRO_ESTELAR, false, true,
@@ -172,10 +173,26 @@ public final class GuideBooks {
 				case COMBATE -> ModItems.LIBRO_COMBATE;
 				case FUNDICION -> ModItems.LIBRO_FUNDICION;
 				case MESA_MAYOR -> ModItems.LIBRO_MESA_MAYOR;
+				case CLASES -> ModItems.LIBRO_CLASES;
 				case TOMO -> ModItems.TOMO_DE_FORJA;
 				default -> null;
 			};
 		}
+	}
+
+	/**
+	 * The advancement given the first time a player opens book V: the classes open with it (Andy, 2026-09-29: "las
+	 * clases se desbloquean la primera vez que abres su libro"). Before it, K only says to read the book.
+	 */
+	public static final String CLASSES_READ = "leer_clases";
+
+	/** Whether this player has opened the classes: read book V, or already has a class from before the books. */
+	public static boolean classesOpen(ServerPlayer player) {
+		if (dev.forja.clase.ClassProgress.clazz(player) != null) {
+			return true;
+		}
+		AdvancementHolder holder = player.level().getServer().getAdvancements().get(Forja.id("forja/" + CLASSES_READ));
+		return holder == null || player.getAdvancements().getOrStartProgress(holder).isDone();
 	}
 
 	/** The eight books of the shelf, in reading order. */
@@ -246,6 +263,10 @@ public final class GuideBooks {
 	 */
 	public static void catchUp(ServerPlayer player) {
 		var advancements = player.level().getServer().getAdvancements();
+		// Whoever took a class before the books has read book V as far as the classes are concerned.
+		if (dev.forja.clase.ClassProgress.clazz(player) != null) {
+			ForjaAdvancements.award(player, CLASSES_READ);
+		}
 		for (Book book : SHELF) {
 			if (!book.ready || book.unlock == null) {
 				continue;

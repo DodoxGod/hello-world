@@ -816,6 +816,9 @@ public class GuideBookScreen extends Screen {
 			// Book IV.
 			case "mayor_sabes" -> this.greaterRecapChapter();
 			case "mayor_siguiente" -> this.greaterNextChapter();
+			// Book V.
+			case "clases_sabes" -> this.classesRecapChapter();
+			case "clases_siguiente" -> this.classesNextChapter();
 			default -> throw new IllegalArgumentException("no chapter " + key);
 		};
 	}
@@ -830,6 +833,16 @@ public class GuideBookScreen extends Screen {
 		List<List<Element>> out = new ArrayList<>();
 		List<Element> page = new ArrayList<>();
 		int used = 0;
+		// A paragraph taller than a page is cut into page-sized pieces first: nothing else can carry it over a turn.
+		List<Element> cut = new ArrayList<>();
+		for (Element element : body) {
+			if (element instanceof Text text && text.height() > CONTENT_H) {
+				cut.addAll(text.pieces(CONTENT_H));
+			} else {
+				cut.add(element);
+			}
+		}
+		body = cut;
 		for (int i = 0; i < body.size(); i++) {
 			Element element = body.get(i);
 			if (element instanceof PageBreak) {
@@ -915,6 +928,8 @@ public class GuideBookScreen extends Screen {
 			case "fundicion_siguiente" -> new ItemStack(Items.COMPASS);
 			case "mayor_sabes" -> new ItemStack(Items.WRITABLE_BOOK);
 			case "mayor_siguiente" -> new ItemStack(Items.COMPASS);
+			case "clases_sabes" -> new ItemStack(Items.WRITABLE_BOOK);
+			case "clases_siguiente" -> new ItemStack(Items.COMPASS);
 			default -> ItemStack.EMPTY;
 		};
 	}
@@ -974,6 +989,7 @@ public class GuideBookScreen extends Screen {
 			case COMBATE -> Assembler.create(ForgeType.ESPADA, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.HIERRO));
 			case FUNDICION -> new ItemStack(ModItems.CRISOL_DE_HIERRO);
 			case MESA_MAYOR -> new ItemStack(ModItems.MESA_DE_FORJA_MAYOR);
+			case CLASES -> dev.forja.forge.Relic.MEDALLON_DEL_OLVIDO.create(dev.forja.forge.Relic.MEDALLON_DEL_OLVIDO.defaultMaterials());
 			case BIBLIOTECA -> new ItemStack(Items.BOOKSHELF);
 			default -> new ItemStack(Items.BOOK);
 		};
@@ -986,6 +1002,7 @@ public class GuideBookScreen extends Screen {
 			case COMBATE -> Assembler.create(ForgeType.ESCUDO, Assembler.defaultMaterials(ForgeType.ESCUDO));
 			case FUNDICION -> new ItemStack(ModItems.alloy("bronce"));
 			case MESA_MAYOR -> new ItemStack(ModItems.FUNDENTE_MAESTRO);
+			case CLASES -> Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.ESMERALDA, ForgeMaterial.ORO, ForgeMaterial.MADERA));
 			case BIBLIOTECA -> new ItemStack(ModItems.GUIA_DE_FORJA);
 			default -> new ItemStack(ModItems.GUIA_DE_FORJA);
 		};
@@ -1792,6 +1809,32 @@ public class GuideBookScreen extends Screen {
 		List<Element> body = new ArrayList<>();
 		body.add(new Text(Component.translatable("gui.forja.libros.mayor_siguiente"), INK));
 		body.add(new BookCard(GuideBooks.Book.CLASES));
+		body.add(new BookCard(GuideBooks.Book.BASTION));
+		body.add(new ChapterLink("siguiente_paso"));
+		return body;
+	}
+
+	// ------------------------------------------------------------------ book V, Clases
+
+	/** Book V opens on what a class is, and on the rule that opening this book is what opens the classes. */
+	private List<Element> classesRecapChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.clases_sabes", keyName(ClassClient.TREE, "K")), INK));
+		List<ItemStack> icons = new ArrayList<>();
+		for (dev.forja.clase.PlayerClass clazz : dev.forja.clase.PlayerClass.values()) {
+			icons.add(clazz.icon());
+		}
+		for (int from = 0; from < icons.size(); from += 5) {
+			body.add(new IconRow(icons.subList(from, Math.min(from + 5, icons.size()))));
+		}
+		body.add(new ClassButton());
+		return body;
+	}
+
+	/** The last page of book V: the world's book and the path. */
+	private List<Element> classesNextChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.clases_siguiente"), INK));
 		body.add(new BookCard(GuideBooks.Book.BASTION));
 		body.add(new ChapterLink("siguiente_paso"));
 		return body;
@@ -3772,6 +3815,21 @@ public class GuideBookScreen extends Screen {
 		Text(Component text, int color) {
 			this.lines = GuideBookScreen.this.font.split(GuideText.rubric(text), WRAP);
 			this.color = color;
+		}
+
+		private Text(List<FormattedCharSequence> lines, int color) {
+			this.lines = lines;
+			this.color = color;
+		}
+
+		/** This paragraph cut into pieces no taller than a page, for one too long for any page. */
+		List<Element> pieces(int room) {
+			int each = Math.max(1, (room - 3) / 8);
+			List<Element> pieces = new ArrayList<>();
+			for (int from = 0; from < this.lines.size(); from += each) {
+				pieces.add(new Text(this.lines.subList(from, Math.min(from + each, this.lines.size())), this.color));
+			}
+			return pieces;
 		}
 
 		@Override

@@ -48,6 +48,11 @@ public final class ClassClient {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (TREE.consumeClick()) {
 				if (client.player != null && client.gui.screen() == null) {
+					// The classes open with book V: before it has been read, K only says so.
+					if (ClassProgress.clazz(client.player) == null && !PathClient.done().contains(dev.forja.GuideBooks.CLASSES_READ)) {
+						client.gui.hud.setOverlayMessage(Component.translatable("gui.forja.libros.clases.cerradas"), false);
+						continue;
+					}
 					openClassScreen(client);
 				}
 			}

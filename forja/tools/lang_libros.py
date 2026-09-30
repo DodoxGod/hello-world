@@ -621,3 +621,25 @@ BOOKS.update({
         "You have not woken them yet. Each appears here the first time it wakes on something you carry: two upgrades "
         "that get on, both at 50 %% or more. The upgrade probe says when a piece is close."),
 })
+
+# ---- book V, Clases
+BOOKS.update({
+    "item.forja.libro_clases": ("Clases", "Classes"),
+    "advancements.forja.leer_clases.title": ("Tu forma de pelear", "Your Way of Fighting"),
+    "advancements.forja.leer_clases.description": ("Abre el libro de clases", "Open the book of classes"),
+    "gui.forja.libro.cap.clases_sabes": ("Qué es una clase", "What a Class Is"),
+    "gui.forja.libro.cap.clases_siguiente": ("Siguiente", "Next"),
+    "gui.forja.libro.seccion.clases_elegir": ("Las clases", "The classes"),
+    "gui.forja.libros.clases.cerradas": ("Las clases se abren con su libro: hazlo y léelo (libro y esmeralda).",
+                                         "The classes open with their book: make it and read it (a book and an emerald)."),
+    "gui.forja.libros.clases_sabes": (
+        "Una clase es tu forma de pelear, o de forjar: siete, cada una con sus números, dos habilidades y un árbol de "
+        "talentos que crece con la experiencia. Abrir este libro por primera vez es lo que las abre: desde ahora "
+        "puedes elegir la tuya con **%s** o con el botón de aquí abajo. La primera es gratis.",
+        "A class is your way of fighting, or of forging: seven, each with its numbers, two skills and a talent tree "
+        "that grows with experience. Opening this book for the first time is what opens them: from now on you can "
+        "choose yours with **%s** or with the button below. The first one is free."),
+    "gui.forja.libros.clases_siguiente": (
+        "Con tu clase elegida, lo que queda está ahí fuera: las ruinas, el castillo del Herrero y lo que hay más allá.",
+        "With your class chosen, what is left is out there: the ruins, the Smith's castle and what lies beyond."),
+})

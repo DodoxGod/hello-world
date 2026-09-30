@@ -82,6 +82,8 @@ public final class ModItems {
 	public static Item LIBRO_FUNDICION;
 	/** Book IV: potential, load, synergies, pacts, mastery and techniques. */
 	public static Item LIBRO_MESA_MAYOR;
+	/** Book V: the classes, which open with it. */
+	public static Item LIBRO_CLASES;
 	/** The whole guide in one volume, as it was before the books: creative only. */
 	public static Item TOMO_DE_FORJA;
 	public static Item PLANTILLA;
@@ -248,6 +250,7 @@ public final class ModItems {
 		LIBRO_COMBATE = register("libro_combate", p -> new GuideBookItem(dev.forja.GuideBooks.Book.COMBATE, p), new Item.Properties().stacksTo(1));
 		LIBRO_FUNDICION = register("libro_fundicion", p -> new GuideBookItem(dev.forja.GuideBooks.Book.FUNDICION, p), new Item.Properties().stacksTo(1));
 		LIBRO_MESA_MAYOR = register("libro_mesa_mayor", p -> new GuideBookItem(dev.forja.GuideBooks.Book.MESA_MAYOR, p), new Item.Properties().stacksTo(1));
+		LIBRO_CLASES = register("libro_clases", p -> new GuideBookItem(dev.forja.GuideBooks.Book.CLASES, p), new Item.Properties().stacksTo(1));
 		TOMO_DE_FORJA = register("tomo_de_forja", p -> new GuideBookItem(dev.forja.GuideBooks.Book.TOMO, p),
 			new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC));
 		PLANTILLA = register("plantilla", TemplateItem::new, new Item.Properties().stacksTo(16));
@@ -422,6 +425,7 @@ public final class ModItems {
 		stacks.add(new ItemStack(LIBRO_COMBATE));
 		stacks.add(new ItemStack(LIBRO_FUNDICION));
 		stacks.add(new ItemStack(LIBRO_MESA_MAYOR));
+		stacks.add(new ItemStack(LIBRO_CLASES));
 		stacks.add(new ItemStack(TOMO_DE_FORJA));
 		stacks.add(new ItemStack(PLANTILLA));
 		stacks.add(new ItemStack(LINGOTE_DE_TEMPLE));

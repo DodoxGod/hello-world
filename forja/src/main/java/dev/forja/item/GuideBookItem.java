@@ -30,6 +30,9 @@ public class GuideBookItem extends Item {
 			opener.accept(this.book);
 		} else {
 			ForjaAdvancements.award(player, "guia");
+			if (this.book == GuideBooks.Book.CLASES) {
+				ForjaAdvancements.award(player, GuideBooks.CLASSES_READ);
+			}
 		}
 		return InteractionResult.SUCCESS;
 	}
