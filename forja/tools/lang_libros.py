@@ -496,3 +496,46 @@ BOOKS.update({
         "With this you know how to fight. What comes next: the heat that turns a table into a foundry, and a class that "
         "makes your way of fighting your own."),
 })
+
+# ---- the upgrade probe: a slot in the book for a piece, and what goes on it (Andy, 2026-09-30)
+BOOKS.update({
+    "gui.forja.libro.cap.probador": ("¿Qué le cabe?", "What Fits It?"),
+    "gui.forja.libros.probador.intro": (
+        "Pon aquí cualquier pieza forjada de tu bolsa y el libro te dice qué mejoras le van, cuáles caben ahora y "
+        "cuáles no, y por qué. Solo mira: la pieza no se mueve de tu bolsa.",
+        "Put any forged piece from your bag here and the book tells you which upgrades go on it, which fit now and "
+        "which do not, and why. It only looks: the piece does not leave your bag."),
+    "gui.forja.libros.probador.ranura": ("Ninguna pieza", "No piece"),
+    "gui.forja.libros.probador.clic": ("Clic: elige una pieza de tu bolsa", "Click: pick a piece from your bag"),
+    "gui.forja.libros.probador.vacio": ("Pulsa la ranura y elige una herramienta, un arma o una pieza de armadura forjada.",
+                                        "Click the slot and pick a forged tool, weapon or armour piece."),
+    "gui.forja.libros.probador.no_forjado": ("Esa pieza no es forjada: las mejoras solo van en lo que sale de la estrella.",
+                                             "That piece is not forged: upgrades only go on what comes off the star."),
+    "gui.forja.libros.probador.estado": (
+        "Potencial %s · carga %s de %s · pactos %s de %s · sinergias despiertas %s de %s",
+        "Potential %s · load %s of %s · pacts %s of %s · synergies awake %s of %s"),
+    "gui.forja.libros.probador.caben": ("Caben ahora (%s)", "Fit now (%s)"),
+    "gui.forja.libros.probador.no_caben": ("Compatibles, pero no caben (%s)", "Compatible, but do not fit (%s)"),
+    "gui.forja.libros.probador.ninguna": ("Ninguna: todo lo compatible cabe.", "None: everything compatible fits."),
+    "gui.forja.libros.probador.elige": ("Elige una pieza de tu bolsa", "Pick a piece from your bag"),
+    "gui.forja.libros.probador.nada": ("No llevas ninguna pieza forjada.", "You carry no forged piece."),
+    "gui.forja.libros.probador.sube": ("%s: %s%% → %s%%", "%s: %s%% → %s%%"),
+    "gui.forja.libros.probador.esta": ("%s: %s%%", "%s: %s%%"),
+    "gui.forja.libros.probador.efecto": ("Al %s%%: %s", "At %s%%: %s"),
+    "gui.forja.libros.probador.mesa": ("La primera mesa sube cada mejora hasta el %s%%; lo que falta, la mesa mayor.",
+                                       "The first table takes each upgrade to %s%%; the rest is the greater table's."),
+    "gui.forja.libros.probador.razon.full": ("Ya está todo lo alto que llega.", "It is already as high as it goes."),
+    "gui.forja.libros.probador.razon.load": ("Falta carga: la pieza no aguanta algo tan pesado.",
+                                             "Not enough load: the piece cannot carry something this heavy."),
+    "gui.forja.libros.probador.razon.potential": ("Falta potencial: la pieza no da para subirla más.",
+                                                  "Not enough potential: the piece cannot take it further."),
+    "gui.forja.libros.probador.razon.conflict": ("No se junta con %s, que ya lleva.", "Does not go with %s, which it already has."),
+    "gui.forja.libros.probador.razon.pacts": ("Ya lleva dos pactos, los que una pieza aguanta.",
+                                              "It already carries two pacts, as many as a piece may."),
+    "gui.forja.libros.probador.razon.sealed": ("Pacto sellado: ábrelo antes con su ofrenda en la estrella.",
+                                               "Sealed pact: open it first with its offering at the star."),
+    "gui.forja.libros.probador.sinergia": ("Con %s despierta «%s».", "With %s it wakes \"%s\"."),
+    "gui.forja.libros.probador.sinergia_dormida": ("Con %s haría «%s», pero ya hay tres despiertas: dormiría.",
+                                                   "With %s it would make \"%s\", but three are awake already: it would sleep."),
+    "gui.forja.libros.probador.orbe": ("solo con el orbe de un evento", "only with an event's orb"),
+})

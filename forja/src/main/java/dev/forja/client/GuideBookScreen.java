@@ -784,6 +784,7 @@ public class GuideBookScreen extends Screen {
 			case "peleas_mundo" -> this.worldFightsChapter();
 			case "dificultad" -> this.difficultyChapter();
 			case "combate_siguiente" -> this.combatNextChapter();
+			case "probador" -> this.probeChapter();
 			default -> throw new IllegalArgumentException("no chapter " + key);
 		};
 	}
@@ -876,6 +877,7 @@ public class GuideBookScreen extends Screen {
 			case "peleas_mundo" -> new ItemStack(Items.BELL);
 			case "dificultad" -> new ItemStack(Items.SKELETON_SKULL);
 			case "combate_siguiente" -> new ItemStack(Items.COMPASS);
+			case "probador" -> new ItemStack(Items.SPYGLASS);
 			default -> ItemStack.EMPTY;
 		};
 	}
@@ -1422,6 +1424,164 @@ public class GuideBookScreen extends Screen {
 		body.add(new BookCard(GuideBooks.Book.CLASES));
 		body.add(new ChapterLink("siguiente_paso"));
 		return body;
+	}
+
+	// ------------------------------------------------------------------ the upgrade probe (Andy, 2026-09-30)
+
+	/** The piece in the probe's slot: remembered while the game runs, never taken from the bag, only copied. */
+	private static ItemStack probe = ItemStack.EMPTY;
+	/** Whether the picker of the bag's pieces is open over the book. */
+	private boolean picking;
+	/** What the probe listed last, as "fits:ID" and "no:ID:REASON", for the client test. */
+	private final List<String> probeReport = new ArrayList<>();
+
+	/**
+	 * "¿Qué le cabe?": a slot for any forged tool, weapon or armour piece from the reader's bag, and the upgrades that
+	 * go on it — those that fit now, and those that are compatible but do not fit, with why (UpgradeFit, the star's
+	 * own rules). It starts on the piece in the reader's hand.
+	 */
+	private List<Element> probeChapter() {
+		List<Element> body = new ArrayList<>();
+		var player = this.minecraft.player;
+		if (probe.isEmpty() && player != null && dev.forja.upgrade.UpgradeFit.upgradable(player.getMainHandItem())) {
+			probe = player.getMainHandItem().copy();
+		}
+		body.add(new Text(Component.translatable("gui.forja.libros.probador.intro"), INK));
+		body.add(new ItemProbe());
+		this.probeReport.clear();
+		if (probe.isEmpty()) {
+			body.add(new Text(Component.translatable("gui.forja.libros.probador.vacio"), INK_SOFT));
+			return body;
+		}
+		if (!dev.forja.upgrade.UpgradeFit.upgradable(probe)) {
+			body.add(new Text(Component.translatable("gui.forja.libros.probador.no_forjado"), INK_SOFT));
+			return body;
+		}
+		dev.forja.upgrade.UpgradeFit.Summary state = dev.forja.upgrade.UpgradeFit.summary(probe);
+		body.add(new Text(Component.translatable("gui.forja.libros.probador.estado", state.potential(), state.load(), state.capacity(),
+			state.pacts(), dev.forja.upgrade.Pacts.MOST, state.synergies(), dev.forja.upgrade.Synergy.MOST), INK_SOFT));
+		List<dev.forja.upgrade.UpgradeFit.Fit> fits = dev.forja.upgrade.UpgradeFit.of(probe, player);
+		List<dev.forja.upgrade.UpgradeFit.Fit> now = fits.stream().filter(dev.forja.upgrade.UpgradeFit.Fit::fits).toList();
+		List<dev.forja.upgrade.UpgradeFit.Fit> not = fits.stream().filter(fit -> !fit.fits()).toList();
+		// Once, not on every line: how far the first table goes, when that is short of the greater one.
+		now.stream().filter(fit -> fit.bench() < fit.greater()).findFirst().ifPresent(fit ->
+			body.add(new Text(Component.translatable("gui.forja.libros.probador.mesa", dev.forja.menu.Station.FORJA.capacity()), INK_SOFT)));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.probador.caben", now.size())));
+		for (dev.forja.upgrade.UpgradeFit.Fit fit : now) {
+			body.add(new FitEntry(fit, state.synergies()));
+			this.probeReport.add("fits:" + fit.upgrade().name());
+		}
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.probador.no_caben", not.size())));
+		if (not.isEmpty()) {
+			body.add(new Text(Component.translatable("gui.forja.libros.probador.ninguna"), INK_SOFT));
+		}
+		for (dev.forja.upgrade.UpgradeFit.Fit fit : not) {
+			body.add(new FitEntry(fit, state.synergies()));
+			this.probeReport.add("no:" + fit.upgrade().name() + ":" + fit.reason());
+		}
+		return body;
+	}
+
+	/**
+	 * Put a piece in the probe and lay the book out again, staying at the probe. A copy: the piece in the bag is not
+	 * moved, taken or changed. Public for the client test.
+	 */
+	public void probe(ItemStack stack) {
+		probe = stack.copy();
+		this.picking = false;
+		this.pages.clear();
+		this.chapters.clear();
+		this.creatures.clear();
+		this.build();
+		this.goToPage(this.chapterPage("probador"));
+	}
+
+	/** What the probe listed for the piece in it, for the client test. */
+	public List<String> probeReport() {
+		if (this.pages.isEmpty()) {
+			this.build();
+		}
+		return List.copyOf(this.probeReport);
+	}
+
+	/** The pieces of the reader's bag the picker offers: whatever is forged, worn and held included. */
+	private List<ItemStack> pickable() {
+		List<ItemStack> found = new ArrayList<>();
+		var player = this.minecraft.player;
+		if (player == null) {
+			return found;
+		}
+		for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+			ItemStack stack = player.getInventory().getItem(slot);
+			if (dev.forja.upgrade.UpgradeFit.upgradable(stack)) {
+				found.add(stack);
+			}
+		}
+		return found;
+	}
+
+	private static final int PICK_COLUMNS = 9;
+	private static final int PICK_CELL = 20;
+
+	private int pickLeft() {
+		return this.width / 2 - PICK_COLUMNS * PICK_CELL / 2 - 6;
+	}
+
+	private int pickTop() {
+		return this.bookTop() + 30;
+	}
+
+	/** The picker, over the book: a dark veil, a panel, and one cell per forged piece of the bag. */
+	private void drawPicker(GuiGraphicsExtractor g, int mouseX, int mouseY) {
+		g.nextStratum();
+		g.fill(0, 0, this.width, this.height, 0xA0100C08);
+		List<ItemStack> items = this.pickable();
+		int rows = Math.max(1, (items.size() + PICK_COLUMNS - 1) / PICK_COLUMNS);
+		int left = this.pickLeft();
+		int top = this.pickTop();
+		int right = left + PICK_COLUMNS * PICK_CELL + 12;
+		int bottom = top + 22 + rows * PICK_CELL + 8;
+		g.fill(left, top, right, bottom, PAPER);
+		g.outline(left, top, right - left, bottom - top, INK_SOFT);
+		g.text(this.font, Component.translatable("gui.forja.libros.probador.elige"), left + 6, top + 6, INK, false);
+		if (items.isEmpty()) {
+			g.text(this.font, Component.translatable("gui.forja.libros.probador.nada"), left + 6, top + 24, INK_SOFT, false);
+			return;
+		}
+		ItemStack hovered = ItemStack.EMPTY;
+		for (int i = 0; i < items.size(); i++) {
+			int x = left + 6 + i % PICK_COLUMNS * PICK_CELL;
+			int y = top + 20 + i / PICK_COLUMNS * PICK_CELL;
+			boolean over = over(mouseX, mouseY, x, y, PICK_CELL - 2, PICK_CELL - 2);
+			g.fill(x, y, x + PICK_CELL - 2, y + PICK_CELL - 2, over ? BAND : PAPER_SHADE);
+			g.item(items.get(i), x + 1, y + 1);
+			if (over) {
+				hovered = items.get(i);
+			}
+		}
+		if (!hovered.isEmpty()) {
+			g.setTooltipForNextFrame(this.font, hovered, mouseX, mouseY);
+		}
+	}
+
+	/** A click while the picker is open: a piece goes into the probe; anywhere else closes the picker. */
+	private boolean pickAt(double mouseX, double mouseY) {
+		List<ItemStack> items = this.pickable();
+		for (int i = 0; i < items.size(); i++) {
+			int x = this.pickLeft() + 6 + i % PICK_COLUMNS * PICK_CELL;
+			int y = this.pickTop() + 20 + i / PICK_COLUMNS * PICK_CELL;
+			if (mouseX >= x && mouseY >= y && mouseX < x + PICK_CELL - 2 && mouseY < y + PICK_CELL - 2) {
+				this.probe(items.get(i));
+				return true;
+			}
+		}
+		this.picking = false;
+		return true;
+	}
+
+	/** Opens the picker, for the client test and the slot. */
+	public void openPicker() {
+		this.picking = true;
 	}
 
 	/** The cabinet, tucked into the chapter about the tables: it is workshop furniture, not a mechanic. */
@@ -2737,6 +2897,10 @@ public class GuideBookScreen extends Screen {
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
 		super.extractRenderState(g, mouseX, mouseY, a);
+		if (this.picking) {
+			this.drawPicker(g, mouseX, mouseY);
+			return;
+		}
 		int tab = this.tabAt(mouseX, mouseY);
 		if (tab >= 0) {
 			g.setTooltipForNextFrame(this.font, Component.translatable("gui.forja.libro.seccion." + this.sectionKey(tab)), mouseX, mouseY);
@@ -2785,6 +2949,9 @@ public class GuideBookScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		if (this.picking) {
+			return this.pickAt(event.x(), event.y());
+		}
 		if (event.button() == 1 && this.goBack()) {
 			return true;
 		}
@@ -2821,6 +2988,9 @@ public class GuideBookScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+		if (this.picking) {
+			return true;
+		}
 		if (scrollY != 0.0) {
 			this.turn(scrollY < 0 ? 1 : -1);
 			return true;
@@ -2830,6 +3000,11 @@ public class GuideBookScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
+		if (this.picking && event.key() == 256) {
+			// Escape closes the picker, not the book.
+			this.picking = false;
+			return true;
+		}
 		if (super.keyPressed(event)) {
 			return true;
 		}
@@ -4548,6 +4723,154 @@ public class GuideBookScreen extends Screen {
 		@Override
 		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
 			BookMemory.read(this.creature);
+		}
+	}
+
+	/** The probe's slot: the piece in it, its name, and "clic: elige otra de tu bolsa". A click opens the picker. */
+	private final class ItemProbe extends Element {
+		private final Component hint = Component.translatable("gui.forja.libros.probador.clic");
+
+		@Override
+		int height() {
+			return 28;
+		}
+
+		@Override
+		int widest(Font font) {
+			return 28 + Math.round(font.width(this.hint) * fitScale(font, this.hint, CONTENT_W - 28, SMALL));
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			boolean hovered = over(mouseX, mouseY, x, y + 2, CONTENT_W, 24);
+			g.fill(x + 1, y + 3, x + 23, y + 25, hovered ? BAND : PAPER_SHADE);
+			g.outline(x + 1, y + 3, 22, 22, INK_SOFT);
+			if (!probe.isEmpty()) {
+				g.item(probe, x + 4, y + 6);
+			}
+			Component name = probe.isEmpty() ? Component.translatable("gui.forja.libros.probador.ranura") : probe.getHoverName();
+			float scale = fitScale(screen.font, name, CONTENT_W - 28, 1.0F);
+			g.pose().pushMatrix();
+			g.pose().translate(x + 28, y + 5 + (1.0F - scale) * 4.0F);
+			g.pose().scale(scale, scale);
+			g.text(screen.font, name, 0, 0, INK, false);
+			g.pose().popMatrix();
+			float hintScale = fitScale(screen.font, this.hint, CONTENT_W - 28, SMALL);
+			g.pose().pushMatrix();
+			g.pose().translate(x + 28, y + 16);
+			g.pose().scale(hintScale, hintScale);
+			g.text(screen.font, this.hint, 0, 0, 0xFF000000 | GuideText.RUBRIC, false);
+			g.pose().popMatrix();
+		}
+
+		@Override
+		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
+			return !probe.isEmpty() && over(mouseX, mouseY, x + 1, y + 3, 22, 22) ? probe : null;
+		}
+
+		@Override
+		boolean click(GuideBookScreen screen) {
+			screen.picking = true;
+			return true;
+		}
+	}
+
+	/**
+	 * One upgrade for the piece in the probe: its name and how far it goes (now and at most), what it does at that,
+	 * why it does not fit when it does not, the synergies it would wake with what is on, and its recipe drawn — or
+	 * the flask's orb for the ones only the sky gives.
+	 */
+	private final class FitEntry extends Element {
+		private final dev.forja.upgrade.UpgradeFit.Fit fit;
+		private final Component head;
+		private final List<FormattedCharSequence> lines = new ArrayList<>();
+
+		FitEntry(dev.forja.upgrade.UpgradeFit.Fit fit, int awake) {
+			this.fit = fit;
+			Upgrade upgrade = fit.upgrade();
+			this.head = fit.fits()
+				? Component.translatable("gui.forja.libros.probador.sube", upgrade.displayName(), fit.current(), fit.greater())
+				: Component.translatable("gui.forja.libros.probador.esta", upgrade.displayName(), fit.current());
+			int target = fit.fits() ? fit.greater() : fit.current() > 0 ? fit.current() : 100;
+			List<Component> parts = new ArrayList<>();
+			parts.add(Component.translatable("gui.forja.libros.probador.efecto", target, upgrade.effect(target)));
+			if (!fit.fits()) {
+				parts.add(fit.conflict() != null
+					? Component.translatable("gui.forja.libros.probador.razon.conflict", fit.conflict().displayName())
+					: Component.translatable("gui.forja.libros.probador.razon." + fit.reason().name().toLowerCase(java.util.Locale.ROOT)));
+			}
+			for (dev.forja.upgrade.Synergy synergy : fit.pairs()) {
+				Upgrade other = synergy.first == upgrade ? synergy.second : synergy.first;
+				parts.add(Component.translatable(awake >= dev.forja.upgrade.Synergy.MOST ? "gui.forja.libros.probador.sinergia_dormida"
+					: "gui.forja.libros.probador.sinergia", other.displayName(), synergy.displayName()));
+			}
+			for (Component part : parts) {
+				this.lines.addAll(GuideBookScreen.this.font.split(part, WRAP));
+			}
+		}
+
+		@Override
+		int height() {
+			return 9 + this.lines.size() * 8 + 14;
+		}
+
+		@Override
+		int widest(Font font) {
+			int widest = Math.round(font.width(this.head) * fitScale(font, this.head, CONTENT_W, SMALL));
+			for (FormattedCharSequence line : this.lines) {
+				widest = Math.max(widest, Math.round(font.width(line) * SMALL));
+			}
+			return widest;
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			Upgrade upgrade = this.fit.upgrade();
+			int colour = this.fit.fits() ? 0xFF000000 | GuideText.darken(upgrade.color) : INK_SOFT;
+			float scale = fitScale(screen.font, this.head, CONTENT_W, SMALL);
+			g.pose().pushMatrix();
+			g.pose().translate(x, y + 1);
+			g.pose().scale(scale, scale);
+			g.text(screen.font, this.head, 0, 0, colour, false);
+			g.pose().popMatrix();
+			for (int i = 0; i < this.lines.size(); i++) {
+				screen.small(g, this.lines.get(i), x, y + 9 + i * 8, this.fit.fits() ? INK : INK_SOFT);
+			}
+			int row = y + 9 + this.lines.size() * 8;
+			int iconX = x;
+			if (upgrade.options.isEmpty()) {
+				// Only the sky gives it: the flask's orb is the way.
+				smallItem(g, dev.forja.item.UpgradeOrbItem.create(upgrade, 100), iconX, row + 1);
+				screen.small(g, Component.translatable("gui.forja.libros.probador.orbe"), iconX + 14, row + 4, INK_SOFT);
+				return;
+			}
+			boolean first = true;
+			for (Upgrade.Option option : upgrade.options) {
+				if (iconX > x + CONTENT_W - 30) {
+					break;
+				}
+				if (!first) {
+					screen.small(g, Component.literal("/"), iconX - 1, row + 4, INK_SOFT);
+					iconX += 5;
+				}
+				first = false;
+				for (int i = 0; i < option.requirements().size(); i++) {
+					if (i > 0) {
+						screen.small(g, Component.literal("+"), iconX - 1, row + 4, INK_SOFT);
+						iconX += 4;
+					}
+					smallItem(g, option.requirements().get(i).displayStack(), iconX, row + 1);
+					iconX += 13;
+				}
+				String percent = "+" + option.percent() + "%";
+				screen.small(g, Component.literal(percent), iconX, row + 4, INK_SOFT);
+				iconX += Math.round(screen.font.width(percent) * SMALL) + 3;
+			}
+		}
+
+		@Override
+		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
+			return GuideText.upgradeTooltip(this.fit.upgrade());
 		}
 	}
 

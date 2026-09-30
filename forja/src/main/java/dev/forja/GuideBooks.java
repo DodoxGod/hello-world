@@ -42,7 +42,7 @@ public final class GuideBooks {
 				new Section("camino", 3, List.of("siguiente_paso", "estanteria")))),
 		YUNQUE("libro_yunque", 0xC8641E, "plantilla", () -> ModItems.PLANTILLA, true, true,
 			List.of(new Section("yunque_taller", 0, List.of("yunque_sabes", "mesas", "cortar", "estrella", "temple")),
-				new Section("yunque_mejorar", 1, List.of("mejorar", "desarmar", "estadisticas", "yunque_siguiente")))),
+				new Section("yunque_mejorar", 1, List.of("mejorar", "probador", "desarmar", "estadisticas", "yunque_siguiente")))),
 		// The six below are designed (docs/LIBROS_GUIA.md, 2.3) and come one delivery at a time; until then their
 		// chapters are read in the creative tome, and the notebook shows them as coming. The chapter lists are the
 		// first cut of 2.4, so a link to one of them can already say which book it will be in.
@@ -69,7 +69,7 @@ public final class GuideBooks {
 			List.of(new Section("estanteria", 0, List.of("estanteria", "siguiente_paso")),
 				new Section("catalogo_objetos", 4, List.of("catalogo", "objetos", "piezas")),
 				new Section("catalogo_materiales", 3, List.of("materiales", "rasgos")),
-				new Section("catalogo_mejoras", 1, List.of("mejoras", "estadisticas")))),
+				new Section("catalogo_mejoras", 1, List.of("probador", "mejoras", "estadisticas")))),
 		/** The whole guide in one volume, as it was: creative only (Andy's answer 6). */
 		TOMO("tomo_de_forja", 0x7A2A20, null, () -> Items.AIR, true, false,
 			List.of(new Section("taller", 0, List.of("primeros_pasos", "siguiente_paso", "mesas", "mesa_mayor", "objetos", "piezas", "materiales", "rasgos",

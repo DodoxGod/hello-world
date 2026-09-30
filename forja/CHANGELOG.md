@@ -1,5 +1,28 @@
 # Novedades
 
+## 2026-09-30 — ¿Qué le cabe? Un probador de mejoras en los libros
+
+- **Capítulo nuevo "¿Qué le cabe?"**, en El yunque (tras "Mejorar") y en la pestaña de mejoras del catálogo de la
+  biblioteca. Tiene una ranura: al pulsarla se abre un selector con las piezas forjadas de tu bolsa (también las
+  puestas y la de la mano). Empieza con la que llevas en la mano. Solo mira: la pieza no se mueve, no se gasta y no
+  cambia.
+- **Qué enseña de la pieza:** su potencial, la carga usada, los pactos (de 2) y las sinergias despiertas (de 3). Y
+  sus mejoras compatibles en dos grupos:
+  - **Caben ahora:** cada una con hasta dónde sube, qué hace a ese porcentaje y su receta o el orbe de evento.
+  - **Compatibles, pero no caben:** cada una con el porqué: falta carga, falta potencial, ya está al máximo, no se
+    junta con otra que ya lleva, ya lleva dos pactos o el pacto está sellado.
+
+  También dice qué sinergia despertaría con lo que ya lleva, o si dormiría porque ya hay tres despiertas.
+- **Las reglas son las de la estrella** (`upgrade/UpgradeFit`): a qué tipo de pieza va (`Upgrade.appliesTo`), los
+  grupos exclusivos, `Pacts.fits` y los pactos abiertos, y `Potential.ceiling` en la mesa mayor con fundente.
+- **Pruebas:**
+  - `LibrosGameTests.theProbeAgreesWithTheStar`: espada, pico y pechera, nuevas, con una mejora de grupo y sin
+    carga. Cada mejora que el probador dice que cabe sube de verdad en la estrella con sus ingredientes, y las que
+    dice que no, no.
+  - En el cliente: la espada lista Filo y no Eficiencia, el pico Eficiencia y no Protección, y la pechera Protección
+    y no Filo. La bolsa queda igual y el libro se maqueta limpio con cada pieza. Hay capturas del probador y del
+    selector.
+
 ## 2026-09-30 — Libros de la guía: libro II, El arte del combate, y tarjetas a oscuras
 
 - **Libros sin aprender, a oscuras** (revisión de Andy). En el Cuaderno y en la biblioteca, la tarjeta de un libro

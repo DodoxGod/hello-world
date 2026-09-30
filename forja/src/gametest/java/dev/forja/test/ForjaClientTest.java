@@ -1242,6 +1242,79 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.runOnClient(mc -> mc.gui.setScreen(null));
 
 		// Pictures: every spread of the notebook, book I and the library, cover first.
+		// The upgrade probe (Andy, 2026-09-30): a sword, a pickaxe and a chestplate each get the list UpgradeFit gives
+		// them, the right upgrades in it, and the bag is left exactly as it was.
+		server.runOnServer(s -> {
+			var player = s.getPlayerList().getPlayers().getFirst();
+			for (dev.forja.forge.ForgeType type : List.of(dev.forja.forge.ForgeType.ESPADA, dev.forja.forge.ForgeType.PICO,
+				dev.forja.forge.ForgeType.PECHERA)) {
+				player.getInventory().add(dev.forja.forge.Assembler.create(type, dev.forja.forge.Assembler.defaultMaterials(type), s.registryAccess()));
+			}
+		});
+		context.waitTicks(5);
+		String probes = context.computeOnClient(mc -> {
+			GuideBookScreen anvil = new GuideBookScreen(dev.forja.GuideBooks.Book.YUNQUE);
+			int bagBefore = mc.player.getInventory().getNonEquipmentItems().stream().mapToInt(net.minecraft.world.item.ItemStack::getCount).sum();
+			StringBuilder out = new StringBuilder();
+			for (dev.forja.forge.ForgeType type : List.of(dev.forja.forge.ForgeType.ESPADA, dev.forja.forge.ForgeType.PICO,
+				dev.forja.forge.ForgeType.PECHERA)) {
+				net.minecraft.world.item.ItemStack piece = dev.forja.forge.Assembler.create(type, dev.forja.forge.Assembler.defaultMaterials(type));
+				anvil.probe(piece);
+				List<String> report = anvil.probeReport();
+				String probeLayout = anvil.overflowingPages() + " " + anvil.wideElements() + " " + anvil.elidedElements() + " " + anvil.rawKeys();
+				if (!probeLayout.equals("[] [] [] []")) {
+					out.append(type).append(" MAQUETACION ").append(probeLayout).append("; ");
+				}
+				List<String> expected = new java.util.ArrayList<>();
+				List<dev.forja.upgrade.UpgradeFit.Fit> fits = dev.forja.upgrade.UpgradeFit.of(piece, mc.player);
+				fits.stream().filter(dev.forja.upgrade.UpgradeFit.Fit::fits).forEach(fit -> expected.add("fits:" + fit.upgrade().name()));
+				fits.stream().filter(fit -> !fit.fits()).forEach(fit -> expected.add("no:" + fit.upgrade().name() + ":" + fit.reason()));
+				out.append(type).append(report.equals(expected) ? " igual" : " DISTINTO").append(' ')
+					.append(report.contains("fits:FILO") ? "filo " : "").append(report.stream().anyMatch(line -> line.contains(":EFICIENCIA")) ? "eficiencia " : "")
+					.append(report.contains("fits:PROTECCION") ? "proteccion " : "").append(report.size()).append("; ");
+			}
+			int bagAfter = mc.player.getInventory().getNonEquipmentItems().stream().mapToInt(net.minecraft.world.item.ItemStack::getCount).sum();
+			return out.append("bolsa ").append(bagBefore == bagAfter ? "igual" : "CAMBIADA").toString();
+		});
+		log("libros, probador: " + probes);
+		check(probes.contains("ESPADA igual filo ") && !probes.split(";")[0].contains("eficiencia"), "a sword should list Filo and not Eficiencia: " + probes);
+		check(probes.contains("PICO igual") && probes.split(";")[1].contains("eficiencia") && !probes.split(";")[1].contains("proteccion"),
+			"a pickaxe should list Eficiencia and not Protección: " + probes);
+		check(probes.contains("PECHERA igual") && probes.split(";")[2].contains("proteccion") && !probes.split(";")[2].contains("filo"),
+			"a chestplate should list Protección and not Filo: " + probes);
+		check(probes.endsWith("bolsa igual"), "the probe must never move or take anything from the bag: " + probes);
+		check(!probes.contains("MAQUETACION"), "the book must lay out cleanly with a piece in the probe: " + probes);
+		// Pictures: the probe with a sword in it, and the picker over the book.
+		context.runOnClient(mc -> {
+			GuideBookScreen anvil = new GuideBookScreen(dev.forja.GuideBooks.Book.YUNQUE);
+			mc.gui.setScreen(anvil);
+			anvil.probe(dev.forja.forge.Assembler.create(dev.forja.forge.ForgeType.ESPADA,
+				dev.forja.forge.Assembler.defaultMaterials(dev.forja.forge.ForgeType.ESPADA)));
+			mc.gui.toastManager().clear();
+		});
+		context.waitForScreen(GuideBookScreen.class);
+		for (int spread = 0; spread < 4; spread++) {
+			int page = spread;
+			context.runOnClient(mc -> {
+				GuideBookScreen book = (GuideBookScreen) mc.gui.screen();
+				book.goToPage(book.chapterPage("probador") + page * 2);
+			});
+			context.getInput().setCursorPos(0, 0);
+			context.waitTicks(4);
+			context.takeScreenshot(TestScreenshotOptions.of(String.format(Locale.ROOT, "forja_libros_probador_%02d", spread)).disableCounterPrefix());
+		}
+		context.runOnClient(mc -> {
+			GuideBookScreen book = (GuideBookScreen) mc.gui.screen();
+			book.goToPage(book.chapterPage("probador"));
+			book.openPicker();
+		});
+		context.waitTicks(4);
+		context.takeScreenshot(TestScreenshotOptions.of("forja_libros_probador_selector").disableCounterPrefix());
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+		server.runCommand("clear @a forja:espada");
+		server.runCommand("clear @a forja:pico");
+		server.runCommand("clear @a forja:pechera");
+
 		// Two creatures met, so the pictures show a written page and a shadow side by side.
 		context.runOnClient(mc -> {
 			dev.forja.client.BookMemory.sawCreature("forja:automata_de_forja");

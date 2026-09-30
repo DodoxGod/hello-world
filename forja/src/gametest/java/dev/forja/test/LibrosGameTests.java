@@ -124,6 +124,75 @@ public class LibrosGameTests {
 		helper.succeed();
 	}
 
+	/**
+	 * The book's upgrade probe (UpgradeFit) against the star itself (UpgradeRecipes.apply at the greater table, with
+	 * flux): for a sword, a pickaxe and a chestplate — fresh, carrying an upgrade that shuts out its group, and with a
+	 * potential so low the load is full — every upgrade the probe says fits does go up with its own ingredients, and
+	 * every one it says does not, does not. Pacts are left to Pacts.fits, which the star asks on its own.
+	 */
+	@GameTest
+	public void theProbeAgreesWithTheStar(GameTestHelper helper) {
+		var registries = helper.getLevel().registryAccess();
+		List<ItemStack> pieces = new java.util.ArrayList<>();
+		for (dev.forja.forge.ForgeType type : List.of(dev.forja.forge.ForgeType.ESPADA, dev.forja.forge.ForgeType.PICO, dev.forja.forge.ForgeType.PECHERA)) {
+			ItemStack fresh = dev.forja.forge.Assembler.create(type, dev.forja.forge.Assembler.defaultMaterials(type), registries);
+			pieces.add(fresh);
+			ItemStack grouped = fresh.copy();
+			dev.forja.upgrade.Upgrade first = dev.forja.upgrade.UpgradeFit.of(fresh, null).stream()
+				.filter(fit -> fit.upgrade().group != dev.forja.upgrade.Upgrade.Group.NONE).findFirst().orElseThrow().upgrade();
+			pieces.add(dev.forja.upgrade.Upgrades.with(grouped, first, 60));
+			ItemStack poor = fresh.copy();
+			poor.set(dev.forja.registry.ModComponents.POTENCIAL, 24);
+			pieces.add(poor);
+		}
+		int checked = 0;
+		StringBuilder wrong = new StringBuilder();
+		for (ItemStack gear : pieces) {
+			for (dev.forja.upgrade.UpgradeFit.Fit fit : dev.forja.upgrade.UpgradeFit.of(gear, null)) {
+				dev.forja.upgrade.Upgrade upgrade = fit.upgrade();
+				helper.assertTrue(upgrade.appliesTo(gear.get(dev.forja.registry.ModComponents.PARTS).type()), "el probador lista " + upgrade + ", que no va en esa pieza");
+				if (upgrade.options.isEmpty() || upgrade.isPact()) {
+					continue;
+				}
+				List<ItemStack> ingredients = new java.util.ArrayList<>();
+				for (dev.forja.upgrade.Upgrade.Requirement requirement : upgrade.options.getFirst().requirements()) {
+					ingredients.add(requirement.displayStack().copyWithCount(64));
+				}
+				while (ingredients.size() < 4) {
+					ingredients.add(ItemStack.EMPTY);
+				}
+				ingredients.add(new ItemStack(ModItems.FUNDENTE_MAESTRO, 64));
+				dev.forja.upgrade.UpgradeRecipes.Application application = dev.forja.upgrade.UpgradeRecipes.apply(gear, ingredients, registries, 0,
+					(candidate, flux) -> dev.forja.forge.Potential.ceiling(gear, candidate, dev.forja.menu.Station.FORJA_MAYOR, flux));
+				if (application == null || application.upgrade() != upgrade) {
+					// The ingredients belong to another upgrade too, and the star took that one: not this test's question.
+					continue;
+				}
+				boolean rose = application.conflict() == null && application.after() > application.before();
+				if (rose != fit.fits()) {
+					wrong.append(gear.getHoverName().getString()).append(' ').append(upgrade).append(": probador ").append(fit.reason())
+						.append(", estrella ").append(application.before()).append("->").append(application.after()).append("; ");
+				}
+				checked++;
+			}
+		}
+		helper.assertTrue(wrong.isEmpty(), "el probador y la estrella no coinciden: " + wrong);
+		helper.assertTrue(checked > 60, "el probador debería haberse comparado con la estrella en muchas mejoras, solo " + checked);
+		// And the three kinds of piece get their own lists.
+		helper.assertTrue(names(pieces.get(0)).contains("FILO") && !names(pieces.get(0)).contains("EFICIENCIA"), "una espada lleva Filo y no Eficiencia");
+		helper.assertTrue(names(pieces.get(3)).contains("EFICIENCIA") && names(pieces.get(3)).contains("FORTUNA"), "un pico lleva Eficiencia y Fortuna");
+		helper.assertTrue(names(pieces.get(6)).contains("PROTECCION") && !names(pieces.get(6)).contains("FILO"), "una pechera lleva Protección y no Filo");
+		helper.succeed();
+	}
+
+	private static Set<String> names(ItemStack gear) {
+		Set<String> found = new HashSet<>();
+		for (dev.forja.upgrade.UpgradeFit.Fit fit : dev.forja.upgrade.UpgradeFit.of(gear, null)) {
+			found.add(fit.upgrade().name());
+		}
+		return found;
+	}
+
 	/** Every step of the path is explained in a chapter some book has, and the books cover the whole path between them. */
 	@GameTest
 	public void everyStepHasItsBook(GameTestHelper helper) {
