@@ -643,3 +643,80 @@ BOOKS.update({
         "Con tu clase elegida, lo que queda está ahí fuera: las ruinas, el castillo del Herrero y lo que hay más allá.",
         "With your class chosen, what is left is out there: the ruins, the Smith's castle and what lies beyond."),
 })
+
+# ---- book VI, El Bastión y el Herrero
+BOOKS.update({
+    "item.forja.libro_bastion": ("El Bastión y el Herrero", "The Bastion and the Smith"),
+    "gui.forja.libro.cap.bastion_sabes": ("Lo que hay ahí fuera", "What Is Out There"),
+    "gui.forja.libro.cap.ruinas": ("Ruinas", "Ruins"),
+    "gui.forja.libro.cap.herrero_historia": ("Quién era el Herrero", "Who the Smith Was"),
+    "gui.forja.libro.cap.bastion": ("El Bastión del Gremio", "The Guild's Bastion"),
+    "gui.forja.libro.cap.portal_estelar": ("El portal", "The Portal"),
+    "gui.forja.libro.cap.bastion_siguiente": ("Siguiente", "Next"),
+    "gui.forja.libro.seccion.bastion_mundo": ("El mundo", "The world"),
+    "gui.forja.libro.seccion.bastion_ruinas": ("Ruinas e historia", "Ruins and history"),
+    "gui.forja.libro.seccion.bastion_castillo": ("El castillo", "The castle"),
+    "gui.forja.libros.bastion_sabes": (
+        "Fuera del taller hay forjas abandonadas con sus cofres, aldeanos que venden lo que no sabes hacer, encargos que "
+        "pagan bien y ruinas con guardianes. Y, en algún sitio no muy lejos del origen del mundo, el castillo del gremio "
+        "de herreros, donde empieza el camino hacia el Herrero Caído.",
+        "Outside the workshop there are abandoned forges with their chests, villagers who sell what you cannot make, "
+        "commissions that pay well and ruins with guardians. And, somewhere not far from the world's origin, the smiths' "
+        "guild castle, where the road to the Fallen Smith begins."),
+    "gui.forja.libros.ruinas.forja.titulo": ("Forja abandonada", "Abandoned forge"),
+    "gui.forja.libros.ruinas.forja": (
+        "En llanuras, bosques y otros biomas de aldea: las dos mesas, un cofre con plantillas grabadas, equipo y orbes, y un "
+        "autómata que aún la guarda. El Herrero de herramientas maestro y el Forjador venden su mapa.",
+        "In plains, forests and other village biomes: both tables, a chest with engraved templates, gear and orbs, and an "
+        "automaton still guarding it. The master toolsmith and the Forger sell its map."),
+    "gui.forja.libros.ruinas.castillo.titulo": ("El castillo de forja", "The forge castle"),
+    "gui.forja.libros.ruinas.castillo": (
+        "Un castillo pequeño de ladrillo de pizarra en colinas, montañas y mesetas de sabana: muralla con almenas, cuatro "
+        "torres con farol y, en el centro, la sala de estampado del **Guardián de Cuño**. Mientras arda uno de los tres "
+        "faroles de pavesa de sus pilares, nada le hace daño. Guarda el mejor cofre de su tamaño.",
+        "A small deepslate-brick castle in hills, mountains and savanna plateaus: crenellated wall, four towers with "
+        "lanterns and, in the middle, the stamping hall of the **Die Guardian**. While one of the three ember lanterns on "
+        "its pillars burns, nothing hurts it. It keeps the best chest of its size."),
+    "gui.forja.libros.ruinas.nether.titulo": ("La fragua del Nether", "The Nether forge"),
+    "gui.forja.libros.ruinas.nether": (
+        "Una fortaleza de piedra negra con canales de lava, dos autómatas y, en el centro, una fragua apagada. Es de antes "
+        "del Bastión: un clic en su fragua la abre en un marco de portal como el de la Forja Profunda, que se enciende "
+        "igual, con cuatro perlas de oricalco.",
+        "A blackstone fortress with lava channels, two automatons and, in the middle, a dead forge. It is older than the "
+        "Bastion: a click on its forge opens it into a portal frame like the Deep Forge's, lit the same way, with four "
+        "orichalcum pearls."),
+    "gui.forja.libros.herrero_historia": (
+        "El gremio de herreros levantó el Bastión para guardar su oficio: once torres, una por taller, y bajo ellas la "
+        "cripta de los Nueve Maestros. El último maestro mayor quiso forjar con lo que cae del cielo y encendió en la Forja "
+        "Profunda un fuego que no era de este mundo.",
+        "The smiths' guild raised the Bastion to keep its craft: eleven towers, one for each workshop, and beneath them "
+        "the crypt of the Nine Masters. The last master smith wanted to forge with what falls from the sky, and lit in "
+        "the Deep Forge a fire that was not of this world."),
+    "gui.forja.libros.herrero_historia.dos": (
+        "El fuego se lo llevó. Su fragua quedó apagada, sus aprendices con él, y desde entonces trabaja en un cementerio de "
+        "armas entre las estrellas. Es el Herrero Caído. Su corazón de forja es el mejor material que existe.",
+        "The fire took him. His forge went dead, his apprentices with him, and since then he works in a graveyard of "
+        "weapons among the stars. He is the Fallen Smith. His forge heart is the finest material there is."),
+    "gui.forja.libros.bastion.donde": (
+        "Cada mundo tiene un Bastión del Gremio entre 1.500 y 4.500 bloques del origen, en terreno llano y seco y lejos de "
+        "las aldeas, y más repartidos por el mundo. El Forjador de nivel 5 vende su mapa, y /locate lo encuentra.",
+        "Every world has a Guild's Bastion between 1,500 and 4,500 blocks from the origin, on flat, dry ground away from "
+        "villages, and more scattered over the world. A level 5 Forger sells its map, and /locate finds it."),
+    "gui.forja.libros.bastion.dentro.titulo": ("Qué hay dentro", "What is inside"),
+    "gui.forja.libros.bastion.dentro": (
+        "Once torres con la sala de su taller en cada piso, patio, salones y casas de aprendices; bajo tierra, la cripta, el "
+        "osario, mazmorras, la bodega, la cámara acorazada y la Forja Profunda. Unos noventa monstruos lo guardan, y el "
+        "botín va por salas: la cámara y la cripta, lo mejor.",
+        "Eleven towers with their workshop's room on every floor, a courtyard, halls and apprentices' houses; underground, "
+        "the crypt, the ossuary, dungeons, the cellar, the vault and the Deep Forge. Some ninety monsters guard it, and "
+        "the loot goes by room: the vault and the crypt hold the best."),
+    "gui.forja.libros.bastion.forja.titulo": ("La Forja Profunda", "The Deep Forge"),
+    "gui.forja.libros.bastion.forja": (
+        "En el fondo del castillo, donde ardía la fragua del maestro, hay un marco de cinco por cinco con cuatro ménsulas "
+        "vacías. Es la puerta al mundo del Herrero.",
+        "At the bottom of the castle, where the master's forge burned, there is a five-by-five frame with four empty "
+        "brackets. It is the door to the Smith's world."),
+    "gui.forja.libros.bastion_siguiente": (
+        "Con el portal encendido aprendes la receta del último libro, y encuentras uno junto al marco.",
+        "With the portal lit you learn the last book's recipe, and find one beside the frame."),
+})

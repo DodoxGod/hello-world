@@ -66,8 +66,11 @@ public final class GuideBooks {
 		// Book V: the classes, which open the first time this book is opened (Andy's answer 3).
 		CLASES("libro_clases", 0x3C7A4A, "parada", () -> Items.EMERALD, true, true,
 			List.of(new Section("clases_elegir", 2, List.of("clases_sabes", "clases", "clases_siguiente")))),
-		BASTION("libro_bastion", 0x28827F, "ruina", () -> Items.MAP, false, true,
-			List.of(new Section("mundo", 3, List.of("mundo", "encargos")))),
+		// Book VI: going out into the world, the Smith's story and his castle. The Forjador sells it at level 3.
+		BASTION("libro_bastion", 0x28827F, "ruina", () -> Items.MAP, true, true,
+			List.of(new Section("bastion_mundo", 3, List.of("bastion_sabes", "mundo", "encargos")),
+				new Section("bastion_ruinas", 4, List.of("ruinas", "herrero_historia")),
+				new Section("bastion_castillo", 2, List.of("bastion", "portal_estelar", "bastion_siguiente")))),
 		CEMENTERIO("libro_cementerio", 0x342658, "portal", () -> ModItems.HIERRO_ESTELAR, false, true,
 			List.of(new Section("mundo", 3, List.of("cementerio")))),
 		/** What G opens when the notebook is carried: the shelf, the path and the reference tables (the catalogue). */
@@ -174,6 +177,7 @@ public final class GuideBooks {
 				case FUNDICION -> ModItems.LIBRO_FUNDICION;
 				case MESA_MAYOR -> ModItems.LIBRO_MESA_MAYOR;
 				case CLASES -> ModItems.LIBRO_CLASES;
+				case BASTION -> ModItems.LIBRO_BASTION;
 				case TOMO -> ModItems.TOMO_DE_FORJA;
 				default -> null;
 			};

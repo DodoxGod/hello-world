@@ -214,6 +214,21 @@ public class LibrosGameTests {
 		helper.succeed();
 	}
 
+	/** The Forjador sells book VI at level 3, always: it is not one of the random draws of the level. */
+	@GameTest
+	public void theForjadorSellsBookSixAtLevelThree(GameTestHelper helper) {
+		for (int attempt = 0; attempt < 5; attempt++) {
+			net.minecraft.world.entity.npc.villager.Villager villager = helper.spawn(net.minecraft.world.entity.EntityTypes.VILLAGER, new BlockPos(1, 1, 1));
+			var forjador = helper.getLevel().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.VILLAGER_PROFESSION)
+				.getOrThrow(dev.forja.registry.ModVillagers.FORJADOR);
+			villager.setVillagerData(villager.getVillagerData().withProfession(forjador).withLevel(3));
+			boolean sells = villager.getOffers().stream().anyMatch(offer -> offer.getResult().is(ModItems.LIBRO_BASTION));
+			helper.assertTrue(sells, "un Forjador de nivel 3 debería vender El Bastión y el Herrero (intento " + attempt + ")");
+			villager.discard();
+		}
+		helper.succeed();
+	}
+
 	/** Every step of the path is explained in a chapter some book has, and the books cover the whole path between them. */
 	@GameTest
 	public void everyStepHasItsBook(GameTestHelper helper) {

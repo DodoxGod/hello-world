@@ -819,6 +819,13 @@ public class GuideBookScreen extends Screen {
 			// Book V.
 			case "clases_sabes" -> this.classesRecapChapter();
 			case "clases_siguiente" -> this.classesNextChapter();
+			// Book VI.
+			case "bastion_sabes" -> this.bastionRecapChapter();
+			case "ruinas" -> this.ruinsChapter();
+			case "herrero_historia" -> this.smithStoryChapter();
+			case "bastion" -> this.bastionChapter();
+			case "portal_estelar" -> this.starPortalChapter();
+			case "bastion_siguiente" -> this.bastionNextChapter();
 			default -> throw new IllegalArgumentException("no chapter " + key);
 		};
 	}
@@ -930,6 +937,12 @@ public class GuideBookScreen extends Screen {
 			case "mayor_siguiente" -> new ItemStack(Items.COMPASS);
 			case "clases_sabes" -> new ItemStack(Items.WRITABLE_BOOK);
 			case "clases_siguiente" -> new ItemStack(Items.COMPASS);
+			case "bastion_sabes" -> new ItemStack(Items.FILLED_MAP);
+			case "ruinas" -> new ItemStack(Items.CRACKED_STONE_BRICKS);
+			case "herrero_historia" -> new ItemStack(ModItems.FRAGUA_APAGADA);
+			case "bastion" -> new ItemStack(Items.DEEPSLATE_BRICKS);
+			case "portal_estelar" -> new ItemStack(ModItems.PERLA_DE_ORICALCO);
+			case "bastion_siguiente" -> new ItemStack(Items.COMPASS);
 			default -> ItemStack.EMPTY;
 		};
 	}
@@ -990,6 +1003,7 @@ public class GuideBookScreen extends Screen {
 			case FUNDICION -> new ItemStack(ModItems.CRISOL_DE_HIERRO);
 			case MESA_MAYOR -> new ItemStack(ModItems.MESA_DE_FORJA_MAYOR);
 			case CLASES -> dev.forja.forge.Relic.MEDALLON_DEL_OLVIDO.create(dev.forja.forge.Relic.MEDALLON_DEL_OLVIDO.defaultMaterials());
+			case BASTION -> new ItemStack(ModItems.FRAGUA_APAGADA);
 			case BIBLIOTECA -> new ItemStack(Items.BOOKSHELF);
 			default -> new ItemStack(Items.BOOK);
 		};
@@ -1003,6 +1017,7 @@ public class GuideBookScreen extends Screen {
 			case FUNDICION -> new ItemStack(ModItems.alloy("bronce"));
 			case MESA_MAYOR -> new ItemStack(ModItems.FUNDENTE_MAESTRO);
 			case CLASES -> Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.ESMERALDA, ForgeMaterial.ORO, ForgeMaterial.MADERA));
+			case BASTION -> new ItemStack(Items.FILLED_MAP);
 			case BIBLIOTECA -> new ItemStack(ModItems.GUIA_DE_FORJA);
 			default -> new ItemStack(ModItems.GUIA_DE_FORJA);
 		};
@@ -1836,6 +1851,90 @@ public class GuideBookScreen extends Screen {
 		List<Element> body = new ArrayList<>();
 		body.add(new Text(Component.translatable("gui.forja.libros.clases_siguiente"), INK));
 		body.add(new BookCard(GuideBooks.Book.BASTION));
+		body.add(new ChapterLink("siguiente_paso"));
+		return body;
+	}
+
+	// ------------------------------------------------------------------ book VI, El Bastión y el Herrero
+
+	/** Book VI opens on the world outside the workshop: what there is to find, and why go. */
+	private List<Element> bastionRecapChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.bastion_sabes"), INK));
+		body.add(new IconRow(List.of(new ItemStack(Items.FILLED_MAP), new ItemStack(Items.EMERALD), new ItemStack(ModItems.PLANTILLA),
+			dev.forja.item.UpgradeOrbItem.create(Upgrade.FILO, 50))));
+		return body;
+	}
+
+	/** The ruins: the abandoned forge, the barrow, the raiders' camp, the forge castle and its guardian, and the Nether's. */
+	private List<Element> ruinsChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.ruinas.forja.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.MESA_DE_PIEZAS), new ItemStack(ModItems.MESA_DE_FORJA), new ItemStack(Items.CHEST))));
+		body.add(new Text(Component.translatable("gui.forja.libros.ruinas.forja"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.tumulo")));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.YUNQUE_DEL_HERRERO), new ItemStack(Items.SOUL_LANTERN), new ItemStack(ModItems.SELLO))));
+		body.add(new Text(Component.translatable("gui.forja.libro.tumulo_desc"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.campamento")));
+		body.add(new IconRow(List.of(new ItemStack(Items.SPRUCE_LOG), new ItemStack(Items.CAMPFIRE), new ItemStack(Items.BELL), new ItemStack(Items.FILLED_MAP))));
+		body.add(new Text(Component.translatable("gui.forja.libro.campamento_desc"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.ruinas.castillo.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(Items.DEEPSLATE_BRICKS), new ItemStack(ModItems.FAROL_DE_PAVESA), new ItemStack(Items.IRON_BARS))));
+		body.add(new Text(Component.translatable("gui.forja.libros.ruinas.castillo"), INK));
+		// His page writes itself when he is met, as in book II's bestiary.
+		this.creature(body, true, "guardian_de_cuno", level -> new dev.forja.entity.CuneGuardian(dev.forja.registry.ModEntities.GUARDIAN_DE_CUNO, level),
+			new Text(Component.translatable("gui.forja.libro.bestiario.guardian_de_cuno", Math.round(dev.forja.entity.CuneGuardian.HEALTH)), INK));
+		body.add(new Divider());
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.ruinas.nether.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(Items.POLISHED_BLACKSTONE_BRICKS), new ItemStack(ModItems.FRAGUA_APAGADA),
+			new ItemStack(ModItems.MENSULA_ESTELAR))));
+		body.add(new Text(Component.translatable("gui.forja.libros.ruinas.nether"), INK));
+		return body;
+	}
+
+	/** Who the Fallen Smith was: the story, with no mechanics in it. */
+	private List<Element> smithStoryChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.herrero_historia"), INK));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.FRAGUA_APAGADA), new ItemStack(ModItems.CORAZON_DE_FORJA))));
+		body.add(new Text(Component.translatable("gui.forja.libros.herrero_historia.dos"), INK));
+		return body;
+	}
+
+	/** The Guild's Bastion: where it stands, how to find it, what is inside and what it is for. */
+	private List<Element> bastionChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.bastion.donde"), INK));
+		body.add(new IconRow(List.of(new ItemStack(Items.FILLED_MAP), new ItemStack(Items.EMERALD, 24))));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.bastion.dentro.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.bastion.dentro"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.bastion.forja.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.MENSULA_ESTELAR), new ItemStack(ModItems.PERLA_DE_ORICALCO))));
+		body.add(new Text(Component.translatable("gui.forja.libros.bastion.forja"), INK));
+		return body;
+	}
+
+	/** The way to the Smith's world: orichalcum, the pearl and the frame. */
+	private List<Element> starPortalChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.cementerio.oricalco.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.HIERRO_ESTELAR), new ItemStack(ModItems.PLACA_HUECA), new ItemStack(ModItems.ESCORIA),
+			new ItemStack(ModItems.alloy("acero_estelar")), new ItemStack(ModItems.alloy("almacero")), new ItemStack(ModItems.ORICALCO))));
+		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.oricalco"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.cementerio.perla.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(Items.ENDER_PEARL), new ItemStack(ModItems.MESA_DE_LOSA), new ItemStack(ModItems.PERLA_DE_ORICALCO))));
+		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.perla", dev.forja.block.entity.CastingTableBlockEntity.PEARL_COST), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.cementerio.portal.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.MENSULA_ESTELAR), new ItemStack(ModItems.PERLA_DE_ORICALCO))));
+		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.portal"), INK_SOFT));
+		return body;
+	}
+
+	/** The last page of book VI: the last book. */
+	private List<Element> bastionNextChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.bastion_siguiente"), INK));
+		body.add(new BookCard(GuideBooks.Book.CEMENTERIO));
 		body.add(new ChapterLink("siguiente_paso"));
 		return body;
 	}

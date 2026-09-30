@@ -3,6 +3,7 @@
 	"package": "dev.forja.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
+		"AbstractVillagerAccess",
 		"EnchantmentHelperMixin",
 		"FishingHookMixin",
 		"GrindstoneMenuMixin",
@@ -26,6 +27,7 @@
 		"ProjectileUtilMixin",
 		"AbstractArrowAccess",
 		"SwellGoalMixin",
+		"VillagerMixin",
 		"WindChargeMixin",
 		"ServerLevelGameEventMixin",
 		"TargetGoalMixin",
