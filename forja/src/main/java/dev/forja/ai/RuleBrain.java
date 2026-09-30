@@ -148,7 +148,8 @@ public final class RuleBrain {
 			return Decision.tactic(Tactic.RETIRARSE);
 		}
 		// An archer given a post by its captain goes to it before it shoots from there (the bow goal does the rest).
-		if (family == MobFamily.ARQUERO && Captain.commandFor(mind) != null && mind.postPoint != null
+		Captain.Command command = Captain.commandFor(mind);
+		if (family == MobFamily.ARQUERO && command != null && !command.free() && mind.postPoint != null
 			&& mob.distanceToSqr(mind.postPoint.x, mob.getY(), mind.postPoint.z) > 3.0 * 3.0) {
 			return Decision.tactic(Tactic.FORMACION);
 		}

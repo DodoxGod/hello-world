@@ -415,6 +415,10 @@ Es la imitación de la que aprende la red del capitán, y el cerebro cuando no h
 Es un punto de partida, no el objetivo. Andy quiere que la red decida, y el premio de equipo la dejará apartarse de estas
 reglas.
 
+**Sustituidas el 30-09:** estas reglas mandaban CERCAR casi siempre y hacían a los grupos peores que sin capitán (en el
+simulador y en el mod). Las nuevas, que solo dan una orden cuando ayuda (carga con el jugador expuesto, pinza si se
+aleja, retirada, asedio, emboscada), están en `red_mob_v4_mod_estado.md`, "Capitán de reglas nuevo".
+
 ---
 
 ## 4. Los 11 puntos

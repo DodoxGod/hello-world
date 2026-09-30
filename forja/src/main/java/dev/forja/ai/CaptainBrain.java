@@ -50,6 +50,42 @@ public final class CaptainBrain {
 		return CombatConfig.get().enabled && CombatConfig.get().iaCapitan;
 	}
 
+	/**
+	 * How a group without a captain network is led: no captain at all (SIN_CAPITAN), a captain that gives no orders and
+	 * leaves its members free (LIBRE: the ring and the turns as without one; its banner, its morale and its fall still
+	 * count), or the rules captain (REGLAS, Captain.rules). A loaded captain network gives the orders whatever this says.
+	 */
+	public enum Mode { SIN_CAPITAN, LIBRE, REGLAS }
+
+	/** Per player overrides of the mode (the measurement tests pit the modes against each other at once). */
+	private static final java.util.Map<Player, Mode> OVERRIDES = new java.util.WeakHashMap<>();
+
+	/** Sets (or with null clears) the mode for the group fighting this player, over the config. For tests. */
+	public static void override(Player player, Mode mode) {
+		if (mode == null) {
+			OVERRIDES.remove(player);
+		} else {
+			OVERRIDES.put(player, mode);
+		}
+	}
+
+	/** The mode for the group fighting this player: its override, else the config (iaCapitan, iaCapitanReglas). */
+	public static Mode mode(Player player) {
+		Mode forced = player == null ? null : OVERRIDES.get(player);
+		if (forced != null) {
+			return forced;
+		}
+		if (!enabled()) {
+			return Mode.SIN_CAPITAN;
+		}
+		return CombatConfig.get().iaCapitanReglas ? Mode.REGLAS : Mode.LIBRE;
+	}
+
+	/** Whether the group fighting this player gets a captain. */
+	static boolean enabled(Player player) {
+		return CombatConfig.get().enabled && mode(player) != Mode.SIN_CAPITAN;
+	}
+
 	/** The 213 names, in order (docs/red_capitan_v4_contrato.json). */
 	public static synchronized List<String> names() {
 		if (names != null) {
@@ -139,7 +175,9 @@ public final class CaptainBrain {
 	static Captain.Command decide(Captain.Group g, Player player, long now) {
 		NetBrain net = MobAi.captainNet();
 		if (net == null) {
-			Captain.Command c = Captain.rules(g, player, now);
+			// No network: the rules captain when it is switched on (iaCapitanReglas); otherwise no orders, and the members
+			// fight free, as without a captain.
+			Captain.Command c = mode(player) == Mode.REGLAS ? Captain.rules(g, player, now) : new Captain.Command();
 			c.posts = Captain.rulesPosts(g);
 			return c;
 		}

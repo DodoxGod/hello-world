@@ -18,8 +18,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.BowItem;
-import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -85,6 +83,11 @@ public final class Captain {
 		boolean shoutedHalf;
 		boolean shoutedGo;
 
+		/** No order and no formation: the members fight free, as without a captain (the ring and the turns). */
+		public boolean free() {
+			return this.order == Order.NINGUNA && this.formation == Formation.LIBRE;
+		}
+
 		Command copyOrder() {
 			Command c = new Command();
 			c.order = this.order;
@@ -109,6 +112,8 @@ public final class Captain {
 		public long startedAt;
 		public long seenAt = Long.MIN_VALUE / 2;
 		public List<MobMind> members = List.of();
+		/** When its last charge was ordered (the rules rest between charges, CHARGE_REST). */
+		public long lastChargeAt = Long.MIN_VALUE / 2;
 		/** The captain network's memory (GRU), from nothing when a captain takes over. */
 		public float[] memory;
 		/** For the world's memory (M6): whether the player went up, or ran or shut themselves in, in this fight. */
@@ -211,7 +216,7 @@ public final class Captain {
 			g.captain = null;
 			g.memory = null;
 		}
-		if (g.captain == null && now - g.captainDiedAt >= LEADERLESS && CaptainBrain.enabled()) {
+		if (g.captain == null && now - g.captainDiedAt >= LEADERLESS && CaptainBrain.enabled(player)) {
 			g.captain = strongest(sorted);
 			g.memory = null;
 		}
@@ -236,6 +241,9 @@ public final class Captain {
 		} else {
 			next.givenAt = now;
 			next.chargeAt = next.order == Order.CARGA ? now + COUNTS[Math.max(0, Math.min(3, next.count))] : Long.MIN_VALUE / 2;
+			if (next.order == Order.CARGA) {
+				g.lastChargeAt = now;
+			}
 		}
 		g.command = next;
 		place(g, player, now);
@@ -302,66 +310,78 @@ public final class Captain {
 		return RESERVA;
 	}
 
+	/** After a charge's extra turn, this long before the rules call another (a charge is a moment, not a way of life). */
+	public static final int CHARGE_REST = 100;
+	/** The player backing away from the group faster than this (blocks a tick) is worth a pincer. */
+	static final double BACKING = 0.08;
+
 	/**
-	 * The rules captain, in this order: the player up a pillar or in a tower → ASEDIO; the group's morale under 0.3 →
-	 * RETIRADA; the player with a shield and a bow beyond 10 → HOSTIGAR; 60 % or more in their posts and the player busy
-	 * (using an item, charging a blow, or someone holds a turn on them) or with one of them behind (within 8, more than 120
-	 * degrees off their look) → CARGA (countdown 10); at night, the player in a light under 7 and nobody seeing
-	 * them → EMBOSCADA; otherwise CERCAR, in a wall (MURO) with at least one shield and one archer, else a pincer.
+	 * The rules captain (2026-09-30). The first one ordered CERCAR nearly all the time: its members held their posts at 6 or
+	 * more and nobody went in, and a charge needed 60 % of them in their posts and the player "busy" (someone holding a
+	 * turn on a player nobody attacked) or a member behind them (never, with everyone at their posts), so a group with a
+	 * captain did less damage than one without (the simulator: 111 against 121 a minute; the mod: CapitanMedidaGameTests).
+	 * Now it gives an order only when it helps, and otherwise none: its members fight free, with the ring and the turns,
+	 * as without a captain. In this order:
+	 * <ul>
+	 *   <li>the player up a pillar or in a tower → ASEDIO;</li>
+	 *   <li>the group's morale under 0.3 → RETIRADA;</li>
+	 *   <li>the player exposed (using an item, charging a blow, staggered, under 30 % health, or with one of them behind,
+	 *   within 6 and more than 120 degrees off their look) with at least two that fight up close within 10, and no charge
+	 *   in the last {@link #CHARGE_REST} ticks after the last one's extra turn → CARGA at once (countdown 0): all in, with
+	 *   one more turn for 2 s;</li>
+	 *   <li>at night, the player in a light under 7 and nobody seeing them → EMBOSCADA;</li>
+	 *   <li>the player backing away from the group → no order, in a pincer (PINZA): those without a turn go round both
+	 *   sides, those with one strike as ever;</li>
+	 *   <li>otherwise no order and no formation (free).</li>
+	 * </ul>
+	 * CERCAR and HOSTIGAR are left to a captain network (they mean the same to the members), never given by the rules.
 	 */
 	public static Command rules(Group g, Player player, long now) {
 		Command c = new Command();
-		int shields = 0;
-		int archers = 0;
-		int inPost = 0;
-		int withPost = 0;
 		boolean seen = false;
+		int close = 0;
 		double cx = 0.0;
 		double cz = 0.0;
+		double look = Squad.facing(player);
+		boolean backTurned = false;
 		for (MobMind mind : g.members) {
 			Mob mob = mind.mob;
-			shields += MobDefense.hasShield(mob) ? 1 : 0;
-			archers += MobFamily.of(mob) == MobFamily.ARQUERO ? 1 : 0;
-			if (mind.postPoint != null) {
-				withPost++;
-				inPost += mob.distanceToSqr(mind.postPoint.x, mob.getY(), mind.postPoint.z) < IN_POST * IN_POST ? 1 : 0;
-			}
 			seen |= Perception.perceived(mind, now) || now - mind.perceivedAt < 20;
+			double d = mob.distanceTo(player);
+			MobFamily family = MobFamily.of(mob);
+			close += d < 10.0 && family != MobFamily.ARQUERO && !RuleBrain.shootsOrCasts(mob, family) ? 1 : 0;
+			// its back to the group: one of them within 6 behind the player (more than 120 degrees off their look)
+			backTurned |= d < 6.0 && Math.abs(Squad.wrap(look - Squad.angle(mob, player))) > Math.toRadians(120.0);
 			cx += mob.getX();
 			cz += mob.getZ();
 		}
 		int n = Math.max(1, g.members.size());
 		cx /= n;
 		cz /= n;
-		double spread = Math.hypot(player.getX() - cx, player.getZ() - cz);
 		MobMind captainMind = MobAi.mind(g.captain);
 		double morale = captainMind == null ? 1.0 : groupMorale(captainMind, player, now);
-		boolean shieldAndBow = player.getOffhandItem().has(net.minecraft.core.component.DataComponents.BLOCKS_ATTACKS)
-			&& (player.getMainHandItem().getItem() instanceof BowItem || player.getMainHandItem().getItem() instanceof CrossbowItem);
-		boolean busy = player.isUsingItem() || dev.forja.combat.ChargedStrike.isCharging(player) || AttackTokens.held(player) > 0;
-		// Its back to the group: some member within 8 behind the player (more than 120 degrees off their look).
-		double look = Squad.facing(player);
-		boolean backTurned = false;
-		for (MobMind mind : g.members) {
-			backTurned |= mind.mob.distanceTo(player) < 8.0 && Math.abs(Squad.wrap(look - Squad.angle(mind.mob, player))) > Math.toRadians(120.0);
-		}
+		Player real = Perception.real(player);
+		boolean exposed = player.isUsingItem() || dev.forja.combat.ChargedStrike.isCharging(player)
+			|| dev.forja.combat.Posture.isStaggered(player, now) || real.getHealth() < real.getMaxHealth() * 0.3F || backTurned;
+		boolean rested = now >= g.lastChargeAt + CHARGE_TURN_TICKS + CHARGE_REST;
+		// the player backing away from the group's middle
+		Vec3 moving = MobSprint.motion(player);
+		double ax = player.getX() - cx;
+		double az = player.getZ() - cz;
+		double ad = Math.max(1.0E-6, Math.hypot(ax, az));
+		boolean backing = (moving.x * ax + moving.z * az) / ad > BACKING && ad < 16.0;
 		boolean night = player.level().isDarkOutside();
 		if (Heights.besieged(player)) {
 			c.order = Order.ASEDIO;
 		} else if (morale < 0.3) {
 			c.order = Order.RETIRADA;
-		} else if (shieldAndBow && spread > 10.0) {
-			c.order = Order.HOSTIGAR;
-			c.formation = shields > 0 ? Formation.MURO : Formation.PINZA;
-		} else if (withPost > 0 && inPost >= 0.6 * withPost && (busy || backTurned)) {
+		} else if (exposed && close >= 2 && rested) {
 			c.order = Order.CARGA;
-			c.count = 1;
-			c.formation = g.command.formation == Formation.LIBRE ? Formation.PINZA : g.command.formation;
+			c.count = 0;
 		} else if (night && Lights.playerLight(player) < 7 && !seen) {
 			c.order = Order.EMBOSCADA;
-		} else {
-			c.order = Order.CERCAR;
-			c.formation = shields >= 1 && archers >= 1 ? Formation.MURO : Formation.PINZA;
+		} else if (backing) {
+			c.formation = Formation.PINZA;
 		}
 		// A charge under way goes through: the rules do not call it off before its extra turn is over.
 		if (g.command.order == Order.CARGA && now < g.command.chargeAt + CHARGE_TURN_TICKS && c.order != Order.ASEDIO && c.order != Order.RETIRADA) {

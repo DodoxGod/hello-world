@@ -425,9 +425,21 @@ public final class CombatConfig {
 	public boolean iaPercepcionHonesta = true;
 	/**
 	 * Captains (docs/red_mob_v4_diseno.md §4.2, Andy 2026-09-29): a group with an elite or a champion is led by it
-	 * (orders, formations, the synchronized charge), by its network (redes_v4/red_capitan.json) or by the rules.
+	 * (orders, formations, the synchronized charge), by its network (redes_v4/red_capitan.json) or by the rules
+	 * (iaCapitanReglas). Off, no group has a captain.
 	 */
 	public boolean iaCapitan = true;
+	/**
+	 * The rules captain's orders (Captain.rules), when there is no captain network (2026-09-30). The first rules captain
+	 * ordered CERCAR nearly all the time and made groups worse than no captain at all (the simulator: 111 against 121
+	 * damage a minute; the mod: 0.6 against 37.5). The new one only orders when it helps (a charge when the player is
+	 * exposed, a pincer when they back away, retreat on low morale, the siege) and leaves its members free otherwise;
+	 * measured in the mod (CapitanMedidaGameTests, docs/red_mob_v4_mod_estado.md, M5) it roughly doubles the damage of a
+	 * group without a captain, so it is on. Off, a group still has its captain (banner, morale, the blow of losing it, no
+	 * duel) but no orders: its members take the ring and the turns as if it had none. A loaded red_capitan.json gives
+	 * the orders whatever this says.
+	 */
+	public boolean iaCapitanReglas = true;
 
 	public double postureFactor(DamageKind kind) {
 		return switch (kind) {

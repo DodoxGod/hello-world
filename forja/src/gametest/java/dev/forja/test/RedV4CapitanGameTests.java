@@ -130,61 +130,212 @@ public class RedV4CapitanGameTests {
 	}
 
 	/**
-	 * The elite leads (never a veteran): with a shield and an archer in the group, the rules captain orders CERCAR in a
-	 * wall (MURO), the shield in front and the archer behind. Block M says so: tengo_capitan, soy_capitan for the elite,
-	 * orden_cercar, formacion_muro, their posts and the point of each. The rules members go to their posts.
+	 * The elite leads (never a veteran), and by default gives no order while nothing calls for one (2026-09-30: the rules
+	 * captain that ordered CERCAR all the time made groups worse): orden_ninguna and formacion_libre, the posts by kind
+	 * (the shield in front, the archer behind) only for block M, and the archer shoots from where it is instead of
+	 * walking to a post. Block M says so: tengo_capitan, soy_capitan for the elite, capitan_vida_frac.
 	 */
-	@GameTest(padding = 24, maxTicks = 260)
-	public void eliteLeadsAWall(GameTestHelper helper) {
+	@GameTest(padding = 24, maxTicks = 120)
+	public void eliteLeadsFreeUntilItHelps(GameTestHelper helper) {
 		floor(helper, 32);
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(16, 1, 16));
+		CaptainBrain.override(player, CaptainBrain.Mode.REGLAS);
 		List<Mob> mobs = group(helper, player, 8);
 		hold(helper, player, mobs);
-		int[] most = {0};
-		StringBuilder[] where = {new StringBuilder()};
-		helper.onEachTick(() -> {
-			int inPost = 0;
-			StringBuilder line = new StringBuilder();
-			for (Mob mob : mobs) {
-				MobMind mind = MobAi.mind(mob);
-				if (mind != null && mind.postPoint != null) {
-					double d = Math.sqrt(mob.distanceToSqr(mind.postPoint.x, mob.getY(), mind.postPoint.z));
-					inPost += d < 2.5 ? 1 : 0;
-					line.append(String.format(java.util.Locale.ROOT, " [%.1f %s p%d en %.1f,%.1f,%.1f a %.1f,%.1f,%.1f v %.2f camino %s metas %s]", d, mind.decision.tactic(), mind.post,
-						mob.getX() - player.getX(), mob.getY() - player.getY(), mob.getZ() - player.getZ(),
-						mind.postPoint.x - player.getX(), mind.postPoint.y - player.getY(), mind.postPoint.z - player.getZ(),
-						mob.getDeltaMovement().horizontalDistance(), mob.getNavigation().getPath() == null ? "no" : mob.getNavigation().getPath().getNodeCount() + "/" + mob.getNavigation().getPath().getTarget(),
-						((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals().getAvailableGoals().stream().filter(w -> w.isRunning()).map(w -> w.getGoal().getClass().getSimpleName()).toList()));
-				}
-			}
-			if (inPost > most[0]) {
-				most[0] = inPost;
-			}
-			where[0] = line;
-		});
 		Mob elite = mobs.get(0);
 		Mob shield = mobs.get(1);
 		Mob skeleton = mobs.get(4);
-		helper.runAfterDelay(25, () -> {
+		boolean[] walked = {false};
+		boolean[] free = {false};
+		String[] wrong = {null};
+		helper.onEachTick(() -> {
+			Captain.Group g = Captain.group(player);
+			if (g == null || g.captain == null) {
+				return;
+			}
+			// the rules never hold the group back: no CERCAR, no wall; only a charge (someone behind the player) or nothing
+			if (g.command.order != Captain.Order.NINGUNA && g.command.order != Captain.Order.CARGA
+				|| g.command.formation != Captain.Formation.LIBRE && g.command.formation != Captain.Formation.PINZA) {
+				wrong[0] = g.command.order + " " + g.command.formation;
+			}
+			free[0] |= g.command.free();
+			MobMind mind = MobAi.mind(skeleton);
+			walked[0] |= g.command.free() && mind != null && mind.decision.tactic() == Tactic.FORMACION;
+		});
+		helper.runAfterDelay(13, () -> {
 			Captain.Group g = Captain.group(player);
 			helper.assertTrue(g != null && g.captain == elite, "el élite es el capitán: " + (g == null ? null : g.captain));
-			helper.assertTrue(g.command.order == Captain.Order.CERCAR && g.command.formation == Captain.Formation.MURO,
-				"con escudo y arquero: CERCAR en MURO, da " + g.command.order + " " + g.command.formation);
-			helper.assertTrue(MobAi.mind(shield).post == Captain.FRENTE, "el del escudo va delante: " + MobAi.mind(shield).post);
+			helper.assertTrue(free[0], "sin nada que lo pida, sin orden y libre: da " + g.command.order + " " + g.command.formation);
+			helper.assertTrue(MobAi.mind(shield).post == Captain.FRENTE, "el del escudo, de puesto frente: " + MobAi.mind(shield).post);
 			helper.assertTrue(MobAi.mind(skeleton).post == Captain.SEGUNDA, "el arquero, en segunda línea: " + MobAi.mind(skeleton).post);
 			float[] obs = ObsV4.build(elite, player, MobAi.mind(elite));
 			int m = ObsV4.M_AT;
 			helper.assertTrue(obs[m] == 1.0F && obs[m + 1] == 1.0F, "tengo_capitan y soy_capitan para el élite");
-			helper.assertTrue(obs[m + 3 + Captain.Order.CERCAR.ordinal()] == 1.0F && obs[m + 16 + Captain.Formation.MURO.ordinal()] == 1.0F,
-				"orden_cercar y formacion_muro");
+			helper.assertTrue(obs[m + 3 + g.command.order.ordinal()] == 1.0F && obs[m + 16 + g.command.formation.ordinal()] == 1.0F,
+				"la orden y la formación, en el bloque M");
 			float[] other = ObsV4.build(shield, player, MobAi.mind(shield));
 			helper.assertTrue(other[m] == 1.0F && other[m + 1] == 0.0F && other[m + 20 + Captain.FRENTE] == 1.0F, "el del escudo: tengo capitán, puesto frente");
 			helper.assertTrue(other[m + 29] > 0.9F, "capitan_vida_frac: " + other[m + 29]);
 		});
-		helper.runAfterDelay(240, () -> {
-			helper.assertTrue(most[0] >= 3, "la mayoría llega a su puesto: como mucho " + most[0] + " a la vez (ahora" + where[0] + ") orden "
-				+ Captain.group(player).command.order);
+		helper.runAfterDelay(100, () -> {
+			helper.assertTrue(wrong[0] == null, "las reglas nunca frenan al grupo: dieron " + wrong[0]);
+			helper.assertFalse(walked[0], "sin orden, el arquero no va a ningún puesto (tira desde donde está)");
+			CaptainBrain.override(player, null);
 			clear(helper, 32);
+			helper.succeed();
+		});
+	}
+
+	/**
+	 * The rules captain's charge: a zombie behind the player (within 6, their back to it) and another up close make the
+	 * player exposed, and the captain orders CARGA at once (countdown 0): one more turn for 2 s, and every member goes in.
+	 * Then it rests: no second charge until CHARGE_REST ticks after the first one's extra turn, though the back is still
+	 * turned.
+	 */
+	@GameTest(padding = 16, maxTicks = 200)
+	public void theRulesChargeWhenTheBackIsTurned(GameTestHelper helper) {
+		floor(helper, 16);
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(8, 1, 8));
+		CaptainBrain.override(player, CaptainBrain.Mode.REGLAS);
+		List<Mob> mobs = new ArrayList<>();
+		Zombie elite = zombie(helper, new BlockPos(12, 1, 8));
+		Threat.ELITE.mark(elite);
+		mobs.add(elite);
+		// the player looks along +x: this one is right behind them
+		mobs.add(zombie(helper, new BlockPos(4, 1, 8)));
+		mobs.add(zombie(helper, new BlockPos(11, 1, 11)));
+		// four: a captain leading more than three never offers a duel (its watchers would stand back)
+		mobs.add(zombie(helper, new BlockPos(11, 1, 5)));
+		for (Mob mob : mobs) {
+			mob.setTarget(player);
+		}
+		hold(helper, player, mobs);
+		long start = helper.getLevel().getGameTime();
+		long[] first = {-1};
+		int[] charges = {0};
+		boolean[] extraTurn = {false};
+		boolean[] allIn = {false};
+		long[] last = {Long.MIN_VALUE};
+		helper.onEachTick(() -> {
+			Captain.Group g = Captain.group(player);
+			long now = helper.getLevel().getGameTime();
+			if (g == null || g.captain == null) {
+				return;
+			}
+			if (g.command.order == Captain.Order.CARGA && g.lastChargeAt != last[0]) {
+				last[0] = g.lastChargeAt;
+				charges[0]++;
+				if (first[0] < 0) {
+					first[0] = now;
+				}
+			}
+			if (first[0] >= 0 && now - first[0] <= Captain.CHARGE_TURN_TICKS) {
+				extraTurn[0] |= Captain.chargeTurn(player, now);
+				int in = 0;
+				for (Mob mob : mobs) {
+					MobMind mind = MobAi.mind(mob);
+					in += mind != null && (mind.decision == dev.forja.ai.Decision.APPROACH || mind.decision.tactic() == Tactic.ACERCARSE) ? 1 : 0;
+				}
+				// all in (one may be busy with something of its own: a blow on its way, a step back from a charged one)
+				allIn[0] |= in >= mobs.size() - 1;
+			}
+		});
+		helper.runAfterDelay(25, () -> {
+			helper.assertTrue(first[0] >= 0 && first[0] - start <= 22, "con uno a su espalda, CARGA en la primera o segunda pasada: " + first[0]);
+		});
+		// the first charge came by tick 22; the next may not before 40 + CHARGE_REST ticks after it (140)
+		helper.runAfterDelay(120, () -> {
+			helper.assertTrue(extraTurn[0], "la carga da un turno más");
+			helper.assertTrue(allIn[0], "en la carga todos van al ataque");
+			helper.assertTrue(charges[0] == 1, "entre carga y carga, descanso: " + charges[0] + " cargas");
+			CaptainBrain.override(player, null);
+			clear(helper, 16);
+			helper.succeed();
+		});
+	}
+
+	/** The player backing away from the group (facing it): no order, in a pincer (PINZA). */
+	@GameTest(padding = 24, maxTicks = 120)
+	public void theRulesPincerAPlayerBackingAway(GameTestHelper helper) {
+		floor(helper, 32);
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(10, 1, 16));
+		CaptainBrain.override(player, CaptainBrain.Mode.REGLAS);
+		// facing the group, on the -x side
+		player.setYRot(90.0F);
+		player.setYHeadRot(90.0F);
+		List<Mob> mobs = new ArrayList<>();
+		Zombie elite = zombie(helper, new BlockPos(2, 1, 16));
+		Threat.ELITE.mark(elite);
+		mobs.add(elite);
+		mobs.add(zombie(helper, new BlockPos(2, 1, 13)));
+		mobs.add(zombie(helper, new BlockPos(2, 1, 19)));
+		for (Mob mob : mobs) {
+			mob.setTarget(player);
+		}
+		Vec3[] at = {player.position()};
+		boolean[] pincer = {false};
+		helper.onEachTick(() -> {
+			at[0] = at[0].add(0.15, 0.0, 0.0);
+			player.setPos(at[0].x, at[0].y, at[0].z);
+			player.setYRot(90.0F);
+			player.setYHeadRot(90.0F);
+			player.setHealth(player.getMaxHealth());
+			for (Mob mob : mobs) {
+				mob.setTarget(player);
+				mob.setHealth(mob.getMaxHealth());
+			}
+			Captain.Group g = Captain.group(player);
+			pincer[0] |= g != null && g.command.order == Captain.Order.NINGUNA && g.command.formation == Captain.Formation.PINZA;
+		});
+		helper.runAfterDelay(80, () -> {
+			helper.assertTrue(pincer[0], "echándose atrás, una pinza: " + (Captain.group(player) == null ? null : Captain.group(player).command.formation));
+			CaptainBrain.override(player, null);
+			clear(helper, 32);
+			helper.succeed();
+		});
+	}
+
+	/**
+	 * With the rules captain off (iaCapitanReglas, or the mode LIBRE) a group keeps its captain but never gets an order,
+	 * even with the player's back turned; with the captain off (SIN_CAPITAN) it has none at all.
+	 */
+	@GameTest(padding = 16, maxTicks = 100)
+	public void aCaptainWithoutRulesGivesNoOrders(GameTestHelper helper) {
+		floor(helper, 16);
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(8, 1, 8));
+		CaptainBrain.override(player, CaptainBrain.Mode.LIBRE);
+		CombatGameTests.TestPlayer other = CombatGameTests.player(helper, new BlockPos(8, 1, 3));
+		CaptainBrain.override(other, CaptainBrain.Mode.SIN_CAPITAN);
+		List<Mob> mobs = new ArrayList<>();
+		Zombie elite = zombie(helper, new BlockPos(12, 1, 8));
+		Threat.ELITE.mark(elite);
+		mobs.add(elite);
+		mobs.add(zombie(helper, new BlockPos(4, 1, 8)));
+		mobs.add(zombie(helper, new BlockPos(11, 1, 11)));
+		List<Mob> others = new ArrayList<>();
+		Zombie otherElite = zombie(helper, new BlockPos(12, 1, 2));
+		Threat.ELITE.mark(otherElite);
+		others.add(otherElite);
+		others.add(zombie(helper, new BlockPos(4, 1, 2)));
+		hold(helper, player, mobs);
+		hold(helper, other, others);
+		boolean[] ordered = {false};
+		boolean[] led = {false};
+		boolean[] otherLed = {false};
+		helper.onEachTick(() -> {
+			Captain.Group g = Captain.group(player);
+			led[0] |= g != null && g.captain == elite;
+			ordered[0] |= g != null && !g.command.free();
+			Captain.Group o = Captain.group(other);
+			otherLed[0] |= o != null && o.captain != null;
+		});
+		helper.runAfterDelay(80, () -> {
+			helper.assertTrue(led[0], "sin reglas el élite sigue siendo capitán");
+			helper.assertFalse(ordered[0], "pero no da órdenes, aunque le den la espalda");
+			helper.assertFalse(otherLed[0], "sin capitán, nadie manda");
+			CaptainBrain.override(player, null);
+			CaptainBrain.override(other, null);
+			clear(helper, 16);
 			helper.succeed();
 		});
 	}
@@ -306,6 +457,8 @@ public class RedV4CapitanGameTests {
 	public void theChargeGivesOneMoreTurn(GameTestHelper helper) {
 		floor(helper, 16);
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(8, 1, 8));
+		// the rules captain keeps a charge under way (and it may have called one of its own before: counted out below)
+		CaptainBrain.override(player, CaptainBrain.Mode.REGLAS);
 		List<Mob> mobs = group(helper, player);
 		hold(helper, player, mobs);
 		int[] base = {0};
@@ -313,8 +466,10 @@ public class RedV4CapitanGameTests {
 		helper.runAfterDelay(25, () -> {
 			Captain.Group g = Captain.group(player);
 			helper.assertTrue(g != null && g.captain != null, "hay capitán");
-			base[0] = Aggression.maxAttackers(player);
 			long now = helper.getLevel().getGameTime();
+			base[0] = Aggression.maxAttackers(player) - (Captain.chargeTurn(player, now) ? 1 : 0);
+			// and none of its own for a while after this one (it rests between charges)
+			g.lastChargeAt = now;
 			Captain.Command c = new Captain.Command();
 			c.order = Captain.Order.CARGA;
 			c.formation = Captain.Formation.PINZA;
@@ -333,6 +488,7 @@ public class RedV4CapitanGameTests {
 		});
 		helper.runAfterDelay(25 + 10 + 45, () -> {
 			helper.assertFalse(Captain.chargeTurn(player, helper.getLevel().getGameTime()), "pasados los 2 s, el turno extra se va");
+			CaptainBrain.override(player, null);
 			clear(helper, 16);
 			helper.succeed();
 		});
@@ -450,6 +606,8 @@ public class RedV4CapitanGameTests {
 		MobAi.reload();
 		helper.assertTrue(MobAi.captainNet() != null && CaptainBrain.check(MobAi.captainNet()) == null, "la red de capitán se carga: " + MobAi.problems());
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(8, 1, 8));
+		// the rules captain off for this group: a loaded network gives the orders all the same
+		CaptainBrain.override(player, CaptainBrain.Mode.LIBRE);
 		List<Mob> mobs = group(helper, player);
 		hold(helper, player, mobs);
 		helper.runAfterDelay(25, () -> {
@@ -474,6 +632,7 @@ public class RedV4CapitanGameTests {
 			} finally {
 				cfg.iaCarpetaRedes = savedFolder;
 				cfg.iaContrato = savedContract;
+				CaptainBrain.override(player, null);
 				MobAi.reload();
 			}
 			clear(helper, 16);

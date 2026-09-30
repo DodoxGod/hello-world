@@ -79,3 +79,11 @@ fabricApi {
 		eula = false
 	}
 }
+
+// FORJA_FILTRO=<selector> ./gradlew runGametest: only the server game tests the selector matches (Fabric's
+// fabric-api.gametest.filter), e.g. the captain's measurement, which is long.
+if (System.getenv("FORJA_FILTRO") != null) {
+	tasks.matching { it.name.equalsIgnoreCase("runGametest") }.configureEach {
+		jvmArgs "-Dfabric-api.gametest.filter=" + System.getenv("FORJA_FILTRO")
+	}
+}
