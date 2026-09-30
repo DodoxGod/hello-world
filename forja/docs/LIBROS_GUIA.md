@@ -16,6 +16,30 @@ Correcciones de Andy durante el diseño, ya incluidas:
 
 Maqueta de las portadas y la estantería: `E:\IA\Claude\Forja_capturas_mejoras\libros\propuesta.png`.
 
+### Respuestas de Andy a la primera revisión (2026-09-29), ya aplicadas en este documento
+
+1. **G** abre la **biblioteca** solo si llevas el Cuaderno del aprendiz. Sin él, G abre el libro de Forja que
+   tengas en la mano; con las manos vacías no hace nada y lo dice.
+2. **Catálogo:** no es una pantalla aparte con buscador. Es una sección con separador y pestañas dentro de la
+   biblioteca: Objetos y piezas, Materiales y rasgos, Mejoras y colores.
+3. **Clases:** se abren la primera vez que **abres el libro de Clases**. Antes, K no hace nada más que decir
+   "lee el libro de clases". Se construye con el libro V.
+4. **El libro II** se llama **"El arte del combate"**. Se fabrica como todos.
+5. **El camino** crece solo con un paso: **técnica** (el 10), después de la mesa mayor. No hay pasos de portal ni
+   de Herrero.
+6. **El tomo completo** se queda como objeto **solo de creativo**.
+7. **Bestiario:** fichas en sombra hasta que conoces al monstruo (con el libro II).
+8. **Todos los libros se fabrican, siempre**, también la primera vez. No hay libros gratis salvo el Cuaderno que se
+   da al entrar, y el Cuaderno también se puede fabricar si se pierde. Las recetas se **aprenden** con el progreso,
+   y el Cuaderno enseña cada receta y cuándo se aprende. El cambio de diseño está en 2.2.
+9. **La fragua del Nether y el castillo del Guardián de Cuño** se quedan como están. El libro los describe tal como
+   son hoy: la fragua de la ruina del Nether abre un marco de portal como el del Bastión, y el castillo tiene su
+   propio jefe.
+10. **El Forjador vende el libro VI** en su nivel 3.
+11. **Orden de construcción:** primero el Cuaderno, el libro I (El yunque) y la biblioteca. En la misma pasada se
+    arreglan los textos anticuados de 1.3 y el título que no cabe (1.4). Luego los demás libros, en orden, con una
+    entrega por libro.
+
 ---
 
 ## 1. Auditoría de la guía actual
@@ -193,8 +217,9 @@ Otros:
 
 ### 2.1 La idea
 
-- **Libros cortos que llegan cuando hacen falta.** Cada libro se da al tocar por primera vez lo que explica. No hay
-  que ir a buscarlo, y nadie recibe 283 páginas en el minuto cero.
+- **Libros cortos que se aprenden cuando hacen falta.** Cada libro se fabrica en la mesa de crafteo con un libro y
+  algo de lo que explica. Su receta se aprende sola al tocar por primera vez lo que cuenta (un logro de Forja), y
+  hasta entonces la mesa no la acepta. Nadie recibe 283 páginas en el minuto cero.
 - **La consulta sale de los libros.** Las 83 páginas de tablas (objetos, piezas, materiales, rasgos, lista de
   mejoras, aleaciones, sinergias, dones y estadísticas) pasan a un **Catálogo**. Es una pestaña de la biblioteca (ver
   3.3) con buscador y filtro por lo que ya has desbloqueado. Los libros enlazan a él ("ver en el catálogo"). Así los
@@ -209,22 +234,32 @@ Otros:
 
 Las páginas son de lectura y se calculan con las medidas de 1.2. Los tiempos cuentan unos 25 segundos por página.
 
-| # | Título | Págs. | Portada | Llega… | Si lo pierdes |
+Todos se fabrican. La receta es siempre **un libro y un ingrediente** en la mesa de crafteo, sin forma. Se
+**aprende** con un logro de Forja; hasta entonces la mesa no la acepta y el libro de recetas no la enseña. La
+misma receta sirve para rehacerlo si se pierde.
+
+| # | Título | Págs. | Portada | Receta | Se aprende… |
 |---|---|---:|---|---|---|
-| 0 | **Cuaderno del aprendiz** | ~12 | Cuero claro, la guía de hoy como emblema | al entrar por primera vez | libro + lingote de hierro (la receta de la guía de hoy) |
-| I | **El yunque** | ~26 | Naranja, mesa de forja | con el logro "Molde a medida" (tu primera plantilla grabada) | libro + plantilla |
-| II | **Primeros golpes** | ~52 + bestiario | Rojo, espada; el lomo más ancho | con tu primera arma forjada **o** el primer golpe que te da un monstruo, lo que llegue antes | libro + hueso |
-| III | **La fundición** | ~34 | Cobre oscuro, crisol encendido | con el logro "Mejorado" (tu primera mejora) | libro + lingote de cobre |
-| IV | **La mesa mayor** | ~38 | Violeta, mesa de forja mayor | con el logro "La mesa mayor" | libro + lingote de damasco |
-| V | **Clases** | ~20 | Verde, medallón del olvido | la primera vez que pulsas K (o eliges clase) | libro + esmeralda |
-| VI | **El Bastión y el Herrero** | ~26 | Verde azulado, fragua apagada | al abrir tu primer cofre de una forja abandonada (logro "Brasas frías"), o se lo compras al Forjador | libro + mapa vacío |
-| VII | **El Cementerio entre Estrellas** | ~16 | Violeta noche con una constelación en oro, perla de oricalco | en un atril de la Forja Profunda, junto al marco (un ejemplar por jugador), o al encender el portal | libro + hierro estelar |
+| 0 | **Cuaderno del aprendiz** | ~12 | Cuero claro, martillo | libro + lingote de hierro | siempre. Además se da uno al entrar por primera vez |
+| I | **El yunque** | ~26 | Naranja, yunque | libro + plantilla | al grabar tu primera plantilla (logro "Molde a medida") |
+| II | **El arte del combate** | ~52 + bestiario | Rojo, espada; el lomo más ancho | libro + hueso | al forjar tu primer objeto (logro "Forjado a mano") |
+| III | **La fundición** | ~34 | Cobre oscuro, crisol | libro + lingote de cobre | con tu primera mejora (logro "Mejorado") |
+| IV | **La mesa mayor** | ~38 | Violeta, mesa mayor | libro + lingote de damasco | con la mesa de forja mayor (logro "La mesa mayor") |
+| V | **Clases** | ~20 | Verde, medallón | libro + esmeralda | con tu primera parada perfecta (logro "Al filo del escudo") |
+| VI | **El Bastión y el Herrero** | ~26 | Verde azulado, fragua apagada | libro + mapa vacío | al abrir el cofre de una forja abandonada (logro "Brasas frías"). El Forjador lo vende en su nivel 3 |
+| VII | **El Cementerio entre Estrellas** | ~16 | Violeta noche, perla de oricalco | libro + hierro estelar | al encender el portal (logro nuevo). También está en un atril de la Forja Profunda |
+
+Por dentro:
+
+- **Cómo se aprende.** `GuideBooks` asocia cada libro a su logro. Cuando el jugador completa ese logro, o al entrar
+  si ya lo tenía (mundos viejos), recibe la receta.
+- **Cómo se bloquea.** Una mezcla en la mesa de crafteo (`CraftingMenuMixin`) deja sin resultado una receta de
+  libro que el jugador no conoce. Es lo mismo que hace vanilla con la regla `doLimitedCrafting`, pero solo para los
+  libros.
+- **El autocrafteador** no tiene jugador, así que no se bloquea.
 
 Total de lectura: unas **225 páginas en 8 libros**, más el bestiario que se va escribiendo. Nadie las tiene todas a la
 vez, y el más largo que se abre en las primeras horas tiene 52.
-
-Todos se pueden volver a fabricar si se pierden, y siempre se pueden releer desde la biblioteca (3.3), así que perder
-el objeto no te quita lo aprendido.
 
 ### 2.3 Qué lleva cada libro
 
@@ -235,11 +270,11 @@ el objeto no te quita lo aprendido.
 2. **Tus dos primeras mesas** (3 págs.): recetas de la mesa de piezas, la mesa de forja y la plantilla. Graba tu
    primera plantilla (paso 1 del camino).
 3. **Tus teclas** (1 pág.): G, la biblioteca; Alt, esquivar; K, V y B, las clases. Todas se cambian en Controles.
-4. **El camino del herrero** (2 págs.): los 9 pasos en tres tramos, cada uno con el libro que lo explica, y tu
+4. **El camino del herrero** (2 págs.): los 10 pasos en cuatro tramos, cada uno con el libro que lo explica, y tu
    marca en cada uno.
-5. **La estantería** (4 págs.): cada libro con su portada en pequeño, qué cuenta, **cómo llega** y **su receta**
+5. **La estantería** (4 págs.): cada libro con su portada en pequeño, qué cuenta, **cuándo se aprende** y **su receta**
    dibujada. Los que ya tienes salen en color; los que no, en sombra, con la condición.
-6. **Siguiente** (1 pág.): "Graba tu primera plantilla y te llegará *El yunque*."
+6. **Siguiente** (1 pág.): "Graba tu primera plantilla y aprenderás la receta de *El yunque*."
 
 **I · El yunque (~26 págs.).** El taller de las primeras horas.
 
@@ -254,7 +289,7 @@ el objeto no te quita lo aprendido.
 - Cómo leer los colores, y el catálogo (2).
 - Siguiente: la pelea (libro II) y el calor (libro III) (1).
 
-**II · Primeros golpes (~52 págs. más el bestiario).** El libro grande, como pidió Andy. Siete partes, cada una con
+**II · El arte del combate (~52 págs. más el bestiario).** El libro grande, como pidió Andy. Siete partes, cada una con
 su pestaña de color. Cada parte empieza con una página **"En una página"**: lo esencial en cinco líneas, para quien
 no quiera seguir.
 
@@ -370,19 +405,20 @@ Las aleaciones, una a una, van al catálogo. Los textos repetidos del capítulo 
 
 ### 3.1 Cada libro apunta al siguiente
 
-- La última página de cada libro es **"Siguiente"**. Dice qué hacer ahora y qué libro llega con ello, con su portada
-  pequeña y su condición. Ejemplo: "Corta tu primera pieza de bronce… cuando mejores algo por primera vez, te
-  llegará *La fundición*".
+- La última página de cada libro es **"Siguiente"**. Dice qué hacer ahora y qué libro toca después, con su tarjeta:
+  portada pequeña, receta dibujada y cuándo se aprende. Ejemplo: "Cuando mejores algo por primera vez aprenderás
+  la receta de *La fundición*: un libro y un lingote de cobre".
 - La primera página de los libros I a VII es **"Lo que ya sabes"**: tres líneas y enlaces al libro anterior, para
   quien lo abra fuera de orden.
-- Cuando llega un libro sale un **aviso** (como el de "¡Nuevas recetas!") con su portada, "Nuevo libro: *La
-  fundición*. Pulsa G". La línea del chat de `ForjaPath.hint` pasa a decir libro y capítulo: "Lo explica «Cubas y
-  depósitos», en *La fundición*". Si aún no tienes ese libro, dice cómo conseguirlo.
+- Al aprender la receta de un libro sale el aviso de vanilla "¡Nuevas recetas!" con el libro. La línea del chat de
+  `ForjaPath.hint` dice el paso, el capítulo y el libro: "Lo explica «Temple», en «El yunque»".
+- Un enlace a un capítulo de otro libro abre ese libro si lo llevas encima. Si no, dice en qué libro está y cómo se
+  hace.
 
 ### 3.2 El camino del herrero, repartido
 
-Los **9 pasos de hoy no cambian**. `ForjaPath` y `PathGameTests` siguen valiendo. Solo se agrupan en tramos, y cada
-paso apunta a un libro y un capítulo en vez de a un capítulo del tomo:
+Los 9 pasos de hoy no cambian y se añade uno, **técnica** (respuesta 5). `ForjaPath` pasa a 10 pasos y
+`PathGameTests` lo comprueba. Cada paso apunta a un capítulo, y cada capítulo vive en un libro:
 
 | Tramo | Pasos | Libro |
 |---|---|---|
@@ -390,54 +426,44 @@ paso apunta a un libro y un capítulo en vez de a un capítulo del tomo:
 | | pieza, forja, temple, mejora | I |
 | 2 · Oficial | parada | II |
 | 3 · Fundidor | aleación, colada, mesa mayor | III |
+| 4 · Maestro | técnica | IV |
 
-- El Cuaderno enseña el camino entero.
-- Cada libro enseña en su portada una **tarjeta con sus propios pasos** (✓ 2/4).
-- El cartel "Tu siguiente paso" de la portada de hoy pasa al Cuaderno y a la biblioteca.
+- El Cuaderno y la biblioteca enseñan el camino entero.
+- Cada libro enseña en su portada **sus propios pasos** (✓ 2/4).
+- El cartel "Tu siguiente paso" va en la portada del Cuaderno y de la biblioteca.
 
-**Propuesta, a decidir por Andy (pregunta 5):** seguir el camino tras la mesa mayor con tramos nuevos.
+### 3.3 La biblioteca y el catálogo
 
-- 4 · Maestro (libro IV): técnica, una mejora al 100 % y un don. Los logros ya existen.
-- 5 · Viajero (libro VI): abrir el cofre de una ruina y encender el portal (logro nuevo "portal").
-- 6 · El Herrero (libro VII): vencerle.
+- **G** (respuesta 1):
+  - si llevas el Cuaderno del aprendiz encima, abre la **biblioteca**;
+  - si no, abre el libro de Forja que tengas en la mano;
+  - con las manos vacías y sin Cuaderno, un aviso dice que lleves el Cuaderno.
+- **La biblioteca** es un libro más, con el mismo visor y pestañas:
+  - **Estantería:** una tarjeta por libro, con su portada pequeña, sus páginas y lo leído, y el sello de "nuevo" si
+    no lo has abierto. Un clic abre los libros que llevas encima. De los que no llevas enseña la receta y cuándo se
+    aprende.
+  - **El camino del herrero.**
+  - **Catálogo** (respuesta 2): una página separadora y tres pestañas de consulta.
+    - Objetos y piezas.
+    - Materiales y rasgos.
+    - Mejoras y colores.
 
-### 3.3 La estantería y la biblioteca
-
-- **Biblioteca (tecla G).**
-  - Hoy G solo abre la guía si la llevas encima. Pasaría a abrir la **biblioteca**: una pantalla con los lomos de tus
-    libros desbloqueados, su progreso y la pestaña **Catálogo**.
-  - Lo desbloqueado se guarda en el jugador (un attachment, como `forja:tecnicas`), así que sirve aunque hayas perdido
-    el objeto.
-  - Con un libro en la mano, clic derecho abre ese libro directamente, como hoy.
-- **Estantería del herrero (bloque).**
-  - Es como la estantería cincelada de vanilla, con 8 huecos a la vista, uno por libro. Cada hueco enseña el lomo de
-    su color.
-  - Clic con un libro lo guarda en su hueco. Clic con la mano vacía abre la biblioteca y, si le falta un libro que ya
-    tienes desbloqueado, te da una copia.
-  - Un comparador lee cuántos libros tiene.
-  - Receta propuesta: 6 tablones, 2 libros y 1 lingote de hierro, como la estantería con un refuerzo de hierro.
-- **Atril.** Un libro de Forja en un atril vanilla se lee como cualquier libro del atril. El libro VII sale así en la
-  Forja Profunda: cada jugador que lo toca recibe su ejemplar, y el del atril se queda.
+    Con los libros III y IV se añadirán las aleaciones una a una, las sinergias y los dones.
+- **Clic derecho** con un libro en la mano abre ese libro, como hoy.
+- **Estantería del herrero (bloque)** y **atril**: se quedan para más adelante. El atril hará falta para el libro
+  VII.
 
 ### 3.4 Qué pasa con la guía de hoy en los mundos viejos
 
-- **El objeto `forja:guia_de_forja` conserva su id** y pasa a ser el *Cuaderno del aprendiz* (mismo icono, nombre
-  nuevo). Las guías que haya en inventarios y cofres se vuelven Cuadernos sin romper nada.
-- **Jugadores que ya habían entrado** (tienen la etiqueta `GUIDE_TAG`): al entrar por primera vez tras la
-  actualización, se les desbloquean de golpe los libros que ya les tocan según sus logros:
-  - plantilla → I;
-  - forja → II;
-  - mejora → III;
-  - mesa_mayor → IV;
-  - clase → V;
-  - ruina → VI;
-  - portal encendido o Herrero vencido → VII.
-
-  Además reciben un solo mensaje: "La guía de forja se ha partido en libros. Los tuyos están en la biblioteca (G)".
-  No se les da ningún objeto: los leen desde G y los fabrican si quieren el objeto.
-- **El tomo entero** (propuesta, pregunta 6): se conserva como objeto de creativo, "Tomo completo de la forja", con
-  todo en un volumen como hoy. Sirve para pruebas, para servidores y para quien lo prefiera.
-- El logro "Lectura obligada" (`guia`) pasa a "Abre el Cuaderno del aprendiz".
+- **El objeto `forja:guia_de_forja` conserva su id** y pasa a ser el *Cuaderno del aprendiz*, con portada nueva.
+  Las guías que haya en inventarios y cofres se vuelven Cuadernos sin romper nada.
+- **Jugadores que ya jugaban:** al entrar se les enseñan las recetas de los libros que ya les tocan según sus logros.
+  Se hace en cada entrada y es idempotente. Ningún libro se regala: se fabrican.
+- **Un aviso único**, la primera vez tras la actualización, para quien ya tenía la guía: "La guía de forja ahora es
+  el Cuaderno del aprendiz. Los demás libros se fabrican: el Cuaderno te dice cómo."
+- **El tomo entero** (respuesta 6): el objeto `forja:tomo_de_forja`, solo en creativo, con todo en un volumen como
+  hoy.
+- El logro "Lectura obligada" (`guia`) se da al abrir cualquier libro de Forja.
 
 ---
 
@@ -463,26 +489,31 @@ paso apunta a un libro y un capítulo en vez de a un capítulo del tomo:
 
 ---
 
-## 5. Preguntas para Andy
+## 5. Pendiente
 
-1. **G sin llevar el libro:** ¿G abre la biblioteca siempre, con lo que tengas desbloqueado, o solo si llevas el
-   libro encima, como hoy?
-2. **El catálogo:** ¿te vale una pestaña de consulta con buscador (objetos, piezas, materiales, mejoras…) fuera de
-   los libros? La alternativa es un apéndice al final de cada libro, que no cuente en sus páginas.
-3. **Clases:** ¿el libro V llega la primera vez que pulsas K, o prefieres que las clases se abran más tarde (por
-   ejemplo, tras la primera arma forjada)?
-4. **Libro II:** ¿llega con la primera arma forjada o con el primer golpe de un monstruo, lo que llegue antes? ¿Te
-   gusta "Primeros golpes" para un libro que también trae magia, enemigos y cielo?
-5. **El camino:** ¿lo seguimos después de la mesa mayor con los tramos 4 a 6 (técnica, portal, Herrero), o se queda
-   en 9 pasos?
-6. **El tomo completo:** ¿lo guardamos como objeto de creativo o desaparece?
-7. **El bestiario:** ¿en sombra hasta conocer al monstruo, o siempre visible?
-8. **Las recetas para volver a fabricar los libros** (libro + hierro, plantilla, hueso, cobre, damasco, esmeralda,
-   mapa vacío y hierro estelar): ¿bien, o prefieres que la estantería los dé gratis a quien los tenga desbloqueados?
-9. **La fragua del Nether** (`fragua_caida`) sigue saliendo, pero su fragua ya solo abre un marco. ¿Se queda como
-   ruina con autómatas y botín, lleva a la dimensión, o se quita? ¿Y el castillo de forja del Guardián de Cuño,
-   junto al Bastión?
-10. **El libro VI:** ¿también lo vende el Forjador (por ejemplo, en el nivel 3, antes que el mapa del Bastión, que
-    está en el 5)?
-11. **Construcción:** ¿empiezo por el Cuaderno, el libro I y la biblioteca, que es lo que ve alguien que empieza, y
-    sigo libro a libro con capturas de cada uno? Los textos anticuados de 1.3 los arreglaría en la misma pasada.
+- Los libros II a VII, en orden, con una entrega cada uno. Hasta que estén, lo suyo solo se lee en el tomo de
+  creativo, y el Cuaderno los enseña como "en preparación".
+- Con el libro II, el bestiario en sombra. Con el V, las clases que se abren al leer su libro. Con el VI, la venta
+  del Forjador. Con el VII, el logro del portal y el atril.
+- La estantería del herrero como bloque, si Andy la sigue queriendo.
+
+---
+
+## 6. Estado de la construcción (2026-09-29, primera entrega)
+
+Hecho: el Cuaderno del aprendiz (0), El yunque (I) y la biblioteca, con el catálogo en tres pestañas. También los
+textos anticuados de 1.3, el título que no cabía (1.4) y el paso 10 del camino. Páginas medidas en la prueba del
+cliente:
+
+| Libro | Páginas | Capítulos (página donde empiezan) |
+|---|---:|---|
+| Cuaderno del aprendiz | 19 | bienvenida 4, primeras mesas 6, teclas 11, siguiente paso 13, los libros 15 |
+| El yunque | 29 | lo que ya sabes 5, mesas 7, cortar 13, la estrella 16, temple 19, mejorar 21, desarmar 24, estadísticas 27, siguiente 28 |
+| Biblioteca | 85 | estantería 5, camino 10, catálogo 12 (objetos 13, piezas 36, materiales 44, rasgos 52, mejoras 61, colores 85) |
+| Tomo (creativo) | 285 | la guía entera, como antes, más "La mesa mayor" |
+
+- El Cuaderno salió más largo que los ~12 previstos, porque las tarjetas de los siete libros llevan su receta
+  dibujada (5 páginas).
+- El yunque, algo más largo que los ~26 previstos.
+- Las hojas de contactos están en `E:\IA\Claude\Forja_capturas_mejoras\libros\`: `portadas.png`, `cuaderno.png`,
+  `yunque.png` y `biblioteca.png`.
