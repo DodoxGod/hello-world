@@ -44,6 +44,8 @@ jobs:
           chmod +x gradlew
           xvfb-run -a -s "-screen 0 1920x1080x24" ./gradlew runClientGameTest --stacktrace > client.log 2>&1 || STATUS=$?
           grep -E "forja-test\]|ALL CHECKS PASSED|AssertionError|GameTestAssert|FAILED|Exception:|Caused by|ERROR" client.log | grep -v "^\s*at " | head -120
+          # the first exception with its stack, for a crash that happens before any check (joining the world)
+          grep -m 3 -A 40 -E "^[a-zA-Z.]+(Exception|Error): " client.log | grep -v "org.gradle" | head -140 || true
           tail -15 client.log
           exit ${STATUS:-0}
       - name: Hojas de contactos en el registro
