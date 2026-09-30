@@ -1,5 +1,36 @@
 # Novedades
 
+## 2026-09-30 — Las pruebas de servidor, estables
+
+Con la máquina cargada (entrenando redes, otras compilaciones) fallaban de vez en cuando unas cuantas pruebas y al
+repetir pasaban. Cada una tenía su causa, y ninguna era la carga:
+
+- **El mundo de pruebas cambiaba de hora y de tiempo.** Se guarda entre ejecuciones con su reloj y su clima: unas
+  veces era mediodía, otras de noche o lloviendo (zombis que ardían o no, la luz de una antorcha, lluvia sobre los
+  blazes). Ahora todas las tandas corren en una mañana despejada que no avanza (`test_environment` `estable`, y
+  `minecraft:default` apoyado en él), y una prueba lo comprueba.
+- **Unas pruebas se metían en otras.** Las pruebas de una tanda están a 5 bloques: las escuadras pasaban monstruos
+  al jugador de la prueba de al lado (`iaRepartirObjetivos`), el jefe devolvía al terminar la probabilidad de
+  veteranos y élites a todas las demás, el esqueleto ponía `skeletonChargedEvery = 1` a todos, la antorcha apagaba
+  `mobGriefing` para toda la tanda, el Enjambre contaba los proyectiles de los vecinos, las pruebas del Herrero al
+  recoger se llevaban los aprendices de la de al lado, dos pruebas anchas sin margen barrían los mobs del vecino y
+  los blazes soltaban trozos del mundo que no habían forzado ellos. Ahora hay una base común para el servidor de
+  pruebas (`TestDefaults`), la antorcha va en una tanda propia y cada prueba mira y recoge solo lo suyo.
+- **Un fallo de verdad (el husk):** tras una finta, un zombi que se metía en la casilla de su objetivo no volvía a
+  golpear: el objetivo vanilla se paraba en cuanto terminaba el camino y soltaba el aviso. Un golpe avisado ahora se
+  termina mientras el objetivo siga vivo (`MeleeAttackGoalMixin`).
+- **Azar y sitio:** el paseo vanilla de los primeros ticks movía al zombi del mangual, al de la percepción y al del
+  salto atrás antes de la prueba; el esqueleto salía de élite o se ponía a hacer especiales a mitad del tiro
+  cargado; la sala oscura de la antorcha se salía de los trozos que se actualizan y el zombi se quedaba congelado; un
+  blaze disparaba justo cuando el jugador se daba la vuelta.
+- **Rendimiento v4:** la horda medida no era de 30. Los creepers explotaban y los esqueletos y arañas caían del
+  borde de la plataforma (está 24 bloques en el aire): la ventana empezaba con 30 y acababa con 19. Ahora hay borde,
+  los creepers no llegan a explotar, los mobs tienen semillas fijas, la red se calienta 300 ticks y el tope se
+  compara con la mediana de 10 trozos, corregida por una calibración que mide cuánto más lenta va la máquina. Con la
+  horda entera y la red ya caliente mide entre 1,4 y 1,9 ms (tope 2,5).
+- Para cazar una prueba: `FORJA_PRUEBAS='forja-test:*torch*' ./gradlew runGametest`, y con `FORJA_VERIFICAR=1`
+  corre 400 copias a la vez.
+
 ## 2026-09-30 — Los grupos sin capitán ya no dan vueltas: un turno libre se usa
 
 - **El fallo:** contra un jugador que se mueve, los monstruos sin turno daban vueltas hasta su hueco del anillo, el

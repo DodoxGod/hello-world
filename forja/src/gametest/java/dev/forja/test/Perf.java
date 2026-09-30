@@ -280,6 +280,11 @@ public final class Perf {
 		return on;
 	}
 
+	/** What a timer has added up so far in the open window, in ns (0 with none open). */
+	public static long nanos(T timer) {
+		return on ? TOTAL[timer.ordinal()] : 0L;
+	}
+
 	/**
 	 * The server thread's samples, sorted by where Forja's code is on the stack. A frame is Forja's when
 	 * its class is in dev.forja (not these tests), or when it is one of the mod's mixin handlers merged
