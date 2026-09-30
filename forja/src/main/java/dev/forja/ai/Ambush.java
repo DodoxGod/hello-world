@@ -144,10 +144,41 @@ public final class Ambush {
 
 	// ---------------------------------------------------------------- the player's surroundings
 
+	/** A player's surroundings (corridor, doorway, roof), worked out once a tick and position. */
+	private record Around(long at, double x, double y, double z, float yaw, boolean corridor, boolean doorway, boolean roofed) {
+	}
+
+	private static final java.util.Map<Player, Around> AROUND = new java.util.WeakHashMap<>();
+
+	private static Around around(Player player) {
+		long now = player.level().getGameTime();
+		Around a = AROUND.get(player);
+		if (a != null && a.at == now && a.x == player.getX() && a.y == player.getY() && a.z == player.getZ() && a.yaw == player.getYRot()) {
+			return a;
+		}
+		a = new Around(now, player.getX(), player.getY(), player.getZ(), player.getYRot(), corridorNow(player), doorwayNow(player), roofedNow(player));
+		AROUND.put(player, a);
+		return a;
+	}
+
 	/**
 	 * jug_en_pasillo: walls at least 2 high within 1.5 blocks on both sides of the player, across the way they look.
 	 */
 	public static boolean corridor(Player player) {
+		return around(player).corridor;
+	}
+
+	/** jug_en_puerta (see {@link #doorwayNow}). */
+	public static boolean doorway(Player player) {
+		return around(player).doorway;
+	}
+
+	/** jug_bajo_techo (see {@link #roofedNow}). */
+	public static boolean roofed(Player player) {
+		return around(player).roofed;
+	}
+
+	private static boolean corridorNow(Player player) {
 		Level level = player.level();
 		double yaw = Math.toRadians(player.getYRot());
 		double lx = -Math.sin(yaw);
@@ -171,7 +202,7 @@ public final class Ambush {
 	 * jug_en_puerta: in a door, a fence gate or a trapdoor's block, or in a gap 1 or 2 wide between walls along one of
 	 * the two axes (walls at the feet and head on both sides within 2 blocks, and open ahead and behind).
 	 */
-	public static boolean doorway(Player player) {
+	private static boolean doorwayNow(Player player) {
 		Level level = player.level();
 		BlockPos feet = player.blockPosition();
 		var state = level.getBlockState(feet);
@@ -197,7 +228,7 @@ public final class Ambush {
 	}
 
 	/** jug_bajo_techo: a block with a collision box within 4 over the player's head. */
-	public static boolean roofed(Player player) {
+	private static boolean roofedNow(Player player) {
 		Level level = player.level();
 		BlockPos head = BlockPos.containing(player.getX(), player.getEyeY(), player.getZ());
 		for (int dy = 1; dy <= 4; dy++) {

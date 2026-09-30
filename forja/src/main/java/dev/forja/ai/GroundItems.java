@@ -182,8 +182,22 @@ public final class GroundItems {
 		return !item.hasPickUpDelay() || item.getOwner() instanceof Player && item.tickCount > MobActions.PLAYER_DROP_TICKS;
 	}
 
-	/** The useful things within {@link #RANGE}, nearest first. */
+	/** The useful things within {@link #RANGE}, nearest first (worked out once a tick per mob). */
 	public static List<Seen> useful(Mob mob) {
+		MobMind mind = MobAi.mind(mob);
+		long now = mob.level().getGameTime();
+		if (mind != null && mind.usefulAt == now && mind.useful != null) {
+			return mind.useful;
+		}
+		List<Seen> out = find(mob);
+		if (mind != null) {
+			mind.usefulAt = now;
+			mind.useful = out;
+		}
+		return out;
+	}
+
+	private static List<Seen> find(Mob mob) {
 		List<Seen> out = new ArrayList<>();
 		List<ItemEntity> items = mob.level().getEntitiesOfClass(ItemEntity.class, mob.getBoundingBox().inflate(RANGE),
 			e -> e.isAlive() && free(e));

@@ -190,7 +190,9 @@ public class RedV4PerfGameTests {
 				+ line("rendimiento v4 (30 mobs, reglas)", rules);
 			Forja.LOGGER.info(report);
 			try {
-				Files.writeString(folder.resolve("resumen.txt"), report);
+				String gap = System.lineSeparator() + System.lineSeparator();
+				Files.writeString(folder.resolve("resumen.txt"), report + gap + Perf.markdown(v4[0]) + gap + Perf.markdown(rules));
+				Forja.LOGGER.info("rendimiento v4, informe completo: {}", folder.resolve("resumen.txt"));
 			} catch (java.io.IOException ignored) {
 				// the log has it
 			}

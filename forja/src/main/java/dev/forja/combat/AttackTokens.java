@@ -19,8 +19,8 @@ public final class AttackTokens {
 	}
 
 	public static boolean tryAcquire(LivingEntity target, Mob mob, int max) {
-		// A staggered mob cannot swing, so it does not get to hold a turn it cannot use.
-		if (Posture.isStaggered(mob, mob.level().getGameTime())) return false;
+		// A staggered mob cannot swing, so it does not get to hold a turn it cannot use; nor one spent after a fury.
+		if (Posture.isStaggered(mob, mob.level().getGameTime()) || dev.forja.ai.Fury.spent(mob)) return false;
 		Set<Mob> holders = HOLDERS.computeIfAbsent(target, t -> Collections.newSetFromMap(new WeakHashMap<>()));
 		holders.removeIf(m -> !current(m, target));
 		if (holders.contains(mob)) return true;

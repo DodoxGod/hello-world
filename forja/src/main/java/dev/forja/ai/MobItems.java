@@ -136,6 +136,27 @@ public final class MobItems {
 	 * middle of the way, and from there to the player's chest.
 	 */
 	public static boolean throwable(Mob mob, Player target) {
+		MobMind mind = MobAi.mind(mob);
+		long now = mob.level().getGameTime();
+		if (mind != null && mind.throwAt == now && mind.throwFor == target) {
+			return mind.throwOk;
+		}
+		// Only for a mob that has something to throw (a splash potion, a wind charge) or a pearl: for the rest both read 0,
+		// and the rays are not cast (the simulator does the same, docs/red_mob_v4_mod_estado.md).
+		int[] counts = MobKit.counts(mob);
+		boolean throwing = counts[MobKit.Kind.SPLASH.ordinal()] > 0 || counts[MobKit.Kind.WIND.ordinal()] > 0;
+		boolean ok = throwing && throwableNow(mob, target);
+		Vec3 spot = counts[MobKit.Kind.PEARL.ordinal()] > 0 ? pearlInNow(mob, target) : null;
+		if (mind != null) {
+			mind.throwAt = now;
+			mind.throwFor = target;
+			mind.throwOk = ok;
+			mind.pearlSpot = spot;
+		}
+		return ok;
+	}
+
+	private static boolean throwableNow(Mob mob, Player target) {
 		double d = mob.distanceTo(target);
 		if (d < THROW_MIN || d > THROW_MAX) {
 			return false;
@@ -156,6 +177,16 @@ public final class MobItems {
 	 * from its eyes. Null for none.
 	 */
 	public static Vec3 pearlIn(Mob mob, Player target) {
+		MobMind mind = MobAi.mind(mob);
+		if (mind != null) {
+			// worked out with lanzamiento_ok, once a tick
+			throwable(mob, target);
+			return mind.pearlSpot;
+		}
+		return pearlInNow(mob, target);
+	}
+
+	private static Vec3 pearlInNow(Mob mob, Player target) {
 		if (mob.distanceTo(target) > PEARL_RANGE) {
 			return null;
 		}

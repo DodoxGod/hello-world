@@ -148,9 +148,24 @@ public final class MobMind {
 	public long occludedAt = Long.MIN_VALUE / 2;
 	public Player occludedFor;
 	public Vec3 occludedPlayerAt;
+	/** The captain's orders (M5): its post (Captain.FRENTE..RESERVA, -1 for none) and the point of it. */
+	public int post = -1;
+	public Vec3 postPoint;
+	/** Since when it has been in RETIRARSE without a break (retirada_ticks, and leaving the fight at 100). */
+	public long retreatSince = Long.MIN_VALUE / 2;
+	/** Whether it has used its fury in this fight (one each). */
+	public boolean furyUsed;
 	/** Its fury (M5): until when it lasts, and until when it is spent after. */
 	public long furyUntil = Long.MIN_VALUE / 2;
 	public long exhaustedUntil = Long.MIN_VALUE / 2;
+
+	/** Per-tick caches of v4's dearer questions, asked by the observation and again by the mask. */
+	public long usefulAt = Long.MIN_VALUE / 2;
+	public java.util.List<GroundItems.Seen> useful;
+	public long throwAt = Long.MIN_VALUE / 2;
+	public Player throwFor;
+	public boolean throwOk;
+	public Vec3 pearlSpot;
 
 	/** When one of v4's executors (RECOGER, ASEDIAR, APAGAR_LUZ) last asked for a path. */
 	public long pathAt = Long.MIN_VALUE / 2;

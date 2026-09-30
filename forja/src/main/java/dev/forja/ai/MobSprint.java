@@ -90,6 +90,15 @@ public final class MobSprint {
 		if (rodeo(mind)) {
 			return true;
 		}
+		// v4 (M5): to its post in the captain's formation, running when it is more than 5 blocks off; and in, at the charge.
+		if (decision.tactic() == Tactic.FORMACION && mind.postPoint != null
+			&& mob.distanceToSqr(mind.postPoint.x, mob.getY(), mind.postPoint.z) > SLOT_FAR * SLOT_FAR) {
+			return true;
+		}
+		Captain.Command command = Captain.commandFor(mind);
+		if (command != null && command.order == Captain.Order.CARGA && mob.level().getGameTime() >= command.chargeAt) {
+			return true;
+		}
 		double distance = mob.distanceTo(target);
 		if (distance >= CHASE_MIN && distance <= CHASE_MAX) {
 			Vec3 line = target.position().subtract(mob.position());

@@ -180,7 +180,11 @@ public class AlcanceGameTests {
 			helper.assertTrue(MobAi.mind(flail).networked, "la red debería llevarlo");
 			helper.assertTrue(near.getHealth() < near.getMaxHealth(), "el zombi del mangual (red) no golpeó (a " + flail.distanceTo(near) + ")");
 			helper.assertTrue(closest[0] > 2.0, "se paró a su alcance: se acercó a " + closest[0] + " entre cajas");
-			helper.assertTrue(far.getHealth() < far.getMaxHealth(), "el zombi sin arma (red) no golpeó");
+			MobMind bareMind = MobAi.mind(bare);
+			helper.assertTrue(far.getHealth() < far.getMaxHealth(), "el zombi sin arma (red) no golpeó: a " + bare.distanceTo(far) + ", hueco "
+				+ closest[1] + ", decisión " + bareMind.decision + ", aviso " + bareMind.windup + ", recarga " + bareMind.cooldown + ", turno "
+				+ dev.forja.combat.AttackTokens.holds(far, bare) + ", especial " + (bareMind.specials != null && bareMind.specials.active())
+				+ ", perdido " + dev.forja.ai.HonestPerception.lost(bareMind, helper.getLevel().getGameTime()) + ", camino " + bare.getNavigation().getPath());
 			helper.assertTrue(closest[1] <= ObsM1.REACH, "el de la mano vacía se acercó hasta su alcance de siempre: " + closest[1]);
 			helper.succeed();
 		});

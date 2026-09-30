@@ -91,6 +91,44 @@ public final class RuleBrain {
 		};
 	}
 
+	/**
+	 * The rules' fury (v4, M5): when it is there (Fury.available), an aggressive mob always goes into it, a cunning or
+	 * careful one a third of the time (per decision, so soon enough), never a coward.
+	 */
+	public static boolean fury(MobMind mind, long now) {
+		if (!Fury.allowed(mind, now)) {
+			return false;
+		}
+		return switch (Personality.trait(mind.mob)) {
+			case AGRESIVO -> true;
+			case COBARDE -> false;
+			default -> mind.random.nextFloat() < 0.02F;
+		};
+	}
+
+	/**
+	 * The rules obeying the captain (v4, M5), for a member with a post: RETIRADA → RETIRARSE; REAGRUPAR and ESCOLTA → to its
+	 * post; EMBOSCADA → EMBOSCAR; ASEDIO → ASEDIAR; CARGA → to its post until the countdown ends, then in; CERCAR and
+	 * HOSTIGAR → to its post (nobody goes in until the charge); none → to its post while it has no turn. Null when there
+	 * is nothing to obey.
+	 */
+	static Decision obey(MobMind mind, Player target, boolean hasTurn, long now) {
+		Captain.Command c = Captain.commandFor(mind);
+		if (c == null || mind.postPoint == null) {
+			return null;
+		}
+		return switch (c.order) {
+			case RETIRADA -> Decision.tactic(Tactic.RETIRARSE);
+			case REAGRUPAR, ESCOLTA -> Decision.tactic(Tactic.FORMACION);
+			case EMBOSCADA -> Decision.tactic(Tactic.EMBOSCAR);
+			case ASEDIO -> Heights.besieged(target) ? Decision.tactic(Tactic.ASEDIAR) : null;
+			case CARGA -> now < c.chargeAt ? Decision.tactic(Tactic.FORMACION) : Decision.APPROACH;
+			// CERCAR: the formation on the outer ring, and nobody goes in; HOSTIGAR: the bodies hold it (the archers shoot)
+			case CERCAR, HOSTIGAR -> Decision.tactic(Tactic.FORMACION);
+			default -> !hasTurn && c.formation != Captain.Formation.LIBRE ? Decision.tactic(Tactic.FORMACION) : null;
+		};
+	}
+
 	public static Decision decide(MobMind mind, Player target) {
 		Mob mob = mind.mob;
 		// A staff or a tome in the hand: its own goal fights with it (entity/ai/CasterGoal), as an archer's
@@ -108,6 +146,11 @@ public final class RuleBrain {
 		// The ember wisp never stands and fights: close in and it drifts off, leaving fire behind (idea 45).
 		if (mob instanceof dev.forja.entity.EmberWisp && mob.distanceTo(target) < 4.0) {
 			return Decision.tactic(Tactic.RETIRARSE);
+		}
+		// An archer given a post by its captain goes to it before it shoots from there (the bow goal does the rest).
+		if (family == MobFamily.ARQUERO && Captain.commandFor(mind) != null && mind.postPoint != null
+			&& mob.distanceToSqr(mind.postPoint.x, mob.getY(), mind.postPoint.z) > 3.0 * 3.0) {
+			return Decision.tactic(Tactic.FORMACION);
 		}
 		if (!(mob instanceof PathfinderMob) || family == MobFamily.ARQUERO || family == MobFamily.CREEPER || shootsOrCasts(mob, family)
 			|| !"minecraft".equals(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getNamespace())) {
@@ -158,6 +201,11 @@ public final class RuleBrain {
 		// The torch that lights the player in the dark (§4.10): one of the group at a time, without a turn.
 		if (!hasTurn && Siege.torchDuty(mob, mind, target, now)) {
 			return Decision.tactic(Tactic.APAGAR_LUZ);
+		}
+		// The captain's orders (M5).
+		Decision ordered = obey(mind, target, hasTurn, now);
+		if (ordered != null) {
+			return ordered;
 		}
 		// A charged blow is coming: shield up if it has one, a dodge if it is right on top, else out of reach
 		// (a flail's or a lance's reach, when that is what the player holds).

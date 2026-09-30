@@ -210,8 +210,7 @@ public final class TacticGoal extends Goal {
 			case SECTOR -> this.toRing(target, !Double.isNaN(this.mind.slotAngle) && this.mind.slotOf == target ? this.mind.slotAngle
 				: Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle, Reach.outside(target, this.mind.ringRadius), 1.0);
 			case TIRO_LIBRE -> this.clearShot(decision, target);
-			case FORMACION -> this.toRing(target, Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle,
-				Reach.outside(target, this.mind.ringRadius), 1.0);
+			case FORMACION -> this.formation(target);
 			case EMBOSCAR -> {
 				if (!this.ambush(target, now, false)) {
 					this.hide(target);
@@ -679,6 +678,44 @@ public final class TacticGoal extends Goal {
 		this.use(target, true);
 	}
 
+	/**
+	 * FORMACION (M5): to the point of its post (Captain.place). A point round the player is reached round the ring, never
+	 * through the player's front (toRing); one that is not (a retreat, the captain's side, a hiding spot, the siege ring)
+	 * straight. There, it holds and looks at the player. Without a post, as RODEAR.
+	 */
+	private void formation(Player target) {
+		Vec3 point = this.mind.postPoint;
+		if (point == null) {
+			this.toRing(target, Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle,
+				Reach.outside(target, this.mind.ringRadius), 1.0);
+			return;
+		}
+		if (this.mob.distanceToSqr(point.x, this.mob.getY(), point.z) < 1.0) {
+			this.mob.getNavigation().stop();
+			return;
+		}
+		Captain.Command c = Captain.commandFor(this.mind);
+		boolean round = c == null || c.order == Captain.Order.CERCAR || c.order == Captain.Order.HOSTIGAR || c.order == Captain.Order.CARGA
+			|| c.order == Captain.Order.NINGUNA;
+		// Round the ring only when the straight way to the point goes near the player (within 3.5): through their blade.
+		if (round && nearSegment(target.position(), this.mob.position(), point) < 3.5) {
+			double angle = Math.atan2(point.z - target.getZ(), point.x - target.getX());
+			double radius = Math.hypot(point.x - target.getX(), point.z - target.getZ());
+			this.toRing(target, angle, Math.max(1.0, radius), 1.0);
+		} else {
+			this.pathTo(point.x, point.y, point.z, 1.0);
+		}
+	}
+
+	/** How near a flat segment from a to b comes to p. */
+	private static double nearSegment(Vec3 p, Vec3 a, Vec3 b) {
+		double dx = b.x - a.x;
+		double dz = b.z - a.z;
+		double len = dx * dx + dz * dz;
+		double t = len < 1.0E-6 ? 0.0 : Math.max(0.0, Math.min(1.0, ((p.x - a.x) * dx + (p.z - a.z) * dz) / len));
+		return Math.hypot(p.x - (a.x + dx * t), p.z - (a.z + dz * t));
+	}
+
 	/** CEBO: to the nearest ally and {@link #BAIT_PAST} beyond it, away from the player, drawing them in. */
 	private void bait(Player target) {
 		Mob ally = this.nearestAlly(target);
@@ -890,14 +927,18 @@ public final class TacticGoal extends Goal {
 		}
 		// A path that came to nothing is not asked for again every tick: the pathfinder is the dear part, and a spot
 		// with no way to it (a hiding spot, a fan point, a torch) asked for it twenty times a second.
-		if (this.repath > 0 && this.lastPathFailed) {
+		if (this.repath > 0 && this.lastPathFailed && Math.abs(x - this.failedX) < 1.0 && Math.abs(z - this.failedZ) < 1.0) {
 			return false;
 		}
 		this.repath = 10;
 		this.lastPathFailed = !this.mob.getNavigation().moveTo(x, y, z, speed);
+		this.failedX = x;
+		this.failedZ = z;
 		return !this.lastPathFailed;
 	}
 
-	/** Whether the last path asked for came to nothing. */
+	/** Whether the last path asked for came to nothing, and where it was to (another spot is still tried at once). */
 	private boolean lastPathFailed;
+	private double failedX;
+	private double failedZ;
 }

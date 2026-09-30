@@ -39,7 +39,9 @@ public final class Aggression {
 		if (player.isUsingItem() && (player.getUseItem().has(DataComponents.FOOD) || player.getUseItem().has(DataComponents.CONSUMABLE))) turns++;
 		if (player.getHealth() < player.getMaxHealth() * 0.3F) turns++;
 		int extra = gearTurns(player);
-		return Math.max(1, Math.min(base + 2 + extra, turns + extra));
+		// The captain's synchronized charge (v4, M5): one more turn for 2 s after its shout.
+		int charge = Captain.chargeTurn(player, player.level().getGameTime()) ? 1 : 0;
+		return Math.max(1, Math.min(base + 2 + extra, turns + extra) + charge);
 	}
 
 	/**

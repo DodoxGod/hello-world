@@ -124,11 +124,18 @@ public final class Scaling {
 		}
 		int room = room(mob, level, cfg);
 		boolean creeper = mob.getType() == net.minecraft.world.entity.EntityTypes.CREEPER;
+		java.util.List<Mob> members = new java.util.ArrayList<>();
+		members.add(mob);
 		for (int i = 1; i < group && i <= room; i++) {
 			net.minecraft.world.entity.EntityType<?> kind = companionKind(mob, level, random, cfg, creeper);
 			creeper |= kind == net.minecraft.world.entity.EntityTypes.CREEPER;
-			companion(mob, level, kind);
+			Mob friend = companion(mob, level, kind);
+			if (friend != null) {
+				members.add(friend);
+			}
 		}
+		// Who of the pack can go into a fury (v4, Andy's decision 3): a tenth, one at least in five or more.
+		dev.forja.ai.Fury.choose(members, random);
 	}
 
 	/**
@@ -192,10 +199,10 @@ public final class Scaling {
 	}
 
 	/** One more, beside it. Not natural itself, so it never brings one of its own, and never more than ordinary. */
-	private static void companion(Mob mob, ServerLevel level, net.minecraft.world.entity.EntityType<?> kind) {
+	private static Mob companion(Mob mob, ServerLevel level, net.minecraft.world.entity.EntityType<?> kind) {
 		var other = kind.create(level, EntitySpawnReason.EVENT);
 		if (!(other instanceof Mob friend)) {
-			return;
+			return null;
 		}
 		friend.addTag(COMPANION);
 		// A few tries round it, one to three blocks off, on something to stand on and with room to stand.
@@ -208,10 +215,11 @@ public final class Scaling {
 			placed = level.noCollision(friend) && level.getBlockState(below).isFaceSturdy(level, below, net.minecraft.core.Direction.UP);
 		}
 		if (!placed) {
-			return;
+			return null;
 		}
 		friend.finalizeSpawn(level, level.getCurrentDifficultyAt(friend.blockPosition()), EntitySpawnReason.EVENT, null);
 		level.addFreshEntity(friend);
+		return friend;
 	}
 
 	private static void raise(LivingEntity mob, Holder<Attribute> attribute, double amount, AttributeModifier.Operation operation) {

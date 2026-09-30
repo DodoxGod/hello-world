@@ -418,6 +418,11 @@ public final class CombatConfig {
 	 * through walls, which is cheating. It only redirects movement: it never breaks or builds anything.
 	 */
 	public boolean iaPercepcionHonesta = true;
+	/**
+	 * Captains (docs/red_mob_v4_diseno.md §4.2, Andy 2026-09-29): a group with an elite or a champion is led by it
+	 * (orders, formations, the synchronized charge), by its network (redes_v4/red_capitan.json) or by the rules.
+	 */
+	public boolean iaCapitan = true;
 
 	public double postureFactor(DamageKind kind) {
 		return switch (kind) {

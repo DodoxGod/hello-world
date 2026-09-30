@@ -158,9 +158,9 @@ public class RedV4GameTests {
 				for (int i = 0; i < obs.length; i++) {
 					helper.assertTrue(Float.isFinite(obs[i]), "la entrada " + i + " (" + ObsV4.names().get(i) + ") no es finita: " + obs[i]);
 				}
-				// The blocks still to come (M, Mo, W) are 0; P, E, A, O, C, G and L came with M2 to M4.
+				// W (M6) is 0 without a world vector; M, Mo, P, E, A, O, C, G and L came with M2 to M5.
 				for (int i = ObsV4.M_AT; i < obs.length; i++) {
-					boolean live = i >= ObsV4.P_AT && i < ObsV4.W_AT;
+					boolean live = i < ObsV4.W_AT;
 					helper.assertTrue(live || obs[i] == 0.0F, "la entrada " + i + " (" + ObsV4.names().get(i) + ") debería ser 0 aún: " + obs[i]);
 				}
 				helper.assertTrue(obs[ObsV4.G_AT + 3] == 1.0F, "bloqueo_hace/20 sin bloqueo es 1: " + obs[ObsV4.G_AT + 3]);

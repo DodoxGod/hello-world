@@ -105,6 +105,11 @@ public final class Duels {
 		if (company < 2) {
 			return false;
 		}
+		// A captain leading more than two (v4, M5) gives orders rather than challenges: its group fights as one.
+		Captain.Group group = Captain.group(target);
+		if (group != null && group.captain == mob && group.members.size() > 3) {
+			return false;
+		}
 		start(mob, player);
 		return true;
 	}

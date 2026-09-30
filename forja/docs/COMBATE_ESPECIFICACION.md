@@ -835,6 +835,19 @@ los números. Todo vale igual para una red v4 y para las reglas: las dos llaman 
   camino, esquina o techo) a 0,8, y quieto mirando hacia él.
 - **Caza:** hasta 48 bloques y 30 s sin verlo ni oírlo.
 - **Reglas:** jugador perdido → BUSCAR; búsqueda acabada y a oscuras → EMBOSCAR.
+
+### Capitán, moral y furia (M5; `Captain`, `CaptainBrain`, `Fury`)
+- **Capitán:** el élite o campeón más fuerte del grupo, nunca un veterano; sin él, el grupo va por sus reglas de
+  siempre. Da órdenes cada 10 ticks: su red (`redes_v4/red_capitan.json`, `red_capitan_v4_contrato.json`) o las
+  reglas. Muerto, 10 s sin órdenes.
+- **Formaciones:** MURO (escudos delante a 3,5, arqueros detrás a 8,5, flancos a ±100°, reserva a 12), PINZA (dos
+  grupos a ±120°), CUÑA (frente estrecho a ±20° y el resto en V) y LIBRE (el anillo). Puesto por tipo: escudo o tanque
+  delante, arquero detrás, araña o rápido al flanco, el resto en reserva.
+- **Carga sincronizada:** cuenta de 0, 10, 20 o 40 ticks; grito a la mitad y al llegar; +1 turno durante 2 s.
+- **Moral:** `1 − 0,8·bajas − 0,4·(capitán muerto hace < 10 s) − 0,2·miedo + 0,2·(jugador < 30 %) + 0,1·en casa`.
+- **Furia** (el 10 % del grupo al aparecer, al menos 1 de 5): tras un golpe de moral, 10 s con +25 % de daño y +20 %
+  de velocidad, y 5 s agotado (−20 % de velocidad y sin turno). Una por pelea.
+- **Abandono:** 5 s huyendo a más de 20 bloques y deja la pelea.
 ### Coste (prueba `RedV4PerfGameTests`)
 30 mobs mezclados con redes v4 del tamaño del contrato (468 → 128 → 128 → GRU 96 → 53): **1,25–1,42 ms/tick** de IA en
 total (tope 2,5); los mismos por reglas, 0,14–0,16 ms/tick.

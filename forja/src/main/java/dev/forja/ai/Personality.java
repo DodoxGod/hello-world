@@ -182,7 +182,8 @@ public final class Personality {
 		if (atHome(mob)) {
 			m *= 1.1;
 		}
-		return m;
+		// v4's fury (M5): +25 % while it lasts
+		return m * Fury.damage(mob);
 	}
 
 	// --- 65: fear, 66: leaders -------------------------------------------------------------------------------

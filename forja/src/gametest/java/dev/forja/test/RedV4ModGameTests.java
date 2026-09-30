@@ -57,6 +57,7 @@ public class RedV4ModGameTests {
 	 */
 	private static void floor(GameTestHelper helper, int size) {
 		if (size > 8) {
+			force(helper, size, true);
 			for (int x = -1; x <= size; x++) {
 				for (int z = -1; z <= size; z++) {
 					for (int y = 0; y <= 10; y++) {
@@ -93,7 +94,22 @@ public class RedV4ModGameTests {
 		}
 		AABB box = new AABB(helper.absoluteVec(new Vec3(-4, -2, -4)), helper.absoluteVec(new Vec3(size + 4, height + 4, size + 4)));
 		helper.getLevel().getEntitiesOfClass(Entity.class, box, e -> !(e instanceof net.minecraft.world.entity.player.Player)).forEach(Entity::discard);
+		if (size > 8) {
+			force(helper, size, false);
+		}
 	}
+
+	/** Forces (or lets go of) the chunks under a floor bigger than a test's box: entities only tick in those that are. */
+	private static void force(GameTestHelper helper, int size, boolean on) {
+		BlockPos a = helper.absolutePos(new BlockPos(-1, 0, -1));
+		BlockPos c = helper.absolutePos(new BlockPos(size, 0, size));
+		for (int cx = Math.min(a.getX(), c.getX()) >> 4; cx <= Math.max(a.getX(), c.getX()) >> 4; cx++) {
+			for (int cz = Math.min(a.getZ(), c.getZ()) >> 4; cz <= Math.max(a.getZ(), c.getZ()) >> 4; cz++) {
+				helper.getLevel().setChunkForced(cx, cz, on);
+			}
+		}
+	}
+
 
 	/** A player standing at a relative block (on whatever is below it), full health, looking along +X. */
 	private static CombatGameTests.TestPlayer player(GameTestHelper helper, BlockPos at) {

@@ -16,6 +16,7 @@ red v4 y las reglas (llaman a los mismos ejecutores), así que el comportamiento
 | M2 | escudo inteligente y golpe de escudo (G); objetos en el suelo, valor de arma y RECOGER (O); mochila, beber, comer, lanzar, perlas, carga de viento y cambiar de arma (C) | ver `git log` |
 | M3 | bloque A; flecha de empuje, zarpazo, garfio; ASEDIAR; antorchas: APAGAR_LUZ, bloque L y `jug_luz` | ver `git log` |
 | M4 | oído (sonidos), última posición y estimación en la observación y el ejecutor, caza hasta 48 y 600 ticks, BUSCAR, escondites y EMBOSCAR; bloques P y E | ver `git log` |
+| M5 | capitán (de reglas y red `red_capitan_v4`), órdenes, formaciones y puestos, carga sincronizada, moral, furia, abandono; bloques M y Mo; FORMACION y furia | ver `git log` |
 
 ## Entradas vivas (M2/M3)
 
@@ -61,6 +62,8 @@ Marco de siempre: "delante" = del mob al jugador en el plano, "derecha" = (−de
 - `consumiendo`: hay un objeto en curso (bebiendo, comiendo, cambiando de arma **o en el aviso de un lanzamiento**).
 - `yo_ef_negativo`: cualquier efecto de categoría HARMFUL.
 - `jug_ef_mejora`: fuerza, velocidad, resistencia o regeneración.
+- `perla_destino_ok` y `lanzamiento_ok` valen **0 si no llevo perla** (la primera) **o nada que lanzar** (poción
+  arrojadiza o carga de viento, la segunda): solo se calculan para quien puede usarlos.
 - `perla_destino_ok`: jugador a ≤ 16 y o bien arriba o en pilar y lo veo (apunto a sus pies + 0,1), o bien hay un
   punto a 2 de él en mi lado con suelo (de 2 por encima a 3 por debajo), sin lava ni caída, a ≤ 16 de mí y con línea
   recta libre de mis ojos a ese punto + 1.
@@ -97,7 +100,7 @@ Marco de siempre: "delante" = del mob al jugador en el plano, "derecha" = (−de
 | 43–50 objeto | lo lleva, no hay otro en curso, enfriamiento 0, no aturdido; 4 y 7 `lanzamiento_ok`; 5 `perla_destino_ok`; 6 no en furia; 8 lleva un arma de repuesto (no una caña) y ≥ 40 ticks desde el último cambio | ver COMBATE §5 |
 | 52 golpe_escudo | escudo arriba, bloqueo < 20 ticks, alcanza, listo | ver COMBATE §5 |
 
-EMBOSCAR (37) y BUSCAR (38) se abren en M4 (ver abajo); FORMACION (36) y furia (51), en M5.
+EMBOSCAR (37) y BUSCAR (38) se abren en M4; FORMACION (36) y furia (51), en M5 (ver abajo).
 
 **Especial 3 (salida 23):** nuevo hueco para la flecha de empuje (esqueleto, stray, bogged, saqueador), el zarpazo
 (araña, araña de cueva) y el garfio (zombi, husk, aldeano zombi, ahogado, vindicador, piglin, piglin bruto, piglin
@@ -186,6 +189,80 @@ mob, el radio se divide por 2.
 ### Caza
 - Un mob sigue pensando y conserva su objetivo **hasta 48 bloques y 600 ticks** sin percibirlo ni oírlo (antes 32 y la
   memoria de 3 s de los objetivos vanilla, `TargetGoalMixin`).
+
+## M5: capitán, órdenes, formaciones, moral y furia
+
+### El capitán (`Captain`, `CaptainBrain`)
+- **Quién:** el élite o campeón más fuerte del grupo (amenaza, luego vida máxima). **Nunca un veterano.** Un grupo sin
+  élite ni campeón no tiene capitán. Grupo = los mobs cuyo objetivo es ese jugador (el del `Squad`).
+- **Cada 10 ticks** (con el `Squad`): la red `redes_v4/red_capitan.json` (formato `red_capitan_v4`, contrato
+  `red_capitan_v4_contrato.json`, 213 → 60) si la hay y encaja; si no, el **capitán de reglas** (diseño §3.4 con estos
+  detalles: "ocupado" = usando un objeto, cargando un golpe o alguien tiene turno sobre él; "de espaldas" = algún
+  miembro a ≤ 8 a más de 120° de su mirada; CARGA sigue hasta que acaba su turno extra; HOSTIGAR en MURO si hay
+  escudo, si no PINZA).
+- **Una orden sigue** (su edad y su cuenta atrás) mientras orden, formación y sector no cambien.
+- **Muere el capitán:** `sin_mando` = 1 y baja a 0 en 200 ticks; sin órdenes durante ese tiempo aunque quede otro
+  élite; después otro élite puede mandar. Es un golpe de moral.
+- **Foco 1:** con otro jugador vivo a ≤ 16 del capitán, los miembros sin turno cambian de objetivo a ese.
+- **Duelos (idea 96):** un capitán que manda a más de 3 no reta a duelo.
+- **Señales:** polvo dorado sobre el capitán cada 20 ticks; con CARGA, grito (celebración de saqueador y cuerno) a la
+  mitad de la cuenta (si es ≥ 20) y al llegar a 0, con partículas de enfado.
+
+### Carga sincronizada
+- CARGA con `cuenta` 0/10/20/40 ticks. Al llegar a 0 el capitán grita y el jugador admite **un turno más durante 40
+  ticks** (`Aggression.maxAttackers` + 1).
+
+### Puestos y formaciones (geometría; ángulos como `Squad.angle`, frente = la media lenta de la mirada del jugador, `ObsV4.front`)
+- Dentro de cada puesto, los miembros se reparten por su ángulo actual respecto al frente (de izquierda a derecha);
+  en los puestos por lados, la primera mitad va a la izquierda (ángulos negativos) y el resto a la derecha; uno solo,
+  al lado en que está.
+- **MURO:** frente a 3,5 en ±40°; segunda a 8,5 en ±30°; flancos a 4 en ±100° (+15° por fila); reserva a 12 en ±20°.
+- **PINZA:** frente y flanco a 3,5 en ±120° (+12° por fila); segunda a 8,5 en ±120°; reserva a 10 detrás (180° ±20°).
+- **CUÑA:** frente a 3,5 en ±20°; segunda a 6 (+1 por fila) en ±35°; flanco a 5 (+1 por fila) en ±60°; reserva a 9
+  en ±25°.
+- **LIBRE:** el hueco estable del anillo.
+- **Órdenes:** CERCAR lleva frente y flanco a ≥ 6 (nadie entra); RETIRADA: 12 más allá, alejándose del jugador;
+  REAGRUPAR: en círculo de 2 alrededor del capitán; ESCOLTA: 2,5 del capitán hacia el jugador, a los lados (0,75 +
+  0,75 por pareja); EMBOSCADA: su escondite (si no, la formación); ASEDIO: su sitio del anillo de asedio; CARGA: la
+  formación hasta el 0 y luego el jugador.
+- **Puestos por tipo (reglas, y miembros 9+ con red):** escudo o tanque → frente; arquero, lanzador o bruja →
+  segunda; araña, velocidad ≥ 0,3 o corriendo → flanco; el resto → reserva.
+
+### M (298–327)
+- **Sin capitán:** `orden_ninguna` = 1 y `formacion_libre` = 1 (el diseño lo dice así; `red_mob_v4_neutros.md` lo
+  dejaba en duda: **el simulador tiene que copiar el 1**), el resto a 0.
+- `orden_edad/40`, `cuenta_atras/40` (ticks que faltan; 0 también sin CARGA), `orden_sector_*` (vector unitario del
+  sector en mi marco; 0, 0 sin sector), `puesto_*` (one-hot; todo 0 sin puesto), `puesto_delante/8`,
+  `puesto_derecha/8` (el punto de mi puesto), `capitan_*`.
+- `cubierto`: un aliado con escudo o de puesto "frente" por tipo corta la línea de los ojos del jugador a los míos.
+
+### Mo (328–337) y moral
+- `moral_grupo` y `moral_propia`: las fórmulas del diseño §4.3; `miedo` y `en_casa` son del propio mob; los intrépidos
+  (élite, campeón, jefe) nunca bajan de 0,8 en la propia.
+- `bajas_frac` = muertos del grupo / su mayor tamaño en esta pelea; `bajas_recientes/5` = muertes en 200 ticks.
+  **Pelea nueva** cuando el grupo lleva 60 ticks sin nadie.
+- `aliados_huyendo/5`: otros en RETIRARSE seguido ≥ 40 ticks; `aliados_furia/5`: otros en furia.
+- `retirada_ticks/100`: ticks seguidos en RETIRARSE. **A 100 y a > 20 del jugador, suelta el objetivo** (abandona la
+  pelea), para cualquier cerebro.
+
+### Furia (`Fury`; decisión 3 de Andy)
+- Solo pueden los elegidos al aparecer: el 10 % del grupo del aparecido (líder y compañeros), redondeado hacia abajo,
+  **al menos 1 si son 5 o más** (etiqueta `forja_furia`). A los demás se les enmascara.
+- `furia_disponible`: elegido, no cobarde, no la usó en esta pelea y **golpe de moral en los últimos 200 ticks**
+  (capitán muerto, o muertos ≥ la mitad del mayor tamaño con ≥ 2).
+- **Salida 51**, máscara: disponible, no aturdido, sin aviso en curso. Efecto: 200 ticks con +25 % de daño y +20 % de
+  velocidad; luego 100 ticks agotado (−20 % de velocidad y **sin turno**). En furia se enmascaran defensa 1–2,
+  fintar, RETIRARSE, REAGRUPARSE, EMBOSCAR y objeto 6.
+- **Reglas:** el agresivo entra siempre que puede; el prudente o astuto con un 2 % por decisión; el cobarde nunca.
+
+### Salidas nuevas (M5)
+- **FORMACION (36)**, máscara: capitán vivo y tengo puesto con punto. Ejecutor: al punto; si el camino recto pasa a
+  < 3,5 del jugador y la orden es de las que rodean (CERCAR, HOSTIGAR, CARGA), por el anillo (`toRing`); si no, recto.
+  Llegado (< 1), quieto mirándolo. Corre si está a > 5 (reglas).
+- **furia (51)**: arriba.
+- **Reglas que obedecen:** RETIRADA → RETIRARSE; REAGRUPAR y ESCOLTA → FORMACION; EMBOSCADA → EMBOSCAR; ASEDIO →
+  ASEDIAR; CARGA → FORMACION hasta el 0 y luego al ataque; CERCAR y HOSTIGAR → FORMACION; un arquero con puesto va a
+  él (a > 3) antes de tirar.
 
 ## Rendimiento
 

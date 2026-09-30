@@ -101,6 +101,8 @@ public final class Squad {
 			assign(group.getKey(), group.getValue(), now);
 			// v4's jug_sin_vernos: whether the player has any of them in sight
 			Perception.watchGroup(group.getKey(), group.getValue(), now);
+			// v4's captain: who leads them, the orders, the posts and their points (M5)
+			Captain.update(group.getKey(), group.getValue(), now);
 		}
 	}
 

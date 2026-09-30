@@ -51,6 +51,8 @@ public final class MobAi {
 	 * (red_capitan.json, "capitan"), which waits for M5. And what was already logged, so a reload does not say it again.
 	 */
 	private static final Map<String, Path> V4_WAITING = new java.util.LinkedHashMap<>();
+	/** The v4 captain's network (red_capitan.json in redes_v4, CaptainBrain), or null: the rules captain then. */
+	private static NetBrain captain;
 	private static final java.util.Set<String> V4_LOGGED = new java.util.HashSet<>();
 
 	private MobAi() {
@@ -88,6 +90,7 @@ public final class MobAi {
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
 			if (entity instanceof Mob mob && entity instanceof Enemy) {
 				Squad.onDeath(mob, mob.level().getGameTime());
+				Captain.onDeath(mob, mob.level().getGameTime());
 			}
 		});
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register(MobAi::callForHelp);
@@ -153,8 +156,9 @@ public final class MobAi {
 		NETS.clear();
 		NET_PROBLEMS.clear();
 		V4_WAITING.clear();
+		captain = null;
 		if (contract() != Contract.V3) {
-			readV4(V4_CAPTAIN);
+			loadCaptain();
 		}
 		for (String family : families()) {
 			// The blaze has a contract of its own (red_blaze_v1), in either folder, whatever iaContrato says.
@@ -223,6 +227,40 @@ public final class MobAi {
 		}
 	}
 
+	/**
+	 * The v4 captain (M5): red_capitan.json from redes_v4 with "formato": "red_capitan_v4", CaptainBrain's 213 inputs in
+	 * order and 60 outputs. One that does not fit is noted in {@link #problems()} ("v4: ...") and the groups keep the
+	 * rules captain.
+	 */
+	private static void loadCaptain() {
+		com.google.gson.JsonObject json = readV4(V4_CAPTAIN);
+		if (json == null) {
+			return;
+		}
+		try {
+			NetBrain net = NetBrain.fromJson(json);
+			String problem = CaptainBrain.check(net);
+			if (problem != null) {
+				NET_PROBLEMS.put(V4_CAPTAIN, "v4: " + problem);
+				Forja.LOGGER.warn("Red de capitán v4 descartada, los grupos siguen con el capitán de reglas: {}", problem);
+				return;
+			}
+			captain = net;
+			Forja.LOGGER.info("Red de capitán v4 cargada ({} entradas, memoria {})", net.inputs(), net.memory);
+		} catch (Exception failure) {
+			NET_PROBLEMS.put(V4_CAPTAIN, "v4: " + failure.getMessage());
+			Forja.LOGGER.warn("No se pudo leer la red de capitán v4", failure);
+		}
+	}
+
+	/** The v4 captain's network, or null for the rules captain. */
+	public static NetBrain captainNet() {
+		if (!loaded) {
+			reload();
+		}
+		return captain;
+	}
+
 	/** Why a network cannot drive a blaze, or null: the red_blaze_v1 contract, exactly (BlazeBrain.check). */
 	public static String checkBlaze(NetBrain net) {
 		return BlazeBrain.check(net);
@@ -248,19 +286,18 @@ public final class MobAi {
 			Forja.LOGGER.warn("No se pudo leer la red v4 {}", file, failure);
 			return null;
 		}
-		boolean captain = V4_CAPTAIN.equals(family);
-		boolean v4 = captain ? "red_capitan_v4".equals(format) : V4_FORMAT.equals(format);
+		boolean isCaptain = V4_CAPTAIN.equals(family);
+		boolean v4 = isCaptain ? CaptainBrain.FORMAT.equals(format) : V4_FORMAT.equals(format);
 		if (!v4) {
 			if (V4_LOGGED.add(family + ":" + format)) {
 				Forja.LOGGER.warn("{} está en redes_v4 pero su formato es '{}', no v4: no se usa", file.getFileName(), format);
 			}
 			return null;
 		}
-		if (captain || !supportsV4()) {
+		if (!supportsV4()) {
 			V4_WAITING.put(family, file);
 			if (V4_LOGGED.add(family)) {
-				Forja.LOGGER.info(captain ? "red de capitán v4 encontrada, aún no soportada (llega en M5): los grupos siguen con sus reglas"
-					: "red v4 encontrada para {}, aún no soportada: se usa v3", family);
+				Forja.LOGGER.info("red v4 encontrada para {}, aún no soportada: se usa v3", family);
 			}
 			return null;
 		}
@@ -419,12 +456,14 @@ public final class MobAi {
 			if (mind.target != null) {
 				MobItems.tick(mind, now);
 				ShieldPlay.tick(mind, now);
+				Fury.tick(mind, now);
 			} else if (mind.itemTicks > 0 || mind.bashWindup > 0) {
 				MobItems.stop(mind.mob, mind);
 				mind.bashWindup = 0;
 				mind.bashTarget = null;
 			}
 		}
+		Captain.tick(level, now);
 		AiDebug.tick(level, now);
 	}
 
@@ -526,11 +565,13 @@ public final class MobAi {
 		if (net == null) {
 			mind.networked = false;
 			Decision decision = RuleBrain.decide(mind, target);
-			// v4's heads by the rules too (Andy, 2026-09-29): what it carries, and the bash after a block.
+			// v4's heads by the rules too (Andy, 2026-09-29): what it carries, the bash after a block, and fury.
 			int item = MobItems.ruleItem(mind, target, now);
 			boolean bash = ShieldPlay.ruleBash(mob, mind, target, now);
-			mind.decision = item != 0 || bash ? decision.withV4(item, false, bash) : decision;
+			boolean fury = RuleBrain.fury(mind, now);
+			mind.decision = item != 0 || bash || fury ? decision.withV4(item, fury, bash) : decision;
 			mind.wantsRun = MobSprint.rules(mind, target);
+			retreat(mind, target, now);
 			AiStats.count(mob, mind.decision);
 			return;
 		}
@@ -579,8 +620,31 @@ public final class MobAi {
 		mind.networked = true;
 		mind.lastObs = obs;
 		mind.lastLogits = logits;
+		retreat(mind, target, now);
 		AiStats.count(mob, mind.decision);
 		AiRecorder.record(mind, target, obs, mask, now);
+	}
+
+	/** Beyond this, running away for {@link #ABANDON_TICKS} ticks, a monster gives the fight up (v4, §4.3). */
+	public static final double ABANDON_RANGE = 20.0;
+	public static final int ABANDON_TICKS = 100;
+
+	/**
+	 * retirada_ticks, and leaving the fight (docs/red_mob_v4_diseno.md §4.3): in RETIRARSE without a break for 100 ticks
+	 * and more than 20 blocks from the player, it lets them go, survives, and counts one more fight.
+	 */
+	private static void retreat(MobMind mind, Player target, long now) {
+		if (mind.decision.tactic() != Tactic.RETIRARSE) {
+			mind.retreatSince = Long.MIN_VALUE / 2;
+			return;
+		}
+		if (mind.retreatSince <= Long.MIN_VALUE / 4) {
+			mind.retreatSince = now;
+		}
+		if (now - mind.retreatSince >= ABANDON_TICKS && mind.mob.distanceTo(target) > ABANDON_RANGE) {
+			mind.mob.setTarget(null);
+			mind.retreatSince = Long.MIN_VALUE / 2;
+		}
 	}
 
 	/**
@@ -696,8 +760,7 @@ public final class MobAi {
 	}
 
 	/**
-	 * v4's part of the mask (docs/red_mob_v4_contrato.json, "mascara"): only what cannot be done is shut. What a step to
-	 * come brings (FORMACION and furia, M5) stays shut until it comes, as the simulator's own steps shut it.
+	 * v4's part of the mask (docs/red_mob_v4_contrato.json, "mascara"): only what cannot be done is shut.
 	 */
 	static void maskV4(Mob mob, MobMind mind, Player target, boolean[] mask) {
 		long now = mob.level().getGameTime();
@@ -705,7 +768,8 @@ public final class MobAi {
 		boolean slot = Squad.onRing(mob) ? mind.slotOf == Perception.real(target) && !Double.isNaN(mind.slotAngle) : !Double.isNaN(mind.ringAngle);
 		mask[at + Tactic.SECTOR.ordinal() - Tactic.V3_COUNT] = slot;
 		mask[at + Tactic.TIRO_LIBRE.ordinal() - Tactic.V3_COUNT] = MobFamily.of(mob) == MobFamily.ARQUERO && Squad.allyInLineOf(mob, target) != null;
-		mask[at + Tactic.FORMACION.ordinal() - Tactic.V3_COUNT] = false;
+		// M5: a post from the captain
+		mask[at + Tactic.FORMACION.ordinal() - Tactic.V3_COUNT] = Captain.commandFor(mind) != null && mind.postPoint != null;
 		// M4: a hiding spot to lie in wait at; a player it does not perceive and saw less than 30 s ago to look for
 		mask[at + Tactic.EMBOSCAR.ordinal() - Tactic.V3_COUNT] = Ambush.spot(mob, mind, target, now) != null;
 		mask[at + Tactic.BUSCAR.ordinal() - Tactic.V3_COUNT] = !Perception.perceived(mind, now) && mind.lastSeen != null
@@ -717,7 +781,7 @@ public final class MobAi {
 		for (int k = 1; k < NetBrain.OBJECTS; k++) {
 			mask[NetBrain.OBJECT_AT + k] = MobItems.allowed(mob, mind, target, k, now);
 		}
-		mask[NetBrain.FURY_AT] = false;
+		mask[NetBrain.FURY_AT] = Fury.allowed(mind, now);
 		mask[NetBrain.SHIELD_BASH_AT] = ShieldPlay.bashReady(mob, mind, target, now);
 		if (mind.furyActive(now)) {
 			// in a fury: no shield, no dodge, no feint, no running away or regrouping, no hiding, no pearl away

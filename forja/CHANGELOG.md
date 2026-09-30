@@ -1,5 +1,19 @@
 # Novedades
 
+## 2026-09-29 — IA v4 de los monstruos: el capitán, formaciones, moral y furia (paso M5)
+
+- **Capitanes:** en un grupo con un élite o un campeón (nunca un veterano), él manda: cercar, cargar, hostigar,
+  retirarse, reagruparse, emboscar, asediar o escoltarle. Lleva un estandarte dorado encima.
+- **Formaciones:** muro (escudos delante, arqueros detrás, rápidos por los flancos), pinza y cuña.
+- **Carga sincronizada:** el capitán cuenta y grita; al grito, 2 s con un turno de ataque más contra ti.
+- **Si matas al capitán:** 10 s sin órdenes y la moral cae.
+- **Furia:** uno de cada diez de un grupo (al menos uno de cinco) puede enfurecerse tras perder al capitán o a la
+  mitad: 10 s más fuerte y rápido, luego 5 s agotado. Se ve (partículas rojas y rugido).
+- **Huir de verdad:** un monstruo que huye 5 s a más de 20 bloques deja la pelea.
+- **Red v4:** bloques M y Mo, FORMACION y furia; red de capitán `red_capitan_v4` (contrato nuevo en
+  `docs/red_capitan_v4_contrato.json`).
+- **Pruebas:** `RedV4CapitanGameTests` (8).
+
 ## 2026-09-29 — IA v4 de los monstruos: oído, rastro y emboscadas (paso M4)
 
 - **Te oyen:** pasos (corriendo más lejos; agachado, nada), picar y poner bloques, puertas y cofres, comer y beber,

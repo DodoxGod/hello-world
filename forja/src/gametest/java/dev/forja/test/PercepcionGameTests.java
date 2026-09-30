@@ -110,8 +110,9 @@ public class PercepcionGameTests {
 			cfg.iaContrato = "auto";
 			MobAi.reload();
 			helper.assertTrue(MobAi.netFolderV4().equals(v4.toAbsolutePath()), "redes_v4 va junto a redes: " + MobAi.netFolderV4());
-			helper.assertTrue(MobAi.v4Waiting().keySet().equals(java.util.Set.of(MobAi.V4_CAPTAIN)),
-				"solo el capitán v4 debería quedar a la espera (llega en M5): " + MobAi.v4Waiting().keySet());
+			helper.assertTrue(MobAi.v4Waiting().isEmpty() && MobAi.captainNet() == null
+				&& String.valueOf(MobAi.problems().get(MobAi.V4_CAPTAIN)).startsWith("v4:"),
+				"el capitán v4 que no encaja se rechaza y se anota (M5): " + MobAi.v4Waiting().keySet() + " " + MobAi.problems());
 			NetBrain cuerpo = MobAi.net("cuerpo");
 			helper.assertTrue(cuerpo != null && "red_mob_v2".equals(cuerpo.format),
 				"el cuerpo debería seguir con su red v3 (aquí una v2), no la v4 que no encaja: " + (cuerpo == null ? null : cuerpo.format));
