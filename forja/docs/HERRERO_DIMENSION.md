@@ -12,9 +12,10 @@ recompensa esperan a que Andy revise la dimensión. Cada sección dice en qué e
 
 | Entrega | Qué lleva | Estado |
 |---|---|---|
-| 1 | Dimensión: terreno, arena, cielo, niebla, luz, partículas, sonido y música; `/forja dimension` | en esta rama |
+| 1 | Dimensión: terreno, arena, cielo, niebla, luz, partículas, sonido y música; `/forja dimension` | hecha y revisada por Andy |
+| 1b | Arreglos de la revisión: sol bajo el vacío, tumbas que caen con su suelo, tumbas vistas desde el sur, meseta según la semilla, estrellas fugaces y cielo que se mueve | en esta rama |
 | 2 | Oricalco, perla de oricalco, marco del portal, portal, retirada de la invocación vieja | pendiente de Andy |
-| 3 | Pelea nueva: llegada, fases a 2/3 y 1/3, aprendices en formación, eventos, persistencia, estrella de vuelta y recompensa | pendiente de Andy |
+| 3 | Pelea nueva: llegada, fases a 2/3 y 1/3, aprendices en formación, eventos, reforjado estelar, persistencia, estrella de vuelta, revancha y recompensa | diseño aprobado en parte (ver 6); pendiente |
 
 ---
 
@@ -121,7 +122,9 @@ lo comprueba. La rotonda se queda como sala del portal, sin bloqueo de construcc
 ### 2.2 El generador: barato a propósito
 
 Un generador propio (`world/StarYardGenerator`), **sin ruido**: cada columna se calcula con unas pocas sumas de
-senos y un hash, sin muestrear nada. Todo lo que no es la meseta es aire, que es lo más barato que hay. No tiene
+senos y un hash, sin muestrear nada. **La meseta depende de la semilla del mundo** (Andy, revisión de la entrega 1):
+`world/StarYardLayout` saca de la semilla, una sola vez, unas pocas decenas de números (ver 2.3) y luego cada
+columna usa esos números y un hash que lleva la semilla. La arena es la misma en todos los mundos. Todo lo que no es la meseta es aire, que es lo más barato que hay. No tiene
 estructuras, así que `/locate` no tiene nada que buscar aquí y no puede congelar el juego; el teletransporte carga
 chunks casi vacíos. Medido en la entrega 1 (ver 2.9).
 
@@ -136,17 +139,30 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
 | **Explanada** (el Taller) | 24 a 34 | obsidiana y piedra negra | 4 pilares con braseros de metal fundido; plataforma de llegada al norte |
 | **Cementerio en filas** | 34 a 72 | ceniza | tumbas en anillos alrededor de la arena, cada 4 bloques |
 | **Cementerio disperso** | 72 al borde | ceniza, ceniza prensada, basalto | armas sueltas, campos de fosas y forjas frías |
-| **Borde** | 124 a 176 (ondulado) | cantil de obsidiana | se cae al vacío |
+| **Borde** | unos 108 a 192, según la semilla | cantil de obsidiana | se cae al vacío |
 
-- **Forma del borde:** radio `150 + 14 sen(3θ + 1,1) + 8 sen(7θ + 2,3) + 4 sen(13θ + 0,4)`, entre 124 y 176
-  bloques. No es un círculo: tiene cabos y ensenadas.
-- **Relieve:** la arena y la explanada son planas. Desde el radio 34 la ceniza ondula ±3 bloques con suavidad, y
-  llega entera al radio 54.
+**Lo que cambia con la semilla** (lo demás es fijo):
+
+| Qué | Cómo varía |
+|---|---|
+| Forma del borde | radio base de 138 a 162, más tres ondas de 2–4, 5–8 y 9–14 lóbulos, de 10–16, 5–9 y 2–5 bloques de alto y giro al azar |
+| Ríos | de 2 a 4, repartidos alrededor con ±20° de juego (nunca a menos de 70° uno de otro); cada uno serpentea con dos ondas propias (6–11 y 3–5 bloques) |
+| Puentes | uno entre 70 y 82 bloques del centro y otro entre 100 y 120 |
+| Islotes | de 5 a 9, de 7 a 18 de radio, a entre 25 y 95 bloques del borde y a y 55–120, sin pisarse |
+| Tumbas | separación en las filas de 3,0 a 3,6; sueltas del 4 al 6 %; en fosas del 12 al 20 %; una celda de fosas de cada 4 a 6 |
+| Forjas frías | celdas de 22 a 26 bloques, una de cada dos |
+| Relieve y manchas | las ondas de la ceniza, las manchas de ceniza prensada y los afloramientos de basalto se estiran y desplazan; las manchas van torcidas por otra onda para que no salgan en filas |
+| Cada elección suelta | (qué arma, qué inclinación, grietas del suelo…) lleva la semilla en el hash |
+
+- **La arena no cambia:** su suelo, su muro, los pilares y la plataforma de llegada son los mismos en todos los
+  mundos (lo comprueba `theSeedShapesThePlateauButNotTheArena`, que también dibuja los mapas de dos semillas).
+- **Relieve:** la arena y la explanada son planas. Desde el radio 34 la ceniza ondula unos ±3 bloques con suavidad,
+  y llega entera al radio 54.
 - **Por debajo:** la meseta es un cono invertido de 4 a 68 bloques de grueso (más gruesa en el centro), con capas de
   ceniza (2), obsidiana (2 o 3: la "losa del Taller", que se ve como una franja negra en los cantiles), piedra negra
   y basalto, y betas de obsidiana llorona.
-- **Islotes:** 7 islotes de obsidiana flotan alrededor, entre 205 y 262 bloques del centro y a distintas alturas
-  (y 55 a 118), de 7 a 18 de radio. Algunos llevan una tumba o una forja rota. Son lo que se ve a lo lejos.
+- **Islotes:** de 5 a 9 islotes de obsidiana flotan alrededor, a distintas alturas. Algunos llevan una tumba. Son
+  lo que se ve a lo lejos.
 
 ### 2.4 La arena y la llegada
 
@@ -167,13 +183,18 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
   punta, medio hundida. 6 armas: espada, espada negra, hacha, tridente, maza y pico, con las texturas vanilla
   recoloreadas a hierro oxidado y quemado. 4 orientaciones y 3 inclinaciones (0°, 22,5° hacia un lado y hacia el
   otro) por arma.
-- **En filas (radio 34 a 72):** anillos cada 4 bloques y una tumba cada 3,2 bloques de anillo, mirando a la
-  arena. Falta una de cada 7 (tumbas saqueadas). Unas 450.
-- **Dispersas (radio 72 al borde):** un 5 % de las columnas, y un 16 % en los "campos de fosas" (celdas de 16 × 16
-  que salen 1 de cada 5). Unas **3.500 tumbas** en total. Una de cada cinco tiene un montón de ceniza prensada
-  debajo.
-- **Forjas frías:** en celdas de 24 × 24, una de cada dos tiene una forja en ruinas, lejos de los ríos y de la
-  arena (radio 76 al borde menos 14). Salen 37. Tres modelos:
+  - **Se ven bien desde los cuatro lados** (arreglo de la revisión): la cara de atrás de la carta llevaba la misma
+    uv que la de delante, y como una cara norte recorre la x al revés, desde el norte el arma salía tumbada. Ahora
+    cada cara trasera tiene la uv que pone el mango y la cabeza en el mismo sitio que la delantera.
+  - **Caen con su suelo** (arreglo de la revisión): si se quita el bloque de debajo, el arma desaparece sin soltar
+    nada, como una antorcha sin pared. Rota a mano tampoco suelta nada. No se puede poner en el aire.
+- **En filas (radio 34 a 72):** anillos cada 4 bloques y una tumba cada 3,0–3,6 bloques de anillo (según la
+  semilla), mirando a la arena. Falta una de cada 7 (tumbas saqueadas).
+- **Dispersas (radio 72 al borde):** del 4 al 6 % de las columnas, y del 12 al 20 % en los "campos de fosas"
+  (celdas de 16 × 16, una de cada 4 a 6). Entre **3.000 y 5.100 tumbas** según la semilla (medido en 5 semillas).
+  Una de cada cinco tiene un montón de ceniza prensada debajo.
+- **Forjas frías:** en celdas de 22 a 26 bloques, una de cada dos tiene una forja en ruinas, lejos de los ríos y de
+  la arena (radio 76 al borde menos 14). Salen de 17 a 42 según la semilla. Tres modelos:
   - **Fragua fría:** suelo de 7 × 7 de ladrillo agrietado, pared del fondo rota, un alto horno apagado con su
     chimenea, un yunque dañado y un caldero vacío.
   - **Yunques rotos:** tres yunques (mellado, dañado y entero) alrededor de una piedra de afilar, y dos armas
@@ -185,11 +206,12 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
 
 ### 2.6 El metal fundido (solo decoración)
 
-- **3 ríos** de metal fundido (`forja:metal_fundido`), a 30°, 150° y 270°. Nacen en un pilón a 52 bloques del
+- **De 2 a 4 ríos** de metal fundido (`forja:metal_fundido`), según la semilla. Nacen en un pilón a 52 bloques del
   centro (una piletita con un chorro que cae de un dintel de obsidiana) y serpentean hasta el borde.
 - **Cauce:** 3 de ancho, con el metal un bloque por debajo del suelo. Las dos orillas llevan un **muro** de
   ladrillo de piedra negra pulida (1,5 de alto: no se salta), así que no se puede caer por accidente.
-- **Puentes:** a 76 y 112 bloques del centro, de 5 de ancho, cerrados con muro por los lados.
+- **Puentes:** dos anillos de puentes (entre 70 y 82, y entre 100 y 120 bloques del centro), de 5 de ancho,
+  cerrados con muro por los lados.
 - **Cascadas:** donde un río llega al borde, el metal cae por el cantil hacia el vacío y se pierde abajo, a
   y ≈ 4, soltando gotas.
 - **Si alguien se mete:** quema como la lava (4 de daño por segundo y fuego) y frena, pero se puede salir andando.
@@ -202,24 +224,41 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
   **naranja de brasa** justo abajo, como si en el fondo del vacío hubiera lava o un horno. Es un degradado:
   - en el horizonte, violeta oscuro (`#1B1624`), sin brillo;
   - a −30°, granate (`#5A1A12`), a media fuerza;
-  - mirando recto abajo, naranja de brasa (`#FF6A1E`), a toda fuerza, con un halo más claro en el centro que
-    respira despacio (±12 % cada 7 s).
+  - mirando recto abajo, naranja de brasa (`#FF6A1E`), a toda fuerza.
+  - **Un sol debajo** (Andy, revisión de la entrega 1: "como si estuvieras encima de un sol"): al fondo, justo
+    abajo, un cuerpo enorme y cegador. De fuera a dentro:
+    - un halo rojo muy ancho;
+    - 28 rayos largos y finos, cada uno de su largo, que parpadean y giran despacio;
+    - dos coronas que giran una contra otra;
+    - un brillo de calor: 12 manchas de luz que rondan el núcleo y tiemblan;
+    - el núcleo, blanco y amarillo, que ciega.
+
+    Todo respira despacio (±8 % cada 7 s).
+  - **Se apaga con la altura:** entero hasta 30 bloques por encima de la arena (y = 110) y apagado a 90 por encima
+    (y = 170). Tiene que apagarse: el sol cuelga dentro de la distancia que la niebla deja limpia, y desde muy alto
+    la meseta queda más lejos que él, así que se dibujaba delante de ella.
   - La **niebla** hace lo mismo: cuanto más miras hacia abajo, más se tiñe de brasa (hasta un 55 % mirando recto
     abajo), y también cuanto más bajo estás (a y = 20 ya es media brasa).
-  - **Brasas que suben:** chispas que brillan solas suben despacio desde el fondo por debajo de la meseta, fuera de
-    su sombra (unas 3 por tick alrededor del jugador, de 10 a 60 bloques por debajo de él).
+  - **Brasas que suben:** chispas que brillan solas suben despacio desde el fondo (unas 3 por tick alrededor del
+    jugador, de 10 a 60 bloques por debajo de él), donde no hay meseta encima o por debajo de y = 8. El cliente lo
+    mira en su propio mapa de alturas, porque la forma de la meseta es de la semilla y el cliente no la sabe.
 - **Estrellas:** por debajo del horizonte se apagan en el resplandor: del todo a −35°.
 - **Estrellas:** las 1.500 de vanilla a brillo pleno, y 900 más del mod, de colores (blancas, azules, doradas y
   alguna roja), que titilan despacio.
-- **Una franja de nebulosa** (como una vía láctea) de violeta a ámbar, cruzando el cielo.
+- **Una franja de nebulosa** (como una vía láctea) de violeta a ámbar, cruzando el cielo. Deriva un poco más
+  deprisa que las estrellas, respira (±20 % cada 23 s) y sus nudos más brillantes se deslizan despacio a lo largo.
+- **Estrellas fugaces** (Andy, revisión): unas 4 por minuto, al azar, bien por encima del horizonte. Cada una es un
+  destello de un cuarto a dos quintos de segundo con una cola corta que se afina.
 - **8 constelaciones que dibujan moldes de armas**, repartidas por el cielo: **Espada, Hacha, Martillo, Lanza,
   Escudo, Yunque, Tenazas y Guadaña**. Cada una es un contorno de 8 a 14 estrellas grandes unidas por líneas
   tenues, como el hueco de un molde visto desde arriba.
 - **La colada del cielo:** cada 40 segundos una constelación "se cuela": un hilo de metal dorado recorre sus líneas
   de un extremo a otro en 6 s, se queda encendida 4 s y se enfría. En la pelea (entrega 3) es el aviso del evento
   *Molde celeste*.
-- Todo gira muy despacio alrededor del eje norte-sur (una vuelta cada 40 minutos), para que el cielo esté vivo.
-- **Día o noche:** no hay. Es siempre la misma noche; lo que cambia es la colada y el giro.
+- **El cielo se mueve** (Andy, revisión): estrellas, nebulosa y constelaciones giran alrededor del eje norte-sur,
+  **una vuelta cada 12 minutos** (medio grado por segundo; antes era cada 40 minutos y no se notaba). Quieto y
+  mirando arriba se ve moverse; en 10 s la hoja de contactos lo muestra.
+- **Día o noche:** no hay. Es siempre la misma noche; lo que cambia es la colada, el giro y las estrellas fugaces.
 
 ### 2.8 Ambiente
 
@@ -270,7 +309,7 @@ Cuando un jugador entra en la dimensión y no hay pelea en curso:
 | Fase | Vida | Qué cambia |
 |---|---|---|
 | 1 | 100 % a 66,7 % (320 a 213) | golpe, onda, "La forja reclama". **Sin aprendices.** |
-| 2 | 66,7 % a 33,3 % (213 a 107) | primera oleada; se suma el garfio y el reforjado de ascuas |
+| 2 | 66,7 % a 33,3 % (213 a 107) | primera oleada; se suma el garfio; **a la mitad (160), el Reforjado estelar** (3.7) |
 | 3 | 33,3 % a 0 | segunda oleada; lluvia de estrellas, yunques del final |
 
 Las fases viejas (75 %, 50 % y 25 %) desaparecen. Una fase solo se pasa una vez, aunque se cure (no se cura).
@@ -295,7 +334,9 @@ Al cruzar 2/3 y 1/3:
   - el anillo de dentro es un **cuadrado** (4), a 3 bloques;
   - cada anillo siguiente tiene **un vértice más** (pentágono, hexágono…), 2 bloques más afuera (5, 7, 9…);
   - se llenan de dentro afuera;
-  - lo que sobra en el último anillo forma **su propio polígono regular, más pequeño**, en ese mismo radio.
+  - lo que sobra en el último anillo forma **su propio polígono regular, más pequeño**, en ese mismo radio;
+  - **pero si sobran 1 o 2** (que no son un polígono), se suman al anillo anterior, que crece: con 10, el
+    pentágono pasa a **hexágono** y queda 4 + 6 (Andy, respuesta 3). Con 7 sigue siendo cuadrado + triángulo.
 - **Giro:** el primer vértice de cada anillo apunta al sur (+Z). Los anillos impares se giran medio lado para que
   no queden alineados con los de dentro.
 
@@ -303,13 +344,11 @@ Al cruzar 2/3 y 1/3:
 |---|---|---|---|
 | 1 | 4 | cuadrado | (0, 3), (3, 0), (0, −3), (−3, 0) |
 | 2 | 7 | cuadrado + **triángulo** | lo anterior + (4,3, 2,5), (0, −5), (−4,3, 2,5) |
-| 3 | 10 | cuadrado + pentágono + **1** | cuadrado + (2,9, 4), (4,8, −1,5), (0, −5), (−4,8, −1,5), (−2,9, 4) + (0, 7) |
-| 4 | 13 | cuadrado + pentágono + **cuadrado** | lo de 3 sin el (0, 7) + (0, 7), (7, 0), (0, −7), (−7, 0) |
+| 3 | 10 | cuadrado + **hexágono** | cuadrado + (2,5, 4,3), (5, 0), (2,5, −4,3), (−2,5, −4,3), (−5, 0), (−2,5, 4,3) |
+| 4 | 13 | cuadrado + pentágono + **cuadrado** | cuadrado + (2,9, 4), (4,8, −1,5), (0, −5), (−4,8, −1,5), (−2,9, 4) + (0, 7), (7, 0), (0, −7), (−7, 0) |
 
 ![Formaciones](herrero_dimension_formaciones.png)
 
-Con 3 jugadores el resto es 1, y "un polígono de un vértice" es un aprendiz solo, al sur a 7 bloques. Ver las
-decisiones para Andy.
 
 Si un puesto cae en un bloque sólido o fuera de la arena, el aprendiz sale en el punto libre más cercano del
 mismo anillo.
@@ -332,14 +371,60 @@ Cada **35 a 45 s** la dimensión hace algo, por turnos, y nunca durante una lleg
    persecución baja de 48 a 16. Sirve para despistarle o para perderle de vista.
 
 Con los números en `config/forja.json` (`dimensionEventoCada`, `dimensionMoldeDano`, `dimensionCenizaSegundos`…).
+Andy aprobó los tres (respuesta 6).
 
-### 3.7 Morir y volver
+### 3.7 El Reforjado estelar: su invulnerabilidad, rota por la dimensión (propuesta para Andy)
+
+**Lo que hay hoy** (`FallenSmith.startReforge`/`reforge`): a la mitad de la vida, después de llamar a los
+aprendices, vuelve a la forja y **nada le hace daño** mientras reforja (`hurtServer` lo ignora todo si
+`reforging > 0`). Enciende **3 ascuas** (bloques de fuego a 5 bloques), cada ascua encendida le cura un 1 % por
+segundo, y el reforjado dura **160 ticks** (8 s) o hasta que se apaguen las tres. Es corto y se resuelve a
+puñetazos contra el fuego.
+
+**Lo que propongo en la dimensión:** que en esa fase **la dimensión sea el arma**. Él es intocable y lo único que
+rompe su escudo es lo que la dimensión hace caer, arder o derramarse.
+
+1. **Empieza:** a la mitad (160 de vida), se arrodilla en el disco de obsidiana llorona del centro, clava el
+   martillo y el cielo entero se vuelve hacia él: las constelaciones se encienden en oro a la vez. Queda
+   **invulnerable** (como hoy) durante **hasta 20 s** (400 ticks).
+2. **Las Brasas estelares:** en lugar de 3 fuegos, **3 + 1 por jugador extra (hasta 6)** brasas flotantes (una
+   entidad nueva, sin bloque, así que el bloqueo de construir de la arena no molesta), en un anillo de **9 a 12
+   bloques** alrededor de él. Cada una está unida a él por un haz dorado. Mientras quede una:
+   - es invulnerable;
+   - le cura un **1 % por segundo por brasa** (como hoy);
+   - **los golpes de los jugadores no les hacen nada.** Solo las rompe la dimensión.
+3. **Tres maneras de romperlas, las tres de la dimensión:**
+   - **Hierro estelar templado:** al empezar, la dimensión deja caer **un meteorito por brasa**, con su aviso de 34
+     ticks, a entre 10 y 16 bloques de ella. Cada uno deja un **hierro estelar ardiente** (un objeto que quema 10 s
+     en la mano: 1 de daño por segundo a quien lo lleve). Llevarlo hasta una brasa y tocarla con él (clic derecho)
+     la **rompe** ("temple"). El pararrayos, puesto antes de la pelea, sirve para que caigan más cerca.
+   - **Molde celeste redirigido:** cada 8 s durante el reforjado, un molde se proyecta en el suelo **centrado en el
+     jugador al que mira el Herrero**, y a los 3 s arde. Una brasa que quede bajo una línea que arde **se rompe**.
+     El jugador hace de cebo: se coloca para que el molde pase por las brasas, y tiene que salir de la línea a
+     tiempo (6 de daño y fuego si no).
+   - **La colada del brasero:** golpear uno de los 4 braseros de los pilares (con un proyectil, o subiendo) lo
+     **vuelca**: un chorro de metal fundido baja por el pilar y corre en línea recta hacia el centro durante 3 s,
+     1 bloque de ancho, **rompiendo las brasas que toca** y quemando a quien pise (jugadores y aprendices; el metal
+     se enfría y desaparece, la arena no cambia). Cada brasero se vuelca una vez por reforjado y se vuelve a
+     llenar después. Hay que elegir el brasero cuya línea pase por más brasas.
+4. **Si se rompen todas antes de 20 s:** el escudo estalla (la onda morada de fase), y queda **aturdido 5 s**:
+   no ataca y recibe **×1,5 de daño**. Es el premio de usar bien la dimensión.
+5. **Si se acaba el tiempo con brasas encendidas:** se levanta curado de lo que haya curado y con **Temple** 30 s:
+   recibe un **30 % menos** de daño. Es el castigo de no usarla.
+6. **Los eventos normales** (3.6) se paran durante el reforjado: la dimensión está ocupada en él.
+7. **Una vez por pelea.** Si alguien muere o sale, la persistencia (3.8) guarda también si ya hubo reforjado y cuántas
+   brasas quedan.
+
+Números de partida, en `config/forja.json`: `reforjadoTicks` 400, `reforjadoBrasasBase` 3, `reforjadoBrasasMax` 6,
+`reforjadoCuraPorBrasa` 0,01, `reforjadoAturdido` 100 ticks, `reforjadoAturdidoDano` 1,5, `reforjadoTemple` 0,3.
+
+### 3.8 Morir y volver
 
 - Un jugador que muere **reaparece en su punto normal** (su cama o el punto de aparición del mundo), porque en la
   dimensión no se puede fijar otro.
 - Puede volver a entrar: el portal sigue encendido.
 - **La pelea se queda exactamente como estaba:** la vida del jefe, su fase, las oleadas que ya salieron y los
-  aprendices vivos. **No se cura.**
+  aprendices vivos. **No se cura** (salvo por sus brasas durante el Reforjado estelar, como hoy).
 - **Se para mientras no haya ningún jugador en la dimensión:** no se mueve, no ataca, no cuenta esperas ni
   eventos. En cuanto entra alguien, sigue (sin volver a caer del cielo).
 - Lo guarda un `SavedData` de la dimensión: estado (esperando, en pelea, derrotado), el UUID del jefe, la fase, las
@@ -347,7 +432,7 @@ Con los números en `config/forja.json` (`dimensionEventoCada`, `dimensionMoldeD
   el jefe se perdiera, su vida. Sobrevive a guardar y cargar el mundo.
 - Si alguien sale por la estrella de vuelta o se desconecta, cuenta igual que morir.
 
-### 3.8 Cuando muere: la estrella de vuelta
+### 3.9 Cuando muere: la estrella de vuelta
 
 - Al morir, **una estrella cae del cielo** (la misma caída de la llegada, pero blanca y dorada) en el centro de la
   arena, 3 s después.
@@ -356,17 +441,34 @@ Con los números en `config/forja.json` (`dimensionEventoCada`, `dimensionMoldeD
   a tu punto de reaparición).
 - Se queda en la arena hasta que llegue la próxima pelea. Los aprendices que queden se deshacen en ceniza.
 
-### 3.9 Revancha
+### 3.10 Revancha: la fragua fría del centro (Andy, respuesta 4)
 
-Tras una victoria, la dimensión queda en calma **un día de juego** (20 minutos). Pasado ese tiempo, el siguiente
-jugador que entre hace caer al Herrero de nuevo. Ver decisiones.
+- **Al morir el Herrero**, en el centro de la arena (sobre el disco de obsidiana llorona) aparece una **fragua
+  fría** (`forja:fragua_fria_estelar`, la fragua apagada de siempre pero con un hueco para una perla), junto a la
+  estrella de vuelta. No estorba: está en el mismo sitio donde él cae.
+- **Se reaviva** con clic derecho llevando encima:
+
+  | Qué | Cuánto | Por qué |
+  |---|---|---|
+  | Perla de oricalco (la "llave") | 1 | la misma que abre el portal: 2 lingotes de oricalco sobre una perla de ender |
+  | Lingotes de oricalco | 2 | la aleación de todos los metales |
+  | Hierro estelar | 16 | lo que dejan los meteoritos de la dimensión (un par de peleas o una lluvia) |
+  | Corazón de forja | 1 | el que dejó él la vez anterior: se lo devuelves |
+
+  En total, unas **4 tandas de oricalco por revancha menos las 2 de las perlas del portal**: más o menos la mitad
+  de lo que costó abrir el portal, más su corazón.
+- **Al reavivarla**, la fragua se enciende, el cielo se oscurece 3 s y el Herrero **vuelve a caer del cielo** (3.2),
+  con la vida entera y sin aprendices.
+- **Recompensa de la revancha:** la de siempre (el corazón de forja que devolviste vuelve a caer, una leyenda, el
+  martillo del maestro; el yunque del Herrero solo la primera vez) y **otra Estrella forjada por participante**.
+- **Límite:** una Estrella por pieza, así que repetirla solo sirve para estrellar más piezas.
 
 ---
 
 ## 4. La recompensa: la **Estrella forjada** (entrega 3)
 
 Lo que da hoy (corazón de forja, una leyenda, el yunque del Herrero y el martillo del maestro) se queda. Además, a
-**cada jugador que participó** (ver 3.7) le cae **una Estrella forjada** (`forja:estrella_forjada`), a sus pies o
+**cada jugador que participó** (ver 3.8) le cae **una Estrella forjada** (`forja:estrella_forjada`), a sus pies o
 en el inventario si está en la dimensión, y guardada para cuando entre si no estaba.
 
 ### 4.1 Qué hace
@@ -382,12 +484,15 @@ pieza, para siempre (componente `ESTRELLADA`):
 | Bono de daño del material (armas y herramientas) | corazón 4,5 | ×1,12: **5,04** |
 | Durabilidad | corazón 2.400 | ×1,5: **3.600** |
 | Velocidad de minado (herramientas) | la del material | ×1,12 |
-| Armadura | la del material | **igual** (solo carga y durabilidad) |
+| Armadura | la del material | **+1 de armadura y +0,5 de dureza por pieza** (juego entero: +4 y +2) |
 | Aspecto | | un brillo de estrellas en la pieza y el nombre en dorado |
 
-- **Por qué la armadura no sube:** `ArmaduraGameTests` exige que ningún juego pase de netherita P4 + 5 puntos, y el
-  obsidiacero ya llega a +5,9 en el peor caso. La Estrella le da a la armadura más carga (más mejoras) y más
-  durabilidad, no más defensa directa.
+- **La armadura sí sube** (Andy, respuesta 5: puede pasar el tope): +1 de armadura y +0,5 de dureza por pieza
+  estrellada, además de la carga y la durabilidad. Cuánto para de más un juego entero se medirá con
+  `ArmaduraGameTests` al construirlo (hoy el de corazón para un 86,0 % del golpe contundente al torso).
+- **`ArmaduraGameTests` cambia:** el tope sigue en netherita P4 + 5 puntos para las piezas sin estrella; para un
+  juego con estrellas el tope pasa a **netherita P4 + 5 + 2 por pieza estrellada** (+13 con las 4), y una prueba
+  nueva comprueba que un juego estrellado queda por encima del mismo sin estrellar y por debajo de ese tope.
 - **Cuánto es:** una espada de corazón perfecta pasa de 4,5 a 5,04 de bono y de 20 a 26 puntos de mejora. Con esos
   6 puntos caben una o dos mejoras más (una de peso 4 y una de 2, o tres de 2). Es un salto claro sobre lo mejor que
   hay, pero no multiplica: el mismo arma, un 20 a 30 % más fuerte en total.
@@ -402,7 +507,24 @@ recoloreada.
 
 ## 5. Pruebas previstas
 
-### Entrega 1 (esta rama)
+### Entrega 1b (arreglos de la revisión, esta rama)
+
+- **Servidor (`DimensionGameTests`)**, ahora en 5 semillas: arena llana y despejada en todas, sin metal fundido
+  cerca de la arena en ninguna, tumbas (3.014 a 5.099), forjas (17 a 42), cascadas y al menos 5 islotes en todas;
+  `theSeedShapesThePlateauButNotTheArena` (borde, ríos, islotes y forjas cambian; la arena no; la misma semilla da
+  las mismas columnas; dibuja los mapas de las semillas 1 y 42); `aGraveFallsWithItsGroundAndDropsNothing`.
+- **Cliente (`FORJA_SOLO=dimension`)**, en dos mundos con semillas "cementerio-uno" y "cementerio-dos":
+  - el sol visto desde el borde, recto abajo y desde debajo de la meseta;
+  - el cielo a los 0 y a los 10 s, y estrellas fugaces;
+  - las 72 armas clavadas (6 armas × 3 inclinaciones × 4 orientaciones) vistas desde el norte, el sur, el este y
+    el oeste;
+  - un arma sobre un bloque de ceniza, y después de quitar la ceniza (comprueba que no queda ni el arma ni un
+    objeto);
+  - las mismas vistas en las dos semillas, y la meseta vista desde arriba en las dos.
+
+  Hojas en `E:\IA\Claude\Forja_capturas_mejoras\dimension_herrero\entrega_1b\`.
+
+### Entrega 1
 
 - **Servidor (`DimensionGameTests`):** el servidor de pruebas no carga las dimensiones de los datapacks, así que
   aquí se comprueba el generador directamente (es una función pura de la columna):
@@ -435,15 +557,25 @@ recoloreada.
 
 ---
 
-## 6. Decisiones para Andy
+## 6. Respuestas de Andy y lo que queda por decidir
 
-1. **Nombre:** "El Cementerio entre Estrellas" para la dimensión, "oricalco" para la aleación, "perla de
-   oricalco", "Estrella forjada" para la recompensa. ¿Te valen?
-2. **Oricalco sin el corazón de forja ni el acero vivo:** los dos solo salen del jefe. ¿De acuerdo?
-3. **Con 3 jugadores sobra 1 aprendiz:** sale solo, al sur a 7 bloques. ¿O prefieres que el sobrante se reparta
-   en el anillo anterior (4 + 6)?
-4. **Revancha:** ¿el jefe vuelve tras un día de juego y da otra Estrella a cada uno? (Con una por pieza, farmearlo
-   solo sirve para mejorar más piezas.)
-5. **La Estrella no sube la armadura directa**, solo la carga y la durabilidad. ¿O prefieres saltarte el tope de
-   netherita P4 + 5 para las piezas estrelladas?
-6. **Eventos:** meteoritos, molde celeste y tormenta de ceniza, cada 35 a 45 s. ¿Te gustan, o cambio alguno?
+**Respuestas (revisión de la entrega 1):**
+
+1. **Nombres aprobados:** El Cementerio entre Estrellas, oricalco, perla de oricalco, Estrella forjada.
+2. **Oricalco sin corazón de forja ni acero vivo:** aprobado.
+3. **Con 10 aprendices, 4 + 6:** lo que sobra se suma al anillo, que pasa a hexágono (ver 3.5).
+4. **Revancha:** al morir aparece una fragua fría en el centro de la arena; se reaviva con materiales y una perla
+   de oricalco, y cada participante recibe otra Estrella (ver 3.10).
+5. **La Estrella puede pasar el tope de armadura** de netherita P4 + 5; `ArmaduraGameTests` se ajusta para las
+   piezas estrelladas (ver 4.1).
+6. **Los tres eventos aprobados:** meteoritos, molde celeste y tormenta de ceniza, cada 35 a 45 s.
+7. **Las forjas hundidas en el terreno están bien.**
+
+**Por decidir:**
+
+1. **Reforjado estelar (3.7):** ¿te gusta que su invulnerabilidad de la mitad solo se rompa con la dimensión
+   (hierro estelar templado, molde celeste redirigido y colada del brasero), con aturdido ×1,5 si lo consigues y
+   Temple −30 % si no?
+2. **Coste de la revancha (3.10):** 1 perla de oricalco, 2 lingotes de oricalco, 16 hierros estelares y el corazón
+   de forja. ¿Te parece bien?
+3. **Armadura estrellada (4.1):** +1 de armadura y +0,5 de dureza por pieza. ¿Te vale?
