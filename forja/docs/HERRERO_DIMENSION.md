@@ -13,92 +13,88 @@ recompensa esperan a que Andy revise la dimensión. Cada sección dice en qué e
 | Entrega | Qué lleva | Estado |
 |---|---|---|
 | 1 | Dimensión: terreno, arena, cielo, niebla, luz, partículas, sonido y música; `/forja dimension` | hecha y revisada por Andy |
-| 1b | Arreglos de la revisión: sol bajo el vacío, tumbas que caen con su suelo, tumbas vistas desde el sur, meseta según la semilla, estrellas fugaces y cielo que se mueve | en esta rama |
-| 2 | Oricalco, perla de oricalco, marco del portal, portal, retirada de la invocación vieja | pendiente de Andy |
+| 1b | Arreglos de la revisión: sol bajo el vacío, tumbas que caen con su suelo, tumbas vistas desde el sur, meseta según la semilla, estrellas fugaces y cielo que se mueve | hecha ("la dimensión está súper bien") |
+| 1c | Arreglos de la segunda revisión: el tinte del sol sin saltos, los eventos del mundo en este cielo, respiraderos muertos, constelaciones repartidas, ecos lejanos | en esta rama |
+| 2 | Oricalco, perla de oricalco, marco del portal, portal, vuelta, retirada de la invocación vieja | en esta rama |
 | 3 | Pelea nueva: llegada, fases a 2/3 y 1/3, aprendices en formación, eventos, reforjado estelar, persistencia, estrella de vuelta, revancha y recompensa | diseño aprobado en parte (ver 6); pendiente |
 
 ---
 
 ## 1. Cómo se llega (entrega 2)
 
-### 1.1 La aleación nueva: el **oricalco**
+### 1.1 La aleación nueva: el **oricalco** (hecho)
 
-Un metal de leyenda hecho de **todos** los metales colables propios del mod. Se declara en `forge/Alloys.java`
-como las demás aleaciones y se funde en el crisol, que pide a los depósitos de la red (`MeltNetwork`) lo que no cabe
-en sus dos huecos, igual que ya hace con cualquier aleación de más de dos ingredientes.
-
-| Dato | Valor |
-|---|---|
-| Calor | **Forja blanca** (crisol de obsidiana, o aliento de forja en los tubos) |
-| Entra | 1 lingote de cada uno de los **17** metales propios de abajo |
-| Sale | **4** lingotes de oricalco (5 con el crisol de obsidiana, que da +1 por aleación) |
-| Tipo | Metal **solo de colada**, como el acero refractario: no es material de forja, no hace herramientas |
-
-Los 17 metales (todos los `ForgeMaterial` propios que se pueden colar, más el hierro estelar, la placa hueca y la
-escoria):
-
-- **Metales base del mod (3):** hierro estelar, placa hueca, escoria.
-- **Aleaciones templadas (4):** bronce, latón, peltre, electro.
-- **Aleaciones calientes (3):** acero, cinerio, voltaico.
-- **Aleaciones fundidas (5):** damasco, acero estelar, obsidiacero, almacero, vidriacero.
-- **Aleaciones de forja blanca (2):** solacero, lunacero.
-
-**Fuera, a propósito:**
-
-- el **corazón de forja** y el **acero vivo**: solo salen del propio Herrero Caído, y pedirlos para llegar a él
-  sería un círculo;
-- el **acero refractario**: es el metal de los moldes, no un material;
-- los metales vanilla (hierro, oro, cobre, netherita, diamante, obsidiana…): la aleación es "del mod".
-
-Coste real de una tanda: unos 40 lingotes de metal base repartidos en las 17 aleaciones. Para las 4 perlas hacen
-falta 8 lingotes de oricalco, es decir, **2 tandas** en el crisol de obsidiana (10 lingotes, sobran 2).
-
-### 1.2 La **perla de oricalco** (colada sobre una perla de ender)
-
-Se hace en la **mesa de colada**, a la manera del mod:
-
-1. Se pone una **perla de ender** en la mesa como si fuera el molde (es el único objeto que la mesa acepta además de
-   moldes y marcos; se añade a `CastingTableBlockEntity.pattern`).
-2. La mesa tira de los depósitos como siempre y vierte **2 lingotes de oricalco** sobre ella.
-3. Enfría (`COOK = 100` ticks) y sale una **perla de oricalco**. La perla de ender se gasta.
+Un metal de leyenda hecho de **todos los metales propios del mod que se pueden volver a hacer** (Andy, revisión de
+la entrega 1b: nada que se acabe ni que solo dé el jefe). Está en `forge/Alloys.java`, en `EXTRA` (no es metal de
+equipo) y en `FOUNDRY_ONLY`: son 14 ingredientes y la estrella de la mesa de forja tiene 5 puntas, así que solo lo
+hace un **crisol en una línea de fundición**. Dos lingotes van al crisol y los otros doce los saca de las cubas de
+su línea, como cualquier aleación de más de dos ingredientes (`MeltNetwork`).
 
 | Dato | Valor |
 |---|---|
-| Mesa mínima | **Mesa de almas** (el oricalco aguanta como la netherita: `holds` sin límite) |
-| Coste | 2 lingotes de oricalco + 1 perla de ender |
-| Colada basta o limpia | Da igual: una perla basta sirve igual (no tiene potencial) |
-| Se apila | 16 |
-| Rareza | Épica |
+| Calor | **Fundido** (lava, farol de pavesa, o más) |
+| Entra | 1 lingote de cada uno de los **14** metales de abajo |
+| Sale | **4** lingotes de oricalco (`forja:oricalco`) |
+| Tipo | Metal **solo de colada**: va a las cubas y se cuela, pero no es material de forja |
 
-Textura: la perla de ender vanilla recoloreada al dorado verdoso del oricalco, con un brillo de estrella en el
-centro (generador).
+**Los 14 y de dónde salen (todos renovables):**
 
-### 1.3 El **marco del portal** en el Bastión
+| Metal | Viene de | Por qué no se acaba |
+|---|---|---|
+| Hierro estelar | la lluvia de meteoritos (evento del mundo) y los meteoritos de la dimensión | los eventos vuelven cada pocas noches |
+| Placa hueca | la Coraza Vacía | reaparece en las ruinas |
+| Escoria | la Escoria Viva | reaparece en las pozas de escoria |
+| Bronce, latón | cobre, hierro y oro | gólems de hierro, ahogados, piglins zombificados, trueques |
+| Peltre | cobre y ladrillo de resina | el creaking da resina sin fin |
+| Electro | oro y amatista | las geodas vuelven a brotar |
+| Acero | hierro y carbón | carbón vegetal de los árboles, esqueletos wither |
+| Cinerio | acero y ascuas | las pavesas vuelven con el fuego |
+| Voltaico | latón, redstone y amatista | las brujas dan redstone |
+| Acero estelar | acero y hierro estelar | lo de arriba |
+| Obsidiacero | acero y obsidiana | la obsidiana se hace con agua y lava |
+| Almacero | acero estelar y placa hueca | lo de arriba |
+| Vidriacero | obsidiacero y cuarzo | trueque con los piglins |
 
-El sitio de la fragua apagada, en la Forja Profunda del sótano (rotonda de radio 25, `tools/castillo_sotanos.py`,
-`rotunda()`, bloque en el plano (100, −23, 92), pieza `bastion/p_2_0_3.nbt`), deja de invocar al jefe y pasa a ser
-el portal:
+**Fuera, a propósito:** el **damasco** y el **solacero** (llevan chatarra de netherita, que se acaba), el
+**lunacero** (fragmentos de eco, que se acaban), el **acero vivo** y el **corazón de forja** (solo del Herrero), y el
+**acero refractario** (es metal de moldes).
 
-- El estrado de 3 escalones se queda. Encima, un marco de 5 × 5: en el centro un hueco de 3 × 3 y alrededor 12
-  bloques. **4 de ellos**, los del medio de cada lado (N, S, E y O), son **ménsulas estelares**
-  (`forja:mensula_estelar`); las 8 esquinas y costados son ladrillo de piedra negra pulida.
-- Cada ménsula tiene un hueco para una perla, como el ojo de ender en el portal del End (propiedad `perla`).
-- Con clic derecho y una perla de oricalco en la mano, la perla se engasta (sonido de yunque y chispas).
-- **Con 4 perlas** el hueco de 3 × 3 se llena de **portal estelar** (`forja:portal_estelar`). Con 3 o menos no pasa
-  nada, y la ménsula dice cuántas faltan.
-- **Se queda encendido para siempre.** Las perlas no se pueden sacar y las ménsulas son irrompibles
-  (`strength -1`), como el marco del End.
-- El portal estelar es como el del End: se ve el cielo de la dimensión dentro, y entrar en él te lleva a la
-  **plataforma de llegada** de la dimensión (ver 2.4).
+Coste: 4 perlas piden 8 lingotes de oricalco, es decir, **2 tandas**.
 
-**Mundos existentes:** el bloque `forja:fragua_apagada` sigue registrado para que los mundos carguen. Ya no invoca
-a nadie: si alguien le da clic derecho, se "abre": se convierte en el marco de 5 × 5 centrado en él, sin perlas, y
-dice "La fragua se abre en un marco de estrellas". Los castillos nuevos ya salen con el marco. La fragua apagada de
-la estructura vieja `fragua_caida` queda como decoración, con el mismo mensaje.
+### 1.2 La **perla de oricalco** (hecho)
 
-**Se quita:** la invocación en el mundo normal (`DeadForgeBlock.useWithoutItem` → `FallenSmith.summon`) y la
-ofrenda (8 hierro estelar, 4 damasco, estrella del Nether, fragmento de eco). La prueba `oldSummonerNoLongerSummons`
-lo comprueba. La rotonda se queda como sala del portal, sin bloqueo de construcción (el bloqueo va con el jefe).
+En la **mesa de colada**: una **perla de ender** en la mesa, como si fuera un molde (`CastingTableBlockEntity.pearl`), y
+oricalco en una cuba de su línea. La mesa vierte **2 lingotes** (`PEARL_COST`), enfría como siempre (`COOK`) y
+sale una **perla de oricalco** (`forja:perla_de_oricalco`, épica, de 16 en 16). La perla de ender se gasta. Vale
+**cualquier mesa**: es un baño, no una pieza, y no sale basta ni limpia. Una perla solo acepta oricalco, y el
+oricalco solo se cuela sobre perlas.
+
+Texturas: el lingote de oro y la perla de ender vanilla, recoloreados al dorado verdoso del oricalco
+(`tools/dimension_assets.py`).
+
+### 1.3 El **marco del portal** en el Bastión (hecho)
+
+- **En el castillo:** donde estaba la fragua apagada, en la Forja Profunda (`bastion/p_2_0_3.nbt`, sitio local
+  24, 3, 6), ahora hay un **marco de 5 × 5** sobre el estrado: 4 **ménsulas estelares** (`forja:mensula_estelar`),
+  una en el medio de cada lado y mirando al hueco, ladrillo de piedra negra pulida en las esquinas, y el hueco de
+  3 × 3 vacío. Se cambió la plantilla directamente (y `tools/castillo_sotanos.py`, para que la próxima vez que se
+  genere el castillo salga igual).
+- **Encenderlo:** clic derecho en una ménsula con una perla de oricalco en la mano; se engasta (sonido de marco del
+  End y chispas) y dice cuántas faltan. **Con las 4**, el hueco se llena de **portal estelar**
+  (`forja:portal_estelar`). Con 3 no pasa nada.
+- **Para siempre:** las ménsulas y el portal no se rompen y las perlas no salen.
+- **El portal:** como el del End, una lámina en la que se entra y lleva al momento. Solo lleva jugadores. Te deja en
+  la plataforma de llegada de la dimensión y **se apunta dónde volver**: justo fuera del marco, del lado por el que
+  entraste, en el primer sitio con suelo y hueco para estar de pie. Se guarda en el jugador (`forja:vuelta_estelar`)
+  y sobrevive a salir del juego y a morir.
+- **Volver:** detrás de la plataforma de llegada, en (0, 80, −37), hay un **pozo encendido**: el mismo marco con
+  sus 4 perlas y el mismo portal. Desde la dimensión te devuelve a donde se apuntó. Si no hay nada apuntado, a tu
+  punto de reaparición. En la entrega 3 la estrella que cae al morir el jefe será otra forma de volver.
+- **Mundos existentes:** la fragua apagada sigue registrada. Ya **no invoca a nadie**: con clic derecho se abre en el
+  marco vacío (el anillo en el estrado, un bloque por debajo de ella) y avisa de que cuatro perlas lo encenderán.
+  Vale para los castillos ya generados y para la estructura vieja `fragua_caida`.
+- **Se quitó:** la invocación en el mundo normal y la ofrenda (8 hierros estelares, 4 damascos, estrella del Nether
+  y fragmento de eco). La prueba `theOldForgeNoLongerSummons` lo comprueba.
 
 ---
 
@@ -204,6 +200,17 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
 
   Echan humo y alguna pavesa (partículas), nada más. Son decoración, sin cofres.
 
+- **Respiraderos muertos** (Andy, revisión 1b): de 5 a 9 conos viejos, de donde los herreros sacaban el calor
+  para forjar, repartidos por la llanura según la semilla, a más de 70 bloques del borde de la arena y lejos de ríos
+  y puentes.
+  - Son conos de basalto y piedra negra de 7 a 13 de radio y 6 a 14 de alto, agrietados (toba, basalto liso y
+    alguna grieta de magma que brilla poco).
+  - Arriba tienen un cráter poco hondo de ceniza prensada y escoria fría (magma).
+  - Algunos **humean**: una hoguera enterrada en el centro del cráter.
+  - Algunos llevan una **chimenea fría** de ladrillo en la ladera.
+  - Otros llevan una **canaleta de cobre** verde que baja por la ladera: por ahí se sacaba el calor.
+  - Las forjas frías se apartan de ellos.
+
 ### 2.6 El metal fundido (solo decoración)
 
 - **De 2 a 4 ríos** de metal fundido (`forja:metal_fundido`), según la semilla. Nacen en un pilón a 52 bloques del
@@ -242,6 +249,10 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
   - **Brasas que suben:** chispas que brillan solas suben despacio desde el fondo (unas 3 por tick alrededor del
     jugador, de 10 a 60 bloques por debajo de él), donde no hay meseta encima o por debajo de y = 8. El cliente lo
     mira en su propio mapa de alturas, porque la forma de la meseta es de la semilla y el cliente no la sabe.
+  - **Sin saltos** (Andy, revisión 1b: con una pared delante el cielo era granate y un paso después naranja): el
+    tinte de la niebla depende **solo** de cuánto miras hacia abajo y de la altura (`StarChart.emberShare`), y
+    además se suaviza en el tiempo (medio segundo). Antes miraba si la cámara estaba sobre el vacío, y un paso fuera
+    del borde lo cambiaba de golpe. La prueba `theEmberTintIsSmooth` recorre alturas y ángulos y exige que no salte.
 - **Estrellas:** por debajo del horizonte se apagan en el resplandor: del todo a −35°.
 - **Estrellas:** las 1.500 de vanilla a brillo pleno, y 900 más del mod, de colores (blancas, azules, doradas y
   alguna roja), que titilan despacio.
@@ -249,9 +260,14 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
   deprisa que las estrellas, respira (±20 % cada 23 s) y sus nudos más brillantes se deslizan despacio a lo largo.
 - **Estrellas fugaces** (Andy, revisión): unas 4 por minuto, al azar, bien por encima del horizonte. Cada una es un
   destello de un cuarto a dos quintos de segundo con una cola corta que se afina.
-- **8 constelaciones que dibujan moldes de armas**, repartidas por el cielo: **Espada, Hacha, Martillo, Lanza,
-  Escudo, Yunque, Tenazas y Guadaña**. Cada una es un contorno de 8 a 14 estrellas grandes unidas por líneas
-  tenues, como el hueco de un molde visto desde arriba.
+- **8 constelaciones que dibujan moldes de armas**: **Espada, Hacha, Martillo, Lanza, Escudo, Yunque, Tenazas y
+  Guadaña**. Cada una es un contorno de 8 a 14 estrellas grandes unidas por líneas tenues, como el hueco de un
+  molde visto desde arriba.
+  - **Repartidas por todo el giro** (Andy, revisión 1b: había ratos sin ninguna): el cielo gira alrededor del eje
+    norte-sur, así que están a 45° una de otra alrededor de ese giro, alternando un poco al norte y al sur
+    (`world/StarChart`).
+  - En cualquier momento hay **al menos 3 a 15° o más sobre el horizonte**. La prueba `theConstellationsAreAlwaysUp`
+    lo mira grado a grado en una vuelta entera.
 - **La colada del cielo:** cada 40 segundos una constelación "se cuela": un hilo de metal dorado recorre sus líneas
   de un extremo a otro en 6 s, se queda encendida 4 s y se enfría. En la pelea (entrega 3) es el aviso del evento
   *Molde celeste*.
@@ -272,10 +288,24 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
   (y = 80) y se espesa al bajar: el doble a y = 60, cinco veces a y = 40 y el máximo (8 veces) a y = 20 o menos,
   que es donde están los islotes bajos. Asomado al borde también se ve más ceniza por debajo de la meseta que por
   encima. Todo en el cliente (`StarYardSky`): no cuesta nada al servidor.
-- **Sonido ambiente:** un bucle de viento hueco (el del valle de almas, más grave), y cada poco un sonido suelto:
-  un martillo lejano, una campana que resuena, un tintineo de amatista (las estrellas) o escombros que caen.
+- **Sonido ambiente:** un bucle de viento hueco (el del valle de almas, más grave).
+- **Ecos de un tiempo ido** (Andy, revisión 1b): cada 8 a 25 s suena algo **lejos**, en un punto al azar a 40–80
+  bloques: un martillo en el yunque, una campana, una piedra de afilar, una mesa de herrero, una cadena, un
+  tintineo de amatista o escombros.
+  - Suena grave (tono 0,5 a 0,75) y apagado por la distancia.
+  - **Resuena** 2 o 3 veces más, a los 8, 18 y 30 ticks, cada vez más flojo (×0,55) y un poco más grave, rebotando
+    algo más lejos y a un lado, como la cola de un salón enorme.
+  - Minecraft no tiene filtro de paso bajo; se usan sonidos que ya resuenan y la distancia hace el resto.
+  - Solo en la dimensión (`StarYardSky`, en el cliente).
 - **Música:** "El Cementerio entre Estrellas", una lista de pistas vanilla bajadas de tono (el End, "So Below",
   "Echo in the Wind", "Deeper"), con pausas de 3 a 8 minutos. Todo por `sounds.json`, sin audio nuevo.
+
+- **Los eventos del mundo también aquí** (Andy, revisión 1b): luna de sangre, eclipse, lluvia de meteoritos,
+  aurora, niebla de almas y los demás tiñen este cielo, sus estrellas, la niebla y la luz, y traen sus partículas,
+  estelas y dibujos (aurora, sigilo, horizonte en llamas).
+  - **Nunca se dibuja una luna ni un sol**: la luna de sangre, la marea viva y el eclipse, que se dibujan sobre
+    uno, aquí dejan solo el resto.
+  - Como aquí siempre es de noche, el evento se ve con la fuerza de la medianoche.
 
 ### 2.9 Para probar: `/forja dimension`
 
@@ -353,70 +383,84 @@ Al cruzar 2/3 y 1/3:
 Si un puesto cae en un bloque sólido o fuera de la arena, el aprendiz sale en el punto libre más cercano del
 mismo anillo.
 
-### 3.6 Eventos de la dimensión durante la pelea
+### 3.6 Las constelaciones en la pelea (propuesta para Andy)
 
-Cada **35 a 45 s** la dimensión hace algo, por turnos, y nunca durante una llegada ni un cambio de fase:
+Andy (revisión 1b): durante la pelea **las constelaciones se encienden**. Cada una de las 8 lanza **un evento
+suyo**, y el **color** en que se enciende dice **lo fuerte** que es. Los tres eventos aprobados (meteoritos, molde
+celeste y tormenta de ceniza) entran en este sistema.
 
-1. **Lluvia de hierro estelar** (la de Andy): cae **un meteorito por jugador** con el aviso de siempre (anillo en el
-   suelo 34 ticks). Hace el daño de siempre, pero **sin cráter** (la arena no cambia) y deja 3 a 6 de hierro
-   estelar. El **pararrayos** funciona igual que en el mundo normal: uno a 12 bloques o menos se lo lleva (y se
-   gasta), así que se puede llevar a la pelea y ponerlo **antes** de que empiece (el bloqueo de construcción
-   empieza con el jefe).
-2. **Molde celeste:** una constelación se cuela en el cielo (el hilo dorado, 3 s de aviso) y su molde se
-   **proyecta en el suelo de la arena**: el contorno del arma (de 10 a 14 bloques de largo) se dibuja con
-   partículas doradas sobre la obsidiana. A los **3 s** el contorno arde **2 s**: 6 de daño y fuego a quien pise la
-   línea (jugadores y aprendices, no al jefe). Obliga a moverse y a leer el cielo.
-3. **Tormenta de ceniza:** la bruma se cierra a **20 bloques** durante **12 s** y el viento empuja a todos
-   (0,06 bloques por tick hacia un lado fijo, que se avisa con la ceniza). El jefe también ve menos: su alcance de
-   persecución baja de 48 a 16. Sirve para despistarle o para perderle de vista.
+**Cómo avisa:**
 
-Con los números en `config/forja.json` (`dimensionEventoCada`, `dimensionMoldeDano`, `dimensionCenizaSegundos`…).
-Andy aprobó los tres (respuesta 6).
+1. Se elige una constelación de las que están a **15° o más** sobre el horizonte. Siempre hay al menos 3, por
+   `StarChart`.
+2. Sus líneas se encienden en su color (1 s).
+3. La **colada** de oro recorre el contorno en **3 s**, como la de ahora, con un tintineo que sube.
+4. Al acabar la colada, el evento cae sobre la arena.
+5. En el suelo, el aviso propio de cada evento (anillos, líneas) aparece al empezar la colada: da 3 s para
+   moverse.
 
-### 3.7 El Reforjado estelar: su invulnerabilidad, rota por la dimensión (propuesta para Andy)
+**Cada cuánto:** uno cada **30 a 40 s**. Nunca durante la caída del jefe, un cambio de fase ni el Reforjado
+estelar, salvo el Martillo (ver 3.7).
 
-**Lo que hay hoy** (`FallenSmith.startReforge`/`reforge`): a la mitad de la vida, después de llamar a los
-aprendices, vuelve a la forja y **nada le hace daño** mientras reforja (`hurtServer` lo ignora todo si
-`reforging > 0`). Enciende **3 ascuas** (bloques de fuego a 5 bloques), cada ascua encendida le cura un 1 % por
-segundo, y el reforjado dura **160 ticks** (8 s) o hasta que se apaguen las tres. Es corto y se resuelve a
-puñetazos contra el fuego.
+**Los 5 colores** (del más flojo al más fuerte):
 
-**Lo que propongo en la dimensión:** que en esa fase **la dimensión sea el arma**. Él es intocable y lo único que
-rompe su escudo es lo que la dimensión hace caer, arder o derramarse.
+| Color | Fuerza (×) | Fase 1 | Fase 2 | Fase 3 |
+|---|---|---|---|---|
+| Plata | 0,6 | 50 % | 25 % | 10 % |
+| Cobre | 0,8 | 35 % | 30 % | 20 % |
+| Oro | 1,0 | 15 % | 25 % | 30 % |
+| Azul estelar | 1,3 | — | 20 % | 25 % |
+| Carmesí | 1,7 | — | — | 15 % |
 
-1. **Empieza:** a la mitad (160 de vida), se arrodilla en el disco de obsidiana llorona del centro, clava el
-   martillo y el cielo entero se vuelve hacia él: las constelaciones se encienden en oro a la vez. Queda
-   **invulnerable** (como hoy) durante **hasta 20 s** (400 ticks).
-2. **Las Brasas estelares:** en lugar de 3 fuegos, **3 + 1 por jugador extra (hasta 6)** brasas flotantes (una
-   entidad nueva, sin bloque, así que el bloqueo de construir de la arena no molesta), en un anillo de **9 a 12
-   bloques** alrededor de él. Cada una está unida a él por un haz dorado. Mientras quede una:
-   - es invulnerable;
-   - le cura un **1 % por segundo por brasa** (como hoy);
-   - **los golpes de los jugadores no les hacen nada.** Solo las rompe la dimensión.
-3. **Tres maneras de romperlas, las tres de la dimensión:**
-   - **Hierro estelar templado:** al empezar, la dimensión deja caer **un meteorito por brasa**, con su aviso de 34
-     ticks, a entre 10 y 16 bloques de ella. Cada uno deja un **hierro estelar ardiente** (un objeto que quema 10 s
-     en la mano: 1 de daño por segundo a quien lo lleve). Llevarlo hasta una brasa y tocarla con él (clic derecho)
-     la **rompe** ("temple"). El pararrayos, puesto antes de la pelea, sirve para que caigan más cerca.
-   - **Molde celeste redirigido:** cada 8 s durante el reforjado, un molde se proyecta en el suelo **centrado en el
-     jugador al que mira el Herrero**, y a los 3 s arde. Una brasa que quede bajo una línea que arde **se rompe**.
-     El jugador hace de cebo: se coloca para que el molde pase por las brasas, y tiene que salir de la línea a
-     tiempo (6 de daño y fuego si no).
-   - **La colada del brasero:** golpear uno de los 4 braseros de los pilares (con un proyectil, o subiendo) lo
-     **vuelca**: un chorro de metal fundido baja por el pilar y corre en línea recta hacia el centro durante 3 s,
-     1 bloque de ancho, **rompiendo las brasas que toca** y quemando a quien pise (jugadores y aprendices; el metal
-     se enfría y desaparece, la arena no cambia). Cada brasero se vuelca una vez por reforjado y se vuelve a
-     llenar después. Hay que elegir el brasero cuya línea pase por más brasas.
-4. **Si se rompen todas antes de 20 s:** el escudo estalla (la onda morada de fase), y queda **aturdido 5 s**:
-   no ataca y recibe **×1,5 de daño**. Es el premio de usar bien la dimensión.
-5. **Si se acaba el tiempo con brasas encendidas:** se levanta curado de lo que haya curado y con **Temple** 30 s:
-   recibe un **30 % menos** de daño. Es el castigo de no usarla.
-6. **Los eventos normales** (3.6) se paran durante el reforjado: la dimensión está ocupada en él.
-7. **Una vez por pelea.** Si alguien muere o sale, la persistencia (3.8) guarda también si ya hubo reforjado y cuántas
-   brasas quedan.
+**Las 8 constelaciones y su evento** (los números son a fuerza ×1; se multiplican por el color):
 
-Números de partida, en `config/forja.json`: `reforjadoTicks` 400, `reforjadoBrasasBase` 3, `reforjadoBrasasMax` 6,
-`reforjadoCuraPorBrasa` 0,01, `reforjadoAturdido` 100 ticks, `reforjadoAturdidoDano` 1,5, `reforjadoTemple` 0,3.
+| Constelación | Evento | Qué hace |
+|---|---|---|
+| **Espada** | *Tajo celeste* (el molde celeste) | El contorno de una espada de 16 bloques se dibuja en el suelo cruzando al jugador que el jefe mira. A los 3 s arde 2 s: **6 de daño** y fuego a quien lo pise (jugadores y aprendices). Si la línea pasa por un pilar, **vuelca su brasero** (ver 3.7). |
+| **Hacha** | *Hachazo* | Un cuarto de círculo de radio 12 desde el jefe hacia su objetivo se marca en el suelo; a los 3 s cae: **7 de daño** y empuje fuera. |
+| **Martillo** | *Lluvia de hierro estelar* (los meteoritos) | Cae **1 meteorito por jugador**, con el aviso de siempre. Plata y cobre: 1 por jugador; oro y azul: 2; carmesí: 3. Daño de meteorito × fuerza, sin cráter. Deja **hierro estelar**. El pararrayos funciona. |
+| **Lanza** | *Lanzas de luz* | Cinco lanzas de luz (plata 3, carmesí 8) caen en puntos marcados alrededor de los jugadores: aviso de 1,5 s y **5 de daño** en 1 bloque. Rápido y preciso. |
+| **Escudo** | *Égida* | El jefe gana un escudo de luz que absorbe **20 de daño** (plata 12, carmesí 34) durante 10 s. Es el único evento que le ayuda a él. |
+| **Yunque** | *Yunque caído* | Un yunque enorme cae donde está el objetivo, con un anillo de radio 3 durante 2 s: **10 de daño**. |
+| **Tenazas** | *Tenazas* | Arrastra a todos los jugadores **4 bloques** hacia el jefe (carmesí 7), sin daño. Le pone la onda a tiro. |
+| **Guadaña** | *Tormenta de ceniza* | La niebla se cierra a 20 bloques durante **8 s** (carmesí 14) con viento de 0,06 bloques por tick (× fuerza). El jefe ve menos: persigue hasta 16 bloques en vez de 48. |
+
+Números de partida en `config/forja.json` (`constelacionCada`, `constelacionFuerzas`, `constelacionPesos`…). Cada
+evento, con su aviso en el suelo y su color, se puede ver en el cielo desde cualquier punto de la arena.
+
+### 3.7 El Reforjado estelar (aprobado por Andy, con cambios)
+
+**Lo que hay hoy** (`FallenSmith.startReforge`/`reforge`):
+- A la mitad de la vida, tras llamar a los aprendices, vuelve a la forja y **nada le hace daño** mientras reforja
+  (`hurtServer` lo ignora todo si `reforging > 0`).
+- Enciende **3 ascuas** (fuego a 5 bloques), y cada una le cura un 1 % por segundo.
+- Dura 160 ticks o hasta que se apagan.
+
+**En la dimensión** (Andy, respuesta 1: inmortal, **sin tiempo**, hasta que le quiten el fuego):
+
+1. **Empieza** a la mitad de la vida (160): se arrodilla en el disco del centro, clava el martillo y enciende su
+   **fuego de forja**: **3 + 1 Brasas estelares por jugador extra (hasta 6)**, en un anillo de 9 a 12 bloques
+   alrededor de él, unidas a él por haces dorados.
+2. **Es inmortal** mientras quede una brasa, **sin límite de tiempo**. No se cura (ya no hace falta: no pasa nada
+   hasta que se rompan). Los aprendices y los golpes normales siguen.
+3. **Lo único que apaga las brasas es la colada del brasero:** golpear uno de los 4 braseros de los pilares (un
+   proyectil, o subiendo) lo **vuelca**. Un chorro de metal fundido baja por el pilar y corre en línea recta hacia
+   el centro durante 3 s, de 1 bloque de ancho. **Apaga todas las brasas que toca** y quema a quien lo pise (el
+   metal se enfría y desaparece; la arena no cambia). Hay que elegir el brasero cuya línea pase por más brasas.
+4. **Los braseros se vacían:** cada uno se vuelca **una vez** y queda vacío. Se rellena de dos maneras, que son
+   las otras dos ideas convertidas en ayudas:
+   - **Con hierro estelar:** clic derecho en la base del pilar con **4 hierros estelares**. Durante el Reforjado la
+     constelación del **Martillo** lanza su lluvia cada 20 s (solo ella), para que siempre haya hierro.
+   - **Con el Tajo celeste:** si la línea ardiendo de la Espada cruza un pilar lleno, **lo vuelca sola**: un golpe de
+     suerte, o de ingenio, si el jugador cebo se coloca bien.
+5. **Cuando se apaga la última brasa:** el escudo estalla (la onda morada de fase) y queda **aturdido 5 s**: no
+   ataca y recibe **×1,5 de daño**. Es el premio.
+6. **Ya no hay castigo de Temple** ni tiempo que se acabe (Andy quitó el límite).
+7. **Una vez por pelea.** La persistencia (3.8) guarda si hubo reforjado, qué brasas quedan y qué braseros están
+   vacíos.
+
+Números de partida: `reforjadoBrasasBase` 3, `reforjadoBrasasMax` 6, `reforjadoRellenoHierro` 4,
+`reforjadoMartilloCada` 400 ticks, `reforjadoAturdido` 100 ticks, `reforjadoAturdidoDano` 1,5.
 
 ### 3.8 Morir y volver
 
@@ -441,26 +485,26 @@ Números de partida, en `config/forja.json`: `reforjadoTicks` 400, `reforjadoBra
   a tu punto de reaparición).
 - Se queda en la arena hasta que llegue la próxima pelea. Los aprendices que queden se deshacen en ceniza.
 
-### 3.10 Revancha: la fragua fría del centro (Andy, respuesta 4)
+### 3.10 Revancha: la fragua fría del centro (Andy, respuesta 4; coste renovable)
 
 - **Al morir el Herrero**, en el centro de la arena (sobre el disco de obsidiana llorona) aparece una **fragua
-  fría** (`forja:fragua_fria_estelar`, la fragua apagada de siempre pero con un hueco para una perla), junto a la
-  estrella de vuelta. No estorba: está en el mismo sitio donde él cae.
-- **Se reaviva** con clic derecho llevando encima:
+  fría** (`forja:fragua_fria_estelar`), junto a la estrella de vuelta.
+- **Se reaviva** con clic derecho llevando encima (Andy: **nada que solo dé el jefe ni nada que se acabe**; si se
+  perdiera, nunca se podría volver a llamar):
 
-  | Qué | Cuánto | Por qué |
+  | Qué | Cuánto | De dónde sale, sin fin |
   |---|---|---|
-  | Perla de oricalco (la "llave") | 1 | la misma que abre el portal: 2 lingotes de oricalco sobre una perla de ender |
-  | Lingotes de oricalco | 2 | la aleación de todos los metales |
-  | Hierro estelar | 16 | lo que dejan los meteoritos de la dimensión (un par de peleas o una lluvia) |
-  | Corazón de forja | 1 | el que dejó él la vez anterior: se lo devuelves |
+  | Perla de oricalco (la llave) | 1 | 2 lingotes de oricalco sobre una perla de ender (endermans) |
+  | Lingotes de oricalco | 3 | la aleación de los 14 metales renovables (1.1) |
+  | Estrella del Nether | 1 | el Wither, que se puede invocar siempre (calaveras de esqueleto wither) |
+  | Hierro estelar | 16 | los meteoritos del mundo y de la dimensión |
 
-  En total, unas **4 tandas de oricalco por revancha menos las 2 de las perlas del portal**: más o menos la mitad
-  de lo que costó abrir el portal, más su corazón.
+  En total, 5 lingotes de oricalco (algo más de una tanda), un Wither y una lluvia de meteoritos. Es tan difícil
+  como el corazón de forja que se pedía antes, pero todo se puede volver a conseguir.
 - **Al reavivarla**, la fragua se enciende, el cielo se oscurece 3 s y el Herrero **vuelve a caer del cielo** (3.2),
   con la vida entera y sin aprendices.
-- **Recompensa de la revancha:** la de siempre (el corazón de forja que devolviste vuelve a caer, una leyenda, el
-  martillo del maestro; el yunque del Herrero solo la primera vez) y **otra Estrella forjada por participante**.
+- **Recompensa de la revancha:** la de siempre (corazón de forja, una leyenda, el martillo del maestro; el yunque del
+  Herrero solo la primera vez) y **otra Estrella forjada por participante**.
 - **Límite:** una Estrella por pieza, así que repetirla solo sirve para estrellar más piezas.
 
 ---
@@ -487,7 +531,7 @@ pieza, para siempre (componente `ESTRELLADA`):
 | Armadura | la del material | **+1 de armadura y +0,5 de dureza por pieza** (juego entero: +4 y +2) |
 | Aspecto | | un brillo de estrellas en la pieza y el nombre en dorado |
 
-- **La armadura sí sube** (Andy, respuesta 5: puede pasar el tope): +1 de armadura y +0,5 de dureza por pieza
+- **La armadura sí sube** (Andy, respuestas 5 y, en la revisión 1b, 3: aprobado): +1 de armadura y +0,5 de dureza por pieza
   estrellada, además de la carga y la durabilidad. Cuánto para de más un juego entero se medirá con
   `ArmaduraGameTests` al construirlo (hoy el de corazón para un 86,0 % del golpe contundente al torso).
 - **`ArmaduraGameTests` cambia:** el tope sigue en netherita P4 + 5 puntos para las piezas sin estrella; para un
@@ -507,7 +551,29 @@ recoloreada.
 
 ## 5. Pruebas previstas
 
-### Entrega 1b (arreglos de la revisión, esta rama)
+### Entrega 1c y entrega 2 (esta rama)
+
+- **Servidor:**
+  - `DimensionGameTests.theConstellationsAreAlwaysUp`: al menos 3 constelaciones a 15° o más en todo el giro.
+  - `theEmberTintIsSmooth`: el tinte no salta con la altura ni el ángulo.
+  - `everyPlateauHasItsDeadVents`: respiraderos en las 5 semillas, lejos de la arena y de los ríos, y alzados.
+  - `PortalGameTests`:
+    - el oricalco sale de los 14 metales a calor de fundición, y no si falta uno o está frío; no lleva nada que se
+      acabe; las cubas lo guardan;
+    - la perla se cuela en una mesa (2 lingotes);
+    - 4 perlas encienden el hueco entero y 3 no; las ménsulas no se rompen;
+    - la fragua vieja ya no invoca, aunque se lleve la ofrenda entera, y se abre en el marco;
+    - la plantilla del castillo tiene el marco (4 ménsulas, ninguna fragua);
+    - la vuelta se apunta fuera del marco, del lado por el que se entró, y lleva allí.
+- **Cliente (`FORJA_SOLO=dimension`), con clics de verdad:**
+  - una fragua apagada en su estrado: clic derecho, y se abre el marco;
+  - 3 perlas puestas a mano, que no lo encienden, y la cuarta, que sí;
+  - se entra pisando el portal y se llega a la plataforma; se vuelve por el pozo y se queda a 3,6 bloques del
+    marco.
+  - Más: el sol con un muro delante y sin él, un respiradero y su cráter, el cielo a 0, 3 y 6 minutos, y tres
+    eventos del mundo en este cielo (aurora, luna de sangre, meteoritos).
+
+### Entrega 1b (arreglos de la revisión)
 
 - **Servidor (`DimensionGameTests`)**, ahora en 5 semillas: arena llana y despejada en todas, sin metal fundido
   cerca de la arena en ninguna, tumbas (3.014 a 5.099), forjas (17 a 42), cascadas y al menos 5 islotes en todas;
@@ -559,23 +625,31 @@ recoloreada.
 
 ## 6. Respuestas de Andy y lo que queda por decidir
 
-**Respuestas (revisión de la entrega 1):**
+**Primera revisión (entrega 1):**
 
 1. **Nombres aprobados:** El Cementerio entre Estrellas, oricalco, perla de oricalco, Estrella forjada.
-2. **Oricalco sin corazón de forja ni acero vivo:** aprobado.
-3. **Con 10 aprendices, 4 + 6:** lo que sobra se suma al anillo, que pasa a hexágono (ver 3.5).
-4. **Revancha:** al morir aparece una fragua fría en el centro de la arena; se reaviva con materiales y una perla
-   de oricalco, y cada participante recibe otra Estrella (ver 3.10).
-5. **La Estrella puede pasar el tope de armadura** de netherita P4 + 5; `ArmaduraGameTests` se ajusta para las
-   piezas estrelladas (ver 4.1).
-6. **Los tres eventos aprobados:** meteoritos, molde celeste y tormenta de ceniza, cada 35 a 45 s.
-7. **Las forjas hundidas en el terreno están bien.**
+2. **Oricalco sin corazón de forja ni acero vivo:** aprobado. En la revisión 1b se amplió: **todo renovable**, así
+   que también quedan fuera el damasco, el solacero y el lunacero (1.1).
+3. **Con 10 aprendices, 4 + 6:** lo que sobra se suma al anillo, que pasa a hexágono (3.5).
+4. **Revancha con fragua fría en el centro:** aprobada; el coste ya no lleva el corazón de forja (3.10).
+5. **La Estrella puede pasar el tope de armadura** (4.1).
+6. **Los tres eventos aprobados** y ahora dentro de las constelaciones (3.6).
+7. **Forjas hundidas:** bien.
+
+**Segunda revisión (entrega 1b):**
+
+1. **Reforjado estelar aprobado** con cambios: inmortal sin tiempo hasta que la colada del brasero le apague el
+   fuego; el hierro y el Tajo celeste pasan a ser ayudas (rellenar o volcar braseros); aturdido 5 s ×1,5 al final
+   (3.7).
+2. **Revancha sin nada que dé solo el jefe:** perla + 3 oricalcos + estrella del Nether + 16 hierros estelares (3.10).
+3. **Armadura estrellada** (+1 y +0,5 por pieza): aprobada.
+4. **Constelaciones en la pelea:** diseñadas en 3.6.
 
 **Por decidir:**
 
-1. **Reforjado estelar (3.7):** ¿te gusta que su invulnerabilidad de la mitad solo se rompa con la dimensión
-   (hierro estelar templado, molde celeste redirigido y colada del brasero), con aturdido ×1,5 si lo consigues y
-   Temple −30 % si no?
-2. **Coste de la revancha (3.10):** 1 perla de oricalco, 2 lingotes de oricalco, 16 hierros estelares y el corazón
-   de forja. ¿Te parece bien?
-3. **Armadura estrellada (4.1):** +1 de armadura y +0,5 de dureza por pieza. ¿Te vale?
+1. **Las 8 constelaciones y los 5 colores (3.6):** ¿te gustan los eventos, las fuerzas (×0,6 a ×1,7), los
+   repartos por fase y que salga uno cada 30 a 40 s?
+2. **Égida (Escudo)** es el único evento que ayuda al jefe. ¿Lo dejas o lo cambias por otro que castigue?
+3. **Rellenar un brasero con 4 hierros estelares (3.7):** ¿es un buen precio?
+4. **Oricalco solo en la fundición (1.1):** con 14 ingredientes, hace falta una línea con doce cubas. ¿Te vale, o
+   prefieres una receta en dos pasos (dos "oricalcos en bruto" de 7 metales cada uno)?
