@@ -58,9 +58,11 @@ public final class GuideBooks {
 			List.of(new Section("fundicion_calor", 0, List.of("fundicion_sabes", "primeras_aleaciones")),
 				new Section("fundicion_linea", 4, List.of("fundicion")),
 				new Section("fundicion_mayor", 1, List.of("mesa_mayor", "fundicion_siguiente")))),
-		MESA_MAYOR("libro_mesa_mayor", 0x7850BE, "mesa_mayor", () -> ModItems.alloy("damasco"), false, true,
-			List.of(new Section("mejoras", 1, List.of("potencial", "maestria", "sinergias", "pactos")),
-				new Section("taller", 0, List.of("herrero", "tecnicas", "accesorios", "mi_taller")))),
+		// Book IV: what a piece can become, and what the smith becomes.
+		MESA_MAYOR("libro_mesa_mayor", 0x7850BE, "mesa_mayor", () -> ModItems.alloy("damasco"), true, true,
+			List.of(new Section("mayor_mejoras", 1, List.of("mayor_sabes", "potencial", "sinergias", "pactos")),
+				new Section("mayor_maestria", 0, List.of("maestria", "herrero", "tecnicas", "mi_taller")),
+				new Section("mayor_llevar", 3, List.of("accesorios", "mayor_siguiente")))),
 		CLASES("libro_clases", 0x3C7A4A, "parada", () -> Items.EMERALD, false, true,
 			List.of(new Section("pelear", 2, List.of("clases")))),
 		BASTION("libro_bastion", 0x28827F, "ruina", () -> Items.MAP, false, true,
@@ -169,6 +171,7 @@ public final class GuideBooks {
 				case YUNQUE -> ModItems.LIBRO_YUNQUE;
 				case COMBATE -> ModItems.LIBRO_COMBATE;
 				case FUNDICION -> ModItems.LIBRO_FUNDICION;
+				case MESA_MAYOR -> ModItems.LIBRO_MESA_MAYOR;
 				case TOMO -> ModItems.TOMO_DE_FORJA;
 				default -> null;
 			};

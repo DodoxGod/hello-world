@@ -1327,6 +1327,21 @@ public class ForjaClientTest implements FabricClientGameTest {
 		check(!pactParts[1].contains(":shadow"), "the tome shows every pact and synergy: " + pactParts[1]);
 		check(pactOpened.contains("pact:PACTO_DE_SED:seen") && pactOpened.contains("pact:PACTO_DE_VIDRIO:shadow"), "an opened pact comes out of the shadow, only it: " + pactOpened);
 
+		// Synergies in shadow until one has woken on the reader's gear: book IV lists them.
+		String synergies = context.computeOnClient(mc -> {
+			java.util.Set<String> was = dev.forja.client.BookMemory.forgetSynergies();
+			String noSynergy = new GuideBookScreen(dev.forja.GuideBooks.Book.MESA_MAYOR).shadowedEntries().toString();
+			dev.forja.client.BookMemory.awoke("FILON");
+			String oneSynergy = new GuideBookScreen(dev.forja.GuideBooks.Book.MESA_MAYOR).shadowedEntries().toString();
+			dev.forja.client.BookMemory.forgetSynergies();
+			was.forEach(dev.forja.client.BookMemory::awoke);
+			return noSynergy + " | " + oneSynergy;
+		});
+		log("libros, sinergias: " + synergies);
+		String[] syn = synergies.split(" [|] ");
+		check(syn[0].contains("synergy:FILON:shadow") && !syn[0].contains("synergy:FILON:seen"), "a synergy never woken should be a shadow: " + syn[0]);
+		check(syn[1].contains("synergy:FILON:seen") && syn[1].contains("synergy:MURO:shadow"), "a synergy woken comes out of the shadow, only it: " + syn[1]);
+
 		// Pictures: the probe with a sword in it, and the picker over the book.
 		context.runOnClient(mc -> {
 			GuideBookScreen anvil = new GuideBookScreen(dev.forja.GuideBooks.Book.YUNQUE);

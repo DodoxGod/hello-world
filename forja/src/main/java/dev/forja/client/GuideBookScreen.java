@@ -813,6 +813,9 @@ public class GuideBookScreen extends Screen {
 			case "primeras_aleaciones" -> this.firstAlloysChapter();
 			case "catalogo_aleaciones" -> this.alloyListChapter();
 			case "fundicion_siguiente" -> this.foundryNextChapter();
+			// Book IV.
+			case "mayor_sabes" -> this.greaterRecapChapter();
+			case "mayor_siguiente" -> this.greaterNextChapter();
 			default -> throw new IllegalArgumentException("no chapter " + key);
 		};
 	}
@@ -910,6 +913,8 @@ public class GuideBookScreen extends Screen {
 			case "primeras_aleaciones" -> new ItemStack(ModItems.alloy("bronce"));
 			case "catalogo_aleaciones" -> new ItemStack(ModItems.alloy("acero"));
 			case "fundicion_siguiente" -> new ItemStack(Items.COMPASS);
+			case "mayor_sabes" -> new ItemStack(Items.WRITABLE_BOOK);
+			case "mayor_siguiente" -> new ItemStack(Items.COMPASS);
 			default -> ItemStack.EMPTY;
 		};
 	}
@@ -968,6 +973,7 @@ public class GuideBookScreen extends Screen {
 			case YUNQUE -> new ItemStack(ModItems.MESA_DE_FORJA);
 			case COMBATE -> Assembler.create(ForgeType.ESPADA, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.HIERRO));
 			case FUNDICION -> new ItemStack(ModItems.CRISOL_DE_HIERRO);
+			case MESA_MAYOR -> new ItemStack(ModItems.MESA_DE_FORJA_MAYOR);
 			case BIBLIOTECA -> new ItemStack(Items.BOOKSHELF);
 			default -> new ItemStack(Items.BOOK);
 		};
@@ -979,6 +985,7 @@ public class GuideBookScreen extends Screen {
 			case YUNQUE -> Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO));
 			case COMBATE -> Assembler.create(ForgeType.ESCUDO, Assembler.defaultMaterials(ForgeType.ESCUDO));
 			case FUNDICION -> new ItemStack(ModItems.alloy("bronce"));
+			case MESA_MAYOR -> new ItemStack(ModItems.FUNDENTE_MAESTRO);
 			case BIBLIOTECA -> new ItemStack(ModItems.GUIA_DE_FORJA);
 			default -> new ItemStack(ModItems.GUIA_DE_FORJA);
 		};
@@ -1177,6 +1184,12 @@ public class GuideBookScreen extends Screen {
 		for (PartType part : List.of(PartType.CABEZA_PICO, PartType.HOJA, PartType.MANGO, PartType.ATADURA)) {
 			body.add(new Part(part));
 		}
+		// Heavy and light handles and bindings (combat/Grip): a choice, not an upgrade.
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.variantes.titulo")));
+		body.add(new Part(PartType.MANGO_PESADO));
+		body.add(new Part(PartType.MANGO_LIGERO));
+		body.add(new Text(Component.translatable("gui.forja.libros.variantes"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.variantes.hacer"), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libros.cortar.rasgo"), INK));
 		body.add(new ChapterLink("piezas"));
 		return body;
@@ -1753,6 +1766,32 @@ public class GuideBookScreen extends Screen {
 		List<Element> body = new ArrayList<>();
 		body.add(new Text(Component.translatable("gui.forja.libros.fundicion_siguiente"), INK));
 		body.add(new BookCard(GuideBooks.Book.MESA_MAYOR));
+		body.add(new BookCard(GuideBooks.Book.BASTION));
+		body.add(new ChapterLink("siguiente_paso"));
+		return body;
+	}
+
+	// ------------------------------------------------------------------ book IV, La mesa mayor
+
+	/** Book IV opens on what the greater table changes: everything the first would not make, and upgrades to the top. */
+	private List<Element> greaterRecapChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.mayor_sabes", dev.forja.menu.Station.FORJA.capacity(),
+			dev.forja.menu.Station.FORJA_MAYOR.capacity()), INK));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.MESA_DE_FORJA_MAYOR),
+			Assembler.create(ForgeType.ESPADON, Assembler.defaultMaterials(ForgeType.ESPADON)),
+			Assembler.create(ForgeType.ESCUDO, Assembler.defaultMaterials(ForgeType.ESCUDO)),
+			new ItemStack(ModItems.FUNDENTE_MAESTRO))));
+		body.add(new ChapterLink("mesa_mayor"));
+		body.add(new ChapterLink("probador"));
+		return body;
+	}
+
+	/** The last page of book IV: the classes and the world, and the path. */
+	private List<Element> greaterNextChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.mayor_siguiente"), INK));
+		body.add(new BookCard(GuideBooks.Book.CLASES));
 		body.add(new BookCard(GuideBooks.Book.BASTION));
 		body.add(new ChapterLink("siguiente_paso"));
 		return body;
@@ -2816,18 +2855,25 @@ public class GuideBookScreen extends Screen {
 		List<Element> body = new ArrayList<>();
 		body.add(new Text(Component.translatable("gui.forja.libro.sinergias_intro", dev.forja.upgrade.Synergy.THRESHOLD,
 			dev.forja.upgrade.Synergy.MOST), INK_SOFT));
+		int sleeping = 0;
 		for (dev.forja.upgrade.Synergy synergy : dev.forja.upgrade.Synergy.values()) {
-			body.add(new Spacer(2));
 			boolean known = this.synergyKnown(synergy);
 			this.shadowed.add("synergy:" + synergy.name() + ":" + (known ? "seen" : "shadow"));
 			if (!known) {
-				body.add(new SubHeader(Component.translatable("gui.forja.libros.bestiario.oculto")));
-				body.add(new Text(Component.translatable("gui.forja.libros.sinergia_dormida.desc"), INK_SOFT));
+				// All the ones not woken yet go together at the end, as a count: a page of question marks each
+				// would be pages of nothing.
+				sleeping++;
 				continue;
 			}
+			body.add(new Spacer(2));
 			body.add(new SubHeader(synergy.displayName()));
 			body.add(new Text(Component.translatable("gui.forja.libro.sinergia_par", synergy.first.displayName(), synergy.second.displayName()), INK_SOFT));
 			body.add(new Text(synergy.description(), INK));
+		}
+		if (sleeping > 0) {
+			body.add(new Divider());
+			body.add(new SubHeader(Component.translatable("gui.forja.libros.sinergias_dormidas", sleeping)));
+			body.add(new Text(Component.translatable("gui.forja.libros.sinergia_dormida.desc"), INK_SOFT));
 		}
 		return body;
 	}

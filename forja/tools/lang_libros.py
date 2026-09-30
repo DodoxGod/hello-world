@@ -592,3 +592,32 @@ BOOKS.update({
         "With the greater table the part of the smith's path learned in the workshop ends. What comes next: getting "
         "everything out of a piece, and going out into the world to find the Smith's castle."),
 })
+
+# ---- book IV, La mesa mayor
+BOOKS.update({
+    "item.forja.libro_mesa_mayor": ("La mesa mayor", "The Greater Table"),
+    "gui.forja.libro.cap.mayor_sabes": ("Lo que cambia", "What Changes"),
+    "gui.forja.libro.cap.mayor_siguiente": ("Siguiente", "Next"),
+    "gui.forja.libro.seccion.mayor_mejoras": ("Mejoras a fondo", "Upgrades in depth"),
+    "gui.forja.libro.seccion.mayor_maestria": ("Maestría y técnicas", "Mastery and techniques"),
+    "gui.forja.libro.seccion.mayor_llevar": ("Lo que llevas", "What you carry"),
+    "gui.forja.libros.mayor_sabes": (
+        "La mesa de forja mayor monta todo lo que la primera no monta (espadones, lanzas, escudos, manguales, alas...) y "
+        "lleva las mejoras del %s%% hasta el %s%%. Pero no todas caben en todas las piezas: cada una tiene un potencial y "
+        "una carga. Este libro cuenta hasta dónde puede llegar una pieza, y hasta dónde puedes llegar tú.",
+        "The greater forge table makes everything the first one will not (greatswords, spears, shields, flails, wings...) "
+        "and takes upgrades from %s%% up to %s%%. But not everything fits on every piece: each has a potential and a load. "
+        "This book tells how far a piece can go, and how far you can."),
+    "gui.forja.libros.mayor_siguiente": (
+        "Lo que queda: una clase que haga tuya tu forma de pelear, y salir al mundo a buscar el castillo del Herrero.",
+        "What is left: a class that makes your way of fighting your own, and going out into the world to find the "
+        "Smith's castle."),
+})
+BOOKS.update({
+    "gui.forja.libros.sinergias_dormidas": ("%s sinergias por despertar", "%s synergies still asleep"),
+    "gui.forja.libros.sinergia_dormida.desc": (
+        "Aún no las has despertado. Cada una aparece aquí la primera vez que despierta en algo que lleves: dos mejoras "
+        "que se llevan bien, las dos al 50 %% o más. El probador de mejoras avisa cuando una pieza está a punto.",
+        "You have not woken them yet. Each appears here the first time it wakes on something you carry: two upgrades "
+        "that get on, both at 50 %% or more. The upgrade probe says when a piece is close."),
+})

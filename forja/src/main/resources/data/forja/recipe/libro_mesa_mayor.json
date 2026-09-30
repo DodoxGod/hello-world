@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:book",
+    "forja:damasco"
+  ],
+  "result": {
+    "id": "forja:libro_mesa_mayor"
+  }
+}
