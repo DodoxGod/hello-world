@@ -229,6 +229,70 @@ public class LibrosGameTests {
 		helper.succeed();
 	}
 
+	/**
+	 * Lighting the star portal teaches book VII: whoever stands at the frame gets the "portal" advancement (and with it
+	 * the recipe), and a lectern with the book appears beside the frame.
+	 */
+	@GameTest(maxTicks = 100)
+	public void lightingThePortalTeachesBookSeven(GameTestHelper helper) {
+		net.minecraft.server.level.ServerLevel level = helper.getLevel();
+		BlockPos forge = helper.absolutePos(new BlockPos(5, 3, 5));
+		for (int dx = -5; dx <= 5; dx++) {
+			for (int dz = -5; dz <= 5; dz++) {
+				level.setBlockAndUpdate(forge.offset(dx, -2, dz), net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+				level.setBlockAndUpdate(forge.offset(dx, -1, dz), net.minecraft.world.level.block.Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
+			}
+		}
+		level.setBlockAndUpdate(forge, dev.forja.registry.ModBlocks.FRAGUA_APAGADA.defaultBlockState());
+		dev.forja.block.DeadForgeBlock.openFrame(level, forge);
+		ServerPlayer player = helper.makeMockServerPlayerInLevel();
+		player.teleportTo(forge.getX() + 0.5, forge.getY(), forge.getZ() + 3.5);
+		AdvancementHolder portal = level.getServer().getAdvancements().get(Forja.id("forja/portal"));
+		helper.assertTrue(portal != null, "falta el logro forja/portal");
+		player.getAdvancements().revoke(portal, "done");
+		player.getRecipeBook().remove(Book.CEMENTERIO.recipe());
+		BlockPos centre = forge.below();
+		for (net.minecraft.core.Direction side : net.minecraft.core.Direction.Plane.HORIZONTAL) {
+			dev.forja.block.StarBracketBlock.setPearl(level, centre.relative(side, dev.forja.block.StarBracketBlock.REACH));
+		}
+		helper.assertTrue(level.getBlockState(centre).is(dev.forja.registry.ModBlocks.PORTAL_ESTELAR), "el portal debería estar encendido");
+		helper.assertTrue(player.getAdvancements().getOrStartProgress(portal).isDone(), "quien está junto al marco debería recibir forja/portal");
+		helper.assertTrue(player.getRecipeBook().contains(Book.CEMENTERIO.recipe()), "con el portal encendido se aprende la receta del libro VII");
+		boolean lectern = false;
+		for (BlockPos at : BlockPos.betweenClosed(centre.offset(-5, -1, -5), centre.offset(5, 1, 5))) {
+			lectern |= level.getBlockState(at).is(dev.forja.registry.ModBlocks.ATRIL_DEL_HERRERO);
+		}
+		helper.assertTrue(lectern, "junto al portal encendido debería aparecer el atril del Herrero");
+		helper.succeed();
+	}
+
+	/** The smith's shelf: a book goes into its own place, comes back out with a click there, and a comparator counts. */
+	@GameTest
+	public void theShelfKeepsEachBookInItsPlace(GameTestHelper helper) {
+		BlockPos rel = new BlockPos(1, 1, 1);
+		helper.setBlock(rel, dev.forja.registry.ModBlocks.ESTANTERIA_DEL_HERRERO.defaultBlockState());
+		BlockPos pos = helper.absolutePos(rel);
+		ServerPlayer player = helper.makeMockServerPlayerInLevel();
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.LIBRO_COMBATE));
+		var state = helper.getLevel().getBlockState(pos);
+		net.minecraft.world.phys.BlockHitResult front = new net.minecraft.world.phys.BlockHitResult(
+			net.minecraft.world.phys.Vec3.atCenterOf(pos).add(0.0, 0.0, -0.5), net.minecraft.core.Direction.NORTH, pos, false);
+		state.useItemOn(player.getMainHandItem(), helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND, front);
+		int place = GuideBooks.SHELF.indexOf(Book.COMBATE);
+		state = helper.getLevel().getBlockState(pos);
+		helper.assertTrue(state.getValue(dev.forja.block.SmithShelfBlock.BOOKS[place]), "el libro II debería ir a su sitio de la estantería");
+		// (The test's player is in creative, where a placed item stays in the hand, as with any block.)
+		helper.assertTrue(state.getAnalogOutputSignal(helper.getLevel(), pos, net.minecraft.core.Direction.NORTH) == 1, "un comparador cuenta un libro");
+		// A click on its place (seen from the north, place 0 is at the east edge; each place is two pixels wide).
+		double x = pos.getX() + 1.0 - (place * 2 + 1) / 16.0;
+		net.minecraft.world.phys.BlockHitResult atPlace = new net.minecraft.world.phys.BlockHitResult(
+			new net.minecraft.world.phys.Vec3(x, pos.getY() + 0.5, pos.getZ()), net.minecraft.core.Direction.NORTH, pos, false);
+		state.useWithoutItem(helper.getLevel(), player, atPlace);
+		helper.assertTrue(!helper.getLevel().getBlockState(pos).getValue(dev.forja.block.SmithShelfBlock.BOOKS[place]), "un clic en su sitio saca el libro");
+		helper.assertTrue(player.getInventory().contains(new ItemStack(ModItems.LIBRO_COMBATE)), "el libro sacado vuelve a la bolsa");
+		helper.succeed();
+	}
+
 	/** Every step of the path is explained in a chapter some book has, and the books cover the whole path between them. */
 	@GameTest
 	public void everyStepHasItsBook(GameTestHelper helper) {

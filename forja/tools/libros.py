@@ -52,6 +52,11 @@ BOOKS = {
                                           ((8, 4), (90, 90, 98)), ((7, 5), (90, 90, 98)), ((8, 5), (90, 90, 98)),
                                           ((6, 6), (70, 70, 78)), ((9, 6), (70, 70, 78)), ((7, 6), (255, 160, 60))],
                       "minecraft:map"),
+    # Book VII: a gold star on the night.
+    "libro_cementerio": ((0x34, 0x26, 0x58), [((8, 3), (236, 196, 84)), ((7, 4), (236, 196, 84)), ((8, 4), (255, 240, 170)),
+                                             ((9, 4), (236, 196, 84)), ((8, 5), (236, 196, 84)), ((5, 5), (200, 200, 230)),
+                                             ((11, 4), (200, 200, 230))],
+                         "forja:hierro_estelar"),
     # The creative tome: dark red with a gold star, and no recipe.
     "tomo_de_forja": ((0x7A, 0x2A, 0x20), [((8, 4), GOLD), ((7, 5), GOLD), ((8, 5), GOLD), ((9, 5), GOLD), ((8, 6), GOLD),
                                           ((6, 5), (200, 160, 60)), ((10, 5), (200, 160, 60))], None),
@@ -99,6 +104,101 @@ def generate(vanilla_book):
     return list(BOOKS)
 
 
+
+# The shelf's eight places, in GuideBooks.SHELF's order: each book's spine colour.
+SHELF = ["guia_de_forja", "libro_yunque", "libro_combate", "libro_fundicion", "libro_mesa_mayor", "libro_clases", "libro_bastion",
+         "libro_cementerio"]
+SPINES = [(0xC9, 0xA4, 0x65), (0xC8, 0x64, 0x1E), (0xA8, 0x32, 0x2C), (0x7A, 0x4A, 0x2A), (0x78, 0x50, 0xBE), (0x3C, 0x7A, 0x4A),
+          (0x28, 0x82, 0x7F), (0x34, 0x26, 0x58)]
+
+
+def spine(colour):
+    """A book's spine for the shelf: its leather, darker at the edges, and two bands of gilt."""
+    out = Image.new("RGBA", (16, 16), colour + (255,))
+    for y in range(16):
+        for x in range(16):
+            shade = 0.72 if x in (0, 15) else 1.0
+            out.putpixel((x, y), tuple(round(c * shade) for c in colour) + (255,))
+    for y in (3, 12):
+        for x in range(16):
+            out.putpixel((x, y), (214, 176, 90, 255))
+    return out
+
+
+def generate_blocks():
+    """The smith's shelf (a place per book, shown by its spine) and the lectern of book VII."""
+    for i, colour in enumerate(SPINES):
+        path = ASSETS / f"textures/block/lomo_{i}.png"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        spine(colour).save(path)
+    frame = "minecraft:block/oak_planks"
+    write_json(ASSETS / "models/block/estanteria_del_herrero.json", {
+        "parent": "minecraft:block/block",
+        "textures": {"particle": frame, "side": "minecraft:block/chiseled_bookshelf_side", "top": "minecraft:block/chiseled_bookshelf_top",
+                     "back": "minecraft:block/dark_oak_planks", "frame": frame},
+        "elements": [
+            {"from": [0, 0, 1], "to": [16, 16, 16], "faces": {
+                "north": {"texture": "#back"}, "south": {"texture": "#side"}, "east": {"texture": "#side"},
+                "west": {"texture": "#side"}, "up": {"texture": "#top"}, "down": {"texture": "#top"}}},
+            {"from": [0, 0, 0], "to": [16, 2, 1], "faces": {d: {"texture": "#frame"} for d in ("north", "up", "down", "east", "west")}},
+            {"from": [0, 14, 0], "to": [16, 16, 1], "faces": {d: {"texture": "#frame"} for d in ("north", "up", "down", "east", "west")}},
+            {"from": [0, 2, 0], "to": [1, 14, 1], "faces": {d: {"texture": "#frame"} for d in ("north", "east", "west")}},
+            {"from": [15, 2, 0], "to": [16, 14, 1], "faces": {d: {"texture": "#frame"} for d in ("north", "east", "west")}},
+        ],
+    })
+    for i in range(8):
+        # Place 0 is on the reader's left, which from the north is the east (SelectableSlotContainer).
+        right = 15 - i * 1.75
+        left = right - 1.75
+        write_json(ASSETS / f"models/block/estanteria_libro_{i}.json", {
+            "textures": {"spine": f"forja:block/lomo_{i}", "particle": f"forja:block/lomo_{i}"},
+            "elements": [{"from": [left + 0.1, 2, 0.2], "to": [right - 0.1, 14, 1], "faces": {
+                "north": {"uv": [0, 2, 16, 14], "texture": "#spine"},
+                "up": {"uv": [0, 0, 16, 1], "texture": "#spine"},
+                "east": {"uv": [0, 2, 1, 14], "texture": "#spine"},
+                "west": {"uv": [15, 2, 16, 14], "texture": "#spine"}}}],
+        })
+    rotations = {"north": 0, "east": 90, "south": 180, "west": 270}
+    multipart = []
+    for facing, y in rotations.items():
+        multipart.append({"when": {"facing": facing}, "apply": {"model": "forja:block/estanteria_del_herrero", "y": y}})
+        for i in range(8):
+            multipart.append({"when": {"facing": facing, f"libro_{i}": "true"},
+                              "apply": {"model": f"forja:block/estanteria_libro_{i}", "y": y}})
+    write_json(ASSETS / "blockstates/estanteria_del_herrero.json", {"multipart": multipart})
+    write_json(ASSETS / "items/estanteria_del_herrero.json", {"model": {"type": "minecraft:model", "model": "forja:block/estanteria_del_herrero"}})
+    write_json(DATA / "recipe/estanteria_del_herrero.json", {
+        "type": "minecraft:crafting_shaped",
+        "category": "building",
+        "pattern": ["PPP", "BIB", "PPP"],
+        "key": {"P": "#minecraft:planks", "B": "minecraft:book", "I": "minecraft:iron_ingot"},
+        "result": {"id": "forja:estanteria_del_herrero"},
+    })
+    # It drops itself and whatever books it holds.
+    pools = [{"rolls": 1.0, "bonus_rolls": 0.0, "entries": [{"type": "minecraft:item", "name": "forja:estanteria_del_herrero"}],
+              "conditions": [{"condition": "minecraft:survives_explosion"}]}]
+    for i, book in enumerate(SHELF):
+        pools.append({"rolls": 1.0, "bonus_rolls": 0.0, "entries": [{"type": "minecraft:item", "name": f"forja:{book}"}],
+                      "conditions": [{"condition": "minecraft:block_state_property", "block": "forja:estanteria_del_herrero",
+                                      "properties": {f"libro_{i}": "true"}}]})
+    write_json(DATA / "loot_table/blocks/estanteria_del_herrero.json", {"type": "minecraft:block", "pools": pools})
+    # The lectern of book VII: vanilla's lectern, turned like it.
+    write_json(ASSETS / "blockstates/atril_del_herrero.json", {"variants": {
+        f"facing={facing}": ({"model": "minecraft:block/lectern", "y": y} if y else {"model": "minecraft:block/lectern"})
+        for facing, y in rotations.items()}})
+    write_json(ASSETS / "items/atril_del_herrero.json", {"model": {"type": "minecraft:model", "model": "minecraft:block/lectern"}})
+    write_json(DATA / "loot_table/blocks/atril_del_herrero.json", {"type": "minecraft:block", "pools": [
+        {"rolls": 1.0, "bonus_rolls": 0.0, "entries": [{"type": "minecraft:item", "name": "forja:atril_del_herrero"}],
+         "conditions": [{"condition": "minecraft:survives_explosion"}]}]})
+    # Both are wood: an axe takes them.
+    tag = ROOT / "src/main/resources/data/minecraft/tags/block/mineable/axe.json"
+    values = json.loads(tag.read_text(encoding="utf-8"))
+    for block in ("forja:estanteria_del_herrero", "forja:atril_del_herrero"):
+        if block not in values["values"]:
+            values["values"].append(block)
+    write_json(tag, values)
+
+
 if __name__ == "__main__":
     import io
     import zipfile
@@ -107,3 +207,5 @@ if __name__ == "__main__":
     with zipfile.ZipFile(jar) as client:
         book = Image.open(io.BytesIO(client.read("assets/minecraft/textures/item/book.png"))).convert("RGBA").crop((0, 0, 16, 16))
     print("books written:", ", ".join(generate(book)))
+    generate_blocks()
+    print("shelf and lectern written")

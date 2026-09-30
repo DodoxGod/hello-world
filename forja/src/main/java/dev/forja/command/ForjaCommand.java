@@ -253,6 +253,11 @@ public final class ForjaCommand {
 			}
 			dev.forja.GuideBooks.catchUp(player);
 		});
+		net.fabricmc.fabric.api.entity.event.v1.ServerEntityLevelChangeEvents.AFTER_PLAYER_CHANGE_LEVEL.register((player, origin, destination) -> {
+			if (destination.dimension().equals(dev.forja.world.StarYard.LEVEL)) {
+				dev.forja.ForjaAdvancements.award(player, "portal");
+			}
+		});
 
 		// In the dev client every player gets the kit once, so new gear can be tried right away.
 		if (FabricLoader.getInstance().isDevelopmentEnvironment()) {

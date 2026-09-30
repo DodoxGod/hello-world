@@ -71,8 +71,10 @@ public final class GuideBooks {
 			List.of(new Section("bastion_mundo", 3, List.of("bastion_sabes", "mundo", "encargos")),
 				new Section("bastion_ruinas", 4, List.of("ruinas", "herrero_historia")),
 				new Section("bastion_castillo", 2, List.of("bastion", "portal_estelar", "bastion_siguiente")))),
-		CEMENTERIO("libro_cementerio", 0x342658, "portal", () -> ModItems.HIERRO_ESTELAR, false, true,
-			List.of(new Section("mundo", 3, List.of("cementerio")))),
+		// Book VII: the Smith's world and the fight. On a lectern beside the portal when it is lit, and crafted as any.
+		CEMENTERIO("libro_cementerio", 0x342658, "portal", () -> ModItems.HIERRO_ESTELAR, true, true,
+			List.of(new Section("cementerio_mundo", 1, List.of("cementerio_viaje", "cementerio_pelea")),
+				new Section("cementerio_final", 2, List.of("cementerio_recompensa", "cementerio_herrero", "cementerio_fin")))),
 		/** What G opens when the notebook is carried: the shelf, the path and the reference tables (the catalogue). */
 		BIBLIOTECA(null, 0x8A6A3A, null, () -> Items.AIR, true, false,
 			List.of(new Section("estanteria", 0, List.of("estanteria", "siguiente_paso")),
@@ -178,6 +180,7 @@ public final class GuideBooks {
 				case MESA_MAYOR -> ModItems.LIBRO_MESA_MAYOR;
 				case CLASES -> ModItems.LIBRO_CLASES;
 				case BASTION -> ModItems.LIBRO_BASTION;
+				case CEMENTERIO -> ModItems.LIBRO_CEMENTERIO;
 				case TOMO -> ModItems.TOMO_DE_FORJA;
 				default -> null;
 			};

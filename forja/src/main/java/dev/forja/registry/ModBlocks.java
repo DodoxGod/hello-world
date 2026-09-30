@@ -367,6 +367,32 @@ public final class ModBlocks {
 	);
 
 	/** Ménsula estelar: a bracket of the star portal's frame, where an oricalco pearl goes. See block/StarBracketBlock. */
+	/** The smith's shelf: a place for each of the guide's eight books (docs/LIBROS_GUIA.md, 3.3). */
+	public static final Block ESTANTERIA_DEL_HERRERO = register(
+		"estanteria_del_herrero",
+		new dev.forja.block.SmithShelfBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.WOOD)
+				.strength(1.5F)
+				.sound(SoundType.CHISELED_BOOKSHELF)
+				.ignitedByLava()
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("estanteria_del_herrero")))
+		)
+	);
+
+	/** The lectern with book VII, put beside the star portal when it is lit. */
+	public static final Block ATRIL_DEL_HERRERO = register(
+		"atril_del_herrero",
+		new dev.forja.block.SmithLecternBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.WOOD)
+				.strength(2.5F)
+				.sound(SoundType.WOOD)
+				.noOcclusion()
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("atril_del_herrero")))
+		)
+	);
+
 	public static final Block MENSULA_ESTELAR = register(
 		"mensula_estelar",
 		new dev.forja.block.StarBracketBlock(

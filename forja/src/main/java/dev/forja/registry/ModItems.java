@@ -86,6 +86,12 @@ public final class ModItems {
 	public static Item LIBRO_CLASES;
 	/** Book VI: the world, the ruins, the Smith's story and his castle. */
 	public static Item LIBRO_BASTION;
+	/** Book VII: the Smith's world, the fight and its reward. */
+	public static Item LIBRO_CEMENTERIO;
+	/** The smith's shelf, a place for each of the eight books (block/SmithShelfBlock). */
+	public static Item ESTANTERIA_DEL_HERRERO;
+	/** The lectern with book VII beside the lit star portal (block/SmithLecternBlock). */
+	public static Item ATRIL_DEL_HERRERO;
 	/** The whole guide in one volume, as it was before the books: creative only. */
 	public static Item TOMO_DE_FORJA;
 	public static Item PLANTILLA;
@@ -254,6 +260,12 @@ public final class ModItems {
 		LIBRO_MESA_MAYOR = register("libro_mesa_mayor", p -> new GuideBookItem(dev.forja.GuideBooks.Book.MESA_MAYOR, p), new Item.Properties().stacksTo(1));
 		LIBRO_CLASES = register("libro_clases", p -> new GuideBookItem(dev.forja.GuideBooks.Book.CLASES, p), new Item.Properties().stacksTo(1));
 		LIBRO_BASTION = register("libro_bastion", p -> new GuideBookItem(dev.forja.GuideBooks.Book.BASTION, p), new Item.Properties().stacksTo(1));
+		LIBRO_CEMENTERIO = register("libro_cementerio", p -> new GuideBookItem(dev.forja.GuideBooks.Book.CEMENTERIO, p),
+			new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.RARE));
+		ESTANTERIA_DEL_HERRERO = register("estanteria_del_herrero", p -> new BlockItem(ModBlocks.ESTANTERIA_DEL_HERRERO, p),
+			new Item.Properties().useBlockDescriptionPrefix());
+		ATRIL_DEL_HERRERO = register("atril_del_herrero", p -> new BlockItem(ModBlocks.ATRIL_DEL_HERRERO, p),
+			new Item.Properties().useBlockDescriptionPrefix());
 		TOMO_DE_FORJA = register("tomo_de_forja", p -> new GuideBookItem(dev.forja.GuideBooks.Book.TOMO, p),
 			new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC));
 		PLANTILLA = register("plantilla", TemplateItem::new, new Item.Properties().stacksTo(16));
@@ -430,6 +442,9 @@ public final class ModItems {
 		stacks.add(new ItemStack(LIBRO_MESA_MAYOR));
 		stacks.add(new ItemStack(LIBRO_CLASES));
 		stacks.add(new ItemStack(LIBRO_BASTION));
+		stacks.add(new ItemStack(LIBRO_CEMENTERIO));
+		stacks.add(new ItemStack(ESTANTERIA_DEL_HERRERO));
+		stacks.add(new ItemStack(ATRIL_DEL_HERRERO));
 		stacks.add(new ItemStack(TOMO_DE_FORJA));
 		stacks.add(new ItemStack(PLANTILLA));
 		stacks.add(new ItemStack(LINGOTE_DE_TEMPLE));

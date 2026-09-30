@@ -720,3 +720,89 @@ BOOKS.update({
         "Con el portal encendido aprendes la receta del último libro, y encuentras uno junto al marco.",
         "With the portal lit you learn the last book's recipe, and find one beside the frame."),
 })
+
+# ---- book VII, El Cementerio entre Estrellas; the shelf and the lectern
+BOOKS.update({
+    "item.forja.libro_cementerio": ("El Cementerio entre Estrellas", "The Graveyard Among the Stars"),
+    "block.forja.estanteria_del_herrero": ("Estantería del herrero", "Smith's Shelf"),
+    "block.forja.atril_del_herrero": ("Atril del Herrero", "Smith's Lectern"),
+    "advancements.forja.portal.title": ("Entre estrellas", "Among the Stars"),
+    "advancements.forja.portal.description": ("Enciende el portal de la Forja Profunda", "Light the Deep Forge's portal"),
+    "gui.forja.libro.cap.cementerio_viaje": ("El viaje", "The Journey"),
+    "gui.forja.libro.cap.cementerio_pelea": ("La pelea", "The Fight"),
+    "gui.forja.libro.cap.cementerio_recompensa": ("La recompensa", "The Reward"),
+    "gui.forja.libro.cap.cementerio_herrero": ("El Herrero Caído", "The Fallen Smith"),
+    "gui.forja.libro.cap.cementerio_fin": ("Fin", "The End"),
+    "gui.forja.libro.seccion.cementerio_mundo": ("Su mundo", "His world"),
+    "gui.forja.libro.seccion.cementerio_final": ("Después", "Afterwards"),
+    "gui.forja.libros.cementerio.meseta": (
+        "Una meseta de ceniza sola en el vacío, sembrada de armas clavadas como tumbas, con forjas frías en ruinas y ríos "
+        "de metal fundido que queman como la lava y caen por el borde. En el centro, la arena. Allí no se duerme ni se "
+        "fija la reaparición, y siempre es de noche.",
+        "A plateau of ash alone in the void, sown with weapons stuck in the ground like graves, with cold ruined forges and "
+        "rivers of molten metal that burn like lava and fall over the edge. In the middle, the arena. There is no "
+        "sleeping and no setting your spawn there, and it is always night."),
+    "gui.forja.libros.cementerio.pelea.resumen": (
+        "Cae del cielo en cuanto llegas. Tiene **tres tramos**: a dos tercios y a un tercio clava el martillo y salen sus "
+        "aprendices. A la mitad se **reforja** y no muere mientras ardan sus brasas estelares: vuelca los **braseros**. Las "
+        "**constelaciones** ayudan a un bando o al otro. Muerto o vencido, la pelea espera tu vuelta.",
+        "He falls from the sky as soon as you arrive. He has **three stages**: at two thirds and one third he drives his "
+        "hammer in and his apprentices rise. At half he **reforges** and cannot die while his star embers burn: tip the "
+        "**braziers** over. The **constellations** help one side or the other. Dead or beaten, the fight waits for you."),
+    "gui.forja.libros.cementerio.llegada.titulo": ("La llegada", "The arrival"),
+    "gui.forja.libros.cementerio.llegada": (
+        "Al entrar en su mundo sin pelea en curso, a los pocos segundos una estrella cae sobre la arena, suelta una onda "
+        "morada al tocar el suelo y el Herrero se levanta. Mientras cae y se asienta no se le puede dañar.",
+        "Entering his world with no fight under way, a few seconds later a star falls on the arena, sends out a purple wave "
+        "as it lands and the Smith rises. While he falls and settles he cannot be hurt."),
+    "gui.forja.libros.cementerio.fases.titulo": ("Tramos y aprendices", "Stages and apprentices"),
+    "gui.forja.libros.cementerio.braseros.titulo": ("El Reforjado estelar", "The Star Reforging"),
+    "gui.forja.libros.cementerio.braseros": (
+        "Solo apaga sus brasas la colada de un brasero de la arena: se vuelca con un golpe o una flecha, y cae sobre la "
+        "brasa que tiene delante. Cada brasero se vuelca una vez; se rellena con %s hierros estelares. Mientras se "
+        "reforja, su martillo llama meteoritos. Al apagarse la última brasa queda aturdido unos segundos y recibe más daño.",
+        "Only the pour of one of the arena's braziers puts out his embers: tip it with a blow or an arrow, and it pours on "
+        "the ember in front of it. Each brazier tips once; it is refilled with %s star irons. While he reforges, his "
+        "hammer calls down meteorites. When the last ember goes out he is stunned for a few seconds and takes more damage."),
+    "gui.forja.libros.cementerio.constelaciones.titulo": ("Las constelaciones", "The constellations"),
+    "gui.forja.libros.cementerio.constelaciones": (
+        "Cada medio minuto una de las ocho constelaciones del cielo se enciende y actúa. Espada, Hacha, Escudo y Guadaña "
+        "ayudan al Herrero (aviso en rojo, con campana); Martillo, Lanza, Yunque y Tenazas ayudan a los jugadores (aviso "
+        "en verde menta): meteoritos sobre él, lanzas de luz, curación, y los aprendices apartados.",
+        "Every half minute one of the sky's eight constellations lights up and acts. Sword, Axe, Shield and Scythe help "
+        "the Smith (a red warning, with a bell); Hammer, Spear, Anvil and Tongs help the players (a mint warning): "
+        "meteorites on him, spears of light, healing, and the apprentices pushed aside."),
+    "gui.forja.libros.cementerio.golpes.titulo": ("Sus golpes", "His blows"),
+    "gui.forja.libros.cementerio.estrella": (
+        "Cada uno que pelea se lleva una. En la mesa de forja mayor, sobre una pieza terminada (una por pieza): su "
+        "potencial puede llegar a %s y sube %s, el daño y el minado %s y la durabilidad %s. En armadura, +%s de armadura "
+        "y +%s de dureza por pieza.",
+        "Everyone who fights takes one. At the greater forge table, on a finished piece (one per piece): its potential "
+        "can reach %s and rises %s, damage and mining %s and durability %s. On armour, +%s armour and +%s toughness per "
+        "piece."),
+    "gui.forja.libros.cementerio.botin.titulo": ("Lo que deja", "What he leaves"),
+    "gui.forja.libros.cementerio.botin": (
+        "Su corazón de forja, una leyenda, el martillo del maestro, su yunque la primera vez, y una **Estrella de vuelta**: "
+        "clic derecho y te devuelve al portal por el que entraste.",
+        "His forge heart, a legend, the master's hammer, his anvil the first time, and a **Star of Return**: right click "
+        "and it takes you back to the portal you came through."),
+    "gui.forja.libros.cementerio.revancha.titulo": ("La revancha", "The rematch"),
+    "gui.forja.libros.cementerio.revancha": (
+        "En el centro de la arena queda una fragua fría estelar. Para volver a pelear, dale una perla de oricalco, tres "
+        "oricalcos, una estrella del Nether y dieciséis hierros estelares. La pelea se conserva si mueres o sales, y se "
+        "para cuando no queda nadie en su mundo.",
+        "A cold star forge is left in the middle of the arena. To fight again, give it an orichalcum pearl, three "
+        "orichalcum, a Nether star and sixteen star irons. The fight is kept if you die or leave, and stops when nobody is "
+        "left in his world."),
+    "gui.forja.libros.cementerio.ficha": ("Su ficha se escribe la primera vez que lo ves.", "His page writes itself the first time you see him."),
+    "gui.forja.libros.cementerio.fin": (
+        "Aquí termina la guía. Lo que queda es tuyo: piezas mejores, la revancha, el mundo entero. Para tenerlos juntos, "
+        "la estantería del herrero guarda los ocho libros, cada uno en su sitio.",
+        "Here the guide ends. What is left is yours: better pieces, the rematch, the whole world. To keep them together, "
+        "the smith's shelf holds the eight books, each in its place."),
+    "gui.forja.libros.estanteria_bloque": (
+        "Clic con un libro de la forja y va a su sitio; clic en un libro de la estantería y vuelve a tu mano. Un comparador "
+        "cuenta cuántos tiene.",
+        "Click with a forge book and it goes to its place; click on a book in the shelf and it comes back to your hand. A "
+        "comparator counts how many it holds."),
+})

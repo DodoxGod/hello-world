@@ -826,6 +826,12 @@ public class GuideBookScreen extends Screen {
 			case "bastion" -> this.bastionChapter();
 			case "portal_estelar" -> this.starPortalChapter();
 			case "bastion_siguiente" -> this.bastionNextChapter();
+			// Book VII.
+			case "cementerio_viaje" -> this.graveyardJourneyChapter();
+			case "cementerio_pelea" -> this.graveyardFightChapter();
+			case "cementerio_recompensa" -> this.graveyardRewardChapter();
+			case "cementerio_herrero" -> this.graveyardSmithChapter();
+			case "cementerio_fin" -> this.graveyardEndChapter();
 			default -> throw new IllegalArgumentException("no chapter " + key);
 		};
 	}
@@ -943,6 +949,11 @@ public class GuideBookScreen extends Screen {
 			case "bastion" -> new ItemStack(Items.DEEPSLATE_BRICKS);
 			case "portal_estelar" -> new ItemStack(ModItems.PERLA_DE_ORICALCO);
 			case "bastion_siguiente" -> new ItemStack(Items.COMPASS);
+			case "cementerio_viaje" -> new ItemStack(ModItems.PERLA_DE_ORICALCO);
+			case "cementerio_pelea" -> new ItemStack(ModItems.MARTILLO_DEL_MAESTRO);
+			case "cementerio_recompensa" -> new ItemStack(ModItems.ESTRELLA_FORJADA);
+			case "cementerio_herrero" -> new ItemStack(ModItems.CORAZON_DE_FORJA);
+			case "cementerio_fin" -> new ItemStack(ModItems.ESTANTERIA_DEL_HERRERO);
 			default -> ItemStack.EMPTY;
 		};
 	}
@@ -1004,6 +1015,7 @@ public class GuideBookScreen extends Screen {
 			case MESA_MAYOR -> new ItemStack(ModItems.MESA_DE_FORJA_MAYOR);
 			case CLASES -> dev.forja.forge.Relic.MEDALLON_DEL_OLVIDO.create(dev.forja.forge.Relic.MEDALLON_DEL_OLVIDO.defaultMaterials());
 			case BASTION -> new ItemStack(ModItems.FRAGUA_APAGADA);
+			case CEMENTERIO -> new ItemStack(ModItems.ESTRELLA_FORJADA);
 			case BIBLIOTECA -> new ItemStack(Items.BOOKSHELF);
 			default -> new ItemStack(Items.BOOK);
 		};
@@ -1018,6 +1030,7 @@ public class GuideBookScreen extends Screen {
 			case MESA_MAYOR -> new ItemStack(ModItems.FUNDENTE_MAESTRO);
 			case CLASES -> Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.ESMERALDA, ForgeMaterial.ORO, ForgeMaterial.MADERA));
 			case BASTION -> new ItemStack(Items.FILLED_MAP);
+			case CEMENTERIO -> new ItemStack(ModItems.PERLA_DE_ORICALCO);
 			case BIBLIOTECA -> new ItemStack(ModItems.GUIA_DE_FORJA);
 			default -> new ItemStack(ModItems.GUIA_DE_FORJA);
 		};
@@ -1936,6 +1949,80 @@ public class GuideBookScreen extends Screen {
 		body.add(new Text(Component.translatable("gui.forja.libros.bastion_siguiente"), INK));
 		body.add(new BookCard(GuideBooks.Book.CEMENTERIO));
 		body.add(new ChapterLink("siguiente_paso"));
+		return body;
+	}
+
+	// ------------------------------------------------------------------ book VII, El Cementerio entre Estrellas
+
+	/** The journey: what the world beyond the portal is, how to come back, and what cannot be done there. */
+	private List<Element> graveyardJourneyChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.intro"), INK));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.PERLA_DE_ORICALCO), new ItemStack(Items.NETHER_STAR), new ItemStack(ModItems.HIERRO_ESTELAR))));
+		body.add(new Text(Component.translatable("gui.forja.libros.cementerio.meseta"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.vuelta"), INK_SOFT));
+		body.add(new ChapterLink("portal_estelar"));
+		return body;
+	}
+
+	/** The fight, in the order it comes: the fall, the stages, the apprentices, the Reforging, the constellations. */
+	private List<Element> graveyardFightChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Summary(Component.translatable("gui.forja.libros.cementerio.pelea.resumen")));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.cementerio.llegada.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.cementerio.llegada"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.cementerio.fases.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_fases", Math.round(dev.forja.entity.FallenSmith.HEALTH),
+			dev.forja.entity.FallenSmith.EMBERS), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.cementerio.braseros.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.cementerio.braseros", dev.forja.world.StarFight.REFILL_IRON), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.cementerio.constelaciones.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.cementerio.constelaciones"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.cementerio.golpes.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libro.ataques.herrero", Math.round(dev.forja.entity.FallenSmith.WAVE_DAMAGE)), INK));
+		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_defensa"), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_reclama",
+			dev.forja.entity.FallenSmith.RECLAIM_WINDOW / 20, Math.round(dev.forja.entity.FallenSmith.RECLAIM_RADIUS),
+			dev.forja.entity.FallenSmith.RECLAIM_COOLDOWN / 20), INK_SOFT));
+		return body;
+	}
+
+	/** What beating him is worth: the Forged Star, his heart, his anvil and hammer, the way home and the rematch. */
+	private List<Element> graveyardRewardChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new IconRow(List.of(new ItemStack(ModItems.ESTRELLA_FORJADA), new ItemStack(ModItems.CORAZON_DE_FORJA),
+			new ItemStack(ModItems.YUNQUE_DEL_HERRERO), new ItemStack(ModItems.MARTILLO_DEL_MAESTRO))));
+		body.add(new SubHeader(Component.translatable("item.forja.estrella_forjada")));
+		body.add(new Text(Component.translatable("gui.forja.libros.cementerio.estrella", dev.forja.forge.ForgedStar.MOST,
+			dev.forja.forge.ForgedStar.POTENTIAL_BONUS, times(dev.forja.forge.ForgedStar.DAMAGE), times(dev.forja.forge.ForgedStar.DURABILITY),
+			dev.forja.forge.ForgedStar.ARMOR, number(dev.forja.forge.ForgedStar.TOUGHNESS)), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.cementerio.botin.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.cementerio.botin"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libro.yunque"), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.martillo_maestro"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.cementerio.revancha.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.cementerio.revancha"), INK));
+		return body;
+	}
+
+	/** The Smith's own page, in shadow until he has been seen. */
+	private List<Element> graveyardSmithChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.cementerio.ficha"), INK_SOFT));
+		this.creature(body, true, "herrero_caido", level -> new dev.forja.entity.FallenSmith(dev.forja.registry.ModEntities.HERRERO_CAIDO, level),
+			new IconRow(List.of(new ItemStack(ModItems.CORAZON_DE_FORJA), new ItemStack(ModItems.YUNQUE_DEL_HERRERO), new ItemStack(ModItems.ESTRELLA_FORJADA))),
+			new Text(Component.translatable("gui.forja.libro.bestiario.herrero", Math.round(dev.forja.entity.FallenSmith.HEALTH)), INK));
+		return body;
+	}
+
+	/** The end of the guide. */
+	private List<Element> graveyardEndChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.cementerio.fin"), INK));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.ESTANTERIA_DEL_HERRERO))));
+		body.add(new Crafting(new Item[] {Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS, Items.BOOK, Items.IRON_INGOT, Items.BOOK,
+			Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS}, new ItemStack(ModItems.ESTANTERIA_DEL_HERRERO)));
+		body.add(new Text(Component.translatable("gui.forja.libros.estanteria_bloque"), INK_SOFT));
 		return body;
 	}
 

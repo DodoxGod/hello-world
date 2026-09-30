@@ -3202,6 +3202,7 @@ def generate_guide_texture():
     import libros
 
     libros.generate(vanilla("item/book.png"))
+    libros.generate_blocks()
 
 
 # ---------------------------------------------------------------- table screens and templates
@@ -4815,6 +4816,8 @@ ADVANCEMENTS = {
     "clase": ("guia", "forja:medallon_del_olvido", "task", None),
     # Opening book V opens the classes (GuideBooks.CLASSES_READ).
     "leer_clases": ("guia", "forja:libro_clases", "task", None),
+    # The star portal lit, or passed through (StarBracketBlock.light, ForjaCommand): book VII's recipe.
+    "portal": ("ruina", "forja:perla_de_oricalco", "goal", None),
     # The two steps of the guide's path (ForjaPath) that nothing marked. Holding anything that came out
     # of the foundry: a part from a casting box, clean or rough, or a whole tool off a casting table,
     # whose mask has every one of its slots cast (a table makes tools of two to six parts).
@@ -11474,7 +11477,7 @@ def generate_data():
     # The saddlery and the cabinet are still carpentry; the two forge benches are stone now, so an axe
     # would take all day and a pickaxe is what the block asks for.
     write_json(RES / "data/minecraft/tags/block/mineable/axe.json",
-               tag(["forja:mesa_de_talabarteria", "forja:armario_de_piezas"]))
+               tag(["forja:mesa_de_talabarteria", "forja:armario_de_piezas", "forja:estanteria_del_herrero", "forja:atril_del_herrero"]))
     write_json(RES / "data/minecraft/tags/block/mineable/pickaxe.json", tag(PICKAXE_BLOCKS))
     # Upgrades replaced the old enchantments.
     shutil.rmtree(DATA / "enchantment", ignore_errors=True)

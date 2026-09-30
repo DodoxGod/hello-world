@@ -1418,6 +1418,17 @@ public class ForjaClientTest implements FabricClientGameTest {
 			context.waitTicks(2);
 		}
 
+		// The smith's shelf with five of its books, and the lectern of book VII, in the world.
+		server.runCommand("execute as @p at @s run setblock ~ ~ ~3 forja:estanteria_del_herrero[facing=north,libro_0=true,libro_1=true,"
+			+ "libro_2=true,libro_4=true,libro_7=true]");
+		server.runCommand("execute as @p at @s run setblock ~1 ~ ~3 forja:estanteria_del_herrero[facing=north,libro_3=true,libro_5=true,libro_6=true]");
+		server.runCommand("execute as @p at @s run setblock ~-2 ~ ~3 forja:atril_del_herrero[facing=north]");
+		server.runCommand("tp @p ~ ~ ~ 0 15");
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+		context.waitTicks(20);
+		context.takeScreenshot(TestScreenshotOptions.of("forja_libros_estanteria_00").disableCounterPrefix());
+		server.runCommand("execute as @p at @s run fill ~-2 ~ ~3 ~1 ~ ~3 minecraft:air");
+
 		// And the player is left as they were.
 		for (dev.forja.ForjaPath.Step step : dev.forja.ForjaPath.STEPS) {
 			server.runCommand("advancement " + (before.contains(step.advancement()) ? "grant" : "revoke") + " @a only forja:forja/" + step.advancement());

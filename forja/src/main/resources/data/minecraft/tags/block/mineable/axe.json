@@ -2,6 +2,8 @@
   "replace": false,
   "values": [
     "forja:mesa_de_talabarteria",
-    "forja:armario_de_piezas"
+    "forja:armario_de_piezas",
+    "forja:estanteria_del_herrero",
+    "forja:atril_del_herrero"
   ]
 }

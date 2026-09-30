@@ -146,6 +146,11 @@ public class StarBracketBlock extends HorizontalDirectionalBlock {
 		level.playSound(null, centre, SoundEvents.END_PORTAL_SPAWN, SoundSource.BLOCKS, 1.0F, 0.9F);
 		level.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD, centre.getX() + 0.5, centre.getY() + 0.8,
 			centre.getZ() + 0.5, 60, 1.2, 0.3, 1.2, 0.05);
+		// Book VII (docs/LIBROS_GUIA.md): whoever is at the frame learns its recipe, and it lies open on a lectern beside it.
+		for (net.minecraft.server.level.ServerPlayer player : level.getPlayers(player -> player.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(centre)) < 16.0 * 16.0)) {
+			dev.forja.ForjaAdvancements.award(player, "portal");
+		}
+		SmithLecternBlock.placeBeside(level, centre);
 	}
 
 	/**
