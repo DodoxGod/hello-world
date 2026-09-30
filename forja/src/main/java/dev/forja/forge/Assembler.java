@@ -9,6 +9,7 @@ import dev.forja.item.PartItem;
 import dev.forja.material.ForgeMaterial;
 import dev.forja.part.ForgedParts;
 import dev.forja.part.PartType;
+import dev.forja.part.PartVariant;
 import dev.forja.registry.ModComponents;
 import dev.forja.registry.ModItems;
 import dev.forja.upgrade.HiddenEnchantments;
@@ -98,6 +99,15 @@ public final class Assembler {
 		return stack;
 	}
 
+	/** Like {@link #create(ForgeType, List)} with a heavy or light handle or binding in some slots. */
+	public static ItemStack create(ForgedParts parts) {
+		ItemStack stack = create(parts.type(), parts.materials());
+		if (parts.hasVariants()) {
+			write(parts, Upgrades.EMPTY, 0, null, 0.0F, BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM, sink(stack));
+		}
+		return stack;
+	}
+
 	public static ComponentSink sink(ItemStack stack) {
 		return new ComponentSink() {
 			@Override
@@ -145,7 +155,7 @@ public final class Assembler {
 			return;
 		}
 		write(
-			parts.type(), parts.materials(), stack.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY),
+			parts, stack.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY),
 			Mastery.level(stack), Perk.of(stack), Quality.bonus(stack), blocks, items, sink(stack)
 		);
 	}
@@ -154,16 +164,25 @@ public final class Assembler {
 		ForgeType type, List<ForgeMaterial> materials, Upgrades upgrades, int mastery, @Nullable Perk perk, float quality,
 		HolderGetter<Block> blocks, HolderGetter<Item> items, ComponentSink sink
 	) {
-		ForgedParts parts = new ForgedParts(type, materials);
+		write(new ForgedParts(type, materials), upgrades, mastery, perk, quality, blocks, items, sink);
+	}
+
+	/** Like {@link #write(ForgeType, List, Upgrades, int, Perk, float, HolderGetter, HolderGetter, ComponentSink)}, keeping the parts' variants. */
+	public static void write(
+		ForgedParts parts, Upgrades upgrades, int mastery, @Nullable Perk perk, float quality,
+		HolderGetter<Block> blocks, HolderGetter<Item> items, ComponentSink sink
+	) {
+		ForgeType type = parts.type();
+		List<ForgeMaterial> materials = parts.materials();
 		ForgeMaterial primary = parts.primary();
-		ForgeStats.Sheet stats = ForgeStats.sheet(type, materials, upgrades, mastery, perk);
+		ForgeStats.Sheet stats = ForgeStats.sheet(parts, upgrades, mastery, perk);
 		stats.scale(quality);
 		if (sink.starred()) {
 			ForgedStar.apply(stats);
 		}
 
 		sink.set(ModComponents.PARTS, parts);
-		sink.set(DataComponents.CUSTOM_MODEL_DATA, colors(materials));
+		sink.set(DataComponents.CUSTOM_MODEL_DATA, colors(parts));
 		sink.set(DataComponents.ITEM_NAME, Component.translatable("item.forja." + type.id() + ".de", primary.displayName()));
 		sink.set(DataComponents.ENCHANTABLE, new Enchantable(Math.max(1, Math.round((float) materials.stream().mapToInt(m -> m.enchantability).average().orElse(1)))));
 		sink.set(DataComponents.REPAIRABLE, new Repairable(primary.repairItems(items)));
@@ -461,6 +480,23 @@ public final class Assembler {
 		return new CustomModelData(List.of(), List.of(), List.of(), materials.stream().map(m -> m.color).toList());
 	}
 
+	/**
+	 * The colours of every slot, and when a handle or binding is heavy or light, which one each slot is ("pesado",
+	 * "ligero", "" for a plain part): the item model draws a chunkier or a slimmer layer by it. A piece with only
+	 * plain parts carries no strings, as it always did.
+	 */
+	private static CustomModelData colors(ForgedParts parts) {
+		if (!parts.hasVariants()) {
+			return colors(parts.materials());
+		}
+		List<String> variants = new ArrayList<>();
+		for (int slot = 0; slot < parts.type().slots.size(); slot++) {
+			PartVariant variant = parts.variant(slot);
+			variants.add(variant == PartVariant.NORMAL ? "" : variant.id());
+		}
+		return new CustomModelData(List.of(), List.of(), variants, parts.materials().stream().map(m -> m.color).toList());
+	}
+
 	/** Like {@link #create(ForgeType, List)}, plus the hidden enchantments its materials' traits grant. */
 	public static ItemStack create(ForgeType type, List<ForgeMaterial> materials, HolderLookup.Provider registries) {
 		ItemStack stack = create(type, materials);
@@ -527,12 +563,15 @@ public final class Assembler {
 		}
 
 		ForgeMaterial[] materials = new ForgeMaterial[type.slots.size()];
+		PartVariant[] variants = new PartVariant[type.slots.size()];
 		int poured = 0;
 		for (ItemStack part : looseParts) {
 			PartType partType = ((PartItem) part.getItem()).type;
 			for (int slot = 0; slot < materials.length; slot++) {
-				if (materials[slot] == null && type.slots.get(slot) == partType) {
+				// A heavy or light handle goes where a handle goes, and the piece remembers which it was.
+				if (materials[slot] == null && type.slots.get(slot) == partType.base()) {
 					materials[slot] = part.get(ModComponents.MATERIAL);
+					variants[slot] = partType.variant;
 					if (pouredClean(part)) {
 						poured |= 1 << slot;
 					}
@@ -540,7 +579,7 @@ public final class Assembler {
 				}
 			}
 		}
-		ItemStack assembled = create(type, List.of(materials));
+		ItemStack assembled = create(new ForgedParts(type, List.of(materials), java.util.Arrays.asList(variants)));
 		if (poured != 0) {
 			// Which of its slots hold a part out of the foundry: forge/Potential counts them.
 			assembled.set(ModComponents.COLADAS, poured);
@@ -580,7 +619,7 @@ public final class Assembler {
 		ItemStack result = gear.copyWithCount(1);
 		int damage = result.getDamageValue();
 		result.set(ModComponents.DON, perk.id());
-		write(parts.type(), parts.materials(), result.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY), Mastery.level(result), perk,
+		write(parts, result.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY), Mastery.level(result), perk, 0.0F,
 			BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM, sink(result));
 		HiddenEnchantments.write(result, registries);
 		result.setDamageValue(Math.min(damage, result.getMaxDamage()));
@@ -591,6 +630,10 @@ public final class Assembler {
 		ForgedParts parts = forged.get(ModComponents.PARTS);
 		ForgeType type = parts.type();
 		List<ForgeMaterial> materials = new ArrayList<>(parts.materials());
+		List<PartVariant> variants = new ArrayList<>();
+		for (int slot = 0; slot < materials.size(); slot++) {
+			variants.add(parts.variant(slot));
+		}
 		boolean[] replaced = new boolean[materials.size()];
 		boolean newHead = false;
 		int poured = forged.getOrDefault(ModComponents.COLADAS, 0);
@@ -599,7 +642,7 @@ public final class Assembler {
 			PartType partType = ((PartItem) part.getItem()).type;
 			int target = -1;
 			for (int slot = 0; slot < materials.size(); slot++) {
-				if (!replaced[slot] && type.slots.get(slot) == partType) {
+				if (!replaced[slot] && type.slots.get(slot) == partType.base()) {
 					target = slot;
 					break;
 				}
@@ -609,6 +652,8 @@ public final class Assembler {
 			}
 			replaced[target] = true;
 			materials.set(target, part.get(ModComponents.MATERIAL));
+			// A heavy handle swapped for a light one makes the piece a light-handled one.
+			variants.set(target, partType.variant);
 			poured = pouredClean(part) ? poured | 1 << target : poured & ~(1 << target);
 			newHead |= partType.role == PartType.Role.HEAD || partType.role == PartType.Role.PLATE;
 		}
@@ -623,8 +668,8 @@ public final class Assembler {
 		}
 		int oldMax = Math.max(1, result.getMaxDamage());
 		int oldDamage = result.getDamageValue();
-		write(type, materials, result.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY), Mastery.level(result), Perk.of(result),
-			BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM, sink(result));
+		write(new ForgedParts(type, materials, variants), result.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY), Mastery.level(result),
+			Perk.of(result), 0.0F, BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM, sink(result));
 		int newMax = result.getMaxDamage();
 		// A fresh head or plate is a repair; other parts keep the same wear ratio.
 		// A new head or plate is a fresh edge; otherwise wear carries over, and broken gear stays broken.
@@ -671,7 +716,8 @@ public final class Assembler {
 		}
 		float remaining = forged.getMaxDamage() > 0 ? 1.0F - (float) forged.getDamageValue() / forged.getMaxDamage() : 1.0F;
 		for (int slot = 0; slot < parts.type().slots.size(); slot++) {
-			PartType type = parts.type().slots.get(slot);
+			// A heavy or light part comes back as itself.
+			PartType type = parts.part(slot);
 			ItemStack part = createPart(type, parts.material(slot));
 			if ((forged.getOrDefault(ModComponents.COLADAS, 0) & 1 << slot) != 0) {
 				part.set(ModComponents.COLADA, true);

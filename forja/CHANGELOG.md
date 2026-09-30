@@ -1,5 +1,36 @@
 # Novedades
 
+## 2026-09-30 — Mangos y ataduras pesados y ligeros
+
+Andy lo aprobó como una **elección, no una mejora**: el mango y la atadura normales siguen siendo el punto medio.
+Números y fórmulas en `combat/Grip`; el balance medido, en `docs/EQUILIBRIO.md` («Mangos y ataduras»).
+
+- **Cuatro piezas nuevas**: mango pesado, mango ligero, atadura pesada y atadura ligera. Van donde va la normal en
+  cualquier receta (la estrella, la montadora, cambiar piezas, desarmar) y la pieza recuerda cuál lleva.
+  - **Mango pesado** (contrapeso): +20 % golpe cargado, +25 % postura, +30 % empuje. Pesa un 18 % más: el golpe
+    a plena fuerza llega más tarde (unos −6 a −8 % de velocidad, según el arma) y cada golpe cuesta un 15 % más de
+    estamina (el cargado, un 10 %).
+  - **Mango ligero**: pesa un 15 % menos (unos +5 a +6 % de velocidad) y cada golpe cuesta un 10 % menos de
+    estamina; −20 % postura, −25 % empuje y −10 % golpe cargado.
+  - **Atadura pesada** (remaches y bandas): +20 % durabilidad, −20 % estamina al bloquear, la guardia rota vuelve
+    en la mitad de tiempo y un golpe de escudo ya no te quita la carga. Pesa un 8 % más.
+  - **Atadura ligera**: pesa un 8 % menos (algo más rápida); −15 % durabilidad y la guardia rota tarda un 35 %
+    más en volver.
+- **Materiales**: las pesadas se cuelan en metal pesado (cobre, hierro, bronce, acero, escoria, cinerio,
+  obsidiacero, netherita); las ligeras se cortan en la mesa de piezas de madera (también la de bambú), hueso o
+  cuero. Como ninguna mesa corta una pieza pesada, su **molde sale de la plantilla grabada** en la caja de colada
+  (con acero refractario, y la plantilla se gasta).
+- Los monstruos que llevan un arma forjada notan el peso (el aviso y la espera, como con cualquier arma).
+- **Se ven**: mango más grueso con pomo de contrapeso o más fino; atadura con remaches o más delgada, en la pieza
+  suelta, en la plantilla, en el molde y en las herramientas y armas terminadas (select por `custom_model_data`).
+- **Tooltips** con el trato en dos líneas (lo que da y lo que cuesta), en la pieza, la plantilla, la pieza
+  terminada y la estrella de la forja.
+- **Mesa de piezas**: la cuadrícula tiene ahora cuatro filas, un poco más juntas, y la línea de estado va en la
+  línea del inventario (antes se escribía encima de la cuarta fila).
+- Las piezas guardadas antes cargan como normales, y una normal de hoy se guarda igual que antes (el campo
+  `variants` sólo aparece si hay alguna variante).
+- Pruebas: `MangosGameTests` (7) y la sección de cliente `FORJA_SOLO=mangos`.
+
 ## 2026-09-30 — un Bastión del gremio cerca del origen en todos los mundos
 
 Andy: en un mundo nuevo, `/locate` daba el castillo más cercano en (−15264, ~, 21856). Quiere al menos uno dentro

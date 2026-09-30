@@ -35,6 +35,21 @@ abstract class LivingEntityMixin {
 		}
 	}
 
+	/**
+	 * A blow struck by hand throws further behind a counterweighted handle and less far behind a light one
+	 * (combat/Grip): the base push every hit gives and the sprint's extra push alike.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "knockback(DDDLnet/minecraft/world/damagesource/DamageSource;FZ)V",
+		at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	private double forja$gripKnockback(double strength,
+		@com.llamalad7.mixinextras.sugar.Local(argsOnly = true) net.minecraft.world.damagesource.DamageSource source) {
+		if (source != null && source.getEntity() instanceof LivingEntity attacker && source.getDirectEntity() == attacker
+			&& attacker != (Object) this) {
+			return strength * dev.forja.combat.Grip.knockback(attacker.getMainHandItem());
+		}
+		return strength;
+	}
+
 	/** Jumping costs stamina (combat/Stamina.onJump); the server sees a player's jump here. */
 	@Inject(method = "jumpFromGround", at = @At("TAIL"))
 	private void forja$jumpCostsStamina(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {

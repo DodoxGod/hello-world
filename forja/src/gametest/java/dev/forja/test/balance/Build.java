@@ -53,16 +53,32 @@ public final class Build {
 	public final double spellDamage;
 	public final int spellCooldown;
 	public final int runeTicks;
+	/** What its handle and binding change (combat/Grip), read off the stack like everything else. */
+	public final double swingCost;
+	public final double chargeCost;
+	public final double chargeDamage;
+	public final double posture;
 
 	private final Map<String, Double> enchantBonus = new java.util.concurrent.ConcurrentHashMap<>();
 
 	public Build(ForgeType type, List<ForgeMaterial> materials, Map<Upgrade, Integer> upgrades, HolderLookup.Provider registries) {
+		this(new ForgedParts(type, materials), upgrades, registries);
+	}
+
+	/** Like the plain one, with a heavy or light handle or binding where the parts say. */
+	public Build(ForgedParts forged, Map<Upgrade, Integer> upgrades, HolderLookup.Provider registries) {
+		ForgeType type = forged.type();
+		List<ForgeMaterial> materials = forged.materials();
 		this.type = type;
 		this.materials = List.copyOf(materials);
 		EnumMap<Upgrade, Integer> sorted = new EnumMap<>(Upgrade.class);
 		sorted.putAll(upgrades);
 		this.upgrades = sorted;
 		ItemStack made = Assembler.create(type, materials, registries);
+		if (forged.hasVariants()) {
+			made = Assembler.create(forged);
+			HiddenEnchantments.write(made, registries);
+		}
 		if (!upgrades.isEmpty()) {
 			made.set(ModComponents.UPGRADES, new Upgrades(sorted));
 			Assembler.rewrite(made, BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM);
@@ -84,6 +100,10 @@ public final class Build {
 		this.fireAspect = level(made, registries, Enchantments.FIRE_ASPECT);
 		this.breach = level(made, registries, Enchantments.BREACH);
 		this.durability = made.getMaxDamage();
+		this.swingCost = dev.forja.combat.Grip.swingCost(made);
+		this.chargeCost = dev.forja.combat.Grip.chargeCost(made);
+		this.chargeDamage = dev.forja.combat.Grip.chargeDamage(made);
+		this.posture = dev.forja.combat.Grip.posture(made);
 		if (Spellcasting.casts(type)) {
 			ForgeMaterial core = Spellcasting.core(made.get(ModComponents.PARTS));
 			this.spellDamage = type == ForgeType.BACULO ? Spellcasting.boltDamage(core) : Spellcasting.areaDamage(core);

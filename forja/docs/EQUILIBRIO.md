@@ -1,6 +1,6 @@
 # Equilibrio de Forja, medido
 
-> Esta página la escribe `./gradlew runGametest` (prueba `BalanceGameTests.equilibrio`, código en `src/gametest/java/dev/forja/test/balance`). No se edita a mano: se regenera sola cada vez que se pasan las pruebas, así que siempre dice lo que hace el código de hoy. Dificultad medida: **HERRERO**. Esta vez: 33 mobs, 12 tipos de arma, 6294696 peleas simuladas.
+> Esta página la escribe `./gradlew runGametest` (prueba `BalanceGameTests.equilibrio`, código en `src/gametest/java/dev/forja/test/balance`). No se edita a mano: se regenera sola cada vez que se pasan las pruebas, así que siempre dice lo que hace el código de hoy. Dificultad medida: **HERRERO**. Esta vez: 33 mobs, 12 tipos de arma, 6314450 peleas simuladas.
 
 ## Cómo se mide
 
@@ -141,6 +141,39 @@ Ráfaga: daño en los 3 primeros segundos con la estamina llena. Sostenido: dañ
 - **guadana**: hoja damasco · mango vidriacero · atadura eco; tormenta, critico, frenesi, ejecucion, matagigantes, filo — TTK medio 0,77 s, 30,7 daño/s sostenido. *No se mide aquí:* el barrido, el alcance y la cosecha.
 - **baculo**: nucleo corazon · engaste prismarina · mango cuarzo; tormenta, ejecucion, matagigantes, filo, conjuro_veloz, resonancia — TTK medio 0,24 s, 53,0 daño/s sostenido. *No se mide aquí:* el abanico de Prisma y los proyectiles que buscan (Buscador).
 - **grimorio**: nucleo corazon · tapas cuarzo · remache eco; critico, ejecucion, matagigantes, filo, conjuro_veloz, resonancia — TTK medio 0,62 s, 26,1 daño/s sostenido. *No se mide aquí:* el área entera de la runa (todo lo que pisa), Vórtice y Santuario.
+
+## Mangos y ataduras: normal, pesado y ligero
+
+Cabeza de hierro y nada más, sin mejoras; el mango normal y el ligero de madera, el pesado de hierro; la atadura normal de madera, la pesada de hierro, la ligera de cuero. Ráfaga, sostenido, TTK medio y cansados como arriba. Aturdidos/min: veces que la barra de postura del maniquí (un mob de 20 de vida) se llena en la pelea larga. Estamina por golpe: la de un golpe normal (12 de base); el cargado cuesta 35 de base, movido igual. Lo que el maniquí no mide y también cuenta: la atadura pesada abarata los bloqueos y no suelta la carga con un golpe de escudo, y con la ligera la guardia rota tarda más en volver.
+
+| Tipo | Mango / atadura | Peso (kg) | Golpes/s | Durabilidad | Ráfaga (daño/s) | Sostenido (daño/s) | TTK medio (s) | Estamina por golpe | Cansados | Aturdidos/min |
+|---|---|---|---|---|---|---|---|---|---|---|
+| espada | normal | 1,30 | 1,60 | 262 | 19,1 | 6,9 | 4,06 | 12,0 | 93 % | 10,0 |
+| espada | mango pesado | 1,62 | 1,47 | 314 | 20,2 | 6,2 | 4,32 | 13,8 | 95 % | 10,0 |
+| espada | mango ligero | 1,11 | 1,69 | 262 | 18,1 | 7,5 | 4,06 | 10,8 | 92 % | 9,0 |
+| hacha | normal | 1,60 | 1,00 | 262 | 24,3 | 6,3 | 3,93 | 12,0 | 0 % | 10,0 |
+| hacha | mango pesado | 2,00 | 0,92 | 314 | 19,9 | 6,2 | 4,38 | 13,8 | 0 % | 12,0 |
+| hacha | mango ligero | 1,36 | 1,06 | 262 | 22,8 | 6,8 | 3,82 | 10,8 | 0 % | 9,0 |
+| hacha | atadura pesada | 1,83 | 0,95 | 360 | 23,6 | 6,5 | 4,54 | 12,0 | 0 % | 10,0 |
+| hacha | atadura ligera | 1,47 | 1,03 | 223 | 24,7 | 6,4 | 3,88 | 12,0 | 91 % | 9,0 |
+| hacha | todo pesado | 2,25 | 0,88 | 432 | 18,8 | 6,3 | 4,46 | 13,8 | 0 % | 12,0 |
+| hacha | todo ligero | 1,23 | 1,09 | 223 | 22,8 | 7,2 | 3,78 | 10,8 | 0 % | 10,0 |
+| mazo | normal | 3,20 | 0,60 | 524 | 9,0 | 4,0 | 6,76 | 12,0 | 0 % | 9,0 |
+| mazo | mango pesado | 3,99 | 0,55 | 628 | 9,5 | 3,8 | 6,35 | 13,8 | 0 % | 10,0 |
+| mazo | mango ligero | 2,72 | 0,63 | 524 | 6,4 | 4,3 | 6,59 | 10,8 | 0 % | 8,0 |
+| mazo | atadura pesada | 3,66 | 0,57 | 720 | 8,7 | 3,8 | 6,96 | 12,0 | 0 % | 9,0 |
+| mazo | atadura ligera | 2,94 | 0,62 | 445 | 9,2 | 4,1 | 6,62 | 12,0 | 0 % | 9,0 |
+| mazo | todo pesado | 4,50 | 0,53 | 864 | 9,2 | 3,7 | 6,73 | 13,8 | 0 % | 10,0 |
+| mazo | todo ligero | 2,46 | 0,65 | 445 | 6,5 | 4,5 | 6,39 | 10,8 | 0 % | 9,0 |
+| lanza | normal | 1,80 | 1,11 | 262 | 6,0 | 2,6 | 13,68 | 12,0 | 87 % | 5,0 |
+| lanza | mango pesado | 2,25 | 1,04 | 314 | 5,9 | 2,4 | 15,08 | 13,8 | 89 % | 6,0 |
+| lanza | mango ligero | 1,53 | 1,17 | 262 | 5,6 | 2,7 | 13,21 | 10,8 | 86 % | 5,0 |
+| lanza | atadura pesada | 2,06 | 1,08 | 360 | 6,0 | 2,5 | 14,06 | 12,0 | 88 % | 5,0 |
+| lanza | atadura ligera | 1,66 | 1,14 | 223 | 6,0 | 2,7 | 13,21 | 12,0 | 88 % | 6,0 |
+| lanza | todo pesado | 2,53 | 1,01 | 432 | 5,8 | 2,4 | 15,69 | 13,8 | 89 % | 6,0 |
+| lanza | todo ligero | 1,39 | 1,21 | 223 | 5,6 | 2,8 | 13,10 | 10,8 | 88 % | 5,0 |
+
+**Ninguna variante domina:** ninguna gana a la normal de su tipo en ráfaga, sostenido y TTK a la vez sin pagarlo en estamina, postura o durabilidad.
 
 ## Tiempo para matar (s), mejores armas al 100 %
 

@@ -89,7 +89,8 @@ public final class ChargedStrike {
 	 * as if let go too early, and the pose drops. Returns whether there was one.
 	 */
 	public static boolean interrupt(LivingEntity entity) {
-		if (!(entity instanceof ServerPlayer player) || CHARGING.remove(player) == null) {
+		// Rivets and iron bands: the head does not shake loose, and neither does the blow drawn back with it.
+		if (!(entity instanceof ServerPlayer player) || Grip.holdsCharge(player.getMainHandItem()) || CHARGING.remove(player) == null) {
 			return false;
 		}
 		CombatAnim.broadcast(player, CombatAnim.Kind.CHARGE, 0, 0.0F, 0.0F);
@@ -98,7 +99,8 @@ public final class ChargedStrike {
 
 	private static void strike(ServerPlayer player, double share, CombatConfig cfg) {
 		// Paid in full or not at all: out of breath, the blow still lands, but only as a tired one.
-		boolean paid = Stamina.trySpend(player, cfg.chargeStaminaCost + (float) (cfg.chargeStaminaPerShare * share));
+		ItemStack weapon = player.getMainHandItem();
+		boolean paid = Stamina.trySpend(player, (cfg.chargeStaminaCost + (float) (cfg.chargeStaminaPerShare * share)) * Grip.chargeCost(weapon));
 		player.swing(InteractionHand.MAIN_HAND, true);
 		Entity target = target(player);
 		if (target == null) {
@@ -106,7 +108,8 @@ public final class ChargedStrike {
 				SoundSource.PLAYERS, 0.8F, 0.6F);
 			return;
 		}
-		double damage = paid ? 1.0 + cfg.chargeDamageBonus * share : cfg.tiredDamageMultiplier;
+		// A counterweight lands the drawn-back blow harder, a light handle a little softer (combat/Grip).
+		double damage = paid ? (1.0 + cfg.chargeDamageBonus * share) * Grip.chargeDamage(weapon) : cfg.tiredDamageMultiplier;
 		double posture = paid ? 1.0 + cfg.chargePostureBonus * share : 1.0;
 		if (target instanceof LivingEntity living) {
 			STRIKING.put(player, new double[] {damage, posture, share});

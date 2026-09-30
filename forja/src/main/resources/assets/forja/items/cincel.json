@@ -20,15 +20,50 @@
               ]
             },
             {
-              "type": "minecraft:model",
-              "model": "forja:item/cincel/1",
-              "tints": [
+              "type": "minecraft:select",
+              "property": "minecraft:custom_model_data",
+              "index": 1,
+              "cases": [
                 {
-                  "type": "minecraft:custom_model_data",
-                  "index": 1,
-                  "default": 12093775
+                  "when": "pesado",
+                  "model": {
+                    "type": "minecraft:model",
+                    "model": "forja:item/cincel/1_pesado",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 1,
+                        "default": 12093775
+                      }
+                    ]
+                  }
+                },
+                {
+                  "when": "ligero",
+                  "model": {
+                    "type": "minecraft:model",
+                    "model": "forja:item/cincel/1_ligero",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 1,
+                        "default": 12093775
+                      }
+                    ]
+                  }
                 }
-              ]
+              ],
+              "fallback": {
+                "type": "minecraft:model",
+                "model": "forja:item/cincel/1",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 1,
+                    "default": 12093775
+                  }
+                ]
+              }
             }
           ]
         },
@@ -65,15 +100,50 @@
           ]
         },
         {
-          "type": "minecraft:model",
-          "model": "forja:item/cincel/1",
-          "tints": [
+          "type": "minecraft:select",
+          "property": "minecraft:custom_model_data",
+          "index": 1,
+          "cases": [
             {
-              "type": "minecraft:custom_model_data",
-              "index": 1,
-              "default": 12093775
+              "when": "pesado",
+              "model": {
+                "type": "minecraft:model",
+                "model": "forja:item/cincel/1_pesado",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 1,
+                    "default": 12093775
+                  }
+                ]
+              }
+            },
+            {
+              "when": "ligero",
+              "model": {
+                "type": "minecraft:model",
+                "model": "forja:item/cincel/1_ligero",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 1,
+                    "default": 12093775
+                  }
+                ]
+              }
             }
-          ]
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "forja:item/cincel/1",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 1,
+                "default": 12093775
+              }
+            ]
+          }
         }
       ]
     }

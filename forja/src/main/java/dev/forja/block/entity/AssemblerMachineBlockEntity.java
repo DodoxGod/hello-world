@@ -383,7 +383,7 @@ public class AssemblerMachineBlockEntity extends BlockEntity implements WorldlyC
 		if (slot < 0 || slot >= POINTS || !Assembler.loosePart(stack)) {
 			return false;
 		}
-		PartType type = ((PartItem) stack.getItem()).type;
+		PartType type = ((PartItem) stack.getItem()).type.base();
 		ForgeType wanted = CastingFrameItem.typeOf(this.items.get(SLOT_FRAME));
 		if (wanted != null && !wanted.slots.contains(type)) {
 			return false;
@@ -402,7 +402,7 @@ public class AssemblerMachineBlockEntity extends BlockEntity implements WorldlyC
 				// It has a pile to join: that point, not this one.
 				return false;
 			}
-			if (other.getItem() instanceof PartItem part && part.type == type) {
+			if (other.getItem() instanceof PartItem part && part.type.base() == type) {
 				holding++;
 			}
 		}

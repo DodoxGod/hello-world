@@ -106,6 +106,10 @@ public class BalanceGameTests {
 				problems.add("nivel invertido " + key);
 			}
 		}
+		// Heavy and light handles and bindings are a choice (Andy, 2026-09-29): none may beat the plain one at everything.
+		for (String variant : written.variants.dominant) {
+			problems.add("variante dominante " + variant);
+		}
 		for (ForgeType type : Analysis.TYPES) {
 			var bare = written.analysis.reports.get(type).best.get(Analysis.Scenario.BASE);
 			for (Target target : written.analysis.targets) {

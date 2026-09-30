@@ -77,7 +77,7 @@ public final class Mastery {
 
 		int damage = stack.getDamageValue();
 		Upgrades upgrades = stack.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY);
-		Assembler.write(parts.type(), parts.materials(), upgrades, after, Perk.of(stack), BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM, Assembler.sink(stack));
+		Assembler.write(parts, upgrades, after, Perk.of(stack), 0.0F, BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM, Assembler.sink(stack));
 		HiddenEnchantments.write(stack, level.registryAccess());
 		stack.setDamageValue(Math.min(damage, Math.max(0, stack.getMaxDamage() - 1)));
 
@@ -116,7 +116,7 @@ public final class Mastery {
 		boolean broken = stack.isBroken();
 		stack.set(ModComponents.MAESTRIA, experienceFor(clamped));
 		Upgrades upgrades = stack.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY);
-		Assembler.write(parts.type(), parts.materials(), upgrades, clamped, Perk.of(stack), BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM, Assembler.sink(stack));
+		Assembler.write(parts, upgrades, clamped, Perk.of(stack), 0.0F, BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM, Assembler.sink(stack));
 		HiddenEnchantments.write(stack, registries);
 		stack.setDamageValue(broken ? stack.getMaxDamage() : Math.min(damage, Math.max(0, stack.getMaxDamage() - 1)));
 	}

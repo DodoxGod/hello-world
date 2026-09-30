@@ -73,8 +73,12 @@ public final class CombatHooks {
 			}
 			// Baluarte's price on a shield: every block costs a fifth more (forge/Perk.BALUARTE_BLOCK_COST)
 			double baluarte = dev.forja.forge.Perk.has(shield, dev.forja.forge.Perk.BALUARTE) ? 1.0 + dev.forja.forge.Perk.BALUARTE_BLOCK_COST : 1.0;
-			if (!parry && !Stamina.trySpend(player, (float) (amount * cfg.blockCostPerDamage * dev.forja.clase.ClassEffects.blockCostMultiplier(player) * baluarte))) {
-				player.getCooldowns().addCooldown(shield, cfg.guardBreakTicks);
+			// A weapon bound with rivets and bands braces the arm behind the block, and its guard comes back sooner
+			// when it breaks; a thin binding's later (combat/Grip).
+			ItemStack weapon = player.getMainHandItem();
+			if (!parry && !Stamina.trySpend(player, (float) (amount * cfg.blockCostPerDamage * dev.forja.clase.ClassEffects.blockCostMultiplier(player)
+				* baluarte * Grip.blockCost(weapon)))) {
+				player.getCooldowns().addCooldown(shield, Grip.guardBreakTicks(weapon, cfg.guardBreakTicks));
 				player.stopUsingItem();
 				CombatFeedback.guardBreak(player);
 			}
@@ -155,6 +159,8 @@ public final class CombatHooks {
 				scaled *= (float) cfg.tiredDamageMultiplier;
 			}
 			postureScale *= dev.forja.clase.ClassEffects.postureMultiplier(attacker);
+			// A counterweight shakes the balance more, a light handle less (combat/Grip).
+			postureScale *= Grip.posture(attacker.getMainHandItem());
 			if (Combos.consumeFinisher(attacker)) {
 				scaled *= (float) cfg.comboFinisherDamage;
 				postureScale *= cfg.comboFinisherPosture;

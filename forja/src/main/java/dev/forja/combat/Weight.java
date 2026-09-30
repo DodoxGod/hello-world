@@ -126,6 +126,15 @@ public final class Weight {
 		return base * (HEAD_SHARE * headDensity + (1.0F - HEAD_SHARE) * restDensity) / reference(type);
 	}
 
+	/**
+	 * Kilograms of an assembled piece: its kind and materials, and then what a heavy or a light handle or
+	 * binding adds or takes off (combat/Grip). Everything that reads a weapon's weight comes through here, so a
+	 * monster holding a counterweighted mace warns as long as that mace weighs.
+	 */
+	public static float kg(ForgedParts parts) {
+		return kg(parts.type(), parts.materials()) * Grip.kgFactor(parts);
+	}
+
 	/** What the default materials of a kind weigh with an iron head, next to the same with all-iron: so that one is the base. */
 	private static float reference(ForgeType type) {
 		List<ForgeMaterial> defaults = new java.util.ArrayList<>(Assembler.defaultMaterials(type));
@@ -151,7 +160,7 @@ public final class Weight {
 		}
 		ForgedParts parts = stack.get(ModComponents.PARTS);
 		if (parts != null) {
-			return kg(parts.type(), parts.materials());
+			return kg(parts);
 		}
 		ForgeType like = vanillaKind(stack);
 		if (like == null) {
@@ -164,6 +173,12 @@ public final class Weight {
 	public static float relative(ForgeType type, List<ForgeMaterial> materials) {
 		Float base = BASE_KG.get(type);
 		return base == null ? 1.0F : kg(type, materials) / base;
+	}
+
+	/** What an assembled piece weighs next to an iron one of its kind, variants included. */
+	public static float relative(ForgedParts parts) {
+		Float base = BASE_KG.get(parts.type());
+		return base == null ? 1.0F : kg(parts) / base;
 	}
 
 	/** The player's swing: how a weapon's material scales its attack speed (iron 1, lighter faster, heavier slower). */

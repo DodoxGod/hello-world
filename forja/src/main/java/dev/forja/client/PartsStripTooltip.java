@@ -65,7 +65,7 @@ public class PartsStripTooltip implements ClientTooltipComponent {
 				x = 0;
 				row++;
 			}
-			this.cells.add(new Cell(Assembler.createPart(this.parts.type().slots.get(slot), material), name, 0xFF000000 | material.color, x, row));
+			this.cells.add(new Cell(Assembler.createPart(this.parts.part(slot), material), name, 0xFF000000 | material.color, x, row));
 			this.width = Math.max(this.width, x + cell);
 			x += cell + BETWEEN;
 		}

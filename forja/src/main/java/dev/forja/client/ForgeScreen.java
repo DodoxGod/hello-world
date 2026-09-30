@@ -67,8 +67,12 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 
 	private static final int TAB_Y = 4;
 
-	/** Where the line under the pattern grid is written, just above the row of slots. */
-	private static final int PARTS_LABEL_Y = 77;
+	/**
+	 * Where the line under the pattern grid is written: on the inventory's own label line, which the parts tab
+	 * uses for it. Four rows of patterns (with the heavy and light handles and bindings) fill everything down to
+	 * the row of slots, and the line used to be written over the fourth.
+	 */
+	private static final int PARTS_LABEL_Y = ForgeMenu.INVENTORY_Y - 11;
 
 	/** Where the first tier's row starts, and how far apart the three of them are. */
 	private static final int TECH_ROW_Y = 16;
@@ -81,7 +85,9 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 	private static final int TAB_W = 58;
 	private static final int TAB_H = 16;
 	private static final int GRID_X = 7;
-	private static final int GRID_Y = 24;
+	private static final int GRID_Y = 21;
+	/** Rows of patterns a pixel closer than a cell is tall, so four of them clear the row of slots under them. */
+	private static final int GRID_ROW = 15;
 	private static final int GRID_COLUMNS = 12;
 	/** Cell size of the pattern grid: the icon is 16, the rest is its border. */
 	private static final int GRID_CELL = 16;
@@ -173,7 +179,10 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 
 	@Override
 	protected void extractLabels(GuiGraphicsExtractor g, int mouseX, int mouseY) {
-		g.text(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, TEXT, false);
+		// The parts tab writes its own line there instead (PARTS_LABEL_Y).
+		if (this.menu.getMode() != ForgeMenu.MODE_PARTS) {
+			g.text(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, TEXT, false);
+		}
 		int titleWidth = Math.round(this.font.width(this.title) * 0.8F);
 		float titleX;
 		float titleY;
@@ -498,12 +507,12 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 		boolean canEngrave = this.menu.canEngrave();
 		for (int i = 0; i < parts.length; i++) {
 			int bx = x + GRID_X + i % GRID_COLUMNS * GRID_CELL;
-			int by = y + GRID_Y + i / GRID_COLUMNS * GRID_CELL;
+			int by = y + GRID_Y + i / GRID_COLUMNS * GRID_ROW;
 			boolean chosen = selected == parts[i];
 			boolean hovered = canEngrave && inside(mouseX, mouseY, bx, by, GRID_CELL, GRID_CELL);
 			int fill = chosen ? 0xFFD9A15A : hovered ? 0xFFB9AC94 : 0xFF9C8E78;
 			bevel(g, bx, by, GRID_CELL, GRID_CELL, fill, chosen ? 0xFF7A4A18 : 0xFF5E5244, 0xFFEFE4CF);
-			ForgeMaterial shown = preview != null && parts[i].accepts(preview) ? preview : ForgeMaterial.HIERRO;
+			ForgeMaterial shown = preview != null && parts[i].accepts(preview) ? preview : parts[i].showcase();
 			// Sixteen to a cell since the grid went to twelve across: the part fills it, and what says
 			// "chosen" is the colour showing round the part rather than a frame the part would cover.
 			g.item(Assembler.createPart(parts[i], shown), bx, by);
@@ -514,7 +523,7 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 			for (int i = 0; i < parts.length; i++) {
 				if (selected != parts[i]) {
 					int bx = x + GRID_X + i % GRID_COLUMNS * GRID_CELL;
-					int by = y + GRID_Y + i / GRID_COLUMNS * GRID_CELL;
+					int by = y + GRID_Y + i / GRID_COLUMNS * GRID_ROW;
 					g.fill(bx, by, bx + GRID_CELL, by + GRID_CELL, 0xA0C6BBA7);
 				}
 			}
@@ -988,6 +997,10 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 				lines.add(ForgeStats.withDelta(line.text(), line, before.get(line.stat())), 0xFF000000 | ForgeStats.color(parts.type(), line));
 			}
 		}
+		// A heavy or light handle or binding says what it trades, in the same panel as the numbers it moves.
+		for (Component trade : dev.forja.combat.Grip.shortTradeoff(result)) {
+			lines.add(trade, dev.forja.combat.Grip.COLOR);
+		}
 		dev.forja.forge.Perk engraved = dev.forja.forge.Perk.of(result);
 		if (engraved != null) {
 			lines.add(Component.translatable("tooltip.forja.don", engraved.displayName()), 0xFF000000 | engraved.color);
@@ -1144,17 +1157,22 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 				ForgeMaterial preview = ForgeMaterial.fromInput(this.menu.getSlot(ForgeMenu.MATERIAL_SLOT).getItem());
 				for (int i = 0; i < parts.length; i++) {
 					if (inside(mouseX, mouseY, x + GRID_X + i % GRID_COLUMNS * GRID_CELL,
-						y + GRID_Y + i / GRID_COLUMNS * GRID_CELL, GRID_CELL, GRID_CELL)) {
+						y + GRID_Y + i / GRID_COLUMNS * GRID_ROW, GRID_CELL, GRID_CELL)) {
 						List<Component> tooltip = new ArrayList<>();
 						tooltip.add(parts[i].displayName());
 						tooltip.add(Component.translatable("gui.forja.coste_tooltip", parts[i].cost).withColor(0xAAAAAA));
 						tooltip.add(Component.translatable("gui.forja.rol." + parts[i].role.name().toLowerCase(Locale.ROOT)).withColor(0xAAAAAA));
-						ForgeMaterial shown = preview != null && parts[i].accepts(preview) ? preview : ForgeMaterial.HIERRO;
+						ForgeMaterial shown = preview != null && parts[i].accepts(preview) ? preview : parts[i].showcase();
 						tooltip.add(Component.translatable("gui.forja.con_material", shown.displayName()).withColor(shown.color));
 						for (ForgeStats.Line line : ForgeStats.partLines(parts[i], shown)) {
 							if (ForgeStats.shown(line)) {
 								tooltip.add(ForgeStats.colored(parts[i], line));
 							}
+						}
+						// A heavy or light handle or binding: the trade it makes, and what it can be made of.
+						if (parts[i].variant != dev.forja.part.PartVariant.NORMAL) {
+							tooltip.addAll(dev.forja.combat.Grip.tradeoff(parts[i]));
+							tooltip.add(dev.forja.combat.Grip.materials(parts[i]));
 						}
 						String hint = this.menu.canEngrave() ? "gui.forja.plantilla.clic" : this.menu.hasTemplate() ? "gui.forja.plantilla.fija" : "gui.forja.plantilla.falta";
 						tooltip.add(Component.translatable(hint).withColor(0xFFD37F));
@@ -1246,7 +1264,7 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 		if (this.menu.getMode() == ForgeMenu.MODE_PARTS && this.menu.canEngrave()) {
 			for (int i = 0; i < PartType.values().length; i++) {
 				if (inside(event.x(), event.y(), x + GRID_X + i % GRID_COLUMNS * GRID_CELL,
-					y + GRID_Y + i / GRID_COLUMNS * GRID_CELL, GRID_CELL, GRID_CELL)) {
+					y + GRID_Y + i / GRID_COLUMNS * GRID_ROW, GRID_CELL, GRID_CELL)) {
 					this.pressButton(i);
 					return true;
 				}

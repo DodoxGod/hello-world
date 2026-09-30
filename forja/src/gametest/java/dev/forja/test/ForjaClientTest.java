@@ -143,6 +143,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// Heavy and light handles and bindings (combat/Grip): the parts, the star, the tooltips, the tools in hand.
+			if ("mangos".equals(solo)) {
+				MangosFootage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			// The classes and the healing lantern (docs/CLASES.md): the choice, the tree, the lantern in hand.
 			if ("clases".equals(solo)) {
 				showClasses(context, server, connection);

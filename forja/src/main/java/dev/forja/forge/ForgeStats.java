@@ -132,7 +132,7 @@ public final class ForgeStats {
 	/** Every stat of an assembled item, straight off the stack: parts, upgrades, Maestria, gift and press. */
 	public static Sheet sheet(ItemStack stack, dev.forja.part.ForgedParts parts) {
 		Sheet sheet = sheet(
-			parts.type(), parts.materials(), stack.getOrDefault(dev.forja.registry.ModComponents.UPGRADES, dev.forja.upgrade.Upgrades.EMPTY),
+			parts, stack.getOrDefault(dev.forja.registry.ModComponents.UPGRADES, dev.forja.upgrade.Upgrades.EMPTY),
 			Mastery.level(stack), Perk.of(stack)
 		);
 		sheet.scale(Quality.bonus(stack) + mixBonus(parts));
@@ -296,6 +296,16 @@ public final class ForgeStats {
 	}
 
 	public static Sheet sheet(ForgeType type, List<ForgeMaterial> materials, Upgrades upgrades, int mastery, @org.jspecify.annotations.Nullable Perk perk) {
+		return sheet(new dev.forja.part.ForgedParts(type, materials), upgrades, mastery, perk);
+	}
+
+	/**
+	 * The stats of a set of parts with its upgrades, Maestria level and engraved gift. A heavy or light handle
+	 * or binding (combat/Grip) moves the weight, and through it the swing, and a binding the durability.
+	 */
+	public static Sheet sheet(dev.forja.part.ForgedParts parts, Upgrades upgrades, int mastery, @org.jspecify.annotations.Nullable Perk perk) {
+		ForgeType type = parts.type();
+		List<ForgeMaterial> materials = parts.materials();
 		Sheet sheet = new Sheet(type);
 		switch (type.kind) {
 			case ARMOR -> {
@@ -365,11 +375,20 @@ public final class ForgeStats {
 		}
 		// Peso (combat/Weight): what it weighs, and for what is swung, how that moves the swing - an iron one
 		// swings as it always did, a lighter material sooner, a heavier one later.
-		sheet.weight = dev.forja.combat.Weight.kg(type, materials);
-		// Not the spear: how long its jab takes already comes from its tip (spearAttackDuration).
+		sheet.weight = dev.forja.combat.Weight.kg(parts);
+		// Not the spear: how long its jab takes already comes from its tip (spearAttackDuration). A heavy or a
+		// light handle still moves a spear's jab, by what its weight moves against the plain one.
 		if (sheet.weight > 0.0F && type != ForgeType.LANZA && (type.kind == ForgeType.Kind.WEAPON || type.kind == ForgeType.Kind.TOOL)) {
-			float speed = (4.0F + sheet.attackSpeed) * dev.forja.combat.Weight.swingFactor(dev.forja.combat.Weight.relative(type, materials));
+			float speed = (4.0F + sheet.attackSpeed) * dev.forja.combat.Weight.swingFactor(dev.forja.combat.Weight.relative(parts));
 			sheet.attackSpeed = speed - 4.0F;
+		} else if (type == ForgeType.LANZA && parts.hasVariants()) {
+			float plain = dev.forja.combat.Weight.relative(parts.plain());
+			float factor = dev.forja.combat.Weight.swingFactor(dev.forja.combat.Weight.relative(parts)) / dev.forja.combat.Weight.swingFactor(plain);
+			sheet.attackSpeed = (4.0F + sheet.attackSpeed) * factor - 4.0F;
+		}
+		// A riveted binding holds the piece together longer, a thin one gives sooner.
+		if (parts.hasVariants() && sheet.durability > 0) {
+			sheet.durability = Math.max(1, Math.round(sheet.durability * dev.forja.combat.Grip.durability(parts)));
 		}
 		if (mastery > 0) {
 			applyMastery(sheet, mastery);
@@ -487,12 +506,12 @@ public final class ForgeStats {
 				lines.add(new Line(Stat.DANO_MAS, material.attackDamageBonus));
 				lines.add(new Line(Stat.CAIDA, maceSmashMultiplier(material)));
 			}
-			case MANGO -> {
+			case MANGO, MANGO_PESADO, MANGO_LIGERO -> {
 				lines.add(new Line(Stat.DURABILIDAD_MULT, material.handleDurability));
 				lines.add(new Line(Stat.VELOCIDAD_MAS, material.handleAttackSpeed));
 				lines.add(new Line(Stat.MINADO_MULT, material.handleMiningSpeed));
 			}
-			case ATADURA, GUARDA -> lines.add(new Line(Stat.DURABILIDAD_MAS, Math.round(material.durability * 0.2F)));
+			case ATADURA, ATADURA_PESADA, ATADURA_LIGERA, GUARDA -> lines.add(new Line(Stat.DURABILIDAD_MAS, Math.round(material.durability * 0.2F)));
 			case BRAZOS_ARCO -> {
 				lines.add(new Line(Stat.TENSADO, bowDrawSpeed(material)));
 				lines.add(new Line(Stat.FLECHA_MAS, arrowDamageBonus(material)));
@@ -739,7 +758,7 @@ public final class ForgeStats {
 		Map<Stat, Double> values = new EnumMap<>(Stat.class);
 		dev.forja.part.ForgedParts parts = stack.get(dev.forja.registry.ModComponents.PARTS);
 		if (parts != null) {
-			for (Line line : sheet(parts.type(), parts.materials(), stack.getOrDefault(dev.forja.registry.ModComponents.UPGRADES, Upgrades.EMPTY), Mastery.level(stack)).lines()) {
+			for (Line line : sheet(parts, stack.getOrDefault(dev.forja.registry.ModComponents.UPGRADES, Upgrades.EMPTY), Mastery.level(stack), null).lines()) {
 				values.put(line.stat(), line.value());
 			}
 		}

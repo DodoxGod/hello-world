@@ -4,6 +4,7 @@ import java.util.List;
 
 import dev.forja.block.CastingBoxBlock;
 import dev.forja.item.CastingMouldItem;
+import dev.forja.part.PartType;
 import dev.forja.material.ForgeMaterial;
 import dev.forja.registry.ModComponents;
 import dev.forja.registry.ModItems;
@@ -153,11 +154,27 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 				? new Job(frame, assembled.type().displayName(), FRAME_COST, null)
 				: null;
 		}
+		// A shape no bench can cut (a heavy handle or binding: only ever metal, and metal is poured) has no
+		// part to pour the steel over, so it is poured over the engraving itself, and the template goes instead.
+		PartType engraved = uncuttable(pattern);
+		if (engraved != null) {
+			if (!this.hasSteel(MOULD_COST)) {
+				return null;
+			}
+			ItemStack result = CastingMouldItem.of(engraved);
+			return this.fits(result) ? new Job(result, engraved.displayName(), MOULD_COST, null) : null;
+		}
 		if (!(pattern.getItem() instanceof dev.forja.item.PartItem made) || !this.hasSteel(MOULD_COST)) {
 			return null;
 		}
 		ItemStack result = CastingMouldItem.of(made.type);
 		return this.fits(result) ? new Job(result, made.type.displayName(), MOULD_COST, null) : null;
+	}
+
+	/** The shape engraved on a template when no bench could cut that part out of anything, else null. */
+	public static @Nullable PartType uncuttable(ItemStack stack) {
+		PartType part = dev.forja.item.TemplateItem.pattern(stack);
+		return part != null && !part.cuttable() ? part : null;
 	}
 
 	/** Whether the side slot holds at least this much refractory steel. */
@@ -398,6 +415,7 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 			case SLOT_PATTERN -> CastingMouldItem.partOf(stack) != null
 				|| stack.getItem() instanceof dev.forja.item.PartItem
 				|| stack.getItem() instanceof dev.forja.item.StrainerItem
+				|| uncuttable(stack) != null
 				// A finished tool, to be cut into a frame. A frame itself has no business in here.
 				|| (stack.has(ModComponents.PARTS) && dev.forja.item.CastingFrameItem.typeOf(stack) == null);
 			case SLOT_STEEL -> stack.is(ModItems.alloy("acero_refractario"));

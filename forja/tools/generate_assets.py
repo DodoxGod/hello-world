@@ -38,6 +38,8 @@ PARTS = {
     "placa_casco": "PLATE", "placa_pechera": "PLATE", "placa_grebas": "PLATE", "placa_botas": "PLATE", "forro": "LINING",
     "brazos_arco": "HEAD", "cuerda": "EXTRA", "placa_escudo": "PLATE", "borde_escudo": "EXTRA",
     "nucleo": "HEAD", "engaste": "EXTRA", "tapas": "HANDLE",
+    # Heavy and light handles and bindings (combat/Grip): parts of their own, slotted where the plain ones go.
+    "mango_pesado": "HANDLE", "mango_ligero": "HANDLE", "atadura_pesada": "EXTRA", "atadura_ligera": "EXTRA",
 }
 TYPES = {
     "pico": ["cabeza_pico", "mango", "atadura"],
@@ -2110,6 +2112,140 @@ def whole(sprite_path):
     return {p: (0, luminance(c)) for p, c in opaque(vanilla(sprite_path)).items()}
 
 
+# ---------------------------------------------------------------- heavy and light handles and bindings
+
+# Which plain part each variant stands for; the finished pieces draw their handle or binding slot chunkier or
+# slimmer by it (item model: select on the custom_model_data string of that slot, see Assembler.colors).
+VARIANTS = {"pesado": {"mango": "mango_pesado", "atadura": "atadura_pesada"},
+            "ligero": {"mango": "mango_ligero", "atadura": "atadura_ligera"}}
+
+
+def _runs(xs):
+    """Consecutive runs in a sorted list of x."""
+    runs, run = [], []
+    for x in sorted(xs):
+        if run and x != run[-1] + 1:
+            runs.append(run)
+            run = []
+        run.append(x)
+    if run:
+        runs.append(run)
+    return runs
+
+
+def _rows(part):
+    rows = {}
+    for (x, y) in part:
+        rows.setdefault(y, []).append(x)
+    return {y: _runs(xs) for y, xs in rows.items()}
+
+
+def _butt(layers, label):
+    """The pixel of a part farthest from everything else on the sprite: the end of a handle."""
+    part = [p for p, v in layers.items() if v[0] == label]
+    rest = [p for p, v in layers.items() if v[0] != label] or [(8, 8)]
+    cx = sum(p[0] for p in rest) / len(rest)
+    cy = sum(p[1] for p in rest) / len(rest)
+    return max(part, key=lambda p: ((p[0] - cx) ** 2 + (p[1] - cy) ** 2, -p[0]))
+
+
+def heavier_handle(layers, label):
+    """A handle a pixel thicker all along (its shadowed edge moved out by one) with a knob of counterweight at
+    its butt. Nothing is drawn over another part: the new pixels only go where the sprite is empty."""
+    out = dict(layers)
+    part = {p: v for p, v in layers.items() if v[0] == label}
+    for y, runs in _rows(part).items():
+        for run in runs:
+            right = run[-1]
+            q = (right + 1, y)
+            if q[0] < 16 and q not in out:
+                out[q] = (label, part[(right, y)][1])
+                if len(run) >= 2:
+                    out[(right, y)] = (label, part[(run[-2], y)][1])
+    # The counterweight: a round knob at the butt, dark rim and a lit face.
+    bx, by = _butt(layers, label)
+    knob = [(bx + dx, by + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)]
+    for q in knob:
+        if 0 <= q[0] < 16 and 0 <= q[1] < 16 and (q not in out or out[q][0] == label):
+            edge = abs(q[0] - bx) + abs(q[1] - by) == 2
+            out[q] = (label, 70 if edge else 215 if q == (bx, by - 1) or q == (bx + 1, by) else 150)
+    return out
+
+
+def lighter_handle(layers, label):
+    """A handle a pixel slimmer (the outline kept, moved in by one) and a pixel shorter at the butt."""
+    out = dict(layers)
+    part = {p: v for p, v in layers.items() if v[0] == label}
+    for y, runs in _rows(part).items():
+        for run in runs:
+            if len(run) >= 3:
+                # One pixel fewer across, keeping both its shadowed and its lit edge.
+                lums = [part[(x, y)][1] for x in run]
+                del out[(run[-1], y)]
+                for x in run[1:-1]:
+                    out[(x, y)] = (label, max(lums))
+                out[(run[0], y)] = (label, lums[0])
+    if sum(1 for v in out.values() if v[0] == label) > 8:
+        del out[_butt(out, label)]
+    return out
+
+
+def heavier_binding(layers, label):
+    """Iron bands: the binding grown by a pixel into the empty space around it, with bright rivet heads."""
+    out = dict(layers)
+    part = [p for p, v in layers.items() if v[0] == label]
+    for p in part:
+        for q in neighbours(p, diagonal=False):
+            if 0 <= q[0] < 16 and 0 <= q[1] < 16 and q not in out:
+                out[q] = (label, 80)
+    for i, p in enumerate(sorted(part)):
+        out[p] = (label, 255 if i % 2 == 0 else 120)
+    return out
+
+
+def lighter_binding(layers, label):
+    """A thin wrap: only the half of the binding nearest the head is left, a shade darker."""
+    out = dict(layers)
+    part = [p for p, v in layers.items() if v[0] == label]
+    head = [p for p, v in layers.items() if v[0] == 0] or [(8, 8)]
+    cx = sum(p[0] for p in head) / len(head)
+    cy = sum(p[1] for p in head) / len(head)
+    part.sort(key=lambda p: (p[0] - cx) ** 2 + (p[1] - cy) ** 2)
+    keep = max(1, (len(part) + 1) // 2)
+    for p in part[keep:]:
+        del out[p]
+    for p in part[:keep]:
+        out[p] = (label, max(40, layers[p][1] - 40))
+    return out
+
+
+VARIANT_DRAW = {"mango_pesado": heavier_handle, "mango_ligero": lighter_handle,
+                "atadura_pesada": heavier_binding, "atadura_ligera": lighter_binding}
+
+
+def variant_layers(layers, slot, variant_part):
+    """The layers of a finished piece with the part in this slot drawn as its heavy or light version."""
+    return VARIANT_DRAW[variant_part](layers, slot)
+
+
+def variant_slots(type_id):
+    """(slot, variant, variant part) for every handle or binding slot of a kind of piece."""
+    found = []
+    for slot, part in enumerate(TYPES[type_id]):
+        for variant, parts in VARIANTS.items():
+            if part in parts:
+                found.append((slot, variant, parts[part]))
+    return found
+
+
+def light_binding_part():
+    """The loose light binding: the lead's cord with its shadowed strands left out, a thin wrap."""
+    lead = whole("item/lead.png")
+    lums = sorted(v[1] for v in lead.values())
+    cut = lums[len(lums) // 3]
+    return {p: v for p, v in lead.items() if v[1] > cut}
+
+
 PART_LAYERS = {
     # The loose parts, without what is only there on the finished thing: the núcleo without its sparks,
     # the setting without the ferrule at the far end of the shaft (it would drag the crescent off centre).
@@ -2129,6 +2265,10 @@ PART_LAYERS = {
     "guarda": lambda: centered(split_sword(), 2),
     "mango": lambda: whole("item/stick.png"),
     "atadura": lambda: whole("item/lead.png"),
+    "mango_pesado": lambda: heavier_handle(whole("item/stick.png"), 0),
+    "mango_ligero": lambda: lighter_handle(whole("item/stick.png"), 0),
+    "atadura_pesada": lambda: heavier_binding(whole("item/lead.png"), 0),
+    "atadura_ligera": light_binding_part,
     "forro": lambda: whole("item/leather.png"),
     "membrana": lambda: whole("item/elytra.png"),
     # The head off the weapon itself rather than a ball drawn by hand: a part should be the thing you
@@ -2463,10 +2603,15 @@ def generate_item_textures():
     for type_id, slots in TYPES.items():
         if type_id in SPECIAL - {"lanza"}:
             continue
-        for slot, image in enumerate(normalized_layers(TOOL_LAYERS[type_id](), len(slots))):
+        base_layers = TOOL_LAYERS[type_id]()
+        for slot, image in enumerate(normalized_layers(base_layers, len(slots))):
             path = item_dir / type_id / f"{slot}.png"
             path.parent.mkdir(parents=True, exist_ok=True)
             image.save(path)
+        # A heavy or light handle or binding: that slot's layer drawn chunkier or slimmer.
+        for slot, variant, part in variant_slots(type_id):
+            drawn = variant_layers(base_layers, slot, part)
+            normalized_layers(drawn, len(slots))[slot].save(item_dir / type_id / f"{slot}_{variant}.png")
         if type_id in FIXED_LAYERS:
             FIXED_LAYERS[type_id]().save(item_dir / type_id / "fijo.png")
     for slot, image in enumerate(normalized_layers(spear_in_hand(), 3, 32)):
@@ -4134,6 +4279,20 @@ def generate_models():
                 "model": f"forja:item/{type_id}/{slot}",
                 "tints": [{"type": "minecraft:custom_model_data", "index": slot, "default": DEFAULT_COLORS[PARTS[part]]}],
             }
+            cases = []
+            for variant_slot, variant, _ in variant_slots(type_id):
+                if variant_slot != slot or type_id == "guanteletes":
+                    continue
+                name = f"{slot}_{variant}"
+                layer = {"parent": parent, "textures": {"layer0": f"forja:item/{type_id}/{name}"}}
+                if type_id in GRIPS:
+                    layer["display"] = GRIPS[type_id]
+                write_json(ASSETS / f"models/item/{type_id}/{name}.json", layer)
+                cases.append({"when": variant, "model": dict(model, model=f"forja:item/{type_id}/{name}")})
+            if cases:
+                # Assembler.colors: a heavy or light part writes "pesado" or "ligero" at its slot's index.
+                model = {"type": "minecraft:select", "property": "minecraft:custom_model_data", "index": slot,
+                         "cases": cases, "fallback": model}
             if type_id in THROWABLE and PARTS[part] == "HEAD":
                 # While the head is flying the tool is on cooldown: draw it headless.
                 model = {
@@ -4387,7 +4546,18 @@ def generate_spear_models():
         for slot, part in enumerate(slots):
             name = f"{prefix}{slot}"
             write_json(ASSETS / f"models/item/lanza/{name}.json", {"parent": parent, "textures": {"layer0": f"forja:item/lanza/{name}"}})
-            models.append({"type": "minecraft:model", "model": f"forja:item/lanza/{name}", "tints": [tint(slot, PARTS[part])]})
+            model = {"type": "minecraft:model", "model": f"forja:item/lanza/{name}", "tints": [tint(slot, PARTS[part])]}
+            # The flat icon shows a heavy or light handle or binding like every other piece does.
+            cases = []
+            for variant_slot, variant, _ in (variant_slots("lanza") if prefix == "" else []):
+                if variant_slot == slot:
+                    write_json(ASSETS / f"models/item/lanza/{slot}_{variant}.json",
+                               {"parent": parent, "textures": {"layer0": f"forja:item/lanza/{slot}_{variant}"}})
+                    cases.append({"when": variant, "model": dict(model, model=f"forja:item/lanza/{slot}_{variant}")})
+            if cases:
+                model = {"type": "minecraft:select", "property": "minecraft:custom_model_data", "index": slot,
+                         "cases": cases, "fallback": model}
+            models.append(model)
         return {"type": "minecraft:composite", "models": models}
 
     write_json(ASSETS / "items/lanza.json", {

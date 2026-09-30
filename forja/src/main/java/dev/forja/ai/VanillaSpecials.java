@@ -374,7 +374,7 @@ public final class VanillaSpecials {
 			ItemStack guard = target.isUsingItem() && target.getUseItem().has(net.minecraft.core.component.DataComponents.BLOCKS_ATTACKS)
 				? target.getUseItem() : null;
 			if (guard != null) {
-				target.getCooldowns().addCooldown(guard, 100);
+				target.getCooldowns().addCooldown(guard, dev.forja.combat.Grip.guardBreakTicks(target.getMainHandItem(), 100));
 				target.stopUsingItem();
 				CombatFeedback.guardBreak(target);
 			}

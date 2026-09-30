@@ -521,7 +521,7 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 		java.util.List<dev.forja.upgrade.Upgrade> possible = new java.util.ArrayList<>();
 		for (dev.forja.upgrade.Upgrade upgrade : dev.forja.upgrade.Upgrade.values()) {
 			for (ForgeType type : ForgeType.values()) {
-				if (type.slots.contains(part) && upgrade.appliesTo(type)) {
+				if (type.slots.contains(part.base()) && upgrade.appliesTo(type)) {
 					possible.add(upgrade);
 					break;
 				}

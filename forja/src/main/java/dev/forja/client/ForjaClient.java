@@ -281,6 +281,8 @@ public final class ForjaClient implements ClientModInitializer {
 					added.add(ForgeStats.withDelta(ForgeStats.colored(parts.type(), line), line, before.get(line.stat())));
 				}
 			}
+			// A heavy or light handle or binding: what it gives and what it costs, in one line each.
+			added.addAll(dev.forja.combat.Grip.tradeoff(stack));
 			if (dev.forja.forge.Oxidation.isCopper(stack)) {
 				added.add(Component.translatable(
 					dev.forja.forge.Oxidation.waxed(stack) ? "tooltip.forja.oxido.encerado" : "tooltip.forja.oxido",
@@ -410,6 +412,13 @@ public final class ForjaClient implements ClientModInitializer {
 			lines.add(insertAt, pattern == null
 				? Component.translatable("tooltip.forja.plantilla.base").withStyle(ChatFormatting.GRAY)
 				: Component.translatable("tooltip.forja.plantilla.molde", pattern.cost).withStyle(ChatFormatting.GRAY));
+			if (pattern != null && pattern.variant != dev.forja.part.PartVariant.NORMAL) {
+				lines.addAll(insertAt + 1, dev.forja.combat.Grip.tradeoff(pattern));
+				lines.add(insertAt + 2, dev.forja.combat.Grip.materials(pattern));
+				if (!pattern.cuttable()) {
+					lines.add(insertAt + 3, Component.translatable("tooltip.forja.plantilla.a_la_caja").withStyle(ChatFormatting.GRAY));
+				}
+			}
 			return;
 		}
 		ForgeMaterial material = stack.get(ModComponents.MATERIAL);
@@ -423,6 +432,7 @@ public final class ForjaClient implements ClientModInitializer {
 			if (material.trait != ForgeMaterial.Trait.NONE) {
 				added.add(Component.translatable("tooltip.forja.rasgo", material.trait.displayName(), material.trait.description()).withColor(0xFFD37F));
 			}
+			added.addAll(dev.forja.combat.Grip.tradeoff(part.type));
 			added.add(Component.translatable("tooltip.forja.coste", part.type.cost, material.displayName()).withStyle(ChatFormatting.DARK_GRAY));
 			lines.addAll(insertAt, added);
 		}

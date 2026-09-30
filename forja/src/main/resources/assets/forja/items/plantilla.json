@@ -262,6 +262,34 @@
               "type": "minecraft:model",
               "model": "forja:item/plantilla/tapas"
             }
+          },
+          {
+            "when": "mango_pesado",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/mango_pesado"
+            }
+          },
+          {
+            "when": "mango_ligero",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/mango_ligero"
+            }
+          },
+          {
+            "when": "atadura_pesada",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/atadura_pesada"
+            }
+          },
+          {
+            "when": "atadura_ligera",
+            "model": {
+              "type": "minecraft:model",
+              "model": "forja:item/plantilla/atadura_ligera"
+            }
           }
         ],
         "fallback": {

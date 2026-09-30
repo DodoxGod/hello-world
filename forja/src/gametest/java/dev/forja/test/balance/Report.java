@@ -42,6 +42,7 @@ public final class Report {
 
 	public void measureOutliers() {
 		this.findings.measure();
+		this.variants.measure(this.analysis);
 	}
 
 	// ---------------------------------------------------------------- small helpers
@@ -163,6 +164,7 @@ public final class Report {
 		this.suspicions();
 		this.newFindings();
 		this.bestBuilds();
+		this.variantsSection();
 		this.ttkTables();
 		this.difficulty();
 		this.materialsSection();
@@ -567,6 +569,36 @@ public final class Report {
 			this.line("- **" + type.id() + "**: " + materials(best.build) + "; " + upgrades(best.build) + " — TTK medio "
 				+ f(best.geo, 2) + " s, " + f(best.sustained.dps(), 1) + " daño/s sostenido. *No se mide aquí:* " + unmeasured(type) + ".");
 		}
+		this.line("");
+	}
+
+	/** Heavy and light handles and bindings against the plain ones (combat/Grip, test/balance/Variants). */
+	public final Variants variants = new Variants();
+
+	private void variantsSection() {
+		CombatConfig cfg = CombatConfig.get();
+		this.line("## Mangos y ataduras: normal, pesado y ligero");
+		this.line("");
+		this.line("Cabeza de hierro y nada más, sin mejoras; el mango normal y el ligero de madera, el pesado de hierro; la atadura "
+			+ "normal de madera, la pesada de hierro, la ligera de cuero. Ráfaga, sostenido, TTK medio y cansados como arriba. "
+			+ "Aturdidos/min: veces que la barra de postura del maniquí (un mob de 20 de vida) se llena en la pelea larga. Estamina por golpe: "
+			+ "la de un golpe normal (" + f(cfg.attackCost, 0) + " de base); el cargado cuesta "
+			+ f(cfg.chargeStaminaCost + cfg.chargeStaminaPerShare, 0) + " de base, movido igual. Lo que el maniquí no mide y también "
+			+ "cuenta: la atadura pesada abarata los bloqueos y no suelta la carga con un golpe de escudo, y con la ligera la guardia rota "
+			+ "tarda más en volver.");
+		this.line("");
+		this.table("Tipo", "Mango / atadura", "Peso (kg)", "Golpes/s", "Durabilidad", "Ráfaga (daño/s)", "Sostenido (daño/s)", "TTK medio (s)",
+			"Estamina por golpe", "Cansados", "Aturdidos/min");
+		for (Variants.Row row : this.variants.rows) {
+			this.row(row.type().id(), row.setup().name(), f(dev.forja.combat.Weight.kg(row.build().parts()), 2), f(row.build().attackSpeed, 2),
+				String.valueOf(row.build().durability), f(row.burst(), 1), f(row.sustained(), 1), f(row.ttk(), 2), f(row.staminaPerSwing(), 1),
+				pct(row.tiredShare()), f(row.staggersPerMinute(), 1));
+		}
+		this.line("");
+		this.line(this.variants.dominant.isEmpty()
+			? "**Ninguna variante domina:** ninguna gana a la normal de su tipo en ráfaga, sostenido y TTK a la vez sin pagarlo en "
+				+ "estamina, postura o durabilidad."
+			: "**Dominan** (ganan en todo a la normal): " + String.join(", ", this.variants.dominant) + ".");
 		this.line("");
 	}
 

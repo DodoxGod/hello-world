@@ -75,6 +75,9 @@ PARTS = {
     "placa_escudo": ("Placa de escudo", "Shield Board"), "borde_escudo": ("Borde de escudo", "Shield Rim"),
     "nucleo": ("Núcleo", "Core"), "engaste": ("Engaste", "Setting"), "tapas": ("Tapas", "Boards"),
     "punta_lanza": ("Punta de lanza", "Spear Tip"), "punta_tridente": ("Punta de tridente", "Trident Head"), "punta_cincel": ("Punta de cincel", "Chisel Edge"), "cabeza_mazo": ("Cabeza de mazo", "Mace Head"),
+    # Heavy and light handles and bindings (combat/Grip): a choice, not an upgrade.
+    "mango_pesado": ("Mango pesado", "Heavy Handle"), "mango_ligero": ("Mango ligero", "Light Handle"),
+    "atadura_pesada": ("Atadura pesada", "Heavy Binding"), "atadura_ligera": ("Atadura ligera", "Light Binding"),
 }
 TYPES = {
     "pico": ("Pico", "Pickaxe"), "hacha": ("Hacha", "Axe"), "pala": ("Pala", "Shovel"), "azada": ("Azada", "Hoe"),
@@ -2599,6 +2602,69 @@ SKILLS = {
                       ("Durante %s s tus golpes cuerpo a cuerpo prenden fuego %s s y hacen un %s más",
                        "For %s s your melee blows set fire for %s s and deal %s more")),
 }
+
+
+# Heavy and light handles and bindings (combat/Grip, 2026-09-29). The numbers come from the Java constants.
+GUI.update({
+    "tooltip.forja.variante.mango_pesado.gana": (
+        "Pesado: %1$s golpe cargado · %2$s postura · %3$s empuje",
+        "Heavy: %1$s charged blow · %2$s posture · %3$s knockback"),
+    "tooltip.forja.variante.mango_pesado.cuesta": (
+        "  a cambio: %4$s velocidad · %5$s estamina por golpe",
+        "  in exchange: %4$s speed · %5$s stamina per swing"),
+    "tooltip.forja.variante.mango_ligero.gana": (
+        "Ligero: %1$s velocidad · %2$s estamina por golpe",
+        "Light: %1$s speed · %2$s stamina per swing"),
+    "tooltip.forja.variante.mango_ligero.cuesta": (
+        "  a cambio: %3$s postura · %4$s empuje · %5$s golpe cargado",
+        "  in exchange: %3$s posture · %4$s knockback · %5$s charged blow"),
+    "tooltip.forja.variante.atadura_pesada.gana": (
+        "Pesada: %1$s durabilidad · %2$s estamina al bloquear",
+        "Heavy: %1$s durability · %2$s stamina when blocking"),
+    "tooltip.forja.variante.atadura_pesada.cuesta": (
+        "  guardia rota %3$s · no suelta la carga · a cambio: %4$s velocidad",
+        "  broken guard %3$s · keeps its charge · in exchange: %4$s speed"),
+    "tooltip.forja.variante.atadura_ligera.gana": (
+        "Ligera: %1$s velocidad", "Light: %1$s speed"),
+    "tooltip.forja.variante.atadura_ligera.cuesta": (
+        "  a cambio: %2$s durabilidad · guardia rota %3$s",
+        "  in exchange: %2$s durability · broken guard %3$s"),
+    "tooltip.forja.variante.materiales.pesado": (
+        "Se cuela en metal pesado: cobre, hierro, bronce, acero, escoria, cinerio, obsidiacero o netherita",
+        "Poured in a dense metal: copper, iron, bronze, steel, slag, cinereous steel, obsidian steel or netherite"),
+    "tooltip.forja.variante.materiales.ligero": (
+        "Se talla en madera (también la de bambú), hueso o cuero",
+        "Cut from wood (bamboo planks too), bone or leather"),
+    "tooltip.forja.plantilla.a_la_caja": (
+        "Ninguna mesa la corta: en la caja de colada, con acero refractario, sale su molde",
+        "No bench can cut it: in the casting box, with refractory steel, it becomes its mould"),
+    # The same trades, short, for the forge's stat panel: one line a variant part.
+    "gui.forja.variante.corto.mango_pesado": ("Pesado: carga %1$s", "Heavy: charge %1$s"),
+    "gui.forja.variante.corto.mango_ligero": ("Ligero: estam. %1$s", "Light: stamina %1$s"),
+    "gui.forja.variante.corto.atadura_pesada": ("Remachada: dur. %1$s", "Riveted: dur. %1$s"),
+    "gui.forja.variante.corto.atadura_ligera": ("At. ligera: dur. %1$s", "Thin wrap: dur. %1$s"),
+    # Short texts for the guide. Where they go in "El yunque" is up to the books' own file (tools/lang_libros.py).
+    "gui.forja.libros.variantes.titulo": ("Mangos y ataduras: pesados o ligeros", "Handles and bindings: heavy or light"),
+    "gui.forja.libros.variantes": (
+        "El mango y la atadura tienen tres formas: la normal, una pesada y una ligera. No son mejoras, son una "
+        "elección. El **mango pesado** lleva contrapeso: el golpe cargado pega un 18 % más y el golpe tumba más la "
+        "guardia y empuja más, pero el arma pesa más, tarda más en llegar al golpe a plena fuerza y cada golpe "
+        "cuesta más estamina. El **mango ligero** es al revés: rápido y barato, más flojo. La **atadura pesada** "
+        "(remaches y bandas) dura más, abarata los bloqueos, te devuelve antes la guardia rota y no deja que un "
+        "golpe de escudo te quite la carga; la **ligera** aligera un poco y dura menos.",
+        "The handle and the binding come in three kinds: the plain one, a heavy one and a light one. They are not "
+        "upgrades, they are a choice. A **heavy handle** has a counterweight: the charged blow hits 18 % harder and "
+        "every blow shakes the guard more and throws further, but the weapon weighs more, reaches a full-strength "
+        "blow later and every swing costs more stamina. A **light handle** is the other way round: quick and cheap, "
+        "softer. A **heavy binding** (rivets and bands) lasts longer, makes blocks cheaper, gives a broken guard back "
+        "sooner and keeps a shield bash from knocking your charge loose; a **light** one is a little lighter and "
+        "wears sooner."),
+    "gui.forja.libros.variantes.hacer": (
+        "Los ligeros se cortan en la mesa de piezas, de madera, hueso o cuero. Los pesados son de metal, y el metal "
+        "se cuela: graba la plantilla, llévala a la caja de colada con acero refractario y sale el molde.",
+        "Light ones are cut at the parts table, from wood, bone or leather. Heavy ones are metal, and metal is "
+        "poured: engrave the template, take it to the casting box with refractory steel and out comes the mould."),
+})
 
 
 # The guide's books (docs/LIBROS_GUIA.md) keep their texts in their own file.

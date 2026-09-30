@@ -231,8 +231,12 @@ public enum ForgeType implements StringRepresentable {
 		return result;
 	}
 
-	/** The type whose slots are exactly this multiset of part types, if any. */
+	/**
+	 * The type whose slots are exactly this multiset of part types, if any. A heavy or light handle or binding
+	 * counts as the plain one: the variant changes how the piece swings, not what it is.
+	 */
 	public static @Nullable ForgeType match(List<PartType> parts) {
+		parts = plain(parts);
 		for (ForgeType type : values()) {
 			if (sameMultiset(type.slots, parts)) {
 				return type;
@@ -243,6 +247,7 @@ public enum ForgeType implements StringRepresentable {
 
 	/** Parts still missing for the closest type that contains everything placed so far. */
 	public static @Nullable List<PartType> missingFor(List<PartType> parts) {
+		parts = plain(parts);
 		List<PartType> best = null;
 		for (ForgeType type : values()) {
 			List<PartType> remaining = new ArrayList<>(type.slots);
@@ -258,6 +263,11 @@ public enum ForgeType implements StringRepresentable {
 			}
 		}
 		return best;
+	}
+
+	/** Every part as the plain part it stands in for. */
+	private static List<PartType> plain(List<PartType> parts) {
+		return parts.stream().map(PartType::base).toList();
 	}
 
 	private static boolean sameMultiset(List<PartType> a, List<PartType> b) {

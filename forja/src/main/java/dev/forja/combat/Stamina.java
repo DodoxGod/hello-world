@@ -244,7 +244,9 @@ public final class Stamina {
 	}
 
 	public static void onAttack(Player player) {
-		data(player).tiredAttack = !trySpend(player, CombatConfig.get().attackCost * dev.forja.clase.ClassEffects.staminaCostMultiplier(player));
+		// A counterweighted handle costs more breath to swing, a light one less (combat/Grip).
+		data(player).tiredAttack = !trySpend(player, CombatConfig.get().attackCost * dev.forja.clase.ClassEffects.staminaCostMultiplier(player)
+			* Grip.swingCost(player.getMainHandItem()));
 	}
 
 	/** Whether the swing that is landing now was made out of breath. Reading it clears it. */

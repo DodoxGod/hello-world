@@ -387,7 +387,7 @@ public final class Fight {
 					case FINISHER -> this.t < this.staggerUntil && this.finisherReady();
 				};
 				if (wantCharge && (policy.breath() == Breath.SPAM || !this.options.stamina
-					|| this.stamina >= this.cfg.chargeStaminaCost + this.cfg.chargeStaminaPerShare)) {
+					|| this.stamina >= this.chargeCost())) {
 					chargeAt = this.t + this.cfg.chargeDelayTicks + this.cfg.chargeFullTicks;
 				}
 			}
@@ -406,9 +406,19 @@ public final class Fight {
 		}
 		return switch (policy.breath()) {
 			case SPAM -> false;
-			case WAIT -> this.stamina < this.cfg.attackCost;
-			case REST -> resting ? this.stamina < this.cfg.staminaMax : this.stamina < this.cfg.attackCost;
+			case WAIT -> this.stamina < this.swingCost();
+			case REST -> resting ? this.stamina < this.cfg.staminaMax : this.stamina < this.swingCost();
 		};
+	}
+
+	/** Stamina a plain swing costs with this weapon: the config's, moved by its handle (combat/Grip). */
+	private double swingCost() {
+		return this.cfg.attackCost * this.build.swingCost;
+	}
+
+	/** And a charged blow at full charge. */
+	private double chargeCost() {
+		return (this.cfg.chargeStaminaCost + this.cfg.chargeStaminaPerShare) * this.build.chargeCost;
 	}
 
 	/** Vanilla's per-tick work on the target: invulnerability running down, and whatever keeps hurting it. */
@@ -524,7 +534,7 @@ public final class Fight {
 	private void swing(int ticker, double delay) {
 		this.swings++;
 		double strength = Math.min(1.0, (ticker + 0.5) / delay);
-		boolean tired = !this.spend(this.cfg.attackCost);
+		boolean tired = !this.spend(this.swingCost());
 		if (tired) {
 			this.tiredSwings++;
 		}
@@ -542,7 +552,7 @@ public final class Fight {
 			}
 		}
 		double damage = tired ? this.cfg.tiredDamageMultiplier : 1.0;
-		double posture = 1.0;
+		double posture = this.build.posture;
 		if (this.comboFinishing) {
 			damage *= this.cfg.comboFinisherDamage;
 			posture *= this.cfg.comboFinisherPosture;
@@ -557,9 +567,9 @@ public final class Fight {
 
 	private void chargedStrike(int ticker, double delay) {
 		this.chargedCount++;
-		boolean paid = this.spend(this.cfg.chargeStaminaCost + this.cfg.chargeStaminaPerShare);
-		double damage = paid ? 1.0 + this.cfg.chargeDamageBonus : this.cfg.tiredDamageMultiplier;
-		double posture = paid ? 1.0 + this.cfg.chargePostureBonus : 1.0;
+		boolean paid = this.spend(this.chargeCost());
+		double damage = paid ? (1.0 + this.cfg.chargeDamageBonus) * this.build.chargeDamage : this.cfg.tiredDamageMultiplier;
+		double posture = (paid ? 1.0 + this.cfg.chargePostureBonus : 1.0) * this.build.posture;
 		double comboDamage = 1.0;
 		double comboPosture = 1.0;
 		if (this.comboFinishing) {

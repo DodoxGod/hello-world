@@ -68,7 +68,19 @@ public enum PartType implements StringRepresentable {
 	/** The metal that holds a staff's núcleo: the crescent. */
 	ENGASTE(Role.EXTRA, 2),
 	/** The boards of a forged tome. They are to it what a handle is to a tool: how long it lasts. */
-	TAPAS(Role.HANDLE, 4);
+	TAPAS(Role.HANDLE, 4),
+	/**
+	 * A handle with a counterweight in its butt, poured in a dense metal: the blow lands later and harder
+	 * (combat/Grip). It goes wherever a handle goes. The four variants come last: parts go over the wire by
+	 * their place in this list.
+	 */
+	MANGO_PESADO(Role.HANDLE, 2, MANGO, PartVariant.PESADO),
+	/** A slim handle cut from a light material: the blow comes sooner and costs less breath, and hits softer. */
+	MANGO_LIGERO(Role.HANDLE, 1, MANGO, PartVariant.LIGERO),
+	/** Rivets and iron bands instead of a wrap: it lasts, and it holds the head when something tries to knock it loose. */
+	ATADURA_PESADA(Role.EXTRA, 2, ATADURA, PartVariant.PESADO),
+	/** A thin wrap: a little lighter and a little quicker, and it gives sooner. */
+	ATADURA_LIGERA(Role.EXTRA, 1, ATADURA, PartVariant.LIGERO);
 
 	public static final Codec<PartType> CODEC = StringRepresentable.fromEnum(PartType::values);
 	public static final StreamCodec<ByteBuf, PartType> STREAM_CODEC = ByteBufCodecs.VAR_INT.map(i -> values()[i], Enum::ordinal);
@@ -88,10 +100,59 @@ public enum PartType implements StringRepresentable {
 
 	public final Role role;
 	public final int cost;
+	/** Which plain part this one stands in for in an assembly (itself for the plain ones). */
+	private final @org.jspecify.annotations.Nullable PartType base;
+	public final PartVariant variant;
 
 	PartType(Role role, int cost) {
+		this(role, cost, null, PartVariant.NORMAL);
+	}
+
+	PartType(Role role, int cost, @org.jspecify.annotations.Nullable PartType base, PartVariant variant) {
 		this.role = role;
 		this.cost = cost;
+		this.base = base;
+		this.variant = variant;
+	}
+
+	/** The plain part this one fills the slot of: a heavy handle is a handle to every recipe. */
+	public PartType base() {
+		return this.base == null ? this : this.base;
+	}
+
+	/** The part that is this plain part made in that variant, or the plain part itself when there is none. */
+	public static PartType of(PartType base, PartVariant variant) {
+		if (variant != PartVariant.NORMAL) {
+			for (PartType part : values()) {
+				if (part.base == base && part.variant == variant) {
+					return part;
+				}
+			}
+		}
+		return base;
+	}
+
+	/** Whether some plain part of this one has heavy and light variants (the handle and the binding). */
+	public boolean hasVariants() {
+		return of(this, PartVariant.PESADO) != this;
+	}
+
+	/**
+	 * Whether a bench can cut this part out of anything at all. A heavy handle or binding is only ever
+	 * metal, and metal is poured: its mould is cut from the engraved template instead (CastingBoxBlockEntity).
+	 */
+	public boolean cuttable() {
+		for (ForgeMaterial material : ForgeMaterial.BASIC) {
+			if (this.accepts(material)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** The material the part is drawn in when none is chosen: iron, or wood for a light part that cannot be iron. */
+	public ForgeMaterial showcase() {
+		return this.accepts(ForgeMaterial.HIERRO) ? ForgeMaterial.HIERRO : ForgeMaterial.MADERA;
 	}
 
 	public String id() {
@@ -108,6 +169,10 @@ public enum PartType implements StringRepresentable {
 	}
 
 	public boolean accepts(ForgeMaterial material) {
-		return this.role != Role.HEAD || material.canBeHead;
+		return switch (this.variant) {
+			case PESADO -> PartVariant.HEAVY.contains(material);
+			case LIGERO -> PartVariant.LIGHT.contains(material);
+			case NORMAL -> this.role != Role.HEAD || material.canBeHead;
+		};
 	}
 }
