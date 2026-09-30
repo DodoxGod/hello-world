@@ -60,6 +60,11 @@ public final class ModComponents {
 	);
 
 	/** On a loose part: it was poured in the foundry, cleanly, rather than cut at the bench. */
+	/** The Estrella forjada is set in this piece (forge/ForgedStar). */
+	public static final DataComponentType<Boolean> ESTRELLADA = register(
+		"estrellada", b -> b.persistent(com.mojang.serialization.Codec.BOOL).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.BOOL)
+	);
+
 	public static final DataComponentType<Boolean> COLADA = register(
 		"colada", b -> b.persistent(com.mojang.serialization.Codec.BOOL).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.BOOL)
 	);

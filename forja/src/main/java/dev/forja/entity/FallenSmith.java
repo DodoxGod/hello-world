@@ -222,6 +222,53 @@ public class FallenSmith extends Monster implements GeoEntity {
 	private int reclaim;
 	private int reclaimCooldown;
 
+	// ---- the graveyard's fight (docs/HERRERO_DIMENSION.md, section 3)
+
+	/** He comes down out of the sky: how long the fall takes, from how high, and the moment on the ground after. */
+	public static final int FALL_TICKS = 40;
+	public static final double FALL_HEIGHT = 120.0;
+	public static final int SETTLE_TICKS = 20;
+	/** The pause of a change of phase, in which he cannot be hurt while his apprentices come up. */
+	public static final int PHASE_GUARD = 60;
+	/** Apprentices come up out of the ground this deep, over this long, each ring this much after the one inside it. */
+	public static final double RISE_DEPTH = 2.2;
+	public static final int RISE_TICKS = 40;
+	public static final int RISE_STAGGER = 8;
+	/** The Reforjado estelar: the forge fires, three and one more a player after the first, six at most. */
+	public static final int EMBERS_BASE = 3;
+	public static final int EMBERS_MOST = 6;
+	/** Put out, it leaves him stunned: this long, taking this much more. */
+	public static final int STUN_TICKS = 100;
+	public static final float STUN_DAMAGE = 1.5F;
+
+	private int falling;
+	private int settling;
+	private int phaseGuard;
+	/** How many times the apprentices have been called: at two thirds and at one third. */
+	private int wavesCalled;
+	/** The Reforjado estelar: 0 not yet, 1 burning, 2 put out. */
+	private int starReforge;
+	private final java.util.List<net.minecraft.core.BlockPos> embersAt = new java.util.ArrayList<>();
+	private int stunned;
+	private int aegis;
+	/** Whether he was held still before a pause of his own (a test's NoAI): the pause gives it back as it was. */
+	private boolean heldStill;
+	private final java.util.List<Riser> risers = new java.util.ArrayList<>();
+
+	/** An apprentice on its way up out of the ground. Not saved: see Apprentices, which finishes it on a reload. */
+	private static final class Riser {
+		final java.util.UUID id;
+		final double floor;
+		int delay;
+		int ticks;
+
+		Riser(java.util.UUID id, double floor, int delay) {
+			this.id = id;
+			this.floor = floor;
+			this.delay = delay;
+		}
+	}
+
 	/** One try at hurting him by something that can be reclaimed, for the RECLAIM_WINDOW count. */
 	private record Blow(java.util.UUID who, int at, float damage, boolean heavy) {
 	}
@@ -284,6 +331,109 @@ public class FallenSmith extends Monster implements GeoEntity {
 		level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5, 80, 1.0, 1.5, 1.0, 0.05);
 		return smith;
 	}
+
+	/**
+	 * He falls out of the sky onto the middle of the arena, like a star (docs/HERRERO_DIMENSION.md, 3.2):
+	 * FALL_TICKS from FALL_HEIGHT up, with a trail, and nothing touches him until he is on his feet.
+	 */
+	public static FallenSmith fallFromSky(ServerLevel level) {
+		FallenSmith smith = ModEntities.HERRERO_CAIDO.create(level, EntitySpawnReason.EVENT);
+		if (smith == null) {
+			throw new IllegalStateException("the fallen smith could not be created");
+		}
+		smith.snapTo(0.5, dev.forja.world.StarYard.SURFACE + 1.0 + FALL_HEIGHT, 0.5, 180.0F, 0.0F);
+		smith.dress(level);
+		smith.falling = FALL_TICKS;
+		smith.setNoAi(true);
+		smith.setNoGravity(true);
+		level.addFreshEntity(smith);
+		for (ServerPlayer player : level.players()) {
+			level.playSound(null, player.getX(), player.getY() + 20.0, player.getZ(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 1.5F, 0.6F);
+			player.sendSystemMessage(Component.translatable("gui.forja.pelea.cae").withColor(0xC460FF));
+		}
+		return smith;
+	}
+
+	/** Whether he fights in the Cementerio entre Estrellas, where the dimension does its part. */
+	public boolean inYard() {
+		return this.yardForTests || this.level().dimension() == dev.forja.world.StarYard.LEVEL;
+	}
+
+	/**
+	 * The gametest server has no datapack dimensions, so a test that wants the graveyard's fight asks for it
+	 * here: the arena's braseros and fires are at the graveyard's own coordinates round (0, 81, 0).
+	 */
+	public boolean yardForTests;
+
+	/** Coming down, getting up, or between phases: the sky waits, and nothing touches him. */
+	public boolean busy() {
+		return this.falling > 0 || this.settling > 0 || this.phaseGuard > 0;
+	}
+
+	public boolean isFalling() {
+		return this.falling > 0 || this.settling > 0;
+	}
+
+	public boolean isStunned() {
+		return this.stunned > 0;
+	}
+
+	public int wavesCalled() {
+		return this.wavesCalled;
+	}
+
+	/** One tick of the fall, and the landing. */
+	private void fall(ServerLevel level) {
+		if (this.falling > 0) {
+			this.falling--;
+			double share = this.falling / (double) FALL_TICKS;
+			double y = dev.forja.world.StarYard.SURFACE + 1.0 + FALL_HEIGHT * share * share;
+			this.setPos(0.5, y, 0.5);
+			this.setDeltaMovement(Vec3.ZERO);
+			level.sendParticles(ParticleTypes.END_ROD, this.getX(), this.getY(1.0), this.getZ(), 12, 0.4, 0.6, 0.4, 0.02);
+			level.sendParticles(ParticleTypes.FLAME, this.getX(), this.getY(0.5), this.getZ(), 14, 0.5, 0.8, 0.5, 0.04);
+			level.sendParticles(dev.forja.registry.ModParticles.CHISPA, this.getX(), this.getY(1.0), this.getZ(), 10, 0.4, 0.6, 0.4, 0.3);
+			level.sendParticles(ParticleTypes.FIREWORK, this.getX(), this.getY() + 4.0, this.getZ(), 6, 0.3, 2.5, 0.3, 0.01);
+			if (this.falling == 0) {
+				this.land(level);
+			}
+			return;
+		}
+		if (--this.settling == 0) {
+			this.setNoAi(false);
+			this.triggerAnim("boss", "roar");
+		}
+	}
+
+	private void land(ServerLevel level) {
+		this.setNoGravity(false);
+		this.settling = SETTLE_TICKS;
+		Shockwave.burst(level, this.position(), 14.0, 18, Shockwave.VIOLET);
+		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.HOSTILE, 5.0F, 0.5F);
+		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 5.0F, 0.4F);
+		level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, this.getX(), this.getY() + 0.5, this.getZ(), 1, 0.0, 0.0, 0.0, 0.0);
+		level.sendParticles(ParticleTypes.END_ROD, this.getX(), this.getY() + 0.5, this.getZ(), 80, 1.5, 0.3, 1.5, 0.25);
+		level.sendParticles(dev.forja.registry.ModParticles.CENIZA, this.getX(), this.getY() + 0.5, this.getZ(), 80, 3.0, 0.5, 3.0, 0.05);
+		this.lightForge(RAGE_TICKS * 2);
+	}
+
+	/** The Égida (docs 3.6, the Escudo): a shield of light that takes this much for this long. */
+	public void aegis(float amount, int ticks) {
+		var max = this.getAttribute(Attributes.MAX_ABSORPTION);
+		if (max != null) {
+			max.removeModifier(AEGIS);
+			max.addTransientModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(AEGIS, amount,
+				net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE));
+		}
+		this.setAbsorptionAmount(amount);
+		this.aegis = ticks;
+		if (this.level() instanceof ServerLevel level) {
+			level.sendParticles(ParticleTypes.END_ROD, this.getX(), this.getY(1.0), this.getZ(), 50, 1.0, 1.4, 1.0, 0.05);
+			level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.BEACON_POWER_SELECT, SoundSource.HOSTILE, 3.0F, 0.7F);
+		}
+	}
+
+	private static final net.minecraft.resources.Identifier AEGIS = dev.forja.Forja.id("egida");
 
 	/** His own work: a damascus flail and obsidian steel plate, all of it at full Maestria. */
 	private void dress(ServerLevel level) {
@@ -388,6 +538,11 @@ public class FallenSmith extends Monster implements GeoEntity {
 	/** Twice a second: drops a dead target, and lets go of a foe that has stopped hitting him (rule 3). */
 	private void reconsider(ServerLevel level) {
 		LivingEntity target = this.getTarget();
+		// In the Guadaña's ash storm he sees no further than anyone else: sixteen blocks.
+		if (target != null && this.inYard() && dev.forja.world.StarFight.storming(level) && target.distanceTo(this) > 16.0F) {
+			this.setTarget(null);
+			return;
+		}
 		if (target == null || target instanceof Player) {
 			return;
 		}
@@ -435,15 +590,23 @@ public class FallenSmith extends Monster implements GeoEntity {
 					damage * dev.forja.difficulty.Bosses.othersShare(source), attacker.getMaxHealth() >= RECLAIM_HEAVY_HEALTH));
 			}
 		}
-		if (this.reforging > 0 && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+		boolean guarded = this.reforging > 0 || this.falling > 0 || this.settling > 0 || this.phaseGuard > 0 || this.starReforge == 1;
+		if (guarded && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
 			level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 1.0F, 1.8F);
 			return false;
 		}
-		return super.hurtServer(level, source, damage * dev.forja.difficulty.Bosses.othersShare(source));
+		// Stunned when his forge is put out: every blow lands half as hard again.
+		float stun = this.stunned > 0 ? STUN_DAMAGE : 1.0F;
+		return super.hurtServer(level, source, damage * stun * dev.forja.difficulty.Bosses.othersShare(source));
 	}
 
 	@Override
 	public void tick() {
+		// Nobody left in the graveyard: the fight stands exactly where it was, him included.
+		if (this.level() instanceof ServerLevel yard && yard.dimension() == dev.forja.world.StarYard.LEVEL
+			&& dev.forja.world.StarFight.fighters(yard).isEmpty()) {
+			return;
+		}
 		super.tick();
 		if (!(this.level() instanceof ServerLevel level)) {
 			return;
@@ -453,8 +616,8 @@ public class FallenSmith extends Monster implements GeoEntity {
 			this.raging--;
 		}
 		boolean hot = this.reforging > 0 || this.raging > 0 || this.getHealth() / this.getMaxHealth() <= 0.25F;
-		if ((this.reforging > 0) != this.entityData.get(DATA_REFORGING)) {
-			this.entityData.set(DATA_REFORGING, this.reforging > 0);
+		if (this.isReforging() != this.entityData.get(DATA_REFORGING)) {
+			this.entityData.set(DATA_REFORGING, this.isReforging());
 		}
 		if (hot != this.entityData.get(DATA_RAGING)) {
 			this.entityData.set(DATA_RAGING, hot);
@@ -471,6 +634,41 @@ public class FallenSmith extends Monster implements GeoEntity {
 		if (this.tickCount % 6 == 0) {
 			level.sendParticles(dev.forja.registry.ModParticles.CENIZA,
 				this.getX(), this.getY(1.4), this.getZ(), 2, 0.6, 0.5, 0.6, 0.01);
+		}
+		this.rise(level);
+		if (this.aegis > 0 && --this.aegis == 0) {
+			var max = this.getAttribute(Attributes.MAX_ABSORPTION);
+			if (max != null) {
+				max.removeModifier(AEGIS);
+			}
+			this.setAbsorptionAmount(0.0F);
+		}
+		if (this.falling > 0 || this.settling > 0) {
+			this.fall(level);
+			return;
+		}
+		if (this.stunned > 0) {
+			this.windup.cancel();
+			if (this.tickCount % 4 == 0) {
+				level.sendParticles(ParticleTypes.CRIT, this.getX(), this.getY(2.1), this.getZ(), 4, 0.5, 0.1, 0.5, 0.05);
+			}
+			if (--this.stunned == 0) {
+				this.letGo();
+			}
+			return;
+		}
+		if (this.phaseGuard > 0) {
+			this.windup.cancel();
+			if (--this.phaseGuard == 0) {
+				this.letGo();
+			}
+			return;
+		}
+		if (this.starReforge == 1) {
+			this.wave = 0;
+			this.windup.cancel();
+			this.starReforgeTick(level);
+			return;
 		}
 		if (this.reforging > 0) {
 			this.wave = 0;
@@ -494,17 +692,32 @@ public class FallenSmith extends Monster implements GeoEntity {
 			return;
 		}
 		float share = this.getHealth() / this.getMaxHealth();
-		if (!this.calledHelp && share <= 0.75F) {
+		// The phases (docs/HERRERO_DIMENSION.md, 3.3): apprentices at two thirds and at one third, and the sky
+		// at the second. Each only once, and each opens with the pause they come up in.
+		if (this.wavesCalled < 1 && share <= 2.0F / 3.0F) {
+			this.wavesCalled = 1;
 			this.calledHelp = true;
-			this.callApprentices(level);
+			this.phaseShift(level);
+			return;
 		}
-		if (this.embersLeft == 0 && share <= 0.5F && this.calledHelp && !this.broughtSky) {
-			this.startReforge(level);
-		}
-		if (!this.broughtSky && share <= 0.25F) {
+		if (this.wavesCalled < 2 && share <= 1.0F / 3.0F) {
+			this.wavesCalled = 2;
 			this.broughtSky = true;
+			this.phaseShift(level);
 			this.triggerAnim("boss", "roar");
 			this.phaseBreak(level);
+			return;
+		}
+		// At half, between the two: the reforge. In the graveyard it is the Reforjado estelar.
+		if (share <= 0.5F && this.wavesCalled == 1) {
+			if (this.inYard()) {
+				if (this.starReforge == 0) {
+					this.startStarReforge(level);
+					return;
+				}
+			} else if (this.embersLeft == 0) {
+				this.startReforge(level);
+			}
 		}
 		// Not over one of his own blows: a special under way finishes first, and the shower waits for the next time.
 		if (this.broughtSky && this.starfall == 0 && this.tickCount % 60 == 0 && this.getTarget() != null && !this.windup.charging()) {
@@ -831,26 +1044,179 @@ public class FallenSmith extends Monster implements GeoEntity {
 		}
 	}
 
-	/** The apprentices: four of them, in his own gear, all at once. */
+	/**
+	 * A change of phase (docs/HERRERO_DIMENSION.md, 3.4): the hammer goes into the floor, he cannot be hurt
+	 * for PHASE_GUARD ticks, and his apprentices come up out of the ground round him.
+	 */
+	private void phaseShift(ServerLevel level) {
+		this.phaseGuard = PHASE_GUARD;
+		this.holdStill();
+		this.getNavigation().stop();
+		this.windup.cancel();
+		Shockwave.burst(level, this.position(), PHASE_RING_REACH, PHASE_RING_TICKS, Shockwave.VIOLET);
+		this.callApprentices(level);
+	}
+
+	/**
+	 * The apprentices (docs 3.5): 4, and 3 more for each player after the first, in rings of regular
+	 * polygons round him (world/Formation). They come up out of the floor like the dead: below it at first,
+	 * rising through it with the floor breaking round them and the sound of digging, and nothing touches
+	 * them until they are out.
+	 */
 	private void callApprentices(ServerLevel level) {
 		// Not the roar of his last quarter: the hammer goes down on the floor and they come up out of it.
 		this.triggerAnim("boss", "call");
 		this.lightForge(RAGE_TICKS * 2);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 4.0F, 0.7F);
-		for (int i = 0; i < 4; i++) {
+		int players = Math.max(1, dev.forja.world.StarFight.fightersNear(level, this).size());
+		int count = dev.forja.world.Formation.count(players);
+		List<Vec3> offsets = dev.forja.world.Formation.offsets(count);
+		List<Integer> rings = dev.forja.world.Formation.ringOf(count);
+		double floor = this.getY();
+		for (int i = 0; i < offsets.size(); i++) {
 			Mob apprentice = (Mob) net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE
 				.getValue(net.minecraft.world.entity.EntityTypeIds.WITHER_SKELETON).create(level, EntitySpawnReason.EVENT);
 			if (apprentice == null) {
 				continue;
 			}
-			double angle = i * Math.PI / 2.0;
-			apprentice.snapTo(this.getX() + Math.cos(angle) * 3.0, this.getY(), this.getZ() + Math.sin(angle) * 3.0, 0.0F, 0.0F);
+			Vec3 at = this.position().add(offsets.get(i));
+			apprentice.snapTo(at.x, floor - RISE_DEPTH, at.z, (float) Math.toDegrees(Math.atan2(-offsets.get(i).x, offsets.get(i).z)) + 180.0F, 0.0F);
 			dev.forja.world.Elites.makeElite(apprentice, level.getRandom());
 			apprentice.setCustomName(Component.translatable("entity.forja.aprendiz"));
-			// His, not just four more elites: they go for whatever goes for him.
+			// His, not just more elites: they go for whatever goes for him.
 			dev.forja.world.Apprentices.enlist(apprentice);
 			level.addFreshEntity(apprentice);
+			// Buried after it is added: a buried apprentice being loaded is one a save caught half out, and is set free.
+			dev.forja.world.Apprentices.bury(apprentice, floor);
+			this.risers.add(new Riser(apprentice.getUUID(), floor, rings.get(i) * RISE_STAGGER));
 		}
+	}
+
+	/** One tick of every apprentice still coming up. */
+	private void rise(ServerLevel level) {
+		for (int i = this.risers.size() - 1; i >= 0; i--) {
+			Riser riser = this.risers.get(i);
+			if (!(level.getEntity(riser.id) instanceof Mob apprentice) || !apprentice.isAlive()) {
+				this.risers.remove(i);
+				continue;
+			}
+			if (riser.delay > 0) {
+				riser.delay--;
+				continue;
+			}
+			riser.ticks++;
+			double share = Math.min(1.0, riser.ticks / (double) RISE_TICKS);
+			apprentice.setPos(apprentice.getX(), riser.floor - RISE_DEPTH + RISE_DEPTH * share, apprentice.getZ());
+			apprentice.setDeltaMovement(Vec3.ZERO);
+			net.minecraft.core.BlockPos under = net.minecraft.core.BlockPos.containing(apprentice.getX(), riser.floor - 0.5, apprentice.getZ());
+			net.minecraft.world.level.block.state.BlockState ground = level.getBlockState(under);
+			if (!ground.isAir()) {
+				level.sendParticles(new net.minecraft.core.particles.BlockParticleOption(ParticleTypes.BLOCK, ground),
+					apprentice.getX(), riser.floor + 0.1, apprentice.getZ(), 8, 0.35, 0.1, 0.35, 0.15);
+			}
+			if (riser.ticks % 10 == 1) {
+				level.playSound(null, apprentice.getX(), riser.floor, apprentice.getZ(), SoundEvents.WARDEN_DIG, SoundSource.HOSTILE, 1.2F, 1.4F);
+			}
+			if (riser.ticks >= RISE_TICKS) {
+				dev.forja.world.Apprentices.unbury(apprentice);
+				this.risers.remove(i);
+			}
+		}
+	}
+
+	/** Stops him for a pause of his own, remembering whether something else had stopped him already. */
+	private void holdStill() {
+		if (!this.isNoAi()) {
+			this.heldStill = false;
+			this.setNoAi(true);
+		} else if (this.phaseGuard == 0 && this.stunned == 0 && this.starReforge != 1) {
+			this.heldStill = true;
+		}
+	}
+
+	private void letGo() {
+		if (!this.heldStill) {
+			this.setNoAi(false);
+		}
+	}
+
+	/** Whether any of his apprentices is still coming up out of the ground. */
+	public boolean apprenticesRising() {
+		return !this.risers.isEmpty();
+	}
+
+	// ------------------------------------------------------------------ the Reforjado estelar (docs 3.7)
+
+	/**
+	 * At half, in the graveyard: he kneels on the disc in the middle and lights his forge fires on the four
+	 * diagonals, where the braseros' metal runs. Until the last of them is out he cannot be hurt, however
+	 * long it takes. The braseros are filled for the start of it.
+	 */
+	private void startStarReforge(ServerLevel level) {
+		this.starReforge = 1;
+		this.holdStill();
+		this.getNavigation().stop();
+		this.snapTo(0.5, dev.forja.world.StarYard.SURFACE + 1.0, 0.5, this.getYRot(), 0.0F);
+		this.triggerAnim("boss", "slam");
+		this.bar.setColor(BossEvent.BossBarColor.YELLOW);
+		int players = Math.max(1, dev.forja.world.StarFight.fightersNear(level, this).size());
+		int count = Math.min(EMBERS_MOST, EMBERS_BASE + players - 1);
+		this.embersAt.clear();
+		for (int i = 0; i < count; i++) {
+			double angle = Math.PI / 4.0 + (i % 4) * Math.PI / 2.0;
+			double radius = i < 4 ? 10.0 : 14.0;
+			net.minecraft.core.BlockPos at = new net.minecraft.core.BlockPos((int) Math.round(Math.cos(angle) * radius),
+				dev.forja.world.StarYard.SURFACE + 1, (int) Math.round(Math.sin(angle) * radius));
+			level.setBlockAndUpdate(at, dev.forja.registry.ModBlocks.BRASA_ESTELAR.defaultBlockState());
+			this.embersAt.add(at);
+		}
+		for (int i = 0; i < 4; i++) {
+			dev.forja.world.StarFight.refill(level, i);
+		}
+		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.BLAZE_SHOOT, SoundSource.HOSTILE, 4.0F, 0.4F);
+		for (ServerPlayer player : level.players()) {
+			player.sendSystemMessage(Component.translatable("gui.forja.pelea.reforjado", count).withColor(0xFFC24A));
+		}
+	}
+
+	private void starReforgeTick(ServerLevel level) {
+		this.lightForge(20);
+		int burning = 0;
+		for (net.minecraft.core.BlockPos at : this.embersAt) {
+			if (level.getBlockState(at).is(dev.forja.registry.ModBlocks.BRASA_ESTELAR)) {
+				burning++;
+				// The beam from each fire to him, that says what is keeping him whole.
+				if (this.tickCount % 5 == 0) {
+					Vec3 from = Vec3.atCenterOf(at);
+					Vec3 to = this.position().add(0.0, 1.4, 0.0);
+					for (int s = 1; s < 10; s++) {
+						Vec3 p = from.lerp(to, s / 10.0);
+						level.sendParticles(ParticleTypes.END_ROD, p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.0);
+					}
+				}
+			}
+		}
+		this.embersLeft = burning;
+		if (burning == 0) {
+			this.starReforge = 2;
+			this.stunned = STUN_TICKS;
+			this.bar.setColor(BossEvent.BossBarColor.RED);
+			Shockwave.burst(level, this.position(), PHASE_RING_REACH, PHASE_RING_TICKS, Shockwave.VIOLET);
+			level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.FIRE_EXTINGUISH, SoundSource.HOSTILE, 4.0F, 0.5F);
+			level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.WITHER_HURT, SoundSource.HOSTILE, 3.0F, 0.5F);
+			for (ServerPlayer player : level.players()) {
+				player.sendSystemMessage(Component.translatable("gui.forja.pelea.aturdido").withColor(0x9CFFD8));
+			}
+		}
+	}
+
+	/** Where his forge fires were lit, for the tests. */
+	public List<net.minecraft.core.BlockPos> embersAt() {
+		return List.copyOf(this.embersAt);
+	}
+
+	public int starReforge() {
+		return this.starReforge;
 	}
 
 	/** He goes back to the forge, lights three embers and waits. Put them out or wait him out. */
@@ -1089,7 +1455,10 @@ public class FallenSmith extends Monster implements GeoEntity {
 		// His heart, and one piece of what he was carrying.
 		level.addFreshEntity(new ItemEntity(level, this.getX(), this.getY(1.0), this.getZ(), new ItemStack(ModItems.CORAZON_DE_FORJA)));
 		level.addFreshEntity(new ItemEntity(level, this.getX(), this.getY(1.0), this.getZ(), Legends.create(level.getRandom(), level.registryAccess())));
-		level.addFreshEntity(new ItemEntity(level, this.getX(), this.getY(1.0), this.getZ(), new ItemStack(dev.forja.registry.ModItems.YUNQUE_DEL_HERRERO)));
+		// His anvil only the first time: a rematch in the graveyard is fought for the star, not the anvil.
+		if (!this.inYard() || dev.forja.world.StarFight.state(level).fights() == 0) {
+			level.addFreshEntity(new ItemEntity(level, this.getX(), this.getY(1.0), this.getZ(), new ItemStack(dev.forja.registry.ModItems.YUNQUE_DEL_HERRERO)));
+		}
 		// The hammer he was working with: the only thing that takes back a technique.
 		level.addFreshEntity(new ItemEntity(level, this.getX(), this.getY(1.0), this.getZ(),
 			new ItemStack(dev.forja.registry.ModItems.MARTILLO_DEL_MAESTRO)));
@@ -1187,15 +1556,54 @@ public class FallenSmith extends Monster implements GeoEntity {
 	 */
 	public int phase() {
 		float share = this.getHealth() / this.getMaxHealth();
-		if (share <= 0.25F) {
+		if (share <= 1.0F / 3.0F) {
 			return 3;
 		}
-		return share <= 0.5F ? 2 : 1;
+		return share <= 2.0F / 3.0F ? 2 : 1;
 	}
 
 	/** Whether he is in the stage where nothing can touch him, for the tests and the tooltip. */
 	public boolean isReforging() {
-		return this.reforging > 0;
+		return this.reforging > 0 || this.starReforge == 1;
+	}
+
+	// ------------------------------------------------------------------ what outlives a save
+
+	@Override
+	protected void addAdditionalSaveData(net.minecraft.world.level.storage.ValueOutput output) {
+		super.addAdditionalSaveData(output);
+		output.putInt("forja_cae", this.falling);
+		output.putInt("forja_asienta", this.settling);
+		output.putInt("forja_fase", this.phaseGuard);
+		output.putInt("forja_oleadas", this.wavesCalled);
+		output.putInt("forja_reforjado", this.starReforge);
+		output.putInt("forja_aturdido", this.stunned);
+		int[] embers = new int[this.embersAt.size() * 3];
+		for (int i = 0; i < this.embersAt.size(); i++) {
+			embers[i * 3] = this.embersAt.get(i).getX();
+			embers[i * 3 + 1] = this.embersAt.get(i).getY();
+			embers[i * 3 + 2] = this.embersAt.get(i).getZ();
+		}
+		output.putIntArray("forja_brasas", embers);
+	}
+
+	@Override
+	protected void readAdditionalSaveData(net.minecraft.world.level.storage.ValueInput input) {
+		super.readAdditionalSaveData(input);
+		this.falling = input.getIntOr("forja_cae", 0);
+		this.settling = input.getIntOr("forja_asienta", 0);
+		this.phaseGuard = input.getIntOr("forja_fase", 0);
+		this.wavesCalled = input.getIntOr("forja_oleadas", 0);
+		this.starReforge = input.getIntOr("forja_reforjado", 0);
+		this.stunned = input.getIntOr("forja_aturdido", 0);
+		this.calledHelp = this.wavesCalled >= 1;
+		this.broughtSky = this.wavesCalled >= 2;
+		this.embersAt.clear();
+		input.getIntArray("forja_brasas").ifPresent(packed -> {
+			for (int i = 0; i + 2 < packed.length; i += 3) {
+				this.embersAt.add(new net.minecraft.core.BlockPos(packed[i], packed[i + 1], packed[i + 2]));
+			}
+		});
 	}
 
 	public int embers() {

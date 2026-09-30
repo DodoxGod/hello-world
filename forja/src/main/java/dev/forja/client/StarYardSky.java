@@ -110,6 +110,8 @@ public final class StarYardSky {
 			STARS.add(new Star(at, size, colour, 0.4F + random.nextFloat() * 1.6F, random.nextFloat() * Mth.TWO_PI));
 		}
 		LevelRenderEvents.COLLECT_SUBMITS.register(StarYardSky::collect);
+		net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.registerGlobalReceiver(dev.forja.world.StarCast.TYPE,
+			(cast, context) -> context.client().execute(() -> receive(cast)));
 		ClientTickEvents.END_CLIENT_TICK.register(StarYardSky::tick);
 	}
 
@@ -184,14 +186,21 @@ public final class StarYardSky {
 				sprite(p, buffer, at, radius, star.size() * radius / 100.0F, star.colour(), alpha);
 			}
 		});
-		int poured = (int) (time / POUR_EVERY) % StarChart.CONSTELLATIONS.size();
-		float into = time % POUR_EVERY;
+		// A constellation cast in the fight takes the place of the idle pour: its lines in its colour, and the
+		// thread run round it in red when it favours him, in pale gold when it favours the players.
+		float sinceCast = (client.level.getGameTime() - castAt + partial);
+		boolean casting = castIndex >= 0 && sinceCast >= 0.0F && sinceCast < CAST_SHOWN;
+		int poured = casting ? castIndex : (int) (time / POUR_EVERY) % StarChart.CONSTELLATIONS.size();
+		float into = casting ? sinceCast / dev.forja.world.StarFight.CAST_TICKS * POUR_RUN : time % POUR_EVERY;
+		int thread = casting ? (castForBoss ? 0xFF3A2A : 0xB8FFE0) : 0xFFC24A;
+		int glow = casting ? TIER_COLOURS[castTier] : 0x9FB4FF;
 		layer(collector, 14).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> {
 			for (int i = 0; i < StarChart.CONSTELLATIONS.size(); i++) {
 				StarChart.Constellation c = StarChart.CONSTELLATIONS.get(i);
-				lines(p, buffer, c, radius, spin, 1.0F, 0x9FB4FF, 0.28F, 0.0045F);
+				boolean cast = casting && i == poured;
+				lines(p, buffer, c, radius, spin, 1.0F, cast ? glow : 0x9FB4FF, cast ? 0.85F : 0.28F, cast ? 0.008F : 0.0045F);
 				if (i == poured) {
-					lines(p, buffer, c, radius * 0.995F, spin, pourShare(into), 0xFFC24A, pourAlpha(into), 0.0075F);
+					lines(p, buffer, c, radius * 0.995F, spin, pourShare(into), thread, pourAlpha(into), 0.0095F);
 				}
 			}
 		});
@@ -199,11 +208,13 @@ public final class StarYardSky {
 			for (int i = 0; i < StarChart.CONSTELLATIONS.size(); i++) {
 				StarChart.Constellation c = StarChart.CONSTELLATIONS.get(i);
 				boolean hot = i == poured && into < POUR_RUN + POUR_HOLD + POUR_COOL;
+				int core = hot ? (casting ? glow : 0xFFE2A0) : 0xEAF0FF;
+				int halo = hot ? (casting ? thread : 0xFFA030) : 0x8FA8FF;
 				for (Vec3 star : c.stars()) {
 					Vec3 at = StarChart.turn(star, spin);
 					float alpha = starlight(at);
-					sprite(p, buffer, at, radius * 0.99F, radius * 0.012F, hot ? 0xFFE2A0 : 0xEAF0FF, alpha);
-					sprite(p, buffer, at, radius * 0.99F, radius * 0.03F, hot ? 0xFFA030 : 0x8FA8FF, 0.35F * alpha);
+					sprite(p, buffer, at, radius * 0.99F, radius * (hot && casting ? 0.018F : 0.012F), core, alpha);
+					sprite(p, buffer, at, radius * 0.99F, radius * (hot && casting ? 0.05F : 0.03F), halo, 0.35F * alpha);
 				}
 			}
 		});
@@ -544,10 +555,44 @@ public final class StarYardSky {
 				Mth.lerp(share, data.color.z(), 0.12F),
 				data.color.w());
 		}
+		// The Guadaña's ash storm closes the fog in to twenty blocks while it blows.
+		net.minecraft.client.multiplayer.ClientLevel level = Minecraft.getInstance().level;
+		if (level != null && level.getGameTime() < stormUntil && !fogOff) {
+			data.environmentalStart = Math.min(data.environmentalStart, 2.0F);
+			data.environmentalEnd = Math.min(data.environmentalEnd, 20.0F);
+			data.color.set(0.26F, 0.24F, 0.27F, data.color.w());
+			return;
+		}
 		float open = fogOff ? 1.0F : (float) Mth.clamp((camera.position().y - 110.0) / 40.0, 0.0, 1.0);
 		if (open > 0.0F) {
 			data.environmentalStart = Mth.lerp(open, data.environmentalStart, data.renderDistanceEnd * 4.0F);
 			data.environmentalEnd = Mth.lerp(open, data.environmentalEnd, data.renderDistanceEnd * 4.0F + 64.0F);
+		}
+	}
+
+	// ------------------------------------------------------------------ the fight's constellations
+
+	/** The five colours a constellation lights up in, weakest first: silver, copper, gold, star blue, crimson. */
+	public static final int[] TIER_COLOURS = {0xDDE4F0, 0xE08A4A, 0xFFD24A, 0x5AA8FF, 0xE0203A};
+	/** How long a cast constellation stays lit: the cast, and the moment after it lands. */
+	private static final float CAST_SHOWN = dev.forja.world.StarFight.CAST_TICKS + 40.0F;
+	private static int castIndex = -1;
+	private static int castTier;
+	private static boolean castForBoss;
+	private static long castAt;
+	private static long stormUntil;
+
+	private static void receive(dev.forja.world.StarCast cast) {
+		net.minecraft.client.multiplayer.ClientLevel level = Minecraft.getInstance().level;
+		if (level == null) {
+			return;
+		}
+		castIndex = cast.constellation();
+		castTier = cast.tier();
+		castForBoss = cast.forBoss();
+		castAt = level.getGameTime();
+		if (cast.stormTicks() > 0) {
+			stormUntil = level.getGameTime() + dev.forja.world.StarFight.CAST_TICKS + cast.stormTicks();
 		}
 	}
 

@@ -37,7 +37,10 @@ final class DimensionFootage {
 	}
 
 	static void run(ClientGameTestContext context) {
-		world(context, "cementerio-uno", "a", true);
+		// FORJA_PELEA_SOLO=1: only the fight, for looking at it again without the whole plateau.
+		if (System.getenv("FORJA_PELEA_SOLO") == null) {
+			world(context, "cementerio-uno", "a", true);
+		}
 		world(context, "cementerio-dos", "b", false);
 	}
 
@@ -49,21 +52,25 @@ final class DimensionFootage {
 			// A fixed wait: waiting for every chunk to render timed out on the second world.
 			context.waitTicks(100);
 			server.runCommand("gamerule spawn_mobs false");
-			server.runCommand("difficulty peaceful");
+			// World a films the plateau with no fight in it; world b has the fight, which wants monsters.
+			server.runCommand(full ? "difficulty peaceful" : "difficulty normal");
+			server.runOnServer(s -> dev.forja.world.StarFight.peaceForFootage = full);
 			long worldSeed = server.computeOnServer(s -> s.overworld().getSeed());
 			StarYardLayout layout = StarYardLayout.of(worldSeed);
 			log("dimension " + tag + ": seed '" + seed + "' = " + worldSeed + ", " + layout.rivers.length + " rios, "
 				+ layout.islets.length + " islotes, " + StarYardGenerator.forges(layout).size() + " forjas");
 			if (full) {
 				portalTrip(context, server, connection, tag);
-			}
-			enter(context, server, connection, tag);
-			if (full) {
+				enter(context, server, connection, tag);
 				film(context, server, connection, layout, tag);
+				leave(context, server, connection);
 			} else {
+				fight(context, server, connection, tag);
+				enter(context, server, connection, tag);
 				overview(context, server, connection, layout, tag);
+				leave(context, server, connection);
 			}
-			leave(context, server, connection);
+			server.runOnServer(s -> dev.forja.world.StarFight.peaceForFootage = false);
 		}
 	}
 
@@ -346,6 +353,191 @@ final class DimensionFootage {
 		view(context, server, graves.x, graves.y, graves.z, 0.5, S + 3, 0.5, p + "27_tumbas_sin_niebla");
 		view(context, server, high[0] + 0.5, high[2] + 8, high[1] + 0.5, 0.5, S, 0.5, p + "28_lejos_sin_niebla");
 		context.runOnClient(mc -> StarYardSky.fogOff = false);
+	}
+
+	// ------------------------------------------------------------------ the fight (delivery 3)
+
+	private static net.minecraft.server.level.ServerLevel yard(net.minecraft.server.MinecraftServer server) {
+		return server.getLevel(StarYard.LEVEL);
+	}
+
+	/** A creative player flying at a spot, looking at a point: out of his reach, and still in the graveyard's count. */
+	private static void hover(ClientGameTestContext context, TestServerContext server, TestServerConnection connection,
+		double x, double y, double z, double lx, double ly, double lz) {
+		server.runOnServer(s -> {
+			var player = connection.getServerPlayer();
+			player.getAbilities().flying = true;
+			player.onUpdateAbilities();
+		});
+		double dx = lx - x;
+		double dy = ly - (y + 1.62);
+		double dz = lz - z;
+		float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+		float pitch = (float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
+		for (int tick = 0; tick < 4; tick++) {
+			server.runCommand(String.format(Locale.ROOT, "execute in %s run tp @a %.2f %.2f %.2f %.2f %.2f", DIM, x, y, z, yaw, pitch));
+			context.waitTicks(1);
+		}
+	}
+
+	private static String smith(TestServerContext server) {
+		return server.computeOnServer(s -> {
+			var boss = dev.forja.world.StarFight.boss(yard(s));
+			return boss == null ? "none" : String.format(Locale.ROOT, "health %.0f, phase %d, waves %d, reforge %d, stunned %b, falling %b",
+				boss.getHealth(), boss.phase(), boss.wavesCalled(), boss.starReforge(), boss.isStunned(), boss.isFalling());
+		});
+	}
+
+	private static void setHealth(TestServerContext server, float share) {
+		server.runOnServer(s -> {
+			var boss = dev.forja.world.StarFight.boss(yard(s));
+			if (boss != null) {
+				boss.setHealth(boss.getMaxHealth() * share);
+			}
+		});
+	}
+
+	/**
+	 * Delivery 3, the whole fight, sped up with commands: in, the star falls and he stands up; the sky
+	 * casts one constellation for him and one for the players; the second phase and his apprentices coming
+	 * up out of the ground; the Reforjado estelar, put out by tipping three braseros with real clicks; the
+	 * stun; the third phase; his death, the star home and the cold forge; the Estrella forjada in the bag;
+	 * and home with a real click on the star.
+	 */
+	private static void fight(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, String tag) {
+		String p = "dimension_" + tag + "_f";
+		server.runCommand("gamemode creative @a");
+		server.runCommand("execute as @a run forja dimension");
+		context.runOnClient(mc -> {
+			mc.options.fov().set(80);
+			mc.options.renderDistance().set(12);
+			if (!mc.gui.hud.isHidden()) {
+				mc.gui.hud.toggle();
+			}
+		});
+		// The fall: from where you arrive, looking up over the arena.
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 6, -34.5, 0.5, StarYard.SURFACE + 60, 0.5);
+		long start = context.computeOnClient(mc -> mc.level.getGameTime());
+		context.waitTicks(dev.forja.world.StarFight.ARRIVAL_DELAY + 12);
+		shot(context, p + "01_cae_la_estrella");
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 6, -34.5, 0.5, StarYard.SURFACE + 25, 0.5);
+		context.waitTicks(14);
+		shot(context, p + "02_cae_cerca");
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 5, -20.5, 0.5, StarYard.SURFACE + 1, 0.5);
+		context.waitTicks(18);
+		shot(context, p + "03_impacto");
+		context.waitTicks(30);
+		log("dimension: after the fall, " + smith(server));
+		check(smith(server).contains("falling false"), "he should be on his feet after the fall: " + smith(server));
+		shot(context, p + "04_en_pie");
+		// Two constellations: one for him (the Espada's burning line) and one for the players (the Lanza).
+		server.runOnServer(s -> dev.forja.world.StarFight.cast(yard(s), dev.forja.world.StarFight.boss(yard(s)), dev.forja.world.StarFight.ESPADA, 3));
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 14, -18.5, 0.5, StarYard.SURFACE + 1, 0.5);
+		context.waitTicks(30);
+		shot(context, p + "05_espada_aviso_suelo");
+		long now = context.computeOnClient(mc -> mc.level.getGameTime());
+		Vec3 up = StarYardSky.constellationAt(dev.forja.world.StarFight.ESPADA, now);
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 3, -18.5, 0.5 + up.x * 40, StarYard.SURFACE + 3 + up.y * 40, -18.5 + up.z * 40);
+		context.waitTicks(8);
+		shot(context, p + "06_espada_cielo_herrero");
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 14, -18.5, 0.5, StarYard.SURFACE + 1, 0.5);
+		context.waitTicks(30);
+		shot(context, p + "07_espada_arde");
+		context.waitTicks(40);
+		server.runOnServer(s -> dev.forja.world.StarFight.cast(yard(s), dev.forja.world.StarFight.boss(yard(s)), dev.forja.world.StarFight.LANZA, 2));
+		now = context.computeOnClient(mc -> mc.level.getGameTime());
+		up = StarYardSky.constellationAt(dev.forja.world.StarFight.LANZA, now);
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 3, -18.5, 0.5 + up.x * 40, StarYard.SURFACE + 3 + up.y * 40, -18.5 + up.z * 40);
+		context.waitTicks(30);
+		shot(context, p + "08_lanza_cielo_jugadores");
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 10, -14.5, 0.5, StarYard.SURFACE + 1, 0.5);
+		context.waitTicks(32);
+		shot(context, p + "09_lanzas_caen");
+		// The second phase: the apprentices come up out of the ground.
+		context.waitTicks(20);
+		setHealth(server, 0.62F);
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 5, -9.5, 0.5, StarYard.SURFACE + 1, 0.5);
+		context.waitTicks(12);
+		shot(context, p + "10_salen_de_la_tierra");
+		context.waitTicks(18);
+		shot(context, p + "11_medio_fuera");
+		context.waitTicks(40);
+		shot(context, p + "12_aprendices_fuera");
+		log("dimension: after two thirds, " + smith(server));
+		check(smith(server).contains("waves 1"), "the first wave should have come at two thirds: " + smith(server));
+		// The Reforjado estelar.
+		setHealth(server, 0.45F);
+		context.waitTicks(10);
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 18, -16.5, 0.5, StarYard.SURFACE + 1, 0.5);
+		context.waitTicks(20);
+		shot(context, p + "13_reforjado_brasas");
+		check(smith(server).contains("reforge 1"), "the Reforjado estelar should burn at half: " + smith(server));
+		// Three braseros tipped by hand: a click on each bowl from beside it.
+		for (int i = 0; i < 3; i++) {
+			net.minecraft.core.BlockPos bowl = dev.forja.world.StarFight.brazier(i);
+			Vec3 out = new Vec3(bowl.getX(), 0, bowl.getZ()).normalize();
+			hover(context, server, connection, bowl.getX() + 0.5 + out.x * 2.5, bowl.getY() - 0.5, bowl.getZ() + 0.5 + out.z * 2.5,
+				bowl.getX() + 0.5, bowl.getY() + 0.5, bowl.getZ() + 0.5);
+			context.waitTicks(10);
+			context.getInput().holdKey(options -> options.keyAttack);
+			context.waitTicks(2);
+			context.getInput().releaseKey(options -> options.keyAttack);
+			context.waitTicks(4);
+			if (i == 0) {
+				hover(context, server, connection, 0.5, StarYard.SURFACE + 18, -16.5, 0.5, StarYard.SURFACE + 1, 0.5);
+				context.waitTicks(28);
+				shot(context, p + "14_colada_del_brasero");
+			}
+		}
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 18, -16.5, 0.5, StarYard.SURFACE + 1, 0.5);
+		context.waitTicks(dev.forja.world.StarFight.FLOW_TICKS + 10);
+		log("dimension: after the braseros, " + smith(server));
+		check(smith(server).contains("reforge 2") && smith(server).contains("stunned true"), "the braseros should put out his forge and stun him: " + smith(server));
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 5, -8.5, 0.5, StarYard.SURFACE + 1.5, 0.5);
+		context.waitTicks(5);
+		shot(context, p + "15_aturdido");
+		// The third phase, and the end.
+		context.waitTicks(100);
+		setHealth(server, 0.3F);
+		context.waitTicks(30);
+		shot(context, p + "16_fase_tres");
+		context.waitTicks(80);
+		server.runOnServer(s -> {
+			var boss = dev.forja.world.StarFight.boss(yard(s));
+			if (boss != null) {
+				boss.setHealth(1.0F);
+				boss.invulnerableTime = 0;
+				boss.hurtServer(yard(s), yard(s).damageSources().playerAttack(connection.getServerPlayer()), 50.0F);
+			}
+		});
+		context.waitTicks(20);
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 8, -16.5, 2.5, StarYard.SURFACE + 30, 0.5);
+		context.waitTicks(20);
+		shot(context, p + "17_cae_la_estrella_de_vuelta");
+		context.waitTicks(40);
+		hover(context, server, connection, 0.5, StarYard.SURFACE + 3, -6.5, 1.5, StarYard.SURFACE + 1.5, 0.5);
+		context.waitTicks(20);
+		shot(context, p + "18_estrella_y_fragua");
+		String after = server.computeOnServer(s -> {
+			var level = yard(s);
+			return dev.forja.world.StarFight.state(level).stage() + " " + level.getBlockState(dev.forja.world.StarFight.returnStarAt())
+				+ " " + level.getBlockState(dev.forja.world.StarFight.forgeAt()) + " bolsa "
+				+ connection.getServerPlayer().getInventory().countItem(dev.forja.registry.ModItems.ESTRELLA_FORJADA)
+				+ " debidas " + dev.forja.world.StarFight.state(level).owed().size()
+				+ " estrellas " + dev.forja.world.StarFight.paidForTests(connection.getServerPlayer().getUUID());
+		});
+		log("dimension: after his death, " + after);
+		check(after.startsWith("WON") && after.contains("estrella_de_vuelta") && after.contains("fragua_fria_estelar") && after.endsWith("estrellas 1"),
+			"his death should leave the star home, the cold forge and one Estrella forjada: " + after);
+		// Home, with a click on the star.
+		server.runCommand("gamemode survival @a");
+		standAndLook(context, server, 2.5, StarYard.SURFACE + 1, -1.5, 2.5, StarYard.SURFACE + 1.4, 0.5);
+		use(context);
+		context.waitTicks(40);
+		boolean home = context.computeOnClient(mc -> !StarYardSky.here());
+		check(home, "the star home should take the player back");
+		shot(context, p + "19_de_vuelta");
+		log("dimension: the fight took " + (context.computeOnClient(mc -> mc.level.getGameTime()) - start) + " ticks of footage");
 	}
 
 	/** World b: the views to set beside world a's. */

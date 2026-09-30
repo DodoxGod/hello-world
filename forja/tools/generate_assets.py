@@ -3409,6 +3409,8 @@ PICKAXE_BLOCKS = [
     "forja:arma_clavada", "forja:metal_fundido",
     # The star portal (tools/dimension_assets.py): unbreakable, like the end portal's frame, but in a list.
     "forja:mensula_estelar", "forja:portal_estelar",
+    # The Fallen Smith's fight: none of them can be broken.
+    "forja:brasa_estelar", "forja:estrella_de_vuelta", "forja:fragua_fria_estelar",
 ]
 
 

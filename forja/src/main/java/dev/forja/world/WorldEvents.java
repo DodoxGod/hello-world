@@ -138,7 +138,10 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 	 * it, with the sky never mentioned. Something falling out of the sky should be **seen falling** —
 	 * it is the rarest thing the mod does and it lasted one tick.
 	 */
-	private record Falling(ServerLevel level, BlockPos ground, int left, dev.forja.entity.Shockwave mark) {
+	private record Falling(ServerLevel level, BlockPos ground, int left, dev.forja.entity.Shockwave mark, float foes) {
+		Falling(ServerLevel level, BlockPos ground, int left, dev.forja.entity.Shockwave mark) {
+			this(level, ground, left, mark, 0.0F);
+		}
 	}
 
 	private static final java.util.List<Falling> INBOUND = new java.util.ArrayList<>();
@@ -213,6 +216,21 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 	}
 
 	/**
+	 * A meteorite the Cementerio entre Estrellas sends during the Fallen Smith's fight (docs/HERRERO_DIMENSION.md,
+	 * 3.6 and 3.7): the same warning and fall, no crater (the arena does not change), its star iron where it
+	 * lands, and {@code foes} damage to what is not a player within its blast. The rod still draws it.
+	 */
+	public static void skyMeteor(ServerLevel level, BlockPos ground, float foes) {
+		BlockPos landing = drawnTo(level, ground);
+		INBOUND.add(new Falling(level, landing, FALL_TICKS, landingMark(level, landing), foes));
+	}
+
+	/** How many meteorites are still on their way down in this level: for the tests. */
+	public static int falling(ServerLevel level) {
+		return (int) INBOUND.stream().filter(falling -> falling.level() == level).count();
+	}
+
+	/**
 	 * Where a meteorite meant for {@code ground} actually comes down: on the nearest Pararrayos de estrellas
 	 * in reach (block/StarRodBlock#attract), or where it was going. Decided as it appears, so the warning
 	 * ring and the chat line already point at the rod.
@@ -243,6 +261,8 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 				// A rod still standing where it was drawn to takes it whole: no crater, and the star iron at its foot.
 				if (dev.forja.block.StarRodBlock.takeStrike(level, falling.ground())) {
 					dropStarIron(level, falling.ground());
+				} else if (level.dimension() == StarYard.LEVEL) {
+					skyStrike(level, falling.ground(), falling.foes());
 				} else {
 					strike(level, falling.ground());
 				}
@@ -255,7 +275,7 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 				dev.forja.entity.Shockwave.burst(level, centre, 11.0, 16, 0xFFC27A, 1.0F);
 				continue;
 			}
-			INBOUND.set(index, new Falling(level, falling.ground(), left, falling.mark()));
+			INBOUND.set(index, new Falling(level, falling.ground(), left, falling.mark(), falling.foes()));
 			// Where it is now: straight down the line, easing in the way a falling thing does.
 			double share = left / (double) FALL_TICKS;
 			double height = falling.ground().getY() + dev.forja.entity.Shockwave.fallHeight(FALL_HEIGHT, share);
@@ -303,6 +323,23 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 		int pieces = 3 + level.getRandom().nextInt(4);
 		ItemStack iron = new ItemStack(dev.forja.registry.ModItems.HIERRO_ESTELAR, pieces);
 		level.addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(level, ground.getX() + 0.5, ground.getY() + 0.5, ground.getZ() + 0.5, iron));
+	}
+
+	/** The moment one arrives in the graveyard: no crater, the iron, and the blast on what is not a player. */
+	private static void skyStrike(ServerLevel level, BlockPos ground, float foes) {
+		dropStarIron(level, ground);
+		if (foes > 0.0F) {
+			net.minecraft.world.phys.AABB blast = new net.minecraft.world.phys.AABB(ground).inflate(3.5, 2.0, 3.5);
+			for (net.minecraft.world.entity.LivingEntity hit : level.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class, blast,
+				living -> living.isAlive() && !(living instanceof net.minecraft.world.entity.player.Player))) {
+				hit.invulnerableTime = 0;
+				hit.hurtServer(level, level.damageSources().magic(), foes);
+			}
+		}
+		level.playSound(null, ground, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.AMBIENT, 4.0F, 0.6F);
+		level.sendParticles(ParticleTypes.EXPLOSION, ground.getX() + 0.5, ground.getY() + 1.0, ground.getZ() + 0.5, 6, 1.5, 0.8, 1.5, 0.0);
+		level.sendParticles(dev.forja.registry.ModParticles.CHISPA,
+			ground.getX() + 0.5, ground.getY() + 1.0, ground.getZ() + 0.5, 40, 1.2, 0.6, 1.2, 0.6);
 	}
 
 	/** The moment it arrives. */

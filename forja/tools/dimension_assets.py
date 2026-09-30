@@ -304,12 +304,39 @@ def portal(gen):
     write_json(gen.ASSETS / "blockstates/portal_estelar.json", {"variants": {"": {"model": "forja:block/portal_estelar"}}})
 
 
+GOLD_STAR = [(0.0, (120, 60, 10)), (0.4, (232, 150, 40)), (0.75, (255, 214, 110)), (1.0, (255, 250, 222))]
+EMBER_GOLD = [(0.0, (150, 60, 0)), (0.5, (255, 170, 40)), (1.0, (255, 250, 200))]
+
+
+def fight(gen):
+    """The fight's own pieces (docs/HERRERO_DIMENSION.md, 3 and 4): the forge fires, the star home, the cold
+    forge of a rematch and the Estrella forjada."""
+    items = gen.ASSETS / "textures/item"
+    blocks = gen.ASSETS / "textures/block"
+    # The Estrella forjada: the nether star, in gold.
+    recolour(gen.vanilla("item/nether_star.png"), GOLD_STAR).save(items / "estrella_forjada.png")
+    write_json(gen.ASSETS / "models/item/estrella_forjada.json", {"parent": "minecraft:item/generated", "textures": {"layer0": "forja:item/estrella_forjada"}})
+    write_json(gen.ASSETS / "items/estrella_forjada.json", {"model": {"type": "minecraft:model", "model": "forja:item/estrella_forjada"}})
+    # The star home: the same star, pale, stood up as a cross that shines from every side.
+    recolour(gen.vanilla("item/nether_star.png"), [(0.0, (180, 150, 90)), (0.6, (255, 236, 170)), (1.0, (255, 255, 250))]).save(blocks / "estrella_de_vuelta.png")
+    write_json(gen.ASSETS / "models/block/estrella_de_vuelta.json", {"parent": "minecraft:block/cross", "textures": {"cross": "forja:block/estrella_de_vuelta"}})
+    write_json(gen.ASSETS / "blockstates/estrella_de_vuelta.json", {"variants": {"": {"model": "forja:block/estrella_de_vuelta"}}})
+    # A forge fire: vanilla fire's frames, gone to star gold.
+    recolour(whole(gen, "block/fire_0.png"), EMBER_GOLD).save(blocks / "brasa_estelar.png")
+    write_json(blocks / "brasa_estelar.png.mcmeta", json.loads(gen.jar_read("assets/minecraft/textures/block/fire_0.png.mcmeta")))
+    write_json(gen.ASSETS / "models/block/brasa_estelar.json", {"parent": "minecraft:block/cross", "textures": {"cross": "forja:block/brasa_estelar"}})
+    write_json(gen.ASSETS / "blockstates/brasa_estelar.json", {"variants": {"": {"model": "forja:block/brasa_estelar"}}})
+    # The cold forge of a rematch is the dead forge the castle always had.
+    write_json(gen.ASSETS / "blockstates/fragua_fria_estelar.json", {"variants": {"": {"model": "forja:block/fragua_apagada"}}})
+
+
 def generate(gen):
     textures(gen)
     blocks(gen)
     particle(gen)
     sounds(gen)
     portal(gen)
+    fight(gen)
     tags(gen)
 
 

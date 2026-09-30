@@ -39,7 +39,8 @@
 			"dev.forja.test.RedV4GameTests",
 			"dev.forja.test.BlazeGameTests",
 			"dev.forja.test.DimensionGameTests",
-			"dev.forja.test.PortalGameTests"
+			"dev.forja.test.PortalGameTests",
+			"dev.forja.test.PeleaEstelarGameTests"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"

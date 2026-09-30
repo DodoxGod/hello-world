@@ -65,6 +65,11 @@ public final class Assembler {
 	/** Receives components; lets the same code fill item properties at registration and stacks at runtime. */
 	public interface ComponentSink {
 		<T> void set(DataComponentType<T> type, T value);
+
+		/** Whether the piece being written carries the Estrella forjada (forge/ForgedStar): only a real stack knows. */
+		default boolean starred() {
+			return false;
+		}
 	}
 
 	public record Result(ItemStack stack, @Nullable List<PartType> missing) {
@@ -98,6 +103,11 @@ public final class Assembler {
 			@Override
 			public <T> void set(DataComponentType<T> type, T value) {
 				stack.set(type, value);
+			}
+
+			@Override
+			public boolean starred() {
+				return ForgedStar.starred(stack);
 			}
 		};
 	}
@@ -148,6 +158,9 @@ public final class Assembler {
 		ForgeMaterial primary = parts.primary();
 		ForgeStats.Sheet stats = ForgeStats.sheet(type, materials, upgrades, mastery, perk);
 		stats.scale(quality);
+		if (sink.starred()) {
+			ForgedStar.apply(stats);
+		}
 
 		sink.set(ModComponents.PARTS, parts);
 		sink.set(DataComponents.CUSTOM_MODEL_DATA, colors(materials));

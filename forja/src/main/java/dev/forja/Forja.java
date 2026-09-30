@@ -82,6 +82,8 @@ public final class Forja implements ModInitializer {
 		dev.forja.world.BossArena.register();
 		// El Cementerio entre Estrellas: its generator, before any world (or datapack) asks for it.
 		dev.forja.world.StarYard.register();
+		// The Fallen Smith's fight there (docs/HERRERO_DIMENSION.md, section 3).
+		dev.forja.world.StarFight.register();
 		dev.forja.world.Commissions.register();
 		dev.forja.world.WorldEvents.register();
 		dev.forja.world.ForgeRaiders.register();

@@ -289,6 +289,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 		if (stack.isEmpty() || stack.getItem() instanceof PartItem || UpgradeOrbItem.orb(stack) != null
 			|| stack.is(Items.ENCHANTED_BOOK) || dev.forja.forge.Potential.isFlux(stack)
 			|| stack.is(dev.forja.registry.ModItems.SELLO) || stack.is(dev.forja.registry.ModItems.CORAZON_DE_FORJA)
+			|| stack.is(dev.forja.registry.ModItems.ESTRELLA_FORJADA)
 			|| ForgeMaterial.fromInput(stack) != null) {
 			return true;
 		}
@@ -1164,7 +1165,7 @@ public class ForgeMenu extends AbstractContainerMenu {
 				&& this.sealedPact == null) {
 				this.forgePreview = this.application.result();
 				this.action = Action.UPGRADE;
-			} else if (this.planHeartRepair(gear, points) || this.planRepair(gear, points)) {
+			} else if (this.planStar(gear, points) || this.planHeartRepair(gear, points) || this.planRepair(gear, points)) {
 				this.application = null;
 				this.action = Action.REPAIR;
 			}
@@ -1201,6 +1202,25 @@ public class ForgeMenu extends AbstractContainerMenu {
 	 * Repair material on the star mends the center gear a quarter of its durability per item, like the
 	 * anvil, using only what it needs. Upgrades win when the same items could do both.
 	 */
+	/**
+	 * The Estrella forjada on the star of the greater forge sets itself in the piece in the middle, once
+	 * (docs/HERRERO_DIMENSION.md, 4). Only the greater forge: it is the Fallen Smith's own work.
+	 */
+	private boolean planStar(ItemStack gear, List<ItemStack> points) {
+		if (this.station != Station.FORJA_MAYOR || !dev.forja.forge.ForgedStar.takes(gear)) {
+			return false;
+		}
+		for (int i = 0; i < points.size(); i++) {
+			if (points.get(i).is(dev.forja.registry.ModItems.ESTRELLA_FORJADA)) {
+				this.forgePreview = dev.forja.forge.ForgedStar.star(gear);
+				java.util.Arrays.fill(this.repairUse, 0);
+				this.repairUse[i] = 1;
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** The heart of the fallen smith puts any forged piece back the way it was, once. */
 	private boolean planHeartRepair(ItemStack gear, List<ItemStack> points) {
 		if (!gear.isDamaged()) {

@@ -136,6 +136,9 @@ public final class ForgeStats {
 			Mastery.level(stack), Perk.of(stack)
 		);
 		sheet.scale(Quality.bonus(stack) + mixBonus(parts));
+		if (ForgedStar.starred(stack)) {
+			ForgedStar.apply(sheet);
+		}
 		if (Oxidation.full(stack)) {
 			// Copper that has gone all the way green holds together better than new copper.
 			sheet.durability = Math.round(sheet.durability * (1.0F + Oxidation.PATINA_DURABILITY));

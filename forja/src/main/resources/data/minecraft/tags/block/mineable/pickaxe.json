@@ -32,6 +32,9 @@
     "forja:arma_clavada",
     "forja:metal_fundido",
     "forja:mensula_estelar",
-    "forja:portal_estelar"
+    "forja:portal_estelar",
+    "forja:brasa_estelar",
+    "forja:estrella_de_vuelta",
+    "forja:fragua_fria_estelar"
   ]
 }

@@ -226,6 +226,10 @@ public final class Potential {
 			}
 		}
 		total += ANNEAL * upgrades.percent(Upgrade.RECOCIDO) / 100;
+		// The Estrella forjada: more potential at once, and a higher ceiling for it (forge/ForgedStar).
+		if (ForgedStar.starred(stack)) {
+			return Math.min(ForgedStar.MOST, total + ForgedStar.POTENTIAL_BONUS);
+		}
 		return Math.min(MOST, total);
 	}
 

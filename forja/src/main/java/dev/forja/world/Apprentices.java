@@ -16,12 +16,54 @@ public final class Apprentices {
 	private Apprentices() {
 	}
 
+	/** The tag of an apprentice still coming up out of the ground, and the one that remembers the floor it is coming up to. */
+	public static final String RISING = "forja_sube";
+	private static final String FLOOR = "forja_suelo_";
+
 	public static void register() {
 		ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
 			if (entity instanceof Mob mob && isApprentice(mob)) {
 				guard(mob);
+				// Caught half out of the ground by a save: the smith who was lifting it does not remember it,
+				// so it is set on its feet at once.
+				if (mob.entityTags().contains(RISING)) {
+					for (String tag : java.util.List.copyOf(mob.entityTags())) {
+						if (tag.startsWith(FLOOR)) {
+							mob.setPos(mob.getX(), Double.parseDouble(tag.substring(FLOOR.length())), mob.getZ());
+						}
+					}
+					unbury(mob);
+				}
 			}
 		});
+	}
+
+	/** Puts a freshly called apprentice below the floor, still and untouchable, ready to come up. */
+	public static void bury(Mob mob, double floor) {
+		mob.setNoAi(true);
+		mob.setInvulnerable(true);
+		mob.setNoGravity(true);
+		mob.noPhysics = true;
+		mob.addTag(RISING);
+		mob.addTag(FLOOR + floor);
+	}
+
+	/** Out of the ground: it moves, falls and can be hurt like anything else. */
+	public static void unbury(Mob mob) {
+		mob.setNoAi(false);
+		mob.setInvulnerable(false);
+		mob.setNoGravity(false);
+		mob.noPhysics = false;
+		for (String tag : java.util.List.copyOf(mob.entityTags())) {
+			if (tag.equals(RISING) || tag.startsWith(FLOOR)) {
+				mob.removeTag(tag);
+			}
+		}
+	}
+
+	/** Whether it is still coming up. */
+	public static boolean rising(Mob mob) {
+		return mob.entityTags().contains(RISING);
 	}
 
 	public static boolean isApprentice(Mob mob) {

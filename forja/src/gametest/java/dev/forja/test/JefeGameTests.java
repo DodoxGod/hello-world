@@ -92,8 +92,8 @@ public class JefeGameTests {
 	public void apprenticesGoForWhoeverHurtsTheSmith(GameTestHelper helper) {
 		Runnable restore = plainSpawns();
 		FallenSmith smith = stillSmith(helper, new BlockPos(4, 1, 4));
-		// Under three quarters: his next tick calls them.
-		smith.setHealth(smith.getMaxHealth() * 0.7F);
+		// Under two thirds: his next tick calls them (docs/HERRERO_DIMENSION.md, 3.3).
+		smith.setHealth(smith.getMaxHealth() * 0.6F);
 		// A spider, because a skeleton never goes for one by itself: if they do, it is for him.
 		LivingEntity spider = toughSpider(helper);
 		List<Mob> apprentices = new ArrayList<>();
@@ -132,7 +132,7 @@ public class JefeGameTests {
 	public void apprenticesJoinTheSmithsFight(GameTestHelper helper) {
 		Runnable restore = plainSpawns();
 		FallenSmith smith = stillSmith(helper, new BlockPos(4, 1, 4));
-		smith.setHealth(smith.getMaxHealth() * 0.7F);
+		smith.setHealth(smith.getMaxHealth() * 0.6F);
 		LivingEntity spider = toughSpider(helper);
 		List<Mob> apprentices = new ArrayList<>();
 		Set<Mob> joined = new HashSet<>();

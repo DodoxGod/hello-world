@@ -395,6 +395,50 @@ public final class ModBlocks {
 		)
 	);
 
+	/** Brasa estelar: one of the Fallen Smith's forge fires in the Reforjado estelar. See block/StarEmberBlock. */
+	public static final Block BRASA_ESTELAR = register(
+		"brasa_estelar",
+		new dev.forja.block.StarEmberBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.GOLD)
+				.strength(-1.0F, 3600000.0F)
+				.noCollision()
+				.noOcclusion()
+				.noLootTable()
+				.lightLevel(state -> 13)
+				.pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("brasa_estelar")))
+		)
+	);
+
+	/** Estrella de vuelta: the star that lands when he dies, and takes you home. See block/ReturnStarBlock. */
+	public static final Block ESTRELLA_DE_VUELTA = register(
+		"estrella_de_vuelta",
+		new dev.forja.block.ReturnStarBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.GOLD)
+				.strength(-1.0F, 3600000.0F)
+				.noOcclusion()
+				.noLootTable()
+				.lightLevel(state -> 15)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("estrella_de_vuelta")))
+		)
+	);
+
+	/** Fragua fría estelar: the forge a rematch is called at. See block/StarForgeBlock. */
+	public static final Block FRAGUA_FRIA_ESTELAR = register(
+		"fragua_fria_estelar",
+		new dev.forja.block.StarForgeBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.COLOR_BLACK)
+				.strength(-1.0F, 3600000.0F)
+				.sound(SoundType.ANCIENT_DEBRIS)
+				.noLootTable()
+				.lightLevel(state -> 4)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("fragua_fria_estelar")))
+		)
+	);
+
 	private ModBlocks() {
 	}
 

@@ -234,7 +234,8 @@ public class MaterialesGameTests {
 			// The Cementerio entre Estrellas' scenery has no item on purpose: the molten metal cannot be
 			// broken, and a grave's weapon is rust (docs/HERRERO_DIMENSION.md, 2.5 and 2.6).
 			if (id.getPath().equals("metal_fundido") || id.getPath().equals("arma_clavada")
-				|| id.getPath().equals("mensula_estelar") || id.getPath().equals("portal_estelar")) {
+				|| id.getPath().equals("mensula_estelar") || id.getPath().equals("portal_estelar")
+				|| id.getPath().equals("brasa_estelar") || id.getPath().equals("estrella_de_vuelta") || id.getPath().equals("fragua_fria_estelar")) {
 				continue;
 			}
 			checked++;

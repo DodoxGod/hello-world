@@ -167,6 +167,41 @@ public class ArmaduraGameTests {
 	 * Baluarte's price (Andy, 2026-09-29: "algo malo debe de tener"): the same chestplate with the gift has one
 	 * more armour point and counts 30 % heavier (slower walk, swing and stamina).
 	 */
+	/**
+	 * The Estrella forjada may take a set past the ceiling (Andy, 2026-09-29): +1 armour and +0.5 toughness a
+	 * piece. A starred set is held to netherite P4 + 5 and 2 more points for each starred piece instead, and
+	 * it has to be better than the same set without its stars.
+	 */
+	@GameTest
+	public void starredArmourMayPassTheCeiling(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		Holder<Enchantment> protection = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.PROTECTION);
+		Zombie zombie = EntityTypes.ZOMBIE.create(level, EntitySpawnReason.EVENT);
+		DamageSource blow = level.damageSources().mobAttack(zombie);
+		Measured netherite = measure(helper, blow, "netherita vanilla P4",
+			vanillaSet(protection, Items.NETHERITE_HELMET, Items.NETHERITE_CHESTPLATE, Items.NETHERITE_LEGGINGS, Items.NETHERITE_BOOTS));
+		for (ForgeMaterial material : new ForgeMaterial[] {ForgeMaterial.CORAZON, ForgeMaterial.OBSIDIACERO, ForgeMaterial.ACERO}) {
+			Measured plain = measure(helper, blow, material.getSerializedName(), forgedSet(level, material, false));
+			ItemStack[] set = forgedSet(level, material, false);
+			for (int i = 0; i < set.length; i++) {
+				set[i] = dev.forja.forge.ForgedStar.star(set[i]);
+			}
+			Measured starred = measure(helper, blow, material.getSerializedName() + " estrellada", set);
+			row(starred, netherite);
+			for (int k = 0; k < KINDS.length; k++) {
+				for (int z = 0; z < ZONES.length; z++) {
+					double over = starred.reduction(k, z) - netherite.reduction(k, z);
+					helper.assertTrue(over <= MAX_OVER_NETHERITE + 2.0 * PIECES.length,
+						material.getSerializedName() + " estrellada se pasa " + over + " puntos en " + ZONES[z] + "/" + KINDS[k]);
+					helper.assertTrue(starred.reduction(k, z) >= plain.reduction(k, z),
+						material.getSerializedName() + ": las estrellas no pueden empeorarla en " + ZONES[z] + "/" + KINDS[k]);
+				}
+			}
+			helper.assertTrue(starred.reduction(0, 1) > plain.reduction(0, 1), material.getSerializedName() + ": estrellada para más en el torso");
+		}
+		helper.succeed();
+	}
+
 	@GameTest
 	public void baluarteIsHeavier(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();

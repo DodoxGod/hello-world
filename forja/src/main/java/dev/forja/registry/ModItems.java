@@ -97,6 +97,8 @@ public final class ModItems {
 	public static Item ORICALCO;
 	public static Item PERLA_DE_ORICALCO;
 	public static Item MENSULA_ESTELAR;
+	/** La Estrella forjada: the Fallen Smith's reward, one per smith who fought him (forge/ForgedStar). */
+	public static Item ESTRELLA_FORJADA;
 	public static Item HUEVO_HERRERO_CAIDO;
 	public static Item HUEVO_AUTOMATA;
 	public static Item HUEVO_CORAZA;
@@ -271,6 +273,9 @@ public final class ModItems {
 			new Item.Properties().stacksTo(16).rarity(net.minecraft.world.item.Rarity.EPIC).fireResistant());
 		MENSULA_ESTELAR = register("mensula_estelar", p -> new BlockItem(ModBlocks.MENSULA_ESTELAR, p),
 			new Item.Properties().useBlockDescriptionPrefix().rarity(net.minecraft.world.item.Rarity.EPIC));
+		ESTRELLA_FORJADA = register("estrella_forjada", Item::new,
+			new Item.Properties().stacksTo(16).rarity(net.minecraft.world.item.Rarity.EPIC).fireResistant()
+				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true));
 		YUNQUE_PORTATIL = register("yunque_portatil", dev.forja.item.PortableAnvilItem::new,
 			new Item.Properties().stacksTo(1).durability(128).rarity(net.minecraft.world.item.Rarity.UNCOMMON)
 				.component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(
@@ -459,6 +464,7 @@ public final class ModItems {
 		stacks.add(new ItemStack(ORICALCO));
 		stacks.add(new ItemStack(PERLA_DE_ORICALCO));
 		stacks.add(new ItemStack(MENSULA_ESTELAR));
+		stacks.add(new ItemStack(ESTRELLA_FORJADA));
 		stacks.add(new ItemStack(TUBO_DE_CALOR));
 		stacks.add(new ItemStack(CALDERA));
 		stacks.add(new ItemStack(DEPOSITO_DE_CALOR));
