@@ -4,12 +4,20 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 
+import dev.forja.mixin.NoiseColumnAccess;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.tags.BiomeTags;
+import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.biome.Climate;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
 
@@ -31,22 +39,49 @@ import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
  * column) at the start and the four corners first, a column asks for the water under it only when its surface is
  * at sea level. Andy (2026-09-29) wants the site flatter even if there are fewer: at most 14 blocks between the
  * highest and lowest ground sampled, and the start within 4 of the median. {@link #report()} says where the candidates went.
+ *
+ * <p>So strict a test leaves most worlds without a castle anywhere near spawn (Andy found his nearest one 26,000
+ * blocks out): every world also gets one "home" castle, chosen by {@link BastionHome} with the same test and slightly
+ * wider {@link Limits}. The home chunk has already been surveyed, so {@link #suitable(Structure.GenerationContext)}
+ * lets it through without asking again.
  */
 public final class BastionGround {
 	/** Half the width of the ground looked at, around the start piece's corner (the plan is about 250 across). */
 	static final int REACH = 120;
 	/** Samples along each side of the full grid. */
 	static final int GRID = 5;
-	/** The highest and the lowest sampled ground may differ by this much, and no more. */
-	static final int MAX_RISE = 14;
-	/** The start column (which sets the courtyard's height) may be this far from the ground's median. */
-	static final int MAX_OFF_MEDIAN = 4;
-	/** Samples with water over the ground allowed: a pond, not a lake. */
-	static final int MAX_WET = 3;
 	/** Candidates remembered (by seed and chunk) before the memory is emptied. */
 	static final int CACHE = 8192;
 
-	private static final Map<Long, Boolean> KNOWN = new ConcurrentHashMap<>();
+	/** How much a site may fall short of flat and dry. */
+	public record Limits(int maxRise, int maxOffMedian, int maxWet) {
+	}
+
+	/**
+	 * Every castle left to the dice: at most 14 blocks between the highest and lowest ground sampled, the start column
+	 * (which sets the courtyard's height) within 4 of the ground's median, and at most 3 samples of 25 with water over
+	 * the ground (a pond, not a lake).
+	 */
+	public static final Limits STRICT = new Limits(14, 4, 3);
+
+	/** Why a site was turned down, or that it was not. */
+	public enum Verdict {
+		OK, BIOME, EDGE, WET, RISE, OFF_MEDIAN
+	}
+
+	/** What the survey of a site found: the verdict and, when it got that far, how far from flat it is. */
+	public record Survey(Verdict verdict, int rise, int offMedian, int wet) {
+		public boolean ok() {
+			return this.verdict == Verdict.OK;
+		}
+
+		/** Lower is better: every block of rise, two per block the courtyard sits off the ground, three per wet sample. */
+		public int score() {
+			return this.rise + 2 * this.offMedian + 3 * this.wet;
+		}
+	}
+
+	private static final Map<Long, Verdict> KNOWN = new ConcurrentHashMap<>();
 
 	/** Candidates asked about, and where they were turned down, since the game started: for the log and the tests. */
 	private static final AtomicLong ASKED_SITES = new AtomicLong();
@@ -67,8 +102,10 @@ public final class BastionGround {
 		}
 	}
 
-	/** How many columns the last {@link #suitable(Ground, int, int)} asked for (the tests watch the cost with it). */
+	/** How many columns the last survey asked for (the tests watch the cost with it). */
 	private static final ThreadLocal<int[]> ASKED = ThreadLocal.withInitial(() -> new int[1]);
+	/** The verdict of the last check on this thread, for the measurements. */
+	private static final ThreadLocal<Verdict[]> LAST = ThreadLocal.withInitial(() -> new Verdict[] {Verdict.OK});
 
 	private BastionGround() {
 	}
@@ -81,64 +118,112 @@ public final class BastionGround {
 	}
 
 	public static boolean suitable(Structure.GenerationContext context) {
+		if (BastionHome.isHome(context.seed(), context.chunkPos())) {
+			// surveyed already, with the home limits, when the home was chosen
+			LAST.get()[0] = Verdict.OK;
+			return true;
+		}
 		int x0 = context.chunkPos().getMinBlockX();
 		int z0 = context.chunkPos().getMinBlockZ();
 		long key = context.seed() * 31L + (((long) x0 << 32) ^ (z0 & 0xffffffffL));
-		Boolean known = KNOWN.get(key);
+		Verdict known = KNOWN.get(key);
 		if (known != null) {
-			return known;
+			LAST.get()[0] = known;
+			return known == Verdict.OK;
 		}
 		long started = System.nanoTime();
 		ASKED_SITES.incrementAndGet();
 		int sea = context.chunkGenerator().getSeaLevel();
-		boolean result;
-		if (!biomes(context, x0, z0, sea)) {
+		Verdict result;
+		Verdict biomes = biomes(context.biomeSource(), context.randomState().sampler(), context.validBiome(), x0, z0, sea);
+		if (biomes != Verdict.OK) {
 			BY_BIOME.incrementAndGet();
-			result = false;
+			LAST.get()[0] = biomes;
+			result = biomes;
 		} else {
-			Ground ground = new Ground() {
-				@Override
-				public int height(int x, int z, boolean floor) {
-					return context.chunkGenerator().getBaseHeight(x, z, floor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG,
-						context.heightAccessor(), context.randomState());
-				}
-
-				@Override
-				public boolean mayBeWet(int surface) {
-					return surface <= sea + 1;
-				}
-			};
-			result = suitable(ground, x0, z0);
-			(result ? PASSED : BY_GROUND).incrementAndGet();
+			result = survey(ground(context.chunkGenerator(), context.heightAccessor(), context.randomState()), x0, z0, STRICT).verdict();
+			(result == Verdict.OK ? PASSED : BY_GROUND).incrementAndGet();
 		}
 		NANOS.addAndGet(System.nanoTime() - started);
 		if (KNOWN.size() > CACHE) {
 			KNOWN.clear();
 		}
 		KNOWN.put(key, result);
-		return result;
+		return result == Verdict.OK;
+	}
+
+	/**
+	 * The heights of a world. On the noise generator every world uses, one walk down the column gives both the ground
+	 * and whether anything (water, lava) stands over it; elsewhere the floor is asked for only where water could be.
+	 */
+	public static Ground ground(ChunkGenerator generator, LevelHeightAccessor heights, RandomState random) {
+		int sea = generator.getSeaLevel();
+		if (generator instanceof NoiseColumnAccess column) {
+			Predicate<BlockState> solid = Heightmap.Types.OCEAN_FLOOR_WG.isOpaque();
+			return new Ground() {
+				private int lastX = Integer.MIN_VALUE;
+				private int lastZ;
+				private int lastFloor;
+
+				@Override
+				public int height(int x, int z, boolean floor) {
+					if (floor && x == this.lastX && z == this.lastZ) {
+						return this.lastFloor;
+					}
+					boolean[] over = {false};
+					int ground = column.forja$iterateNoiseColumn(heights, random, x, z, null, state -> {
+						if (solid.test(state)) {
+							return true;
+						}
+						over[0] |= !state.isAir();
+						return false;
+					}).orElse(heights.getMinY());
+					this.lastX = x;
+					this.lastZ = z;
+					this.lastFloor = ground;
+					// the survey only asks whether something stands over the ground, not how deep it is
+					return over[0] ? ground + 1 : ground;
+				}
+
+				@Override
+				public boolean mayBeWet(int surface) {
+					// the floor is known already, asking for it again is free
+					return true;
+				}
+			};
+		}
+		return new Ground() {
+			@Override
+			public int height(int x, int z, boolean floor) {
+				return generator.getBaseHeight(x, z, floor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heights, random);
+			}
+
+			@Override
+			public boolean mayBeWet(int surface) {
+				return surface <= sea + 1;
+			}
+		};
 	}
 
 	/**
 	 * The biomes, before any column: the start's must be one the castle may stand in (the test vanilla makes after
 	 * us, at sea level rather than at the surface), and no corner may be sea, river or mountain.
 	 */
-	private static boolean biomes(Structure.GenerationContext context, int x0, int z0, int sea) {
-		if (!context.validBiome().test(biome(context, x0, z0, sea))) {
-			return false;
+	static Verdict biomes(BiomeSource source, Climate.Sampler sampler, Predicate<Holder<Biome>> valid, int x0, int z0, int sea) {
+		if (!valid.test(biome(source, sampler, x0, z0, sea))) {
+			return Verdict.BIOME;
 		}
 		for (int[] corner : new int[][] {{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}) {
-			Holder<Biome> at = biome(context, x0 + corner[0] * REACH, z0 + corner[1] * REACH, sea);
+			Holder<Biome> at = biome(source, sampler, x0 + corner[0] * REACH, z0 + corner[1] * REACH, sea);
 			if (at.is(BiomeTags.IS_OCEAN) || at.is(BiomeTags.IS_RIVER) || at.is(BiomeTags.IS_MOUNTAIN)) {
-				return false;
+				return Verdict.EDGE;
 			}
 		}
-		return true;
+		return Verdict.OK;
 	}
 
-	private static Holder<Biome> biome(Structure.GenerationContext context, int x, int z, int y) {
-		return context.biomeSource().getNoiseBiome(QuartPos.fromBlock(x), QuartPos.fromBlock(y), QuartPos.fromBlock(z),
-			context.randomState().sampler());
+	private static Holder<Biome> biome(BiomeSource source, Climate.Sampler sampler, int x, int z, int y) {
+		return source.getNoiseBiome(QuartPos.fromBlock(x), QuartPos.fromBlock(y), QuartPos.fromBlock(z), sampler);
 	}
 
 	/** Where the candidates went since the game started: asked, turned down by biome and by ground, passed, and the time. */
@@ -147,8 +232,13 @@ public final class BastionGround {
 			+ " valen; " + NANOS.get() / 1_000_000L + " ms";
 	}
 
-	/** The ground test itself, on any source of heights; leaves at the first sample that rules the site out. */
+	/** The ground test itself with the strict limits, on any source of heights. */
 	public static boolean suitable(Ground ground, int x0, int z0) {
+		return survey(ground, x0, z0, STRICT).ok();
+	}
+
+	/** The ground test on any source of heights; leaves at the first sample that rules the site out. */
+	public static Survey survey(Ground ground, int x0, int z0, Limits limits) {
 		int[] asked = ASKED.get();
 		asked[0] = 0;
 		Ground counted = (x, z, floor) -> {
@@ -156,8 +246,9 @@ public final class BastionGround {
 			return ground.height(x, z, floor);
 		};
 		int[] heights = new int[GRID * GRID];
-		int[] wet = {0};
-		int[] range = {Integer.MAX_VALUE, Integer.MIN_VALUE};
+		int wet = 0;
+		int low = Integer.MAX_VALUE;
+		int high = Integer.MIN_VALUE;
 		// the centre and the four corners, then the rest of the grid
 		int mid = GRID / 2;
 		int[][] order = new int[GRID * GRID][];
@@ -179,21 +270,31 @@ public final class BastionGround {
 			int surface = counted.height(x, z, false);
 			int floor = ground.mayBeWet(surface) ? counted.height(x, z, true) : surface;
 			heights[at[0] * GRID + at[1]] = floor;
-			if (surface > floor && ++wet[0] > MAX_WET) {
-				return false;
+			if (surface > floor && ++wet > limits.maxWet()) {
+				return verdict(new Survey(Verdict.WET, 0, 0, wet));
 			}
-			range[0] = Math.min(range[0], floor);
-			range[1] = Math.max(range[1], floor);
-			if (range[1] - range[0] > MAX_RISE) {
-				return false;
+			low = Math.min(low, floor);
+			high = Math.max(high, floor);
+			if (high - low > limits.maxRise()) {
+				return verdict(new Survey(Verdict.RISE, high - low, 0, wet));
 			}
 		}
 		int[] sorted = heights.clone();
 		Arrays.sort(sorted);
 		int median = sorted[sorted.length / 2];
 		// the start column is the centre sample, the first one asked
-		int start = heights[mid * GRID + mid];
-		return Math.abs(start - median) <= MAX_OFF_MEDIAN;
+		int off = Math.abs(heights[mid * GRID + mid] - median);
+		return verdict(new Survey(off <= limits.maxOffMedian() ? Verdict.OK : Verdict.OFF_MEDIAN, high - low, off, wet));
+	}
+
+	private static Survey verdict(Survey survey) {
+		LAST.get()[0] = survey.verdict();
+		return survey;
+	}
+
+	/** Why the last check on this thread turned its site down ({@link Verdict#OK} if it did not). */
+	public static Verdict lastVerdict() {
+		return LAST.get()[0];
 	}
 
 	/** Columns the last ground test on this thread asked for. */

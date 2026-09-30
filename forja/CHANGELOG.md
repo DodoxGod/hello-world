@@ -1,5 +1,40 @@
 # Novedades
 
+## 2026-09-30 — un Bastión del gremio cerca del origen en todos los mundos
+
+Andy: en un mundo nuevo, `/locate` daba el castillo más cercano en (−15264, ~, 21856). Quiere al menos uno dentro
+del cuadrado de (−5000, −5000) a (5000, 5000) en todos los mundos, y en buen sitio.
+
+- **Por qué no salía:** la rejilla da un candidato cada 110 chunks (unos 32 dentro del cuadrado) y casi ninguno
+  vale. Medido en 60 semillas, de los 1.943 candidatos dentro del cuadrado: 979 caen fuera de los 8 biomas del
+  castillo, 695 están a menos de 10 chunks de un candidato de aldea, 146 tienen mar, río o montaña en una esquina,
+  118 tienen demasiado desnivel, 4 tienen agua y solo 1 vale. Solo 1 semilla de 60 tenía castillo en el cuadrado;
+  la mediana del más cercano estaba a 31.000 bloques y 21 semillas no tenían ninguno en 35.000.
+- **El castillo de casa** (`world/BastionHome`): cada mundo busca una vez, en segundo plano al crearse, el mejor
+  sitio entre 1.500 y 4.500 bloques del origen:
+  - primero lo barato: los biomas del castillo en el centro y sin mar, río ni montaña en las esquinas, y ningún
+    candidato de aldea a menos de 12 chunks;
+  - luego ordena los sitios por lo llano que dice el ruido (sin mirar columnas) y mide el terreno de verdad solo en
+    los mejores;
+  - el terreno se mide igual que en el resto de castillos, pero algo menos exigente: desnivel hasta 20 (antes 14),
+    el centro a 6 de la altura típica (antes 4) y como mucho 3 muestras de 25 con agua (igual que antes);
+  - se queda con el más llano y seco de los que valen.
+  La celda de la rejilla donde cae ese sitio lo reparte en lugar de su candidato al azar, así que `/locate`, el
+  mapa del Forjador y la exclusión del castillo pequeño (12 chunks) lo ven como un castillo más. Los demás
+  castillos siguen donde estaban: lejos y raros.
+- **Medido en 60 semillas:** el castillo más cercano queda a 1.594–4.481 bloques del origen (mediana 3.367), dentro
+  del cuadrado en el 100 % de las semillas. Desnivel del sitio elegido: 8 a 20 (mediana 13). La búsqueda tarda
+  0,3–1,9 s (mediana 0,76 s) en un hilo de fondo al crear el mundo, y un `/locate` en frío que la incluye tarda
+  lo mismo (el límite era 4,4 s).
+- **El bioma bajo tierra ya no tira castillos buenos:** vanilla miraba el bioma 25 bloques bajo el patio (a veces
+  una cueva frondosa) y descartaba sitios que ya habían pasado todo. Ahora cuenta solo la comprobación de biomas
+  del castillo.
+- **El terreno se mide más barato:** una sola pasada por la columna da el suelo y si hay agua encima.
+- Pruebas: `BastionCercaGameTests.everySeedHasAHomeCastle` (5 semillas: hogar dentro del cuadrado, sitio que la
+  estructura acepta, la celda lo reparte, `/locate` lo encuentra en menos de 4,4 s). La medición de las 60 semillas
+  se repite con `FORJA_BASTION_SEMILLAS=<archivo>`. La sección de cliente `mundo` comprueba que el castillo
+  encontrado queda dentro del cuadrado.
+
 ## 2026-09-30 — ¿Qué le cabe? Un probador de mejoras en los libros
 
 - **Capítulo nuevo "¿Qué le cabe?"**, en El yunque (tras "Mejorar") y en la pestaña de mejoras del catálogo de la

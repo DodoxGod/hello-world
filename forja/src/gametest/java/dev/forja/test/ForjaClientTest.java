@@ -12374,6 +12374,16 @@ public class ForjaClientTest implements FabricClientGameTest {
 			log("mundo: sitios del castillo: " + dev.forja.world.BastionGround.report());
 			// /locate froze the game (Andy, 2026-09-29): the site check has to keep a search to seconds
 			check(cost < 15000, "finding the Bastion took " + cost + " ms: /locate would hang");
+			// every world has its home castle within 5,000 blocks of the origin (Andy, 2026-09-30)
+			String home = server.computeOnServer(s -> {
+				long seed = connection.getServerLevel().getSeed();
+				var chosen = dev.forja.world.BastionHome.forSeed(seed);
+				return chosen == null ? "ninguno" : "semilla " + seed + ", hogar " + chosen.chunk() + ", sitio " + chosen.survey() + ", " + chosen.surveys()
+					+ " sondeos en " + chosen.millis() + " ms";
+			});
+			log("mundo: castillo de casa: " + home);
+			check(Math.abs(found[0]) <= 5000 && Math.abs(found[1]) <= 5000, "the nearest Bastion is at " + found[0] + ", " + found[1]
+				+ ": outside the square of 5000 around the origin");
 			long located = System.currentTimeMillis();
 			server.runCommand("locate structure forja:bastion_del_gremio");
 			long locateCost = System.currentTimeMillis() - located;
