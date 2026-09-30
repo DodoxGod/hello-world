@@ -745,3 +745,82 @@ Una red con 11 salidas es v1: tácticas LIBRE y sin cabezas de Forja.
 **Familias** (10 archivos): `red_cuerpo`, `red_arquero`, `red_creeper`, `red_arana`, `red_forja_cuerpo`,
 `red_forja_distancia`, `red_forja_area`, `red_forja_tanque`, `red_forja_enjambre` y `red_forja_jefe`, en
 `config/forja/redes/` (o `iaCarpetaRedes`).
+
+## 5. Red de mobs v4 en el mod (pasos M2 y siguientes, `red_mob_v4_diseno.md` §6.1)
+
+Lo que el simulador tiene que copiar está resumido en [red_mob_v4_mod_estado.md](red_mob_v4_mod_estado.md). Aquí van
+los números. Todo vale igual para una red v4 y para las reglas: las dos llaman a los mismos ejecutores.
+
+### Escudo inteligente y golpe de escudo (M2; `ShieldPlay`)
+- **Golpe de escudo** (salida 52): permitido con el escudo arriba, un bloqueo o una parada en los últimos 20 ticks, el
+  jugador al alcance de su golpe y el golpe listo. 4 ticks de aviso; baja el escudo, empuja al jugador 0,8 en
+  horizontal (mob → jugador) y 0,15 hacia arriba, menos lo que quite Anclaje, le quita 15 de estamina y le corta la
+  carga. Enfriamiento 60.
+- **Reglas:** justo tras un bloqueo, con el jugador al alcance, la mitad de las veces. El muro de escudos de las
+  reglas solo sube el escudo si viene algo (golpe en ≤ 3 ticks, golpe fuerte, arco o ballesta tensos apuntándole) o
+  si el jugador está a un brazo.
+
+### Objetos en el suelo (M2; `GroundItems`)
+- **Valor de un arma:** `daño × velocidad × (1 + 0,15 · alcance extra) × (1,3 si es forjada con mejoras)`; daño =
+  1 + modificadores de daño, velocidad = 4 + modificadores de velocidad (espada de hierro: 6 × 1,6 = 9,6). Arco 3,
+  ballesta 3,8, solo para los que disparan (esqueletos, saqueador, piglin) o un mob sin arma. Las manos vacías valen 0.
+- **mejora** = valor en sus manos − lo que lleva; escudo sin escudo y con la mano izquierda libre = 3; consumible
+  con sitio en la mochila = 1; caña de pescar para un mob de cuerpo a cuerpo sin repuesto = 0,5.
+- **RECOGER:** ruta al objeto útil más cercano (≤ 12, a ≤ 3 de altura y a la vista); a 1,5 se para y en 10 ticks lo
+  coge. El arma va a la mano y la anterior a la ranura de repuesto (si está libre; si no, al suelo). Lo recogido se
+  suelta siempre al morir, salvo los consumibles (decisión 6 de Andy).
+- **Reglas:** un arma que mejore ≥ 1 o un escudo a ≤ 10, un consumible o una caña a ≤ 6, nunca al alcance del
+  jugador, y sin turno o con el jugador a > 5.
+
+### Mochila y cabeza de objeto (M2; `MobKit`, `MobItems`)
+- **Lo que lleva al aparecer** (solo apariciones naturales y su grupo): normal 10 % pan; veterano además 20 %
+  curación, 15 % arrojadiza, 30 % 1–3 cargas de viento; élite curación y arrojadiza, 60 % 1–3 cargas, 40 % perla;
+  campeón 2 de cada. Topes: 2 curaciones, 2 mejoras, 3 arrojadizas, 3 comidas, 2 perlas, 3 cargas.
+
+| Objeto | Ticks | Efecto | Enfriamiento |
+|---|---|---|---|
+| 1 curarse | 32, a media velocidad | +4 de vida por nivel (regeneración: su efecto vanilla) | 20 |
+| 2 mejorarse | 32, a media velocidad | el efecto vanilla, 90 s | 20 |
+| 3 comer | 32, a media velocidad | +4 de vida | 20 |
+| 4 lanzar poción | 10 de aviso | arrojadiza al punto previsto (velocidad × tiempo de vuelo), 0,75 de velocidad | 40 |
+| 5 perla (acercarse) | 8 de aviso | a 2 del jugador en su lado, o al jugador en un pilar; 2 de daño al llegar | 100 |
+| 6 perla (escapar) | 8 de aviso | a 12–16 del jugador, oculto si puede; 2 de daño | 100 |
+| 7 carga de viento | 8 de aviso | la de vanilla a los pies del jugador (1,5 de velocidad) | 60 |
+| 8 cambiar de arma | 20, a media velocidad | mano y repuesto se cambian | 40 |
+
+- Aturdido a mitad, se para y no pierde nada. La carga de viento de un monstruo no abre puertas ni pulsa botones
+  (`WindChargeMixin`).
+- **Reglas:** curarse con < 40 % de vida fuera del alcance del jugador; comer con < 50 % a > 4; mejorarse una vez a
+  < 12; perla para acercarse si el jugador lleva 40 ticks arriba o está a > 10; perla para escapar con < 25 % si
+  huye; carga de viento con el jugador arriba, al borde o junto a lava o una caída; arrojadiza a 4–8 (30 % por
+  decisión) si el jugador no tiene ya ese efecto; un arquero con el arco en el repuesto lo saca a > 8 y la espada a
+  < 3.
+
+### Contra el pilar sin construir ni romper (M3; `Heights`, `VanillaSpecials`, `Siege`)
+- **Flecha de empuje** (hueco 3 de esqueleto, stray, bogged y saqueador): 20 ticks de aviso (brilla y suena), la
+  flecha hace 1 de daño y empuja 0,9 en horizontal (tirador → jugador) y 0,15 hacia arriba. Solo con el jugador
+  arriba (≥ 2), al borde (< 0,6) o junto a lava o una caída, a 4–24 y a la vista. Enfriamiento 160–240.
+- **Zarpazo de araña** (hueco 3): 6 ticks de aviso, golpe y empuje de 1,0. A < 2 del jugador y con el jugador arriba
+  o al borde. Enfriamiento 80–120. Trepar es el de vanilla.
+- **Garfio** (hueco 3 de zombis, ahogados, vindicadores, piglins y esqueletos wither, con una caña recogida en el
+  repuesto): 10 ticks de aviso, tirón de 1,0 hacia el mob y 0,3 hacia arriba. A 3–12 y a la vista. Enfriamiento
+  120–200.
+- Una red v1–v3 no ve estos tres: para ella el hueco 3 está vacío.
+- **ASEDIAR:** los de cuerpo a cuerpo esperan a 8, 6 o 10 del pie del pilar, por su lado (su hueco del anillo ±40°) y
+  donde la cima no los vea si lo hay; los arqueros a 14, 12 o 16 con línea. Nunca construyen ni cavan: un búnker
+  cerrado solo se espera.
+- **Reglas:** jugador arriba o en una torre y fuera de su alcance: la araña trepa si hay pared, uno del grupo apaga la
+  antorcha si vale la pena y el resto asedia.
+
+### Antorchas (M3; `Lights`, `Siege.putOut`)
+- Solo antorcha, antorcha de pared, de almas y de almas de pared, y solo con `mobGriefing`.
+- **aporte** de una antorcha a la luz de bloque en los pies del jugador: `max(0, min(luz de bloque, emite −
+  Manhattan) − max(las demás antorchas, luz de cielo actual))`, emite 14 (almas 10).
+- **APAGAR_LUZ:** ruta a un sitio donde estar (su columna o las 4 de al lado, hasta 2 por debajo); a ≤ 2,5 de sus ojos
+  y sin nada sólido en medio, 15 ticks golpeándola y la rompe soltándola. Sin llegar en 200 ticks, esa antorcha se
+  deja 100 ticks.
+- **Reglas:** uno del grupo a la vez, sin turno, si la antorcha quita ≥ 3 de luz al jugador.
+
+### Coste (prueba `RedV4PerfGameTests`)
+30 mobs mezclados con redes v4 del tamaño del contrato (468 → 128 → 128 → GRU 96 → 53): **1,25–1,42 ms/tick** de IA en
+total (tope 2,5); los mismos por reglas, 0,14–0,16 ms/tick.

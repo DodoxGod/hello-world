@@ -92,6 +92,9 @@ public final class MobAi {
 		});
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register(MobAi::callForHelp);
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register(MobAi::pushToDanger);
+		// v4's knockback arrow (VanillaSpecials.KNOCKBACK_ARROW): whoever it reaches is shoved.
+		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register(
+			(entity, source, base, taken, blocked) -> VanillaSpecials.knockbackHit(entity, source, blocked));
 	}
 
 	public static Mode mode() {
@@ -412,6 +415,15 @@ public final class MobAi {
 		for (MobMind mind : minds) {
 			think(mind, now);
 			MobSprint.tick(mind, now);
+			// v4's instant heads, for a network and the rules alike: the object in hand and the shield bash.
+			if (mind.target != null) {
+				MobItems.tick(mind, now);
+				ShieldPlay.tick(mind, now);
+			} else if (mind.itemTicks > 0 || mind.bashWindup > 0) {
+				MobItems.stop(mind.mob, mind);
+				mind.bashWindup = 0;
+				mind.bashTarget = null;
+			}
 		}
 		AiDebug.tick(level, now);
 	}
@@ -489,12 +501,26 @@ public final class MobAi {
 			return;
 		}
 		mind.blaze = null;
+		// The v4 specials (the third slot) are only there for the rules and a v4 network: an older one never saw them.
+		if (mind.specials != null) {
+			mind.specials.hideV4 = net != null && !V4_FORMAT.equals(net.format);
+		}
 		if (net == null) {
 			mind.networked = false;
-			mind.decision = RuleBrain.decide(mind, target);
+			Decision decision = RuleBrain.decide(mind, target);
+			// v4's heads by the rules too (Andy, 2026-09-29): what it carries, and the bash after a block.
+			int item = MobItems.ruleItem(mind, target, now);
+			boolean bash = ShieldPlay.ruleBash(mob, mind, target, now);
+			mind.decision = item != 0 || bash ? decision.withV4(item, false, bash) : decision;
 			mind.wantsRun = MobSprint.rules(mind, target);
 			AiStats.count(mob, mind.decision);
 			return;
+		}
+		// A change of family (a skeleton that took up a blade runs the zombie's network) starts its memory afresh.
+		String family = familyOf(mob);
+		if (!family.equals(mind.family)) {
+			mind.family = family;
+			mind.memory = null;
 		}
 		if (mind.memory == null || mind.memory.length != net.memory) {
 			mind.resetMemory(net.memory);
@@ -598,7 +624,7 @@ public final class MobAi {
 	 * one and its guard holds, a dodge only when ready and on the ground, a feint only in the first half of
 	 * a warning.
 	 */
-	static boolean[] mask(Mob mob, MobMind mind, Player target, int outputs) {
+	public static boolean[] mask(Mob mob, MobMind mind, Player target, int outputs) {
 		boolean[] mask = new boolean[Math.max(11, outputs)];
 		java.util.Arrays.fill(mask, true);
 		boolean[] v1 = mask(mob);
@@ -631,20 +657,43 @@ public final class MobAi {
 			mask[NetBrain.RUN_AT] = MobSprint.able(mind, mob.level().getGameTime());
 		}
 		if (outputs >= NetBrain.V4_OUTPUTS) {
-			// v4 (M1): what the executor cannot carry out yet is shut, as the simulator's step S1 shuts it (the contract's
-			// "estado_S1"): the eight new tactics (34..41), every object but "nada" (42 stays open: index 0 of a softmax
-			// is never shut), furia (51) and golpe_escudo (52). Each opens with the step that brings it (M2 to M5).
-			for (int k = NetBrain.V4_TACTICS_AT; k < NetBrain.V4_TACTICS_AT + NetBrain.V4_NEW_TACTICS; k++) {
-				mask[k] = false;
-			}
-			mask[NetBrain.OBJECT_AT] = true;
-			for (int k = 1; k < NetBrain.OBJECTS; k++) {
-				mask[NetBrain.OBJECT_AT + k] = false;
-			}
-			mask[NetBrain.FURY_AT] = false;
-			mask[NetBrain.SHIELD_BASH_AT] = false;
+			maskV4(mob, mind, target, mask);
 		}
 		return mask;
+	}
+
+	/**
+	 * v4's part of the mask (docs/red_mob_v4_contrato.json, "mascara"): only what cannot be done is shut. What a step to
+	 * come brings (FORMACION, EMBOSCAR and BUSCAR, furia) stays shut until it comes, as the simulator's own steps shut it.
+	 */
+	static void maskV4(Mob mob, MobMind mind, Player target, boolean[] mask) {
+		long now = mob.level().getGameTime();
+		int at = NetBrain.V4_TACTICS_AT;
+		boolean slot = Squad.onRing(mob) ? mind.slotOf == target && !Double.isNaN(mind.slotAngle) : !Double.isNaN(mind.ringAngle);
+		mask[at + Tactic.SECTOR.ordinal() - Tactic.V3_COUNT] = slot;
+		mask[at + Tactic.TIRO_LIBRE.ordinal() - Tactic.V3_COUNT] = MobFamily.of(mob) == MobFamily.ARQUERO && Squad.allyInLineOf(mob, target) != null;
+		mask[at + Tactic.FORMACION.ordinal() - Tactic.V3_COUNT] = false;
+		mask[at + Tactic.EMBOSCAR.ordinal() - Tactic.V3_COUNT] = false;
+		mask[at + Tactic.BUSCAR.ordinal() - Tactic.V3_COUNT] = false;
+		mask[at + Tactic.RECOGER.ordinal() - Tactic.V3_COUNT] = CombatConfig.get().mobActionsV4 && GroundItems.canPickUp(mob);
+		mask[at + Tactic.APAGAR_LUZ.ordinal() - Tactic.V3_COUNT] = Lights.canPutOut(mob, target);
+		mask[at + Tactic.ASEDIAR.ordinal() - Tactic.V3_COUNT] = Heights.besieged(target);
+		mask[NetBrain.OBJECT_AT] = true;
+		for (int k = 1; k < NetBrain.OBJECTS; k++) {
+			mask[NetBrain.OBJECT_AT + k] = MobItems.allowed(mob, mind, target, k, now);
+		}
+		mask[NetBrain.FURY_AT] = false;
+		mask[NetBrain.SHIELD_BASH_AT] = ShieldPlay.bashReady(mob, mind, target, now);
+		if (mind.furyActive(now)) {
+			// in a fury: no shield, no dodge, no feint, no running away or regrouping, no hiding, no pearl away
+			mask[NetBrain.DEFENSE_AT + 1] = false;
+			mask[NetBrain.DEFENSE_AT + 2] = false;
+			mask[NetBrain.FEINT_AT] = false;
+			mask[NetBrain.TACTIC_AT + Tactic.RETIRARSE.ordinal()] = false;
+			mask[NetBrain.TACTIC_AT + Tactic.REAGRUPARSE.ordinal()] = false;
+			mask[at + Tactic.EMBOSCAR.ordinal() - Tactic.V3_COUNT] = false;
+			mask[NetBrain.OBJECT_AT + MobItems.PEARL_AWAY] = false;
+		}
 	}
 
 	/** What the network may not choose right now, as in the simulator: a lit creeper holds still. */

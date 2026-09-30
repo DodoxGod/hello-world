@@ -88,6 +88,18 @@ public final class ForjaConfig {
 		}
 	}
 
+	/**
+	 * The monsters' v4 actions (Andy, 2026-09-29): a file from before M2 had both switches off, because nothing used them
+	 * yet. They come on once, here; whatever is chosen after that stays (CombatConfig.iaAccionesRevision).
+	 */
+	private static void migrateActions(ForjaConfig config) {
+		if (config.combate != null && config.combate.iaAccionesRevision < 1) {
+			config.combate.mobActionsV4 = true;
+			config.combate.mobsBreakLights = true;
+			config.combate.iaAccionesRevision = 1;
+		}
+	}
+
 	/** Reads config/forja.json, writing it with the defaults if it is not there yet. */
 	public static void load() {
 		Path path = FabricLoader.getInstance().getConfigDir().resolve("forja.json");
@@ -109,10 +121,12 @@ public final class ForjaConfig {
 				if (current.combate != null && current.combate.pressureDelayTicks == 40) {
 					current.combate.pressureDelayTicks = 60;
 				}
+				migrateActions(current);
 				// Written back so keys added in a newer version show up in an older file.
 				Files.writeString(path, GSON.toJson(current));
 				return;
 			}
+			migrateActions(current);
 			Files.createDirectories(path.getParent());
 			Files.writeString(path, GSON.toJson(current));
 		} catch (IOException | JsonSyntaxException failure) {

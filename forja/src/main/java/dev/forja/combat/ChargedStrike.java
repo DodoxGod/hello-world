@@ -84,6 +84,18 @@ public final class ChargedStrike {
 		return entity instanceof ServerPlayer player && CHARGING.containsKey(player);
 	}
 
+	/**
+	 * Knocks a charge out of the player's hands (a monster's shield bash, ai/ShieldPlay): the blow drawn back is lost,
+	 * as if let go too early, and the pose drops. Returns whether there was one.
+	 */
+	public static boolean interrupt(LivingEntity entity) {
+		if (!(entity instanceof ServerPlayer player) || CHARGING.remove(player) == null) {
+			return false;
+		}
+		CombatAnim.broadcast(player, CombatAnim.Kind.CHARGE, 0, 0.0F, 0.0F);
+		return true;
+	}
+
 	private static void strike(ServerPlayer player, double share, CombatConfig cfg) {
 		// Paid in full or not at all: out of breath, the blow still lands, but only as a tired one.
 		boolean paid = Stamina.trySpend(player, cfg.chargeStaminaCost + (float) (cfg.chargeStaminaPerShare * share));

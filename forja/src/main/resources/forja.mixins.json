@@ -21,6 +21,7 @@
 		"ProjectileUtilMixin",
 		"AbstractArrowAccess",
 		"SwellGoalMixin",
+		"WindChargeMixin",
 		"MobGoalsAccess",
 		"MobMixin",
 		"MobSpawnMixin",

@@ -148,7 +148,8 @@ public class PortalGameTests {
 		int after = player.getInventory().countItem(ModItems.HIERRO_ESTELAR);
 		helper.assertTrue(before == 8 && after == before, "la ofrenda sigue en la bolsa: " + before + " antes, " + after + " después");
 		helper.runAfterDelay(20, () -> {
-			helper.assertTrue(level.getEntitiesOfClass(FallenSmith.class, new AABB(forge).inflate(48.0)).isEmpty(), "no aparece el Herrero Caído");
+			// Within 12 of the forge, where it would rise: the boss tests run beside this one and bring smiths of their own.
+			helper.assertTrue(level.getEntitiesOfClass(FallenSmith.class, new AABB(forge).inflate(12.0)).isEmpty(), "no aparece el Herrero Caído");
 			helper.assertTrue(level.getBlockState(forge).isAir(), "la fragua se abre: " + level.getBlockState(forge));
 			BlockPos centre = forge.below();
 			for (Direction side : Direction.Plane.HORIZONTAL) {

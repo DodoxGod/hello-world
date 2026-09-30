@@ -200,7 +200,7 @@ public final class NetBrain {
 	 * simulator's first v4 step does.
 	 */
 	public static int[] tacticLogits(int outputs) {
-		int n = outputs >= V4_OUTPUTS ? V4_TACTICS : outputs >= V3_OUTPUTS ? Tactic.values().length : Tactic.V2_COUNT;
+		int n = outputs >= V4_OUTPUTS ? V4_TACTICS : outputs >= V3_OUTPUTS ? V3_TACTICS : Tactic.V2_COUNT;
 		int[] at = new int[n];
 		for (int k = 0; k < n; k++) {
 			at[k] = k < Tactic.V2_COUNT ? TACTIC_AT + k : k < V3_TACTICS ? NEW_TACTICS_AT + (k - Tactic.V2_COUNT) : V4_TACTICS_AT + (k - V3_TACTICS);
@@ -217,9 +217,9 @@ public final class NetBrain {
 	 * network (29) adds tactica (9), especial (5), defensa (3) and fintar (1), each sampled on its own with
 	 * the same temperature and its part of the mask.
 	 *
-	 * <p>A v4 network (53) is sampled the same way, its tactic head over all 21. Its object head, furia and golpe_escudo
-	 * are not sampled at all: nothing in the mod carries them out yet (M2 to M5), and the mask shuts them anyway, which
-	 * leaves the object head on "nada" and both Bernoullis at 0, the contract's value for a head that is forbidden.
+	 * <p>A v4 network (53) is sampled the same way, its tactic head over all 21, and then its object head (a softmax of
+	 * 9), furia and golpe_escudo (Bernoullis), each under its part of the mask: a forbidden Bernoulli comes out 0 and a
+	 * fully shut object head "nada", as the contract says.
 	 */
 	public static Decision sample(float[] logits, double temperature, RandomSource random, boolean[] mask) {
 		Decision base = sampleV1(logits, temperature, random, mask);
@@ -231,7 +231,16 @@ public final class NetBrain {
 		int defense = categorical(logits, DEFENSE_AT, 3, temperature, random, mask);
 		boolean feint = (mask == null || mask.length <= FEINT_AT || mask[FEINT_AT])
 			&& random.nextDouble() < sigmoid((float) (logits[FEINT_AT] / Math.max(0.05, temperature)));
-		return new Decision(base.move(), base.jump(), base.use(), Tactic.of(tactic), special, defense, feint);
+		Decision decision = new Decision(base.move(), base.jump(), base.use(), Tactic.of(tactic), special, defense, feint);
+		if (logits.length < V4_OUTPUTS) {
+			return decision;
+		}
+		// v4's heads (M2..M5): the object head, fury and the shield bash, each under its part of the mask.
+		int item = categorical(logits, OBJECT_AT, OBJECTS, temperature, random, mask);
+		boolean fury = allowed(mask, FURY_AT) && random.nextDouble() < sigmoid((float) (logits[FURY_AT] / Math.max(0.05, temperature)));
+		boolean bash = allowed(mask, SHIELD_BASH_AT)
+			&& random.nextDouble() < sigmoid((float) (logits[SHIELD_BASH_AT] / Math.max(0.05, temperature)));
+		return decision.withV4(item, fury, bash);
 	}
 
 	/** One categorical head: logits [at, at + n), masked where the mask says so (never all masked: 0 stays). */

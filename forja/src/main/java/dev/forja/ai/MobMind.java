@@ -90,6 +90,47 @@ public final class MobMind {
 	public int blazeCharge;
 	public double blazeVy;
 
+	// --- v4 (docs/red_mob_v4_diseno.md): the state of the new mechanics, the same for a network and the rules
+
+	/** The family file whose network it last ran, so a change of family (a skeleton that took a blade) starts its memory afresh. */
+	public String family;
+	/** Its shield (ShieldPlay): when it last blocked or parried, when the bash is ready, the bash's warning and target. */
+	public long lastBlockAt = Long.MIN_VALUE / 2;
+	public long bashReadyAt;
+	public int bashWindup;
+	public Player bashTarget;
+	public long lastBash = Long.MIN_VALUE / 2;
+	/** The object under way (MobItems): which, ticks left, at whom, what it shows, and when the next may start. */
+	public int itemAction;
+	public int itemTicks;
+	public long itemReadyAt;
+	public Player itemTarget;
+	public net.minecraft.world.item.ItemStack itemShown;
+	public boolean showing;
+	public float shownChance;
+	/** A pearl of its own in flight, to hurt it when it lands. */
+	public net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEnderpearl pearl;
+	/** When it last changed weapon (a pick-up or a swap). */
+	public long swapAt = Long.MIN_VALUE / 2;
+	/** RECOGER (GroundItems): what it is going for, and the ticks spent picking it up. */
+	public net.minecraft.world.entity.item.ItemEntity pickupItem;
+	public int pickupTicks;
+	/** APAGAR_LUZ (TorchGoal): the torch it is going for, the ticks spent striking it, and when it set off. */
+	public net.minecraft.core.BlockPos lightTarget;
+	public int lightTicks;
+	public long lightSince = Long.MIN_VALUE / 2;
+	/** ASEDIAR (Siege): its spot in the siege ring, and when it was chosen. */
+	public Vec3 siegeSpot;
+	public long siegeAt = Long.MIN_VALUE / 2;
+	/** Its fury (M5): until when it lasts, and until when it is spent after. */
+	public long furyUntil = Long.MIN_VALUE / 2;
+	public long exhaustedUntil = Long.MIN_VALUE / 2;
+
+	/** Whether it is in a fury now. */
+	public boolean furyActive(long now) {
+		return now < this.furyUntil;
+	}
+
 	MobMind(Mob mob) {
 		this.mob = mob;
 		this.random = RandomSource.create(mob.getUUID().getLeastSignificantBits() ^ mob.level().getGameTime());

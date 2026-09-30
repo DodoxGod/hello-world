@@ -19,14 +19,40 @@ public abstract class Special {
 	public final int cooldownMax;
 	/** Chance per tick the rules start it when it is ready and can start. */
 	public final double ruleChance;
+	/**
+	 * A special of red_mob_v4's (the knockback arrow, the spider's swipe, the hook: docs/red_mob_v4_diseno.md §4.6):
+	 * a v1..v3 network never trained with it, so for a mob on one of those it is not there at all (SpecialRunner.hideV4).
+	 * The rules and a v4 network have it.
+	 */
+	public final boolean v4;
 
 	protected Special(String id, int windup, int cooldownMin, int cooldownMax, double ruleChance) {
+		this(id, windup, cooldownMin, cooldownMax, ruleChance, false);
+	}
+
+	protected Special(String id, int windup, int cooldownMin, int cooldownMax, double ruleChance, boolean v4) {
 		this.id = id;
 		this.windup = windup;
 		this.cooldownMin = cooldownMin;
 		this.cooldownMax = cooldownMax;
 		this.ruleChance = ruleChance;
+		this.v4 = v4;
 	}
+
+	/**
+	 * An empty slot, to put a v4 special at the slot the contract gives it (the third: especial 3) in a moveset with
+	 * fewer before it. It never starts and reads as no special at all.
+	 */
+	public static final Special NONE = new Special("ninguno", 0, 0, 0, 0.0) {
+		@Override
+		public boolean canStart(Mob mob, Player target) {
+			return false;
+		}
+
+		@Override
+		public void release(Mob mob, Player target, SpecialRunner.Run run) {
+		}
+	};
 
 	/** Whether it can start now against this target (range, sight, footing...). */
 	public abstract boolean canStart(Mob mob, Player target);

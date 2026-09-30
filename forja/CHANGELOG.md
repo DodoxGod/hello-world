@@ -1,5 +1,27 @@
 # Novedades
 
+## 2026-09-29 — IA v4 de los monstruos: escudo, objetos, mochila y contra el pilar (pasos M2 y M3)
+
+- **Escudo inteligente:** el muro de escudos solo sube el escudo cuando viene algo. Tras bloquear, **golpe de
+  escudo**: 4 ticks de aviso, empuja al jugador, le quita 15 de estamina y le corta la carga.
+- **Recogen armas del suelo,** también la tuya: la mejor según su valor (daño × velocidad × alcance). La que llevaban
+  va a una ranura de repuesto. Lo que recogen se suelta siempre al morir.
+- **Mochila:** los veteranos, élites y campeones aparecen con pociones de curación, arrojadizas, cargas de viento y
+  perlas. Beben (a media velocidad, se les ve la poción), comen, lanzan pociones, se acercan o escapan con perlas y
+  lanzan cargas de viento. Nada de la mochila se suelta al morir.
+- **Contra el pilar, sin construir ni romper:** flecha de empuje de los arqueros, zarpazo de la araña que trepa,
+  garfio del que lleva una caña, perla al pilar, carga de viento y asedio: esperan alrededor del pie, fuera de la
+  vista de la cima, cortando la bajada.
+- **Apagan antorchas** (solo antorchas y solo con `mobGriefing`): uno del grupo a la vez, la que más te ilumina; se
+  suelta al romperse.
+- **Una base cerrada del todo sigue a salvo:** ninguna herramienta rompe ni abre bloques; la carga de viento de un
+  monstruo no abre puertas.
+- **Red v4:** los bloques A, O, C, G, L y `jug_luz` de la observación ya se calculan, y se abren RECOGER,
+  APAGAR_LUZ, ASEDIAR, SECTOR, TIRO_LIBRE, la cabeza de objeto y el golpe de escudo. Las reglas usan todo lo mismo.
+- **Configuración:** `mobActionsV4` y `mobsBreakLights` se encienden una vez al cargar (`iaAccionesRevision`).
+- **Pruebas:** `RedV4ModGameTests` (20) y `RedV4PerfGameTests` (30 mobs con redes v4 del tamaño del contrato:
+  1,2–1,4 ms/tick de IA, tope 2,5).
+
 ## 2026-09-29 — La pelea del Cementerio entre Estrellas (entrega 3)
 
 - **Cae del cielo:** al entrar en la dimensión sin pelea en curso, a los 3 s una estrella cae sobre la arena. Tarda

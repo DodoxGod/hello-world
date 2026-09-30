@@ -66,6 +66,31 @@ public final class RuleBrain {
 			|| mob instanceof net.minecraft.world.entity.monster.Blaze;
 	}
 
+	/**
+	 * The rules' RECOGER: the nearest useful thing on the floor is worth the walk. A weapon at least 1 better (on
+	 * GroundItems' scale) or a shield within 10 blocks, a consumable or a rod within 6, and never one lying within the
+	 * player's reach.
+	 */
+	static boolean pickupWorth(Mob mob, Player target) {
+		if (!dev.forja.combat.CombatConfig.get().mobActionsV4) {
+			return false;
+		}
+		var seen = GroundItems.useful(mob);
+		if (seen.isEmpty()) {
+			return false;
+		}
+		GroundItems.Seen first = seen.get(0);
+		double d = mob.distanceTo(first.item());
+		if (first.item().distanceTo(target) < Reach.player(target) + 1.0 || !GroundItems.reachable(mob, first.item())) {
+			return false;
+		}
+		return switch (first.type()) {
+			case GroundItems.MELEE, GroundItems.RANGED -> first.gain() >= 1.0 && d <= 10.0;
+			case GroundItems.SHIELD -> d <= 10.0;
+			default -> d <= 6.0;
+		};
+	}
+
 	public static Decision decide(MobMind mind, Player target) {
 		Mob mob = mind.mob;
 		// A staff or a tome in the hand: its own goal fights with it (entity/ai/CasterGoal), as an archer's
@@ -105,6 +130,29 @@ public final class RuleBrain {
 			return Decision.tactic(Tactic.RETIRARSE);
 		}
 		boolean hasTurn = AttackTokens.holds(target, mob) || AttackTokens.free(target, Aggression.maxAttackers(mob, target));
+		// v4 by the rules (docs/red_mob_v4_diseno.md §4.6): a player up on a pillar or a tower that its blows do not
+		// reach. A spider climbs to them (vanilla's climbing, and its swipe at the top); the rest put out the torch that
+		// lights the base, one at a time, or wait round the foot out of sight of the top, cutting the ways down. Nobody
+		// builds or digs: a closed bunker is only waited out.
+		if (Heights.besieged(target) && !Heights.reachable(mob, target)) {
+			if (family == MobFamily.ARANA && Heights.of(target).climbable) {
+				return Decision.APPROACH;
+			}
+			if (Siege.torchDuty(mob, mind, target, now)) {
+				return Decision.tactic(Tactic.APAGAR_LUZ);
+			}
+			return Decision.tactic(Tactic.ASEDIAR);
+		}
+		// Something worth having on the floor (§4.7): a better weapon, a shield, a potion for the kit. Not with a turn
+		// in hand and the player close, and not from under the player's nose.
+		if (mind.pickupItem != null && mind.decision.tactic() == Tactic.RECOGER
+			|| (!hasTurn || distance > 5.0) && pickupWorth(mob, target)) {
+			return Decision.tactic(Tactic.RECOGER);
+		}
+		// The torch that lights the player in the dark (§4.10): one of the group at a time, without a turn.
+		if (!hasTurn && Siege.torchDuty(mob, mind, target, now)) {
+			return Decision.tactic(Tactic.APAGAR_LUZ);
+		}
 		// A charged blow is coming: shield up if it has one, a dodge if it is right on top, else out of reach
 		// (a flail's or a lance's reach, when that is what the player holds).
 		if (Aggression.charging(target) && distance < Reach.outside(target, CHARGE_RANGE) && mind.windup == 0 && !AttackTokens.holds(target, mob)) {
@@ -164,8 +212,10 @@ public final class RuleBrain {
 		if (mind.role == SquadRole.FLANCO && Math.abs(Squad.wrap(Squad.angle(mob, target) - Squad.facing(target))) < FLANK_DONE) {
 			return Decision.tactic(Tactic.FLANQUEAR);
 		}
-		// The shield wall, and a hurt shield bearer's guard (ideas 15 and 37): without a turn, covered.
-		if (!hasTurn && distance < 8.0 && hasShield(mob) && !MobDefense.guardBroken(mob) && mind.role != SquadRole.FLANCO) {
+		// The shield wall, and a hurt shield bearer's guard (ideas 15 and 37): without a turn, covered. The smart shield
+		// (v4, §4.9): up only when a blow or a shot is on its way or the player is at arm's length, not all the time.
+		if (!hasTurn && distance < 8.0 && hasShield(mob) && !MobDefense.guardBroken(mob) && mind.role != SquadRole.FLANCO
+			&& (ShieldPlay.incoming(mob, target) || distance < Reach.player(target) + 1.0)) {
 			return Decision.tactic(Tactic.CUBRIRSE);
 		}
 		// Waiting for a turn: from further off against a player whose weapon reaches further (flail, lance...),

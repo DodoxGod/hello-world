@@ -82,6 +82,10 @@ public final class Scaling {
 		mob.setHealth(mob.getMaxHealth());
 		dev.forja.ai.MobDefense.arm(mob);
 		dev.forja.ai.Personality.roll(mob, level);
+		// What it carries (docs/red_mob_v4_diseno.md §4.8): natural spawns and their packs only, never a test or an egg.
+		if (natural || mob.entityTags().contains(COMPANION)) {
+			dev.forja.ai.MobKit.roll(mob, random, difficulty.threat);
+		}
 		// The hordes of a sky event come out fighting (idea 93).
 		if (dev.forja.world.WorldEvents.active(level) != null) {
 			for (dev.forja.ai.Personality.Trait trait : dev.forja.ai.Personality.Trait.values()) {

@@ -33,6 +33,11 @@ public final class SpecialRunner {
 	private final List<Special> moveset;
 	private final long[] readyAt;
 	private Run run;
+	/**
+	 * Whether the v4 specials are out of reach: true while a v1..v3 network drives the mob (set by MobAi every
+	 * decision), which never trained with them. Then they read as an empty slot and never start.
+	 */
+	public boolean hideV4;
 
 	public SpecialRunner(Mob mob, List<Special> moveset) {
 		this.mob = mob;
@@ -48,14 +53,23 @@ public final class SpecialRunner {
 		return this.run != null;
 	}
 
+	/** Whether slot k holds a special this mob has now: not an empty slot, and not a v4 one under an older network. */
+	public boolean present(int k) {
+		if (k < 0 || k >= this.moveset.size()) {
+			return false;
+		}
+		Special special = this.moveset.get(k);
+		return special != Special.NONE && !(special.v4 && this.hideV4);
+	}
+
 	/** Whether the special in slot k (0-based) is ready: off cooldown. */
 	public boolean ready(int k) {
-		return k >= 0 && k < this.moveset.size() && this.mob.level().getGameTime() >= this.readyAt[k];
+		return this.present(k) && this.mob.level().getGameTime() >= this.readyAt[k];
 	}
 
 	/** Share of its cooldown still to run, 0 (ready) to 1. */
 	public double cooldownLeft(int k) {
-		if (k < 0 || k >= this.moveset.size()) {
+		if (!this.present(k)) {
 			return 1.0;
 		}
 		Special special = this.moveset.get(k);

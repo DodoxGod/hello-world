@@ -174,6 +174,13 @@ public final class TacticGoal extends Goal {
 		if (decision.defense() == 2) {
 			MobDefense.dodge(this.mob, target);
 		}
+		if (decision.tactic() != Tactic.RECOGER && this.mind.pickupItem != null) {
+			this.mind.pickupItem = null;
+			this.mind.pickupTicks = 0;
+		}
+		if (decision.tactic() != Tactic.APAGAR_LUZ) {
+			this.mind.lightTicks = 0;
+		}
 		switch (decision.tactic()) {
 			case LIBRE, ACERCARSE -> this.free(decision, target);
 			case RODEAR -> this.toRing(target, Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle,
@@ -189,8 +196,34 @@ public final class TacticGoal extends Goal {
 				Math.max(Reach.outside(target, RELAY_RADIUS), Reach.standOff(this.mob, target)), 1.0);
 			case OCULTARSE -> this.hide(target);
 			case EMPUJAR -> this.pushTowardsDanger(decision, target);
+			// v4 (docs/red_mob_v4_diseno.md §3.1)
+			case SECTOR -> this.toRing(target, !Double.isNaN(this.mind.slotAngle) && this.mind.slotOf == target ? this.mind.slotAngle
+				: Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle, Reach.outside(target, this.mind.ringRadius), 1.0);
+			case TIRO_LIBRE -> this.clearShot(decision, target);
+			case FORMACION -> this.toRing(target, Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle,
+				Reach.outside(target, this.mind.ringRadius), 1.0);
+			case EMBOSCAR -> this.hide(target);
+			case BUSCAR -> this.free(decision, target);
+			case RECOGER -> {
+				if (!GroundItems.tick(this.mob, this.mind)) {
+					this.free(Decision.APPROACH, target);
+				}
+			}
+			case APAGAR_LUZ -> {
+				if (!Siege.putOut(this.mob, this.mind, target, now)) {
+					this.free(Decision.APPROACH, target);
+				}
+			}
+			case ASEDIAR -> {
+				if (!Siege.tick(this.mob, this.mind, target, now)) {
+					this.hold(target);
+				}
+			}
 		}
-		if (decision.tactic() != Tactic.LIBRE && decision.tactic() != Tactic.ACERCARSE && decision.use()) {
+		// The tactics that use their weapon by themselves (or fall back on the low-level controls) are left out.
+		Tactic tactic = decision.tactic();
+		if (tactic != Tactic.LIBRE && tactic != Tactic.ACERCARSE && tactic != Tactic.TIRO_LIBRE && tactic != Tactic.BUSCAR
+			&& tactic != Tactic.RECOGER && tactic != Tactic.APAGAR_LUZ && decision.use()) {
 			this.use(target, true);
 		}
 	}
@@ -615,6 +648,21 @@ public final class TacticGoal extends Goal {
 	/** Which way this one steps aside: fixed per mob, so a relay does not dither from side to side. */
 	private double side() {
 		return (this.mob.getId() & 1) == 0 ? 1.0 : -1.0;
+	}
+
+	/**
+	 * TIRO_LIBRE: an archer with a friend in its line steps to the nearest spot with a clear shot (Squad.clearLineStep:
+	 * two blocks aside, the other side, back), drawing as it goes; with the line clear it shoots from where it stands.
+	 */
+	private void clearShot(Decision decision, Player target) {
+		net.minecraft.world.phys.Vec3 step = Squad.clearLineStep(this.mob, target);
+		if (step != null) {
+			this.mob.getNavigation().stop();
+			this.mob.getMoveControl().setWantedPosition(step.x, this.mob.getY(), step.z, 1.0);
+		} else {
+			this.mob.getNavigation().stop();
+		}
+		this.use(target, true);
 	}
 
 	/** CEBO: to the nearest ally and {@link #BAIT_PAST} beyond it, away from the player, drawing them in. */

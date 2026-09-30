@@ -180,8 +180,22 @@ public final class ObsV4 {
 		out[R_AT] = (float) ObsM1.clip(Reach.min(mob) / 6.0, 0.0, 2.0);
 		AttackRange range = target.getMainHandItem().get(DataComponents.ATTACK_RANGE);
 		out[R_AT + 1] = range == null ? 0.0F : (float) ObsM1.clip(range.minReach() / 6.0, 0.0, 2.0);
+		if (mind != null) {
+			// M2/M3 (docs/red_mob_v4_mod_estado.md): the player's light, height and pillar, the things on the floor, the
+			// kit and the effects, the shield, the torches.
+			long now = mob.level().getGameTime();
+			out[JUG_LUZ] = Lights.playerLight(target) / 15.0F;
+			Heights.observe(mob, target, now, out, A_AT);
+			GroundItems.observe(mob, target, out, O_AT);
+			MobItems.observe(mob, mind, target, now, out, C_AT);
+			ShieldPlay.observe(mob, mind, target, now, out, G_AT);
+			Lights.observe(mob, target, out, L_AT);
+		}
 		return out;
 	}
+
+	/** jug_luz/15, the one input of block E that M3 brings (the rest of E comes with M4). */
+	public static final int JUG_LUZ = E_AT + 14;
 
 	// ---------------------------------------------------------------- S: sectors
 

@@ -157,11 +157,13 @@ public final class MobDefense {
 				player.hurtMarked = true;
 			}
 			state(mob).counterUntil = now + COUNTER_TICKS;
+			ShieldPlay.blocked(mob);
 			CombatAnim.broadcast(mob, CombatAnim.Kind.PARRY, 8, 1.0F, 0.0F);
 			mob.level().playSound(null, mob.getX(), mob.getY(), mob.getZ(), SoundEvents.SHIELD_BLOCK.value(), SoundSource.HOSTILE, 1.0F, 1.6F);
 			return false;
 		}
 		// A plain block: the shield takes it, the balance pays for it; a broken balance breaks the guard.
+		ShieldPlay.blocked(mob);
 		boolean wasStaggered = Posture.isStaggered(mob, now);
 		Posture.onHit(mob, dev.forja.combat.AttackClassifier.classify(source, mob).kind(), (float) (amount * BLOCK_POSTURE), now);
 		if (!wasStaggered && Posture.isStaggered(mob, now)) {

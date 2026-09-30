@@ -158,9 +158,13 @@ public class RedV4GameTests {
 				for (int i = 0; i < obs.length; i++) {
 					helper.assertTrue(Float.isFinite(obs[i]), "la entrada " + i + " (" + ObsV4.names().get(i) + ") no es finita: " + obs[i]);
 				}
+				// The blocks still to come (M, Mo, P, E but jug_luz, W) are 0; A, O, C, G, L and jug_luz came with M2/M3.
 				for (int i = ObsV4.M_AT; i < obs.length; i++) {
-					helper.assertTrue(obs[i] == 0.0F, "la entrada " + i + " (" + ObsV4.names().get(i) + ") debería ser 0 en M1: " + obs[i]);
+					boolean live = i == ObsV4.JUG_LUZ || i >= ObsV4.A_AT && i < ObsV4.W_AT;
+					helper.assertTrue(live || obs[i] == 0.0F, "la entrada " + i + " (" + ObsV4.names().get(i) + ") debería ser 0 aún: " + obs[i]);
 				}
+				helper.assertTrue(obs[ObsV4.G_AT + 3] == 1.0F, "bloqueo_hace/20 sin bloqueo es 1: " + obs[ObsV4.G_AT + 3]);
+				helper.assertTrue(obs[ObsV4.A_AT + 3] == 2.0F, "jug_borde/2 en llano es el tope, 2: " + obs[ObsV4.A_AT + 3]);
 				float sectors = obs[ObsV4.S_AT] + obs[ObsV4.S_AT + 1] + obs[ObsV4.S_AT + 2] + obs[ObsV4.S_AT + 3];
 				helper.assertTrue(sectors == 0.0F || sectors == 1.0F, "los sectores son un one-hot (o nada sin hueco): " + sectors);
 				helper.assertTrue(mind.reachVersion == ObsV4.REACH_VERSION, "una observación v4 lee el alcance con alcance_v 2");
@@ -263,8 +267,8 @@ public class RedV4GameTests {
 
 	/**
 	 * A fake v4 network drives a zombie for 40 ticks: it decides every 2 ticks without an exception, each time from 468
-	 * finite inputs into 53 finite logits. SECTOR, a tactic the executor cannot carry out yet, is given a huge bias and
-	 * is never run: the mask shuts it (were it not shut, every decision would come out LIBRE, the safe fallback).
+	 * finite inputs into 53 finite logits. FORMACION, a tactic that needs a post from the captain (M5), is given a huge
+	 * bias and is never run: the mask shuts it, as it shuts "curarse" with nothing in the kit.
 	 */
 	@GameTest(maxTicks = 80)
 	public void fakeV4NetworkDrivesAZombie(GameTestHelper helper) {
@@ -274,7 +278,8 @@ public class RedV4GameTests {
 			}
 		}
 		float[] bias = new float[NetBrain.V4_OUTPUTS];
-		bias[NetBrain.V4_TACTICS_AT] = 20.0F;
+		// FORMACION (a post from the captain, M5) is still shut, and "curarse" without a potion in the kit
+		bias[NetBrain.V4_TACTICS_AT + dev.forja.ai.Tactic.FORMACION.ordinal() - dev.forja.ai.Tactic.V3_COUNT] = 20.0F;
 		bias[NetBrain.OBJECT_AT + 1] = 20.0F;
 		NetBrain net = NetBrain.fromJson(fakeV4(11L, bias));
 		helper.assertTrue(MobAi.checkV4(net) == null, "la red v4 falsa debería encajar: " + MobAi.checkV4(net));
@@ -312,13 +317,14 @@ public class RedV4GameTests {
 				helper.assertTrue(Float.isFinite(v), "salida no finita de la red v4");
 			}
 			Decision decision = mind.decision;
-			helper.assertTrue(decision != null && decision.tactic().ordinal() < NetBrain.V3_TACTICS,
-				"la táctica debería ser una de las 13 que el mod ejecuta: " + (decision == null ? null : decision.tactic()));
+			helper.assertTrue(decision != null && decision.tactic() != Tactic.FORMACION && decision.tactic() != Tactic.EMBOSCAR
+				&& decision.tactic() != Tactic.BUSCAR, "FORMACION, EMBOSCAR y BUSCAR siguen enmascaradas: " + (decision == null ? null : decision.tactic()));
+			helper.assertTrue(decision.item() == 0, "sin nada en la mochila la cabeza de objeto sale 'nada': " + decision.item());
 			notFree[0] += decision.tactic() != Tactic.LIBRE ? 1 : 0;
 		});
 		helper.runAfterDelay(41, () -> {
 			helper.assertTrue(decisions[0] >= 15, "en 40 ticks la red v4 debería decidir unas 20 veces: " + decisions[0]);
-			helper.assertTrue(notFree[0] > 0, "SECTOR está enmascarada: las tácticas deberían repartirse entre las 13, no caer siempre en LIBRE");
+			helper.assertTrue(notFree[0] > 0, "FORMACION está enmascarada: las tácticas deberían repartirse entre las abiertas, no caer siempre en LIBRE");
 			zombie.discard();
 			helper.succeed();
 		});

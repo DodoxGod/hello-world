@@ -382,19 +382,24 @@ public final class CombatConfig {
 
 	// --- Mob actions for the v4 network (dev.forja.ai.MobActions) ---------------------------------
 	/**
-	 * Andy, 2026-09-29: monsters will pick up better weapons, drink and throw potions, eat, throw ender pearls,
-	 * break lights and raise their shield when aimed at, and the network (contract v4) will decide when. The
-	 * actions are built and tested but nothing calls them yet: this master switch keeps every one of them off
-	 * until the v4 wires them in. The rules do not read it.
+	 * Andy, 2026-09-29: monsters pick up better weapons, drink and throw potions, eat, throw ender pearls and wind
+	 * charges, put out torches and bash with their shield (docs/red_mob_v4_diseno.md §4.6–§4.10). A v4 network decides
+	 * when, and without one the rules do (M2/M3). This master switch turns every one of them off.
 	 */
-	public boolean mobActionsV4 = false;
-	/** How far (blocks) a monster looks for a better weapon lying on the floor. */
+	public boolean mobActionsV4 = true;
+	/** How far (blocks) a monster looks for a better weapon lying on the floor (MobActions.pickUpBetterWeapon). */
 	public double mobPickupRange = 6.0;
 	/**
-	 * Monsters never break or place blocks (Andy, 2026-09-29). The one exception planned is putting out torches and
-	 * lanterns, and it comes with the v4: off until then, even with {@link #mobActionsV4} on.
+	 * Monsters never break or place blocks (Andy, 2026-09-29). The one exception is putting out torches (torch, wall
+	 * torch, soul torch, soul wall torch), and only with the mobGriefing game rule on. This switch turns it off too.
 	 */
-	public boolean mobsBreakLights = false;
+	public boolean mobsBreakLights = true;
+	/**
+	 * Which default of the two switches above a config file has seen: 0 is a file written before M2, with both off
+	 * because nothing used them yet; it is brought to 1 (both on) once, on load (ForjaConfig.load), and a choice
+	 * made after that stays.
+	 */
+	public int iaAccionesRevision = 0;
 
 	/** Natural attacks of unarmed mobs by entity id; anything missing hits BLUNT. */
 	public Map<String, DamageKind> ataquesNaturales = defaultNaturalAttacks();

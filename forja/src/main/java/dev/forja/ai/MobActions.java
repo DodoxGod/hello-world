@@ -282,6 +282,13 @@ public final class MobActions {
 		if (!isLight(level.getBlockState(pos)) || mob.getEyePosition().distanceTo(Vec3.atCenterOf(pos)) > LIGHT_REACH) {
 			return false;
 		}
+		// Nothing solid between its eyes and the torch: no putting one out through a glass pane or a wall, so a closed
+		// base keeps its lights as it keeps everything else.
+		var hit = level.clip(new net.minecraft.world.level.ClipContext(mob.getEyePosition(), Vec3.atCenterOf(pos),
+			net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, mob));
+		if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK && !hit.getBlockPos().equals(pos)) {
+			return false;
+		}
 		mob.swing(InteractionHand.MAIN_HAND);
 		return level.destroyBlock(pos, true, mob);
 	}
