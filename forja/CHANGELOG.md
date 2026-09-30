@@ -1,5 +1,19 @@
 # Novedades
 
+## 2026-09-30 — La espera tras un golpe ya no se salta
+
+- **La espera tras un golpe se respeta.** Un monstruo de cuerpo a cuerpo espera un segundo tras cada golpe, y más si
+  va cargado. Esa espera se perdía cada vez que volvía a atacar tras un momento haciendo otra cosa, y 1 de cada 5
+  avisos llegaba antes de tiempo. Ya no pasa.
+- **Un golpe avisado desde una táctica también se termina.** Casi todos se cortaban cuando el monstruo volvía a ver al
+  jugador o cambiaba de idea. Ahora se terminan.
+- **Medido en el mod** (8 contra el jugador de prueba, 160 peleas): los avisos por pelea bajan de 17 a 16 sin capitán
+  y de 29 a 24 con el capitán de reglas. El daño por minuto queda en 172 sin capitán y 194 con el capitán de reglas.
+- **La medida del capitán** ahora apunta de dónde sale cada aviso y a qué distancia empieza. También cuánto tarda desde
+  que el monstruo llega a su alcance, cuánto espera entre golpes, cuántos avisan a la vez y por qué uno a su alcance no
+  avisa. Las tablas están en `docs/red_mob_v4_mod_estado.md`.
+- **Pruebas:** 1 nueva.
+
 ## 2026-09-30 — Un golpe avisado se termina, y la pinza del capitán, apagada
 
 - **Un golpe avisado se termina.** Los monstruos ya no cortan un golpe avisado a medias para rodear, retirarse,

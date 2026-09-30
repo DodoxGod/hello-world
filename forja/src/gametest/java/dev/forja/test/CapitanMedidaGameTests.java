@@ -60,6 +60,96 @@ public class CapitanMedidaGameTests {
 		return list != null && java.util.Arrays.asList(list.split(",")).contains(name);
 	}
 
+	/**
+	 * How each fight's warned blows start (the fifth pass): by which path, from how far, how long after coming within
+	 * reach, how long after the mob's last one, how many at once, and why a mob within reach was not warning.
+	 */
+	static final class WarnLog {
+		final Map<String, Integer> counts = new java.util.TreeMap<>();
+		final Map<Mob, Long> inRangeSince = new java.util.HashMap<>();
+		final Map<Mob, long[]> lastEnd = new java.util.HashMap<>();
+		final Map<Mob, String> lastOutcome = new java.util.HashMap<>();
+		final Map<Mob, String> path = new java.util.HashMap<>();
+		Player player;
+		long now;
+
+		void add(String key, int n) {
+			this.counts.merge(key, n, Integer::sum);
+		}
+	}
+
+	static final Map<Entity, WarnLog> WARN_LOGS = new java.util.WeakHashMap<>();
+
+	static final String[] DELAY_BUCKETS = {"0", "1-2", "3-5", "6-10", "11-20", "21+"};
+
+	static String delayBucket(long d) {
+		return d <= 0 ? "0" : d <= 2 ? "1-2" : d <= 5 ? "3-5" : d <= 10 ? "6-10" : d <= 20 ? "11-20" : "21+";
+	}
+
+	static {
+		dev.forja.combat.CombatStats.watcher = new dev.forja.combat.CombatStats.WarnWatcher() {
+			@Override
+			public void started(Entity entity, Entity target, String path) {
+				WarnLog log = WARN_LOGS.get(entity);
+				if (log == null || !(entity instanceof Mob mob) || target != log.player) {
+					return;
+				}
+				long now = mob.level().getGameTime();
+				log.add("inicio_" + path, 1);
+				log.path.put(mob, path.startsWith("especial:") ? "especial" : path);
+				if (path.startsWith("especial:")) {
+					return;
+				}
+				// distance at the start: centre to centre (flat) and the gap between the two boxes
+				double centre = Math.hypot(mob.getX() - log.player.getX(), mob.getZ() - log.player.getZ());
+				net.minecraft.world.phys.AABB a = mob.getBoundingBox();
+				net.minecraft.world.phys.AABB b = log.player.getBoundingBox();
+				double gx = Math.max(0.0, Math.max(a.minX - b.maxX, b.minX - a.maxX));
+				double gz = Math.max(0.0, Math.max(a.minZ - b.maxZ, b.minZ - a.maxZ));
+				double gap = Math.hypot(gx, gz);
+				log.add("dist_centro_x100", (int) Math.round(centre * 100));
+				log.add("dist_hueco_x100", (int) Math.round(gap * 100));
+				log.add("dist_n", 1);
+				log.add("dist_centro_" + (centre < 1.0 ? "<1" : centre < 1.25 ? "1-1.25" : centre < 1.5 ? "1.25-1.5" : centre < 1.75 ? "1.5-1.75" : ">=1.75"), 1);
+				// ticks since it came within reach (or since its last warning ended, if later)
+				Long since = log.inRangeSince.get(mob);
+				long[] end = log.lastEnd.get(mob);
+				if (since != null) {
+					long from = end != null ? Math.max(since, end[0]) : since;
+					log.add("retraso_" + delayBucket(now - from), 1);
+					log.add("retraso_suma", (int) (now - from));
+					log.add("retraso_n", 1);
+				} else {
+					log.add("retraso_fuera_de_alcance", 1);
+				}
+				// its wait since its own last warning ended, by how that one ended
+				if (end != null) {
+					String outcome = log.lastOutcome.get(mob);
+					log.add("espera_" + outcome + "_suma", (int) (now - end[0]));
+					log.add("espera_" + outcome + "_n", 1);
+					// sooner than the melee goal's 20-tick wait after a blow (vanilla's start() puts it back to 0)
+					if (now - end[0] < 20 && "vanilla".equals(path) && !"cortado".equals(outcome)) {
+						log.add("espera_menos_de_20_" + outcome, 1);
+					}
+				}
+			}
+
+			@Override
+			public void ended(Entity entity, String outcome) {
+				WarnLog log = WARN_LOGS.get(entity);
+				if (log == null || !(entity instanceof Mob mob)) {
+					return;
+				}
+				log.add("fin_" + outcome, 1);
+				log.add("fin_" + log.path.getOrDefault(mob, "?") + "_" + outcome, 1);
+				if (!"especial".equals(outcome)) {
+					log.lastEnd.put(mob, new long[] {mob.level().getGameTime()});
+					log.lastOutcome.put(mob, outcome);
+				}
+			}
+		};
+	}
+
 	/** What each fight's player took, by kind, and how the chasers moved. */
 	static final class Watch {
 		double melee;
@@ -313,6 +403,11 @@ public class CapitanMedidaGameTests {
 		Watch w = new Watch();
 		DAMAGE.put(player, w);
 		Map<Mob, Vec3> last = new java.util.HashMap<>();
+		WarnLog warns = new WarnLog();
+		warns.player = player;
+		for (Mob mob : mobs) {
+			WARN_LOGS.put(mob, warns);
+		}
 		String traced = System.getenv("FORJA_CAPITAN_TRAZA");
 		Path trace = traced == null || traced.isBlank() ? null : Path.of(traced.trim());
 		Vec3 low = helper.absoluteVec(new Vec3(4, 1, 4));
@@ -356,6 +451,55 @@ public class CapitanMedidaGameTests {
 			watch[1] += held;
 			watch[2] += held < max ? 1 : 0;
 			watch[3]++;
+			// the fifth pass: who is within reach, who is warning, and why one within reach is not
+			{
+				long gt = helper.getLevel().getGameTime();
+				int warning = 0;
+				int heldNow = dev.forja.combat.AttackTokens.held(player);
+				int maxNow = dev.forja.ai.Aggression.maxAttackers(player);
+				for (Mob mob : alive) {
+					dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
+					boolean busy = mind != null && (mind.warning || mind.windup > 0 || mind.specials != null && mind.specials.warningProgress() >= 0.0);
+					warning += busy ? 1 : 0;
+					boolean melee = mob instanceof net.minecraft.world.entity.monster.zombie.Zombie || mob instanceof net.minecraft.world.entity.monster.spider.Spider;
+					if (!melee) {
+						continue;
+					}
+					boolean inRange = mob.isWithinMeleeAttackRange(player);
+					if (!inRange) {
+						warns.inRangeSince.remove(mob);
+						continue;
+					}
+					warns.inRangeSince.putIfAbsent(mob, gt);
+					if (busy) {
+						warns.add("alcance_avisando", 1);
+						continue;
+					}
+					net.minecraft.world.entity.ai.goal.MeleeAttackGoal goal = null;
+					for (var wrapped : ((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals().getAvailableGoals()) {
+						if (wrapped.isRunning() && wrapped.getGoal() instanceof net.minecraft.world.entity.ai.goal.MeleeAttackGoal meleeGoal) {
+							goal = meleeGoal;
+						}
+					}
+					String why;
+					if (dev.forja.combat.Posture.isStaggered(mob, gt)) {
+						why = "aturdido";
+					} else if (goal == null) {
+						why = "sin_meta_" + (mind == null ? "?" : mind.decision.tactic().name().toLowerCase(Locale.ROOT));
+					} else if (((dev.forja.test.mixin.MeleeGoalAccess) goal).forja$ticksUntilNextAttack() > 0) {
+						why = "recarga";
+					} else if (!dev.forja.combat.AttackTokens.holds(player, mob) && heldNow >= dev.forja.ai.Aggression.maxAttackers(mob, player)) {
+						why = "turnos_llenos";
+					} else if (!mob.getSensing().hasLineOfSight(player)) {
+						why = "sin_vista";
+					} else {
+						why = "otro";
+					}
+					warns.add("alcance_" + why, 1);
+				}
+				warns.add("a_la_vez_" + Math.min(4, warning), 1);
+				warns.add("turnos_" + heldNow + "_de_" + maxNow, 1);
+			}
 			// arrows: the test player is not in the level (a FakePlayer never added), so an arrow flies through it; count
 			// the ones fired at it and the ones whose path crosses its box (what would have hit a real player)
 			for (net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow : helper.getLevel().getEntitiesOfClass(
@@ -521,6 +665,14 @@ public class CapitanMedidaGameTests {
 			w.melee, w.arrow, w.arrows, w.potion, w.fire, w.other, w.walkTicks == 0 ? 0.0 : w.walkDist / w.walkTicks, w.walkTicks,
 			w.runTicks == 0 ? 0.0 : w.runDist / w.runTicks, w.runTicks, w.goingIn == 0 ? 0.0 : w.idle / (double) w.goingIn, w.fired, w.wouldHit, w.drops));
 		DAMAGE.remove(player);
+		WarnLog warns = null;
+		for (Mob mob : mobs) {
+			WarnLog l = WARN_LOGS.remove(mob);
+			warns = l != null ? l : warns;
+		}
+		if (warns != null) {
+			warns.counts.forEach((key, v) -> k.append(';').append(key).append('=').append(v));
+		}
 		String line = String.format(Locale.ROOT, "%s\t%d\t%.1f\t%d\t%d\t%d\t%s\t%.2f\t%.2f\t%.2f\t%s%n", mode.name().toLowerCase(Locale.ROOT), seed,
 			taken * 60.0 * 20.0 / Math.max(1, ticks), killedAt, dead, ticks, o, watch[0] / n, watch[1] / n, watch[2] / n, k);
 		try {

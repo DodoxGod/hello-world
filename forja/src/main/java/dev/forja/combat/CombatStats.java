@@ -32,6 +32,31 @@ public final class CombatStats {
 
 	private static final Map<Entity, Map<String, Integer>> COUNTS = new WeakHashMap<>();
 
+	/** Told of every warned blow's start and end (the tests' measurement); null in play. */
+	public interface WarnWatcher {
+		/** A warning starts: {@code path} is "vanilla" (MeleeAttackGoalMixin), "tactica" (TacticGoal) or "especial:id". */
+		void started(Entity mob, Entity target, String path);
+
+		/** A warning ends: "llega", "falla", "finta", "cortado", or "especial" (a special is over, however it went). */
+		void ended(Entity mob, String outcome);
+	}
+
+	public static WarnWatcher watcher;
+
+	public static void warnStarted(Entity mob, Entity target, String path) {
+		WarnWatcher w = watcher;
+		if (w != null) {
+			w.started(mob, target, path);
+		}
+	}
+
+	public static void warnEnded(Entity mob, String outcome) {
+		WarnWatcher w = watcher;
+		if (w != null) {
+			w.ended(mob, outcome);
+		}
+	}
+
 	private CombatStats() {
 	}
 

@@ -577,6 +577,108 @@ el daño por minuto):
 El daño de flecha sale ahora más alto que en la tercera tanda: es el mismo número de flechas, pero contado con los
 multiplicadores de Forja (cabeza ×1,3).
 
+### Quinta tanda (30-09): cómo empieza un aviso en el mod
+
+#### Las reglas exactas
+
+Hay tres caminos por los que empieza un golpe avisado. `CombatStats.warnStarted` / `warnEnded` los apunta en las pruebas.
+
+**1. "vanilla": la meta cuerpo a cuerpo de vanilla con `MeleeAttackGoalMixin`.** Es el camino de casi todos los mobs de
+reglas (zombi, husk, araña…).
+- **La meta corre** cuando la decisión de las reglas es ACERCARSE. Vanilla solo mira si puede empezar cada 20 ticks; para
+  los mobs de reglas con ACERCARSE, cada 4 (tercera tanda).
+  - `canUse`: hace una ruta al objetivo; si no hay ruta, vale estar ya a su alcance.
+  - La del zombi se para cuando su ruta se acaba (no sigue a quien no ve). Mientras dura un aviso, no se para.
+- **Cada tick que corre**, `checkAndPerformAttack` → el aviso empieza si se cumple todo esto:
+  - `canPerformAttack`: `ticksUntilNextAttack` ≤ 0, **a su alcance** y lo ve (`hasLineOfSight`).
+    - A su alcance = la caja de ataque del mob corta la caja del jugador (`isWithinMeleeAttackRange`). La caja de ataque
+      es la del mob ensanchada en horizontal lo que da un alcance de √2,04 ≈ 1,43 bloques. Con un arma que alarga
+      (`Reach.actionExtra`), la de Forja: el alcance de su arma (`MobMixin`).
+    - Para un zombi contra un jugador eso es un hueco entre cajas de hasta ~0,83, o ~1,4–1,7 de centro a centro según
+      el ángulo.
+  - **Un turno libre**: `AttackTokens.tryAcquire(jugador, mob, Aggression.maxAttackers(mob, jugador))`.
+  - No estar aturdido, ni mirando un duelo.
+- **El aviso:** `MobDefense.windup` = `windupTicks` 8 + el peso (min(14, round(1,5 × kg))); 4 si tiene el contraataque
+  listo. Quieto, mirando.
+  - Con la probabilidad de finta (`Aggression.feintChance`), es una finta: se corta a mitad del aviso, sin golpe.
+- **Al acabar:** golpea si está a ≤ `Reach.landing` (2 × ancho del mob + ½ del jugador + 0,5 + `actionExtra`, de centro a
+  centro, unos 2,0 para un zombi) y lo ve. Si le da, `HopBack.afterHit`: un salto atrás de 2,5 a lo sumo cada 120 ticks.
+  Suelta el turno y `resetAttackCooldown`: `ticksUntilNextAttack` = 20 × (1 + 0,1 × kg). Tras una finta también.
+  - Esa espera solo baja mientras la meta corre.
+  - **Arreglado en esta tanda:** el `start()` de vanilla la ponía a 0 cada vez que la meta volvía a empezar, y 1 de cada
+    5 avisos llegaba menos de 20 ticks después del golpe anterior del mismo mob. Ahora la espera que queda se conserva
+    (`forja$keepTheWait`). Prueba `theWaitAfterABlowSurvivesARestart`.
+
+**2. "tactica": `TacticGoal.strike`.** Es el "usar" de un mob con red, y el de las reglas cuando la decisión es una
+táctica con `use` o el mob ha perdido al jugador.
+- Empieza si: `mind.cooldown` ≤ 0, `Reach.reaches` (su alcance con arma) y un turno libre (`tryAcquire`).
+- El aviso dura lo mismo (`MobDefense.windup`); la finta la decide la red.
+- Al acabar, `mind.cooldown = Weight.interval(mob, MELEE_COOLDOWN 20)`; tras una finta, 10. `mind.cooldown` baja 1 por
+  tick mientras corre `TacticGoal`.
+- **Arreglado en esta tanda:** casi todos los avisos de este camino se cortaban. La meta se paraba en cuanto la decisión
+  volvía a ACERCARSE o el mob volvía a ver al jugador. Ahora `TacticGoal` sigue mientras `mind.windup` > 0, y las reglas
+  conservan su decisión mientras tanto (`MobAi`).
+
+**3. "especial": `SpecialGoal` (prioridad 1) → `SpecialRunner.ruleStart`.** Cada tick, para cada especial listo (su
+enfriamiento `readyAt` pasado y `canStart`), empieza con su `ruleChance`.
+- Embestida del zombi (`lunge`, 0,3 por tick): aviso 12, enfriamiento 100–200; a 3,5–7 bloques (+ `actionExtra`), en el
+  suelo, lo ve, no élite, sin lanza, y con turno libre (lo toma al avisar y lo suelta al acabar).
+- Andanada (0,02), paso atrás (0,15), salto de araña (0,06)…
+- No empieza a mitad de un aviso cuerpo a cuerpo (cuarta tanda).
+
+Los arcos de los esqueletos no pasan por aquí: su meta de arco con `RangedBowAttackGoalMixin`.
+
+#### Lo medido (160 peleas por modo, jugador en el mundo, código final de esta tanda)
+
+| Medida (por pelea de 30 s) | sin capitán | sin órdenes | capitán de reglas |
+|---|---|---|---|
+| daño/min | 172,4 | 176,9 | 193,6 |
+| avisos "vanilla" empezados | 16,1 | 16,7 | 23,7 |
+| — que llegan / fallan / fintas / cortados | 6,3 / 5,8 / 2,8 / 0,7 | 6,5 / 6,3 / 2,7 / 0,6 | 9,5 / 9,2 / 3,5 / 0,8 |
+| avisos "tactica" empezados (llegan / fallan) | 0,8 (0,4 / 0,4) | 1,0 (0,4 / 0,5) | 1,4 (0,5 / 0,9) |
+| especiales: embestida / andanada / paso atrás / salto de araña | 8,3 / 3,1 / 0,2 / 0,8 | 8,4 / 3,0 / 0,2 / 0,8 | 9,4 / 1,6 / 4,2 / 0,8 |
+| distancia al empezar, de centro a centro (media) | 1,62 | 1,62 | 1,57 |
+| — < 1 / 1–1,25 / 1,25–1,5 / 1,5–1,75 / ≥ 1,75 | 9 / 6 / 28 / 20 / 37 % | 8 / 6 / 30 / 19 / 37 % | 10 / 7 / 32 / 18 / 32 % |
+| hueco entre cajas al empezar (media) | 0,86 | 0,87 | 0,82 |
+| ticks desde "a su alcance" hasta el aviso (media) | 3,9 | 3,5 | 4,7 |
+| — 1–2 / 3–5 / 6–10 / 11–20 / 21+ ticks | 67 / 11 / 12 / 7 / 3 % | 70 / 11 / 11 / 6 / 3 % | 62 / 11 / 12 / 11 / 4 % |
+| avisos "vanilla" sin estar a su alcance en el tick anterior | 1,8 | 2,2 | 3,4 |
+| espera del mismo mob hasta su siguiente aviso tras uno que llega | 64,7 ticks | 66,4 | 58,2 |
+| — tras uno que falla | 63,5 | 67,5 | 59,8 |
+| — tras una finta | 66,5 | 66,1 | 54,7 |
+| mobs avisando a la vez: 0 / 1 / 2 / 3 / 4+ (% de ticks) | 61 / 28 / 8 / 2 / 0,2 | 60 / 29 / 9 / 1,5 / 0,2 | 58 / 28 / 11 / 2,4 / 0,4 |
+| turnos ocupados = máximo (% de ticks) | ~8 % | ~9 % | ~10 % |
+
+**Por qué un mob a su alcance no está avisando** (% de sus ticks a su alcance; sin capitán / sin órdenes / capitán):
+- avisando: 45 / 46 / 43 %;
+- **esperando tras su golpe** (`ticksUntilNextAttack` > 0): 30 / 27 / 33 %;
+- **sin la meta cuerpo a cuerpo con la decisión ACERCARSE**: 13 / 13 / 12 %. Su ruta se acabó junto al jugador, la meta
+  se paró y aún no ha vuelto a mirar (cada 4 ticks);
+- con otra táctica (rodear, esperar, retirarse, flanquear…): ~7 %;
+- **turnos llenos: 0,3–0,8 %**. Los turnos casi nunca son el freno;
+- aturdido ~1 %; otro ~4–5 %.
+
+**Antes y después de los dos arreglos** (160 peleas; el empezar en el mismo tick que "a su alcance" sale como 1–2 ticks,
+porque se mide una vez por tick):
+
+| | sin capitán | sin órdenes | capitán de reglas |
+|---|---|---|---|
+| avisos "vanilla" empezados | 17,1 → 16,1 | 18,1 → 16,7 | 28,8 → 23,7 |
+| avisos a < 20 ticks del golpe anterior del mismo mob | ~4 → 1,0 | ~4 → 1,0 | ~8 → 2,1 |
+| avisos "tactica" cortados | ~1,5 → 0 | ~2,6 → 0 | ~2,9 → 0 |
+| daño/min | 170,1 → 172,4 | 178,8 → 176,9 | 205,7 → 193,6 |
+
+Los que siguen a < 20 ticks vienen de mezclar caminos: la espera de `TacticGoal` (`mind.cooldown`) y la de la meta
+vanilla son distintas.
+
+**Para el simulador:**
+- el aviso empieza a 1–2 ticks de estar a su alcance (el 65 %), a 1,6 de centro a centro de media;
+- entre dos avisos del mismo mob pasan ~60–65 ticks (20 de espera, más volver a su alcance, el salto atrás, las rutas);
+- ~13 % del tiempo a su alcance está sin meta (la meta del zombi se para cuando acaba su ruta);
+- los turnos casi nunca limitan (< 1 %).
+
+Con la espera arreglada, el mod baja a 16,1 avisos por pelea sin capitán (el simulador, 12,8).
+
 ## M6: el vector de mundo W (452–467, `WorldMemory`)
 
 - **Dónde:** un adjunto del jugador (se guarda con él y pasa la muerte), un vector por dimensión. `/forja ia mundo`

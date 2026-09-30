@@ -76,8 +76,9 @@ public final class TacticGoal extends Goal {
 
 	@Override
 	public boolean canUse() {
+		// A blow it has warned is seen through (a commitment): the goal goes on while it lasts, whatever the rules say now.
 		return this.mind.target != null && this.mind.target.isAlive()
-			&& (this.mind.networked || this.mind.decision.tactic() != Tactic.ACERCARSE
+			&& (this.mind.networked || this.mind.decision.tactic() != Tactic.ACERCARSE || this.mind.windup > 0
 				|| HonestPerception.lost(this.mind, this.mob.level().getGameTime()));
 	}
 
@@ -103,6 +104,7 @@ public final class TacticGoal extends Goal {
 		if (this.mind.windup > 0) {
 			this.mind.windup = 0;
 			AttackTokens.release(this.struck, this.mob);
+			dev.forja.combat.CombatStats.warnEnded(this.mob, "cortado");
 		}
 		this.struck = null;
 		this.mind.draw = 0;
@@ -144,6 +146,9 @@ public final class TacticGoal extends Goal {
 			this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
 		}
 		if (Posture.isStaggered(this.mob, now)) {
+			if (this.mind.windup > 0) {
+				dev.forja.combat.CombatStats.warnEnded(this.mob, "cortado");
+			}
 			this.mind.windup = 0;
 			this.mob.getNavigation().stop();
 			return;
@@ -361,6 +366,7 @@ public final class TacticGoal extends Goal {
 		this.struck = target;
 		this.mob.getNavigation().stop();
 		CombatFeedback.telegraph(this.mob, this.mind.windupTotal);
+		dev.forja.combat.CombatStats.warnStarted(this.mob, target, "tactica");
 	}
 
 	/**
@@ -387,16 +393,19 @@ public final class TacticGoal extends Goal {
 			this.mind.cooldown = MELEE_COOLDOWN / 2;
 			AttackTokens.release(target, this.mob);
 			this.struck = null;
+			dev.forja.combat.CombatStats.warnEnded(this.mob, "finta");
 			return;
 		}
 		if (--this.mind.windup > 0) {
 			return;
 		}
 		this.mob.swing(InteractionHand.MAIN_HAND);
-		if (this.mob.distanceTo(target) <= Reach.landing(this.mob, target) && ObsM1.sees(this.mob, target.getX(), target.getEyeY(), target.getZ())
-			&& this.mob.level() instanceof ServerLevel level && this.mob.doHurtTarget(level, target)) {
+		boolean landed = this.mob.distanceTo(target) <= Reach.landing(this.mob, target) && ObsM1.sees(this.mob, target.getX(), target.getEyeY(), target.getZ())
+			&& this.mob.level() instanceof ServerLevel level && this.mob.doHurtTarget(level, target);
+		if (landed) {
 			HopBack.afterHit(this.mob, target);
 		}
+		dev.forja.combat.CombatStats.warnEnded(this.mob, landed ? "llega" : "falla");
 		this.mind.cooldown = dev.forja.combat.Weight.interval(this.mob, MELEE_COOLDOWN);
 		this.mind.lastStrike = this.mob.level().getGameTime();
 		AttackTokens.release(target, this.mob);

@@ -539,6 +539,32 @@ public class RedV4CapitanGameTests {
 		});
 	}
 
+	/**
+	 * The wait after a blow survives a restart of the melee goal: vanilla's start() put it back to 0, and our rules stop
+	 * and start that goal often, so 1 warning in 5 came less than 20 ticks after the same mob's last blow.
+	 */
+	@GameTest(maxTicks = 20)
+	public void theWaitAfterABlowSurvivesARestart(GameTestHelper helper) {
+		Zombie zombie = zombie(helper, new BlockPos(2, 1, 2));
+		zombie.setNoAi(true);
+		net.minecraft.world.entity.ai.goal.MeleeAttackGoal goal = null;
+		for (var wrapped : ((dev.forja.mixin.MobGoalsAccess) zombie).forjaGoals().getAvailableGoals()) {
+			if (wrapped.getGoal() instanceof net.minecraft.world.entity.ai.goal.MeleeAttackGoal melee) {
+				goal = melee;
+			}
+		}
+		helper.assertTrue(goal != null, "el zombi tiene su meta cuerpo a cuerpo");
+		dev.forja.test.mixin.MeleeGoalAccess access = (dev.forja.test.mixin.MeleeGoalAccess) goal;
+		access.forja$resetAttackCooldown();
+		int after = access.forja$ticksUntilNextAttack();
+		goal.stop();
+		goal.start();
+		int restarted = access.forja$ticksUntilNextAttack();
+		helper.assertTrue(after >= 20 && restarted >= after - 1, "la espera tras el golpe sigue al volver a empezar: " + after + " -> " + restarted);
+		zombie.discard();
+		helper.succeed();
+	}
+
 	/** A group led by nobody but a veteran has no captain (Andy's decision 4). */
 	@GameTest(padding = 16, maxTicks = 40)
 	public void aVeteranNeverLeads(GameTestHelper helper) {

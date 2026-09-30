@@ -101,6 +101,7 @@ public final class SpecialRunner {
 		this.mob.getNavigation().stop();
 		special.warn(this.mob, target, this.run);
 		CombatStats.record(this.mob, special.id);
+		CombatStats.warnStarted(this.mob, target, "especial:" + special.id);
 		if (this.run.left == 0) {
 			this.release();
 		}
@@ -160,5 +161,6 @@ public final class SpecialRunner {
 		// was taken over, the mob fell back), it used to keep the turn while doing something else.
 		dev.forja.combat.AttackTokens.release(this.run.target, this.mob);
 		this.run = null;
+		CombatStats.warnEnded(this.mob, "especial");
 	}
 }

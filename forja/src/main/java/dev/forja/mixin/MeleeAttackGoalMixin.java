@@ -98,6 +98,7 @@ abstract class MeleeAttackGoalMixin {
 				// The fake: it wound up, the player raised the shield for it, and nothing comes.
 				forja$feint = false;
 				dev.forja.combat.CombatStats.record(mob, dev.forja.combat.CombatStats.FEINT);
+				dev.forja.combat.CombatStats.warnEnded(mob, "finta");
 				resetAttackCooldown();
 				forja$reset();
 				return;
@@ -112,6 +113,7 @@ abstract class MeleeAttackGoalMixin {
 				dev.forja.ai.HopBack.afterHit(mob, target);
 			}
 			// how it ended, for the tests (CapitanMedidaGameTests): struck during the warning is knocked back
+			dev.forja.combat.CombatStats.warnEnded(mob, landed ? "llega" : "falla");
 			dev.forja.combat.CombatStats.record(mob, landed ? dev.forja.combat.CombatStats.WARNED_LANDED
 				: !inReach ? (mob.hurtTime > 0 ? dev.forja.combat.CombatStats.WARNED_KNOCKED : dev.forja.combat.CombatStats.WARNED_MOVED)
 				: !seen ? dev.forja.combat.CombatStats.WARNED_UNSEEN : dev.forja.combat.CombatStats.WARNED_NO_DAMAGE);
@@ -133,6 +135,7 @@ abstract class MeleeAttackGoalMixin {
 		forja$holdStill(target);
 		CombatFeedback.telegraph(mob, forja$windup);
 		dev.forja.combat.CombatStats.record(mob, dev.forja.combat.CombatStats.WARNED);
+		dev.forja.combat.CombatStats.warnStarted(mob, target, "vanilla");
 		dev.forja.ai.MobMind warned = dev.forja.ai.MobAi.mind(mob);
 		if (warned != null) {
 			warned.warning = true;
@@ -145,6 +148,7 @@ abstract class MeleeAttackGoalMixin {
 		if (forja$windup > 0) {
 			dev.forja.combat.CombatStats.record(mob, dev.forja.combat.CombatStats.WARNED_CUT);
 			dev.forja.combat.CombatStats.record(mob, dev.forja.combat.CombatStats.WARNED_CUT + "_" + why);
+			dev.forja.combat.CombatStats.warnEnded(mob, "cortado");
 		}
 	}
 
@@ -273,6 +277,24 @@ abstract class MeleeAttackGoalMixin {
 	private void forja$heavyWait(CallbackInfo ci) {
 		if (CombatConfig.get().enabled) {
 			ticksUntilNextAttack = Math.round(ticksUntilNextAttack * (1.0F + dev.forja.combat.Weight.INTERVAL_PER_KG * dev.forja.combat.Weight.carried(mob)));
+		}
+		forja$nextAttackAt = mob.level().getGameTime() + ticksUntilNextAttack;
+	}
+
+	/** When the wait after its last blow is over (resetAttackCooldown): a restart of the goal does not cut it short. */
+	@Unique
+	private long forja$nextAttackAt = Long.MIN_VALUE / 2;
+
+	/**
+	 * Vanilla's start() puts the wait before the next blow back to 0. Our rules stop and start the melee goal far more
+	 * often than vanilla does (a tactic for a moment, a path run out next to a moving player, the goal looked at again
+	 * every 4 ticks), and 1 warning in 5 came less than 20 ticks after the same mob's last blow (2026-09-30): the
+	 * wait after a blow, and a heavy mob's longer one (Weight), were skipped. The wait left over is kept.
+	 */
+	@Inject(method = "start", at = @At("TAIL"))
+	private void forja$keepTheWait(CallbackInfo ci) {
+		if (CombatConfig.get().enabled) {
+			ticksUntilNextAttack = (int) Math.max(ticksUntilNextAttack, forja$nextAttackAt - mob.level().getGameTime());
 		}
 	}
 
