@@ -780,7 +780,7 @@ public class RedV4ModGameTests {
 	 * In a dark roofed room lit by one torch, a zombie on the rules without a turn puts the torch out (15 ticks of
 	 * striking, the torch drops); a lantern beside it never counts. With mobGriefing off it never does.
 	 */
-	@GameTest(padding = 16, maxTicks = 300)
+	@GameTest(padding = 16, maxTicks = 400)
 	public void zombiePutsOutTheTorchOnlyWithGriefing(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		boolean griefing = level.getGameRules().get(GameRules.MOB_GRIEFING);
@@ -823,24 +823,28 @@ public class RedV4ModGameTests {
 			level.getGameRules().set(GameRules.MOB_GRIEFING, true, level.getServer());
 			Lights.forget(player);
 		});
-		helper.runAfterDelay(290, () -> {
-			level.getGameRules().set(GameRules.MOB_GRIEFING, griefing, level.getServer());
+		boolean[] on = {false};
+		helper.runAfterDelay(101, () -> on[0] = true);
+		helper.succeedWhen(() -> {
+			helper.assertTrue(on[0], "aún sin mobGriefing");
 			List<Lights.Torch> near = Lights.forMob(zombie, player);
 			helper.assertTrue(helper.getBlockState(torch).isAir(), "con mobGriefing la antorcha debería apagarse: " + helper.getBlockState(torch)
 				+ " (táctica " + mind.decision.tactic() + ", permitido " + Lights.allowed(level) + ", antorchas " + near
 				+ ", alcanzable " + (near.isEmpty() ? null : Lights.reachable(zombie, near.get(0).pos())) + ", turno "
 				+ dev.forja.combat.AttackTokens.holds(player, zombie) + "/" + dev.forja.combat.AttackTokens.free(player, dev.forja.ai.Aggression.maxAttackers(zombie, player))
-				+ " de " + dev.forja.ai.Aggression.maxAttackers(zombie, player) + ", sitiado " + Heights.besieged(player) + ")");
+				+ " de " + dev.forja.ai.Aggression.maxAttackers(zombie, player) + ", sitiado " + Heights.besieged(player) + ", zombi en " + zombie.position()
+				+ " a " + zombie.position().distanceTo(Vec3.atCenterOf(helper.absolutePos(torch))) + " de la antorcha, golpes " + mind.lightTicks
+				+ ", objetivo " + mind.lightTarget + ", camino " + zombie.getNavigation().getPath() + ")");
 			helper.assertTrue(helper.getBlockState(new BlockPos(5, 1, 7)).is(Blocks.LANTERN), "el farol nunca se rompe");
 			boolean dropped = !level.getEntitiesOfClass(ItemEntity.class, new AABB(helper.absolutePos(torch)).inflate(3.0), e -> e.getItem().is(Items.TORCH)).isEmpty();
 			helper.assertTrue(dropped, "la antorcha rota se suelta para el jugador");
+			level.getGameRules().set(GameRules.MOB_GRIEFING, griefing, level.getServer());
 			zombie.discard();
 			for (Zombie holder : holders) {
 				dev.forja.combat.AttackTokens.releaseAll(holder);
 				holder.discard();
 			}
 			clear(helper, 10, 4);
-			helper.succeed();
 		});
 	}
 

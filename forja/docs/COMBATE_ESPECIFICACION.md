@@ -821,6 +821,20 @@ los números. Todo vale igual para una red v4 y para las reglas: las dos llaman 
   deja 100 ticks.
 - **Reglas:** uno del grupo a la vez, sin turno, si la antorcha quita ≥ 3 de luz al jugador.
 
+
+### Oído, rastro y emboscadas (M4; `Hearing`, `Perception`, `Ambush`, `TacticGoal.search`)
+- **Sonidos del jugador** (los eventos del juego que provoca): paso 6 (corriendo 12; agachado no suena), caer 10,
+  romper o poner un bloque 16, abrir o cerrar puertas y cofres 12, comer o beber 8, disparar 16, un golpe suyo 12. Sin
+  línea entre el sonido y el mob, la mitad. Cada mob guarda sus 2 últimos.
+- **Estimación:** la última posición vista, o la del último sonido oído si es más nueva. Sin percibir al jugador, el
+  ejecutor va a la estimación y la red v4 ve a un sustituto allí, como lo vio por última vez (la posición real nunca le
+  llega).
+- **BUSCAR:** a la estimación; luego 3 puntos a 6 bloques, a 0° y ±60° de por dónde iba; luego quieto. Un sonido nuevo
+  empieza de nuevo.
+- **EMBOSCAR:** a su escondite (el mejor de 16 puntos a 3 y 6 bloques fuera de la vista del jugador: oscuro, junto a su
+  camino, esquina o techo) a 0,8, y quieto mirando hacia él.
+- **Caza:** hasta 48 bloques y 30 s sin verlo ni oírlo.
+- **Reglas:** jugador perdido → BUSCAR; búsqueda acabada y a oscuras → EMBOSCAR.
 ### Coste (prueba `RedV4PerfGameTests`)
 30 mobs mezclados con redes v4 del tamaño del contrato (468 → 128 → 128 → GRU 96 → 53): **1,25–1,42 ms/tick** de IA en
 total (tope 2,5); los mismos por reglas, 0,14–0,16 ms/tick.

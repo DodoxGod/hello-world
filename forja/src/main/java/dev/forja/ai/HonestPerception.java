@@ -10,9 +10,9 @@ import net.minecraft.world.entity.player.Player;
  * real position through walls, and a mob that walks round a corner straight to a player it has never seen there is
  * cheating. This only moves the goal of its walk: it never breaks or builds anything, so a closed base stays closed.
  *
- * <p>Only for a mob with a mind whose player target it has perceived at least once ({@link MobMind#lastSeen}): one
- * sent after a player it never saw (a siege, a call for help) has no last position and keeps going as before. The
- * search for the player once there (BUSCAR) comes with the v4; for now it waits at the spot.
+ * <p>Only for a mob with a mind that has perceived its player at least once, or heard them (Perception.estimate: the
+ * newer of the two): one sent after a player it never saw nor heard (a siege, a call for help) has no estimate and
+ * keeps going as before. Once there it searches (TacticGoal.search, BUSCAR) or lies in wait (EMBOSCAR).
  */
 public final class HonestPerception {
 	/** Ticks without perceiving the player after which its movement follows the last known position instead. */
@@ -31,7 +31,7 @@ public final class HonestPerception {
 			return false;
 		}
 		Player target = mind.target;
-		if (target == null || mind.lastSeen == null || now - mind.lastSeenAt < LOST_AFTER || mind.mob.getTarget() != target) {
+		if (target == null || Perception.estimate(mind) == null || now - mind.lastSeenAt < LOST_AFTER || mind.mob.getTarget() != target) {
 			return false;
 		}
 		// A boss fights in its own arena by its own script: it is not hunting anybody down.
@@ -45,7 +45,7 @@ public final class HonestPerception {
 
 	/** Whether it has got to the last known position (then it holds still there). */
 	public static boolean arrived(MobMind mind) {
-		return mind.lastSeen != null
-			&& mind.mob.distanceToSqr(mind.lastSeen.x, mind.mob.getY(), mind.lastSeen.z) < ARRIVED * ARRIVED;
+		net.minecraft.world.phys.Vec3 estimate = Perception.estimate(mind);
+		return estimate != null && mind.mob.distanceToSqr(estimate.x, mind.mob.getY(), estimate.z) < ARRIVED * ARRIVED;
 	}
 }

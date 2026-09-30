@@ -184,6 +184,9 @@ public final class ObsV4 {
 			// M2/M3 (docs/red_mob_v4_mod_estado.md): the player's light, height and pillar, the things on the floor, the
 			// kit and the effects, the shield, the torches.
 			long now = mob.level().getGameTime();
+			// M4: what it perceives, has heard and last saw (P), and hiding, being seen and the player's surroundings (E)
+			perception(mob, target, mind, now, out, P_AT);
+			ambush(mob, target, mind, now, out, E_AT);
 			out[JUG_LUZ] = Lights.playerLight(target) / 15.0F;
 			Heights.observe(mob, target, now, out, A_AT);
 			GroundItems.observe(mob, target, out, O_AT);
@@ -194,8 +197,77 @@ public final class ObsV4 {
 		return out;
 	}
 
-	/** jug_luz/15, the one input of block E that M3 brings (the rest of E comes with M4). */
+	/** jug_luz/15, the one input of block E that M3 brought. */
 	public static final int JUG_LUZ = E_AT + 14;
+
+	/** A player unseen this long counts as never seen for the ages of block P (its tope, 2 in both scales). */
+	private static final long NEVER = 400;
+
+	/**
+	 * Block P (338–365). {@code target} is the player as the observation sees them (the stand-in at the estimate when it
+	 * does not perceive them): the frame is theirs, the rest comes from the mind.
+	 */
+	private static void perception(Mob mob, Player target, MobMind mind, long now, float[] out, int at) {
+		double dx = target.getX() - mob.getX();
+		double dz = target.getZ() - mob.getZ();
+		double d = Math.max(1.0E-6, Math.hypot(dx, dz));
+		double fx = dx / d;
+		double fz = dz / d;
+		boolean perceived = Perception.perceived(mind, now);
+		out[at] = perceived ? 1.0F : 0.0F;
+		out[at + 1] = mind.lastHeard != null && now - mind.lastHeardAt <= Hearing.HEARD_RECENTLY ? 1.0F : 0.0F;
+		long age = mind.lastSeen == null ? NEVER : Math.max(0, now - mind.lastSeenAt);
+		out[at + 2] = perceived ? 0.0F : (float) ObsM1.clip(age / 100.0, 0.0, 2.0);
+		if (mind.lastSeen != null) {
+			double ox = mind.lastSeen.x - mob.getX();
+			double oz = mind.lastSeen.z - mob.getZ();
+			out[at + 3] = (float) ObsM1.clip((ox * fx + oz * fz) / 16.0, -2.0, 2.0);
+			out[at + 4] = (float) ObsM1.clip((ox * -fz + oz * fx) / 16.0, -2.0, 2.0);
+			out[at + 5] = (float) ObsM1.clip((mind.lastSeen.y - mob.getY()) / 4.0, -2.0, 2.0);
+		}
+		out[at + 6] = perceived ? 0.0F : (float) ObsM1.clip(age / 200.0, 0.0, 2.0);
+		Hearing.observe(mind.sound0, mob, fx, fz, now, out, at + 7);
+		Hearing.observe(mind.sound1, mob, fx, fz, now, out, at + 17);
+		boolean searching = !perceived && mind.searchSince > Long.MIN_VALUE / 4;
+		out[at + 27] = searching ? (float) ObsM1.clip((now - mind.searchSince) / 200.0, 0.0, 2.0) : 0.0F;
+	}
+
+	/** Block E (366–386) but jug_luz, which build writes. */
+	private static void ambush(Mob mob, Player target, MobMind mind, long now, float[] out, int at) {
+		double dx = target.getX() - mob.getX();
+		double dz = target.getZ() - mob.getZ();
+		double d = Math.max(1.0E-6, Math.hypot(dx, dz));
+		double fx = dx / d;
+		double fz = dz / d;
+		boolean[] hidden = Ambush.occluded(mob, mind, target, fx, fz, now);
+		for (int k = 0; k < 8; k++) {
+			out[at + k] = hidden[k] ? 1.0F : 0.0F;
+		}
+		Ambush.Spot spot = Ambush.spot(mob, mind, target, now);
+		if (spot != null) {
+			double ox = spot.pos().x - mob.getX();
+			double oz = spot.pos().z - mob.getZ();
+			out[at + 8] = 1.0F;
+			out[at + 9] = (float) ObsM1.clip((ox * fx + oz * fz) / 8.0, -2.0, 2.0);
+			out[at + 10] = (float) ObsM1.clip((ox * -fz + oz * fx) / 8.0, -2.0, 2.0);
+			out[at + 11] = spot.light() / 15.0F;
+			out[at + 12] = (float) ObsM1.clip(spot.fromPlayer() / 16.0, 0.0, 2.0);
+		}
+		out[at + 13] = Perception.seenBy(mob, target) ? 1.0F : 0.0F;
+		out[at + 15] = Ambush.corridor(target) ? 1.0F : 0.0F;
+		out[at + 16] = Ambush.doorway(target) ? 1.0F : 0.0F;
+		out[at + 17] = Ambush.roofed(target) ? 1.0F : 0.0F;
+		Player real = Perception.real(target);
+		out[at + 18] = (float) ObsM1.clip(Perception.sinceSawGroup(real, now) / 200.0, 0.0, 2.0);
+		int waiting = 0;
+		for (MobMind other : MobAi.minds()) {
+			if (other.target == real && other.mob.isAlive() && other.ambushSince > Long.MIN_VALUE / 4) {
+				waiting++;
+			}
+		}
+		out[at + 19] = (float) ObsM1.clip(waiting / 5.0, 0.0, 2.0);
+		out[at + 20] = mind.ambushSince > Long.MIN_VALUE / 4 ? (float) ObsM1.clip((now - mind.ambushSince) / 200.0, 0.0, 2.0) : 0.0F;
+	}
 
 	// ---------------------------------------------------------------- S: sectors
 
@@ -203,13 +275,13 @@ public final class ObsV4 {
 	private static void sectors(Mob mob, Player target, MobMind mind, float[] out, int at) {
 		long now = mob.level().getGameTime();
 		double front = front(target, now);
-		List<MobMind> squad = squad(mob, target, mind);
-		double mine = slot(mind, target);
+		List<MobMind> squad = squad(mob, Perception.real(target), mind);
+		double mine = slot(mind, Perception.real(target));
 		int sector = Double.isNaN(mine) ? -1 : sector(mine, front);
 		if (sector >= 0) {
 			out[at + sector] = 1.0F;
 			out[at + 4] = (float) (Squad.wrap(mine - Squad.angle(mob, target)) / Math.PI);
-			out[at + 5] = mind.slotOf == target && !Double.isNaN(mind.slotAngle) && mind.slotSince > Long.MIN_VALUE / 4
+			out[at + 5] = mind.slotOf == Perception.real(target) && !Double.isNaN(mind.slotAngle) && mind.slotSince > Long.MIN_VALUE / 4
 				? (float) ObsM1.clip((now - mind.slotSince) / 100.0, 0.0, 2.0) : 0.0F;
 		}
 		int crowd = 0;
@@ -233,7 +305,7 @@ public final class ObsV4 {
 			if (other == mind || sector < 0) {
 				continue;
 			}
-			double theirs = slot(other, target);
+			double theirs = slot(other, Perception.real(target));
 			if (!Double.isNaN(theirs) && sector(theirs, front) == sector) {
 				inSector++;
 				if (other.mob.distanceToSqr(target) < myDistance) {
@@ -260,7 +332,7 @@ public final class ObsV4 {
 			out[at + 12] = (float) shot[1];
 		}
 		out[at + 13] = (float) ObsM1.clip(squad.size() / 13.0, 0.0, 2.0);
-		boolean waiting = mind.othersWaiting && !AttackTokens.holds(target, mob);
+		boolean waiting = mind.othersWaiting && !AttackTokens.holds(Perception.real(target), mob);
 		if (!waiting || mind.waitingSince <= Long.MIN_VALUE / 4) {
 			mind.waitingSince = now;
 		}
@@ -288,6 +360,11 @@ public final class ObsV4 {
 			mean[2] = now;
 		}
 		return Math.atan2(mean[1], mean[0]);
+	}
+
+	/** Forgets the slow mean of a player's look (Perception's stand-in, which stands for a different player each time). */
+	static void forgetLook(Player player) {
+		LOOK.remove(player);
 	}
 
 	/** 0 in front (under 45° off the front), 1 left, 2 right (45° to 135°), 3 behind (over 135°). */

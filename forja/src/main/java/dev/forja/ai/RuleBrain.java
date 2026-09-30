@@ -98,6 +98,12 @@ public final class RuleBrain {
 		if (dev.forja.entity.ai.CasterGoal.casts(mob)) {
 			return Decision.APPROACH;
 		}
+		// A player it has lost (HonestPerception, M4): it looks for them where it thinks they are (BUSCAR: there, then a
+		// fan of three points ahead); its search done, in the dark it lies in wait near there (EMBOSCAR) instead.
+		if (HonestPerception.lost(mind, mob.level().getGameTime())) {
+			boolean dark = mob.level().isDarkOutside() || mob.level().getMaxLocalRawBrightness(mob.blockPosition()) < Perception.DARK;
+			return Decision.tactic(mind.searchStage == 2 && dark ? Tactic.EMBOSCAR : Tactic.BUSCAR);
+		}
 		MobFamily family = MobFamily.of(mob);
 		// The ember wisp never stands and fights: close in and it drifts off, leaving fire behind (idea 45).
 		if (mob instanceof dev.forja.entity.EmberWisp && mob.distanceTo(target) < 4.0) {

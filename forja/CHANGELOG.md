@@ -1,5 +1,17 @@
 # Novedades
 
+## 2026-09-29 — IA v4 de los monstruos: oído, rastro y emboscadas (paso M4)
+
+- **Te oyen:** pasos (corriendo más lejos; agachado, nada), picar y poner bloques, puertas y cofres, comer y beber,
+  disparar y golpear. A través de una pared, la mitad de lejos.
+- **Te buscan donde creen que estás:** donde te vieron o donde te oyeron por última vez; luego miran en abanico más
+  allá. Nunca van a tu posición real si no te perciben.
+- **Emboscadas:** de noche o a oscuras, cuando te pierden, esperan quietos en un escondite fuera de tu vista.
+- **Te siguen más:** hasta 48 bloques y 30 s sin verte ni oírte (antes, 3 s).
+- **Red v4:** bloques P y E; BUSCAR y EMBOSCAR abiertas; mientras no te percibe, la red ve un sustituto en la posición
+  estimada.
+- **Pruebas:** `RedV4PercepcionGameTests` (6).
+
 ## 2026-09-29 — IA v4 de los monstruos: escudo, objetos, mochila y contra el pilar (pasos M2 y M3)
 
 - **Escudo inteligente:** el muro de escudos solo sube el escudo cuando viene algo. Tras bloquear, **golpe de

@@ -15,14 +15,15 @@ red v4 y las reglas (llaman a los mismos ejecutores), así que el comportamiento
 | M0, M1 | sin construir ni cavar; `ObsV4` con v3b + S + R; carga de `redes_v4`; cabezas enmascaradas | anteriores |
 | M2 | escudo inteligente y golpe de escudo (G); objetos en el suelo, valor de arma y RECOGER (O); mochila, beber, comer, lanzar, perlas, carga de viento y cambiar de arma (C) | ver `git log` |
 | M3 | bloque A; flecha de empuje, zarpazo, garfio; ASEDIAR; antorchas: APAGAR_LUZ, bloque L y `jug_luz` | ver `git log` |
+| M4 | oído (sonidos), última posición y estimación en la observación y el ejecutor, caza hasta 48 y 600 ticks, BUSCAR, escondites y EMBOSCAR; bloques P y E | ver `git log` |
 
 ## Entradas vivas (M2/M3)
 
 Marco de siempre: "delante" = del mob al jugador en el plano, "derecha" = (−delante_z, delante_x).
 
-### E (solo 380)
+### E: `jug_luz` (380)
 - `jug_luz/15`: `getMaxLocalRawBrightness` en el bloque de los pies del jugador (cielo con su oscurecimiento y
-  bloques), /15. El resto de E sigue a 0 (llega en M4).
+  bloques), /15. El resto de E está en la sección M4.
 
 ### A (387–396): `Heights`, calculado por jugador como mucho cada 10 ticks
 - `jug_sobre_suelo/8`: pies − mediana del "suelo" en 8 puntos a 2,5 del jugador. El suelo de un punto es la cara de
@@ -96,8 +97,7 @@ Marco de siempre: "delante" = del mob al jugador en el plano, "derecha" = (−de
 | 43–50 objeto | lo lleva, no hay otro en curso, enfriamiento 0, no aturdido; 4 y 7 `lanzamiento_ok`; 5 `perla_destino_ok`; 6 no en furia; 8 lleva un arma de repuesto (no una caña) y ≥ 40 ticks desde el último cambio | ver COMBATE §5 |
 | 52 golpe_escudo | escudo arriba, bloqueo < 20 ticks, alcanza, listo | ver COMBATE §5 |
 
-Siguen cerradas: FORMACION (36), EMBOSCAR (37), BUSCAR (38) y furia (51); llegan en M4 y M5. Si una red las eligiera
-sin máscara, FORMACION se ejecuta como RODEAR, EMBOSCAR como OCULTARSE y BUSCAR como LIBRE.
+EMBOSCAR (37) y BUSCAR (38) se abren en M4 (ver abajo); FORMACION (36) y furia (51), en M5.
 
 **Especial 3 (salida 23):** nuevo hueco para la flecha de empuje (esqueleto, stray, bogged, saqueador), el zarpazo
 (araña, araña de cueva) y el garfio (zombi, husk, aldeano zombi, ahogado, vindicador, piglin, piglin bruto, piglin
@@ -119,6 +119,73 @@ para estos mobs en la v4.
 7. **Carga de viento:** la de vanilla; la de un monstruo no activa bloques (puertas, botones).
 8. **Perla:** 2 de daño al mob al llegar. Tiro parabólico a 45° (60° si el destino está casi tan alto como lejos),
    v² = g·x² / (2·cos²θ·(x·tanθ − dy)) con g = 0,03 y +8 % por el rozamiento.
+
+## M4: percepción, oído, rastro y emboscadas
+
+### Percepción honesta en la observación (`Perception`)
+- **Percibido** (`obj_percibido`): este tick hay rayo de sus ojos a los ojos del jugador, dentro del alcance en que
+  piensa, y no lo oculta la regla de la noche (`WorldFights.hiddenByNight`: de noche, a > 12 y con luz < 4 en los pies
+  del jugador).
+- **Estimación**: donde lo vio por última vez, o donde lo oyó por última vez si es más reciente.
+- **Mientras no lo percibe, las 468 entradas** (también las 280 de v3b) se calculan contra un **jugador sustituto**
+  puesto en la estimación, con lo que tenía del jugador la última vez que lo percibió: vida, lo que llevaba en las manos
+  y la armadura, hacia dónde miraba, si corría o iba agachado, y su estamina. Velocidad 0 y sin usar objeto (arco,
+  escudo, comer). Lo que depende de **quién** es el jugador y no de **dónde** está (el grupo que pelea con él, sus
+  turnos, el rencor, sus hábitos) se lee del jugador real. Así la posición real **nunca** llega a la red (prueba
+  `v4EstimateNeverLeaksTheRealPosition`).
+- Un mob que nunca lo vio ni lo oyó (asedio, llamada de ayuda) no tiene estimación y ve al jugador real, como el
+  ejecutor.
+- **Con el jugador no percibido se cierran** los objetos 4 (poción), 5 (perla para acercarse) y 7 (carga de viento):
+  apuntarían al jugador real. Los especiales ya no empezaban sin percibirlo (M1).
+
+### P (338–365)
+- `obj_oido`: oyó un sonido del jugador en los últimos 20 ticks.
+- `obj_edad/100` y `ultima_edad/200`: ticks desde que lo vio por última vez; **0 mientras lo percibe**; si nunca lo vio,
+  400 (2 y 2).
+- `ultima_delante/16`, `ultima_derecha/16`, `ultima_dy/4`: dónde lo vio por última vez, en el marco de siempre (el
+  marco va hacia la estimación cuando no lo percibe). 0 si nunca lo vio.
+- `sonidoK_*`: los 2 últimos sonidos que **este mob** oyó del jugador (el más reciente primero), mientras no tengan
+  más de 80 ticks. `fuerza` = radio/16 (6, 10, 12, 16 → 0,375…1). Tipos: movimiento, trabajo, comer, combate.
+- `buscando/200`: ticks desde que lo perdió (HonestPerception: 20 ticks sin percibirlo) mientras no lo percibe.
+
+**Sonidos** (`Hearing`): los eventos del juego que provoca el jugador. Radios: paso andando 6, corriendo 12
+(agachado no hay evento de paso), caer 10, romper o poner bloque 16, abrir o cerrar puertas y cofres 12, comer o
+beber 8, disparar 16, un golpe suyo que hace daño 12. **Sin línea** entre el sonido (+0,5 de altura) y los oídos del
+mob, el radio se divide por 2.
+
+### E (366–386)
+- `oculto_r3_*`: desde el punto a 3 bloques en cada dirección del marco (a la altura de sus ojos) no hay rayo a los
+  ojos del jugador. Cada 10 ticks.
+- **Escondite** (cada 10 ticks, y se conserva mientras siga oculto y a ≤ 8): 16 puntos alrededor del mob (8
+  direcciones a 3 y 6), en el centro de su bloque, con suelo y sitio, sin rayo desde los ojos del jugador a 1,5 por
+  encima. Nota: luz < 4 +2; a 2–5 del camino probable del jugador (su posición y la de dentro de 40 ticks con su
+  velocidad) +1; esquina, marco de puerta (paredes en 2 o más lados a la altura de la cabeza) o techo a 2–3 +1; menos
+  la distancia al mob / 8.
+- `escondite_luz/15`: luz total (cielo y bloques) en el escondite.
+- `me_ve_jugador`: rayo de los ojos del jugador a los míos, dentro de su cono de **70° en total** (35° a cada lado) y
+  con luz ≥ 4 donde estoy o a < 8.
+- `jug_en_pasillo`: pared de 2 de alto a ≤ 1,5 a los dos lados, perpendicular a su mirada.
+- `jug_en_puerta`: en una puerta, puerta de valla o trampilla, o en un hueco de 1–2 entre paredes (pies y cabeza) en
+  uno de los dos ejes, abierto delante y detrás. **Un pasillo de 1–2 también cuenta como hueco.**
+- `jug_bajo_techo`: bloque con colisión a 1–4 por encima de su cabeza.
+- `jug_sin_vernos/200`: ticks desde que algún mob del grupo que pelea con él estuvo en su cono con línea
+  (`me_ve_jugador`); se mira cada 10 ticks.
+- `emboscados/5`: miembros del grupo quietos en su escondite (EMBOSCAR y llegados).
+- `yo_emboscado/200`: ticks que llevo quieto en el escondite.
+
+### Salidas nuevas (M4)
+- **BUSCAR (38)**, máscara: no lo percibe, lo vio alguna vez y hace < 600 ticks. Ejecutor, igual para cualquier
+  cerebro con el jugador perdido: ruta a la estimación; al llegar (< 2), 3 puntos a 6 bloques más allá, a 0° y ±60°
+  de la dirección en que iba el jugador (su velocidad cuando lo vio, o la del mob hacia la estimación), uno tras otro
+  (80 ticks cada uno como mucho); luego quieto mirando alrededor. Un sonido nuevo reinicia la búsqueda desde él.
+- **EMBOSCAR (37)**, máscara: hay escondite. Ejecutor: ruta al escondite a 0,8; a < 1,5 se para y mira hacia el jugador
+  (o la estimación). Con el jugador perdido, el escondite se busca desde la estimación.
+- **Reglas**: con el jugador perdido, BUSCAR; con la búsqueda acabada y a oscuras (de noche o con luz < 4 donde está),
+  EMBOSCAR.
+
+### Caza
+- Un mob sigue pensando y conserva su objetivo **hasta 48 bloques y 600 ticks** sin percibirlo ni oírlo (antes 32 y la
+  memoria de 3 s de los objetivos vanilla, `TargetGoalMixin`).
 
 ## Rendimiento
 

@@ -122,9 +122,50 @@ public final class MobMind {
 	/** ASEDIAR (Siege): its spot in the siege ring, and when it was chosen. */
 	public Vec3 siegeSpot;
 	public long siegeAt = Long.MIN_VALUE / 2;
+	/** Perception (M4): when it last perceived its player, and what it had of them then (Perception). */
+	public long perceivedAt = Long.MIN_VALUE / 2;
+	public Perception.Snapshot snapshot;
+	/** Hearing (M4): where and when it last heard its player, its two latest sounds, and up to when it has listened. */
+	public Vec3 lastHeard;
+	public long lastHeardAt = Long.MIN_VALUE / 2;
+	public Hearing.Sound sound0;
+	public Hearing.Sound sound1;
+	public long heardUpTo = Long.MIN_VALUE / 2;
+	/** BUSCAR (M4): since when, which stage, the fan of points ahead and the one it is going to, for which estimate. */
+	public long searchSince = Long.MIN_VALUE / 2;
+	public int searchStage;
+	public Vec3[] searchPoints;
+	public int searchIndex;
+	public long searchFor = Long.MIN_VALUE / 2;
+	/** EMBOSCAR (M4): its hiding spot and when it was worked out, and for whom; since when it lies in wait. */
+	public Ambush.Spot hideSpot;
+	public long hideAt = Long.MIN_VALUE / 2;
+	public Player hideFor;
+	public Vec3 hidePlayerAt;
+	public long ambushSince = Long.MIN_VALUE / 2;
+	/** oculto_r3_* (M4), kept for Ambush.PERIOD ticks. */
+	public boolean[] occluded;
+	public long occludedAt = Long.MIN_VALUE / 2;
+	public Player occludedFor;
+	public Vec3 occludedPlayerAt;
 	/** Its fury (M5): until when it lasts, and until when it is spent after. */
 	public long furyUntil = Long.MIN_VALUE / 2;
 	public long exhaustedUntil = Long.MIN_VALUE / 2;
+
+	/** When one of v4's executors (RECOGER, ASEDIAR, APAGAR_LUZ) last asked for a path. */
+	public long pathAt = Long.MIN_VALUE / 2;
+
+	/**
+	 * Whether a new path may be asked for now, and if so notes it: at most every 10 ticks. The pathfinder is the dear
+	 * part, and asked "whenever the last path is done", a mob whose path ended short asked every tick.
+	 */
+	public boolean pathDue(long now) {
+		if (now - this.pathAt >= 10 || now < this.pathAt) {
+			this.pathAt = now;
+			return true;
+		}
+		return false;
+	}
 
 	/** Whether it is in a fury now. */
 	public boolean furyActive(long now) {

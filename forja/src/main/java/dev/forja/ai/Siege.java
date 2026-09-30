@@ -84,7 +84,7 @@ public final class Siege {
 		}
 		if (mob.distanceToSqr(spot.x, mob.getY(), spot.z) < 1.5 * 1.5) {
 			mob.getNavigation().stop();
-		} else if (mob.getNavigation().isDone() || mob.tickCount % 10 == 0) {
+		} else if (mind.pathDue(mob.level().getGameTime())) {
 			mob.getNavigation().moveTo(spot.x, spot.y, spot.z, 1.0);
 		}
 		mob.getLookControl().setLookAt(player, 30.0F, 30.0F);
@@ -162,7 +162,7 @@ public final class Siege {
 				mind.lightTarget = null;
 				return false;
 			}
-			if (mob.getNavigation().isDone() || mob.tickCount % 10 == 0) {
+			if (mind.pathDue(mob.level().getGameTime())) {
 				if (!mob.getNavigation().moveTo(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, 1.0) && mob.getNavigation().isDone()) {
 					Lights.unreachable(mob.level(), torch);
 					mind.lightTarget = null;

@@ -440,12 +440,19 @@ public final class MobAi {
 			if (hunting != null) {
 				mind.lastSeen = null;
 				mind.lastSeenAt = now;
+				mind.lastHeard = null;
+				mind.lastHeardAt = Long.MIN_VALUE / 2;
+				mind.sound0 = null;
+				mind.sound1 = null;
+				mind.heardUpTo = Hearing.latest(hunting);
+				mind.snapshot = null;
 			}
 		}
-		// Boredom (69): a player it has not seen for 30 seconds is given up.
-		if (mob.getTarget() instanceof Player hunted && mind.lastSeenAt > Long.MIN_VALUE / 2 && now - mind.lastSeenAt > Personality.BORED_TICKS) {
+		// Boredom (69): a player it has neither seen nor heard for 30 seconds is given up.
+		if (mob.getTarget() instanceof Player hunted && mind.lastSeenAt > Long.MIN_VALUE / 2 && now - Perception.estimateAt(mind) > Personality.BORED_TICKS) {
 			mob.setTarget(null);
 			mind.lastSeen = null;
+			mind.lastHeard = null;
 		}
 		// A grudge (62): with nothing to do, it goes for the player it holds one against, if it sees them.
 		if (mob.getTarget() == null && now % 20 == 0) {
@@ -456,11 +463,22 @@ public final class MobAi {
 				mob.setTarget(held);
 			}
 		}
+		// A player it is hunting (seen or heard within the boredom time) is followed further than one it has just met:
+		// up to 48 blocks (v4, docs/red_mob_v4_diseno.md §4.5), not only the 32 it starts thinking at.
+		double range = CombatConfig.get().iaAlcance;
+		if (mob.getTarget() instanceof Player chased && chased == mind.hunted && now - Perception.estimateAt(mind) <= Personality.BORED_TICKS) {
+			range = Math.max(range, Perception.HUNT_RANGE);
+		}
 		Player target = mob.getTarget() instanceof Player player && player.isAlive() && !player.isCreative() && !player.isSpectator()
-			&& mob.distanceTo(player) <= CombatConfig.get().iaAlcance ? player : null;
+			&& mob.distanceTo(player) <= range ? player : null;
 		if (target != null && ObsM1.sees(mob, target.getX(), target.getEyeY(), target.getZ()) && !WorldFights.hiddenByNight(mob, target)) {
 			mind.lastSeen = target.position();
 			mind.lastSeenAt = now;
+			mind.perceivedAt = now;
+		}
+		if (target != null) {
+			// its ears (M4): the player's sounds that reach it since it last listened
+			Hearing.listen(mind, target, now);
 		}
 		if (target != mind.target) {
 			if (mind.target != null && target == null && mob.isAlive()) {
@@ -526,17 +544,32 @@ public final class MobAi {
 			mind.resetMemory(net.memory);
 		}
 		float[] obs;
+		boolean[] mask;
 		if (V4_FORMAT.equals(net.format)) {
-			// v4: its own 468 (ObsV4 also sets reachVersion to 2, the only one the v4 contract has)
-			obs = ObsV4.build(mob, target, mind);
+			// v4: its own 468 (ObsV4 also sets reachVersion to 2, the only one the v4 contract has). Honest perception
+			// (M4): a player it does not perceive now is seen at the estimate, as it last saw them (Perception.standIn);
+			// their real position never reaches the network.
+			Player seen = target;
+			if (Perception.perceived(mind, now)) {
+				Perception.take(mind, target, now);
+			} else if (CombatConfig.get().iaPercepcionHonesta) {
+				Player standIn = Perception.standIn(mind, target);
+				seen = standIn != null ? standIn : target;
+			}
+			try {
+				obs = ObsV4.build(mob, seen, mind);
+				mask = mask(mob, mind, seen, net.outputs());
+			} finally {
+				Perception.release();
+			}
 		} else {
 			mind.reachVersion = net.reachVersion;
 			obs = ObsM1.of(mob, target, mind.cooldown, mind.draw);
 			if (net.inputs() > obs.length) {
 				obs = ObsForja.full(mob, target, mind, obs, net.inputs());
 			}
+			mask = mask(mob, mind, target, net.outputs());
 		}
-		boolean[] mask = mask(mob, mind, target, net.outputs());
 		float[] logits = net.forward(obs, mind.memory);
 		double temperature = CombatConfig.get().iaTemperatura * ForjaDifficulty.current().temperature * Threat.of(mob).temperature();
 		mind.decision = NetBrain.sample(logits, temperature, mind.random, mask);
@@ -642,7 +675,7 @@ public final class MobAi {
 			// also takes a block), the push needs lava or a drop by the player.
 			boolean ally = false;
 			for (Mob other : ObsM1.allies(mob)) {
-				if (other.getTarget() == target) {
+				if (other.getTarget() == Perception.real(target)) {
 					ally = true;
 					break;
 				}
@@ -664,17 +697,19 @@ public final class MobAi {
 
 	/**
 	 * v4's part of the mask (docs/red_mob_v4_contrato.json, "mascara"): only what cannot be done is shut. What a step to
-	 * come brings (FORMACION, EMBOSCAR and BUSCAR, furia) stays shut until it comes, as the simulator's own steps shut it.
+	 * come brings (FORMACION and furia, M5) stays shut until it comes, as the simulator's own steps shut it.
 	 */
 	static void maskV4(Mob mob, MobMind mind, Player target, boolean[] mask) {
 		long now = mob.level().getGameTime();
 		int at = NetBrain.V4_TACTICS_AT;
-		boolean slot = Squad.onRing(mob) ? mind.slotOf == target && !Double.isNaN(mind.slotAngle) : !Double.isNaN(mind.ringAngle);
+		boolean slot = Squad.onRing(mob) ? mind.slotOf == Perception.real(target) && !Double.isNaN(mind.slotAngle) : !Double.isNaN(mind.ringAngle);
 		mask[at + Tactic.SECTOR.ordinal() - Tactic.V3_COUNT] = slot;
 		mask[at + Tactic.TIRO_LIBRE.ordinal() - Tactic.V3_COUNT] = MobFamily.of(mob) == MobFamily.ARQUERO && Squad.allyInLineOf(mob, target) != null;
 		mask[at + Tactic.FORMACION.ordinal() - Tactic.V3_COUNT] = false;
-		mask[at + Tactic.EMBOSCAR.ordinal() - Tactic.V3_COUNT] = false;
-		mask[at + Tactic.BUSCAR.ordinal() - Tactic.V3_COUNT] = false;
+		// M4: a hiding spot to lie in wait at; a player it does not perceive and saw less than 30 s ago to look for
+		mask[at + Tactic.EMBOSCAR.ordinal() - Tactic.V3_COUNT] = Ambush.spot(mob, mind, target, now) != null;
+		mask[at + Tactic.BUSCAR.ordinal() - Tactic.V3_COUNT] = !Perception.perceived(mind, now) && mind.lastSeen != null
+			&& now - mind.lastSeenAt < Personality.BORED_TICKS;
 		mask[at + Tactic.RECOGER.ordinal() - Tactic.V3_COUNT] = CombatConfig.get().mobActionsV4 && GroundItems.canPickUp(mob);
 		mask[at + Tactic.APAGAR_LUZ.ordinal() - Tactic.V3_COUNT] = Lights.canPutOut(mob, target);
 		mask[at + Tactic.ASEDIAR.ordinal() - Tactic.V3_COUNT] = Heights.besieged(target);

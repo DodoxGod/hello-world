@@ -39,6 +39,7 @@
 			"dev.forja.test.RedV4GameTests",
 			"dev.forja.test.RedV4ModGameTests",
 			"dev.forja.test.RedV4PerfGameTests",
+			"dev.forja.test.RedV4PercepcionGameTests",
 			"dev.forja.test.BlazeGameTests",
 			"dev.forja.test.DimensionGameTests",
 			"dev.forja.test.PortalGameTests",

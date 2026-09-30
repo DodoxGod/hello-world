@@ -196,6 +196,11 @@ public final class Stamina {
 		data.stamina = Math.min(maxOf(player), data.stamina + amount);
 	}
 
+	/** Sets the stamina outright (the stand-in a monster keeps of a player it lost sight of: ai/Perception). */
+	public static void set(Player player, float amount) {
+		data(player).stamina = Math.max(0.0F, amount);
+	}
+
 	public static boolean isDodging(Player player, long now) {
 		return data(player).dodgeUntil >= now;
 	}

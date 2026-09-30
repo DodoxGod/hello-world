@@ -99,6 +99,8 @@ public final class Squad {
 		share(level, groups);
 		for (Map.Entry<Player, List<MobMind>> group : groups.entrySet()) {
 			assign(group.getKey(), group.getValue(), now);
+			// v4's jug_sin_vernos: whether the player has any of them in sight
+			Perception.watchGroup(group.getKey(), group.getValue(), now);
 		}
 	}
 

@@ -265,7 +265,7 @@ public final class GroundItems {
 		ItemEntity item = mind.pickupItem;
 		if (mob.distanceTo(item) > MobActions.TAKE_REACH) {
 			mind.pickupTicks = 0;
-			if (mob.getNavigation().isDone() || mob.tickCount % 10 == 0) {
+			if (mind.pathDue(mob.level().getGameTime())) {
 				mob.getNavigation().moveTo(item.getX(), item.getY(), item.getZ(), 1.1);
 			}
 			return true;

@@ -259,7 +259,7 @@ public final class ObsV3 {
 		o[i++] = ObsM1.clip(reach(held, reader == null ? 1 : reader.reachVersion) / 6.0, 0.0, 2.0);
 		List<Mob> side = new ArrayList<>();
 		for (Mob other : ObsM1.allies(mob)) {
-			if (other.getTarget() == target && other.distanceTo(target) <= ALLY_RANGE) {
+			if (other.getTarget() == Perception.real(target) && other.distanceTo(target) <= ALLY_RANGE) {
 				side.add(other);
 			}
 		}
@@ -350,7 +350,7 @@ public final class ObsV3 {
 		o[i++] = self != null && self.running ? 1.0 : 0.0;
 		int runners = 0;
 		for (Mob other : mob.level().getEntitiesOfClass(Mob.class, mob.getBoundingBox().inflate(16.0),
-			m -> m != mob && m.isAlive() && m.getTarget() == target)) {
+			m -> m != mob && m.isAlive() && m.getTarget() == Perception.real(target))) {
 			MobMind them = MobAi.mind(other);
 			runners += them != null && them.running ? 1 : 0;
 		}

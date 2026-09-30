@@ -121,10 +121,11 @@ public final class MobItems {
 			case HEAL -> counts[MobKit.Kind.HEAL.ordinal()] > 0;
 			case BUFF -> counts[MobKit.Kind.BUFF.ordinal()] > 0;
 			case EAT -> counts[MobKit.Kind.FOOD.ordinal()] > 0;
-			case SPLASH -> counts[MobKit.Kind.SPLASH.ordinal()] > 0 && throwable(mob, target);
-			case PEARL_IN -> counts[MobKit.Kind.PEARL.ordinal()] > 0 && pearlIn(mob, target) != null;
+			// nothing is thrown at a player it does not perceive: that would be aiming at where they really are
+			case SPLASH -> counts[MobKit.Kind.SPLASH.ordinal()] > 0 && Perception.perceived(mind, now) && throwable(mob, target);
+			case PEARL_IN -> counts[MobKit.Kind.PEARL.ordinal()] > 0 && Perception.perceived(mind, now) && pearlIn(mob, target) != null;
 			case PEARL_AWAY -> counts[MobKit.Kind.PEARL.ordinal()] > 0 && !mind.furyActive(now);
-			case WIND -> counts[MobKit.Kind.WIND.ordinal()] > 0 && throwable(mob, target);
+			case WIND -> counts[MobKit.Kind.WIND.ordinal()] > 0 && Perception.perceived(mind, now) && throwable(mob, target);
 			case SWAP -> !MobKit.spare(mob).isEmpty() && !MobKit.hasRod(mob) && now - mind.swapAt >= GroundItems.SWAP_GAP;
 			default -> false;
 		};
@@ -483,17 +484,60 @@ public final class MobItems {
 		double dz = to.z - pearl.getZ();
 		double flat = Math.sqrt(dx * dx + dz * dz);
 		double dy = to.y - pearl.getY();
-		// The lob that lands there under a thrown item's gravity (0.03 a tick): 45° up, or 60° when the spot is almost as
-		// high as it is far; v² = g·x² / (2·cos²θ·(x·tanθ − dy)), and 8 % more for the air's drag.
+		// The lob that lands there: 45 degrees up, or 60 when the spot is almost as high as it is far, at the speed that
+		// brings it down on the spot under a thrown item's flight (lobSpeed).
 		double x = Math.max(1.0, flat);
 		double tan = x - dy > 0.5 ? 1.0 : Math.sqrt(3.0);
-		double cos2 = 1.0 / (1.0 + tan * tan);
-		double room = Math.max(0.25, x * tan - dy);
-		float speed = (float) Math.min(2.5, Math.max(0.35, Math.sqrt(0.03 * x * x / (2.0 * cos2 * room)) * 1.08));
+		float speed = (float) lobSpeed(x, dy, tan, PEARL_GRAVITY, 0.99);
 		pearl.shoot(dx, x * tan, dz, speed, 0.0F);
 		level.addFreshEntity(pearl);
 		level.playSound(null, mob.getX(), mob.getY(), mob.getZ(), SoundEvents.ENDER_PEARL_THROW, SoundSource.HOSTILE, 0.5F, 0.4F);
 		return pearl;
+	}
+
+	/** A thrown ender pearl's gravity per tick. */
+	public static final double PEARL_GRAVITY = 0.03;
+
+	/**
+	 * The speed a thrown item needs, launched at the slope {@code tan} (rise over run), to come down {@code dy} above its
+	 * start after {@code x} blocks, flying as vanilla's thrown items fly: each tick it moves, then slows by {@code drag}
+	 * and falls by {@code gravity}. Found by halving (the simulator copies it: at 45 degrees, 8 blocks off and 2.5 up it
+	 * is about 0.615). Between 0.3 and 3.
+	 */
+	public static double lobSpeed(double x, double dy, double tan, double gravity, double drag) {
+		double cos = 1.0 / Math.sqrt(1.0 + tan * tan);
+		double sin = tan * cos;
+		double lo = 0.3;
+		double hi = 3.0;
+		for (int i = 0; i < 24; i++) {
+			double v = (lo + hi) / 2.0;
+			double vx = v * cos;
+			double vy = v * sin;
+			double px = 0.0;
+			double py = 0.0;
+			double yAtX = Double.NEGATIVE_INFINITY;
+			for (int t = 0; t < 200; t++) {
+				double nx = px + vx;
+				double ny = py + vy;
+				if (nx >= x) {
+					yAtX = py + (ny - py) * (x - px) / Math.max(1.0E-9, nx - px);
+					break;
+				}
+				px = nx;
+				py = ny;
+				vx *= drag;
+				vy = vy * drag - gravity;
+				if (py < dy - 64.0) {
+					break;
+				}
+			}
+			if (yAtX < dy) {
+				lo = v;
+			} else {
+				hi = v;
+			}
+		}
+		return (lo + hi) / 2.0;
 	}
 
 	/** Vanilla's wind charge, thrown at the player's feet the way a player throws one (1.5 blocks a tick). */

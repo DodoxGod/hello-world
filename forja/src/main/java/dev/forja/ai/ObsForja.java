@@ -73,8 +73,8 @@ public final class ObsForja {
 		}
 		add("hueco_delante", (m, p, k) -> slot(m, p, k)[0]);
 		add("hueco_derecha", (m, p, k) -> slot(m, p, k)[1]);
-		add("turnos_ocupados/4", (m, p, k) -> dev.forja.combat.AttackTokens.held(p) / 4.0);
-		add("tengo_turno", (m, p, k) -> dev.forja.combat.AttackTokens.holds(p, m) ? 1.0 : 0.0);
+		add("turnos_ocupados/4", (m, p, k) -> dev.forja.combat.AttackTokens.held(Perception.real(p)) / 4.0);
+		add("tengo_turno", (m, p, k) -> dev.forja.combat.AttackTokens.holds(Perception.real(p), m) ? 1.0 : 0.0);
 		add("aliado_aturdido", (m, p, k) -> k != null && k.guarding ? 1.0 : 0.0);
 		add("desbandada", (m, p, k) -> k != null && k.routed ? 1.0 : 0.0);
 		add("otros_esperan", (m, p, k) -> k != null && k.othersWaiting ? 1.0 : 0.0);
@@ -131,7 +131,7 @@ public final class ObsForja {
 			add("rasgo_" + trait.name().toLowerCase(java.util.Locale.ROOT), (m, p, k) -> Personality.trait(m) == trait ? 1.0 : 0.0);
 		}
 		add("veterania", (m, p, k) -> Math.min(1.0, Personality.fights(m) / (double) Personality.VETERAN_FIGHTS));
-		add("rencor", (m, p, k) -> Personality.grudge(m, p) ? 1.0 : 0.0);
+		add("rencor", (m, p, k) -> Personality.grudge(m, Perception.real(p)) ? 1.0 : 0.0);
 		add("miedo", (m, p, k) -> Personality.afraid(m) ? 1.0 : 0.0);
 		add("intrepido", (m, p, k) -> Personality.fearless(m) ? 1.0 : 0.0);
 		add("en_casa", (m, p, k) -> Personality.atHome(m) ? 1.0 : 0.0);

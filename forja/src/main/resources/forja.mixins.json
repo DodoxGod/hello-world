@@ -22,6 +22,8 @@
 		"AbstractArrowAccess",
 		"SwellGoalMixin",
 		"WindChargeMixin",
+		"ServerLevelGameEventMixin",
+		"TargetGoalMixin",
 		"MobGoalsAccess",
 		"MobMixin",
 		"MobSpawnMixin",

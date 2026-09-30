@@ -127,6 +127,12 @@ public final class TacticGoal extends Goal {
 			this.trailing = lost;
 			this.repath = 0;
 			this.mob.getNavigation().stop();
+			// BUSCAR's clock and stages start again with each loss (and stop when it perceives them)
+			this.mind.searchSince = lost ? now : Long.MIN_VALUE / 2;
+			this.mind.searchFor = Long.MIN_VALUE / 2;
+		}
+		if (this.mind.decision.tactic() != Tactic.EMBOSCAR) {
+			this.mind.ambushSince = Long.MIN_VALUE / 2;
 		}
 		if (!lost) {
 			this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
@@ -156,7 +162,11 @@ public final class TacticGoal extends Goal {
 			return;
 		}
 		if (lost) {
-			this.toLastKnown();
+			// Lost (HonestPerception): whatever the brain decided is worked out from where it thinks the player is. It lies
+			// in wait if it chose to (EMBOSCAR) and has somewhere to; otherwise it looks for them (BUSCAR).
+			if (this.mind.decision.tactic() != Tactic.EMBOSCAR || !this.ambush(target, now, true)) {
+				this.search(now);
+			}
 			return;
 		}
 		// A blaze on its own network (red_blaze_v1) flies and fires by its own executor, in 3D.
@@ -202,7 +212,11 @@ public final class TacticGoal extends Goal {
 			case TIRO_LIBRE -> this.clearShot(decision, target);
 			case FORMACION -> this.toRing(target, Double.isNaN(this.mind.ringAngle) ? this.currentAngle(target) : this.mind.ringAngle,
 				Reach.outside(target, this.mind.ringRadius), 1.0);
-			case EMBOSCAR -> this.hide(target);
+			case EMBOSCAR -> {
+				if (!this.ambush(target, now, false)) {
+					this.hide(target);
+				}
+			}
 			case BUSCAR -> this.free(decision, target);
 			case RECOGER -> {
 				if (!GroundItems.tick(this.mob, this.mind)) {
@@ -723,20 +737,149 @@ public final class TacticGoal extends Goal {
 		}
 	}
 
+	/** BUSCAR's fan: three points this far ahead of where it lost them, this far apart (radians). */
+	public static final double SEARCH_REACH = 6.0;
+	public static final double SEARCH_SPREAD = Math.toRadians(60.0);
+	/** Ticks it gives each point of the fan before it tries the next. */
+	public static final int SEARCH_PATIENCE = 80;
+
 	/**
-	 * Honest perception (HonestPerception, Andy 2026-09-29): with its player unseen for a second, it walks to where it
-	 * last saw them, whatever the brain decided (every tactic is worked out from the real position), and waits there.
+	 * BUSCAR (docs/red_mob_v4_diseno.md §4.5), and what every brain does with a player it has lost (HonestPerception):
+	 * <ol>
+	 *   <li>to where it thinks they are: where it last saw them, or where it last heard them if that is newer (a newer
+	 *   sound starts the search again from there);</li>
+	 *   <li>then three points 6 blocks further on, in a fan of 60 degrees either side of the way they were going (their
+	 *   motion when last seen, or the way it came itself), one after another;</li>
+	 *   <li>then it stands and waits. Perceiving them again ends it.</li>
+	 * </ol>
+	 * It never breaks or builds anything on the way: a player in a closed base is only looked for from outside.
 	 */
-	private void toLastKnown() {
+	private void search(long now) {
 		if (this.mob.isUsingItem() && this.mind.draw > 0) {
 			this.mob.stopUsingItem();
 			this.mind.draw = 0;
 		}
-		if (HonestPerception.arrived(this.mind)) {
+		Vec3 estimate = Perception.estimate(this.mind);
+		if (estimate == null) {
 			this.mob.getNavigation().stop();
 			return;
 		}
-		this.pathTo(this.mind.lastSeen.x, this.mind.lastSeen.y, this.mind.lastSeen.z, 1.0);
+		long lead = Perception.estimateAt(this.mind);
+		if (this.mind.searchFor != lead) {
+			this.mind.searchFor = lead;
+			this.mind.searchStage = 0;
+			this.mind.searchPoints = null;
+			this.mind.searchIndex = 0;
+			this.repath = 0;
+		}
+		if (this.mind.searchStage == 0) {
+			if (this.mob.distanceToSqr(estimate.x, this.mob.getY(), estimate.z) >= HonestPerception.ARRIVED * HonestPerception.ARRIVED) {
+				this.pathTo(estimate.x, estimate.y, estimate.z, 1.0);
+				return;
+			}
+			this.mind.searchPoints = this.fan(estimate);
+			this.mind.searchIndex = 0;
+			this.mind.searchStage = 1;
+			this.searchPointSince = now;
+			this.repath = 0;
+		}
+		if (this.mind.searchStage == 1) {
+			Vec3[] points = this.mind.searchPoints;
+			while (points != null && this.mind.searchIndex < points.length && points[this.mind.searchIndex] == null) {
+				this.mind.searchIndex++;
+			}
+			if (points == null || this.mind.searchIndex >= points.length) {
+				this.mind.searchStage = 2;
+			} else {
+				Vec3 at = points[this.mind.searchIndex];
+				boolean there = this.mob.distanceToSqr(at.x, this.mob.getY(), at.z) < HonestPerception.ARRIVED * HonestPerception.ARRIVED;
+				if (there || now - this.searchPointSince > SEARCH_PATIENCE) {
+					this.mind.searchIndex++;
+					this.searchPointSince = now;
+					this.repath = 0;
+				} else {
+					this.pathTo(at.x, at.y, at.z, 1.0);
+				}
+				return;
+			}
+		}
+		// done: it stands there, turning its head now and then
+		this.mob.getNavigation().stop();
+		if ((now + this.mob.getId()) % 40 == 0) {
+			double a = this.mob.getRandom().nextDouble() * Math.PI * 2.0;
+			this.mob.getLookControl().setLookAt(this.mob.getX() + Math.cos(a) * 4.0, this.mob.getEyeY(), this.mob.getZ() + Math.sin(a) * 4.0);
+		}
+	}
+
+	/** How close to its hiding spot counts as there (EMBOSCAR): it stops and waits. */
+	public static final double AMBUSH_THERE = 1.5;
+
+	/** When it set off for the point of BUSCAR's fan it is going to. */
+	private long searchPointSince;
+
+	/** The three points of BUSCAR's fan beyond the estimate (null where there is no floor to stand on). */
+	private Vec3[] fan(Vec3 estimate) {
+		double dx;
+		double dz;
+		Perception.Snapshot seen = this.mind.snapshot;
+		if (seen != null && seen.motion.horizontalDistanceSqr() > 0.05 * 0.05 && this.mind.lastSeenAt >= this.mind.lastHeardAt) {
+			dx = seen.motion.x;
+			dz = seen.motion.z;
+		} else {
+			dx = estimate.x - this.mob.getX();
+			dz = estimate.z - this.mob.getZ();
+		}
+		double d = Math.hypot(dx, dz);
+		if (d < 1.0E-4) {
+			double a = this.mob.getYRot() * Math.PI / 180.0;
+			dx = -Math.sin(a);
+			dz = Math.cos(a);
+			d = 1.0;
+		}
+		double base = Math.atan2(dz / d, dx / d);
+		Vec3[] points = new Vec3[3];
+		double[] turns = {0.0, -SEARCH_SPREAD, SEARCH_SPREAD};
+		for (int i = 0; i < 3; i++) {
+			double a = base + turns[i];
+			points[i] = MobItems.floorNear(this.mob, estimate.x + Math.cos(a) * SEARCH_REACH, estimate.y, estimate.z + Math.sin(a) * SEARCH_REACH);
+		}
+		return points;
+	}
+
+	/**
+	 * EMBOSCAR (docs/red_mob_v4_diseno.md §4.4): to its hiding spot from the player (Ambush.spot; from where it thinks they
+	 * are when it has lost them) at 0.8, and still there, looking out towards them. False when it has no spot.
+	 */
+	private boolean ambush(Player target, long now, boolean lost) {
+		Ambush.Spot spot;
+		if (lost) {
+			Player standIn = Perception.standIn(this.mind, target);
+			try {
+				spot = standIn == null ? null : Ambush.spot(this.mob, this.mind, standIn, now);
+			} finally {
+				Perception.release();
+			}
+		} else {
+			spot = Ambush.spot(this.mob, this.mind, target, now);
+		}
+		if (spot == null) {
+			this.mind.ambushSince = Long.MIN_VALUE / 2;
+			return false;
+		}
+		Vec3 look = lost ? Perception.estimate(this.mind) : target.position();
+		if (this.mob.distanceToSqr(spot.pos().x, this.mob.getY(), spot.pos().z) > AMBUSH_THERE * AMBUSH_THERE) {
+			this.pathTo(spot.pos().x, spot.pos().y, spot.pos().z, 0.8);
+			this.mind.ambushSince = Long.MIN_VALUE / 2;
+		} else {
+			this.mob.getNavigation().stop();
+			if (this.mind.ambushSince <= Long.MIN_VALUE / 4) {
+				this.mind.ambushSince = now;
+			}
+		}
+		if (look != null) {
+			this.mob.getLookControl().setLookAt(look.x, look.y + 1.5, look.z, 10.0F, 30.0F);
+		}
+		return true;
 	}
 
 	/** A path, refreshed at most every 10 ticks so the pathfinder is not asked every tick. */
@@ -745,7 +888,16 @@ public final class TacticGoal extends Goal {
 			this.mob.getNavigation().setSpeedModifier(speed);
 			return true;
 		}
+		// A path that came to nothing is not asked for again every tick: the pathfinder is the dear part, and a spot
+		// with no way to it (a hiding spot, a fan point, a torch) asked for it twenty times a second.
+		if (this.repath > 0 && this.lastPathFailed) {
+			return false;
+		}
 		this.repath = 10;
-		return this.mob.getNavigation().moveTo(x, y, z, speed);
+		this.lastPathFailed = !this.mob.getNavigation().moveTo(x, y, z, speed);
+		return !this.lastPathFailed;
 	}
+
+	/** Whether the last path asked for came to nothing. */
+	private boolean lastPathFailed;
 }
