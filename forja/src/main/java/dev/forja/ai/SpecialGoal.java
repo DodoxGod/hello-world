@@ -26,7 +26,8 @@ public final class SpecialGoal extends Goal {
 		if (runner == null || this.mind.networked || this.mind.target == null || !dev.forja.combat.CombatConfig.get().enabled) {
 			return false;
 		}
-		return runner.active() || runner.ruleStart(this.mind.target);
+		// not in the middle of a warned blow (a commitment, MeleeAttackGoalMixin): the special would stop it half-way
+		return runner.active() || !this.mind.warning && runner.ruleStart(this.mind.target);
 	}
 
 	@Override

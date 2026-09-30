@@ -39,6 +39,12 @@ public final class CombatStats {
 		COUNTS.computeIfAbsent(entity, e -> new HashMap<>()).merge(what, 1, Integer::sum);
 	}
 
+	/** Everything counted for this entity (a copy). */
+	public static Map<String, Integer> counts(Entity entity) {
+		Map<String, Integer> counts = COUNTS.get(entity);
+		return counts == null ? Map.of() : new HashMap<>(counts);
+	}
+
 	public static int count(Entity entity, String what) {
 		Map<String, Integer> counts = COUNTS.get(entity);
 		return counts == null ? 0 : counts.getOrDefault(what, 0);

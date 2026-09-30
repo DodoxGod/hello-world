@@ -387,7 +387,7 @@ mismo jugador (la cuenta del `Squad`, con o sin capitán), `Aggression.maxAttack
 | sí | 114,2 ± 3,0 | 100,4 ± 4,8 | +43,6 / +31,2 |
 
 En el mod la pinza **gana** (+14 de daño por minuto en las dos tandas), al revés que en el simulador (−8 %): se queda
-(`iaCapitanPinza`, activada). Con el anillo arreglado, el jugador que se aleja deja atrás a los que no tienen turno, y la
+(`iaCapitanPinza`, activada; **apagada en la cuarta tanda**, ver abajo). Con el anillo arreglado, el jugador que se aleja deja atrás a los que no tienen turno, y la
 pinza los manda por los lados en vez de detrás de él.
 
 **Qué tambalea al jugador (para el simulador).** Los jugadores **no tienen barra de postura** (`Posture` los deja
@@ -488,6 +488,94 @@ tramo seguido baja de 14–26 ticks a ≤ 12.
 - la meta cuerpo a cuerpo mira cada 4 ticks si puede empezar (antes cada 20) para los mobs de reglas que van al ataque.
 
 Con flechas y este arreglo, el mod (168 / 177 / 190) ya supera al simulador v4e (129 / 140 / 155).
+
+### Cuarta tanda (30-09): el daño sin atribuir, los avisos cortados y la pinza
+
+**1. El daño "sin atribuir" no era de ninguna fuente escondida.** Una prueba (`HealthDropMixin`) apunta cada bajada de
+vida del jugador de prueba y quién la hace. **Todas** vienen de `hurtServer`:
+- el golpe de un mob (`doHurtTarget`: el aviso, `VanillaSpecials.contact`, `TacticGoal`);
+- una flecha (`AbstractArrow.onHitEntity`).
+
+No hay fuego, sol, espinas, caída, veneno, asfixia ni daño del propio banco. La diferencia estaba en la cuenta: el
+`damageTaken` del evento `AFTER_DAMAGE` de Fabric es la cifra que llega al paso de armadura de vanilla, **antes** de los
+multiplicadores de Forja (`CombatHooks.afterArmor`) y del recorte de los i-frames. Ejemplos medidos:
+
+| Golpe | El evento dice | Lo que pierde el jugador |
+|---|---|---|
+| flecha a la cabeza | 4 | 5,2 (×1,3) |
+| flecha de un mob agresivo a la cabeza | 4 | 5,46 (×1,3 × 1,05) |
+| golpe del élite | 8 | 10,4 (×1,3) |
+| golpe de un mob agresivo | 2 / 3 | 2,1 / 3,15 (×1,05) |
+| golpe con los i-frames aún altos | 3 | 1,05 (solo lo que pasa del último) |
+
+Es daño real del juego. Ahora el banco reparte por tipo lo que de verdad baja la vida, y la suma coincide con el daño
+por minuto.
+
+**Para el simulador, el daño a un jugador:** base del mob × dificultad (HERRERO 1) × amenaza del mob (normal 1,
+veterano 1,15, **élite 1,3**) × `Adaptive` (1 + 0,15·valor) × personalidad (1 + 0,05 por pelea hasta 6; rencor ×1,15;
+agresivo ×1,05; en casa ×1,1; furia ×1,25) × equipo del jugador (`GearScore`) × **cabeza ×1,3** (golpe preciso: las
+flechas) × aturdido ×1,25. Después, la armadura de Forja.
+
+**2. Avisos cortados: de 2,8 a 0,8 por pelea (el simulador, 0,3).** Por qué se cortaban (40 peleas por modo, antes del
+arreglo):
+
+| Motivo del corte | sin capitán | sin órdenes | capitán de reglas |
+|---|---|---|---|
+| RODEAR a mitad de aviso (el mob "con turno" y lejos de su hueco) | 1,4 | 2,05 | 1,38 |
+| RETIRARSE | 0,23 | 0,4 | 0,55 |
+| ESPERAR | 0,33 | 0 | 0,1 |
+| la meta se paró con la decisión ACERCARSE (un especial la quitaba) | 0,3 | 0,17 | 0,65 |
+| aturdido | 0,3 | 0,38 | 0,28 |
+
+**El arreglo** (regla de Andy: un golpe avisado es un compromiso que el jugador lee y contesta):
+- mientras dura el aviso de la meta cuerpo a cuerpo (`MobMind.warning`), las reglas no cambian de táctica (`MobAi`);
+- un especial no empieza a mitad de aviso (`SpecialGoal`).
+
+Solo lo acaban un aturdimiento, la finta en su primera mitad, la muerte o perder el objetivo. Prueba
+`aWarnedBlowIsSeenThrough`: un zombi al que se le manda huir en cuanto avisa ya no corta el aviso (sin el arreglo, lo
+cortaba).
+
+Tras el arreglo quedan 0,7–0,8 por pelea: aturdido 0,35–0,42, meta parada con ACERCARSE 0,3–0,38, sin objetivo 0,05.
+
+**Antes y después** (160 peleas por modo, jugador en el mundo):
+
+| | sin capitán | sin órdenes | capitán de reglas |
+|---|---|---|---|
+| avisos cortados, antes → después | 2,8 → 0,79 | 3,1 → 0,71 | 2,7 → 0,81 |
+| avisos que llegan, antes → después | 6,2 → 6,1 | 6,7 → 7,2 | 10,3 → 10,7 |
+| fuera de alcance al acabar (empujado + se movió), antes → después | 3,5 → 5,3 | 3,5 → 5,7 | 5,7 → 7,2 |
+| daño/min, antes → después | 168,1 → 169,2 | 176,7 → 184,1 | 189,9 → 203,8 |
+
+Los avisos que antes se cortaban ahora se terminan, pero la mayoría fallan: el jugador de prueba ya se ha ido o lo ha
+empujado. Aun así el daño sube (+0,7 %, +4 %, +7 %).
+
+**3. La pinza, otra vez** (160 peleas, jugador en el mundo, código final):
+
+| | con pinza | sin pinza |
+|---|---|---|
+| capitán de reglas, daño/min | 203,8 ± 4,1 | 206,3 ± 3,8 |
+| capitán contra sin capitán, pareado | +34,6 ± 4,7 (112/160) | +44,3 ± 4,6 (126/160) |
+
+La ventaja de +14 de antes era con el jugador fuera del mundo (sin flechas). Ahora no gana, como en el simulador.
+**`iaCapitanPinza` pasa a apagada.** La prueba de la pinza la enciende solo para ella.
+
+**Tabla final** (160 peleas, código final, jugador en el mundo, pinza encendida en esta tanda; por pelea de 30 s, salvo
+el daño por minuto):
+
+| Medida | sin capitán | sin órdenes | capitán de reglas |
+|---|---|---|---|
+| daño/min | 169,2 | 184,1 | 203,8 (206,3 sin pinza) |
+| turnos ocupados | 0,47 | 0,50 | 0,68 |
+| avisos / llegan / fintas | 17,1 / 6,1 / 2,5 | 19,6 / 7,2 / 3,1 | 28,7 / 10,7 / 4,4 |
+| cortados / empujado / se movió / sin daño | 0,79 / 2,6 / 2,7 / 2,0 | 0,71 / 3,0 / 2,7 / 2,3 | 0,81 / 3,3 / 3,9 / 4,9 |
+| embestidas / tocan | 8,3 / 1,2 | 8,4 / 1,3 | 10,0 / 1,4 |
+| daño cuerpo / flecha | 41,7 / 42,9 | 49,3 / 42,8 | 68,3 / 33,6 |
+| flechas que dan (de las disparadas) | 8,2 / 24,8 | 8,3 / 24,9 | 7,0 / 14,2 |
+| mobs muertos | 2,6 | 3,1 | 2,9 |
+| zombi persiguiendo, andando / corriendo | 0,097 / 0,171 | 0,099 / 0,174 | 0,096 / 0,166 |
+
+El daño de flecha sale ahora más alto que en la tercera tanda: es el mismo número de flechas, pero contado con los
+multiplicadores de Forja (cabeza ×1,3).
 
 ## M6: el vector de mundo W (452–467, `WorldMemory`)
 

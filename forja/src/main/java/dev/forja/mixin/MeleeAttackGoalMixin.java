@@ -75,7 +75,7 @@ abstract class MeleeAttackGoalMixin {
 		}
 		ci.cancel();
 		if (Posture.isStaggered(mob, mob.level().getGameTime())) {
-			forja$cut();
+			forja$cut("aturdido");
 			forja$reset();
 			return;
 		}
@@ -85,7 +85,7 @@ abstract class MeleeAttackGoalMixin {
 			AttackTokens.release(forja$target, mob);
 			forja$target = null;
 			if (!AttackTokens.tryAcquire(target, mob, dev.forja.ai.Aggression.maxAttackers(mob, target))) {
-				forja$cut();
+				forja$cut("objetivo");
 				forja$reset();
 				return;
 			}
@@ -133,14 +133,32 @@ abstract class MeleeAttackGoalMixin {
 		forja$holdStill(target);
 		CombatFeedback.telegraph(mob, forja$windup);
 		dev.forja.combat.CombatStats.record(mob, dev.forja.combat.CombatStats.WARNED);
+		dev.forja.ai.MobMind warned = dev.forja.ai.MobAi.mind(mob);
+		if (warned != null) {
+			warned.warning = true;
+		}
 	}
 
 	/** A warning dropped before its end (counted for the tests; a feint is counted as one). */
 	@Unique
-	private void forja$cut() {
+	private void forja$cut(String why) {
 		if (forja$windup > 0) {
 			dev.forja.combat.CombatStats.record(mob, dev.forja.combat.CombatStats.WARNED_CUT);
+			dev.forja.combat.CombatStats.record(mob, dev.forja.combat.CombatStats.WARNED_CUT + "_" + why);
 		}
+	}
+
+	/** Why the goal stopped mid-warning, for the tests: no target, dead, or what the brain decided instead. */
+	@Unique
+	private String forja$stopReason() {
+		if (!mob.isAlive()) {
+			return "muerto";
+		}
+		if (mob.getTarget() == null || mob.getTarget() != forja$target) {
+			return "sin_objetivo";
+		}
+		dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
+		return mind == null ? "parada" : "parada_" + mind.decision.tactic().name().toLowerCase(java.util.Locale.ROOT);
 	}
 
 	/**
@@ -260,7 +278,7 @@ abstract class MeleeAttackGoalMixin {
 
 	@Inject(method = "stop", at = @At("TAIL"))
 	private void forja$onStop(CallbackInfo ci) {
-		forja$cut();
+		forja$cut(forja$stopReason());
 		forja$reset();
 	}
 
@@ -269,5 +287,9 @@ abstract class MeleeAttackGoalMixin {
 		AttackTokens.release(forja$target, mob);
 		forja$target = null;
 		forja$windup = 0;
+		dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
+		if (mind != null) {
+			mind.warning = false;
+		}
 	}
 }

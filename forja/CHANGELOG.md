@@ -1,5 +1,17 @@
 # Novedades
 
+## 2026-09-30 — Un golpe avisado se termina, y la pinza del capitán, apagada
+
+- **Un golpe avisado se termina.** Los monstruos ya no cortan un golpe avisado a medias para rodear, retirarse,
+  esperar o hacer un especial. Solo lo cortan si quedan aturdidos, si es una finta en su primera mitad, si mueren o si
+  pierden al jugador. Así se lee y se contesta, como pide el combate. Antes cortaban casi 3 por pelea; ahora, menos de 1.
+- **La pinza del capitán de reglas, apagada** (`iaCapitanPinza`). Medida otra vez, ya con flechas: no gana (204 de daño
+  por minuto con ella y 206 sin ella).
+- **El "daño sin explicar" de la medida era daño real.** Son los multiplicadores de Forja (golpe en la cabeza ×1,3,
+  élite ×1,3, personalidad…), que el evento de Fabric no ve. La medida ahora cuenta lo que baja de verdad la vida del
+  jugador.
+- **Pruebas:** 1 nueva, un golpe avisado se termina aunque el monstruo quiera huir.
+
 ## 2026-09-30 — Los zombis ya no se quedan parados antes de atacar
 
 - **El fallo:** un monstruo que volvía a atacar tras esperar o rodear podía quedarse quieto hasta un segundo: el

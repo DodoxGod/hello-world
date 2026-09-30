@@ -5,6 +5,7 @@
 	"mixins": [
 		"BrainPerfMixin",
 		"GoalsPerfMixin",
+		"HealthDropMixin",
 		"HelpersCountMixin",
 		"MobAiPerfMixin",
 		"MobPickupInvoker",

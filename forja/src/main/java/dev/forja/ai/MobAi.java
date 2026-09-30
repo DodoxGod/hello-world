@@ -584,7 +584,10 @@ public final class MobAi {
 		}
 		if (net == null) {
 			mind.networked = false;
-			Decision decision = RuleBrain.decide(mind, target);
+			// A warned blow is a commitment (Andy): once vanilla's melee goal has warned it, the rules do not turn the mob to
+			// another tactic until it lands or misses; a stun, a feint in its first half, death or losing the target
+			// still end it (MeleeAttackGoalMixin). Before, 1 in 6 warnings was dropped, most for RODEAR mid-warning.
+			Decision decision = mind.warning ? Decision.APPROACH : RuleBrain.decide(mind, target);
 			// v4's heads by the rules too (Andy, 2026-09-29): what it carries, the bash after a block, and fury.
 			int item = MobItems.ruleItem(mind, target, now);
 			boolean bash = ShieldPlay.ruleBash(mob, mind, target, now);

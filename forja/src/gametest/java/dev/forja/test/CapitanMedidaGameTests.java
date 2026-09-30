@@ -74,6 +74,8 @@ public class CapitanMedidaGameTests {
 		int runTicks;
 		int goingIn;
 		int idle;
+		double drops;
+		double lastDrop;
 		int fired;
 		int wouldHit;
 		final java.util.Set<Integer> arrowsSeen = new java.util.HashSet<>();
@@ -81,6 +83,38 @@ public class CapitanMedidaGameTests {
 	}
 
 	static final Map<Player, Watch> DAMAGE = new java.util.WeakHashMap<>();
+	/** Every drop of a watched player's health, by the calls that made it (HealthDropMixin): amount and count. */
+	static final Map<String, double[]> DROPS = new java.util.TreeMap<>();
+
+	/** Whether this is a measured fight's player (HealthDropMixin). */
+	public static boolean watching(net.minecraft.world.entity.LivingEntity entity) {
+		return entity instanceof Player p && DAMAGE.containsKey(p);
+	}
+
+	/** A watched player's health went down by {@code amount}: counted, and filed under the calls that did it. */
+	public static void healthDrop(net.minecraft.world.entity.LivingEntity entity, float amount) {
+		Watch w = DAMAGE.get((Player) entity);
+		if (w == null) {
+			return;
+		}
+		w.drops += amount;
+		w.lastDrop = amount;
+		StringBuilder key = new StringBuilder();
+		int kept = 0;
+		for (StackTraceElement frame : Thread.currentThread().getStackTrace()) {
+			String c = frame.getClassName();
+			if (c.startsWith("java.") || c.contains("HealthDropMixin") || c.contains("CapitanMedidaGameTests") || frame.getMethodName().equals("setHealth")) {
+				continue;
+			}
+			key.append(c.substring(c.lastIndexOf('.') + 1)).append('.').append(frame.getMethodName()).append(" < ");
+			if (++kept == 7) {
+				break;
+			}
+		}
+		double[] sum = DROPS.computeIfAbsent(key.toString(), k -> new double[2]);
+		sum[0] += amount;
+		sum[1]++;
+	}
 
 	static {
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, base, taken, blocked) -> {
@@ -88,6 +122,12 @@ public class CapitanMedidaGameTests {
 			if (w == null || taken <= 0.0F) {
 				return;
 			}
+			// What the hit really took off (HealthDropMixin, just before this event, in the same hurt): the event's figure is
+			// the one handed to vanilla's armor step, before Forja's multipliers (CombatHooks.afterArmor: the difficulty, the
+			// mob's threat, its personality, a head hit ×1.3...) and the i-frames' "only what is over the last blow".
+			float real = w.lastDrop > 0.0 ? (float) w.lastDrop : taken;
+			w.lastDrop = 0.0;
+			taken = real;
 			Entity direct = source.getDirectEntity();
 			if (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
 				w.fire += taken;
@@ -187,6 +227,14 @@ public class CapitanMedidaGameTests {
 			}
 			if (next[0] >= fights) {
 				over[0] = true;
+				// where the health went, by the calls that took it, for every fight so far
+				StringBuilder drops = new StringBuilder();
+				DROPS.forEach((k, v) -> drops.append(String.format(Locale.ROOT, "%.1f\t%d\t%s%n", v[0], (long) v[1], k)));
+				try {
+					Files.writeString(Path.of(out.trim() + ".caidas"), drops);
+				} catch (java.io.IOException failure) {
+					throw new RuntimeException(failure);
+				}
 				TestChunks.release(helper);
 				helper.succeed();
 				return;
@@ -458,10 +506,20 @@ public class CapitanMedidaGameTests {
 			}
 			k.append(key).append('=').append(sum).append(';');
 		}
+		// why the warnings that were cut were cut (aviso_cortado_<why>)
+		Map<String, Integer> cuts = new java.util.TreeMap<>();
+		for (Mob mob : mobs) {
+			dev.forja.combat.CombatStats.counts(mob).forEach((key, v) -> {
+				if (key.startsWith(dev.forja.combat.CombatStats.WARNED_CUT + "_")) {
+					cuts.merge(key, v, Integer::sum);
+				}
+			});
+		}
+		cuts.forEach((key, v) -> k.append(key).append('=').append(v).append(';'));
 		k.append(String.format(Locale.ROOT, "dano_cuerpo=%.1f;dano_flecha=%.1f;golpes_flecha=%d;dano_pocion=%.1f;dano_fuego=%.1f;dano_otro=%.1f;"
-			+ "vel_andando=%.4f;ticks_andando=%d;vel_corriendo=%.4f;ticks_corriendo=%d;ociosos=%.3f;flechas=%d;flechas_tocarian=%d",
+			+ "vel_andando=%.4f;ticks_andando=%d;vel_corriendo=%.4f;ticks_corriendo=%d;ociosos=%.3f;flechas=%d;flechas_tocarian=%d;caidas=%.1f",
 			w.melee, w.arrow, w.arrows, w.potion, w.fire, w.other, w.walkTicks == 0 ? 0.0 : w.walkDist / w.walkTicks, w.walkTicks,
-			w.runTicks == 0 ? 0.0 : w.runDist / w.runTicks, w.runTicks, w.goingIn == 0 ? 0.0 : w.idle / (double) w.goingIn, w.fired, w.wouldHit));
+			w.runTicks == 0 ? 0.0 : w.runDist / w.runTicks, w.runTicks, w.goingIn == 0 ? 0.0 : w.idle / (double) w.goingIn, w.fired, w.wouldHit, w.drops));
 		DAMAGE.remove(player);
 		String line = String.format(Locale.ROOT, "%s\t%d\t%.1f\t%d\t%d\t%d\t%s\t%.2f\t%.2f\t%.2f\t%s%n", mode.name().toLowerCase(Locale.ROOT), seed,
 			taken * 60.0 * 20.0 / Math.max(1, ticks), killedAt, dead, ticks, o, watch[0] / n, watch[1] / n, watch[2] / n, k);

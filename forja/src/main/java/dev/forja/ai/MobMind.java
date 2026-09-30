@@ -51,6 +51,11 @@ public final class MobMind {
 	public long coverAt = Long.MIN_VALUE / 2;
 	/** When it last swung at its target (for the relay: strike, then make room). */
 	public long lastStrike = Long.MIN_VALUE / 2;
+	/**
+	 * A warned blow of vanilla's melee goal is under way (MeleeAttackGoalMixin): the rules keep it going in until it
+	 * lands or misses (Andy: a warned blow is a commitment the player reads and answers).
+	 */
+	public boolean warning;
 	/** Its breath for running (ai/MobSprint), whether it wants to run and whether it is running. */
 	public float stamina = MobSprint.MAX;
 	public boolean wantsRun;

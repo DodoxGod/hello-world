@@ -259,6 +259,9 @@ public class RedV4CapitanGameTests {
 	@GameTest(padding = 24, maxTicks = 120)
 	public void theRulesPincerAPlayerBackingAway(GameTestHelper helper) {
 		floor(helper, 32);
+		// the pincer is off by default (iaCapitanPinza): on for this test
+		boolean pinza = CombatConfig.get().iaCapitanPinza;
+		CombatConfig.get().iaCapitanPinza = true;
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(10, 1, 16));
 		CaptainBrain.override(player, CaptainBrain.Mode.REGLAS);
 		// facing the group, on the -x side
@@ -289,6 +292,7 @@ public class RedV4CapitanGameTests {
 			pincer[0] |= g != null && g.command.order == Captain.Order.NINGUNA && g.command.formation == Captain.Formation.PINZA;
 		});
 		helper.runAfterDelay(80, () -> {
+			CombatConfig.get().iaCapitanPinza = pinza;
 			helper.assertTrue(pincer[0], "echándose atrás, una pinza: " + (Captain.group(player) == null ? null : Captain.group(player).command.formation));
 			CaptainBrain.override(player, null);
 			clear(helper, 32);
@@ -491,6 +495,46 @@ public class RedV4CapitanGameTests {
 		helper.runAfterDelay(200, () -> {
 			helper.assertTrue(worst[0] <= 12, "un zombi que va al ataque no se queda quieto más de 12 ticks seguidos (antes, hasta 20): " + worst[0]);
 			clear(helper, 32);
+			helper.succeed();
+		});
+	}
+
+	/**
+	 * A warned blow is a commitment (Andy): once a zombie on the rules has warned its blow, it sees it through even if its
+	 * rules now want something else (here, a rout: RETIRARSE); only a stun, a feint in its first half, death or losing
+	 * the target end it. Before, the tactic's goal took over and the warning was dropped half-way.
+	 */
+	@GameTest(padding = 16, maxTicks = 120)
+	public void aWarnedBlowIsSeenThrough(GameTestHelper helper) {
+		floor(helper, 16);
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(8, 1, 8));
+		Zombie zombie = zombie(helper, new BlockPos(6, 1, 8));
+		for (dev.forja.ai.Personality.Trait trait : dev.forja.ai.Personality.Trait.values()) {
+			zombie.removeTag(dev.forja.ai.Personality.TRAIT_TAG + trait.name().toLowerCase(java.util.Locale.ROOT));
+		}
+		zombie.addTag(dev.forja.ai.Personality.TRAIT_TAG + "agresivo");
+		Vec3 at = player.position();
+		boolean[] routed = {false};
+		helper.onEachTick(() -> {
+			player.setPos(at.x, at.y, at.z);
+			player.setHealth(player.getMaxHealth());
+			player.invulnerableTime = 0;
+			zombie.setTarget(player);
+			zombie.setHealth(zombie.getMaxHealth());
+			MobMind mind = MobAi.mind(zombie);
+			// from the moment its first warning starts, its rules want it gone
+			routed[0] |= mind != null && mind.warning;
+			if (mind != null && routed[0]) {
+				mind.routed = true;
+			}
+		});
+		helper.runAfterDelay(100, () -> {
+			int started = dev.forja.combat.CombatStats.count(zombie, dev.forja.combat.CombatStats.WARNED);
+			int cut = dev.forja.combat.CombatStats.count(zombie, dev.forja.combat.CombatStats.WARNED_CUT);
+			helper.assertTrue(routed[0] && started >= 1, "avisó al menos un golpe: " + started);
+			// seen through: it landed or missed, or it was a feint (the feint rule stands); never dropped for the tactic
+			helper.assertTrue(cut == 0, "y lo terminó aunque las reglas quisieran retirarse: empezados " + started + ", cortados " + cut);
+			clear(helper, 16);
 			helper.succeed();
 		});
 	}
