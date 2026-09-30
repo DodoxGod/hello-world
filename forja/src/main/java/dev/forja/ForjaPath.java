@@ -37,7 +37,7 @@ public final class ForjaPath {
 		FORJA("estrella"),
 		TEMPLE("temple"),
 		MEJORA("mejorar"),
-		PARADA("combate"),
+		PARADA("defenderse"),
 		ALEACION("aleaciones"),
 		COLADA("fundicion"),
 		MESA_MAYOR("mesa_mayor"),

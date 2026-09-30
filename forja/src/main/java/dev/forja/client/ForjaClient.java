@@ -140,6 +140,7 @@ public final class ForjaClient implements ClientModInitializer {
 		net.fabricmc.fabric.api.client.rendering.v1.ClientTooltipComponentCallback.EVENT.register(
 			data -> data instanceof dev.forja.item.PartsStrip strip ? new PartsStripTooltip(strip) : null);
 		registerGuideKey();
+		CreatureSightings.register();
 		CombatClient.register();
 		ClassClient.register();
 		net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.attachElementAfter(

@@ -517,3 +517,19 @@ cliente:
 - El yunque, algo más largo que los ~26 previstos.
 - Las hojas de contactos están en `E:\IA\Claude\Forja_capturas_mejoras\libros\`: `portadas.png`, `cuaderno.png`,
   `yunque.png` y `biblioteca.png`.
+
+### Segunda entrega (2026-09-30): tarjetas a oscuras y libro II
+
+- **Tarjetas.** La de un libro sin aprender sale a oscuras y sin receta. Con JEI, las recetas no aprendidas se
+  esconden.
+- **El arte del combate:** 86 páginas con el bestiario entero en sombra, repartidas así:
+  - tu cuerpo 5, golpear 9, armas 16, defenderte 22;
+  - magia 26, maná 31;
+  - cómo pelean 42, rangos 50, peleas del mundo 54, dificultad 58;
+  - eventos 61;
+  - bestiario 71, siguiente 85.
+- **Tamaño.** Es más largo que las ~52 previstas porque el capítulo de maná (11 páginas), los eventos (10) y las
+  resistencias de cada monstruo ocupan lo suyo. Cada parte empieza con "En una página", y el índice lleva las cinco
+  partes con su pestaña.
+- **Bestiario.** Se escribe solo (client/CreatureSightings): una criatura cuenta como vista a 24 bloques o menos y
+  con línea de vista. Lo visto se guarda en el cliente.

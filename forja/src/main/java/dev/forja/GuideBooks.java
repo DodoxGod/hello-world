@@ -46,9 +46,13 @@ public final class GuideBooks {
 		// The six below are designed (docs/LIBROS_GUIA.md, 2.3) and come one delivery at a time; until then their
 		// chapters are read in the creative tome, and the notebook shows them as coming. The chapter lists are the
 		// first cut of 2.4, so a link to one of them can already say which book it will be in.
-		COMBATE("libro_combate", 0xA8322C, "forja", () -> Items.BONE, false, true,
-			List.of(new Section("pelear", 2, List.of("combate", "mana")),
-				new Section("mundo", 3, List.of("eventos", "amenazas", "bestiario")))),
+		// Book II (Andy): combat, stamina, magic and the enemies in one book, bigger than the rest, in five parts.
+		COMBATE("libro_combate", 0xA8322C, "forja", () -> Items.BONE, true, true,
+			List.of(new Section("combate_cuerpo", 2, List.of("tu_cuerpo", "golpear", "armas", "defenderse")),
+				new Section("combate_magia", 1, List.of("magia", "mana")),
+				new Section("combate_enemigos", 4, List.of("como_pelean", "rangos", "peleas_mundo", "dificultad")),
+				new Section("combate_cielo", 3, List.of("eventos")),
+				new Section("combate_bestiario", 0, List.of("bestiario", "combate_siguiente")))),
 		FUNDICION("libro_fundicion", 0x7A4A2A, "mejora", () -> Items.COPPER_INGOT, false, true,
 			List.of(new Section("taller", 0, List.of("aleaciones", "fundicion", "mesa_mayor")))),
 		MESA_MAYOR("libro_mesa_mayor", 0x7850BE, "mesa_mayor", () -> ModItems.alloy("damasco"), false, true,
@@ -160,6 +164,7 @@ public final class GuideBooks {
 			return switch (this) {
 				case CUADERNO -> ModItems.GUIA_DE_FORJA;
 				case YUNQUE -> ModItems.LIBRO_YUNQUE;
+				case COMBATE -> ModItems.LIBRO_COMBATE;
 				case TOMO -> ModItems.TOMO_DE_FORJA;
 				default -> null;
 			};

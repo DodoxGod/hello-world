@@ -773,6 +773,17 @@ public class GuideBookScreen extends Screen {
 			case "desarmar" -> this.salvageChapter();
 			case "yunque_siguiente" -> this.anvilNextChapter();
 			case "catalogo" -> this.catalogueChapter();
+			// Book II.
+			case "tu_cuerpo" -> this.bodyChapter();
+			case "golpear" -> this.hittingChapter();
+			case "armas" -> this.weaponsChapter(false);
+			case "defenderse" -> this.defendingChapter();
+			case "magia" -> this.magicChapter();
+			case "como_pelean" -> this.enemiesChapter();
+			case "rangos" -> this.ranksChapter();
+			case "peleas_mundo" -> this.worldFightsChapter();
+			case "dificultad" -> this.difficultyChapter();
+			case "combate_siguiente" -> this.combatNextChapter();
 			default -> throw new IllegalArgumentException("no chapter " + key);
 		};
 	}
@@ -855,6 +866,16 @@ public class GuideBookScreen extends Screen {
 			case "desarmar" -> new ItemStack(Items.GRINDSTONE);
 			case "yunque_siguiente" -> new ItemStack(Items.COMPASS);
 			case "catalogo" -> new ItemStack(Items.BOOK);
+			case "tu_cuerpo" -> new ItemStack(Items.RABBIT_FOOT);
+			case "golpear" -> Assembler.create(ForgeType.MARTILLO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO));
+			case "armas" -> Assembler.create(ForgeType.ESPADA, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.HIERRO));
+			case "defenderse" -> Assembler.create(ForgeType.ESCUDO, Assembler.defaultMaterials(ForgeType.ESCUDO));
+			case "magia" -> Assembler.create(ForgeType.BACULO, List.of(ForgeMaterial.AMATISTA, ForgeMaterial.HIERRO, ForgeMaterial.MADERA));
+			case "como_pelean" -> new ItemStack(Items.ZOMBIE_HEAD);
+			case "rangos" -> new ItemStack(Items.TOTEM_OF_UNDYING);
+			case "peleas_mundo" -> new ItemStack(Items.BELL);
+			case "dificultad" -> new ItemStack(Items.SKELETON_SKULL);
+			case "combate_siguiente" -> new ItemStack(Items.COMPASS);
 			default -> ItemStack.EMPTY;
 		};
 	}
@@ -911,6 +932,7 @@ public class GuideBookScreen extends Screen {
 		return switch (this.book) {
 			case CUADERNO -> Assembler.create(ForgeType.MARTILLO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO));
 			case YUNQUE -> new ItemStack(ModItems.MESA_DE_FORJA);
+			case COMBATE -> Assembler.create(ForgeType.ESPADA, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.HIERRO));
 			case BIBLIOTECA -> new ItemStack(Items.BOOKSHELF);
 			default -> new ItemStack(Items.BOOK);
 		};
@@ -920,6 +942,7 @@ public class GuideBookScreen extends Screen {
 		return switch (this.book) {
 			case CUADERNO -> new ItemStack(ModItems.PLANTILLA);
 			case YUNQUE -> Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO));
+			case COMBATE -> Assembler.create(ForgeType.ESCUDO, Assembler.defaultMaterials(ForgeType.ESCUDO));
 			case BIBLIOTECA -> new ItemStack(ModItems.GUIA_DE_FORJA);
 			default -> new ItemStack(ModItems.GUIA_DE_FORJA);
 		};
@@ -1203,6 +1226,201 @@ public class GuideBookScreen extends Screen {
 		body.add(new Crafting(new Item[] {stone, Items.GOLD_INGOT, stone, damascus, ModItems.MESA_DE_FORJA, damascus, stone, stone, stone},
 			new ItemStack(ModItems.MESA_DE_FORJA_MAYOR)));
 		body.add(new Text(ForjaPath.Step.MESA_MAYOR.description(), INK_SOFT));
+		return body;
+	}
+
+	// ------------------------------------------------------------------ book II, El arte del combate
+
+	private static String pct(double share) {
+		return String.valueOf(Math.round(share * 100));
+	}
+
+	private static String secs(int ticks) {
+		return number(ticks / 20.0F);
+	}
+
+	/** The body: stamina and what spends it, the dodge and its counter, jumping and running, and weight. */
+	private List<Element> bodyChapter() {
+		dev.forja.combat.CombatConfig cfg = dev.forja.combat.CombatConfig.get();
+		List<Element> body = new ArrayList<>();
+		body.add(new Summary(Component.translatable("gui.forja.libros.combate.cuerpo.resumen")));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.estamina.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.estamina", number(cfg.staminaMax), number(cfg.attackCost),
+			number(cfg.dodgeCost), number(cfg.jumpCost), number(cfg.sprintJumpCost), number(cfg.staminaRegenPerTick * 20.0F),
+			secs(cfg.staminaRegenDelayTicks), pct(cfg.tiredDamageMultiplier), number(cfg.blockCostPerDamage)), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.especiales", number(cfg.whirlStamina), number(cfg.quakeStamina),
+			number(cfg.reapStamina), number(cfg.chargeMoveStamina)), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.esquivar.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.esquivar", keyName(CombatClient.DODGE_KEY, "Alt"),
+			cfg.dodgeIframeTicks, secs(cfg.counterWindowTicks), pct(cfg.counterDamage - 1.0), number(cfg.counterStaminaRefund)), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.peso.titulo")));
+		body.add(new IconRow(List.of(
+			Assembler.create(ForgeType.DAGA, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA)),
+			Assembler.create(ForgeType.ESPADA, Assembler.defaultMaterials(ForgeType.ESPADA)),
+			Assembler.create(ForgeType.MARTILLO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO)))));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.peso", pct(cfg.maxArmorSlow)), INK));
+		return body;
+	}
+
+	/** Hitting: the charged blow, combos, posture and the finisher, where the blow lands and what it goes through. */
+	private List<Element> hittingChapter() {
+		dev.forja.combat.CombatConfig cfg = dev.forja.combat.CombatConfig.get();
+		List<Element> body = new ArrayList<>();
+		body.add(new Summary(Component.translatable("gui.forja.libros.combate.golpear.resumen")));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.cargado.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.cargado", secs(cfg.chargeDelayTicks + cfg.chargeFullTicks),
+			pct(cfg.chargeDamageBonus), pct(cfg.chargePostureBonus), number(cfg.chargeStaminaCost)), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.combo.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.combo", secs(cfg.comboWindowTicks),
+			pct(cfg.comboFinisherDamage - 1.0), pct(cfg.comboFinisherPosture - 1.0)), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.postura.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.postura", pct(cfg.staggerDamageMultiplier - 1.0),
+			secs(cfg.staggerTicks), number((float) cfg.finisherMultiplier)), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.zonas.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.zonas", pct(cfg.headMultiplier - 1.0)), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.tipos.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.tipos", pct(cfg.penBlade), pct(cfg.penAxe), pct(cfg.penBlunt),
+			pct(cfg.penSpear), pct(cfg.penArrowMax)), INK));
+		// Every monster's own resistances, straight out of the config it plays by.
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.resisten"), INK_SOFT));
+		for (Map.Entry<String, dev.forja.combat.CombatConfig.MobResistance> entry : cfg.resistenciasMobs.entrySet()) {
+			net.minecraft.resources.Identifier id = net.minecraft.resources.Identifier.tryParse(entry.getKey());
+			if (id == null) {
+				continue;
+			}
+			dev.forja.combat.CombatConfig.MobResistance resists = entry.getValue();
+			body.add(new Text(Component.translatable("gui.forja.libros.combate.resiste",
+				Component.translatable("entity." + id.getNamespace() + "." + id.getPath()),
+				times(resists.slash), times(resists.blunt), times(resists.pierce)), INK_SOFT));
+		}
+		return body;
+	}
+
+	private static String times(double factor) {
+		return "×" + String.format(java.util.Locale.ROOT, "%.2f", factor).replaceAll("0+$", "").replaceAll("\\.$", "").replace('.', ',');
+	}
+
+	/** Defending: the parry, a weapon's own guard and its rhythm, and the shield's bash. */
+	private List<Element> defendingChapter() {
+		dev.forja.combat.CombatConfig cfg = dev.forja.combat.CombatConfig.get();
+		List<Element> body = new ArrayList<>();
+		body.add(new Summary(Component.translatable("gui.forja.libros.combate.defender.resumen")));
+		body.add(new IconRow(List.of(Assembler.create(ForgeType.ESCUDO, Assembler.defaultMaterials(ForgeType.ESCUDO)),
+			Assembler.create(ForgeType.ESPADA, Assembler.defaultMaterials(ForgeType.ESPADA)))));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.parada.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libro.parada"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.guardia.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.guardia", pct(cfg.weaponGuardBlock), cfg.weaponParryTicks,
+			secs(cfg.parrySpamTicks), number(cfg.parryStaminaRefund)), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.especial.escudo.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libro.especial.escudo"), INK));
+		return body;
+	}
+
+	/** Magic, the plain way: the staff and the tome are weapons that spend mana, and the healing lantern. */
+	private List<Element> magicChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Summary(Component.translatable("gui.forja.libros.combate.magia.resumen")));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.especial.baculo.titulo")));
+		body.add(new IconRow(List.of(Assembler.create(ForgeType.BACULO, List.of(ForgeMaterial.AMATISTA, ForgeMaterial.HIERRO, ForgeMaterial.MADERA)))));
+		body.add(new Text(Component.translatable("gui.forja.libro.especial.baculo"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.especial.grimorio.titulo")));
+		body.add(new IconRow(List.of(Assembler.create(ForgeType.GRIMORIO, List.of(ForgeMaterial.AMATISTA, ForgeMaterial.HIERRO, ForgeMaterial.ORO)))));
+		body.add(new Text(Component.translatable("gui.forja.libro.especial.grimorio"), INK));
+		body.add(new SubHeader(Component.translatable("item.forja.farol")));
+		body.add(new IconRow(List.of(Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.ESMERALDA, ForgeMaterial.ORO, ForgeMaterial.MADERA)))));
+		body.add(new Text(Component.translatable("gui.forja.libro.clases.farol", Math.round(dev.forja.magic.Healing.BEAM_REACH),
+			Math.round(dev.forja.magic.Healing.RING_REACH), Math.round(dev.forja.magic.Healing.RING_GROWTH),
+			Math.round(dev.forja.magic.Healing.SELF_SHARE * 100)), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.farol_curandero"), INK_SOFT));
+		return body;
+	}
+
+	/** How the monsters fight: warnings and feints, turns and the ring, packs and captains, senses, and your gear. */
+	private List<Element> enemiesChapter() {
+		dev.forja.combat.CombatConfig cfg = dev.forja.combat.CombatConfig.get();
+		List<Element> body = new ArrayList<>();
+		body.add(new Summary(Component.translatable("gui.forja.libros.combate.enemigos.resumen")));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.aviso.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.aviso",
+			pct(dev.forja.difficulty.ForjaDifficulty.APRENDIZ.feint), pct(dev.forja.difficulty.ForjaDifficulty.LEYENDA.feint)), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.anillo.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.anillo", cfg.maxSimultaneousAttackers), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.grupos.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.grupos", cfg.packMin, cfg.packMax, cfg.packVeteranMin,
+			cfg.packVeteranMax), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.sentidos.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.sentidos"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.sin_obras"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.equipo.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.equipo", pct(cfg.mobDamagePerGearTier), pct(cfg.pressureMax)), INK));
+		body.add(new Text(Component.translatable("gui.forja.libro.mundo.monstruos"), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.tregua"), INK_SOFT));
+		return body;
+	}
+
+	/** Veterans, elites and champions: their badges, what they can take and go through, and what they drop. */
+	private List<Element> ranksChapter() {
+		dev.forja.combat.CombatConfig cfg = dev.forja.combat.CombatConfig.get();
+		List<Element> body = new ArrayList<>();
+		body.add(new Summary(Component.translatable("gui.forja.libros.combate.rangos.resumen")));
+		body.add(new Text(Component.translatable("gui.forja.libro.insignias"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.tope.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.tope", pct(cfg.hitCapNormal), pct(cfg.hitCapVeteran),
+			pct(cfg.hitCapElite), pct(cfg.hitCapChampion), pct(cfg.penetrationVeteran), pct(cfg.penetrationElite),
+			pct(cfg.penetrationChampion)), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.elites.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(Items.TOTEM_OF_UNDYING), new ItemStack(Items.ROTTEN_FLESH), new ItemStack(Items.BONE))));
+		body.add(new Text(Component.translatable("gui.forja.libro.elites", Math.round(dev.forja.ForjaConfig.get().elites * 100),
+			Math.round(dev.forja.world.Elites.HEALTH)), INK));
+		body.add(new Text(Component.translatable("gui.forja.libro.ataques.elite",
+			Math.round(dev.forja.world.Elites.WIND_MEND * 100)), INK_SOFT));
+		return body;
+	}
+
+	/** The fights the world starts on its own: sieges, thieves, the ones who come back, duels and raiders. */
+	private List<Element> worldFightsChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Summary(Component.translatable("gui.forja.libros.combate.mundo.resumen")));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.asedio.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.asedio", dev.forja.ai.WorldFights.SIEGE_MIN,
+			dev.forja.ai.WorldFights.SIEGE_MAX), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.ladrones.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.ladrones"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.duelo.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.duelo"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.saqueadores.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(Items.CROSSBOW), new ItemStack(Items.IRON_AXE), new ItemStack(Items.BELL))));
+		body.add(new Text(Component.translatable("gui.forja.libro.saqueadores", dev.forja.world.ForgeRaiders.BAND), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.noche_lluvia"), INK_SOFT));
+		return body;
+	}
+
+	/** Forja's own difficulty, the adaptive one and the nights. */
+	private List<Element> difficultyChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Summary(Component.translatable("gui.forja.libros.combate.dificultad.resumen")));
+		for (dev.forja.difficulty.ForjaDifficulty level : dev.forja.difficulty.ForjaDifficulty.values()) {
+			body.add(new Text(Component.translatable("gui.forja.libros.combate.dificultad_linea",
+				Component.translatable("dificultad.forja." + level.name().toLowerCase(java.util.Locale.ROOT)),
+				times(level.health), times(level.damage), times(level.threat), times(level.loot)), INK));
+		}
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.dificultad_actual",
+			Component.translatable("dificultad.forja." + dev.forja.difficulty.ForjaDifficulty.current().name().toLowerCase(java.util.Locale.ROOT))), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.adaptativa.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.adaptativa"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.noches.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.noches"), INK));
+		return body;
+	}
+
+	/** The last page of book II: the books that come next, and the path. */
+	private List<Element> combatNextChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.siguiente"), INK));
+		body.add(new BookCard(GuideBooks.Book.FUNDICION));
+		body.add(new BookCard(GuideBooks.Book.CLASES));
+		body.add(new ChapterLink("siguiente_paso"));
 		return body;
 	}
 
@@ -1740,6 +1958,11 @@ public class GuideBookScreen extends Screen {
 
 	/** The fighting chapter: the parry, the combo, the wounds and the moves. */
 	private List<Element> combatChapter() {
+		return this.weaponsChapter(true);
+	}
+
+	/** The weapons compared, frenzy, bleeding, the special moves, throwing and the lance; the parry only for the tome. */
+	private List<Element> weaponsChapter(boolean parry) {
 		List<Element> body = new ArrayList<>();
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.armas_comparadas")));
 		body.add(new Text(Component.translatable("gui.forja.libro.armas_comparadas.desc"), INK_SOFT));
@@ -1762,8 +1985,10 @@ public class GuideBookScreen extends Screen {
 		}
 		body.add(new Bars(weapons));
 		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("gui.forja.libro.parada.titulo")));
-		body.add(new Text(Component.translatable("gui.forja.libro.parada"), INK));
+		if (parry) {
+			body.add(new SubHeader(Component.translatable("gui.forja.libro.parada.titulo")));
+			body.add(new Text(Component.translatable("gui.forja.libro.parada"), INK));
+		}
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.frenesi.titulo")));
 		body.add(new Text(Component.translatable("gui.forja.libro.frenesi", dev.forja.upgrade.Frenzy.MAX_HITS,
 			dev.forja.upgrade.Frenzy.WINDOW_TICKS / 20), INK));
@@ -2004,140 +2229,159 @@ public class GuideBookScreen extends Screen {
 	}
 
 	/**
-	 * The three things the mod puts in the world to fight, with what each one leaves behind. Short on
-	 * purpose: the chapter on threats says how they behave, this one says what they are worth.
+	 * What the mod puts in the world to fight, with what each one leaves behind. Short on purpose: the chapters on
+	 * the enemies say how they behave, this one says what they are and what they are worth.
+	 *
+	 * <p>In book II it writes itself (docs/LIBROS_GUIA.md, Andy's answer 7): a creature the reader has not seen yet is
+	 * a shadow and a question mark, and its page fills in the first time it is in sight (client/CreatureSightings).
+	 * The tome, for creative, shows them all, and keeps the barrow, the camp and the Smith, which live in books VI
+	 * and VII.
 	 */
 	private List<Element> bestiaryChapter() {
+		boolean shadows = this.book == GuideBooks.Book.COMBATE;
 		List<Element> body = new ArrayList<>();
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario_intro"), INK_SOFT));
+		body.add(new Text(Component.translatable(shadows ? "gui.forja.libros.bestiario.sombras" : "gui.forja.libro.bestiario_intro"), INK_SOFT));
 
-		body.add(new SubHeader(Component.translatable("entity.forja.automata_de_forja")));
-		body.add(new Portrait(level -> new dev.forja.entity.ForgeAutomaton(dev.forja.registry.ModEntities.AUTOMATA, level)));
-		body.add(new IconRow(List.of(
-			Assembler.createPart(PartType.CABEZA_MARTILLO, ForgeMaterial.HIERRO),
-			Assembler.createPart(PartType.BOLA, ForgeMaterial.PIEDRA),
-			new ItemStack(Items.IRON_NUGGET)
-		)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.automata", Math.round(dev.forja.entity.ForgeAutomaton.HEALTH)), INK));
-		body.add(new Text(Component.translatable("gui.forja.libro.ataques.automata",
-			Math.round(dev.forja.entity.ForgeAutomaton.STEAM_DAMAGE)), INK_SOFT));
-		body.add(new Divider());
-
-		body.add(new SubHeader(Component.translatable("entity.forja.coraza_vacia")));
-		body.add(new Portrait(level -> new dev.forja.entity.HollowArmor(dev.forja.registry.ModEntities.CORAZA, level)));
-		body.add(new IconRow(List.of(
-			Assembler.createPart(PartType.PLACA_PECHERA, ForgeMaterial.HIERRO),
-			Assembler.createPart(PartType.PLACA_CASCO, ForgeMaterial.HIERRO),
-			dev.forja.item.UpgradeOrbItem.create(Upgrade.PROTECCION, 25)
-		)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.coraza",
-			Math.round(dev.forja.entity.HollowArmor.HEALTH),
-			Math.round(dev.forja.entity.HollowArmor.UNFORGED_SHARE * 100)), INK));
-		body.add(new Text(Component.translatable("gui.forja.libro.coraza_alma",
-			Math.round(dev.forja.entity.HollowArmor.SOUL_REACH),
-			Math.round(dev.forja.entity.HollowArmor.SOUL_HEAL),
-			dev.forja.entity.HollowArmor.SOUL_RAGE / 20), INK));
-		body.add(new Text(Component.translatable("gui.forja.libro.ataques.coraza",
-			Math.round(dev.forja.entity.HollowArmor.DASH_DAMAGE)), INK_SOFT));
-		body.add(new Text(Component.translatable("gui.forja.libro.coraza_visita",
-			Math.round(dev.forja.ForjaConfig.get().corazas * 100)), INK_SOFT));
-		body.add(new Divider());
-
-		body.add(new SubHeader(Component.translatable("entity.forja.pavesa")));
-		body.add(new Portrait(level -> new dev.forja.entity.EmberWisp(dev.forja.registry.ModEntities.PAVESA, level)));
-		body.add(new IconRow(List.of(
-			new ItemStack(Items.COAL), new ItemStack(Items.BLAZE_POWDER), new ItemStack(ModItems.HUEVO_PAVESA)
-		)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.pavesa",
-			Math.round(dev.forja.entity.EmberWisp.HEALTH),
-			Math.round(dev.forja.entity.EmberWisp.DIVE_DAMAGE),
-			Math.round(dev.forja.entity.EmberWisp.FLARE_DAMAGE)), INK));
-		body.add(new Text(Component.translatable("gui.forja.libro.farol"), INK));
-		body.add(new IconRow(List.of(new ItemStack(Items.LANTERN), new ItemStack(ModItems.FAROL_DE_PAVESA))));
-		body.add(new Text(Component.translatable("gui.forja.libro.farol_precio"), INK_SOFT));
-		body.add(new Text(Component.translatable("gui.forja.libro.pavesa_visita",
-			Math.round(dev.forja.ForjaConfig.get().pavesas * 100), dev.forja.world.WispWatch.limit()), INK_SOFT));
-		body.add(new Divider());
-
-		body.add(new SubHeader(Component.translatable("entity.forja.capitan_saqueador")));
-		body.add(new IconRow(List.of(
-			dev.forja.item.UpgradeOrbItem.create(Upgrade.FILO, 50),
-			dev.forja.item.UpgradeOrbItem.create(Upgrade.PROTECCION, 75)
-		)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.capitan", dev.forja.world.ForgeRaiders.BAND), INK));
-		body.add(new Text(Component.translatable("gui.forja.libro.ataques.capitan",
-			dev.forja.world.ForgeRaiders.RALLY_TICKS / 20), INK_SOFT));
-		body.add(new SubHeader(Component.translatable("gui.forja.libro.tumulo")));
-		body.add(new IconRow(List.of(
-			new ItemStack(ModItems.YUNQUE_DEL_HERRERO), new ItemStack(Items.SOUL_LANTERN), new ItemStack(ModItems.SELLO)
-		)));
-		body.add(new Text(Component.translatable("gui.forja.libro.tumulo_desc"), INK_SOFT));
-		body.add(new Divider());
-
-		body.add(new SubHeader(Component.translatable("gui.forja.libro.campamento")));
-		body.add(new IconRow(List.of(
-			new ItemStack(Items.SPRUCE_LOG), new ItemStack(Items.CAMPFIRE), new ItemStack(Items.BELL), new ItemStack(Items.FILLED_MAP)
-		)));
-		body.add(new Text(Component.translatable("gui.forja.libro.campamento_desc"), INK_SOFT));
-		body.add(new Divider());
-
-		body.add(new SubHeader(Component.translatable("entity.forja.herrero_caido")));
-		body.add(new Portrait(level -> new dev.forja.entity.FallenSmith(dev.forja.registry.ModEntities.HERRERO_CAIDO, level)));
-		body.add(new IconRow(List.of(
-			new ItemStack(ModItems.CORAZON_DE_FORJA), new ItemStack(ModItems.YUNQUE_DEL_HERRERO), new ItemStack(ModItems.FRAGUA_APAGADA)
-		)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.herrero", Math.round(dev.forja.entity.FallenSmith.HEALTH)), INK));
-		body.add(new Text(Component.translatable("gui.forja.libro.ataques.herrero",
-			Math.round(dev.forja.entity.FallenSmith.WAVE_DAMAGE)), INK_SOFT));
-		body.add(new Text(Component.translatable("gui.forja.libro.yunque"), INK_SOFT));
+		this.creature(body, shadows, "automata_de_forja", level -> new dev.forja.entity.ForgeAutomaton(dev.forja.registry.ModEntities.AUTOMATA, level),
+			new IconRow(List.of(
+				Assembler.createPart(PartType.CABEZA_MARTILLO, ForgeMaterial.HIERRO),
+				Assembler.createPart(PartType.BOLA, ForgeMaterial.PIEDRA),
+				new ItemStack(Items.IRON_NUGGET)
+			)),
+			new Text(Component.translatable("gui.forja.libro.bestiario.automata", Math.round(dev.forja.entity.ForgeAutomaton.HEALTH)), INK),
+			new Text(Component.translatable("gui.forja.libro.ataques.automata",
+				Math.round(dev.forja.entity.ForgeAutomaton.STEAM_DAMAGE)), INK_SOFT));
+		this.creature(body, shadows, "coraza_vacia", level -> new dev.forja.entity.HollowArmor(dev.forja.registry.ModEntities.CORAZA, level),
+			new IconRow(List.of(
+				Assembler.createPart(PartType.PLACA_PECHERA, ForgeMaterial.HIERRO),
+				Assembler.createPart(PartType.PLACA_CASCO, ForgeMaterial.HIERRO),
+				dev.forja.item.UpgradeOrbItem.create(Upgrade.PROTECCION, 25)
+			)),
+			new Text(Component.translatable("gui.forja.libro.bestiario.coraza",
+				Math.round(dev.forja.entity.HollowArmor.HEALTH),
+				Math.round(dev.forja.entity.HollowArmor.UNFORGED_SHARE * 100)), INK),
+			new Text(Component.translatable("gui.forja.libro.coraza_alma",
+				Math.round(dev.forja.entity.HollowArmor.SOUL_REACH),
+				Math.round(dev.forja.entity.HollowArmor.SOUL_HEAL),
+				dev.forja.entity.HollowArmor.SOUL_RAGE / 20), INK),
+			new Text(Component.translatable("gui.forja.libro.ataques.coraza",
+				Math.round(dev.forja.entity.HollowArmor.DASH_DAMAGE)), INK_SOFT),
+			new Text(Component.translatable("gui.forja.libro.coraza_visita",
+				Math.round(dev.forja.ForjaConfig.get().corazas * 100)), INK_SOFT));
+		this.creature(body, shadows, "pavesa", level -> new dev.forja.entity.EmberWisp(dev.forja.registry.ModEntities.PAVESA, level),
+			new IconRow(List.of(
+				new ItemStack(Items.COAL), new ItemStack(Items.BLAZE_POWDER), new ItemStack(ModItems.HUEVO_PAVESA)
+			)),
+			new Text(Component.translatable("gui.forja.libro.bestiario.pavesa",
+				Math.round(dev.forja.entity.EmberWisp.HEALTH),
+				Math.round(dev.forja.entity.EmberWisp.DIVE_DAMAGE),
+				Math.round(dev.forja.entity.EmberWisp.FLARE_DAMAGE)), INK),
+			new Text(Component.translatable("gui.forja.libro.farol"), INK),
+			new IconRow(List.of(new ItemStack(Items.LANTERN), new ItemStack(ModItems.FAROL_DE_PAVESA))),
+			new Text(Component.translatable("gui.forja.libro.farol_precio"), INK_SOFT),
+			new Text(Component.translatable("gui.forja.libro.pavesa_visita",
+				Math.round(dev.forja.ForjaConfig.get().pavesas * 100), dev.forja.world.WispWatch.limit()), INK_SOFT));
+		// The raiders' captain is a pillager with a name, not a creature of its own: no portrait.
+		this.creature(body, shadows, "capitan_saqueador", null,
+			new IconRow(List.of(
+				dev.forja.item.UpgradeOrbItem.create(Upgrade.FILO, 50),
+				dev.forja.item.UpgradeOrbItem.create(Upgrade.PROTECCION, 75)
+			)),
+			new Text(Component.translatable("gui.forja.libro.bestiario.capitan", dev.forja.world.ForgeRaiders.BAND), INK),
+			new Text(Component.translatable("gui.forja.libro.ataques.capitan",
+				dev.forja.world.ForgeRaiders.RALLY_TICKS / 20), INK_SOFT));
+		if (!shadows) {
+			body.add(new SubHeader(Component.translatable("gui.forja.libro.tumulo")));
+			body.add(new IconRow(List.of(
+				new ItemStack(ModItems.YUNQUE_DEL_HERRERO), new ItemStack(Items.SOUL_LANTERN), new ItemStack(ModItems.SELLO)
+			)));
+			body.add(new Text(Component.translatable("gui.forja.libro.tumulo_desc"), INK_SOFT));
+			body.add(new Divider());
+			body.add(new SubHeader(Component.translatable("gui.forja.libro.campamento")));
+			body.add(new IconRow(List.of(
+				new ItemStack(Items.SPRUCE_LOG), new ItemStack(Items.CAMPFIRE), new ItemStack(Items.BELL), new ItemStack(Items.FILLED_MAP)
+			)));
+			body.add(new Text(Component.translatable("gui.forja.libro.campamento_desc"), INK_SOFT));
+			this.creature(body, false, "herrero_caido", level -> new dev.forja.entity.FallenSmith(dev.forja.registry.ModEntities.HERRERO_CAIDO, level),
+				new IconRow(List.of(
+					new ItemStack(ModItems.CORAZON_DE_FORJA), new ItemStack(ModItems.YUNQUE_DEL_HERRERO), new ItemStack(ModItems.FRAGUA_APAGADA)
+				)),
+				new Text(Component.translatable("gui.forja.libro.bestiario.herrero", Math.round(dev.forja.entity.FallenSmith.HEALTH)), INK),
+				new Text(Component.translatable("gui.forja.libro.ataques.herrero",
+					Math.round(dev.forja.entity.FallenSmith.WAVE_DAMAGE)), INK_SOFT),
+				new Text(Component.translatable("gui.forja.libro.yunque"), INK_SOFT));
+		}
 		// The eleven that came after the book was written. They were in the world for days with no page:
 		// the only way to learn that the Herrumbre eats armour, or that the Nucleo is better left
 		// alone, was to find out. One page each — what it is, what it costs you, and the way round it.
-		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("entity.forja.herrumbre")));
-		body.add(new Portrait(level -> new dev.forja.entity.RustSwarm(dev.forja.registry.ModEntities.HERRUMBRE, level)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.herrumbre", Math.round(dev.forja.entity.RustSwarm.HEALTH)), INK));
-		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("entity.forja.ascua_mayor")));
-		body.add(new Portrait(level -> new dev.forja.entity.GreaterEmber(dev.forja.registry.ModEntities.ASCUA_MAYOR, level)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.ascua_mayor", Math.round(dev.forja.entity.GreaterEmber.HEALTH)), INK));
-		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("entity.forja.escoria_viviente")));
-		body.add(new Portrait(level -> new dev.forja.entity.LivingSlag(dev.forja.registry.ModEntities.ESCORIA, level)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.escoria_viviente"), INK));
-		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("entity.forja.yunque_andante")));
-		body.add(new Portrait(level -> new dev.forja.entity.WalkingAnvil(dev.forja.registry.ModEntities.YUNQUE_ANDANTE, level)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.yunque_andante", Math.round(dev.forja.entity.WalkingAnvil.HEALTH)), INK));
-		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("entity.forja.percutor")));
-		body.add(new Portrait(level -> new dev.forja.entity.Striker(dev.forja.registry.ModEntities.PERCUTOR, level)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.percutor", Math.round(dev.forja.entity.Striker.HEALTH)), INK));
-		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("entity.forja.tenaza")));
-		body.add(new Portrait(level -> new dev.forja.entity.Tongs(dev.forja.registry.ModEntities.TENAZA, level)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.tenaza", Math.round(dev.forja.entity.Tongs.HEALTH)), INK));
-		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("entity.forja.cargador_de_carbon")));
-		body.add(new Portrait(level -> new dev.forja.entity.CoalHauler(dev.forja.registry.ModEntities.CARGADOR_DE_CARBON, level)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.cargador_de_carbon", Math.round(dev.forja.entity.CoalHauler.HEALTH)), INK));
-		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("entity.forja.templador")));
-		body.add(new Portrait(level -> new dev.forja.entity.Quencher(dev.forja.registry.ModEntities.TEMPLADOR, level)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.templador", Math.round(dev.forja.entity.Quencher.HEALTH)), INK));
-		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("entity.forja.nucleo_estelar")));
-		body.add(new Portrait(level -> new dev.forja.entity.StarCore(dev.forja.registry.ModEntities.NUCLEO_ESTELAR, level)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.nucleo_estelar", Math.round(dev.forja.entity.StarCore.HEALTH)), INK));
-		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("entity.forja.molde_roto")));
-		body.add(new Portrait(level -> new dev.forja.entity.BrokenMould(dev.forja.registry.ModEntities.MOLDE_ROTO, level)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.molde_roto", Math.round(dev.forja.entity.BrokenMould.HEALTH)), INK));
-		body.add(new Divider());
-		body.add(new SubHeader(Component.translatable("entity.forja.guardian_de_cuno")));
-		body.add(new Portrait(level -> new dev.forja.entity.CuneGuardian(dev.forja.registry.ModEntities.GUARDIAN_DE_CUNO, level)));
-		body.add(new Text(Component.translatable("gui.forja.libro.bestiario.guardian_de_cuno", Math.round(dev.forja.entity.CuneGuardian.HEALTH)), INK));
+		this.creature(body, shadows, "herrumbre", level -> new dev.forja.entity.RustSwarm(dev.forja.registry.ModEntities.HERRUMBRE, level),
+			new Text(Component.translatable("gui.forja.libro.bestiario.herrumbre", Math.round(dev.forja.entity.RustSwarm.HEALTH)), INK));
+		this.creature(body, shadows, "ascua_mayor", level -> new dev.forja.entity.GreaterEmber(dev.forja.registry.ModEntities.ASCUA_MAYOR, level),
+			new Text(Component.translatable("gui.forja.libro.bestiario.ascua_mayor", Math.round(dev.forja.entity.GreaterEmber.HEALTH)), INK));
+		this.creature(body, shadows, "escoria_viviente", level -> new dev.forja.entity.LivingSlag(dev.forja.registry.ModEntities.ESCORIA, level),
+			new Text(Component.translatable("gui.forja.libro.bestiario.escoria_viviente"), INK));
+		this.creature(body, shadows, "yunque_andante", level -> new dev.forja.entity.WalkingAnvil(dev.forja.registry.ModEntities.YUNQUE_ANDANTE, level),
+			new Text(Component.translatable("gui.forja.libro.bestiario.yunque_andante", Math.round(dev.forja.entity.WalkingAnvil.HEALTH)), INK));
+		this.creature(body, shadows, "percutor", level -> new dev.forja.entity.Striker(dev.forja.registry.ModEntities.PERCUTOR, level),
+			new Text(Component.translatable("gui.forja.libro.bestiario.percutor", Math.round(dev.forja.entity.Striker.HEALTH)), INK));
+		this.creature(body, shadows, "tenaza", level -> new dev.forja.entity.Tongs(dev.forja.registry.ModEntities.TENAZA, level),
+			new Text(Component.translatable("gui.forja.libro.bestiario.tenaza", Math.round(dev.forja.entity.Tongs.HEALTH)), INK));
+		this.creature(body, shadows, "cargador_de_carbon", level -> new dev.forja.entity.CoalHauler(dev.forja.registry.ModEntities.CARGADOR_DE_CARBON, level),
+			new Text(Component.translatable("gui.forja.libro.bestiario.cargador_de_carbon", Math.round(dev.forja.entity.CoalHauler.HEALTH)), INK));
+		this.creature(body, shadows, "templador", level -> new dev.forja.entity.Quencher(dev.forja.registry.ModEntities.TEMPLADOR, level),
+			new Text(Component.translatable("gui.forja.libro.bestiario.templador", Math.round(dev.forja.entity.Quencher.HEALTH)), INK));
+		this.creature(body, shadows, "nucleo_estelar", level -> new dev.forja.entity.StarCore(dev.forja.registry.ModEntities.NUCLEO_ESTELAR, level),
+			new Text(Component.translatable("gui.forja.libro.bestiario.nucleo_estelar", Math.round(dev.forja.entity.StarCore.HEALTH)), INK));
+		this.creature(body, shadows, "molde_roto", level -> new dev.forja.entity.BrokenMould(dev.forja.registry.ModEntities.MOLDE_ROTO, level),
+			new Text(Component.translatable("gui.forja.libro.bestiario.molde_roto", Math.round(dev.forja.entity.BrokenMould.HEALTH)), INK));
+		// The Guardian lives in the forge castle, and his page goes with it into book VI.
+		if (!shadows) {
+			this.creature(body, false, "guardian_de_cuno", level -> new dev.forja.entity.CuneGuardian(dev.forja.registry.ModEntities.GUARDIAN_DE_CUNO, level),
+				new Text(Component.translatable("gui.forja.libro.bestiario.guardian_de_cuno", Math.round(dev.forja.entity.CuneGuardian.HEALTH)), INK));
+		}
 		return body;
+	}
+
+	/** Every creature page of this book as "id:seen" or "id:shadow", for the client test. */
+	private final List<String> creatures = new ArrayList<>();
+
+	public List<String> creaturePages() {
+		if (this.pages.isEmpty()) {
+			this.build();
+		}
+		return List.copyOf(this.creatures);
+	}
+
+	/**
+	 * One creature's page: its name, its portrait and what it is, when it has been seen (or the book does not keep
+	 * shadows); a shadow, three question marks and nothing else when not. A creature seen but whose page the
+	 * reader has not looked at yet carries a "nuevo" mark.
+	 */
+	private void creature(List<Element> body, boolean shadows, String id,
+		java.util.function.@Nullable Function<net.minecraft.world.level.Level, net.minecraft.world.entity.LivingEntity> maker, Element... details) {
+		if (this.creatures.size() > 0 || body.size() > 1) {
+			body.add(new Divider());
+		}
+		String key = dev.forja.Forja.MOD_ID + ":" + id;
+		boolean seen = !shadows || BookMemory.hasSeen(key);
+		this.creatures.add(id + ":" + (seen ? "seen" : "shadow"));
+		if (!seen) {
+			body.add(new SubHeader(Component.translatable("gui.forja.libros.bestiario.oculto")));
+			body.add(new CreatureShadow());
+			body.add(new Text(Component.translatable("gui.forja.libros.bestiario.sin_ver"), INK_SOFT));
+			return;
+		}
+		boolean fresh = shadows && !BookMemory.hasRead(key);
+		body.add(new SubHeader(fresh
+			? Component.translatable("entity.forja." + id).copy().append(Component.translatable("gui.forja.libros.nuevo").withColor(0xB02020))
+			: Component.translatable("entity.forja." + id)));
+		if (maker != null) {
+			body.add(new Portrait(maker));
+		}
+		if (shadows) {
+			body.add(new CreatureRead(key));
+		}
+		body.addAll(List.of(details));
 	}
 
 	/** Talismans and the tool belt: what you carry rather than what you swing. */
@@ -3204,9 +3448,10 @@ public class GuideBookScreen extends Screen {
 			int colour = hovered ? 0xFF6B2A0E : INK;
 			if (screen.font.width(this.chapter.name) > room) {
 				// Long titles would run into the page number, so they are written a little smaller.
+				float scale = fitScale(screen.font, this.chapter.name, room, 0.8F);
 				g.pose().pushMatrix();
-				g.pose().translate(x + 14, y + 4);
-				g.pose().scale(0.8F, 0.8F);
+				g.pose().translate(x + 14, y + 3 + (1.0F - scale) * 4.0F);
+				g.pose().scale(scale, scale);
 				g.text(screen.font, this.chapter.name, 0, 0, colour, false);
 				g.pose().popMatrix();
 			} else {
@@ -4226,6 +4471,83 @@ public class GuideBookScreen extends Screen {
 		boolean click(GuideBookScreen screen) {
 			screen.jumpTo(Math.min(this.page, screen.pages.size() - 1));
 			return true;
+		}
+	}
+
+	/**
+	 * "En una página": the whole of a part of the book in a few lines, on a shaded card, first thing in it. For the
+	 * reader who wants the gist and nothing more (Andy: a long book, well sectioned, that does not scare).
+	 */
+	private final class Summary extends Element {
+		private final List<FormattedCharSequence> lines;
+		private final Component label = Component.translatable("gui.forja.libros.en_una_pagina");
+
+		Summary(Component text) {
+			this.lines = GuideBookScreen.this.font.split(GuideText.rubric(text), WRAP - 8);
+		}
+
+		@Override
+		int height() {
+			return 16 + this.lines.size() * 8;
+		}
+
+		@Override
+		int widest(Font font) {
+			int widest = Math.round(font.width(this.label) * SMALL);
+			for (FormattedCharSequence line : this.lines) {
+				widest = Math.max(widest, 4 + Math.round(font.width(line) * SMALL));
+			}
+			return widest;
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			g.fill(x - 2, y + 1, x + CONTENT_W + 2, y + this.height() - 2, PAPER_SHADE);
+			g.fill(x - 2, y + 1, x, y + this.height() - 2, 0xFF000000 | GuideText.RUBRIC);
+			screen.small(g, this.label, x + 3, y + 3, 0xFF000000 | GuideText.RUBRIC);
+			for (int i = 0; i < this.lines.size(); i++) {
+				screen.small(g, this.lines.get(i), x + 3, y + 12 + i * 8, INK);
+			}
+		}
+	}
+
+	/** A creature not seen yet: a dark plate and a question mark where its portrait will be. */
+	private static final class CreatureShadow extends Element {
+		@Override
+		int height() {
+			return 60;
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			int left = x + 14;
+			int right = x + CONTENT_W - 14;
+			g.fill(left, y + 2, right, y + 56, 0xFF2E2620);
+			g.outline(left, y + 2, right - left, 54, 0x90806848);
+			g.pose().pushMatrix();
+			g.pose().translate(x + CONTENT_W / 2.0F - 9, y + 14);
+			g.pose().scale(3.0F, 3.0F);
+			g.text(screen.font, "?", 0, 0, 0xFF8C7A62, false);
+			g.pose().popMatrix();
+		}
+	}
+
+	/** Not drawn: on screen, it marks its creature's page as read, so the "nuevo" mark goes away. */
+	private static final class CreatureRead extends Element {
+		private final String creature;
+
+		CreatureRead(String creature) {
+			this.creature = creature;
+		}
+
+		@Override
+		int height() {
+			return 0;
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			BookMemory.read(this.creature);
 		}
 	}
 

@@ -1,5 +1,39 @@
 # Novedades
 
+## 2026-09-30 — Libros de la guía: libro II, El arte del combate, y tarjetas a oscuras
+
+- **Libros sin aprender, a oscuras** (revisión de Andy). En el Cuaderno y en la biblioteca, la tarjeta de un libro
+  cuya receta no has aprendido sale a oscuras: la sombra de un libro, un candado, "Libro II · ???" y solo cuándo se
+  aprende, sin receta. Al aprenderla se ilumina, con un sello de nuevo hasta que lo abres. Con JEI, las recetas de
+  los libros sin aprender se esconden hasta que se aprenden.
+- **El arte del combate** (II, libro + hueso; la receta se aprende al forjar tu primer objeto). Es el libro grande,
+  en cinco partes con pestaña. Cada una empieza con lo esencial en una página.
+  - **Tu cuerpo y tus golpes:**
+    - estamina y lo que la gasta;
+    - esquivar (Alt), la esquiva perfecta y el contraataque;
+    - peso;
+    - golpe cargado, combos, postura y remate, dónde das, corte, golpe y perforación, y las resistencias de cada
+      monstruo, leídas de la configuración;
+    - armas y golpes especiales;
+    - defenderte: parada, guardia del arma y golpe de escudo.
+  - **Magia y maná:** báculo, grimorio, el farol de curación y el capítulo del maná.
+  - **Los enemigos:**
+    - cómo pelean: aviso y finta, turnos y anillo, grupos y capitanes, lo que ven y oyen, que no construyen, tu
+      equipo y la presión, y la tregua;
+    - los rangos: veterano, élite y campeón, lo que aguantan y lo que atraviesan;
+    - peleas del mundo: asedios, ladrones, los que vuelven, duelos y saqueadores;
+    - la dificultad de Forja, la adaptativa y las noches.
+  - **El cielo:** los eventos.
+  - **Bestiario que se escribe solo:** cada criatura está en sombra, con "???", hasta que la ves de cerca y a la
+    vista. Entonces aparece su ficha, marcada "nuevo" hasta que la miras. Se guarda en
+    `config/forja/libros_leidos.json`. El tomo de creativo las enseña todas.
+- El paso "Para un golpe" del camino lleva a "Defenderte", en el libro II.
+- En el índice, los títulos largos se escriben más pequeños hasta que caben.
+- **Pruebas:**
+  - `LibrosGameTests`: la receta del libro II.
+  - En el cliente (`FORJA_SOLO=libro`): tarjetas iluminadas u oscuras según lo aprendido, el bestiario en sombra y una
+    criatura vista, la maquetación y los enlaces del libro II, y fotos de sus 45 dobles páginas.
+
 ## 2026-09-29 — La guía se parte en libros (primera entrega: el Cuaderno, El yunque y la biblioteca)
 
 Andy: "Ver un libro que tiene más de 200 páginas termina asustando". El diseño completo está en

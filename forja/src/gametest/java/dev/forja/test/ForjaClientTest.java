@@ -1155,6 +1155,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 		}
 		server.runCommand("give @a forja:guia_de_forja");
 		server.runCommand("give @a forja:libro_yunque");
+		server.runCommand("give @a forja:libro_combate");
 		context.waitFor(mc -> dev.forja.client.PathClient.done().contains("forja") && !dev.forja.client.PathClient.done().contains("temple"), 200);
 		context.waitTicks(10);
 
@@ -1162,7 +1163,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 		String layout = context.computeOnClient(mc -> {
 			StringBuilder report = new StringBuilder();
 			for (dev.forja.GuideBooks.Book which : List.of(dev.forja.GuideBooks.Book.CUADERNO, dev.forja.GuideBooks.Book.YUNQUE,
-				dev.forja.GuideBooks.Book.BIBLIOTECA, dev.forja.GuideBooks.Book.TOMO)) {
+				dev.forja.GuideBooks.Book.COMBATE, dev.forja.GuideBooks.Book.BIBLIOTECA, dev.forja.GuideBooks.Book.TOMO)) {
 				GuideBookScreen book = new GuideBookScreen(which);
 				String problems = book.overflowingPages() + " " + book.wideElements() + " " + book.elidedElements() + " " + book.rawKeys()
 					+ " " + book.misplacedChapters() + " " + book.brokenLinks();
@@ -1186,6 +1187,23 @@ public class ForjaClientTest implements FabricClientGameTest {
 		log("libros, tarjetas: " + cards);
 		check(cards.startsWith("[CUADERNO:lit, YUNQUE:dark, COMBATE:dark") && cards.contains("| [CUADERNO:lit, YUNQUE:lit, COMBATE:dark"),
 			"only learned books should be lit, and book I only after the first template: " + cards);
+
+		// Book II's bestiary writes itself: every creature in shadow until seen, and a creature seen has its page.
+		String bestiary = context.computeOnClient(mc -> {
+			java.util.Set<String> was = dev.forja.client.BookMemory.forgetCreatures();
+			String none = new GuideBookScreen(dev.forja.GuideBooks.Book.COMBATE).creaturePages().toString();
+			dev.forja.client.BookMemory.sawCreature("forja:herrumbre");
+			String one = new GuideBookScreen(dev.forja.GuideBooks.Book.COMBATE).creaturePages().toString();
+			String tome = new GuideBookScreen(dev.forja.GuideBooks.Book.TOMO).creaturePages().toString();
+			dev.forja.client.BookMemory.forgetCreatures();
+			was.forEach(dev.forja.client.BookMemory::sawCreature);
+			return none + " | " + one + " | " + tome;
+		});
+		log("libros, bestiario: " + bestiary);
+		String[] parts = bestiary.split(" \\| ");
+		check(!parts[0].contains(":seen") && parts[0].contains("herrumbre:shadow"), "with nothing seen the whole bestiary should be in shadow: " + parts[0]);
+		check(parts[1].contains("herrumbre:seen") && parts[1].contains("pavesa:shadow"), "a creature seen should have its page, the rest not: " + parts[1]);
+		check(!parts[2].contains(":shadow"), "the tome shows every creature: " + parts[2]);
 
 		// G: with the notebook carried, the library; without it, the book in hand; without either, nothing.
 		String keys = context.computeOnClient(mc -> String.valueOf(dev.forja.client.ForjaClient.guideKeyOpens(mc.player)));
@@ -1224,8 +1242,13 @@ public class ForjaClientTest implements FabricClientGameTest {
 		context.runOnClient(mc -> mc.gui.setScreen(null));
 
 		// Pictures: every spread of the notebook, book I and the library, cover first.
+		// Two creatures met, so the pictures show a written page and a shadow side by side.
+		context.runOnClient(mc -> {
+			dev.forja.client.BookMemory.sawCreature("forja:automata_de_forja");
+			dev.forja.client.BookMemory.sawCreature("forja:pavesa");
+		});
 		for (dev.forja.GuideBooks.Book which : List.of(dev.forja.GuideBooks.Book.CUADERNO, dev.forja.GuideBooks.Book.YUNQUE,
-			dev.forja.GuideBooks.Book.BIBLIOTECA)) {
+			dev.forja.GuideBooks.Book.COMBATE, dev.forja.GuideBooks.Book.BIBLIOTECA)) {
 			int pages = context.computeOnClient(mc -> {
 				GuideBookScreen book = new GuideBookScreen(which);
 				mc.gui.setScreen(book);
@@ -1254,6 +1277,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			server.runCommand("advancement " + (before.contains(step.advancement()) ? "grant" : "revoke") + " @a only forja:forja/" + step.advancement());
 		}
 		server.runCommand("clear @a forja:libro_yunque");
+		server.runCommand("clear @a forja:libro_combate");
 		context.waitTicks(5);
 	}
 

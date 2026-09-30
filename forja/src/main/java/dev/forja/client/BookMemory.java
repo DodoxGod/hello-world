@@ -22,6 +22,10 @@ import net.fabricmc.loader.api.FabricLoader;
 public final class BookMemory {
 	/** Per book: [opened (0 or 1), last page, furthest page]. */
 	private static final Map<GuideBooks.Book, int[]> READ = new EnumMap<>(GuideBooks.Book.class);
+	/** Creatures seen (their entity ids), for the bestiary of book II, which is dark until each one is met. */
+	private static final java.util.Set<String> SEEN = new java.util.TreeSet<>();
+	/** Creatures whose page has been looked at since they were seen: their "nuevo" mark is gone. */
+	private static final java.util.Set<String> PAGE_READ = new java.util.TreeSet<>();
 	private static boolean loaded;
 	private static boolean dirty;
 
@@ -64,6 +68,44 @@ public final class BookMemory {
 		}
 	}
 
+	/** A creature came into sight: its bestiary page writes itself. True the first time. */
+	public static boolean sawCreature(String id) {
+		load();
+		if (SEEN.add(id)) {
+			dirty = true;
+			return true;
+		}
+		return false;
+	}
+
+	public static boolean hasSeen(String id) {
+		load();
+		return SEEN.contains(id);
+	}
+
+	/** The creature's page was on screen: it is no longer new. */
+	public static void read(String id) {
+		load();
+		if (PAGE_READ.add(id)) {
+			dirty = true;
+		}
+	}
+
+	public static boolean hasRead(String id) {
+		load();
+		return PAGE_READ.contains(id);
+	}
+
+	/** Forget every creature, for the client test to see the bestiary in shadow. Returns what was seen. */
+	public static java.util.Set<String> forgetCreatures() {
+		load();
+		java.util.Set<String> was = new java.util.TreeSet<>(SEEN);
+		SEEN.clear();
+		PAGE_READ.clear();
+		dirty = true;
+		return was;
+	}
+
 	/** The page to go back to, or 0 for a book never read past its cover. */
 	public static int bookmark(GuideBooks.Book book) {
 		return of(book)[1];
@@ -88,6 +130,13 @@ public final class BookMemory {
 		}
 		try {
 			JsonObject all = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
+			for (String list : new String[] {"vistos", "fichas_leidas"}) {
+				if (all.has(list) && all.get(list).isJsonArray()) {
+					for (var id : all.getAsJsonArray(list)) {
+						(list.equals("vistos") ? SEEN : PAGE_READ).add(id.getAsString());
+					}
+				}
+			}
 			for (GuideBooks.Book book : GuideBooks.Book.values()) {
 				if (all.has(book.key()) && all.get(book.key()).isJsonArray() && all.getAsJsonArray(book.key()).size() == 3) {
 					var array = all.getAsJsonArray(book.key());
@@ -114,6 +163,12 @@ public final class BookMemory {
 			}
 			all.add(entry.getKey().key(), array);
 		}
+		var seen = new com.google.gson.JsonArray();
+		SEEN.forEach(seen::add);
+		all.add("vistos", seen);
+		var pagesRead = new com.google.gson.JsonArray();
+		PAGE_READ.forEach(pagesRead::add);
+		all.add("fichas_leidas", pagesRead);
 		try {
 			Files.createDirectories(file().getParent());
 			Files.writeString(file(), all.toString(), StandardCharsets.UTF_8);
