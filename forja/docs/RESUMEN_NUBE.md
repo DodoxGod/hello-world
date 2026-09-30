@@ -393,7 +393,12 @@ Una config con los valores viejos de presión pasa sola a los nuevos.
 - **Pararrayos:** `docs/capturas_2026-09-29/pararrayos.jpg`. El meteorito que apuntaba a 6 bloques cae en el
   pararrayos (desgaste 1, sin cráter).
 - **Cerco y retroceso:** `docs/capturas_2026-09-29/cerco_y_retroceso_1.jpg` y `cerco_retroceso_2.jpg`.
-- **Pendientes:** clases y castillo (tercera pasada).
+- **Castillo, tercera pasada** (30-09): `docs/castillo/tercera_pasada_2026-09-29/juego/`, 11 hojas con todas las vistas.
+  - En el gran salón las cadenas están espaciadas y ya no es un bosque.
+  - La pasarela de la fundición se ve y se llega a ella.
+  - La sala de los tornos ya es accesible, aunque se ve algo vacía.
+  - Fallo de la captura, no del castillo: en `int_fundicion_suelo` la cámara queda medio dentro de un muro.
+- **Pendientes:** clases.
 
 ## Estado de las pruebas
 
