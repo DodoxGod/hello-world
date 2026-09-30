@@ -91,10 +91,18 @@ public final class MobAi {
 			if (entity instanceof Mob mob && entity instanceof Enemy) {
 				Squad.onDeath(mob, mob.level().getGameTime());
 				Captain.onDeath(mob, mob.level().getGameTime());
+				// the world's memory (M6): how the player killed it, and what its life was worth
+				WorldMemory.onDeath(mob, source);
 			}
 		});
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register(MobAi::callForHelp);
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register(MobAi::pushToDanger);
+		// the world's memory (M6): the damage each mob does to a player over its life
+		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, base, taken, blocked) -> {
+			if (entity instanceof Player && source.getEntity() instanceof Mob mob && !blocked) {
+				WorldMemory.onHit(mob, taken);
+			}
+		});
 		// v4's knockback arrow (VanillaSpecials.KNOCKBACK_ARROW): whoever it reaches is shoved.
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register(
 			(entity, source, base, taken, blocked) -> VanillaSpecials.knockbackHit(entity, source, blocked));
@@ -634,6 +642,7 @@ public final class MobAi {
 	 * and more than 20 blocks from the player, it lets them go, survives, and counts one more fight.
 	 */
 	private static void retreat(MobMind mind, Player target, long now) {
+		WorldMemory.count(mind);
 		if (mind.decision.tactic() != Tactic.RETIRARSE) {
 			mind.retreatSince = Long.MIN_VALUE / 2;
 			return;
@@ -642,6 +651,7 @@ public final class MobAi {
 			mind.retreatSince = now;
 		}
 		if (now - mind.retreatSince >= ABANDON_TICKS && mind.mob.distanceTo(target) > ABANDON_RANGE) {
+			WorldMemory.onLeave(mind, target);
 			mind.mob.setTarget(null);
 			mind.retreatSince = Long.MIN_VALUE / 2;
 		}

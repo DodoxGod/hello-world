@@ -848,6 +848,11 @@ los números. Todo vale igual para una red v4 y para las reglas: las dos llaman 
 - **Furia** (el 10 % del grupo al aparecer, al menos 1 de 5): tras un golpe de moral, 10 s con +25 % de daño y +20 %
   de velocidad, y 5 s agotado (−20 % de velocidad y sin turno). Una por pelea.
 - **Abandono:** 5 s huyendo a más de 20 bloques y deja la pelea.
+### Memoria del mundo (M6; `WorldMemory`)
+- Por jugador y dimensión: causas de muerte (8, suman 1), daño/10 por forma de atacar (5), si se sube o huye (2) y
+  confianza (muertes/50). Medias móviles de 0,1; cada día de juego se acerca un 10 % a los valores iniciales (1/8 cada
+  causa, el resto 0). `/forja ia mundo [ver|borrar]`.
+
 ### Coste (prueba `RedV4PerfGameTests`)
 30 mobs mezclados con redes v4 del tamaño del contrato (468 → 128 → 128 → GRU 96 → 53): **1,25–1,42 ms/tick** de IA en
 total (tope 2,5); los mismos por reglas, 0,14–0,16 ms/tick.

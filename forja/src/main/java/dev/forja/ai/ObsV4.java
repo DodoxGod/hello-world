@@ -184,6 +184,8 @@ public final class ObsV4 {
 			// M2/M3 (docs/red_mob_v4_mod_estado.md): the player's light, height and pillar, the things on the floor, the
 			// kit and the effects, the shield, the torches.
 			long now = mob.level().getGameTime();
+			// M6: the world's vector
+			WorldMemory.observe(target, out, W_AT);
 			// M5: the captain's command (M) and morale (Mo)
 			Captain.observe(mob, mind, target, now, out, M_AT);
 			Captain.observeMorale(mob, mind, target, now, out, MO_AT);

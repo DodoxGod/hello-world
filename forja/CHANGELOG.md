@@ -1,5 +1,14 @@
 # Novedades
 
+## 2026-09-29 — IA v4 de los monstruos: la memoria del mundo (paso M6)
+
+- **Los monstruos de un mundo recuerdan cómo los matas:** en llano, con flechas, desde arriba, en pasillos, con
+  trampas, con área o con fuego; qué forma de atacarte les funciona (de frente, por el flanco, a distancia, emboscados
+  o asediando), y si sueles subirte a un pilar o huir. La red v4 lo ve (bloque W). Se olvida poco a poco con los días.
+- **`/forja ia mundo`** enseña esa memoria y **`/forja ia mundo borrar`** la borra.
+- **`/forja ia ver`** muestra también la orden del capitán y el puesto, el objeto en curso y la furia.
+- **Pruebas:** `RedV4MundoGameTests` (4).
+
 ## 2026-09-29 — IA v4 de los monstruos: el capitán, formaciones, moral y furia (paso M5)
 
 - **Capitanes:** en un grupo con un élite o un campeón (nunca un veterano), él manda: cercar, cargar, hostigar,

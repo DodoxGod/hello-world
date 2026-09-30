@@ -703,7 +703,7 @@ public final class TacticGoal extends Goal {
 			double radius = Math.hypot(point.x - target.getX(), point.z - target.getZ());
 			this.toRing(target, angle, Math.max(1.0, radius), 1.0);
 		} else {
-			this.pathTo(point.x, point.y, point.z, 1.0);
+			this.patientPathTo(point.x, point.y, point.z, 1.0);
 		}
 	}
 
@@ -811,7 +811,7 @@ public final class TacticGoal extends Goal {
 		}
 		if (this.mind.searchStage == 0) {
 			if (this.mob.distanceToSqr(estimate.x, this.mob.getY(), estimate.z) >= HonestPerception.ARRIVED * HonestPerception.ARRIVED) {
-				this.pathTo(estimate.x, estimate.y, estimate.z, 1.0);
+				this.patientPathTo(estimate.x, estimate.y, estimate.z, 1.0);
 				return;
 			}
 			this.mind.searchPoints = this.fan(estimate);
@@ -835,7 +835,7 @@ public final class TacticGoal extends Goal {
 					this.searchPointSince = now;
 					this.repath = 0;
 				} else {
-					this.pathTo(at.x, at.y, at.z, 1.0);
+					this.patientPathTo(at.x, at.y, at.z, 1.0);
 				}
 				return;
 			}
@@ -905,7 +905,7 @@ public final class TacticGoal extends Goal {
 		}
 		Vec3 look = lost ? Perception.estimate(this.mind) : target.position();
 		if (this.mob.distanceToSqr(spot.pos().x, this.mob.getY(), spot.pos().z) > AMBUSH_THERE * AMBUSH_THERE) {
-			this.pathTo(spot.pos().x, spot.pos().y, spot.pos().z, 0.8);
+			this.patientPathTo(spot.pos().x, spot.pos().y, spot.pos().z, 0.8);
 			this.mind.ambushSince = Long.MIN_VALUE / 2;
 		} else {
 			this.mob.getNavigation().stop();
@@ -925,16 +925,24 @@ public final class TacticGoal extends Goal {
 			this.mob.getNavigation().setSpeedModifier(speed);
 			return true;
 		}
-		// A path that came to nothing is not asked for again every tick: the pathfinder is the dear part, and a spot
-		// with no way to it (a hiding spot, a fan point, a torch) asked for it twenty times a second.
-		if (this.repath > 0 && this.lastPathFailed && Math.abs(x - this.failedX) < 1.0 && Math.abs(z - this.failedZ) < 1.0) {
-			return false;
-		}
 		this.repath = 10;
 		this.lastPathFailed = !this.mob.getNavigation().moveTo(x, y, z, speed);
 		this.failedX = x;
 		this.failedZ = z;
 		return !this.lastPathFailed;
+	}
+
+	/**
+	 * pathTo for v4's walks to a fixed spot (BUSCAR's points, a hiding spot, a post): a path to the same spot that came to
+	 * nothing is not asked for again for 10 ticks. The pathfinder is the dear part, and a spot with no way to it was asked
+	 * for twenty times a second.
+	 */
+	private boolean patientPathTo(double x, double y, double z, double speed) {
+		if (this.repath > 1 && this.lastPathFailed && Math.abs(x - this.failedX) < 1.0 && Math.abs(z - this.failedZ) < 1.0) {
+			this.repath--;
+			return false;
+		}
+		return this.pathTo(x, y, z, speed);
 	}
 
 	/** Whether the last path asked for came to nothing, and where it was to (another spot is still tried at once). */

@@ -100,9 +100,11 @@ public class RedV4PerfGameTests {
 			r.perTickMs(Perf.T.MOVEMENT), r.meanMs());
 	}
 
-	@GameTest(padding = 24, maxTicks = WARMUP * 2 + WINDOW * 2 + 40)
+	@GameTest(environment = "forja-test:rendimiento_v4", padding = 24, maxTicks = WARMUP * 2 + WINDOW * 2 + 40)
 	public void v4AiOf30MobsFitsTheBudget(GameTestHelper helper) throws java.io.IOException {
 		int size = 22;
+		// every mob in a chunk that ticks entities, so all 30 are measured (TestChunks)
+		TestChunks.force(helper, size);
 		for (int x = -1; x <= size; x++) {
 			for (int z = -1; z <= size; z++) {
 				for (int y = 0; y <= 10; y++) {
@@ -199,6 +201,7 @@ public class RedV4PerfGameTests {
 			double ai = aiMs(v4[0]);
 			AABB box = new AABB(helper.absoluteVec(new Vec3(-4, -2, -4)), helper.absoluteVec(new Vec3(size + 4, 12, size + 4)));
 			helper.getLevel().getEntitiesOfClass(Entity.class, box, e -> !(e instanceof net.minecraft.world.entity.player.Player)).forEach(Entity::discard);
+			TestChunks.release(helper);
 			helper.assertTrue(ai <= BUDGET_MS, String.format(Locale.ROOT, "la IA de 30 mobs con redes v4 cuesta %.3f ms/tick (tope %.1f)", ai, BUDGET_MS));
 			helper.succeed();
 		});

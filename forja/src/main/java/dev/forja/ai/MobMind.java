@@ -153,6 +153,9 @@ public final class MobMind {
 	public Vec3 postPoint;
 	/** Since when it has been in RETIRARSE without a break (retirada_ticks, and leaving the fight at 100). */
 	public long retreatSince = Long.MIN_VALUE / 2;
+	/** The world's memory (M6): the damage it has done to its player in this life, and how it fought (by WorldMemory's styles). */
+	public float lifeDamage;
+	public final int[] styleTicks = new int[5];
 	/** Whether it has used its fury in this fight (one each). */
 	public boolean furyUsed;
 	/** Its fury (M5): until when it lasts, and until when it is spent after. */

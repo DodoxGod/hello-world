@@ -28,7 +28,8 @@ import net.minecraft.world.phys.Vec3;
  *   <li>{@code temperatura x}: how sure the networks are (1 as trained, lower is sharper);</li>
  *   <li>{@code grabar}: start or stop recording every network decision (see {@link AiRecorder});</li>
  *   <li>{@code recargar}: read the network files again;</li>
- *   <li>{@code estadisticas}: what the brains have been doing.</li>
+ *   <li>{@code estadisticas}: what the brains have been doing;</li>
+ *   <li>{@code mundo [ver|borrar]}: the world's memory of the player (v4's W vector, WorldMemory), or forget it.</li>
  * </ul>
  */
 public final class AiDebug {
@@ -104,7 +105,24 @@ public final class AiDebug {
 			.then(Commands.literal("estadisticas").executes(c -> {
 				c.getSource().sendSuccess(() -> Component.literal(AiStats.summary()), false);
 				return 1;
-			}));
+			}))
+			.then(Commands.literal("mundo")
+				.executes(c -> {
+					ServerPlayer player = c.getSource().getPlayerOrException();
+					c.getSource().sendSuccess(() -> Component.literal(WorldMemory.describe(player)), false);
+					return 1;
+				})
+				.then(Commands.literal("ver").executes(c -> {
+					ServerPlayer player = c.getSource().getPlayerOrException();
+					c.getSource().sendSuccess(() -> Component.literal(WorldMemory.describe(player)), false);
+					return 1;
+				}))
+				.then(Commands.literal("borrar").executes(c -> {
+					ServerPlayer player = c.getSource().getPlayerOrException();
+					WorldMemory.clear(player);
+					c.getSource().sendSuccess(() -> Component.literal("Memoria del mundo borrada en esta dimensión."), true);
+					return 1;
+				})));
 	}
 
 	private static String status() {
@@ -139,9 +157,27 @@ public final class AiDebug {
 			String line = mob.getType().getDescription().getString() + " · " + (mind.networked ? "red" : "reglas") + " · " + d.tactic().name()
 				+ (d.tactic() == Tactic.LIBRE ? " mover=" + d.move() + (d.jump() ? " saltar" : "") + (d.use() ? " usar" : "") : "")
 				+ (mind.windup > 0 ? " · avisando" : "") + (mind.draw > 0 ? " · tensando " + mind.draw : "")
-				+ (mind.target == null ? " · sin objetivo" : "");
+				+ (mind.target == null ? " · sin objetivo" : "") + v4(mind, mob.level().getGameTime());
 			player.sendOverlayMessage(Component.literal(line));
 		}
+	}
+
+	/** What the v4 part of a mind is doing, for ver: its captain's order and its post, its object, its fury. */
+	private static String v4(MobMind mind, long now) {
+		StringBuilder out = new StringBuilder();
+		Captain.Command c = Captain.commandFor(mind);
+		if (c != null) {
+			Captain.Group g = Captain.group(mind.target);
+			out.append(" · ").append(g != null && g.captain == mind.mob ? "capitán " : "").append(c.order.name().toLowerCase(Locale.ROOT))
+				.append("/").append(c.formation.name().toLowerCase(Locale.ROOT)).append(" puesto ").append(mind.post);
+		}
+		if (mind.itemTicks > 0) {
+			out.append(" · objeto ").append(mind.itemAction);
+		}
+		if (mind.furyActive(now)) {
+			out.append(" · furia");
+		}
+		return out.toString();
 	}
 
 	private static Mob lookedAt(ServerPlayer player) {

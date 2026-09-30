@@ -111,6 +111,10 @@ public final class Captain {
 		public List<MobMind> members = List.of();
 		/** The captain network's memory (GRU), from nothing when a captain takes over. */
 		public float[] memory;
+		/** For the world's memory (M6): whether the player went up, or ran or shut themselves in, in this fight. */
+		public boolean wentUp;
+		public boolean ranOff;
+		public boolean over;
 	}
 
 	private static final Map<Player, Group> GROUPS = new WeakHashMap<>();
@@ -176,6 +180,7 @@ public final class Captain {
 	static void update(Player player, List<MobMind> members, long now) {
 		Group g = GROUPS.computeIfAbsent(player, p -> new Group());
 		if (now - g.seenAt > FORGET) {
+			finish(player, g);
 			Group fresh = new Group();
 			fresh.startedAt = now;
 			GROUPS.put(player, fresh);
@@ -191,6 +196,15 @@ public final class Captain {
 		List<MobMind> sorted = new ArrayList<>(members);
 		sorted.sort(java.util.Comparator.comparingDouble(m -> m.mob.distanceToSqr(player)));
 		g.members = sorted;
+		// the player's style in this fight (WorldMemory): up high 40 ticks, or away from all of them / unseen for 200
+		g.wentUp |= Heights.upTicks(Heights.of(player), now) >= 40;
+		long seen = Long.MIN_VALUE / 2;
+		boolean near = false;
+		for (MobMind mind : sorted) {
+			seen = Math.max(seen, mind.lastSeenAt);
+			near |= mind.mob.distanceTo(player) <= 24.0;
+		}
+		g.ranOff |= !near || now - seen >= 200 && now - g.startedAt >= 200;
 		g.peak = Math.max(g.peak, sorted.size());
 		Mob leading = g.captain;
 		if (leading != null && (!leading.isAlive() || sorted.stream().noneMatch(m -> m.mob == leading))) {
@@ -497,10 +511,21 @@ public final class Captain {
 
 	// ---------------------------------------------------------------- each tick: the shouts and the banner
 
+	/** A fight is over (its group gone for FORGET ticks): the player's style in it goes to the world's memory, once. */
+	private static void finish(Player player, Group g) {
+		if (!g.over && g.seenAt > Long.MIN_VALUE / 4) {
+			g.over = true;
+			WorldMemory.onFightEnd(player, g.wentUp, g.ranOff);
+		}
+	}
+
 	/** Each tick (MobAi): the captain's banner, and its shouts in a charge (at half the countdown, and at 0). */
 	static void tick(ServerLevel level, long now) {
 		for (Map.Entry<Player, Group> entry : GROUPS.entrySet()) {
 			Group g = entry.getValue();
+			if (now - g.seenAt > FORGET && entry.getKey().level() == level) {
+				finish(entry.getKey(), g);
+			}
 			Mob captain = g.captain;
 			if (captain == null || !captain.isAlive() || captain.level() != level) {
 				continue;

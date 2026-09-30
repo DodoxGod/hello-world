@@ -17,6 +17,7 @@ red v4 y las reglas (llaman a los mismos ejecutores), así que el comportamiento
 | M3 | bloque A; flecha de empuje, zarpazo, garfio; ASEDIAR; antorchas: APAGAR_LUZ, bloque L y `jug_luz` | ver `git log` |
 | M4 | oído (sonidos), última posición y estimación en la observación y el ejecutor, caza hasta 48 y 600 ticks, BUSCAR, escondites y EMBOSCAR; bloques P y E | ver `git log` |
 | M5 | capitán (de reglas y red `red_capitan_v4`), órdenes, formaciones y puestos, carga sincronizada, moral, furia, abandono; bloques M y Mo; FORMACION y furia | ver `git log` |
+| M6 | `WorldMemory` (memoria por jugador y dimensión), bloque W, `/forja ia mundo` | ver `git log` |
 
 ## Entradas vivas (M2/M3)
 
@@ -263,6 +264,35 @@ mob, el radio se divide por 2.
 - **Reglas que obedecen:** RETIRADA → RETIRARSE; REAGRUPAR y ESCOLTA → FORMACION; EMBOSCADA → EMBOSCAR; ASEDIO →
   ASEDIAR; CARGA → FORMACION hasta el 0 y luego al ataque; CERCAR y HOSTIGAR → FORMACION; un arquero con puesto va a
   él (a > 3) antes de tirar.
+
+## M6: el vector de mundo W (452–467, `WorldMemory`)
+
+- **Dónde:** un adjunto del jugador (se guarda con él y pasa la muerte), un vector por dimensión. `/forja ia mundo`
+  (o `ver`) lo enseña y `/forja ia mundo borrar` lo borra en la dimensión.
+- **Valores iniciales** (y a los que vuelve al olvidar): las 8 causas a **1/8** cada una (suman 1, como pide el
+  diseño; `red_mob_v4_neutros.md` lo dejaba abierto), todo lo demás a 0, confianza incluida.
+- **Causa de cada muerte** de un mob que pelea con el jugador (su objetivo es él, o lo mató él), en este orden:
+  1. **trampa**: lava, suelo caliente, caída, ahogarse, asfixia en un bloque, cactus, vacío o arbusto de bayas;
+  2. **fuego**: cualquier daño de fuego, o una explosión que provocó el jugador;
+  3. **otra**: lo mató otra cosa que no es el jugador;
+  4. **altura**: el jugador estaba arriba (sobre el suelo ≥ 2);
+  5. **flecha**: un proyectil del jugador;
+  6. **área**: un golpe del jugador con un arma de área (especial de área o mejora que golpea en área);
+  7. **estrecho**: el jugador en un pasillo o una puerta (bloque E);
+  8. **abierto**: el resto de golpes del jugador.
+  Cada causa: `v ← v + 0,1·(onehot − v)`.
+- **Lo que funciona:** al morir un mob (o al abandonar la pelea), el daño que hizo al jugador en su vida / 10 (tope 2)
+  va a la media de la forma en que más peleó, contada por decisiones: **frente** (ACERCARSE, RODEAR, FORMACION,
+  CUBRIRSE, LIBRE), **flanco** (FLANQUEAR, SECTOR), **distancia** (toda la vida de un arquero, TIRO_LIBRE),
+  **emboscada** (EMBOSCAR, OCULTARSE), **asedio** (ASEDIAR). `v ← v + 0,1·(daño/10 − v)`; una vida sin ninguna de
+  esas no cuenta.
+- **Estilo del jugador**, al acabar cada pelea (su grupo lleva 60 ticks sin nadie): `mundo_jug_pilar` = se subió
+  (arriba ≥ 40 ticks seguidos); `mundo_jug_huye` = estuvo a más de 24 de todo el grupo, o nadie lo percibió durante
+  200 ticks con la pelea ya empezada hace 200. Media 0,1 de 0/1.
+- **Confianza:** muertes registradas / 50, tope 1.
+- **Olvido:** por cada día de juego (reloj del mundo / 24 000) que pasa, cada valor se acerca un 10 % a su valor inicial:
+  `v ← inicial + 0,9^días·(v − inicial)`; el contador de muertes también se multiplica por 0,9^días.
+- La red del capitán ve el mismo vector (su bloque W).
 
 ## Rendimiento
 
