@@ -4,7 +4,7 @@ Para Andy. Todo está en la rama `claude/hola-rv9w0u` (PR #1). El detalle de la 
 `docs/RESUMEN_2026-09-29.md`; aquí va todo junto, con la segunda tanda (la que mandaste por la sesión "Mod Forja")
 y lo que vino después.
 
-**Estado del CI:** ver "Estado de las pruebas" al final.
+**Estado del CI (30-09):** `732628e`, con las diez tandas que ha subido después la sesión "Mod Forja" (turnos, golpes avisados, blazes, pruebas intermitentes), compila y pasa todas las pruebas de servidor. Ver también "Estado de las pruebas" al final.
 
 ## Cómo lo he probado sin tu PC
 
