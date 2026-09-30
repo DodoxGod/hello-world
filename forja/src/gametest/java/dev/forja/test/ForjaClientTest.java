@@ -150,6 +150,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// The v4 mob AI (docs/red_mob_v4_mod_estado.md): shield, pick-up, pearl, torch, pillar, ambush, captain.
+			if ("v4".equals(solo)) {
+				V4Footage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			// La forja reclama (FallenSmith.RECLAIM_*): four iron golems on the smith, and what is left of them.
 			if ("jefe_reclama".equals(solo)) {
 				checkAttackTimings();

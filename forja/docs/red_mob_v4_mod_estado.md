@@ -121,8 +121,11 @@ para estos mobs en la v4.
 5. ASEDIAR (anillo de 6–10 fuera de la vista de la cima; arqueros 12–16 con línea) y APAGAR_LUZ (15 ticks, soltarla).
 6. Mochila al aparecer por amenaza (COMBATE §5).
 7. **Carga de viento:** la de vanilla; la de un monstruo no activa bloques (puertas, botones).
-8. **Perla:** 2 de daño al mob al llegar. Tiro parabólico a 45° (60° si el destino está casi tan alto como lejos),
-   v² = g·x² / (2·cos²θ·(x·tanθ − dy)) con g = 0,03 y +8 % por el rozamiento.
+8. **Perla:** 2 de daño al mob al llegar. Tiro a 45° (60° si el destino está a menos de 0,5 más lejos que alto), con
+   la velocidad que, simulando el vuelo de un objeto lanzado (cada tick: se mueve, frena ×0,99 y cae 0,03), lo baja en
+   el punto; se busca por mitades entre 0,3 y 3 (`MobItems.lobSpeed`: 8 bloques y 2,5 de subida a 45° → 0,615).
+9. **La poción arrojadiza** apunta a donde estará el jugador: su velocidad × (distancia / 0,7) ticks; la carga de
+   viento, igual con 1,5.
 
 ## M4: percepción, oído, rastro y emboscadas
 
@@ -296,6 +299,23 @@ mob, el radio se divide por 2.
 
 ## Rendimiento
 
-`RedV4PerfGameTests`: 30 mobs mezclados con redes v4 del tamaño del contrato (468 → 128 → 128 → GRU 96 → 53), antorchas
-y objetos en el suelo: **1,25–1,42 ms/tick** de IA en total (MobAi.tick con observación, máscara y red, más las metas
-que ejecutan); tope 2,5. La observación es la mayor parte (≈ 0,9 ms); la red ≈ 0,21 ms.
+`RedV4PerfGameTests` (entorno propio, corre solo, chunks forzados): 30 mobs mezclados (zombis, algunos con escudo y
+mochila, esqueletos, arañas, creepers) con redes v4 del tamaño del contrato (468 → 128 → 128 → GRU 96 → 53) y pesos al
+azar, antorchas y objetos en el suelo, el jugador dando vueltas: **1,5–2,2 ms/tick** de IA en total (MobAi.tick con
+observación, máscara y red ≈ 1,2–1,6; las metas que ejecutan ≈ 0,35–0,55); tope 2,5. La base v3b (`ObsForja.full`)
+sigue siendo lo más caro de la observación (≈ 0,5–0,6 ms); la red ≈ 0,2 ms. Las mismas 30 por reglas: 0,2–0,5 ms/tick.
+Con redes entrenadas (que no cambian de táctica cada 2 ticks como las de pesos al azar) el ejecutor pedirá menos rutas.
+
+## Pendiente
+
+- **M7** del diseño: grabación JSONL v4 (con la línea del capitán) y `RENDIMIENTO.md` medido con `tools/rendimiento.sh`.
+- El simulador: copiar lo de este documento (S4–S7) y entrenar; la red del capitán (`red_capitan_v4_contrato.json`) no
+  existe aún: los grupos usan el capitán de reglas.
+- Neutros que el mod ya fija y el simulador debe copiar: `orden_ninguna` = 1 y `formacion_libre` = 1 sin capitán;
+  `bloqueo_hace/20` = 1 sin bloqueo; `jug_borde/2` = 2 sin borde; causas de muerte a 1/8; `obj_edad` y `ultima_edad` a
+  2 si nunca lo vio; `perla_destino_ok` y `lanzamiento_ok` a 0 sin nada que usar.
+
+## Capturas
+
+`FORJA_SOLO=v4 ./gradlew runClientGameTest` (`V4Footage`) y `python tools/hoja_v4.py`: hoja en
+`E:/IA/Claude/Forja_capturas_mejoras/v4_mod/hoja_v4.png` (escudo, recoger, perla, antorcha, pilar, emboscada y capitán).
