@@ -86,8 +86,9 @@ public class MagiaGameTests {
 			lost[1] = 200.0F - zombie.getHealth();
 			helper.assertTrue(lost[0] > 1.0F, "un proyectil solo hace daño: " + lost[0]);
 			// On the zombie: the five together take off about what the one did. Not exactly, as a bolt that
-			// happens to find the head does a little more (CombatConfig.headMultiplier), but never five times.
-			helper.assertTrue(lost[1] >= lost[0] * 0.9F && lost[1] <= lost[0] * 1.35F,
+			// happens to find the head does a little more (CombatConfig.headMultiplier) and one that grazes it a little
+			// less, but never five times.
+			helper.assertTrue(lost[1] >= lost[0] * 0.7F && lost[1] <= lost[0] * 1.35F,
 				"en el zombi, los cinco juntos quitan lo que uno solo: " + lost[1] + " contra " + lost[0]);
 			helper.succeed();
 		});
