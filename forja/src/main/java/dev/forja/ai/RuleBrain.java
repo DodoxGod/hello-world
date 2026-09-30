@@ -112,10 +112,15 @@ public final class RuleBrain {
 	 * HOSTIGAR → to its post (nobody goes in until the charge); none → to its post while it has no turn. Null when there
 	 * is nothing to obey.
 	 */
-	static Decision obey(MobMind mind, Player target, boolean hasTurn, long now) {
+	public static Decision obey(MobMind mind, Player target, boolean hasTurn, long now) {
 		Captain.Command c = Captain.commandFor(mind);
 		if (c == null || mind.postPoint == null) {
 			return null;
+		}
+		// Captain 2: an escort of its captain holds its point beside it while it has no turn (whatever the order); a free turn
+		// is used, as ever (the rules' "with a turn": it holds one or one is free).
+		if (mind.escort && !hasTurn) {
+			return Decision.tactic(Tactic.FORMACION);
 		}
 		return switch (c.order) {
 			case RETIRADA -> Decision.tactic(Tactic.RETIRARSE);
@@ -125,6 +130,11 @@ public final class RuleBrain {
 			case CARGA -> now < c.chargeAt ? Decision.tactic(Tactic.FORMACION) : Decision.APPROACH;
 			// CERCAR: the formation on the outer ring, and nobody goes in; HOSTIGAR: the bodies hold it (the archers shoot)
 			case CERCAR, HOSTIGAR -> Decision.tactic(Tactic.FORMACION);
+			// captain 2: the ways out closed; with a turn it strikes, without one to its point on the arc
+			case CERRAR_SALIDAS -> hasTurn ? Decision.APPROACH : Decision.tactic(Tactic.FORMACION);
+			// captain 2: the false retreat; away to 10 as a formation (not RETIRARSE: no rout, no leaving), then all in
+			case RETIRADA_FALSA -> c.falseAttack ? Decision.APPROACH : Decision.tactic(Tactic.FORMACION);
+			// FOCO_HERIDO is no order for the ones that stay on this player (the others were sent to the hurt one)
 			default -> !hasTurn && c.formation != Captain.Formation.LIBRE ? Decision.tactic(Tactic.FORMACION) : null;
 		};
 	}
@@ -141,6 +151,10 @@ public final class RuleBrain {
 		if (HonestPerception.lost(mind, mob.level().getGameTime())) {
 			boolean dark = mob.level().isDarkOutside() || mob.level().getMaxLocalRawBrightness(mob.blockPosition()) < Perception.DARK;
 			return Decision.tactic(mind.searchStage == 2 && dark ? Tactic.EMBOSCAR : Tactic.BUSCAR);
+		}
+		// Captain 2: a protected captain goes to its point, behind the front or back out of it (Captain.guarded).
+		if (Captain.guarded(mind, mob.level().getGameTime())) {
+			return Decision.tactic(Tactic.FORMACION);
 		}
 		MobFamily family = MobFamily.of(mob);
 		// The ember wisp never stands and fights: close in and it drifts off, leaving fire behind (idea 45).

@@ -1,5 +1,30 @@
 # Novedades
 
+## 2026-09-30 — Capitán 2
+
+- **Visión compartida.** Lo que ve un monstruo del grupo lo sabe el grupo: los que no ven al jugador y están a 32 bloques
+  del capitán reciben dónde lo vio el último que lo vio, como si lo hubieran oído. Los que lo habían perdido lo buscan allí.
+- **Sucesión (decisión de Andy).** Si muere el capitán, a los 3 segundos manda el veterano con más vida, como capitán
+  interino: decide la mitad de veces, nunca ordena cargar y la moral del grupo baja un poco mientras manda. Su
+  estandarte es plateado. Solo una sucesión por pelea, y un élite que quede lo releva a los 10 segundos.
+- **Protección del capitán.** Se queda a 7 bloques detrás de los suyos, se retira a 14 con menos del 35 % de vida y, con
+  el jugador cerca, lleva dos escoltas (primero los de escudo) que atacan si hay un turno libre.
+- **Órdenes nuevas** para una red de capitán: cerrar las salidas, ir a por el jugador más herido y la retirada falsa (se
+  retiran 2 segundos y vuelven todos a la vez con un grito). Los monstruos las entienden como las órdenes de siempre, así
+  que sus redes no cambian.
+- **Capitán visible.** Cada orden nueva es un grito y una nube de polvo dorado sobre el capitán.
+- **Red del capitán, contrato 2** (253 entradas, 68 salidas): ve la orden que daría el capitán de reglas y solo la cambia
+  si su cabeza de "mando" lo pide, así que una red recién empezada juega igual que las reglas. Las redes del contrato 1
+  siguen cargando.
+- Cada pieza tiene su interruptor (`iaCapitanVision`, `iaCapitanSucesion`, `iaCapitanProteccion`, `iaCapitanOrdenes2`,
+  `iaCapitanVisible`), todos activados.
+- **Medido en el mod** (160 peleas): sin capitán 170 de daño por minuto, capitán de reglas 188 y capitán 2 **123**. Toda la
+  bajada es de la protección (sin ella, 194): el élite, que es el que más pega, se queda atrás. Contra el jugador de prueba
+  no compensa. Queda a decisión de Andy si se apaga.
+- **Arreglos de paso:** un monstruo que va a su puesto de formación ya no se queda a un bloque y medio; las pruebas de
+  cliente ya no fallan al entrar (la medida del capitán miraba al jugador antes de que tuviera número).
+- **Pruebas:** 8 nuevas (428 en total). Captura: `FORJA_SOLO=capitan2`.
+
 ## 2026-09-30 — Una sola espera entre golpes
 
 - **La espera tras un golpe ya no se salta cambiando de forma de atacar.** Un monstruo podía golpear de dos maneras

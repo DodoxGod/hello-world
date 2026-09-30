@@ -99,6 +99,10 @@ public final class MobSprint {
 		if (command != null && command.order == Captain.Order.CARGA && mob.level().getGameTime() >= command.chargeAt) {
 			return true;
 		}
+		// captain 2: RETIRADA_FALSA turned to the attack runs in as the charge does
+		if (command != null && command.order == Captain.Order.RETIRADA_FALSA && command.falseAttack) {
+			return true;
+		}
 		double distance = mob.distanceTo(target);
 		if (distance >= CHASE_MIN && distance <= CHASE_MAX) {
 			Vec3 line = target.position().subtract(mob.position());

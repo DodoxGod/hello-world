@@ -56,6 +56,24 @@ public final class Perception {
 		public boolean onGround;
 		public final ItemStack[] equipment = new ItemStack[SLOTS.length];
 		public long at;
+
+		/** A copy (a member given the group's picture of the player: Captain.share). */
+		public Snapshot copy() {
+			Snapshot s = new Snapshot();
+			s.pos = this.pos;
+			s.motion = this.motion;
+			s.yRot = this.yRot;
+			s.xRot = this.xRot;
+			s.health = this.health;
+			s.maxHealth = this.maxHealth;
+			s.stamina = this.stamina;
+			s.sprinting = this.sprinting;
+			s.crouching = this.crouching;
+			s.onGround = this.onGround;
+			System.arraycopy(this.equipment, 0, s.equipment, 0, this.equipment.length);
+			s.at = this.at;
+			return s;
+		}
 	}
 
 	private static final EquipmentSlot[] SLOTS = {EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND, EquipmentSlot.HEAD, EquipmentSlot.CHEST,

@@ -29,7 +29,9 @@ import net.minecraft.world.phys.Vec3;
  * <ul>
  *   <li><b>Who</b>: the strongest elite or champion of the group, never a veteran; a group without one has no captain
  *   and goes by its old rules. When the captain dies the group is leaderless (sin_mando 1 → 0 over
- *   {@link #LEADERLESS} ticks), with no orders even if another elite is there; after that another may take over.</li>
+ *   {@link #LEADERLESS} ticks), with no orders even if another elite is there; after that another may take over. The one
+ *   exception (captain 2, Andy 2026-09-30): {@link #SUCCESSION} ticks after a captain fell, a veteran leads as a weaker
+ *   acting captain until an elite takes over.</li>
  *   <li><b>Orders</b>: from red_capitan.json (CaptainNet) when there is one, else by the rules ({@link #rules}): an
  *   order, a formation, a sector, a countdown, a focus and a post for each member. The Squad turns the formation and
  *   the posts into a point per member ({@link #place}).</li>
@@ -38,9 +40,25 @@ import net.minecraft.world.phys.Vec3;
  *   <li><b>Morale</b>: the group's losses, its captain's death, fear, the player's health, being at home (§4.3).</li>
  * </ul>
  * The members see all of it as inputs (blocks M and Mo) and decide; the rule brain obeys by rules.
+ *
+ * <p><b>Captain 2</b> (docs/mod_spec_capitan2.md; docs/red_mob_v4_mod_estado.md, "Capitán 2"), each piece with its switch
+ * (CaptainBrain.piece): shared vision ({@link #share}), the acting veteran (succession), the captain's protection and its
+ * escorts ({@link #protect}), the new orders CERRAR_SALIDAS, FOCO_HERIDO and RETIRADA_FALSA (only a network of contract
+ * revision 2 gives them; the members see them as older ones, {@link #seenAs}) and the visible captain (a shout with each
+ * new order).
  */
 public final class Captain {
-	public enum Order { NINGUNA, CERCAR, CARGA, HOSTIGAR, RETIRADA, REAGRUPAR, EMBOSCADA, ASEDIO, ESCOLTA }
+	/**
+	 * The orders. The first nine are contract v1's; the last three (captain 2, docs/mod_spec_capitan2.md §4) only a captain
+	 * network of contract revision 2 gives, and the members see each as one of the first nine ({@link #seenAs}): the mob's
+	 * contract (red_mob_v4) does not change.
+	 */
+	public enum Order {
+		NINGUNA, CERCAR, CARGA, HOSTIGAR, RETIRADA, REAGRUPAR, EMBOSCADA, ASEDIO, ESCOLTA, CERRAR_SALIDAS, FOCO_HERIDO, RETIRADA_FALSA;
+
+		/** How many orders contract v1 has (and the members' block M sees). */
+		public static final int V1 = 9;
+	}
 
 	public enum Formation { LIBRE, MURO, PINZA, CUNA }
 
@@ -65,6 +83,49 @@ public final class Captain {
 	/** How close to its post a member counts as in it. */
 	public static final double IN_POST = 2.0;
 
+	// ---- captain 2 (docs/mod_spec_capitan2.md), each piece with its switch (CaptainBrain.piece)
+	/** Shared vision: the members within this of the captain (3D) get what the group saw. */
+	public static final double SHARED_RANGE = 32.0;
+	/** Shared vision: a member that perceived the player less than this many ticks ago gives what it saw. */
+	public static final int SHARED_FRESH = 10;
+	/** Succession: this long after the captain died, a veteran takes command as an acting captain (once a fight). */
+	public static final int SUCCESSION = 60;
+	/** An acting captain decides only on the passes with now % this == 0. */
+	public static final int INTERIM_EVERY = 20;
+	/** The group's morale is this much lower while an acting captain leads. */
+	public static final double INTERIM_MORALE = 0.15;
+	/** Protection: behind the front at this from the player, back to this under {@link #GUARD_HEALTH} of its health. */
+	public static final double GUARD_BEHIND = 7.0;
+	public static final double GUARD_RETREAT = 14.0;
+	public static final double GUARD_HEALTH = 0.35;
+	/** Protection: behind only with at least this many others that fight up close (and it fights up close itself). */
+	public static final int GUARD_MELEE = 3;
+	/** Protection: a captain behind with a turn and the player this close fights as ever. */
+	public static final double GUARD_FIGHT = 3.5;
+	/** Escorts: while the player is within this of the captain, up to {@link #ESCORTS}, 2 ahead of it and 1 to a side. */
+	public static final double ESCORT_RANGE = 10.0;
+	public static final int ESCORTS = 2;
+	public static final double ESCORT_AHEAD = 2.0;
+	public static final double ESCORT_SIDE = 1.0;
+	/** The captain's guard: none, behind the front, or retreating. */
+	public static final int GUARD_NONE = 0;
+	public static final int GUARD_BEHIND_FRONT = 1;
+	public static final int GUARD_RETREATING = 2;
+	/** The protection head of a v2 network: 0 by the rules, 1 none, 2 retreat now. */
+	public static final int PROTECT_RULES = 0;
+	public static final int PROTECT_NONE = 1;
+	public static final int PROTECT_RETREAT = 2;
+	/** CERRAR_SALIDAS: the bodies spread over ±60° of the way out, 5 from the player; the way out is the player's motion over 0.05. */
+	public static final double EXITS_RADIUS = 5.0;
+	public static final double EXITS_HALF = Math.toRadians(60.0);
+	public static final double EXITS_MOVING = 0.05;
+	/** RETIRADA_FALSA: 10 from the player, going away, for 40 ticks or until the player comes 4 on towards the group. */
+	public static final double FALSE_RADIUS = 10.0;
+	public static final int FALSE_TICKS = 40;
+	public static final double FALSE_ADVANCE = 4.0;
+	/** FOCO_HERIDO (and foco 1): the other player within this of the captain. */
+	public static final double FOCUS_RANGE = 16.0;
+
 	/** The captain's orders as they stand. */
 	public static final class Command {
 		public Order order = Order.NINGUNA;
@@ -82,6 +143,10 @@ public final class Captain {
 		public long chargeAt = Long.MIN_VALUE / 2;
 		boolean shoutedHalf;
 		boolean shoutedGo;
+		/** RETIRADA_FALSA: whether it has turned to the attack (phase 2), and where the player stood and the way to the group then. */
+		public boolean falseAttack;
+		Vec3 falseFrom;
+		Vec3 falseToGroup;
 
 		/** No order and no formation: the members fight free, as without a captain (the ring and the turns). */
 		public boolean free() {
@@ -97,6 +162,27 @@ public final class Captain {
 			c.focus = this.focus;
 			return c;
 		}
+
+		/** Whether it is the same order as another, for the tests: order, formation, sector, countdown and posts. */
+		public boolean sameAs(Command other) {
+			return other != null && this.order == other.order && this.formation == other.formation && this.sector == other.sector
+				&& this.count == other.count && this.focus == other.focus && java.util.Arrays.equals(this.posts, other.posts);
+		}
+
+		@Override
+		public String toString() {
+			return this.order + "/" + this.formation + " sector " + this.sector + " cuenta " + this.count + " foco " + this.focus;
+		}
+	}
+
+	/** The order as the members see it (block M, and block O of a v1 captain): the new ones as one of the first nine. */
+	public static Order seenAs(Command c) {
+		return switch (c.order) {
+			case CERRAR_SALIDAS -> Order.CERCAR;
+			case FOCO_HERIDO -> Order.NINGUNA;
+			case RETIRADA_FALSA -> c.falseAttack ? Order.CARGA : Order.RETIRADA;
+			default -> c.order;
+		};
 	}
 
 	/** One group: the monsters fighting one player. */
@@ -120,10 +206,25 @@ public final class Captain {
 		public boolean wentUp;
 		public boolean ranOff;
 		public boolean over;
+		/** Captain 2: an acting veteran leads (succession), and whether this fight has had its one succession. */
+		public boolean interim;
+		public boolean succeeded;
+		/** The protection in force: the v2 network's head (PROTECT_*), and the captain's guard this pass (GUARD_*). */
+		public int protection;
+		public int guard;
+		/** How many members got the group's estimate at the last pass (compartida/8). */
+		public int shared;
+		/** The rules' order at the last decision of a v2 network (its inputs 213..232), and whether the network took command. */
+		public Command rulesCommand;
+		public boolean mando;
+		/** Orders shouted by the visible captain in this fight. */
+		public int shouts;
 	}
 
 	private static final Map<Player, Group> GROUPS = new WeakHashMap<>();
 	private static final DustParticleOptions BANNER = new DustParticleOptions(0xE0B020, 1.4F);
+	/** An acting captain's banner (succession): silver, not gold. */
+	private static final DustParticleOptions ACTING = new DustParticleOptions(0xC8D0DC, 1.4F);
 
 	private Captain() {
 	}
@@ -188,7 +289,10 @@ public final class Captain {
 		g.dead++;
 		g.deaths.addLast(now);
 		if (mob == g.captain) {
+			// an acting captain's fall is a captain's fall: leaderless again and a blow to morale (no second succession)
 			g.captain = null;
+			g.interim = false;
+			g.guard = GUARD_NONE;
 			g.captainDiedAt = now;
 			g.blowAt = now;
 			g.command = new Command();
@@ -234,42 +338,325 @@ public final class Captain {
 		Mob leading = g.captain;
 		if (leading != null && (!leading.isAlive() || sorted.stream().noneMatch(m -> m.mob == leading))) {
 			g.captain = null;
+			g.interim = false;
 			g.memory = null;
 		}
-		if (g.captain == null && now - g.captainDiedAt >= LEADERLESS && CaptainBrain.enabled(player)) {
-			g.captain = strongest(sorted);
-			g.memory = null;
+		// An elite or champion takes over once the group has been leaderless LEADERLESS ticks: from nobody, or from an
+		// acting veteran (the relief).
+		if ((g.captain == null || g.interim) && now - g.captainDiedAt >= LEADERLESS && CaptainBrain.enabled(player)) {
+			Mob best = strongest(sorted);
+			if (best != null || g.captain == null) {
+				g.captain = best;
+				g.interim = false;
+				g.memory = null;
+			}
+		}
+		// Captain 2, succession (Andy, 2026-09-30): SUCCESSION ticks after a captain fell, the group's veteran with the most
+		// health leads as an acting captain. Once a fight: when it falls too, nobody but an elite takes over.
+		if (g.captain == null && !g.succeeded && g.captainDiedAt > Long.MIN_VALUE / 4 && now - g.captainDiedAt >= SUCCESSION
+			&& CaptainBrain.enabled(player) && CaptainBrain.piece(player, CaptainBrain.Piece.SUCESION)) {
+			Mob veteran = veteran(sorted);
+			if (veteran != null) {
+				g.captain = veteran;
+				g.interim = true;
+				g.succeeded = true;
+				g.memory = null;
+			}
 		}
 		if (g.captain == null) {
 			g.command = new Command();
+			g.guard = GUARD_NONE;
+			g.shared = 0;
 			for (MobMind mind : sorted) {
 				mind.post = -1;
 				mind.postPoint = null;
+				mind.escort = false;
 			}
 			return;
 		}
-		Command previous = g.command;
-		Command next = CaptainBrain.decide(g, player, now);
-		// An order carries on (its age, its countdown) while it stays the same; a new one starts from now.
-		if (next.order == previous.order && next.formation == previous.formation && next.sector == previous.sector
-			&& (next.order != Order.CARGA || now < previous.chargeAt + CHARGE_TURN_TICKS)) {
-			next.givenAt = previous.givenAt;
-			next.chargeAt = previous.chargeAt;
-			next.count = previous.count;
-			next.shoutedHalf = previous.shoutedHalf;
-			next.shoutedGo = previous.shoutedGo;
+		// Captain 2, shared vision: what one of them saw, the group knows (before the decision: the captain reads compartida).
+		if (CaptainBrain.piece(player, CaptainBrain.Piece.VISION)) {
+			share(g, now);
 		} else {
-			next.givenAt = now;
-			next.chargeAt = next.order == Order.CARGA ? now + COUNTS[Math.max(0, Math.min(3, next.count))] : Long.MIN_VALUE / 2;
-			if (next.order == Order.CARGA) {
-				g.lastChargeAt = now;
+			g.shared = 0;
+		}
+		Command previous = g.command;
+		// An acting captain decides on every other pass (now % 20 == 0); in between its order carries on, and the posts are
+		// placed afresh.
+		boolean decides = !g.interim || now % INTERIM_EVERY == 0;
+		Command next = decides ? CaptainBrain.decide(g, player, now) : previous;
+		if (decides) {
+			// An order carries on (its age, its countdown) while it stays the same; a new one starts from now.
+			if (next.order == previous.order && next.formation == previous.formation && next.sector == previous.sector
+				&& (next.order != Order.CARGA || now < previous.chargeAt + CHARGE_TURN_TICKS)) {
+				next.givenAt = previous.givenAt;
+				next.chargeAt = previous.chargeAt;
+				next.count = previous.count;
+				next.shoutedHalf = previous.shoutedHalf;
+				next.shoutedGo = previous.shoutedGo;
+				next.falseAttack = previous.falseAttack;
+				next.falseFrom = previous.falseFrom;
+				next.falseToGroup = previous.falseToGroup;
+			} else {
+				next.givenAt = now;
+				next.chargeAt = next.order == Order.CARGA ? now + COUNTS[Math.max(0, Math.min(3, next.count))] : Long.MIN_VALUE / 2;
+				if (next.order == Order.CARGA) {
+					g.lastChargeAt = now;
+				}
+				if (next.order == Order.RETIRADA_FALSA) {
+					next.falseFrom = player.position();
+					Vec3 middle = middle(g.members, null);
+					Vec3 toGroup = middle.subtract(player.position()).multiply(1.0, 0.0, 1.0);
+					next.falseToGroup = toGroup.lengthSqr() < 1.0E-6 ? Vec3.ZERO : toGroup.normalize();
+				}
+				// Captain 2, the visible captain: a shout with every new order but none-and-free (a charge shouts at its 0).
+				if (!next.free() && next.order != Order.CARGA && CaptainBrain.piece(player, CaptainBrain.Piece.VISIBLE)
+					&& g.captain.level() instanceof ServerLevel level) {
+					g.shouts++;
+					orderShout(level, g.captain, g.interim);
+				}
 			}
 		}
 		g.command = next;
 		place(g, player, now);
+		protect(g, player, now);
 		if (next.focus == 1) {
 			focus(g, player);
 		}
+		if (next.order == Order.FOCO_HERIDO) {
+			focusHurt(g, player);
+		}
+	}
+
+	/** The middle of the members (flat), leaving one out (or none). */
+	static Vec3 middle(List<MobMind> members, Mob except) {
+		double x = 0.0;
+		double y = 0.0;
+		double z = 0.0;
+		int n = 0;
+		for (MobMind mind : members) {
+			if (mind.mob != except) {
+				x += mind.mob.getX();
+				y += mind.mob.getY();
+				z += mind.mob.getZ();
+				n++;
+			}
+		}
+		return n == 0 ? Vec3.ZERO : new Vec3(x / n, y / n, z / n);
+	}
+
+	/** Whether it fights up close: not an archer, nor one that shoots or casts by nature (as the rules' count of them). */
+	public static boolean melee(Mob mob) {
+		MobFamily family = MobFamily.of(mob);
+		return family != MobFamily.ARQUERO && !RuleBrain.shootsOrCasts(mob, family);
+	}
+
+	/** How many of the group fight up close, the captain included. */
+	public static int meleeCount(Group g) {
+		int n = 0;
+		for (MobMind mind : g.members) {
+			n += melee(mind.mob) ? 1 : 0;
+		}
+		return n;
+	}
+
+	/** The group's veteran with the most health (threat 1, not a boss), or null: the acting captain of a succession. */
+	private static Mob veteran(List<MobMind> members) {
+		Mob best = null;
+		for (MobMind mind : members) {
+			if (Threat.of(mind.mob) == Threat.VETERANO && !dev.forja.difficulty.Bosses.isBoss(mind.mob) && mind.mob.isAlive()
+				&& (best == null || mind.mob.getMaxHealth() > best.getMaxHealth())) {
+				best = mind.mob;
+			}
+		}
+		return best;
+	}
+
+	// ---------------------------------------------------------------- captain 2: shared vision
+
+	/**
+	 * Shared vision (docs/mod_spec_capitan2.md §1): of the members that perceived the player less than SHARED_FRESH ticks
+	 * ago, the one that did last gives where it saw them, and when. Each member that does not see them now (the pass runs
+	 * before this tick's thinking, so "now" is the last tick) and stands within SHARED_RANGE (3D) of the captain takes it as a
+	 * sound heard, if it is newer than its own estimate; one with no picture of the player takes the giver's too.
+	 */
+	static void share(Group g, long now) {
+		g.shared = 0;
+		MobMind giver = null;
+		for (MobMind mind : g.members) {
+			if (mind.lastSeen != null && now - mind.perceivedAt < SHARED_FRESH && (giver == null || mind.perceivedAt > giver.perceivedAt)) {
+				giver = mind;
+			}
+		}
+		if (giver == null) {
+			return;
+		}
+		long at = giver.perceivedAt;
+		Vec3 where = giver.lastSeen;
+		for (MobMind mind : g.members) {
+			if (mind == giver || now - mind.perceivedAt <= 1 || mind.mob.distanceTo(g.captain) > SHARED_RANGE || at <= Perception.estimateAt(mind)) {
+				continue;
+			}
+			mind.lastHeard = where;
+			mind.lastHeardAt = at;
+			if (mind.snapshot == null && giver.snapshot != null) {
+				mind.snapshot = giver.snapshot.copy();
+			}
+			g.shared++;
+		}
+	}
+
+	// ---------------------------------------------------------------- captain 2: protection
+
+	/**
+	 * Protecting the captain (docs/mod_spec_capitan2.md §3), after the posts are placed: under GUARD_HEALTH of its health (or
+	 * the network's "retreat now") its point is GUARD_RETREAT from the player, on the side it is on, and it drops its turn;
+	 * otherwise, fighting up close itself with GUARD_MELEE or more others that do, GUARD_BEHIND from the player towards the
+	 * middle of the others. Its post is then the reserve, and every brain goes there (TacticGoal, {@link #guarded}). With the
+	 * player within ESCORT_RANGE of it, up to two that fight up close and hold no turn (shields first, then the nearest to
+	 * it) stand 2 ahead of it towards the player, 1 to either side (the first on the right), in the front post.
+	 */
+	static void protect(Group g, Player player, long now) {
+		g.guard = GUARD_NONE;
+		for (MobMind mind : g.members) {
+			mind.escort = false;
+		}
+		if (!CaptainBrain.piece(player, CaptainBrain.Piece.PROTECCION) || g.protection == PROTECT_NONE) {
+			return;
+		}
+		Mob captain = g.captain;
+		MobMind own = MobAi.mind(captain);
+		if (own == null) {
+			return;
+		}
+		Vec3 p = player.position();
+		double front = ObsV4.front(player, now);
+		Vec3 point = null;
+		if (captain.getHealth() < captain.getMaxHealth() * GUARD_HEALTH || g.protection == PROTECT_RETREAT) {
+			Vec3 away = captain.position().subtract(p).multiply(1.0, 0.0, 1.0);
+			away = away.lengthSqr() < 1.0E-6 ? new Vec3(Math.cos(front + Math.PI), 0.0, Math.sin(front + Math.PI)) : away.normalize();
+			point = p.add(away.scale(GUARD_RETREAT));
+			g.guard = GUARD_RETREATING;
+			AttackTokens.release(player, captain);
+		} else if (melee(captain)) {
+			int others = 0;
+			for (MobMind mind : g.members) {
+				others += mind.mob != captain && melee(mind.mob) ? 1 : 0;
+			}
+			if (others >= GUARD_MELEE) {
+				Vec3 toGroup = middle(g.members, captain).subtract(p).multiply(1.0, 0.0, 1.0);
+				toGroup = toGroup.lengthSqr() < 1.0E-6 ? new Vec3(Math.cos(front + Math.PI), 0.0, Math.sin(front + Math.PI)) : toGroup.normalize();
+				point = p.add(toGroup.scale(GUARD_BEHIND));
+				g.guard = GUARD_BEHIND_FRONT;
+			}
+		}
+		if (point != null) {
+			own.post = RESERVA;
+			own.postPoint = new Vec3(point.x, p.y, point.z);
+		}
+		if (captain.distanceTo(player) >= ESCORT_RANGE) {
+			return;
+		}
+		List<MobMind> guards = new ArrayList<>();
+		for (MobMind mind : g.members) {
+			if (mind.mob != captain && melee(mind.mob) && !AttackTokens.holds(player, mind.mob)) {
+				guards.add(mind);
+			}
+		}
+		guards.sort(java.util.Comparator.<MobMind>comparingInt(m -> MobDefense.hasShield(m.mob) ? 0 : 1)
+			.thenComparingDouble(m -> m.mob.distanceToSqr(captain)));
+		Vec3 ahead = p.subtract(captain.position()).multiply(1.0, 0.0, 1.0);
+		ahead = ahead.lengthSqr() < 1.0E-6 ? new Vec3(Math.cos(front + Math.PI), 0.0, Math.sin(front + Math.PI)) : ahead.normalize();
+		// the frame's "derecha" is (−delante_z, delante_x)
+		Vec3 right = new Vec3(-ahead.z, 0.0, ahead.x);
+		for (int k = 0; k < Math.min(ESCORTS, guards.size()); k++) {
+			MobMind mind = guards.get(k);
+			Vec3 at = captain.position().add(ahead.scale(ESCORT_AHEAD)).add(right.scale(k == 0 ? ESCORT_SIDE : -ESCORT_SIDE));
+			mind.escort = true;
+			mind.post = FRENTE;
+			mind.postPoint = new Vec3(at.x, p.y, at.z);
+		}
+	}
+
+	/**
+	 * Whether this mob is its group's protected captain and goes to its point whatever its brain decided (TacticGoal, as
+	 * BUSCAR with a player lost): not behind the front with a turn and the player within GUARD_FIGHT (it fights then).
+	 */
+	public static boolean guarded(MobMind mind, long now) {
+		Player target = mind.target;
+		Group g = target == null ? null : group(target);
+		if (g == null || g.captain != mind.mob || g.guard == GUARD_NONE || mind.postPoint == null || now - g.seenAt > FORGET) {
+			return false;
+		}
+		return !(g.guard == GUARD_BEHIND_FRONT && AttackTokens.holds(target, mind.mob) && mind.mob.distanceTo(target) < GUARD_FIGHT);
+	}
+
+	// ---------------------------------------------------------------- captain 2: the new orders
+
+	/** FOCO_HERIDO: another player in the fight within FOCUS_RANGE of the captain and more hurt (share of health) than this one, the most hurt; or null. */
+	public static Player hurtOther(Group g, Player player) {
+		if (g.captain == null) {
+			return null;
+		}
+		Player real = Perception.real(player);
+		double mine = real.getHealth() / Math.max(1.0F, real.getMaxHealth());
+		Player best = null;
+		double lowest = mine;
+		for (Player p : g.captain.level().players()) {
+			if (p == real || !p.isAlive() || p.isCreative() || p.isSpectator() || p.distanceToSqr(g.captain) > FOCUS_RANGE * FOCUS_RANGE) {
+				continue;
+			}
+			double share = p.getHealth() / Math.max(1.0F, p.getMaxHealth());
+			if (share < lowest) {
+				lowest = share;
+				best = p;
+			}
+		}
+		return best;
+	}
+
+	/** FOCO_HERIDO: the members without a turn, but the captain, go for the more hurt player (as foco 1, chosen by health). */
+	private static void focusHurt(Group g, Player player) {
+		Player other = hurtOther(g, player);
+		if (other == null) {
+			return;
+		}
+		for (MobMind mind : g.members) {
+			if (mind.mob != g.captain && !AttackTokens.holds(player, mind.mob)) {
+				mind.mob.setTarget(other);
+			}
+		}
+	}
+
+	/**
+	 * CERRAR_SALIDAS: the way out is the player's motion when over EXITS_MOVING a tick, else away from the group's middle.
+	 * The ones that fight up close, sorted by their angle off that way, are spread over ±60° of it at EXITS_RADIUS from the
+	 * player (one alone right on it); the others keep their formation's point.
+	 */
+	private static Map<MobMind, Vec3> exits(Group g, Player player) {
+		Map<MobMind, Vec3> points = new java.util.HashMap<>();
+		Vec3 moving = MobSprint.motion(player);
+		double way;
+		if (Math.hypot(moving.x, moving.z) > EXITS_MOVING) {
+			way = Math.atan2(moving.z, moving.x);
+		} else {
+			Vec3 middle = middle(g.members, null);
+			way = Math.atan2(player.getZ() - middle.z, player.getX() - middle.x);
+		}
+		List<MobMind> bodies = new ArrayList<>();
+		for (MobMind mind : g.members) {
+			if (melee(mind.mob)) {
+				bodies.add(mind);
+			}
+		}
+		double at = way;
+		bodies.sort(java.util.Comparator.comparingDouble(m -> Squad.wrap(Squad.angle(m.mob, player) - at)));
+		int n = bodies.size();
+		for (int k = 0; k < n; k++) {
+			double a = n == 1 ? way : way - EXITS_HALF + 2.0 * EXITS_HALF * k / (n - 1);
+			points.put(bodies.get(k), new Vec3(player.getX() + Math.cos(a) * EXITS_RADIUS, player.getY(), player.getZ() + Math.sin(a) * EXITS_RADIUS));
+		}
+		return points;
 	}
 
 	/** The strongest elite or champion of the group (Andy: never a veteran), or null. */
@@ -437,13 +824,15 @@ public final class Captain {
 			byPost.get(Math.max(0, Math.min(3, posts[i]))).add(i);
 		}
 		Vec3 p = player.position();
+		Map<MobMind, Vec3> exits = c.order == Order.CERRAR_SALIDAS ? exits(g, player) : Map.of();
 		for (int post = 0; post < 4; post++) {
 			List<Integer> these = byPost.get(post);
 			these.sort(java.util.Comparator.comparingDouble(i -> Squad.wrap(Squad.angle(g.members.get(i).mob, player) - front)));
 			for (int k = 0; k < these.size(); k++) {
 				MobMind mind = g.members.get(these.get(k));
 				mind.post = post;
-				mind.postPoint = point(g, c, mind, player, p, front, post, k, these.size(), now);
+				Vec3 exit = exits.get(mind);
+				mind.postPoint = exit != null ? exit : point(g, c, mind, player, p, front, post, k, these.size(), now);
 			}
 		}
 	}
@@ -451,6 +840,15 @@ public final class Captain {
 	private static Vec3 point(Group g, Command c, MobMind mind, Player player, Vec3 p, double front, int post, int k, int n, long now) {
 		Mob mob = mind.mob;
 		switch (c.order) {
+			case RETIRADA_FALSA -> {
+				// phase 1: 10 from the player, going away (FORMACION for the rules, not RETIRARSE); phase 2: on the player, as CARGA at 0
+				if (c.falseAttack) {
+					return p;
+				}
+				Vec3 away = mob.position().subtract(p).multiply(1.0, 0.0, 1.0);
+				away = away.lengthSqr() < 1.0E-6 ? new Vec3(Math.cos(front + Math.PI), 0.0, Math.sin(front + Math.PI)) : away.normalize();
+				return p.add(away.scale(FALSE_RADIUS));
+			}
 			case RETIRADA -> {
 				Vec3 away = mob.position().subtract(p).multiply(1.0, 0.0, 1.0);
 				away = away.lengthSqr() < 1.0E-6 ? new Vec3(Math.cos(front + Math.PI), 0.0, Math.sin(front + Math.PI)) : away.normalize();
@@ -573,7 +971,25 @@ public final class Captain {
 			}
 			Command c = g.command;
 			if (now % 20 == 0) {
-				level.sendParticles(BANNER, captain.getX(), captain.getY() + captain.getBbHeight() + 0.6, captain.getZ(), 4, 0.15, 0.2, 0.15, 0.0);
+				level.sendParticles(g.interim ? ACTING : BANNER, captain.getX(), captain.getY() + captain.getBbHeight() + 0.6, captain.getZ(), 4, 0.15, 0.2, 0.15, 0.0);
+			}
+			// RETIRADA_FALSA turns to the attack after FALSE_TICKS, or sooner when the player comes FALSE_ADVANCE on towards
+			// the group (from where they stood when it was given): a shout, the charge's 0 and one more turn for 40 ticks.
+			if (c.order == Order.RETIRADA_FALSA && !c.falseAttack) {
+				Player player = entry.getKey();
+				double advanced = c.falseFrom == null || c.falseToGroup == null ? 0.0
+					: (player.getX() - c.falseFrom.x) * c.falseToGroup.x + (player.getZ() - c.falseFrom.z) * c.falseToGroup.z;
+				if (now - c.givenAt >= FALSE_TICKS || advanced >= FALSE_ADVANCE) {
+					c.falseAttack = true;
+					c.chargeAt = now;
+					c.shoutedGo = true;
+					g.chargeUntil = now + CHARGE_TURN_TICKS;
+					shout(level, captain, 1.2F);
+					level.sendParticles(ParticleTypes.ANGRY_VILLAGER, captain.getX(), captain.getEyeY() + 0.5, captain.getZ(), 6, 0.4, 0.2, 0.4, 0.0);
+					place(g, player, now);
+					protect(g, player, now);
+				}
+				continue;
 			}
 			if (c.order != Order.CARGA) {
 				continue;
@@ -597,18 +1013,29 @@ public final class Captain {
 		level.playSound(null, captain.getX(), captain.getY(), captain.getZ(), SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 0.6F, pitch);
 	}
 
+	/**
+	 * Captain 2, the visible captain: a new order (not none-and-free) is a shout the player can place, and a burst of the
+	 * banner's dust over its head (silver for an acting captain), so they can read who leads.
+	 */
+	static void orderShout(ServerLevel level, Mob captain, boolean acting) {
+		level.playSound(null, captain.getX(), captain.getY(), captain.getZ(), SoundEvents.VINDICATOR_CELEBRATE, SoundSource.HOSTILE, 1.6F, acting ? 1.25F : 0.9F);
+		level.sendParticles(acting ? ACTING : BANNER, captain.getX(), captain.getY() + captain.getBbHeight() + 0.6, captain.getZ(), 14, 0.35, 0.3, 0.35, 0.0);
+	}
+
 	// ---------------------------------------------------------------- morale (§4.3)
 
 	/**
 	 * moral_grupo = clamp(1 − 0.8·bajas_frac − 0.4·[captain dead less than 200 ticks ago] − 0.2·miedo + 0.2·[player under
-	 * 30 % health] + 0.1·en_casa, 0, 1); miedo and en_casa are the mob's own.
+	 * 30 % health] + 0.1·en_casa, 0, 1); miedo and en_casa are the mob's own. Captain 2: 0.15 less while an acting veteran
+	 * leads (INTERIM_MORALE), on top of the 0.4 of the 200 leaderless ticks.
 	 */
 	public static double groupMorale(MobMind mind, Player player, long now) {
 		Group g = group(player);
 		double lost = g == null || g.peak <= 0 ? 0.0 : Math.min(1.0, g.dead / (double) g.peak);
 		boolean leaderless = g != null && now - g.captainDiedAt < LEADERLESS;
+		boolean acting = g != null && g.interim && g.captain != null && g.captain.isAlive();
 		Player real = Perception.real(player);
-		double m = 1.0 - 0.8 * lost - (leaderless ? 0.4 : 0.0) - (Personality.afraid(mind.mob) ? 0.2 : 0.0)
+		double m = 1.0 - 0.8 * lost - (leaderless ? 0.4 : 0.0) - (acting ? INTERIM_MORALE : 0.0) - (Personality.afraid(mind.mob) ? 0.2 : 0.0)
 			+ (real.getHealth() < real.getMaxHealth() * 0.3F ? 0.2 : 0.0) + (Personality.atHome(mind.mob) ? 0.1 : 0.0);
 		return Math.max(0.0, Math.min(1.0, m));
 	}
@@ -646,7 +1073,8 @@ public final class Captain {
 			out[at + 2] = (float) (1.0 - (now - g.captainDiedAt) / (double) LEADERLESS);
 		}
 		Command c = led ? g.command : null;
-		out[at + 3 + (c == null ? 0 : c.order.ordinal())] = 1.0F;
+		// the new orders of contract revision 2 as one of the first nine (seenAs): the mob's contract does not change
+		out[at + 3 + (c == null ? 0 : seenAs(c).ordinal())] = 1.0F;
 		if (c != null) {
 			out[at + 12] = (float) ObsM1.clip((now - c.givenAt) / 40.0, 0.0, 2.0);
 			if (c.order == Order.CARGA && now < c.chargeAt) {

@@ -79,7 +79,7 @@ public final class TacticGoal extends Goal {
 		// A blow it has warned is seen through (a commitment): the goal goes on while it lasts, whatever the rules say now.
 		return this.mind.target != null && this.mind.target.isAlive()
 			&& (this.mind.networked || this.mind.decision.tactic() != Tactic.ACERCARSE || this.mind.windup > 0
-				|| HonestPerception.lost(this.mind, this.mob.level().getGameTime()));
+				|| HonestPerception.lost(this.mind, this.mob.level().getGameTime()) || Captain.guarded(this.mind, this.mob.level().getGameTime()));
 	}
 
 	@Override
@@ -178,6 +178,16 @@ public final class TacticGoal extends Goal {
 			if (this.mind.decision.tactic() != Tactic.EMBOSCAR || !this.ambush(target, now, true)) {
 				this.search(now);
 			}
+			return;
+		}
+		// Captain 2, protection: the protected captain goes to its point as FORMACION whatever its network or its rules
+		// decided (as BUSCAR with a player lost); there, it holds and watches the player (Captain.guarded).
+		if (Captain.guarded(this.mind, now)) {
+			if (this.mob.isUsingItem() && this.mind.draw > 0) {
+				this.mob.stopUsingItem();
+				this.mind.draw = 0;
+			}
+			this.formation(target);
 			return;
 		}
 		Decision decision = this.mind.decision;
@@ -709,14 +719,16 @@ public final class TacticGoal extends Goal {
 		}
 		Captain.Command c = Captain.commandFor(this.mind);
 		boolean round = c == null || c.order == Captain.Order.CERCAR || c.order == Captain.Order.HOSTIGAR || c.order == Captain.Order.CARGA
-			|| c.order == Captain.Order.NINGUNA;
+			|| c.order == Captain.Order.NINGUNA || c.order == Captain.Order.CERRAR_SALIDAS || c.order == Captain.Order.FOCO_HERIDO;
 		// Round the ring only when the straight way to the point goes near the player (within 3.5): through their blade.
 		if (round && nearSegment(target.position(), this.mob.position(), point) < 3.5) {
 			double angle = Math.atan2(point.z - target.getZ(), point.x - target.getX());
 			double radius = Math.hypot(point.x - target.getX(), point.z - target.getZ());
 			this.toRing(target, angle, Math.max(1.0, radius), 1.0);
-		} else {
-			this.patientPathTo(point.x, point.y, point.z, 1.0);
+		} else if (!this.patientPathTo(point.x, point.y, point.z, 1.0) || this.mob.getNavigation().isDone()) {
+			// A path ends within a block or so of its point: the last of the way is walked straight, as toRing does, or it
+			// stood 1.4 short of its post and never counted as there (captain 2's protected captain, 2026-09-30).
+			this.mob.getMoveControl().setWantedPosition(point.x, point.y, point.z, 1.0);
 		}
 	}
 

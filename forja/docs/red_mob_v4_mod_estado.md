@@ -197,7 +197,8 @@ mob, el radio se divide por 2.
 ## M5: capitán, órdenes, formaciones, moral y furia
 
 ### El capitán (`Captain`, `CaptainBrain`)
-- **Quién:** el élite o campeón más fuerte del grupo (amenaza, luego vida máxima). **Nunca un veterano.** Un grupo sin
+- **Quién:** el élite o campeón más fuerte del grupo (amenaza, luego vida máxima). **Nunca un veterano** (salvo el
+  interino de la sucesión, ver "Capitán 2"). Un grupo sin
   élite ni campeón no tiene capitán. Grupo = los mobs cuyo objetivo es ese jugador (el del `Squad`).
 - **Cada 10 ticks** (con el `Squad`): la red `redes_v4/red_capitan.json` (formato `red_capitan_v4`, contrato
   `red_capitan_v4_contrato.json`, 213 → 60) si la hay y encaja, diga lo que diga `iaCapitanReglas`; si no, el
@@ -742,6 +743,200 @@ Lo que sigue es del código final.
 - es una sola para los dos caminos, y ni el salto atrás, ni los especiales, ni los turnos la tocan;
 - si en el simulador solo cuenta mientras la meta está en marcha, se alarga: la meta está parada ~17 de los ~32 ticks de
   espera. Eso explicaría su 47 % de "esperando" frente al 30 % del mod, y sus 85 ticks entre avisos frente a los 71.
+
+## Capitán 2 (30-09; responde a `mod_spec_capitan2.md`)
+
+Rama `forja-capitan2`. Las seis piezas del simulador (`capitan2.rs`, motor `py_mobs_v4j`) están en el mod con los
+números de la especificación. **El contrato de los mobs (`red_mob_v4`) no cambia.** El del capitán tiene revisión 2
+(`red_capitan_v4_contrato_v2.json`, 253 → 68) y la v1 (213 → 60) sigue cargando igual.
+
+**Interruptores** (`CombatConfig`), todos **activados**, como propone la especificación (Andy puede apagar cualquiera):
+`iaCapitanVision`, `iaCapitanSucesion`, `iaCapitanProteccion`, `iaCapitanOrdenes2` e `iaCapitanVisible`. Para las pruebas y
+la medida hay además una forma de fijar las piezas por jugador (`CaptainBrain.overridePieces`), como `CaptainBrain.override`
+fija el modo. **Ojo con la protección:** la medida de abajo dice que, contra el jugador de guion, el grupo hace un 35 %
+menos de daño con ella (ver "La medida").
+
+### 1. Visión compartida (`Captain.share`, cada pase del `Squad`, con capitán vivo, también interino)
+- **Quién da:** de los miembros con `lastSeen` y que lo percibieron hace < 10 ticks (`now − perceivedAt < 10`), el que lo
+  percibió más tarde. Da `lastSeen` y el tick en que lo percibió.
+- **Quién recibe:** cada miembro que **no lo percibió en el tick anterior** (el pase del `Squad` va antes de que los mobs
+  piensen en ese tick, así que "no lo percibe ahora" es `now − perceivedAt > 1`), a ≤ 32 del capitán en 3D, y solo si el
+  tick del que da es más nuevo que su estimación (`max(lastSeenAt, lastHeardAt)`).
+- **Qué recibe:** `lastHeard` = esa posición y `lastHeardAt` = ese tick, como un sonido oído. Si no tenía foto del jugador
+  (`Perception.Snapshot`), una copia de la del que da (solo la tienen los mobs con red v4; los de reglas no guardan foto).
+- **Efecto:** su estimación pasa a ser la del grupo, el perdido busca allí (su búsqueda empieza otra vez desde ella),
+  el aburrimiento (600 ticks) se reinicia y la observación P lo ve como `obj_oido` = 1. No toca los `sonidoK_*`.
+- `compartida` = cuántos la recibieron en el último pase.
+- **Para el simulador:** en el mod, `lastSeenAt` se pone al tick en que el mob toma al jugador como objetivo aunque no lo
+  vea (`MobAi.think`); un mob que acaba de tomarlo no acepta una foto de antes de ese tick.
+
+### 2. Sucesión: el veterano interino (confirmada por Andy el 30-09)
+- En el primer pase con `now − muerte del capitán ≥ 60`, si aún no hubo sucesión en esta pelea, manda **el veterano de más
+  vida máxima** (amenaza VETERANO, no jefe), con `interino` = 1. Es la única excepción a "solo élites y campeones".
+- **Decide solo en los pases con `now % 20 == 0`** (tiempo de juego). Entre medias, la orden sigue y los puestos y la
+  protección se recolocan. Si su primer pase no es múltiplo de 20, hasta el siguiente no hay orden (la de la muerte:
+  ninguna, libre).
+- **No da CARGA:** la orden de las reglas con CARGA se convierte en "ninguna" (con la formación que digan las reglas y
+  cuenta 0). Con red, CARGA y las 3 órdenes nuevas van a 0 en la máscara (también con una red v1).
+- **Moral:** −0,15 mientras manda (`Captain.INTERIM_MORALE`), además del −0,4 de `sin_mando` durante los 200 ticks.
+  **Consecuencia medida en la prueba:** con 1 baja en un grupo de 5, la moral queda en 1 − 0,16 − 0,4 − 0,15 = 0,29 < 0,3 y
+  la regla 2 del capitán manda **RETIRADA**; hacen falta 8 en el grupo para que el interino pueda ordenar otra cosa. El
+  simulador debería ver lo mismo.
+- **Relevo:** a los 200 ticks de la muerte, un élite o campeón que quede releva al interino (`interino` = 0).
+- **Muere el interino:** `sin_mando` y golpe de moral como con cualquier capitán; no hay segunda sucesión (aunque quede
+  otro veterano).
+- Los mobs ven `tengo_capitan` = 1 y el interino `soy_capitan` = 1; su estandarte es **plateado** en vez de dorado.
+
+### 3. Protección del capitán (`Captain.protect`, cada pase después de colocar los puestos)
+- La cabeza `proteccion` de una red v2: 0 = reglas, 1 = sin protección, 2 = retirarse ya. Sin red o con mando 0, reglas.
+- **Retirarse** (vida < 35 % o la red pide 2): su punto a **14** del jugador en la dirección jugador → capitán (si están
+  encima, la contraria a la mirada lenta) y **suelta su turno** en cada pase.
+- **Detrás del frente** (él de cuerpo a cuerpo y ≥ **3** de los demás también): su punto a **7** del jugador en la dirección
+  jugador → centro de todos los demás miembros (si cae encima, la contraria a la mirada lenta).
+- "De cuerpo a cuerpo" (`Captain.melee`) = ni arquero ni de los que disparan o lanzan por naturaleza, como cuenta la regla
+  de la CARGA; los creepers cuentan.
+- Con punto, su puesto es `reserva`. **Cualquier cerebro** va a él como FORMACION (`TacticGoal`, como BUSCAR con el jugador
+  perdido); las reglas deciden FORMACION. Excepción: "detrás" con turno propio (`holds`) y el jugador a < 3,5, pelea. Llegado
+  a < 1, quieto mirando al jugador.
+- **Escoltas** (jugador a < 10 del capitán): hasta 2 miembros de cuerpo a cuerpo que no tienen turno propio, primero los de
+  escudo y luego los más cercanos al capitán; punto a 2 del capitán hacia el jugador y a ±1 de lado (el primero a la
+  derecha, (−delante_z, delante_x)); puesto `frente`. **Las de reglas van a su punto (FORMACION) cuando no tienen turno en el
+  sentido de siempre de las reglas: ni lo tienen ni hay uno libre.** Con un turno libre atacan ("un turno libre se usa").
+  La primera versión las dejaba quietas aunque hubiera turno libre: 99,6 de daño por minuto frente a 119,6 (80 peleas).
+- **Arreglo de paso en FORMACION:** una ruta termina a un bloque o así de su punto; el último tramo va recto
+  (`MoveControl`), como ya hacía `toRing`. Antes el capitán se quedaba a 1,4 de su puesto y nunca contaba como llegado.
+- **Visto en el mod:** con el grupo rodeando al jugador, el centro de los demás cae casi encima de él y la dirección
+  "detrás" salta de un pase a otro: el capitán da vueltas a 4–5 del jugador en vez de quedarse a 7. En la medida, de media,
+  está a 7,4 (4,6 sin protección).
+
+### 4. Órdenes nuevas (solo una red v2 las da; las reglas y los miembros las obedecen)
+Enum `Captain.Order` con 12 valores (los 9 de v1 primero). Los mobs las ven como una de las 9 (`Captain.seenAs`), en el
+bloque M y en el bloque O de una red v1: CERRAR_SALIDAS → CERCAR, FOCO_HERIDO → NINGUNA, RETIRADA_FALSA → RETIRADA en la
+fase 1 y CARGA en la fase 2 (con `cuenta_atras` 0).
+- **CERRAR_SALIDAS:** la salida es la velocidad del jugador (`MobSprint.motion`) si pasa de 0,05 por tick, si no la dirección
+  centro del grupo → jugador. Los de cuerpo a cuerpo (el capitán también, salvo que la protección le dé otro punto),
+  ordenados por su ángulo respecto a la salida, van repartidos en ±60° a 5 del jugador (uno solo, justo en la salida).
+  Los demás, a su punto de formación. Reglas: con turno (propio o libre), al ataque; sin turno, FORMACION, por el anillo si
+  la línea recta pasa a < 3,5 del jugador.
+- **FOCO_HERIDO:** en cada pase mientras dure, los miembros sin turno propio salvo el capitán cambian de objetivo al
+  jugador en la pelea (vivo, ni creativo ni espectador) a ≤ 16 del capitán **con menos fracción de vida que el mío; el más
+  herido** si hay varios. Los que quedan ven "ninguna".
+- **RETIRADA_FALSA:** fase 1, puntos a **10** del jugador alejándose (la dirección jugador → mob), y las reglas van con
+  **FORMACION** (no RETIRARSE: no cuenta para huir ni para abandonar). **Paso a la fase 2:** el mod lo mira **cada tick**
+  (`Captain.tick`): a los 40 ticks de darla, o antes si el jugador avanza ≥ 4 bloques en la dirección jugador → centro del
+  grupo **tal como era al darla**, medida desde donde estaba al darla. Entonces grito, `chargeAt` = ahora (cero_t), +1
+  turno 40 ticks y los puntos se recolocan en el acto (en el jugador). Fase 2: reglas al ataque (con turno o sin él) y
+  corriendo (`MobSprint`).
+- **Una orden sigue** mientras orden, formación y sector no cambien (la regla de siempre): una red que da RETIRADA_FALSA con
+  otra formación la vuelve a empezar desde la fase 1.
+- **Máscaras** (con `iaCapitanOrdenes2` y nunca con un interino): CERRAR_SALIDAS con ≥ 2 de cuerpo a cuerpo (el capitán
+  cuenta); FOCO_HERIDO con ese jugador más herido; RETIRADA_FALSA con ≥ 3 de cuerpo a cuerpo y moral del grupo ≥ 0,5.
+
+### 5. Capitán visible
+- Con cada orden nueva que no sea "ninguna y LIBRE" (ni CARGA, que ya grita a la mitad de la cuenta y en su 0): un grito
+  (`VINDICATOR_CELEBRATE`, más agudo para el interino) y una nube del polvo del estandarte sobre su cabeza. Solo visual.
+- El estandarte de siempre (polvo dorado cada 20 ticks), plateado para el interino. `/forja ia ver` dice "capitán
+  interino", "tras el frente", "se retira" y "escolta".
+- Captura: `FORJA_SOLO=capitan2 ./gradlew runClientGameTest` (`V4Footage.filmCaptain2`) →
+  `E:\IA\Claude\Forja_capturas_mejoras\capitan2\capitan2_01_detras_con_escoltas.png`: el élite del hacha a 7,4 del
+  jugador, apartado de la pelea, con su polvo dorado; las dos escoltas estaban usando turnos libres.
+
+### 6. Contrato `red_capitan_v4` revisión 2 (`CaptainBrain`)
+- **Carga:** `"contrato_version": 2` en el archivo (`NetBrain.contractVersion`) → 253 nombres (`CaptainBrain.namesV2`) y 68
+  salidas; sin el campo o con 1 → los 213 y 60 de siempre. Otra versión se rechaza con su motivo en `/forja ia`.
+- **Entradas 213–232:** la orden de `CaptainBrain.ruleOrder` = `Captain.rules()` ahora, con la CARGA de un interino como
+  "ninguna". Con una red cargada se calcula siempre, diga lo que diga `iaCapitanReglas`.
+- **233–252**, cómo las calcula el mod:
+  - `capitan_tras_frente/8`: (distancia capitán–jugador − la del miembro de cuerpo a cuerpo más cercano al jugador, sin
+    contar al capitán) / 8, ±2; 0 si no hay ninguno.
+  - `escoltas/2`: miembros (sin el capitán) a < 3 de él, no los que tienen la marca de escolta.
+  - `jug_mira_capitan`: sus ojos dentro del cono de 30° de la mirada del jugador (15° a cada lado) y línea libre de ojos a
+    ojos. Sin condición de luz.
+  - `capitan_golpeado/3`: golpes de un jugador (`AFTER_DAMAGE` con un jugador como causa y sin bloquear) en 100 ticks.
+  - `jug_aleja/0.2`: `MobSprint.motion` del jugador proyectada en la dirección centro del grupo → jugador, / 0,2, ±2.
+  - `salidas_libres/8`: de 8 direcciones (0°, 45°…) desde el jugador, el punto a 4 bloques cuenta si el bloque a sus pies
+    + 1 y el de encima no tienen colisión (sube como mucho 1) y hay línea libre de sus ojos a ese punto a la altura de sus
+    ojos. Una caída no cierra la salida.
+  - `otro_*`: el otro jugador más cercano al capitán a ≤ 16 (vivo, ni creativo ni espectador); `otro_dist/16` desde el
+    capitán. `mi_jug_vida_frac`: la del jugador del grupo.
+  - `proteccion_*`: la cabeza en vigor (0 sin red o con mando 0).
+- **Mando:** `logits[67] > logits[66]`, sin temperatura ni sorteo. Mando 0: la orden de las reglas tal cual (puestos por
+  tipo) y protección 0; **no se sortea ninguna otra cabeza** (el azar del mob capitán no se toca, así que el grupo juega
+  exactamente como con el capitán de reglas; prueba `theMandoHeadFollowsOrOverridesTheRules`). Mando 1: se sortean las 14
+  cabezas con logits/T y su máscara, como en v1.
+- **Cadencia:** cada pase (10 ticks), cada 20 con un interino. **Memoria:** a 0 al cambiar de capitán.
+
+### Pruebas (`Capitan2GameTests`, 8 nuevas; 428 en total, todas en verde)
+- `sharedVisionReachesTheBlind`: un zombi encerrado en piedra recibe la posición del grupo (`obj_oido`, estimación,
+  `compartida`); sin la pieza, nadie.
+- `aVeteranTakesCommandWithoutCharges`: muerto el élite, el veterano de 30 de vida manda a los 60–70 ticks, sus órdenes
+  nuevas caen en pases múltiplos de 20, nunca CARGA aunque las reglas la quieran, moral −0,15 exacta, `capitan_interino` = 1;
+  muerto él, no manda el otro veterano.
+- `theCaptainStaysBehindWithEscorts`: la geometría exacta (7 hacia el centro de los demás, reserva; escoltas: el del escudo
+  primero a la derecha, el más cercano después; 14 con < 35 % y suelta el turno), luego llega a su punto y se queda a 6–8;
+  sin la pieza, nada.
+- `v2NamesMatchTheContract`: los 253 nombres, las 68 salidas y las cabezas del JSON; las 253 entradas de un grupo real son
+  finitas y los one-hot suman 1.
+- `theMandoHeadFollowsOrOverridesTheRules` (entorno propio): una red v2 recién empezada da en cada pase la orden de las
+  reglas exacta (con cargas incluidas) y `decide()` también; con mando 1 manda HOSTIGAR en CUÑA; una v1 sigue cargando y
+  mandando; una v2 con los nombres de v1 se rechaza.
+- `closingTheWaysOut`, `focusOnTheHurtOne`, `theFalseRetreatTurns` (entornos propios): cada orden nueva con sus puntos,
+  su máscara, lo que ven los mobs y cómo obedecen las reglas (`RuleBrain.obey`).
+- Las 4 del lote normal pasan 400 de 400 con `FORJA_VERIFICAR=1`.
+- `theRulesChargeWhenTheBackIsTurned` (M5) apaga las piezas: prueba el capitán de reglas de antes, y con la protección el
+  capitán y sus escoltas no entran en la carga.
+
+### La medida (`CapitanMedidaGameTests`, 160 peleas por modo en dos tandas de 80, jugador en el mundo)
+El grupo es el de siempre, con **uno de los zombis veterano en todos los modos** (para que pueda haber sucesión;
+`FORJA_CAPITAN_VETERANO=no` lo quita). Modo nuevo **"reglas2"** (`measureRulesCaptain2`): el capitán de reglas con las cinco
+piezas; los otros tres, sin ninguna. `FORJA_CAPITAN2_PIEZAS=vision,sucesion,…` elige las de "reglas2". La línea de cada
+pelea apunta también `interino`, `protegido`, `escoltas`, `compartida`, `gritos`, `elite_muere` y `capitan_dist`.
+
+| Medida (por pelea de 30 s salvo el daño) | sin capitán | sin órdenes | capitán de reglas | capitán de reglas 2 |
+|---|---|---|---|---|
+| daño/min | 170,3 ± 3,5 | 177,2 ± 3,1 | **188,2 ± 3,8** | **122,5 ± 2,0** |
+| "muerto" (20 de daño) en 30 s | 160/160 | 160/160 | 160/160 | 160/160 |
+| tiempo hasta 20 de daño | 8,7 s | 8,0 s | 7,9 s | 10,6 s |
+| mobs muertos | 2,71 | 3,20 | 3,16 | 3,29 |
+| el élite muere | 98/160 | 71/160 | 19/160 | **0/160** |
+| daño cuerpo a cuerpo / flecha | 43,0 / 42,2 | 46,0 / 42,5 | 61,9 / 32,2 | 24,2 / 37,0 |
+| avisos / llegan | 15,4 / 6,2 | 16,8 / 6,7 | 24,0 / 9,6 | 15,7 / 5,9 |
+| capitán a … del jugador (media) | — | 4,8 | 4,6 | 7,4 |
+| órdenes | — | — | CARGA 21 % | CARGA 17 % |
+| ticks con el capitán protegido / escoltas × ticks | — | — | — | 486 / 947 |
+
+Pareado por semilla: capitán de reglas − sin capitán **+17,9 ± 5,0** (gana 107/160); capitán 2 − sin capitán **−47,7 ± 4,1**
+(gana 33/160); **capitán 2 − capitán de reglas −65,7 ± 3,6** (gana 15/160).
+
+**Cada pieza** (80 peleas, "reglas2" solo):
+
+| Piezas | daño/min |
+|---|---|
+| todas menos la protección (visión, sucesión, órdenes, visible) | 193,5 ± 4,5 (como el capitán de reglas, 188,2) |
+| solo la protección | 127,4 ± 4,5 |
+
+- **La protección se lleva todo el efecto:** el élite (el que más pega: espada de hierro, ×1,3) se queda a 7 y casi nunca
+  golpea, y con el jugador a < 10 del capitán (casi siempre) dos zombis más quedan de escolta cuando no hay turno libre. El
+  daño cuerpo a cuerpo cae de 62 a 24. A cambio, el élite ya no muere nunca (19/160 → 0/160). Contra el jugador de guion,
+  que pega al más cercano, proteger al capitán no compra nada; el simulador la justifica contra un jugador que caza
+  capitanes (`mod_spec_capitan2.md` §5), y ese jugador el mod no lo tiene.
+- **La visión, la sucesión, las órdenes y el visible no cambian nada aquí:** de día todos ven al jugador (0,4 estimaciones
+  compartidas por pelea), el élite solo muere en 9 de 80 peleas y casi siempre al final (tick ≥ 497), así que el interino
+  manda 0,35 ticks por pelea, y las reglas no dan las órdenes nuevas.
+- **Decisión pendiente de Andy:** `iaCapitanProteccion` va activada porque así lo pide la especificación. Con estos números
+  convendría apagarla hasta que haya un jugador de prueba que cace capitanes, o que la red v2 aprenda cuándo usarla (su
+  cabeza `proteccion` = 1 la quita).
+
+### Lo que el simulador tiene que copiar
+1. "Sin turno" para las escoltas de reglas = ni lo tienen ni hay uno libre (con turno libre atacan).
+2. RETIRADA_FALSA pasa a la fase 2 mirando cada tick, con el avance medido en la dirección jugador → centro del grupo del
+   momento en que se dio; al pasar, los puntos se recolocan en el acto.
+3. La visión compartida: "no lo percibe" = no lo percibió en el tick anterior, y la estimación de un mob que acaba de tomar
+   al jugador empieza en ese tick.
+4. Con el interino y una baja en un grupo de 5, la moral cae por debajo de 0,3 y las reglas mandan RETIRADA.
+5. Las definiciones de las entradas 233–252 de arriba (sobre todo `salidas_libres`, `jug_mira_capitan`, `escoltas/2` y
+   `capitan_tras_frente/8`).
+6. El dato de la medida: con el jugador de guion, la protección cuesta un 35 % del daño del grupo.
 
 ## M6: el vector de mundo W (452–467, `WorldMemory`)
 

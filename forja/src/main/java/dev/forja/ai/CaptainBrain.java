@@ -2,15 +2,20 @@ package dev.forja.ai;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 
 import dev.forja.combat.AttackTokens;
 import dev.forja.combat.CombatConfig;
 import dev.forja.difficulty.ForjaDifficulty;
+import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * The captain's brain (docs/red_mob_v4_diseno.md §3.2–§3.4): red_capitan.json from redes_v4 ("formato":
@@ -21,6 +26,13 @@ import net.minecraft.world.entity.player.Player;
  * Each head is sampled on its own under the mask: foco 1 only with another player within 16 of the captain; a post of a
  * member that is not there is left at 0; ASEDIO only with the player up high (as the mob's ASEDIAR). Members 9 and on
  * take their post by kind (Captain.postByKind), as the design says.
+ *
+ * <p><b>Contract revision 2</b> (captain 2, docs/red_capitan_v4_contrato_v2.json, docs/mod_spec_capitan2.md §6): a file
+ * with "contrato_version": 2 has 253 inputs ({@link #namesV2()}: v1's 213, then the order the rules would give now and
+ * the captain-2 state) and 68 outputs ({@link #outputsV2()}: 12 orders, then the same heads, a protection head and the
+ * mando head). It is residual: mando = 1 only when logit 67 > logit 66, with no temperature and no draw; with mando 0 the
+ * group gets the rules' order as it is (posts by kind, protection by the rules), so a network fresh from its start (mando
+ * rows at 0, bias (+6, 0)) plays exactly as the rules captain. A v1 file still loads and runs as before.
  */
 public final class CaptainBrain {
 	public static final String FORMAT = "red_capitan_v4";
@@ -40,7 +52,29 @@ public final class CaptainBrain {
 	public static final int O_AT = 199;
 	public static final int SIZE = 213;
 
+	/** Contract revision 2: its outputs, and where its heads start. */
+	public static final int OUTPUTS_V2 = 68;
+	public static final int FORMATION_AT_V2 = 12;
+	public static final int SECTOR_AT_V2 = 16;
+	public static final int COUNT_AT_V2 = 25;
+	public static final int FOCUS_AT_V2 = 29;
+	public static final int POSTS_AT_V2 = 31;
+	public static final int PROTECTION_AT = 63;
+	public static final int MANDO_AT = 66;
+	/** Contract revision 2: its inputs, and where the new ones start (the rules' order, then the captain-2 state). */
+	public static final int SIZE_V2 = 253;
+	public static final int RULE_AT = 213;
+	public static final int C2_AT = 233;
+
+	/** Where each head of a captain network's outputs starts, and how many orders it has. */
+	record Layout(int orders, int formationAt, int sectorAt, int countAt, int focusAt, int postsAt, int outputs) {
+	}
+
+	static final Layout V1 = new Layout(Captain.Order.V1, FORMATION_AT, SECTOR_AT, COUNT_AT, FOCUS_AT, POSTS_AT, OUTPUTS);
+	static final Layout V2 = new Layout(Captain.Order.values().length, FORMATION_AT_V2, SECTOR_AT_V2, COUNT_AT_V2, FOCUS_AT_V2, POSTS_AT_V2, OUTPUTS_V2);
+
 	private static List<String> names;
+	private static List<String> namesV2;
 
 	private CaptainBrain() {
 	}
@@ -57,8 +91,17 @@ public final class CaptainBrain {
 	 */
 	public enum Mode { SIN_CAPITAN, LIBRE, REGLAS }
 
+	/**
+	 * The pieces of captain 2 (docs/mod_spec_capitan2.md), each with its switch in CombatConfig: shared vision
+	 * (iaCapitanVision), succession (iaCapitanSucesion), protection (iaCapitanProteccion), the new orders
+	 * (iaCapitanOrdenes2) and the visible captain (iaCapitanVisible).
+	 */
+	public enum Piece { VISION, SUCESION, PROTECCION, ORDENES2, VISIBLE }
+
 	/** Per player overrides of the mode (the measurement tests pit the modes against each other at once). */
 	private static final java.util.Map<Player, Mode> OVERRIDES = new java.util.WeakHashMap<>();
+	/** Per player overrides of captain 2's pieces: the ones on (the rest off), over the config. */
+	private static final java.util.Map<Player, EnumSet<Piece>> PIECES = new java.util.WeakHashMap<>();
 
 	/** Sets (or with null clears) the mode for the group fighting this player, over the config. For tests. */
 	public static void override(Player player, Mode mode) {
@@ -67,6 +110,31 @@ public final class CaptainBrain {
 		} else {
 			OVERRIDES.put(player, mode);
 		}
+	}
+
+	/** Sets (or with null clears) which of captain 2's pieces are on for the group fighting this player. For tests. */
+	public static void overridePieces(Player player, EnumSet<Piece> on) {
+		if (on == null) {
+			PIECES.remove(player);
+		} else {
+			PIECES.put(player, EnumSet.copyOf(on));
+		}
+	}
+
+	/** Whether a piece of captain 2 is on for the group fighting this player: its override, else the config. */
+	public static boolean piece(Player player, Piece piece) {
+		EnumSet<Piece> forced = player == null ? null : PIECES.get(Perception.real(player));
+		if (forced != null) {
+			return forced.contains(piece);
+		}
+		CombatConfig cfg = CombatConfig.get();
+		return switch (piece) {
+			case VISION -> cfg.iaCapitanVision;
+			case SUCESION -> cfg.iaCapitanSucesion;
+			case PROTECCION -> cfg.iaCapitanProteccion;
+			case ORDENES2 -> cfg.iaCapitanOrdenes2;
+			case VISIBLE -> cfg.iaCapitanVisible;
+		};
 	}
 
 	/** The mode for the group fighting this player: its override, else the config (iaCapitan, iaCapitanReglas). */
@@ -84,6 +152,10 @@ public final class CaptainBrain {
 	/** Whether the group fighting this player gets a captain. */
 	static boolean enabled(Player player) {
 		return CombatConfig.get().enabled && mode(player) != Mode.SIN_CAPITAN;
+	}
+
+	private static String lower(Enum<?> e) {
+		return e.name().toLowerCase(java.util.Locale.ROOT);
 	}
 
 	/** The 213 names, in order (docs/red_capitan_v4_contrato.json). */
@@ -117,26 +189,60 @@ public final class CaptainBrain {
 		}
 		// W: the world's vector, as the mob's (16)
 		n.addAll(ObsV4.names().subList(ObsV4.W_AT, ObsV4.W_AT + 16));
-		// O: the order in force (14)
-		for (Captain.Order o : Captain.Order.values()) {
-			n.add("orden_" + o.name().toLowerCase(java.util.Locale.ROOT));
+		// O: the order in force (14): v1's nine orders (the new ones read as the members see them)
+		for (int i = 0; i < Captain.Order.V1; i++) {
+			n.add("orden_" + lower(Captain.Order.values()[i]));
 		}
 		n.add("orden_edad/40");
 		for (Captain.Formation f : Captain.Formation.values()) {
-			n.add("formacion_" + (f == Captain.Formation.CUNA ? "cuna" : f.name().toLowerCase(java.util.Locale.ROOT)));
+			n.add("formacion_" + lower(f));
 		}
 		names = Collections.unmodifiableList(n);
 		return names;
 	}
 
-	/** The output names, in order. */
-	public static List<String> outputs() {
-		List<String> out = new ArrayList<>();
+	/** The 253 names of contract revision 2, in order (docs/red_capitan_v4_contrato_v2.json). */
+	public static synchronized List<String> namesV2() {
+		if (namesV2 != null) {
+			return namesV2;
+		}
+		List<String> n = new ArrayList<>(names());
+		// 213..232: the order Captain.rules() would give now (with an acting captain, CARGA → none)
 		for (Captain.Order o : Captain.Order.values()) {
-			out.add("orden_" + o.name().toLowerCase(java.util.Locale.ROOT));
+			n.add("regla_orden_" + lower(o));
 		}
 		for (Captain.Formation f : Captain.Formation.values()) {
-			out.add("formacion_" + f.name().toLowerCase(java.util.Locale.ROOT));
+			n.add("regla_formacion_" + lower(f));
+		}
+		for (int c : Captain.COUNTS) {
+			n.add("regla_cuenta_" + c);
+		}
+		// 233..252: captain 2's state
+		Collections.addAll(n, "orden_cerrar_salidas", "orden_foco_herido", "orden_retirada_falsa", "falsa_ataque", "capitan_interino",
+			"sin_mando", "capitan_tras_frente/8", "escoltas/2", "jug_mira_capitan", "capitan_golpeado/3", "compartida/8", "jug_aleja/0.2",
+			"salidas_libres/8", "otro_jug_presente", "otro_vida_frac", "otro_dist/16", "mi_jug_vida_frac", "proteccion_regla",
+			"proteccion_sin", "proteccion_retirada");
+		namesV2 = Collections.unmodifiableList(n);
+		return namesV2;
+	}
+
+	/** The output names of contract v1, in order. */
+	public static List<String> outputs() {
+		return outputs(V1);
+	}
+
+	/** The output names of contract revision 2, in order. */
+	public static List<String> outputsV2() {
+		return outputs(V2);
+	}
+
+	private static List<String> outputs(Layout layout) {
+		List<String> out = new ArrayList<>();
+		for (int i = 0; i < layout.orders(); i++) {
+			out.add("orden_" + lower(Captain.Order.values()[i]));
+		}
+		for (Captain.Formation f : Captain.Formation.values()) {
+			out.add("formacion_" + lower(f));
 		}
 		for (int s = 0; s <= 8; s++) {
 			out.add("sector_" + s);
@@ -151,72 +257,144 @@ public final class CaptainBrain {
 				out.add("puesto" + k + "_" + post);
 			}
 		}
+		if (layout == V2) {
+			Collections.addAll(out, "proteccion_regla", "proteccion_sin", "proteccion_retirada", "mando_regla", "mando_red");
+		}
 		return out;
 	}
 
-	/** Why a network cannot be the captain, or null (formato, the 213 names in order, 60 outputs). */
+	/**
+	 * Why a network cannot be the captain, or null: formato, then by its "contrato_version" either v1's 213 names in
+	 * order and 60 outputs, or revision 2's 253 and 68.
+	 */
 	public static String check(NetBrain net) {
 		if (!FORMAT.equals(net.format)) {
 			return "formato '" + net.format + "': no es " + FORMAT;
 		}
-		List<String> ours = names();
+		boolean v2 = net.contractVersion >= 2;
+		if (net.contractVersion > 2) {
+			return "contrato_version " + net.contractVersion + ": este mod lee la 1 y la 2";
+		}
+		List<String> ours = v2 ? namesV2() : names();
+		String which = v2 ? "el capitán v4 (contrato 2)" : "el capitán v4";
 		if (net.inputs() != ours.size() || net.names.size() != ours.size()) {
-			return "espera " + net.inputs() + " entradas con " + net.names.size() + " nombres; el capitán v4 tiene " + ours.size();
+			return "espera " + net.inputs() + " entradas con " + net.names.size() + " nombres; " + which + " tiene " + ours.size();
 		}
 		for (int i = 0; i < ours.size(); i++) {
 			if (!ours.get(i).equals(net.names.get(i))) {
 				return "la entrada " + i + " es '" + net.names.get(i) + "' y el mod da '" + ours.get(i) + "'";
 			}
 		}
-		return net.outputs() != OUTPUTS ? "da " + net.outputs() + " salidas y el capitán v4 tiene " + OUTPUTS : null;
+		int outputs = v2 ? OUTPUTS_V2 : OUTPUTS;
+		return net.outputs() != outputs ? "da " + net.outputs() + " salidas y " + which + " tiene " + outputs : null;
+	}
+
+	/**
+	 * The rules' order now, as a captain of this group may give it: Captain.rules, with an acting captain's CARGA turned
+	 * into no order (the formation the rules say). The posts are by kind.
+	 */
+	public static Captain.Command ruleOrder(Captain.Group g, Player player, long now) {
+		Captain.Command c = Captain.rules(g, player, now);
+		if (g.interim && c.order == Captain.Order.CARGA) {
+			c.order = Captain.Order.NINGUNA;
+			c.count = 0;
+		}
+		c.posts = Captain.rulesPosts(g);
+		return c;
 	}
 
 	/** The group's orders this pass: from the captain's network when there is one, else the rules. */
-	static Captain.Command decide(Captain.Group g, Player player, long now) {
+	public static Captain.Command decide(Captain.Group g, Player player, long now) {
 		NetBrain net = MobAi.captainNet();
+		g.mando = false;
 		if (net == null) {
 			// No network: the rules captain when it is switched on (iaCapitanReglas); otherwise no orders, and the members
 			// fight free, as without a captain.
-			Captain.Command c = mode(player) == Mode.REGLAS ? Captain.rules(g, player, now) : new Captain.Command();
+			g.protection = Captain.PROTECT_RULES;
+			if (mode(player) == Mode.REGLAS) {
+				return ruleOrder(g, player, now);
+			}
+			Captain.Command c = new Captain.Command();
 			c.posts = Captain.rulesPosts(g);
 			return c;
 		}
 		if (g.memory == null || g.memory.length != net.memory) {
 			g.memory = new float[net.memory];
 		}
-		float[] obs = observe(g, player, now);
+		boolean v2 = net.contractVersion >= 2;
+		Captain.Command rules = null;
+		float[] obs;
+		if (v2) {
+			rules = ruleOrder(g, player, now);
+			g.rulesCommand = rules;
+			obs = observeV2(g, player, now, rules);
+		} else {
+			obs = observe(g, player, now);
+		}
 		float[] logits = net.forward(obs, g.memory);
+		if (v2 && !(logits[MANDO_AT + 1] > logits[MANDO_AT])) {
+			// mando 0 (argmax, no temperature, no draw): the rules' order as it is, and protection by the rules
+			g.protection = Captain.PROTECT_RULES;
+			return rules;
+		}
+		g.mando = v2;
+		Layout layout = v2 ? V2 : V1;
 		MobMind captain = MobAi.mind(g.captain);
 		RandomSource random = captain != null ? captain.random : g.captain.getRandom();
 		double temperature = CombatConfig.get().iaTemperatura * ForjaDifficulty.current().temperature;
-		boolean[] mask = mask(g, player);
+		boolean[] mask = mask(g, player, now, layout);
 		Captain.Command c = new Captain.Command();
-		c.order = Captain.Order.values()[pick(logits, ORDER_AT, 9, temperature, random, mask)];
-		c.formation = Captain.Formation.values()[pick(logits, FORMATION_AT, 4, temperature, random, mask)];
-		c.sector = pick(logits, SECTOR_AT, 9, temperature, random, mask);
-		c.count = pick(logits, COUNT_AT, 4, temperature, random, mask);
-		c.focus = pick(logits, FOCUS_AT, 2, temperature, random, mask);
+		c.order = Captain.Order.values()[pick(logits, 0, layout.orders(), temperature, random, mask)];
+		c.formation = Captain.Formation.values()[pick(logits, layout.formationAt(), 4, temperature, random, mask)];
+		c.sector = pick(logits, layout.sectorAt(), 9, temperature, random, mask);
+		c.count = pick(logits, layout.countAt(), 4, temperature, random, mask);
+		c.focus = pick(logits, layout.focusAt(), 2, temperature, random, mask);
 		c.posts = new int[g.members.size()];
 		for (int i = 0; i < c.posts.length; i++) {
-			c.posts[i] = i < Captain.MEMBERS ? pick(logits, POSTS_AT + 4 * i, 4, temperature, random, mask) : Captain.postByKind(g.members.get(i).mob);
+			c.posts[i] = i < Captain.MEMBERS ? pick(logits, layout.postsAt() + 4 * i, 4, temperature, random, mask) : Captain.postByKind(g.members.get(i).mob);
 		}
+		g.protection = v2 ? pick(logits, PROTECTION_AT, 3, temperature, random, mask) : Captain.PROTECT_RULES;
 		return c;
 	}
 
-	/** The captain's mask: ASEDIO with the player up high, focus on another player only with one about, posts of members there. */
+	/** Contract v1's mask (see {@link #mask(Captain.Group, Player, long, Layout)}). */
 	static boolean[] mask(Captain.Group g, Player player) {
-		boolean[] mask = new boolean[OUTPUTS];
+		return mask(g, player, g.captain.level().getGameTime(), V1);
+	}
+
+	/**
+	 * The captain's mask: ASEDIO with the player up high, focus on another player only with one about, posts of members
+	 * there; never CARGA for an acting captain. Revision 2 adds: CERRAR_SALIDAS with 2 or more that fight up close (the
+	 * captain counted), FOCO_HERIDO with a more hurt player about, RETIRADA_FALSA with 3 or more up close and the group's
+	 * morale at 0.5 or more (all three with the piece "ordenes" and never for an acting captain); protection 1 and 2 only
+	 * with the piece "proteccion"; mando always both. Index 0 of a head is never forbidden.
+	 */
+	static boolean[] mask(Captain.Group g, Player player, long now, Layout layout) {
+		boolean[] mask = new boolean[layout.outputs()];
 		java.util.Arrays.fill(mask, true);
-		mask[ORDER_AT + Captain.Order.ASEDIO.ordinal()] = Heights.besieged(player);
+		mask[Captain.Order.ASEDIO.ordinal()] = Heights.besieged(player);
+		mask[Captain.Order.CARGA.ordinal()] = !g.interim;
 		boolean other = false;
 		for (Player p : g.captain.level().players()) {
-			other |= p != player && p.isAlive() && !p.isSpectator() && p.distanceToSqr(g.captain) < 16.0 * 16.0;
+			other |= p != Perception.real(player) && p.isAlive() && !p.isSpectator() && p.distanceToSqr(g.captain) < Captain.FOCUS_RANGE * Captain.FOCUS_RANGE;
 		}
-		mask[FOCUS_AT + 1] = other;
+		mask[layout.focusAt() + 1] = other;
 		for (int k = g.members.size(); k < Captain.MEMBERS; k++) {
 			for (int j = 1; j < 4; j++) {
-				mask[POSTS_AT + 4 * k + j] = false;
+				mask[layout.postsAt() + 4 * k + j] = false;
 			}
+		}
+		if (layout == V2) {
+			boolean orders = piece(player, Piece.ORDENES2) && !g.interim;
+			int melee = Captain.meleeCount(g);
+			MobMind cm = MobAi.mind(g.captain);
+			double morale = cm == null ? 1.0 : Captain.groupMorale(cm, player, now);
+			mask[Captain.Order.CERRAR_SALIDAS.ordinal()] = orders && melee >= 2;
+			mask[Captain.Order.FOCO_HERIDO.ordinal()] = orders && Captain.hurtOther(g, player) != null;
+			mask[Captain.Order.RETIRADA_FALSA.ordinal()] = orders && melee >= 3 && morale >= 0.5;
+			boolean guard = piece(player, Piece.PROTECCION);
+			mask[PROTECTION_AT + Captain.PROTECT_NONE] = guard;
+			mask[PROTECTION_AT + Captain.PROTECT_RETREAT] = guard;
 		}
 		return mask;
 	}
@@ -393,11 +571,141 @@ public final class CaptainBrain {
 		}
 		// W: the world's vector, as the captain's own observation has it
 		System.arraycopy(own, ObsV4.W_AT, out, W_AT, 16);
-		// O: the order in force
-		out[O_AT + g.command.order.ordinal()] = 1.0F;
+		// O: the order in force, the new orders of revision 2 as the members see them (Captain.seenAs)
+		out[O_AT + Captain.seenAs(g.command).ordinal()] = 1.0F;
 		out[O_AT + 9] = (float) ObsM1.clip((now - g.command.givenAt) / 40.0, 0.0, 2.0);
 		out[O_AT + 10 + g.command.formation.ordinal()] = 1.0F;
 		return out;
+	}
+
+	/** The 253 inputs of contract revision 2, with the rules' order worked out here (tests, tools). */
+	public static float[] observeV2(Captain.Group g, Player player, long now) {
+		return observeV2(g, player, now, ruleOrder(g, player, now));
+	}
+
+	/**
+	 * The 253 inputs of contract revision 2 ({@link #namesV2()}; docs/red_capitan_v4_contrato_v2.json, "entradas_nuevas"):
+	 * v1's 213, then the rules' order ({@code rules}), then captain 2's state.
+	 */
+	public static float[] observeV2(Captain.Group g, Player player, long now, Captain.Command rules) {
+		float[] out = new float[SIZE_V2];
+		System.arraycopy(observe(g, player, now), 0, out, 0, SIZE);
+		Mob captain = g.captain;
+		Player real = Perception.real(player);
+		// 213..232: the rules' order, formation and countdown now
+		out[RULE_AT + rules.order.ordinal()] = 1.0F;
+		out[RULE_AT + 12 + rules.formation.ordinal()] = 1.0F;
+		out[RULE_AT + 16 + Math.max(0, Math.min(3, rules.count))] = 1.0F;
+		int at = C2_AT;
+		// 233..236: the order in force, if it is one of the new ones, and whether RETIRADA_FALSA has turned to the attack
+		Captain.Command c = g.command;
+		out[at] = c.order == Captain.Order.CERRAR_SALIDAS ? 1.0F : 0.0F;
+		out[at + 1] = c.order == Captain.Order.FOCO_HERIDO ? 1.0F : 0.0F;
+		out[at + 2] = c.order == Captain.Order.RETIRADA_FALSA ? 1.0F : 0.0F;
+		out[at + 3] = c.order == Captain.Order.RETIRADA_FALSA && c.falseAttack ? 1.0F : 0.0F;
+		// 237, 238: an acting captain; sin_mando 1 → 0 over the 200 ticks after the last captain fell
+		out[at + 4] = g.interim ? 1.0F : 0.0F;
+		out[at + 5] = now - g.captainDiedAt < Captain.LEADERLESS ? (float) (1.0 - (now - g.captainDiedAt) / (double) Captain.LEADERLESS) : 0.0F;
+		// 239: the captain's distance to the player less the nearest one that fights up close (itself left out), /8, ±2
+		double nearest = Double.NaN;
+		int escorts = 0;
+		for (MobMind m : g.members) {
+			if (m.mob == captain) {
+				continue;
+			}
+			if (Captain.melee(m.mob)) {
+				double d = m.mob.distanceTo(real);
+				nearest = Double.isNaN(nearest) ? d : Math.min(nearest, d);
+			}
+			escorts += m.mob.distanceTo(captain) < 3.0 ? 1 : 0;
+		}
+		out[at + 6] = Double.isNaN(nearest) ? 0.0F : (float) ObsM1.clip((captain.distanceTo(real) - nearest) / 8.0, -2.0, 2.0);
+		// 240: members within 3 of the captain, /2
+		out[at + 7] = (float) ObsM1.clip(escorts / 2.0, 0.0, 2.0);
+		// 241: the player has it in a cone of 30° (15° each side) with a clear line
+		out[at + 8] = looksAt(real, captain) ? 1.0F : 0.0F;
+		// 242: the player's blows on it in the last 100 ticks, /3
+		MobMind cm = MobAi.mind(captain);
+		int hits = 0;
+		if (cm != null) {
+			for (long t : cm.playerHits) {
+				hits += now - t <= MobMind.HITS_KEPT ? 1 : 0;
+			}
+		}
+		out[at + 9] = (float) ObsM1.clip(hits / 3.0, 0.0, 2.0);
+		// 243: members given the group's estimate at the last pass, /8
+		out[at + 10] = (float) ObsM1.clip(g.shared / 8.0, 0.0, 2.0);
+		// 244: the player's speed away from the group's middle, /0.2, ±2
+		Vec3 middle = Captain.middle(g.members, null);
+		Vec3 away = real.position().subtract(middle).multiply(1.0, 0.0, 1.0);
+		Vec3 moving = MobSprint.motion(real);
+		out[at + 11] = away.lengthSqr() < 1.0E-6 ? 0.0F
+			: (float) ObsM1.clip((moving.x * away.x + moving.z * away.z) / away.length() / 0.2, -2.0, 2.0);
+		// 245: of 8 ways out, the free ones, /8
+		out[at + 12] = freeExits(real) / 8.0F;
+		// 246..249: the other player (the nearest to the captain within 16) and mine
+		Player other = null;
+		double best = Captain.FOCUS_RANGE * Captain.FOCUS_RANGE;
+		for (Player p : captain.level().players()) {
+			if (p != real && p.isAlive() && !p.isCreative() && !p.isSpectator() && p.distanceToSqr(captain) <= best) {
+				best = p.distanceToSqr(captain);
+				other = p;
+			}
+		}
+		if (other != null) {
+			out[at + 13] = 1.0F;
+			out[at + 14] = other.getHealth() / Math.max(1.0F, other.getMaxHealth());
+			out[at + 15] = (float) ObsM1.clip(other.distanceTo(captain) / 16.0, 0.0, 2.0);
+		}
+		out[at + 16] = real.getHealth() / Math.max(1.0F, real.getMaxHealth());
+		// 250..252: the protection in force
+		out[at + 17 + Math.max(0, Math.min(2, g.protection))] = 1.0F;
+		return out;
+	}
+
+	/** Half the player's cone for jug_mira_capitan (a cone of 30°). */
+	static final double LOOK_COS = Math.cos(Math.toRadians(15.0));
+
+	/** jug_mira_capitan: the captain inside the player's cone of 30° with a clear line from their eyes to its. */
+	static boolean looksAt(Player player, Mob captain) {
+		Vec3 eyes = player.getEyePosition();
+		Vec3 to = captain.getEyePosition().subtract(eyes);
+		double d = to.length();
+		if (d < 1.0E-4) {
+			return true;
+		}
+		if (to.scale(1.0 / d).dot(player.getViewVector(1.0F)) < LOOK_COS) {
+			return false;
+		}
+		return captain.level().clip(new ClipContext(eyes, captain.getEyePosition(), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player))
+			.getType() == HitResult.Type.MISS;
+	}
+
+	/**
+	 * salidas_libres: of the 8 ways from the player (45° apart), the ones where the spot 4 blocks off does not rise more
+	 * than 1 over their feet (the block at feet + 1 there has no collision, and there is room for them on it) and can be
+	 * seen from their eyes (a clear line to the spot at their eye height). A drop does not close a way.
+	 */
+	public static int freeExits(Player player) {
+		var level = player.level();
+		int free = 0;
+		int feet = (int) Math.floor(player.getY() + 1.0E-3);
+		Vec3 eyes = player.getEyePosition();
+		for (int k = 0; k < 8; k++) {
+			double a = k * Math.PI / 4.0;
+			double x = player.getX() + Math.cos(a) * 4.0;
+			double z = player.getZ() + Math.sin(a) * 4.0;
+			BlockPos step = BlockPos.containing(x, feet + 1, z);
+			if (!level.getBlockState(step).getCollisionShape(level, step).isEmpty()
+				|| !level.getBlockState(step.above()).getCollisionShape(level, step.above()).isEmpty()) {
+				continue;
+			}
+			Vec3 spot = new Vec3(x, eyes.y, z);
+			if (level.clip(new ClipContext(eyes, spot, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player)).getType() == HitResult.Type.MISS) {
+				free++;
+			}
+		}
+		return free;
 	}
 
 	/** 0 body, 1 archer, 2 creeper, 3 spider, 4 anything else (the g_* one-hot). */

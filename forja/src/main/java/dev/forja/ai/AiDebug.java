@@ -168,8 +168,15 @@ public final class AiDebug {
 		Captain.Command c = Captain.commandFor(mind);
 		if (c != null) {
 			Captain.Group g = Captain.group(mind.target);
-			out.append(" · ").append(g != null && g.captain == mind.mob ? "capitán " : "").append(c.order.name().toLowerCase(Locale.ROOT))
+			boolean leads = g != null && g.captain == mind.mob;
+			out.append(" · ").append(leads ? g.interim ? "capitán interino " : "capitán " : "").append(c.order.name().toLowerCase(Locale.ROOT))
 				.append("/").append(c.formation.name().toLowerCase(Locale.ROOT)).append(" puesto ").append(mind.post);
+			if (leads && g.guard != Captain.GUARD_NONE) {
+				out.append(g.guard == Captain.GUARD_RETREATING ? " · se retira" : " · tras el frente");
+			}
+			if (mind.escort) {
+				out.append(" · escolta");
+			}
 		}
 		if (mind.itemTicks > 0) {
 			out.append(" · objeto ").append(mind.itemAction);

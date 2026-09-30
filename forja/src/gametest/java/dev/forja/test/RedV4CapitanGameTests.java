@@ -50,7 +50,7 @@ public class RedV4CapitanGameTests {
 	 * A stone floor of size × size. Bigger than a test's 8×8 box, its barriers come down and its chunks are forced
 	 * (entities only tick in chunks that are, and a test's own reach little past its box); {@link #clear} lets them go.
 	 */
-	private static void floor(GameTestHelper helper, int size) {
+	static void floor(GameTestHelper helper, int size) {
 		if (size > 8) {
 			TestChunks.force(helper, size);
 			for (int x = -1; x <= size; x++) {
@@ -71,7 +71,7 @@ public class RedV4CapitanGameTests {
 		}
 	}
 
-	private static void clear(GameTestHelper helper, int size) {
+	static void clear(GameTestHelper helper, int size) {
 		AABB box = new AABB(helper.absoluteVec(new Vec3(-4, -2, -4)), helper.absoluteVec(new Vec3(size + 4, 10, size + 4)));
 		helper.getLevel().getEntitiesOfClass(Entity.class, box, e -> !(e instanceof Player)).forEach(Entity::discard);
 		if (size > 8) {
@@ -80,7 +80,7 @@ public class RedV4CapitanGameTests {
 	}
 
 
-	private static Zombie zombie(GameTestHelper helper, BlockPos at) {
+	static Zombie zombie(GameTestHelper helper, BlockPos at) {
 		CombatConfig.get().veteranChance = 0.0;
 		CombatConfig.get().eliteChance = 0.0;
 		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, at);
@@ -198,6 +198,8 @@ public class RedV4CapitanGameTests {
 		floor(helper, 16);
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(8, 1, 8));
 		CaptainBrain.override(player, CaptainBrain.Mode.REGLAS);
+		// the rules captain as it was: captain 2's protection keeps the captain back and two escorts by it (Capitan2GameTests)
+		CaptainBrain.overridePieces(player, java.util.EnumSet.noneOf(CaptainBrain.Piece.class));
 		List<Mob> mobs = new ArrayList<>();
 		Zombie elite = zombie(helper, new BlockPos(12, 1, 8));
 		Threat.ELITE.mark(elite);
@@ -250,6 +252,7 @@ public class RedV4CapitanGameTests {
 			helper.assertTrue(allIn[0], "en la carga todos van al ataque");
 			helper.assertTrue(charges[0] == 1, "entre carga y carga, descanso: " + charges[0] + " cargas");
 			CaptainBrain.override(player, null);
+			CaptainBrain.overridePieces(player, null);
 			clear(helper, 16);
 			helper.succeed();
 		});
@@ -834,7 +837,7 @@ public class RedV4CapitanGameTests {
 		return json;
 	}
 
-	private static JsonArray noise(Random random, int rows, int cols) {
+	static JsonArray noise(Random random, int rows, int cols) {
 		JsonArray m = new JsonArray();
 		for (int i = 0; i < rows; i++) {
 			JsonArray row = new JsonArray();
@@ -904,7 +907,7 @@ public class RedV4CapitanGameTests {
 	}
 
 	/** The captain's contract file for the simulator (docs/red_capitan_v4_contrato.json), found walking up from the game. */
-	private static Path contractFile() {
+	static Path contractFile() {
 		for (Path start : List.of(FabricLoader.getInstance().getGameDir().toAbsolutePath(), Path.of("").toAbsolutePath())) {
 			for (Path at = start; at != null; at = at.getParent()) {
 				for (String relative : new String[] {"docs/red_capitan_v4_contrato.json", "forja/docs/red_capitan_v4_contrato.json"}) {

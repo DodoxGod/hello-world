@@ -36,8 +36,12 @@ import net.minecraft.world.phys.Vec3;
  * hits whoever is within 3.5 for 5 every 16 ticks; its health is put back each tick and what it lost is added up.
  *
  * <p>Only with FORJA_CAPITAN_MEDIR=&lt;file&gt; (a line per fight goes to it; FORJA_CAPITAN_N fights per mode, 8 by default):
- * the fights are long and their outcome is a measurement, not a pass or a fail. The three modes run at once, in a batch
+ * the fights are long and their outcome is a measurement, not a pass or a fail. The modes run at once, in a batch
  * of their own (environment capitan_medida), each on its own player (CaptainBrain.override).
+ *
+ * <p>Captain 2 (2026-09-30): a fourth mode, "reglas2", is the rules captain with every piece of captain 2 on
+ * (CaptainBrain.overridePieces); the other three have them all off, as before. One zombie of the group is a veteran in
+ * every mode (the one a succession hands command to; FORJA_CAPITAN_VETERANO=no leaves it out).
  */
 public class CapitanMedidaGameTests {
 	/** Ticks per fight. */
@@ -233,6 +237,16 @@ public class CapitanMedidaGameTests {
 		double lastDrop;
 		int fired;
 		int wouldHit;
+		/** Captain 2: ticks with an acting captain, with the captain guarded (behind or back), escorts × ticks, estimates shared. */
+		int interim;
+		int guarded;
+		int escorts;
+		int shared;
+		long sharedAt = Long.MIN_VALUE;
+		/** When the elite (the first captain) fell, -1 for never; and the captain's distance to the player summed over ticks. */
+		long eliteDied = -1;
+		double captainDist;
+		int captainTicks;
 		final java.util.Set<Integer> arrowsSeen = new java.util.HashSet<>();
 		final java.util.Set<Integer> arrowsHit = new java.util.HashSet<>();
 	}
@@ -248,14 +262,17 @@ public class CapitanMedidaGameTests {
 	 * and an entity without an id yet is never one being watched.
 	 */
 	public static boolean watching(net.minecraft.world.entity.LivingEntity entity) {
-		if (DAMAGE.isEmpty() || !(entity instanceof Player p)) {
+		// by identity, not containsKey: that hashes the entity (its id), and a client's own player sets its health in its
+		// constructor before it has an id, which crashed every client test at login
+		if (!(entity instanceof Player) || DAMAGE.isEmpty()) {
 			return false;
 		}
-		try {
-			return DAMAGE.containsKey(p);
-		} catch (IllegalStateException noIdYet) {
-			return false;
+		for (Player watched : DAMAGE.keySet()) {
+			if (watched == entity) {
+				return true;
+			}
 		}
+		return false;
 	}
 
 	/** A watched player's health went down by {@code amount}: counted, and filed under the calls that did it. */
@@ -334,20 +351,49 @@ public class CapitanMedidaGameTests {
 
 	@GameTest(environment = "forja-test:capitan_medida", padding = 32, maxTicks = MAX_FIGHTS * (FIGHT + GAP) + 200)
 	public void measureNoCaptain(GameTestHelper helper) {
-		measure(helper, CaptainBrain.Mode.SIN_CAPITAN);
+		measure(helper, CaptainBrain.Mode.SIN_CAPITAN, false);
 	}
 
 	@GameTest(environment = "forja-test:capitan_medida", padding = 32, maxTicks = MAX_FIGHTS * (FIGHT + GAP) + 200)
 	public void measureFreeCaptain(GameTestHelper helper) {
-		measure(helper, CaptainBrain.Mode.LIBRE);
+		measure(helper, CaptainBrain.Mode.LIBRE, false);
 	}
 
 	@GameTest(environment = "forja-test:capitan_medida", padding = 32, maxTicks = MAX_FIGHTS * (FIGHT + GAP) + 200)
 	public void measureRulesCaptain(GameTestHelper helper) {
-		measure(helper, CaptainBrain.Mode.REGLAS);
+		measure(helper, CaptainBrain.Mode.REGLAS, false);
 	}
 
-	private static void measure(GameTestHelper helper, CaptainBrain.Mode mode) {
+	/** The rules captain with every piece of captain 2 (vision, succession, protection, new orders, visible): "reglas2". */
+	@GameTest(environment = "forja-test:capitan_medida", padding = 32, maxTicks = MAX_FIGHTS * (FIGHT + GAP) + 200)
+	public void measureRulesCaptain2(GameTestHelper helper) {
+		measure(helper, CaptainBrain.Mode.REGLAS, true);
+	}
+
+	/**
+	 * The pieces of captain 2 "reglas2" gets: all of them, or the ones FORJA_CAPITAN2_PIEZAS names (a comma list of
+	 * vision, sucesion, proteccion, ordenes2, visible), to measure each on its own.
+	 */
+	static java.util.EnumSet<CaptainBrain.Piece> pieces() {
+		String list = System.getenv("FORJA_CAPITAN2_PIEZAS");
+		if (list == null || list.isBlank()) {
+			return java.util.EnumSet.allOf(CaptainBrain.Piece.class);
+		}
+		java.util.EnumSet<CaptainBrain.Piece> on = java.util.EnumSet.noneOf(CaptainBrain.Piece.class);
+		for (String name : list.split(",")) {
+			if (!name.isBlank()) {
+				on.add(CaptainBrain.Piece.valueOf(name.trim().toUpperCase(Locale.ROOT)));
+			}
+		}
+		return on;
+	}
+
+	/** The mode's name in the measurement file: its CaptainBrain.Mode, or "reglas2" for the rules captain with captain 2. */
+	static String label(CaptainBrain.Mode mode, boolean two) {
+		return two ? "reglas2" : mode.name().toLowerCase(Locale.ROOT);
+	}
+
+	private static void measure(GameTestHelper helper, CaptainBrain.Mode mode, boolean two) {
 		String out = System.getenv("FORJA_CAPITAN_MEDIR");
 		if (out == null || out.isBlank()) {
 			helper.succeed();
@@ -406,7 +452,7 @@ public class CapitanMedidaGameTests {
 				helper.succeed();
 				return;
 			}
-			current[0] = fight(helper, mode, ++next[0], file);
+			current[0] = fight(helper, mode, two, ++next[0], file);
 		});
 	}
 
@@ -430,12 +476,14 @@ public class CapitanMedidaGameTests {
 	}
 
 	/** One fight: the group comes in from a seeded side, the player follows its seeded script, for FIGHT ticks. */
-	private static java.util.function.BooleanSupplier fight(GameTestHelper helper, CaptainBrain.Mode mode, int seed, Path out) {
+	private static java.util.function.BooleanSupplier fight(GameTestHelper helper, CaptainBrain.Mode mode, boolean two, int seed, Path out) {
 		Random dice = new Random(seed * 7919L);
 		net.minecraft.server.level.ServerPlayer player = inLevel() ? levelPlayer(helper, new BlockPos(SIZE / 2, 1, SIZE / 2))
 			: CombatGameTests.player(helper, new BlockPos(SIZE / 2, 1, SIZE / 2));
 		player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
 		CaptainBrain.override(player, mode);
+		// captain 2's pieces: all for "reglas2", none for the rest (the captain as it was before them)
+		CaptainBrain.overridePieces(player, two ? pieces() : java.util.EnumSet.noneOf(CaptainBrain.Piece.class));
 		double side = dice.nextDouble() * Math.PI * 2.0;
 		List<Mob> mobs = new ArrayList<>();
 		List<EntityType<? extends Mob>> kinds = List.of(EntityTypes.ZOMBIE, EntityTypes.ZOMBIE, EntityTypes.ZOMBIE, EntityTypes.ZOMBIE,
@@ -456,6 +504,11 @@ public class CapitanMedidaGameTests {
 		Threat.ELITE.mark(elite);
 		elite.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
 		mobs.get(1).setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(Items.SHIELD));
+		// one veteran (captain 2): the one a succession hands command to when the elite falls; in every mode, so they compare
+		// (FORJA_CAPITAN_VETERANO=no leaves the group as it was before)
+		if (!"no".equals(System.getenv("FORJA_CAPITAN_VETERANO"))) {
+			Threat.VETERANO.mark(mobs.get(2));
+		}
 		if (ablation("mochila")) {
 			// the kit a monster spawning by itself rolls (helper.spawn skips it), the elite's as an elite's: potions,
 			// food, pearls, wind charges (MobKit.roll)
@@ -511,12 +564,30 @@ public class CapitanMedidaGameTests {
 			List<Mob> alive = mobs.stream().filter(Entity::isAlive).toList();
 			if (t >= FIGHT || alive.isEmpty()) {
 				done[0] = true;
-				finish(helper, mode, seed, out, mobs, taken[0], killedAt[0], t, orders, player, watch, w);
+				finish(helper, mode, two, seed, out, mobs, taken[0], killedAt[0], t, orders, player, watch, w);
 				return true;
 			}
 			Captain.Group g = Captain.group(player);
 			Captain.Order order = g == null || g.captain == null ? Captain.Order.NINGUNA : g.command.order;
 			orders.merge(order, 1, Integer::sum);
+			// captain 2 at work
+			if (g != null && g.captain != null) {
+				w.interim += g.interim ? 1 : 0;
+				w.guarded += g.guard != Captain.GUARD_NONE ? 1 : 0;
+				w.captainDist += g.captain.distanceTo(player);
+				w.captainTicks++;
+				for (Mob mob : alive) {
+					dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
+					w.escorts += mind != null && mind.escort ? 1 : 0;
+				}
+				if (g.seenAt != w.sharedAt) {
+					w.sharedAt = g.seenAt;
+					w.shared += g.shared;
+				}
+			}
+			if (w.eliteDied < 0 && !mobs.get(0).isAlive()) {
+				w.eliteDied = t;
+			}
 			// where the free ring stalls: how many are within reach of the player, and how many turns are taken
 			int near = 0;
 			for (Mob mob : alive) {
@@ -668,7 +739,7 @@ public class CapitanMedidaGameTests {
 				}
 			}
 			if (trace != null && seed <= TRACED) {
-				StringBuilder row = new StringBuilder(String.format(Locale.ROOT, "%s\t%d\t%d\t%d\t%d/%d\t%.2f,%.2f\t%s", mode.name().toLowerCase(Locale.ROOT),
+				StringBuilder row = new StringBuilder(String.format(Locale.ROOT, "%s\t%d\t%d\t%d\t%d/%d\t%.2f,%.2f\t%s", label(mode, two),
 					seed, t, near, held, max, player.getX() - low.x, player.getZ() - low.z, order.name().toLowerCase(Locale.ROOT)));
 				for (Mob mob : alive) {
 					dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
@@ -753,7 +824,7 @@ public class CapitanMedidaGameTests {
 		};
 	}
 
-	private static void finish(GameTestHelper helper, CaptainBrain.Mode mode, int seed, Path out, List<Mob> mobs, double taken, long killedAt,
+	private static void finish(GameTestHelper helper, CaptainBrain.Mode mode, boolean two, int seed, Path out, List<Mob> mobs, double taken, long killedAt,
 		long ticks, Map<Captain.Order, Integer> orders, Player player, double[] watch, Watch w) {
 		int dead = (int) mobs.stream().filter(m -> !m.isAlive()).count();
 		StringBuilder o = new StringBuilder();
@@ -789,6 +860,11 @@ public class CapitanMedidaGameTests {
 			+ "vel_andando=%.4f;ticks_andando=%d;vel_corriendo=%.4f;ticks_corriendo=%d;ociosos=%.3f;flechas=%d;flechas_tocarian=%d;caidas=%.1f",
 			w.melee, w.arrow, w.arrows, w.potion, w.fire, w.other, w.walkTicks == 0 ? 0.0 : w.walkDist / w.walkTicks, w.walkTicks,
 			w.runTicks == 0 ? 0.0 : w.runDist / w.runTicks, w.runTicks, w.goingIn == 0 ? 0.0 : w.idle / (double) w.goingIn, w.fired, w.wouldHit, w.drops));
+		// captain 2: acting-captain ticks, guarded ticks, escorts × ticks, estimates shared, orders shouted, when the elite fell,
+		// and the captain's mean distance to the player
+		Captain.Group g = Captain.group(player);
+		k.append(String.format(Locale.ROOT, ";interino=%d;protegido=%d;escoltas=%d;compartida=%d;gritos=%d;elite_muere=%d;capitan_dist=%.2f",
+			w.interim, w.guarded, w.escorts, w.shared, g == null ? 0 : g.shouts, w.eliteDied, w.captainTicks == 0 ? 0.0 : w.captainDist / w.captainTicks));
 		DAMAGE.remove(player);
 		WarnLog warns = null;
 		for (Mob mob : mobs) {
@@ -798,7 +874,7 @@ public class CapitanMedidaGameTests {
 		if (warns != null) {
 			warns.counts.forEach((key, v) -> k.append(';').append(key).append('=').append(v));
 		}
-		String line = String.format(Locale.ROOT, "%s\t%d\t%.1f\t%d\t%d\t%d\t%s\t%.2f\t%.2f\t%.2f\t%s%n", mode.name().toLowerCase(Locale.ROOT), seed,
+		String line = String.format(Locale.ROOT, "%s\t%d\t%.1f\t%d\t%d\t%d\t%s\t%.2f\t%.2f\t%.2f\t%s%n", label(mode, two), seed,
 			taken * 60.0 * 20.0 / Math.max(1, ticks), killedAt, dead, ticks, o, watch[0] / n, watch[1] / n, watch[2] / n, k);
 		try {
 			Files.writeString(out, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
@@ -806,6 +882,7 @@ public class CapitanMedidaGameTests {
 			throw new RuntimeException(failure);
 		}
 		CaptainBrain.override(player, null);
+		CaptainBrain.overridePieces(player, null);
 		Captain.forget(player);
 		AABB box = new AABB(helper.absoluteVec(new Vec3(-4, -2, -4)), helper.absoluteVec(new Vec3(SIZE + 4, 10, SIZE + 4)));
 		helper.getLevel().getEntitiesOfClass(Entity.class, box, e -> !(e instanceof Player)).forEach(Entity::discard);

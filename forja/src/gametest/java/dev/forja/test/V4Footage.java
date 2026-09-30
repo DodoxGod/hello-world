@@ -142,6 +142,84 @@ final class V4Footage {
 		cfg.packChance = new CombatConfig().packChance;
 	}
 
+	/**
+	 * Captain 2 on film (FORJA_SOLO=capitan2; docs/red_mob_v4_mod_estado.md, "Capitán 2"): an elite captain with an axe,
+	 * four zombies (one with a shield) and two skeletons on the player, from above. The captain stands back from the front
+	 * with its banner's gold dust over it, and two escorts stand ahead of it; the log says who leads and where.
+	 */
+	static void filmCaptain2(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		CombatConfig cfg = CombatConfig.get();
+		cfg.veteranChance = 0.0;
+		cfg.eliteChance = 0.0;
+		cfg.packChance = 0.0;
+		run(server, "difficulty normal");
+		run(server, "gamemode survival @a");
+		run(server, "effect give @a resistance infinite 4 true");
+		run(server, "effect give @a saturation infinite 0 true");
+		context.runOnClient(mc -> mc.options.gamma().set(1.0));
+		int bx = x + 1020;
+		int bz = z;
+		run(server, "time set noon");
+		ground(server, bx, y, bz, 24);
+		run(server, "attribute @a minecraft:knockback_resistance base set 1");
+		tp(server, bx + 0.5, y, bz + 0.5, 180.0F, 0.0F);
+		context.waitTicks(10);
+		server.runOnServer(s -> {
+			Captain.forget(connection.getServerPlayer());
+			dev.forja.ai.Squad.forget(connection.getServerPlayer());
+			ServerLevel level = connection.getServerLevel();
+			ServerPlayer player = connection.getServerPlayer();
+			Mob elite = spawn(level, EntityTypes.ZOMBIE, bx + 0.5, y, bz - 12.5, 0.0F);
+			Threat.ELITE.mark(elite);
+			elite.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_AXE));
+			elite.setTarget(player);
+			for (int i = 0; i < 4; i++) {
+				Mob zombie = spawn(level, EntityTypes.ZOMBIE, bx - 3.5 + 2 * i, y, bz - 9.5, 0.0F);
+				if (i == 1) {
+					zombie.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(Items.SHIELD));
+				}
+				zombie.setTarget(player);
+			}
+			for (int i = 0; i < 2; i++) {
+				Mob skeleton = spawn(level, EntityTypes.SKELETON, bx - 2.5 + 5 * i, y, bz - 13.5, 0.0F);
+				skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+				skeleton.setTarget(player);
+			}
+		});
+		context.waitTicks(100);
+		// the camera over the middle of the player and the captain, low enough to read who is who
+		double[] middle = server.computeOnServer(s -> {
+			Captain.Group g = Captain.group(connection.getServerPlayer());
+			ServerPlayer player = connection.getServerPlayer();
+			return g == null || g.captain == null ? new double[] {player.getX(), player.getZ()}
+				: new double[] {(player.getX() + g.captain.getX()) / 2.0, (player.getZ() + g.captain.getZ()) / 2.0};
+		});
+		int eye = eye(context, server, connection, middle[0], y + 9.0, middle[1], 0.0F, 90.0F);
+		// wait for the banner's dust (every 20 ticks) to be fresh when the shot is taken
+		context.waitFor(mc -> mc.level.getGameTime() % 20 == 3, 40);
+		String state = server.computeOnServer(s -> {
+			Captain.Group g = Captain.group(connection.getServerPlayer());
+			if (g == null || g.captain == null) {
+				return "sin capitán";
+			}
+			StringBuilder out = new StringBuilder(String.format(Locale.ROOT, "capitán a %.1f del jugador, guardia %d, orden %s/%s, escoltas",
+				g.captain.distanceTo(connection.getServerPlayer()), g.guard, g.command.order, g.command.formation));
+			for (MobMind mind : g.members) {
+				if (mind.escort) {
+					out.append(String.format(Locale.ROOT, " %.1f", mind.mob.distanceTo(g.captain)));
+				}
+			}
+			return out.toString();
+		});
+		log("capitan2: " + state);
+		shot(context, eye, "capitan2_01_detras_con_escoltas");
+		back(context);
+		clear(server);
+		run(server, "attribute @a minecraft:knockback_resistance base set 0");
+		run(server, "effect clear @a");
+		cfg.packChance = new CombatConfig().packChance;
+	}
+
 	// ---------------------------------------------------------------- the shield and its bash
 
 	private static void shield(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int bx, int y, int bz) {

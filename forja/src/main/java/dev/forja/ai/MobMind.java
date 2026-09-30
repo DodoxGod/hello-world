@@ -161,6 +161,11 @@ public final class MobMind {
 	/** The captain's orders (M5): its post (Captain.FRENTE..RESERVA, -1 for none) and the point of it. */
 	public int post = -1;
 	public Vec3 postPoint;
+	/** Captain 2: one of its captain's escorts this pass (Captain.protect): the rules take it to its point without a turn. */
+	public boolean escort;
+	/** When a player's blows landed on it, the last {@link #HITS_KEPT} ticks (capitan_golpeado/3 of a v2 captain). */
+	public final java.util.ArrayDeque<Long> playerHits = new java.util.ArrayDeque<>();
+	public static final int HITS_KEPT = 100;
 	/** Since when it has been in RETIRARSE without a break (retirada_ticks, and leaving the fight at 100). */
 	public long retreatSince = Long.MIN_VALUE / 2;
 	/** The world's memory (M6): the damage it has done to its player in this life, and how it fought (by WorldMemory's styles). */

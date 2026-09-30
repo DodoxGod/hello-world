@@ -103,6 +103,16 @@ public final class MobAi {
 				WorldMemory.onHit(mob, taken);
 			}
 		});
+		// captain 2: a player's blows on a monster, kept 100 ticks (a v2 captain's capitan_golpeado/3)
+		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, base, taken, blocked) -> {
+			if (entity instanceof Mob mob && source.getEntity() instanceof Player && !blocked && MINDS.get(mob) instanceof MobMind mind) {
+				long now = mob.level().getGameTime();
+				mind.playerHits.addLast(now);
+				while (!mind.playerHits.isEmpty() && now - mind.playerHits.peekFirst() > MobMind.HITS_KEPT) {
+					mind.playerHits.removeFirst();
+				}
+			}
+		});
 		// v4's knockback arrow (VanillaSpecials.KNOCKBACK_ARROW): whoever it reaches is shoved.
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register(
 			(entity, source, base, taken, blocked) -> VanillaSpecials.knockbackHit(entity, source, blocked));
@@ -237,7 +247,7 @@ public final class MobAi {
 
 	/**
 	 * The v4 captain (M5): red_capitan.json from redes_v4 with "formato": "red_capitan_v4", CaptainBrain's 213 inputs in
-	 * order and 60 outputs. One that does not fit is noted in {@link #problems()} ("v4: ...") and the groups keep the
+	 * order and 60 outputs; or, with "contrato_version": 2 (captain 2), its 253 inputs and 68 outputs. One that does not fit is noted in {@link #problems()} ("v4: ...") and the groups keep the
 	 * rules captain.
 	 */
 	private static void loadCaptain() {
@@ -254,7 +264,7 @@ public final class MobAi {
 				return;
 			}
 			captain = net;
-			Forja.LOGGER.info("Red de capitán v4 cargada ({} entradas, memoria {})", net.inputs(), net.memory);
+			Forja.LOGGER.info("Red de capitán v4 cargada (contrato {}, {} entradas, memoria {})", net.contractVersion, net.inputs(), net.memory);
 		} catch (Exception failure) {
 			NET_PROBLEMS.put(V4_CAPTAIN, "v4: " + failure.getMessage());
 			Forja.LOGGER.warn("No se pudo leer la red de capitán v4", failure);

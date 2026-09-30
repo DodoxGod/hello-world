@@ -169,6 +169,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// Captain 2 (docs/red_mob_v4_mod_estado.md, "Capitán 2"): the captain behind the front, its escorts, its banner.
+			if ("capitan2".equals(solo)) {
+				V4Footage.filmCaptain2(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			// La forja reclama (FallenSmith.RECLAIM_*): four iron golems on the smith, and what is left of them.
 			if ("jefe_reclama".equals(solo)) {
 				checkAttackTimings();

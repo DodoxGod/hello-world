@@ -447,6 +447,28 @@ public final class CombatConfig {
 	 */
 	public boolean iaCapitanPinza = false;
 	/**
+	 * Captain 2 (docs/mod_spec_capitan2.md, 2026-09-30; docs/red_mob_v4_mod_estado.md, "Capitán 2"). Each piece has its own
+	 * switch, and all are on, as the spec proposes. Shared vision: with a captain alive, every Squad pass what the member
+	 * that saw the player last knows reaches every member within 32 of the captain that does not see them, as a sound
+	 * heard.
+	 */
+	public boolean iaCapitanVision = true;
+	/**
+	 * Succession (Andy, 2026-09-30): 60 ticks after the captain dies, the group's veteran with the most health leads as an
+	 * acting captain: it decides every 20 ticks, never orders CARGA nor the new orders, and the group's morale is 0.15
+	 * lower while it leads. One succession a fight; an elite or champion left takes over at 200 ticks as ever.
+	 */
+	public boolean iaCapitanSucesion = true;
+	/**
+	 * Protecting the captain: 7 behind the front (with 3 or more that fight up close besides it), back to 14 under 35 %
+	 * health, and 2 escorts while the player is within 10 of it.
+	 */
+	public boolean iaCapitanProteccion = true;
+	/** The new orders of contract revision 2 (CERRAR_SALIDAS, FOCO_HERIDO, RETIRADA_FALSA): only a v2 network gives them. */
+	public boolean iaCapitanOrdenes2 = true;
+	/** A shout and a burst of dust each time the captain gives a new order (other than none and free); an acting one shows silver. */
+	public boolean iaCapitanVisible = true;
+	/**
 	 * One more turn on a player (Aggression.maxAttackers) while iaGrupoGrandeMin or more monsters fight them (the
 	 * Squad's count), captain or not. Measured in the mod 2026-09-30 (docs/red_mob_v4_mod_estado.md): a little more
 	 * damage in every mode (+9 a minute with a captain), so it is on.
