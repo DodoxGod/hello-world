@@ -258,6 +258,15 @@ public class RedV4ModGameTests {
 		helper.getLevel().addFreshEntity(sword);
 		zombie.setTarget(player);
 		MobMind mind = mind(helper, zombie);
+		// held where it is while the sword cannot be taken yet: with a turn free and the player near, it goes for the
+		// player instead (a free turn is used), and it used to wait out vanilla's 20-tick look first
+		Vec3 home = zombie.position();
+		helper.onEachTick(() -> {
+			if (sword.isAlive() && !GroundItems.free(sword)) {
+				zombie.setPos(home.x, home.y, home.z);
+				zombie.getNavigation().stop();
+			}
+		});
 		helper.runAfterDelay(20, () -> {
 			float[] obs = ObsV4.build(zombie, player, mind);
 			helper.assertTrue(obs[ObsV4.O_AT] == 0.0F, "con el retraso de recogida la espada aún no cuenta: " + obs[ObsV4.O_AT]);

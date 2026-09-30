@@ -406,6 +406,89 @@ carga y el empujón del Molde si los tiene.
 **Lo que el simulador tiene que copiar de esta tanda:** "un turno libre se usa" (rodeo, flanqueo, retirada por postura
 y relevo solo sin turno libre), el turno de grupo grande (≥ 6 → +1) y "tambaleándose" = lentitud II o más.
 
+### Tercera tanda (30-09, responde a `mod_spec_v4e.md`): qué pasa en cada pelea
+
+`CapitanMedidaGameTests` apunta ahora, por pelea:
+- los avisos (`CombatStats`, desde `MeleeAttackGoalMixin`): empezados, los que llegan, fintas, cortados antes de acabar
+  (aturdido, meta parada u objetivo nuevo sin turno), fuera de alcance al acabar (**empujado**: le pegaron durante el
+  aviso; **se movió**: si no), sin vista, y en alcance pero sin daño;
+- las embestidas del zombi (`LUNGE`) empezadas y las que tocan;
+- el daño que recibe el jugador por tipo (cuerpo a cuerpo, flecha, poción, fuego, otro), las flechas disparadas y las
+  que cruzan su caja;
+- la velocidad real de un zombi que persigue (a > 4, en el suelo, sin golpe reciente), andando y corriendo;
+- la parte de los ticks "al ataque" (decisión ACERCARSE) sin ninguna meta que lo mueva.
+
+**Fallo del banco de pruebas: las flechas no llegaban nunca.** El jugador de prueba (un FakePlayer) no estaba en el
+nivel: las flechas lo atravesaban y las pociones lanzadas no le daban. Todas las tablas anteriores del mod (37,5 / 70,6 /
+114,2…) son **sin flechas**. Ahora el jugador se añade al nivel (`addNewPlayer`); `FORJA_CAPITAN_JUGADOR=fuera` lo deja
+fuera, como antes. Con el mismo código:
+
+| Jugador de prueba (80–160 peleas, antes del arreglo de abajo) | sin capitán | sin órdenes | capitán de reglas |
+|---|---|---|---|
+| fuera del nivel (como hasta ahora) | 69,6 | 84,5 | 128,2 |
+| en el nivel | 155,2 | 162,6 | 182,8 |
+| en el nivel, sin empuje | 184,7 | 202,3 | 221,1 |
+
+**Fallo del mod: el zombi se quedaba quieto con la decisión de atacar.** La meta cuerpo a cuerpo de vanilla solo se
+plantea empezar una vez cada 20 ticks. Cada vez que el mob pasaba a una táctica (esperar, rodear) o su ruta se acababa
+junto a un jugador que se mueve, la meta se paraba; al volver a ACERCARSE se quedaba **sin nada que lo moviera** hasta
+20 ticks: el 12 % de sus ticks "al ataque". Ahora, para los mobs de reglas con la decisión ACERCARSE, se vuelve a
+mirar cada 4 ticks (`MeleeAttackGoalMixin`). Esos ticks pasan al 2 %. Prueba `aZombieGoingInIsNeverLeftIdle`: el peor
+tramo seguido baja de 14–26 ticks a ≤ 12.
+
+**La tabla (160 peleas por modo, código final, jugador en el nivel, por pelea de 30 s salvo el daño por minuto):**
+
+| Medida | sin capitán | sin órdenes | capitán de reglas |
+|---|---|---|---|
+| daño/min (vida que pierde) | **168,1 ± 3,5** | **176,7 ± 3,3** | **189,9 ± 3,8** |
+| daño/min (suma de los golpes que se ven) | 134,8 | 142,3 | 166,9 |
+| turnos ocupados (media por tick) | 0,47 | 0,48 | 0,66 |
+| mobs a ≤ 3,5 | 1,23 | 1,37 | 2,11 |
+| avisos empezados | 17,7 | 19,1 | 28,5 |
+| — llegan | 6,2 | 6,7 | 10,3 |
+| — fintas | 2,5 | 2,9 | 4,3 |
+| — cortados antes de acabar | 2,8 | 3,1 | 2,7 |
+| — fuera de alcance, empujado | 1,7 | 1,7 | 2,4 |
+| — fuera de alcance, el jugador se movió | 1,8 | 1,8 | 3,3 |
+| — sin vista | 0 | 0 | 0 |
+| — en alcance y sin daño (sus i-frames) | 2,2 | 2,2 | 4,7 |
+| embestidas empezadas / que tocan | 8,7 / 1,0 | 8,4 / 1,1 | 9,8 / 1,2 |
+| daño cuerpo a cuerpo | 36,7 | 39,7 | 57,5 |
+| flechas disparadas / que dan | 25,1 / 8,0 | 25,0 / 8,1 | 14,1 / 6,6 |
+| daño de flecha | 30,7 | 31,5 | 25,9 |
+| daño de pociones (sin mochila) | 0 | 0 | 0 |
+| daño de fuego (con casco) | 0 | 0 | 0 |
+| mobs muertos por el jugador | 2,66 | 3,04 | 3,17 |
+| ticks "al ataque" sin nada que lo mueva | 2 % (antes 12 %) | 2 % (14 %) | 2 % (12 %) |
+
+- **Zombi que persigue:** **0,098 bloques/tick andando** y **0,165–0,175 corriendo** (antes del arreglo, 0,085 andando:
+  contaba los ticks parado). El simulador usa 0,135 andando: es un **38 % más rápido** que el mod. Estos ticks cuentan
+  rodeos, esquinas y acelerones de la ruta, no solo la línea recta.
+- **Con mochila** (`FORJA_CAPITAN_ABLACION=mochila`, `MobKit.roll` como al aparecer solo): daño de pociones **1,3–1,5 por
+  pelea** (la del élite: 1 poción arrojadiza, 1 de cada 4 de daño y 1 de veneno; los normales solo llevan pan, y los
+  veteranos un 15 % de las veces). El simulador da ≈ 6: su escenario lleva más pociones que el mod.
+- **El empuje de los golpes del jugador de prueba** (antes de este arreglo): sin él, +19 % sin capitán, +24 % sin
+  órdenes, +21 % con el capitán de reglas. En el simulador, −11 % y −17 %: pesa algo más en el mod.
+- **Los turnos: por qué el mod los tiene la mitad.** Un turno se toma al empezar el aviso y se suelta al golpear
+  (8 ticks + el peso), al fintar, al cortarse (aturdido, meta parada) o al acabar la embestida. Las **embestidas** también
+  toman turno (`VanillaSpecials.LUNGE`) y lo tienen hasta ~25 ticks, pero **solo 1 de cada 8 toca** (1,0 de 8,7; en el
+  simulador tocan 3,9 por pelea): el zombi salta a donde estaba el jugador y el de guion ya se ha movido. No he
+  encontrado ningún turno que se suelte antes de tiempo por un fallo: se sueltan como están diseñados. Lo que más se
+  pierde es el aviso (un 35 % llega) y la embestida (un 12 %).
+- **Daño sin atribuir:** la vida que pierde el jugador supera en ~25–35 por minuto la suma de los golpes que ve
+  `AFTER_DAMAGE`. No sé de dónde viene. Puede ser del propio banco (el jugador no hace su tick y la vida se le devuelve
+  cada tick). La comparación entre modos no cambia.
+
+**Para el simulador:**
+- la velocidad del zombi al perseguir: 0,098 andando, 0,17 corriendo;
+- las embestidas: 8–10 por pelea, 1 de cada 8 toca;
+- las flechas: 8 de 25 dan, ~3,8 de daño cada una;
+- los avisos: un 35 % llega;
+- las pociones: solo el élite y algún veterano llevan una arrojadiza;
+- la meta cuerpo a cuerpo mira cada 4 ticks si puede empezar (antes cada 20) para los mobs de reglas que van al ataque.
+
+Con flechas y este arreglo, el mod (168 / 177 / 190) ya supera al simulador v4e (129 / 140 / 155).
+
 ## M6: el vector de mundo W (452–467, `WorldMemory`)
 
 - **Dónde:** un adjunto del jugador (se guarda con él y pasa la muerte), un vector por dimensión. `/forja ia mundo`

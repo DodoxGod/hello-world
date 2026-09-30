@@ -60,6 +60,66 @@ public class CapitanMedidaGameTests {
 		return list != null && java.util.Arrays.asList(list.split(",")).contains(name);
 	}
 
+	/** What each fight's player took, by kind, and how the chasers moved. */
+	static final class Watch {
+		double melee;
+		double arrow;
+		int arrows;
+		double potion;
+		double fire;
+		double other;
+		double walkDist;
+		int walkTicks;
+		double runDist;
+		int runTicks;
+		int goingIn;
+		int idle;
+		int fired;
+		int wouldHit;
+		final java.util.Set<Integer> arrowsSeen = new java.util.HashSet<>();
+		final java.util.Set<Integer> arrowsHit = new java.util.HashSet<>();
+	}
+
+	static final Map<Player, Watch> DAMAGE = new java.util.WeakHashMap<>();
+
+	static {
+		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, base, taken, blocked) -> {
+			Watch w = entity instanceof Player p ? DAMAGE.get(p) : null;
+			if (w == null || taken <= 0.0F) {
+				return;
+			}
+			Entity direct = source.getDirectEntity();
+			if (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
+				w.fire += taken;
+			} else if (direct instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow) {
+				w.arrow += taken;
+				w.arrows++;
+			} else if (direct instanceof net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownSplashPotion
+				|| source.is(net.minecraft.world.damagesource.DamageTypes.MAGIC) || source.is(net.minecraft.world.damagesource.DamageTypes.INDIRECT_MAGIC)) {
+				w.potion += taken;
+			} else if (direct instanceof Mob) {
+				w.melee += taken;
+			} else {
+				w.other += taken;
+			}
+		});
+	}
+
+	/**
+	 * The test player is added to the level (2026-09-30), so arrows and thrown potions reach it: the FakePlayer of the
+	 * other tests is never added, arrows flew through it and every table before counted no arrow at all.
+	 * FORJA_CAPITAN_JUGADOR=fuera keeps it out, as before.
+	 */
+	static boolean inLevel() {
+		return !"fuera".equals(System.getenv("FORJA_CAPITAN_JUGADOR"));
+	}
+
+	private static net.minecraft.server.level.ServerPlayer levelPlayer(GameTestHelper helper, BlockPos relative) {
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, relative);
+		helper.getLevel().addNewPlayer(player);
+		return player;
+	}
+
 	static int fights() {
 		String n = System.getenv("FORJA_CAPITAN_N");
 		return n == null || n.isBlank() ? 8 : Integer.parseInt(n.trim());
@@ -157,7 +217,8 @@ public class CapitanMedidaGameTests {
 	/** One fight: the group comes in from a seeded side, the player follows its seeded script, for FIGHT ticks. */
 	private static java.util.function.BooleanSupplier fight(GameTestHelper helper, CaptainBrain.Mode mode, int seed, Path out) {
 		Random dice = new Random(seed * 7919L);
-		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(SIZE / 2, 1, SIZE / 2));
+		net.minecraft.server.level.ServerPlayer player = inLevel() ? levelPlayer(helper, new BlockPos(SIZE / 2, 1, SIZE / 2))
+			: CombatGameTests.player(helper, new BlockPos(SIZE / 2, 1, SIZE / 2));
 		player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
 		CaptainBrain.override(player, mode);
 		double side = dice.nextDouble() * Math.PI * 2.0;
@@ -180,6 +241,13 @@ public class CapitanMedidaGameTests {
 		Threat.ELITE.mark(elite);
 		elite.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
 		mobs.get(1).setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(Items.SHIELD));
+		if (ablation("mochila")) {
+			// the kit a monster spawning by itself rolls (helper.spawn skips it), the elite's as an elite's: potions,
+			// food, pearls, wind charges (MobKit.roll)
+			for (int k = 0; k < mobs.size(); k++) {
+				dev.forja.ai.MobKit.roll(mobs.get(k), net.minecraft.util.RandomSource.create(seed * 131L + k), 1.0);
+			}
+		}
 		for (Mob mob : mobs) {
 			mob.setTarget(player);
 		}
@@ -193,6 +261,10 @@ public class CapitanMedidaGameTests {
 		boolean[] done = {false};
 		// ticks summed: mobs within reach, turns taken, ticks with a turn free, ticks
 		double[] watch = new double[4];
+		// what each kind of thing did to the player, and how the chasers moved (see Watch)
+		Watch w = new Watch();
+		DAMAGE.put(player, w);
+		Map<Mob, Vec3> last = new java.util.HashMap<>();
 		String traced = System.getenv("FORJA_CAPITAN_TRAZA");
 		Path trace = traced == null || traced.isBlank() ? null : Path.of(traced.trim());
 		Vec3 low = helper.absoluteVec(new Vec3(4, 1, 4));
@@ -211,6 +283,7 @@ public class CapitanMedidaGameTests {
 				}
 			}
 			player.setHealth(player.getMaxHealth());
+			// neither player ticks (a FakePlayer is ticked by nobody, in the level or not): its i-frames are counted down here
 			player.invulnerableTime = Math.max(0, player.invulnerableTime - 1);
 			player.hurtTime = Math.max(0, player.hurtTime - 1);
 			player.removeAllEffects();
@@ -218,7 +291,7 @@ public class CapitanMedidaGameTests {
 			List<Mob> alive = mobs.stream().filter(Entity::isAlive).toList();
 			if (t >= FIGHT || alive.isEmpty()) {
 				done[0] = true;
-				finish(helper, mode, seed, out, mobs, taken[0], killedAt[0], t, orders, player, watch);
+				finish(helper, mode, seed, out, mobs, taken[0], killedAt[0], t, orders, player, watch, w);
 				return true;
 			}
 			Captain.Group g = Captain.group(player);
@@ -235,14 +308,56 @@ public class CapitanMedidaGameTests {
 			watch[1] += held;
 			watch[2] += held < max ? 1 : 0;
 			watch[3]++;
+			// arrows: the test player is not in the level (a FakePlayer never added), so an arrow flies through it; count
+			// the ones fired at it and the ones whose path crosses its box (what would have hit a real player)
+			for (net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow : helper.getLevel().getEntitiesOfClass(
+				net.minecraft.world.entity.projectile.arrow.AbstractArrow.class, player.getBoundingBox().inflate(48.0), a -> mobs.contains(a.getOwner()))) {
+				if (w.arrowsSeen.add(arrow.getId())) {
+					w.fired++;
+				}
+				Vec3 from = arrow.position();
+				Vec3 to = from.add(arrow.getDeltaMovement());
+				if (!w.arrowsHit.contains(arrow.getId()) && player.getBoundingBox().inflate(0.3).clip(from, to).isPresent()) {
+					w.arrowsHit.add(arrow.getId());
+					w.wouldHit++;
+				}
+			}
+			// the chasers' real speed (zombies and husks going in, more than 4 off, on the ground, not reeling), and the
+			// ones that should be going in with nothing moving them (their melee goal waiting out vanilla's 20 ticks)
+			for (Mob mob : alive) {
+				dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
+				Vec3 was = last.put(mob, mob.position());
+				boolean melee = mob instanceof net.minecraft.world.entity.monster.zombie.Zombie || mob instanceof net.minecraft.world.entity.monster.spider.Spider;
+				if (mind == null || !melee) {
+					continue;
+				}
+				boolean goingIn = mind.decision.tactic() == dev.forja.ai.Tactic.ACERCARSE;
+				boolean moving = ((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals().getAvailableGoals().stream()
+					.anyMatch(goal -> goal.isRunning() && goal.getFlags().contains(net.minecraft.world.entity.ai.goal.Goal.Flag.MOVE));
+				if (goingIn) {
+					w.goingIn++;
+					w.idle += moving ? 0 : 1;
+				}
+				if (was != null && goingIn && mob instanceof net.minecraft.world.entity.monster.zombie.Zombie && mob.onGround()
+					&& mob.distanceTo(player) > 4.0 && !dev.forja.combat.Posture.isStaggered(mob, helper.getLevel().getGameTime()) && mob.hurtTime == 0) {
+					double step = Math.hypot(mob.getX() - was.x, mob.getZ() - was.z);
+					if (mind.running) {
+						w.runDist += step;
+						w.runTicks++;
+					} else {
+						w.walkDist += step;
+						w.walkTicks++;
+					}
+				}
+			}
 			if (trace != null && seed <= TRACED) {
 				StringBuilder row = new StringBuilder(String.format(Locale.ROOT, "%s\t%d\t%d\t%d\t%d/%d\t%.2f,%.2f\t%s", mode.name().toLowerCase(Locale.ROOT),
 					seed, t, near, held, max, player.getX() - low.x, player.getZ() - low.z, order.name().toLowerCase(Locale.ROOT)));
 				for (Mob mob : alive) {
 					dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
 					StringBuilder goals = new StringBuilder();
-					((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals().getAvailableGoals().stream().filter(w -> w.isRunning())
-						.forEach(w -> goals.append(w.getGoal().getClass().getSimpleName(), 0, Math.min(5, w.getGoal().getClass().getSimpleName().length())).append('+'));
+					((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals().getAvailableGoals().stream().filter(r -> r.isRunning())
+						.forEach(r -> goals.append(r.getGoal().getClass().getSimpleName(), 0, Math.min(5, r.getGoal().getClass().getSimpleName().length())).append('+'));
 					row.append(String.format(Locale.ROOT, "\t%s:%.1f:%s:%s%s%s%s:%s", mob.getType().toShortString().substring(0, 3), mob.distanceTo(player),
 						mind == null ? "-" : mind.decision.tactic().name().toLowerCase(Locale.ROOT),
 						dev.forja.combat.AttackTokens.holds(player, mob) ? "T" : "", mind != null && mind.windup > 0 ? "W" : "",
@@ -322,7 +437,7 @@ public class CapitanMedidaGameTests {
 	}
 
 	private static void finish(GameTestHelper helper, CaptainBrain.Mode mode, int seed, Path out, List<Mob> mobs, double taken, long killedAt,
-		long ticks, Map<Captain.Order, Integer> orders, Player player, double[] watch) {
+		long ticks, Map<Captain.Order, Integer> orders, Player player, double[] watch, Watch w) {
 		int dead = (int) mobs.stream().filter(m -> !m.isAlive()).count();
 		StringBuilder o = new StringBuilder();
 		int total = orders.values().stream().mapToInt(Integer::intValue).sum();
@@ -331,8 +446,25 @@ public class CapitanMedidaGameTests {
 				.append(String.format(Locale.ROOT, "%.2f", e.getValue() / (double) Math.max(1, total)));
 		}
 		double n = Math.max(1.0, watch[3]);
-		String line = String.format(Locale.ROOT, "%s\t%d\t%.1f\t%d\t%d\t%d\t%s\t%.2f\t%.2f\t%.2f%n", mode.name().toLowerCase(Locale.ROOT), seed,
-			taken * 60.0 * 20.0 / Math.max(1, ticks), killedAt, dead, ticks, o, watch[0] / n, watch[1] / n, watch[2] / n);
+		// per fight: the warned blows and how they ended, the lunges, damage by kind, the chasers' speed, idle share
+		StringBuilder k = new StringBuilder();
+		for (String key : new String[] {dev.forja.combat.CombatStats.WARNED, dev.forja.combat.CombatStats.WARNED_LANDED,
+			dev.forja.combat.CombatStats.FEINT, dev.forja.combat.CombatStats.WARNED_CUT, dev.forja.combat.CombatStats.WARNED_KNOCKED,
+			dev.forja.combat.CombatStats.WARNED_MOVED, dev.forja.combat.CombatStats.WARNED_UNSEEN, dev.forja.combat.CombatStats.WARNED_NO_DAMAGE,
+			dev.forja.combat.CombatStats.LUNGE, dev.forja.combat.CombatStats.LUNGE_HIT}) {
+			int sum = 0;
+			for (Mob mob : mobs) {
+				sum += dev.forja.combat.CombatStats.count(mob, key);
+			}
+			k.append(key).append('=').append(sum).append(';');
+		}
+		k.append(String.format(Locale.ROOT, "dano_cuerpo=%.1f;dano_flecha=%.1f;golpes_flecha=%d;dano_pocion=%.1f;dano_fuego=%.1f;dano_otro=%.1f;"
+			+ "vel_andando=%.4f;ticks_andando=%d;vel_corriendo=%.4f;ticks_corriendo=%d;ociosos=%.3f;flechas=%d;flechas_tocarian=%d",
+			w.melee, w.arrow, w.arrows, w.potion, w.fire, w.other, w.walkTicks == 0 ? 0.0 : w.walkDist / w.walkTicks, w.walkTicks,
+			w.runTicks == 0 ? 0.0 : w.runDist / w.runTicks, w.runTicks, w.goingIn == 0 ? 0.0 : w.idle / (double) w.goingIn, w.fired, w.wouldHit));
+		DAMAGE.remove(player);
+		String line = String.format(Locale.ROOT, "%s\t%d\t%.1f\t%d\t%d\t%d\t%s\t%.2f\t%.2f\t%.2f\t%s%n", mode.name().toLowerCase(Locale.ROOT), seed,
+			taken * 60.0 * 20.0 / Math.max(1, ticks), killedAt, dead, ticks, o, watch[0] / n, watch[1] / n, watch[2] / n, k);
 		try {
 			Files.writeString(out, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 		} catch (java.io.IOException failure) {
@@ -342,6 +474,10 @@ public class CapitanMedidaGameTests {
 		Captain.forget(player);
 		AABB box = new AABB(helper.absoluteVec(new Vec3(-4, -2, -4)), helper.absoluteVec(new Vec3(SIZE + 4, 10, SIZE + 4)));
 		helper.getLevel().getEntitiesOfClass(Entity.class, box, e -> !(e instanceof Player)).forEach(Entity::discard);
-		player.discard();
+		if (player instanceof net.minecraft.server.level.ServerPlayer sp && helper.getLevel().players().contains(sp)) {
+			helper.getLevel().removePlayerImmediately(sp, Entity.RemovalReason.DISCARDED);
+		} else {
+			player.discard();
+		}
 	}
 }

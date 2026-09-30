@@ -168,6 +168,7 @@ public final class VanillaSpecials {
 		@Override
 		public boolean follow(Mob mob, Player target, SpecialRunner.Run run, int tick) {
 			if (contact(mob, target, run, 0.0F) && run.hit) {
+				CombatStats.record(mob, CombatStats.LUNGE_HIT);
 				target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, CombatConfig.get().lungeGrabTicks, 1));
 			}
 			boolean over = tick > 3 && mob.onGround() || tick > 25;

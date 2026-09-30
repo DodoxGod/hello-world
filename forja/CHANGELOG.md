@@ -1,5 +1,25 @@
 # Novedades
 
+## 2026-09-30 — Los zombis ya no se quedan parados antes de atacar
+
+- **El fallo:** un monstruo que volvía a atacar tras esperar o rodear podía quedarse quieto hasta un segundo: el
+  ataque cuerpo a cuerpo de vanilla solo mira si puede empezar cada 20 ticks. Pasaba en el 12 % del tiempo que iban al
+  ataque. Ahora lo mira cada 4 ticks. Contra el jugador de prueba hacen un 8 % más de daño sin capitán y un 4 % más
+  con él.
+- **La medida del capitán estaba mal:** el jugador de prueba no estaba en el mundo, así que las flechas lo
+  atravesaban. Ahora sí está. Con las flechas, un grupo de 8 hace unos 168 de daño por minuto sin capitán y 190 con el
+  capitán de reglas.
+- **La medida ahora cuenta más cosas por pelea:**
+  - avisos empezados y los que llegan, y por qué fallan los otros (empujado, el jugador se movió, cortado);
+  - embestidas, y cuántas tocan;
+  - daño por tipo, flechas disparadas y flechas que dan;
+  - velocidad del zombi que persigue.
+
+  Opciones: `FORJA_CAPITAN_ABLACION=mochila` da a los monstruos la mochila con la que aparecen;
+  `FORJA_CAPITAN_JUGADOR=fuera` deja al jugador fuera del mundo, como antes.
+- **Pruebas:** 1 nueva. La de coger la espada del jugador ahora sujeta al zombi mientras la espada aún no se puede
+  coger, porque con un turno libre va antes a por el jugador.
+
 ## 2026-09-30 — Las pruebas de servidor, estables
 
 Con la máquina cargada (entrenando redes, otras compilaciones) fallaban de vez en cuando unas cuantas pruebas y al

@@ -75,6 +75,7 @@ abstract class MeleeAttackGoalMixin {
 		}
 		ci.cancel();
 		if (Posture.isStaggered(mob, mob.level().getGameTime())) {
+			forja$cut();
 			forja$reset();
 			return;
 		}
@@ -84,6 +85,7 @@ abstract class MeleeAttackGoalMixin {
 			AttackTokens.release(forja$target, mob);
 			forja$target = null;
 			if (!AttackTokens.tryAcquire(target, mob, dev.forja.ai.Aggression.maxAttackers(mob, target))) {
+				forja$cut();
 				forja$reset();
 				return;
 			}
@@ -103,10 +105,16 @@ abstract class MeleeAttackGoalMixin {
 			if (--forja$windup > 0) return;
 			mob.swing(InteractionHand.MAIN_HAND);
 			// Lands as far off as the weapon reaches (Reach): a flail's or a lance's blow further than a fist's.
-			if (mob.distanceTo(target) <= dev.forja.ai.Reach.landing(mob, target) && mob.getSensing().hasLineOfSight(target) && mob.level() instanceof ServerLevel level
-				&& mob.doHurtTarget(level, target)) {
+			boolean inReach = mob.distanceTo(target) <= dev.forja.ai.Reach.landing(mob, target);
+			boolean seen = inReach && mob.getSensing().hasLineOfSight(target);
+			boolean landed = seen && mob.level() instanceof ServerLevel level && mob.doHurtTarget(level, target);
+			if (landed) {
 				dev.forja.ai.HopBack.afterHit(mob, target);
 			}
+			// how it ended, for the tests (CapitanMedidaGameTests): struck during the warning is knocked back
+			dev.forja.combat.CombatStats.record(mob, landed ? dev.forja.combat.CombatStats.WARNED_LANDED
+				: !inReach ? (mob.hurtTime > 0 ? dev.forja.combat.CombatStats.WARNED_KNOCKED : dev.forja.combat.CombatStats.WARNED_MOVED)
+				: !seen ? dev.forja.combat.CombatStats.WARNED_UNSEEN : dev.forja.combat.CombatStats.WARNED_NO_DAMAGE);
 			resetAttackCooldown();
 			dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
 			if (mind != null) {
@@ -124,6 +132,15 @@ abstract class MeleeAttackGoalMixin {
 			? dev.forja.ai.Aggression.adaptiveFeintChance(target) : dev.forja.ai.Aggression.feintChance(mob, target));
 		forja$holdStill(target);
 		CombatFeedback.telegraph(mob, forja$windup);
+		dev.forja.combat.CombatStats.record(mob, dev.forja.combat.CombatStats.WARNED);
+	}
+
+	/** A warning dropped before its end (counted for the tests; a feint is counted as one). */
+	@Unique
+	private void forja$cut() {
+		if (forja$windup > 0) {
+			dev.forja.combat.CombatStats.record(mob, dev.forja.combat.CombatStats.WARNED_CUT);
+		}
 	}
 
 	/**
@@ -182,6 +199,29 @@ abstract class MeleeAttackGoalMixin {
 	 * chase them by vanilla's path to the real position; the executor (TacticGoal) walks it to where it last saw them.
 	 * A player it perceives, or touches, is attacked as always.
 	 */
+	@Shadow
+	private long lastCanUseCheck;
+
+	/**
+	 * Vanilla looks at whether to start the melee goal once every 20 ticks. A monster our rules drive stops it whenever
+	 * it turns to a tactic (to wait, to go round) or its path runs out next to a moving player, and then stood with
+	 * nothing moving it for up to a second when it went in again: 12 % of its "going in" ticks against the test player
+	 * (CapitanMedidaGameTests, 2026-09-30). For those, the look comes every {@link #FORJA_RECHECK} ticks.
+	 */
+	@Unique
+	private static final long FORJA_RECHECK = 4L;
+
+	@Inject(method = "canUse", at = @At("HEAD"))
+	private void forja$recheckSooner(CallbackInfoReturnable<Boolean> cir) {
+		long now = mob.level().getGameTime();
+		if (now - lastCanUseCheck >= FORJA_RECHECK && now - lastCanUseCheck < 20L && CombatConfig.get().enabled) {
+			dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
+			if (mind != null && mind.target != null && !mind.networked && mind.decision.tactic() == dev.forja.ai.Tactic.ACERCARSE) {
+				lastCanUseCheck = now - 20L;
+			}
+		}
+	}
+
 	@Inject(method = "canUse", at = @At("HEAD"), cancellable = true)
 	private void forja$honestStart(CallbackInfoReturnable<Boolean> cir) {
 		if (forja$windup == 0 && dev.forja.ai.HonestPerception.lost(mob)) {
@@ -220,6 +260,7 @@ abstract class MeleeAttackGoalMixin {
 
 	@Inject(method = "stop", at = @At("TAIL"))
 	private void forja$onStop(CallbackInfo ci) {
+		forja$cut();
 		forja$reset();
 	}
 

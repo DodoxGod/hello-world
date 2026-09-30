@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import com.google.gson.JsonArray;
@@ -450,6 +451,48 @@ public class RedV4CapitanGameTests {
 		helper.assertTrue(Captain.reeling(player), "lentitud II (la parada de un mob), sí");
 		helper.assertFalse(dev.forja.combat.Posture.isStaggered(player, helper.getLevel().getGameTime()), "la postura nunca aturde a un jugador");
 		helper.succeed();
+	}
+
+	/**
+	 * A zombie our rules send in is never left standing with nothing moving it for long: vanilla looks at starting its
+	 * melee goal once every 20 ticks, and after a stop (a tactic, a path run out next to a moving player) it stood still
+	 * up to a second; now it looks again every 4 (MeleeAttackGoalMixin). Against a player walking to and fro, no zombie
+	 * going in stands idle more than 12 ticks in a row (two looks that find no path; it was up to 20).
+	 */
+	@GameTest(padding = 24, maxTicks = 220)
+	public void aZombieGoingInIsNeverLeftIdle(GameTestHelper helper) {
+		floor(helper, 32);
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(16, 1, 16));
+		List<Mob> mobs = new ArrayList<>();
+		for (int k = 0; k < 3; k++) {
+			mobs.add(zombie(helper, new BlockPos(8, 1, 12 + 4 * k)));
+		}
+		Vec3 start = player.position();
+		Map<Mob, Integer> streak = new java.util.HashMap<>();
+		int[] worst = {0};
+		helper.onEachTick(() -> {
+			long t = helper.getTick();
+			double offset = (t % 80) < 40 ? (t % 40) * 0.12 : (40 - t % 40) * 0.12;
+			player.setPos(start.x + offset, start.y, start.z);
+			player.setHealth(player.getMaxHealth());
+			player.invulnerableTime = 0;
+			for (Mob mob : mobs) {
+				mob.setTarget(player);
+				mob.setHealth(mob.getMaxHealth());
+				MobMind mind = MobAi.mind(mob);
+				boolean moving = ((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals().getAvailableGoals().stream()
+					.anyMatch(g -> g.isRunning() && g.getFlags().contains(net.minecraft.world.entity.ai.goal.Goal.Flag.MOVE));
+				boolean idle = t > 20 && mind != null && !mind.networked && mind.decision.tactic() == Tactic.ACERCARSE && !moving;
+				int n = idle ? streak.getOrDefault(mob, 0) + 1 : 0;
+				streak.put(mob, n);
+				worst[0] = Math.max(worst[0], n);
+			}
+		});
+		helper.runAfterDelay(200, () -> {
+			helper.assertTrue(worst[0] <= 12, "un zombi que va al ataque no se queda quieto más de 12 ticks seguidos (antes, hasta 20): " + worst[0]);
+			clear(helper, 32);
+			helper.succeed();
+		});
 	}
 
 	/** A group led by nobody but a veteran has no captain (Andy's decision 4). */
