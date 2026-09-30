@@ -196,6 +196,20 @@ abstract class MeleeAttackGoalMixin {
 		}
 	}
 
+	/**
+	 * A blow being warned is seen through while its target lives. Vanilla ends the goal of a mob that does not
+	 * follow unseen targets (a zombie's) as soon as its path is done, and {@link #forja$holdStill} keeps a path only
+	 * when one can be made: a mob standing in its target's own block, as close as it can get, has none, so its goal
+	 * stopped the tick after it started, dropped the warning with it, and started again twenty ticks later only to
+	 * drop it again. After a feint a zombie walked into a still test player that way and never struck again.
+	 */
+	@Inject(method = "canContinueToUse", at = @At("HEAD"), cancellable = true)
+	private void forja$finishTheWarning(CallbackInfoReturnable<Boolean> cir) {
+		if (forja$windup > 0 && forja$target != null && forja$target.isAlive() && forja$target == mob.getTarget()) {
+			cir.setReturnValue(true);
+		}
+	}
+
 	/** Peso (combat/Weight): the more it carries, the longer it waits before the next blow. */
 	@Inject(method = "resetAttackCooldown", at = @At("TAIL"))
 	private void forja$heavyWait(CallbackInfo ci) {
