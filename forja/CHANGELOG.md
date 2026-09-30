@@ -1,5 +1,21 @@
 # Novedades
 
+## 2026-09-30 — El maná vuelve lentísimo sin clase mágica
+
+Andy: "el sistema actual es igual a no tener maná, se debe regenerar lentísimo si no tienes la clase".
+
+- **Sin clase mágica**, el maná vuelve a 0,4 por segundo mientras lanzas y a 0,8 por segundo tras 5 s sin lanzar
+  (antes 6 y 20 tras 2 s): una barra vacía tarda unos dos minutos, no siete segundos. Los valores viejos de
+  `config/forja.json` que nadie tocó pasan solos a los nuevos.
+- **El Mago** lo recupera ×6 (una barra de 125 en ~26 s) y con Mente clara ×7. **El Curandero**, ×4 (~36 s) y con
+  Serenidad ×5. La clase multiplica también lo que den las mejoras.
+- **Mejoras de ritmo más flojas**, porque ya no deben convertir a cualquiera en mago: Flujo +15 % por pieza (antes
+  +25 %), el conjunto de eco +30 % (antes +40 %) y Meditación +40 % (antes +60 %).
+- **Las muertes** siguen igual (8 + 0,4 por punto de vida, hasta un 30 % de la barra, un 3 % cada 5 ticks) y ahora
+  son la fuente de maná de quien no es mago: un zombi devuelve dos proyectiles.
+- La guía (capítulo del maná y libro II) y `docs/CLASES.md` (tabla *El maná por clase*) lo cuentan. Prueba
+  `manaRegenDependsOnTheClass`.
+
 ## 2026-09-30 — Mangos y ataduras pesados y ligeros
 
 Andy lo aprobó como una **elección, no una mejora**: el mango y la atadura normales siguen siendo el punto medio.

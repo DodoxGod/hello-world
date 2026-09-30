@@ -143,8 +143,8 @@ Vida: 20 de base (10 corazones). Estamina: 100 de base (`CombatConfig.staminaMax
 | Guerrero | 22 (+10 %) | 120 (+20 %) | ×1 (+5 % de daño c/c) | ×1 | ×0,4 | regeneración de estamina +10 %, postura +15 %, parada +1 tick |
 | Asesino | 14 (−30 %) | 130 (+30 %) | ×1 (+10 % de daño c/c) | ×1 | ×0,4 | velocidad +5 %, esquiva: distancia +35 %, espera −30 %, coste −20 %, invulnerabilidad +2 ticks |
 | Tanque | 32 (+60 %) | 100 | ×0,67 | ×0,67 | ×0,67 | armadura +2, empuje +30 %, velocidad −12 %, distancia de esquiva −35 %, coste de esquiva +20 %, estamina al parar −25 % |
-| Mago | 18 (−10 %) | 90 (−10 %) | ×0,7 | ×1 | ×1 (+15 % de hechizos) | espera de hechizos −15 %, maná +25 %, regeneración de maná +20 % |
-| Curandero | 20 | 100 | ×0,5 | ×1 | ×1/3 (y cura 1/10 del daño entero a aliados) | curación +50 %, maná +15 %, regeneración de estamina +10 % |
+| Mago | 18 (−10 %) | 90 (−10 %) | ×0,7 | ×1 | ×1 (+15 % de hechizos) | espera de hechizos −15 %, maná +25 %, regeneración de maná ×6 (+500 %) |
+| Curandero | 20 | 100 | ×0,5 | ×1 | ×1/3 (y cura 1/10 del daño entero a aliados) | curación +50 %, maná +15 %, regeneración de maná ×4 (+300 %), regeneración de estamina +10 % |
 | Arquero | 18 (−10 %) | 100 | ×0,7 | ×1 (+15 % de proyectiles) | ×1 | velocidad +8 %, tensado +10 %, esquiva +20 %, espera de esquiva −15 %, caída −25 % |
 | Herrero | 21 (+5 %) | 100 | ×1 | ×1 | ×1 | minado +15 %, ventana del golpe perfecto +0,01, potencial +5, reparación +25 % |
 
@@ -201,7 +201,7 @@ Espera 60 s.
 ### Mago — magia
 
 **Base:** vida −10 %, estamina máxima −10 %, daño de hechizos +15 %, espera de hechizos −15 %, maná máximo
-+25 % *(gancho de maná)*, regeneración de maná +20 % *(gancho)*. **Factor de daño:** cuerpo a cuerpo ×0,7
++25 %, regeneración de maná ×6 (+500 %: sin clase mágica el maná vuelve lentísimo, ver *El maná por clase*). **Factor de daño:** cuerpo a cuerpo ×0,7
 (sustituye el −10 % cuerpo a cuerpo de antes).
 **Habilidad I — Nova arcana (V):** un anillo de 5 bloques a tu alrededor: 6 de daño mágico (con tu bono de
 hechizos) a los monstruos hostiles, y los empuja. Espera 20 s.
@@ -209,7 +209,7 @@ hechizos) a los monstruos hostiles, y los empuja. Espera 20 s.
 | Rama | Nivel 1 | Nivel 2 | Nivel 3 |
 |---|---|---|---|
 | Arcano | Núcleo afinado: daño de hechizos +10 % | Sobrecarga arcana: la carga completa vale +25 % más | Catalizador: daño de hechizos +15 % |
-| Flujo | Mente clara: espera −10 %, regeneración de maná +25 % | Canalización: tiempo de carga −25 %, maná máximo +30 % | Economía arcana: coste de maná −25 %, espera −10 % |
+| Flujo | Mente clara: espera −10 %, regeneración de maná +100 % (×7 en total) | Canalización: tiempo de carga −25 %, maná máximo +30 % | Economía arcana: coste de maná −25 %, espera −10 % |
 | Égida | Barrera: daño mágico recibido −25 % | Paso etéreo: distancia de esquiva +20 %, espera de esquiva −10 % | Égida: cada 30 s ganas 4 de absorción |
 
 **Habilidad II — Concentración (B):** 8 s con la espera de los hechizos a la mitad (y, con maná, sin coste).
@@ -225,7 +225,7 @@ del daño entero** (`Healing.MAGIC_HEAL_SHARE = 0.1F`), y al Curandero un tercio
 entero, antes de ese tercio). El proyectil cura al primer aliado que toca y se deshace; si antes toca a otra
 cosa, la daña y se deshace; nunca daña a un aliado. La runa cura a los aliados que hay dentro y daña al resto. Las
 mejoras del arma (Filo, Vampirismo…) no entran en la curación.
-**Base:** curación +50 %, maná máximo +15 % *(gancho)*, regeneración de estamina +10 %. **Factores de daño:**
+**Base:** curación +50 %, maná máximo +15 %, regeneración de maná ×4 (+300 %), regeneración de estamina +10 %. **Factores de daño:**
 cuerpo a cuerpo ×0,5 (sustituye el −15 % de antes), magia ×1/3.
 **Habilidad I — Pulso sanador (V):** cura 4 (× tu curación) a ti y a los jugadores y tus animales a 8 bloques.
 Espera 30 s.
@@ -234,7 +234,7 @@ Espera 30 s.
 |---|---|---|---|
 | Sanación | Manos cálidas: curación +20 % | Renuevo: lo que curas recibe además Regeneración I 3 s | Milagro: curación +30 % |
 | Amparo | Bendición: curar a alguien por debajo de la mitad de vida le da Resistencia I 4 s | Purificar: tus curas quitan Veneno, Marchitamiento, Debilidad y Lentitud | Vínculo: te curas el 25 % de lo que curas a otros |
-| Fe | Serenidad: regeneración de maná +25 %, regeneración de estamina +15 % | Voluntad: vida +15 % | Aura: tú y tus aliados a 6 bloques recuperáis 0,5 de vida cada 3 s |
+| Fe | Serenidad: regeneración de maná +100 % (×5 en total), regeneración de estamina +15 % | Voluntad: vida +15 % | Aura: tú y tus aliados a 6 bloques recuperáis 0,5 de vida cada 3 s |
 
 **Habilidad II — Resurgir (B):** el aliado que miras (hasta 16 bloques) recupera la mitad de la vida que le falta
 (× tu curación) y Regeneración II 5 s. Espera 90 s.
@@ -325,6 +325,30 @@ la media luna (`docs/arma_magica/variantes_baculo.py`): un cayado del que cuelga
 - **Comandos (`/forja clase`)**: `elegir <clase>`, `nivel <n>`, `xp <n>`, `puntos` (desbloquea todo lo
   posible), `aprender <talento>`, `reiniciar`, `quitar`, `info`, `habilidad <1|2>` (sin espera).
 
+## El maná por clase (Andy, 2026-09-30)
+
+Andy: «el sistema actual es igual a no tener maná, se debe regenerar lentísimo si no tienes la clase». Sin clase
+mágica el maná vuelve a 0,4 por segundo mientras lanzas y a 0,8 por segundo tras 5 s sin lanzar
+(`CombatConfig.manaRegenPerTick` 0,02, `manaIdleRegenPerTick` 0,04, `manaIdleDelayTicks` 100): una barra vacía de
+100 tarda unos dos minutos. La clase multiplica ese ritmo, y también lo que den las mejoras
+(`Mana.regenFactor` = (1 + Flujo + eco + Meditación) × (1 + `MANA_REGEN` de la clase)).
+
+| Clase | Multiplicador | Maná máx. | Lanzando (/s) | En calma (/s) | Barra vacía → llena |
+|---|---|---|---|---|---|
+| Sin clase mágica (las otras cinco) | ×1 | 100 | 0,4 | 0,8 | ~125 s |
+| Mago | ×6 | 125 | 2,4 | 4,8 | ~26 s |
+| Mago con Mente clara | ×7 | 125 (155 con Canalización) | 2,8 | 5,6 | ~22 s |
+| Curandero | ×4 | 115 | 1,6 | 3,2 | ~36 s |
+| Curandero con Serenidad | ×5 | 115 | 2,0 | 4,0 | ~29 s |
+
+Las mejoras suman al ritmo base antes de la clase: Flujo +15 % por pieza (antes +25 %), el conjunto de eco +30 %
+(antes +40 %) y Meditación en la mano +40 % (antes +60 %). Sin clase y con todo (cuatro piezas de Flujo, eco y
+Meditación) se llega a ×2,3: 1,8 por segundo en calma, una barra en ~55 s, menos que un Mago sin nada.
+
+Las muertes siguen igual (`killManaBase` 8 + 0,4 por punto de vida máxima de la víctima, hasta un 30 % de la
+barra, y entrando como mucho un 3 % cada 5 ticks): un zombi vale 16, un enderman 24. Para quien no es mago son la
+fuente de verdad: un zombi devuelve lo que cuestan dos proyectiles, veinte segundos de espera.
+
 ## Ganchos para la fusión con el maná
 
 Integración con el maná (hecha al unir la rama, 2026-09-29):
@@ -332,7 +356,7 @@ Integración con el maná (hecha al unir la rama, 2026-09-29):
 | Gancho | Qué devuelve | Dónde se usa |
 |---|---|---|
 | `ClassEffects.manaMaxBonus(player)` | fracción a sumar al maná máximo (Mago +0,25, Canalización +0,30, Curandero +0,15) | `Mana.maxOf` |
-| `ClassEffects.manaRegenBonus(player)` | fracción a sumar a la regeneración (Mago +0,20, Mente clara +0,25, Serenidad +0,25) | `Mana.regenFactor` |
+| `ClassEffects.manaRegenBonus(player)` | fracción a sumar a la regeneración, que multiplica todo lo demás (Mago +5, Mente clara +1, Curandero +3, Serenidad +1) | `Mana.regenFactor` |
 | `ClassEffects.spellCostMultiplier(player)` | multiplicador del coste (Economía arcana 0,75; Concentración 0) | `Spellcasting.tryCast` (báculo, grimorio y farol) |
 | `ClassEffects.staminaMaxMultiplier(player)` | multiplicador de la estamina máxima | `Stamina.maxOf`, con Aguante |
 | `ClassEffects.dodgeDistanceMultiplier(player)` | multiplicador de distancia | `CombatClient.tryDodge`, con Quiebro y Paso arcano |

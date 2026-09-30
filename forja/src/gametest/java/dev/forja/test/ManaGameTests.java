@@ -8,6 +8,9 @@ import dev.forja.combat.ChargedStrike;
 import dev.forja.combat.CombatConfig;
 import dev.forja.combat.KillFlow;
 import dev.forja.combat.Stamina;
+import dev.forja.clase.ClassProgress;
+import dev.forja.clase.PlayerClass;
+import dev.forja.clase.Talent;
 import dev.forja.forge.Assembler;
 import dev.forja.forge.ForgeType;
 import dev.forja.forge.Potential;
@@ -145,7 +148,64 @@ public class ManaGameTests {
 		helper.succeed();
 	}
 
-	/** Slow while spells keep coming, quick once they have stopped for two seconds. */
+	/** Seconds of quiet an empty bar takes to fill, ticking the real bar. */
+	private static float secondsToFill(CombatGameTests.TestPlayer player, long now) {
+		Mana.set(player, 0.0F);
+		float max = Mana.maxOf(player);
+		int ticks = 0;
+		while (Mana.value(player) < max - 1.0E-3F && ticks < 20 * 600) {
+			ticks++;
+			Mana.tick(player, now + ticks);
+		}
+		return ticks / 20.0F;
+	}
+
+	/**
+	 * Andy, 2026-09-30: "se debe regenerar lentísimo si no tienes la clase". Without a magic class an empty bar takes
+	 * about two minutes; the Mago gets it back six times as fast and the Curandero four, and their talents more.
+	 */
+	@GameTest(maxTicks = 40)
+	public void manaRegenDependsOnTheClass(GameTestHelper helper) {
+		CombatConfig cfg = CombatConfig.get();
+		long now = helper.getLevel().getGameTime();
+		CombatGameTests.TestPlayer plain = player(helper, new BlockPos(1, 1, 1));
+		helper.assertTrue(Math.abs(Mana.regenFactor(plain) - 1.0F) < EPS, "sin clase, el ritmo de base: " + Mana.regenFactor(plain));
+		helper.assertTrue(cfg.manaIdleRegenPerTick * 20.0F <= 1.0F, "sin clase vuelve como mucho 1 por segundo en calma: " + cfg.manaIdleRegenPerTick * 20.0F);
+		float plainFill = secondsToFill(plain, now);
+		helper.assertTrue(plainFill >= 100.0F && plainFill <= 150.0F, "sin clase, una barra vacía tarda unos dos minutos: " + plainFill + " s");
+		// A guerrero has a class, but not a magic one.
+		ClassProgress.choose(plain, PlayerClass.GUERRERO);
+		helper.assertTrue(Math.abs(Mana.regenFactor(plain) - 1.0F) < EPS, "un guerrero, igual que sin clase: " + Mana.regenFactor(plain));
+		ClassProgress.clear(plain);
+
+		CombatGameTests.TestPlayer mage = player(helper, new BlockPos(3, 1, 1));
+		ClassProgress.choose(mage, PlayerClass.MAGO);
+		helper.assertTrue(Math.abs(Mana.regenFactor(mage) - 6.0F) < EPS, "el Mago, ×6: " + Mana.regenFactor(mage));
+		float mageFill = secondsToFill(mage, now);
+		helper.assertTrue(mageFill <= 30.0F && mageFill < plainFill / 4.0F, "el Mago llena su barra (más grande) en menos de 30 s: " + mageFill + " s");
+		ClassProgress.award(mage, ClassProgress.totalFor(5));
+		helper.assertTrue(ClassProgress.unlock(mage, Talent.MAGO_MENTE_CLARA), "Mente clara se aprende");
+		helper.assertTrue(Math.abs(Mana.regenFactor(mage) - 7.0F) < EPS, "con Mente clara, ×7: " + Mana.regenFactor(mage));
+		// The upgrades add to the base, and the class multiplies the sum.
+		mage.setItemInHand(InteractionHand.MAIN_HAND, staff(helper, Upgrade.MEDITACION, 100));
+		helper.assertTrue(Math.abs(Mana.regenFactor(mage) - 7.0F * 1.4F) < EPS, "Meditación suma a la base y la clase la multiplica: " + Mana.regenFactor(mage));
+		plain.setItemInHand(InteractionHand.MAIN_HAND, staff(helper, Upgrade.MEDITACION, 100));
+		helper.assertTrue(Mana.regenFactor(plain) < 2.0F, "sin clase, Meditación sola no llega ni a ×2: " + Mana.regenFactor(plain));
+		ClassProgress.clear(mage);
+
+		CombatGameTests.TestPlayer healer = player(helper, new BlockPos(5, 1, 1));
+		ClassProgress.choose(healer, PlayerClass.CURANDERO);
+		helper.assertTrue(Math.abs(Mana.regenFactor(healer) - 4.0F) < EPS, "el Curandero, ×4: " + Mana.regenFactor(healer));
+		float healerFill = secondsToFill(healer, now);
+		helper.assertTrue(healerFill > mageFill && healerFill <= 40.0F, "el Curandero, entre el Mago y los demás: " + healerFill + " s");
+		ClassProgress.award(healer, ClassProgress.totalFor(5));
+		helper.assertTrue(ClassProgress.unlock(healer, Talent.CURANDERO_SERENIDAD), "Serenidad se aprende");
+		helper.assertTrue(Math.abs(Mana.regenFactor(healer) - 5.0F) < EPS, "con Serenidad, ×5: " + Mana.regenFactor(healer));
+		ClassProgress.clear(healer);
+		helper.succeed();
+	}
+
+	/** Slow while spells keep coming, twice as quick once they have stopped for five seconds. */
 	@GameTest
 	public void manaComesBackOverTime(GameTestHelper helper) {
 		CombatConfig cfg = CombatConfig.get();
@@ -163,9 +223,9 @@ public class ManaGameTests {
 			Mana.tick(player, now + t);
 		}
 		float idle = Mana.value(player) - before;
-		// Two seconds on from the last spell the quick rate has taken over.
+		// Five seconds on from the last spell the quicker rate has taken over.
 		float expected = cfg.manaIdleRegenPerTick * 20;
-		helper.assertTrue(Math.abs(idle - expected) < 0.05F, "dos segundos sin lanzar, " + cfg.manaIdleRegenPerTick * 20 + " por segundo: " + idle);
+		helper.assertTrue(Math.abs(idle - expected) < 0.05F, "cinco segundos sin lanzar, " + cfg.manaIdleRegenPerTick * 20 + " por segundo: " + idle);
 		helper.succeed();
 	}
 
@@ -290,7 +350,7 @@ public class ManaGameTests {
 		CombatGameTests.TestPlayer player = player(helper, new BlockPos(1, 1, 1));
 		helper.assertTrue(Math.abs(Mana.regenFactor(player) - 1.0F) < EPS, "desnudo, el maná vuelve a su ritmo");
 		player.setItemInHand(InteractionHand.MAIN_HAND, staff(helper, Upgrade.MEDITACION, 100));
-		helper.assertTrue(Math.abs(Mana.regenFactor(player) - 1.6F) < EPS, "Meditación en la mano, un 60 % más rápido: " + Mana.regenFactor(player));
+		helper.assertTrue(Math.abs(Mana.regenFactor(player) - 1.4F) < EPS, "Meditación en la mano, un 40 % más rápido: " + Mana.regenFactor(player));
 		player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
 		for (EquipmentSlot slot : new EquipmentSlot[] {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
 			ForgeType type = switch (slot) {
@@ -302,7 +362,7 @@ public class ManaGameTests {
 			player.setItemSlot(slot, forged(helper, type, Upgrade.RESERVA, 100, Upgrade.FLUJO, 100, Upgrade.AGUANTE, 100, Upgrade.FUELLE, 100));
 		}
 		helper.assertTrue(Math.abs(Mana.maxOf(player) - (cfg.manaMax + 100.0F)) < EPS, "Reserva en las cuatro piezas, +25 cada una: " + Mana.maxOf(player));
-		helper.assertTrue(Math.abs(Mana.regenFactor(player) - 2.0F) < EPS, "Flujo en las cuatro, +25 % cada una: " + Mana.regenFactor(player));
+		helper.assertTrue(Math.abs(Mana.regenFactor(player) - 1.6F) < EPS, "Flujo en las cuatro, +15 % cada una: " + Mana.regenFactor(player));
 		helper.assertTrue(Math.abs(Stamina.maxOf(player) - (cfg.staminaMax + 60.0F)) < EPS, "Aguante en las cuatro, +15 cada una: " + Stamina.maxOf(player));
 		helper.assertTrue(Math.abs(Stamina.regenFactor(player) - 1.8F) < EPS, "Fuelle en las cuatro, +20 % cada una: " + Stamina.regenFactor(player));
 		// The max the bar is drawn to follows the armour.
@@ -329,7 +389,7 @@ public class ManaGameTests {
 			if (material == ForgeMaterial.AMATISTA) {
 				helper.assertTrue(Math.abs(Mana.maxOf(mage) - (cfg.manaMax + Mana.AMETHYST_SET_MANA)) < EPS, "cuatro de amatista: +40 de maná: " + Mana.maxOf(mage));
 			} else {
-				helper.assertTrue(Math.abs(Mana.regenFactor(mage) - (1.0F + Mana.ECHO_SET_REGEN)) < EPS, "cuatro de eco: +40 % de regeneración: " + Mana.regenFactor(mage));
+				helper.assertTrue(Math.abs(Mana.regenFactor(mage) - (1.0F + Mana.ECHO_SET_REGEN)) < EPS, "cuatro de eco: +30 % de regeneración: " + Mana.regenFactor(mage));
 			}
 		}
 		helper.succeed();

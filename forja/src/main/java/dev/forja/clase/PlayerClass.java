@@ -34,18 +34,22 @@ public enum PlayerClass {
 		List.of(MAX_HEALTH.of(0.60F), ARMOR.of(2), KNOCKBACK.of(0.30F), MOVE_SPEED.of(-0.12F), DODGE_DISTANCE.of(-0.35F),
 			DODGE_COST.of(0.20F), BLOCK_COST.of(-0.25F)),
 		ActiveSkill.PROVOCAR),
-	/** Magic: the staff and the tome, harder and sooner, for health and stamina. */
+	/**
+	 * Magic: the staff and the tome, harder and sooner, for health and stamina. Andy (2026-09-30): mana comes back
+	 * "lentísimo si no tienes la clase", so the Mago's bar refills six times as fast as anyone else's.
+	 */
 	MAGO(0x4F7FE8, () -> Assembler.create(ForgeType.BACULO, List.of(ForgeMaterial.AMATISTA, ForgeMaterial.ORO, ForgeMaterial.MADERA)),
 		List.of(MAX_HEALTH.of(-0.10F), STAMINA_MAX.of(-0.10F), SPELL_DAMAGE.of(0.15F), SPELL_COOLDOWN.of(-0.15F),
-			MANA_MAX.of(0.25F), MANA_REGEN.of(0.20F)),
+			MANA_MAX.of(0.25F), MANA_REGEN.of(5.0F)),
 		ActiveSkill.NOVA_ARCANA),
 	/**
 	 * Andy: "cambia el daño de las armas mágicas por curación (sólo cura 1/10 parte del daño)", and later
 	 * (2026-09-29): its magic hurts foes at a third and still mends allies. The rule lives in magic/Healing and
-	 * the damage factors (melee x0.5, magic x1/3) in {@link ClassDamage}; here are only its other numbers.
+	 * the damage factors (melee x0.5, magic x1/3) in {@link ClassDamage}; here are only its other numbers. Its
+	 * mana comes back four times as fast as a player's without a magic class (Andy, 2026-09-30).
 	 */
 	CURANDERO(0x5CC46A, () -> Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.ESMERALDA, ForgeMaterial.ORO, ForgeMaterial.MADERA)),
-		List.of(HEALING.of(0.50F), MANA_MAX.of(0.15F), STAMINA_REGEN.of(0.10F)),
+		List.of(HEALING.of(0.50F), MANA_MAX.of(0.15F), MANA_REGEN.of(3.0F), STAMINA_REGEN.of(0.10F)),
 		ActiveSkill.PULSO_SANADOR),
 	/** Bows and crossbows, mobility, dodge. */
 	ARQUERO(0x8DBF4A, () -> Assembler.create(ForgeType.ARCO, Assembler.defaultMaterials(ForgeType.ARCO)),

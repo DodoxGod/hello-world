@@ -106,16 +106,21 @@ public final class CombatConfig {
 	 * Andy, 2026-09-28: "¿podrías hacer una barra de maná?", and for the staff and the tome, "maná y un
 	 * enfriamiento corto": every spell costs mana and the wait between two is cut a lot, so you can burst until
 	 * the bar is empty and then wait for it to fill again. Mana comes back "solo, con el tiempo" — slowly while
-	 * you keep casting, much faster once you have left it alone for {@link #manaIdleDelayTicks} — and with kills.
+	 * you keep casting, twice as fast once you have left it alone for {@link #manaIdleDelayTicks} — and with kills.
+	 *
+	 * <p>Andy, 2026-09-30: "el sistema actual es igual a no tener maná, se debe regenerar lentísimo si no tienes la
+	 * clase". These are the rates of a player without a magic class: an empty bar takes about two minutes. The
+	 * Mago and the Curandero multiply them through their class (clase/PlayerClass, ClassStat.MANA_REGEN), and for
+	 * everyone else kills (killMana*) are what really fills the bar.
 	 */
 	public boolean mana = true;
 	public float manaMax = 100F;
-	/** Per tick while spells keep coming (6 a second). */
-	public float manaRegenPerTick = 0.3F;
-	/** After this long without a spell, the quick regeneration takes over. */
-	public int manaIdleDelayTicks = 40;
-	/** Per tick once you have stopped casting (20 a second: an empty bar is whole again in about seven seconds). */
-	public float manaIdleRegenPerTick = 1.0F;
+	/** Per tick while spells keep coming (0.4 a second). */
+	public float manaRegenPerTick = 0.02F;
+	/** After this long without a spell, the quicker regeneration takes over. */
+	public int manaIdleDelayTicks = 100;
+	/** Per tick once you have stopped casting (0.8 a second: an empty bar is whole again in about two minutes). */
+	public float manaIdleRegenPerTick = 0.04F;
 	/** What a tap of the staff costs: a bolt is cheap, twelve of them in a full bar. */
 	public float manaBoltCost = 8F;
 	/** What a tap of the tome costs: an area and a rune, three of them in a full bar. */

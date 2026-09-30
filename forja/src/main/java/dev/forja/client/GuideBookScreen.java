@@ -2188,7 +2188,10 @@ public class GuideBookScreen extends Screen {
 		body.add(new Text(Component.translatable("gui.forja.libro.mana.vacio"), INK_SOFT));
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.mana.vuelve.titulo")));
 		body.add(new Text(Component.translatable("gui.forja.libro.mana.vuelve", number(cfg.manaRegenPerTick * 20.0F),
-			number(cfg.manaIdleDelayTicks / 20.0F), number(cfg.manaIdleRegenPerTick * 20.0F)), INK_SOFT));
+			number(cfg.manaIdleDelayTicks / 20.0F), number(cfg.manaIdleRegenPerTick * 20.0F),
+			Math.round(cfg.manaMax / Math.max(1.0E-4F, cfg.manaIdleRegenPerTick * 20.0F) / 60.0F),
+			number(1.0F + dev.forja.clase.PlayerClass.MAGO.base(dev.forja.clase.ClassStat.MANA_REGEN)),
+			number(1.0F + dev.forja.clase.PlayerClass.CURANDERO.base(dev.forja.clase.ClassStat.MANA_REGEN))), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.mana.muertes", Math.round(cfg.killFlowShare * 100), cfg.killFlowEveryTicks,
 			number(cfg.killManaBase), number(cfg.killManaPerHealth), Math.round(cfg.killManaCapShare * 100),
 			number(cfg.killStaminaBase), number(cfg.killStaminaPerHealth), Math.round(cfg.killStaminaCapShare * 100)), INK_SOFT));

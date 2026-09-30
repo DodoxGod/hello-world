@@ -74,7 +74,7 @@ public enum Talent {
 	MAGO_NUCLEO_AFINADO(PlayerClass.MAGO, 0, 1, () -> new ItemStack(Items.AMETHYST_SHARD), List.of(SPELL_DAMAGE.of(0.10F))),
 	MAGO_SOBRECARGA_ARCANA(PlayerClass.MAGO, 0, 2, () -> new ItemStack(Items.REDSTONE_BLOCK), List.of(CHARGE_BONUS.of(0.25F))),
 	MAGO_CATALIZADOR(PlayerClass.MAGO, 0, 3, () -> new ItemStack(Items.END_CRYSTAL), List.of(SPELL_DAMAGE.of(0.15F))),
-	MAGO_MENTE_CLARA(PlayerClass.MAGO, 1, 1, () -> new ItemStack(Items.GLOWSTONE_DUST), List.of(SPELL_COOLDOWN.of(-0.10F), MANA_REGEN.of(0.25F))),
+	MAGO_MENTE_CLARA(PlayerClass.MAGO, 1, 1, () -> new ItemStack(Items.GLOWSTONE_DUST), List.of(SPELL_COOLDOWN.of(-0.10F), MANA_REGEN.of(1.0F))),
 	MAGO_CANALIZACION(PlayerClass.MAGO, 1, 2, () -> new ItemStack(Items.LAPIS_LAZULI), List.of(SPELL_CHARGE.of(-0.25F), MANA_MAX.of(0.30F))),
 	MAGO_ECONOMIA(PlayerClass.MAGO, 1, 3, () -> new ItemStack(Items.EXPERIENCE_BOTTLE), List.of(SPELL_COST.of(-0.25F), SPELL_COOLDOWN.of(-0.10F))),
 	MAGO_BARRERA(PlayerClass.MAGO, 2, 1, () -> new ItemStack(Items.GLASS), List.of(MAGIC_TAKEN.of(-0.25F))),
@@ -93,7 +93,7 @@ public enum Talent {
 	CURANDERO_PURIFICAR(PlayerClass.CURANDERO, 1, 2, () -> new ItemStack(Items.MILK_BUCKET), List.of()),
 	/** You heal {@code numbers[0]} of what you heal others. */
 	CURANDERO_VINCULO(PlayerClass.CURANDERO, 1, 3, () -> new ItemStack(Items.LEAD), List.of(), 0.25F),
-	CURANDERO_SERENIDAD(PlayerClass.CURANDERO, 2, 1, () -> new ItemStack(Items.LILY_OF_THE_VALLEY), List.of(MANA_REGEN.of(0.25F), STAMINA_REGEN.of(0.15F))),
+	CURANDERO_SERENIDAD(PlayerClass.CURANDERO, 2, 1, () -> new ItemStack(Items.LILY_OF_THE_VALLEY), List.of(MANA_REGEN.of(1.0F), STAMINA_REGEN.of(0.15F))),
 	CURANDERO_VOLUNTAD(PlayerClass.CURANDERO, 2, 2, () -> new ItemStack(Items.APPLE), List.of(MAX_HEALTH.of(0.15F))),
 	/** You and your allies within {@code numbers[0]} blocks get {@code numbers[1]} health every {@code numbers[2]} seconds. */
 	CURANDERO_AURA(PlayerClass.CURANDERO, 2, 3, () -> new ItemStack(Items.BEACON), List.of(), 6.0F, 1.0F, 6.0F),

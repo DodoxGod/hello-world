@@ -40,8 +40,11 @@ import net.minecraft.world.item.ItemStack;
  * <p>Andy, 2026-09-28: "¿podrías hacer una barra de maná? y mejoras que tengan que ver con el maná". Every spell
  * costs mana (a bolt little, an area more, a full charge a quarter more again) and in exchange the wait between
  * two spells is short, so a fight is a burst until the bar is empty and a moment's patience while it fills. It
- * comes back "solo, con el tiempo": slowly while spells keep coming, much faster once you have stopped for two
- * seconds. Kills add to it through {@link KillFlow}, at most 3 % of the bar every 5 ticks. The numbers are in
+ * comes back "solo, con el tiempo": slowly while spells keep coming, twice as fast once you have stopped for five
+ * seconds. Andy, 2026-09-30: "se debe regenerar lentísimo si no tienes la clase" — without a magic class an empty
+ * bar takes about two minutes; the Mago (x6) and the Curandero (x4), and their talents, are the ones who get it
+ * back at a useful pace (ClassStat.MANA_REGEN). Kills add to it through {@link KillFlow}, at most 3 % of the bar
+ * every 5 ticks, and for everyone else they are the real source. The numbers are in
  * {@link CombatConfig}; the upgrades that move them (Reserva and Flujo on armour, Meditación, Concentración,
  * Sifón and Descarga on the magic weapons, Filo arcano, Estallido arcano and Paso arcano on the blades) are in
  * upgrade/Upgrade.
@@ -75,7 +78,7 @@ public final class Mana {
 
 	/** Amatista: a full set of it is a reservoir. Eco: a full set of it hums with what comes back. */
 	public static final float AMETHYST_SET_MANA = 40.0F;
-	public static final float ECHO_SET_REGEN = 0.4F;
+	public static final float ECHO_SET_REGEN = 0.3F;
 	/** A refused cast says so no oftener than this, in ticks: holding the button on an empty bar is not a drum roll. */
 	private static final int DENY_SOUND_EVERY = 8;
 
@@ -165,8 +168,9 @@ public final class Mana {
 	}
 
 	/**
-	 * What comes back this tick: the slow rate while spells keep coming, the quick one once they have stopped,
-	 * times Flujo on every piece added up, a full set of echo, and Meditación on whatever is in the hands.
+	 * What comes back this tick: the slow rate while spells keep coming, the quicker one once they have stopped,
+	 * times Flujo on every piece added up, a full set of echo, and Meditación on whatever is in the hands, and all
+	 * of that times the class (a Mago x6, a Curandero x4, more with their talents).
 	 */
 	public static float regenPerTick(Player player, long now) {
 		CombatConfig cfg = CombatConfig.get();

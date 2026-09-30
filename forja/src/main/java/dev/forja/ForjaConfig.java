@@ -121,6 +121,16 @@ public final class ForjaConfig {
 				if (current.combate != null && current.combate.pressureDelayTicks == 40) {
 					current.combate.pressureDelayTicks = 60;
 				}
+				// Mana (Andy, 2026-09-30): very slow without a magic class. The old quick defaults follow the new ones.
+				if (current.combate != null && current.combate.manaRegenPerTick == 0.3F) {
+					current.combate.manaRegenPerTick = 0.02F;
+				}
+				if (current.combate != null && current.combate.manaIdleRegenPerTick == 1.0F) {
+					current.combate.manaIdleRegenPerTick = 0.04F;
+				}
+				if (current.combate != null && current.combate.manaIdleDelayTicks == 40) {
+					current.combate.manaIdleDelayTicks = 100;
+				}
 				migrateActions(current);
 				// Written back so keys added in a newer version show up in an older file.
 				Files.writeString(path, GSON.toJson(current));

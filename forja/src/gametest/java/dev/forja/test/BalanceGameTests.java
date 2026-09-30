@@ -112,15 +112,30 @@ public class BalanceGameTests {
 		}
 		for (ForgeType type : Analysis.TYPES) {
 			var bare = written.analysis.reports.get(type).best.get(Analysis.Scenario.BASE);
+			boolean magic = dev.forja.magic.Spellcasting.casts(type);
 			for (Target target : written.analysis.targets) {
 				var result = bare.ttk.get(target.id);
+				if (target.hurtable() && result != null && result.killedShare < 0.999 && magic) {
+					// Andy, 2026-09-30: without a magic class mana comes back "lentísimo", so a bar is a few spells
+					// and a boss outlasts it. The magic weapons are held to what a Mago's bar does instead.
+					result = written.analysis.ttk(bare.build, target, Analysis.SEARCH_RUNS, Analysis.SEARCH_RUNS, null, mago(written.analysis.options));
+				}
 				if (target.hurtable() && result != null && result.killedShare < 0.999) {
-					problems.add(type.id() + " sin mejoras no mata a " + target.id + " en " + (Analysis.MAX_TICKS / 20) + " s");
+					problems.add(type.id() + " sin mejoras no mata a " + target.id + " en " + (Analysis.MAX_TICKS / 20) + " s"
+						+ (magic ? " ni con el maná de un Mago" : ""));
 				}
 			}
 		}
 		helper.assertTrue(problems.isEmpty(), String.join("; ", problems));
 		helper.succeed();
+	}
+
+	/** The fight options with a Mago's bar: how fast it fills and how deep it is, from the class's base numbers. */
+	static Fight.Options mago(Fight.Options base) {
+		Fight.Options options = base.copy();
+		options.manaRegen = 1.0 + dev.forja.clase.PlayerClass.MAGO.base(dev.forja.clase.ClassStat.MANA_REGEN);
+		options.manaMax = 1.0 + dev.forja.clase.PlayerClass.MAGO.base(dev.forja.clase.ClassStat.MANA_MAX);
+		return options;
 	}
 
 	// ---------------------------------------------------------------- the model, held to the real code

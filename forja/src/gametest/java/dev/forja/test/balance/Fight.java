@@ -77,6 +77,12 @@ public final class Fight {
 		public boolean stamina = true;
 		/** The mana bar (magic/Mana): off, a staff or a tome casts every time its wait is over, as it did before the bar. */
 		public boolean mana = true;
+		/**
+		 * How much faster than bare the bar fills, and how much deeper it is (magic/Mana.regenFactor, maxOf): 1 and 1
+		 * for a player without a magic class, the Mago's own numbers for a Mago (BalanceGameTests.mago).
+		 */
+		public double manaRegen = 1.0;
+		public double manaMax = 1.0;
 		public boolean iframes = true;
 		public boolean cap = true;
 		public boolean posture = true;
@@ -96,6 +102,8 @@ public final class Fight {
 			Options copy = new Options();
 			copy.stamina = this.stamina;
 			copy.mana = this.mana;
+			copy.manaRegen = this.manaRegen;
+			copy.manaMax = this.manaMax;
 			copy.iframes = this.iframes;
 			copy.cap = this.cap;
 			copy.posture = this.posture;
@@ -331,7 +339,7 @@ public final class Fight {
 		this.procTick = -1;
 		this.procs = 0;
 		this.casts = 0;
-		this.mana = this.cfg.manaMax;
+		this.mana = this.manaMax();
 		this.lastCast = -100000;
 		this.runes.clear();
 		this.pending.clear();
@@ -477,14 +485,19 @@ public final class Fight {
 		return dev.forja.magic.Spellcasting.tapCost(this.build.stack, this.build.type);
 	}
 
-	/** magic/Mana's regeneration: slow while spells keep coming, quick once they have stopped. */
+	/** The bar's size: the base, times the class's (Options.manaMax). */
+	private double manaMax() {
+		return this.cfg.manaMax * this.options.manaMax;
+	}
+
+	/** magic/Mana's regeneration: slow while spells keep coming, quicker once they have stopped, times the class. */
 	private void tickMana() {
 		if (!this.options.mana) {
-			this.mana = this.cfg.manaMax;
+			this.mana = this.manaMax();
 			return;
 		}
 		double rate = this.t - this.lastCast >= this.cfg.manaIdleDelayTicks ? this.cfg.manaIdleRegenPerTick : this.cfg.manaRegenPerTick;
-		this.mana = Math.min(this.cfg.manaMax, this.mana + rate);
+		this.mana = Math.min(this.manaMax(), this.mana + rate * this.options.manaRegen);
 	}
 
 	/** Whether the caster holds back for want of mana: SPAM casts whenever a tap is paid for, REST empties the bar and waits for it full. */
@@ -495,7 +508,7 @@ public final class Fight {
 		double tap = this.tapCost();
 		return switch (policy.breath()) {
 			case SPAM, WAIT -> this.mana < tap;
-			case REST -> resting ? this.mana < this.cfg.manaMax : this.mana < tap;
+			case REST -> resting ? this.mana < this.manaMax() : this.mana < tap;
 		};
 	}
 

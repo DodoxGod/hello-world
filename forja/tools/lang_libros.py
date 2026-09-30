@@ -361,11 +361,13 @@ BOOKS.update({
         "A parry gives back %4$s stamina."),
     "gui.forja.libros.combate.magia.resumen": (
         "El **báculo** y el **grimorio** son armas: un proyectil y un área. Gastan **maná**, la barra azul, que vuelve "
-        "sola y más deprisa cuando dejas de lanzar. Tócalos para lanzar rápido; mantenlos para cargar y pegar más, gastando "
-        "más. El **farol** cura en vez de dañar.",
+        "sola **muy despacio**: unos dos minutos para llenarse. Solo el **Mago** y el **Curandero** la recuperan deprisa; "
+        "a los demás les vuelve sobre todo matando, así que para ellos la magia es un recurso, no el arma de siempre. "
+        "Tócalos para lanzar rápido; mantenlos para cargar y pegar más, gastando más. El **farol** cura en vez de dañar.",
         "The **staff** and the **tome** are weapons: a bolt and an area. They spend **mana**, the blue bar, which comes "
-        "back on its own and faster when you stop casting. Tap to cast fast; hold to charge and hit harder, spending more. "
-        "The **lantern** heals instead of hurting."),
+        "back on its own **very slowly**: about two minutes to fill. Only the **Mage** and the **Healer** get it back "
+        "quickly; everyone else gets it back mostly by killing, so for them magic is a resource, not the everyday weapon. "
+        "Tap to cast fast; hold to charge and hit harder, spending more. The **lantern** heals instead of hurting."),
     "gui.forja.libros.combate.farol_curandero": ("El Curandero lo usa mucho mejor: el libro de clases lo cuenta.",
                                                  "The Healer uses it far better: the book of classes explains."),
     "gui.forja.libros.combate.enemigos.resumen": (

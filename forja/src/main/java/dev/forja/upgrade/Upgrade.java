@@ -868,9 +868,13 @@ public enum Upgrade implements StringRepresentable {
 		return 0.25F * f;
 	}
 
-	/** Meditacion: how much faster mana comes back with the staff or the tome in the hand. */
+	/**
+	 * Meditacion: how much faster mana comes back with the staff or the tome in the hand. Like Flujo and the echo
+	 * set it adds to the base rate, and the class multiplies the sum (Mana.regenFactor): on its own it helps, but
+	 * it never makes a player without a magic class regenerate like a Mago.
+	 */
 	public static float meditationRegen(float f) {
-		return 0.6F * f;
+		return 0.4F * f;
 	}
 
 	/** Reserva: mana each piece adds to the bar. */
@@ -880,7 +884,7 @@ public enum Upgrade implements StringRepresentable {
 
 	/** Flujo: how much faster mana comes back, each piece. */
 	public static float manaFlow(float f) {
-		return 0.25F * f;
+		return 0.15F * f;
 	}
 
 	/** Filo arcano: what one blow costs, and the share of it that comes again as magic. */
