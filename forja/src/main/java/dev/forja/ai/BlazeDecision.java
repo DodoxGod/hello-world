@@ -1,47 +1,32 @@
 package dev.forja.ai;
 
 /**
- * One decision of a blaze network (red_blaze_v1, docs/red_blaze_contrato.json "cabezas"; Andy, 2026-09-29): its five
- * heads, each sampled on its own. {@link BlazePilot} carries it out.
+ * One decision of a blaze network (red_blaze_v1, docs/red_blaze_contrato.json "cabezas"): its five heads, each sampled
+ * on its own. {@link BlazePilot} carries it out every tick until the next one.
  *
- * @param move     mover, as v3's: 0 still, 1 towards the player, 5 away, the others (k − 1) · 45° from "towards"
+ * @param move     mover, as v3's: 0 no push, k = 1..8 the direction (k − 1) · 45° from "towards the player", turning right
  * @param vertical 0 hold its height, 1 rise, 2 descend
- * @param fire     0 wait (a charge is kept), 1 charge, 2 fire the burst
- * @param range    the distance band RODEAR_ALTO and ESPERAR keep: 0 middle (8–12), 1 near (5–8), 2 far (12–15)
- * @param tactic   what it is doing
+ * @param use      start the burst (charge, then three fireballs) if it can start now
+ * @param lead     aim lead: 0, 0.5, 1 or 1.5 × the player's flat speed × the fireball's flight ticks ({@link #LEADS})
+ * @param retreat  retirarse: overrides move and vertical with "away from the player" and "rise"
  */
-public record BlazeDecision(int move, int vertical, int fire, int range, Plan tactic) {
+public record BlazeDecision(int move, int vertical, boolean use, int lead, boolean retreat) {
 	public static final int HOLD = 0;
 	public static final int RISE = 1;
 	public static final int DESCEND = 2;
-	public static final int WAIT = 0;
-	public static final int CHARGE = 1;
-	public static final int FIRE = 2;
-	public static final int MIDDLE = 0;
-	public static final int NEAR = 1;
-	public static final int FAR = 2;
+	/** The aim lead factors of the adelanto head, in its order. */
+	public static final double[] LEADS = {0.0, 0.5, 1.0, 1.5};
+	/** mover's "away from the player", what retirarse flies. */
+	public static final int AWAY = 5;
 
-	/** The tactic head, in the contract's order (tacticas). ACOSAR, the first, is never masked. */
-	public enum Plan {
-		/** Presses in: the move and vertical heads drive it directly. */
-		ACOSAR(Tactic.ACERCARSE),
-		/** Circles the player at the chosen distance, a few blocks above them; the vertical head does not count. */
-		RODEAR_ALTO(Tactic.RODEAR),
-		/** Backs straight away from the player. */
-		RETIRARSE(Tactic.RETIRARSE),
-		/** Holds within the chosen distance band. */
-		ESPERAR(Tactic.ESPERAR);
-
-		/** The ground mobs' tactic it is counted and shown as (AiStats, AiDebug). */
-		public final Tactic shown;
-
-		Plan(Tactic shown) {
-			this.shown = shown;
-		}
+	/** The lead factor this decision fires with. */
+	public double leadFactor() {
+		return LEADS[Math.max(0, Math.min(LEADS.length - 1, this.lead))];
 	}
 
-	/** The same decision as the ground mobs' kind, for what counts and shows decisions (AiStats, AiDebug, TacticGoal.canUse). */
+	/** The same decision in the ground mobs' terms, for what counts and shows decisions (AiStats, AiDebug, TacticGoal.canUse). */
 	public Decision asDecision() {
-		return new Decision(this.move, false, this.fire == FIRE, this.tactic.shown, 0, 0, false);
+		Tactic shown = this.retreat ? Tactic.RETIRARSE : Tactic.LIBRE;
+		return new Decision(this.retreat ? AWAY : this.move, false, this.use, shown, 0, 0, false);
 	}
 }

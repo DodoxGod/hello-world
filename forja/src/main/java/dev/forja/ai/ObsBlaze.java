@@ -4,76 +4,76 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import dev.forja.mixin.LivingEntityAiAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.tags.FluidTags;
-import net.minecraft.tags.ItemTags;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Blaze;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball;
-import net.minecraft.world.item.BowItem;
-import net.minecraft.world.item.CrossbowItem;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.projectile.hurtingprojectile.AbstractHurtingProjectile;
+import net.minecraft.world.entity.projectile.hurtingprojectile.Fireball;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The blaze's own observation, red_blaze_v1 (docs/red_blaze_contrato.json; Andy, 2026-09-29): 65 inputs in five blocks
- * (YO, OBJ, BOLAS, ALIADOS, ENTORNO). A flying mob with a burst of fireballs did not fit red_mob_v3 without breaking it
- * (PROPUESTAS_IA_SIMULADOR.md §7.1): it needs its height over the ground and the player's, the state of its burst and
- * where its own fireballs are going, and none of the melee, squad or special inputs.
+ * The blaze's observation, red_blaze_v1 (docs/red_blaze_contrato.json, written by the simulator; its blaze.rs
+ * {@code obs_blaze}): 324 inputs, the 280 of red_mob_v3b (with correr) seen from the blaze, then 44 of its own.
  *
- * <p>The frame is v3's: "forward" is the flat direction from the blaze to the player, "right" is (−forward_z,
- * forward_x). Every input is 0 when there is nothing to measure, the contracts' neutral value.
+ * <p>The first 280 are worked out exactly as for a v3b mob (ObsM1, ObsForja, ObsV3), with three things the contract
+ * spells out for the blaze: yo_recarga/40 is the wait after its burst (the mind's cooldown), yo_arco/20 is 0 (its
+ * burst is not a drawn bow) and yo_fuego is 0 (a blaze never burns; vanilla's Blaze.isOnFire is its "charged" flag).
+ * yo_vy*5 is the vertical speed its executor flies with (BlazePilot), not the delta after vanilla's gravity, which
+ * the simulator does not have.
+ *
+ * <p>The frame of the new ones is v3's: "delante" is the flat direction from the blaze to the player, "derecha" is
+ * (−delante_z, delante_x).
  */
 public final class ObsBlaze {
 	/** The "formato" of a blaze network (docs/red_blaze_contrato.json). */
 	public static final String FORMAT = "red_blaze_v1";
-	public static final int SIZE = 65;
-	/** Where each block starts. */
-	public static final int YO_AT = 0;
-	public static final int OBJ_AT = 15;
-	public static final int BOLAS_AT = 39;
-	public static final int ALIADOS_AT = 43;
-	public static final int ENTORNO_AT = 54;
-	/** How far down the ground is looked for (yo_sobre_suelo/8 reads 2 when there is none), and up for a ceiling. */
+	/** red_mob_v3b's inputs, the blaze's own, and all of them. */
+	public static final int BASE = 280;
+	public static final int EXTRA = 44;
+	public static final int SIZE = BASE + EXTRA;
+	/** Where the three nearest fireballs start among the 324, and how many inputs each has. */
+	public static final int BALLS_AT = BASE + 20;
+	public static final int PER_BALL = 8;
+	public static final int BALLS = 3;
+	/** How far down the ground under a box is looked for; with none that deep, the height reads this. */
 	public static final int GROUND_DEPTH = 16;
-	public static final int CEILING_RANGE = 8;
-	/** How far off its own fireballs, other blazes and allies are counted, and fireballs sent back at it. */
-	public static final double RANGE = 32.0;
-	public static final double BATTED_RANGE = 16.0;
-	/** A ground ally this close to the player (flat) is round them: tierra_junto_obj/5. */
-	public static final double CLOSE_TO_PLAYER = 3.0;
-
-	private static final String[] DIRECTIONS = {"adelante", "adelante_derecha", "derecha", "atras_derecha", "atras",
-		"atras_izquierda", "izquierda", "adelante_izquierda"};
+	/** A ground ally this close to the player (flat) is beside them (aliados_junto_jug). */
+	public static final double BESIDE_PLAYER = 3.0;
+	/** How far round the player ground allies and fireballs are looked for. */
+	public static final double ALLY_RANGE = 24.0;
+	public static final double BALL_RANGE = 48.0;
+	/** A fireball older than this has left the fight (the simulator drops its own at 100 ticks). */
+	public static final int BALL_LIFE = 100;
+	/** How far ahead a fireball's path is followed for its closest point to the player, in ticks. */
+	public static final int BALL_LOOKAHEAD = 40;
+	/** How much higher the player's eyes are when they jump, for jug_dist_golpe_salto. */
+	public static final double JUMP_EYES = 1.25;
+	/** ObsM1's indices the blaze overrides. */
+	private static final int YO_VY = 26;
+	private static final int YO_ARCO = 28;
+	private static final int YO_FUEGO = 30;
 
 	private static final List<String> NAMES;
 
 	static {
-		List<String> names = new ArrayList<>();
-		// YO: the blaze itself
-		Collections.addAll(names, "yo_vida_frac", "yo_sobre_suelo/8", "yo_vy*5", "yo_vel_hacia_obj*5", "yo_vel_lateral*5", "yo_en_suelo",
-			"yo_carga", "yo_cargado", "yo_en_rafaga", "yo_rafaga_quedan/3", "yo_enfriamiento/60", "yo_fuego", "yo_en_agua", "yo_lluvia",
-			"yo_herido");
-		// OBJ: the player
-		Collections.addAll(names, "obj_distancia/16", "obj_distancia3d/16", "obj_dy/4", "obj_vel_hacia_mi*5", "obj_vel_lateral*5",
-			"obj_vy*5", "obj_en_suelo", "obj_sobre_suelo/8", "obj_vida/20", "obj_escudo_arriba", "obj_escudo_activo", "obj_mano_arco",
-			"obj_arco_tensado/20", "obj_mano_cuerpo", "obj_me_mira(cos)", "obj_desde_ataque/40", "obj_esprintando", "obj_en_agua",
-			"obj_ardiendo", "obj_resiste_fuego", "obj_techo_cerca", "obj_a_espada", "yo_ve_obj", "linea_aliado");
-		// BOLAS: its fireballs in flight
-		Collections.addAll(names, "bolas_en_vuelo/3", "bola0_fallo/4", "bola0_t/20", "bolas_desviadas/3");
-		// ALIADOS: other blazes and allies on the ground
-		Collections.addAll(names, "blazes_n/4", "blaze0_presente", "blaze0_delante/16", "blaze0_derecha/16", "blaze0_dy/4", "tierra_n/5",
-			"tierra0_presente", "tierra0_delante/16", "tierra0_derecha/16", "tierra0_dist_obj/16", "tierra_junto_obj/5");
-		// ENTORNO: what is round it
-		Collections.addAll(names, "techo_cerca", "agua_debajo", "agua_cerca");
-		for (String d : DIRECTIONS) {
-			names.add("pared_r2_" + d);
+		List<String> names = new ArrayList<>(ObsNames.M1);
+		names.addAll(ObsForja.names());
+		names.addAll(ObsV3.names());
+		names = new ArrayList<>(names.subList(0, BASE));
+		Collections.addAll(names, "yo_altura_suelo/5", "jug_altura_suelo/5", "jug_dy_ojos/4", "jug_dist_golpe/6",
+			"jug_dist_golpe_salto/6", "jug_me_alcanza", "jug_me_alcanza_salto", "rafaga_cargando", "rafaga_carga_progreso",
+			"rafaga_en_curso", "rafaga_quedan/3", "rafaga_enfriamiento/60", "rafaga_lista", "jug_ardiendo", "jug_fuego/100",
+			"aliados_junto_jug/5", "aliado_suelo_dist_jug/8", "bola_ticks_al_jug/20", "yo_mojado", "mis_bolas_vuelo/3");
+		for (int k = 0; k < BALLS; k++) {
+			for (String s : new String[] {"presente", "delante/16", "derecha/16", "dy/4", "t_cercano/20", "fallo/2", "mia", "desviada"}) {
+				names.add("bola" + k + "_" + s);
+			}
 		}
 		NAMES = Collections.unmodifiableList(names);
 	}
@@ -81,289 +81,234 @@ public final class ObsBlaze {
 	private ObsBlaze() {
 	}
 
-	/** The 65 names, in the contract's order. */
+	/** The 324 names, in the contract's order. */
 	public static List<String> names() {
 		return NAMES;
 	}
 
-	/** The observation a red_blaze_v1 network is fed. {@code mind} may be null (tests): its burst then reads as idle. */
+	/** The observation a blaze network is fed (see the class comment). {@code mind} may not be null. */
 	public static float[] build(Mob mob, Player target, MobMind mind) {
-		double[] o = new double[SIZE];
-		Level level = mob.level();
+		BlazePilot.State state = BlazePilot.state(mind);
+		float[] m1 = ObsM1.of(mob, target, mind.cooldown, 0);
+		float[] base = ObsForja.full(mob, target, mind, m1, BASE);
+		float[] out = new float[SIZE];
+		System.arraycopy(base, 0, out, 0, BASE);
+		out[YO_ARCO] = 0.0F;
+		out[YO_FUEGO] = 0.0F;
+		// On the ground and not moving up or down, Minecraft keeps the tick's gravity in the delta (−0.0784), and the
+		// simulator observes it so; in the air it is the executor's own vertical speed.
+		double vy = mob.onGround() && state.vy == 0.0 ? -0.0784 : state.vy;
+		out[YO_VY] = (float) ObsM1.clip(vy * 5.0, -3.0, 3.0);
+
 		double dx = target.getX() - mob.getX();
 		double dz = target.getZ() - mob.getZ();
-		double flat = Math.hypot(dx, dz);
-		double ux = flat > 1.0E-6 ? dx / flat : 1.0;
-		double uz = flat > 1.0E-6 ? dz / flat : 0.0;
+		double d = Math.max(1.0E-6, Math.hypot(dx, dz));
+		double ux = dx / d;
+		double uz = dz / d;
 		double rx = -uz;
 		double rz = ux;
-		Vec3 mv = mob.getDeltaMovement();
-		// what the player's client says it moved (the server's delta barely moves: see ObsM1)
-		Vec3 tv = target.getKnownMovement();
-
-		// YO
-		int at = YO_AT;
-		o[at] = mob.getHealth() / Math.max(1.0E-6, mob.getMaxHealth());
-		o[at + 1] = heightOverGround(mob) / 8.0;
-		o[at + 2] = ObsM1.clip(mv.y * 5.0, -3.0, 3.0);
-		o[at + 3] = ObsM1.clip((mv.x * ux + mv.z * uz) * 5.0, -3.0, 3.0);
-		o[at + 4] = ObsM1.clip((mv.x * rx + mv.z * rz) * 5.0, -3.0, 3.0);
-		o[at + 5] = mob.onGround() ? 1.0 : 0.0;
-		int charge = mind == null ? 0 : mind.blazeCharge;
-		int draw = mind == null ? 0 : mind.draw;
-		int cooldown = mind == null ? 0 : mind.cooldown;
-		o[at + 6] = ObsM1.clip(charge / (double) BlazePilot.CHARGE_TICKS, 0.0, 1.0);
-		o[at + 7] = charge >= BlazePilot.CHARGE_TICKS ? 1.0 : 0.0;
-		o[at + 8] = draw > 0 ? 1.0 : 0.0;
-		o[at + 9] = draw > 0 ? BlazePilot.shotsLeft(draw) / (double) TacticGoal.BLAZE_BURST : 0.0;
-		o[at + 10] = ObsM1.clip(Math.max(0, cooldown) / (double) TacticGoal.BLAZE_COOLDOWN, 0.0, 1.0);
-		o[at + 11] = mob.isOnFire() ? 1.0 : 0.0;
-		o[at + 12] = mob.isInWater() ? 1.0 : 0.0;
-		o[at + 13] = level.isRainingAt(mob.blockPosition()) ? 1.0 : 0.0;
-		o[at + 14] = mob.invulnerableTime > 10 ? 1.0 : 0.0;
-
-		// OBJ
-		at = OBJ_AT;
-		Vec3 mobCenter = new Vec3(mob.getX(), mob.getY(0.5), mob.getZ());
-		Vec3 targetCenter = new Vec3(target.getX(), target.getY(0.5), target.getZ());
-		o[at] = ObsM1.clip(flat / 16.0, 0.0, 2.0);
-		o[at + 1] = ObsM1.clip(mobCenter.distanceTo(targetCenter) / 16.0, 0.0, 2.0);
-		o[at + 2] = ObsM1.clip((target.getY() - mob.getY()) / 4.0, -2.0, 2.0);
-		o[at + 3] = ObsM1.clip(-(tv.x * ux + tv.z * uz) * 5.0, -3.0, 3.0);
-		o[at + 4] = ObsM1.clip((tv.x * rx + tv.z * rz) * 5.0, -3.0, 3.0);
-		o[at + 5] = ObsM1.clip(tv.y * 5.0, -3.0, 3.0);
-		o[at + 6] = target.onGround() ? 1.0 : 0.0;
-		o[at + 7] = heightOverGround(target) / 8.0;
-		o[at + 8] = ObsM1.clip(target.getHealth() / 20.0, 0.0, 1.5);
-		int shield = ObsM1.shieldTicks(target);
-		o[at + 9] = shield > 0 ? 1.0 : 0.0;
-		o[at + 10] = shield >= ObsM1.SHIELD_TICKS ? 1.0 : 0.0;
-		o[at + 11] = ranged(target.getMainHandItem()) || ranged(target.getOffhandItem()) ? 1.0 : 0.0;
-		boolean drawing = target.isUsingItem() && ranged(target.getUseItem());
-		o[at + 12] = drawing ? ObsM1.clip(target.getTicksUsingItem() / 20.0, 0.0, 1.0) : 0.0;
-		ItemStack held = target.getMainHandItem();
-		o[at + 13] = held.is(ItemTags.SWORDS) || held.is(ItemTags.AXES)
-			|| dev.forja.combat.SwingStyle.of(held) != dev.forja.combat.SwingStyle.VANILLA ? 1.0 : 0.0;
-		Vec3 toMob = mobCenter.subtract(target.getEyePosition());
-		o[at + 14] = toMob.lengthSqr() > 1.0E-8 ? ObsM1.clip(target.getViewVector(1.0F).dot(toMob.normalize()), -1.0, 1.0) : 0.0;
-		o[at + 15] = Math.min(40, Math.max(0, ((LivingEntityAiAccess) target).forja$attackStrengthTicker())) / 40.0;
-		o[at + 16] = target.isSprinting() ? 1.0 : 0.0;
-		o[at + 17] = target.isInWater() ? 1.0 : 0.0;
-		o[at + 18] = target.isOnFire() ? 1.0 : 0.0;
-		o[at + 19] = target.hasEffect(MobEffects.FIRE_RESISTANCE) ? 1.0 : 0.0;
-		o[at + 20] = ceilingNear(level, target.getX(), target.getY() + target.getBbHeight(), target.getZ());
-		o[at + 21] = playerReaches(mob, target) ? 1.0 : 0.0;
-		o[at + 22] = sees(mob, target) ? 1.0 : 0.0;
-		o[at + 23] = Squad.allyInLine(mob, target) ? 1.0 : 0.0;
-
-		// BOLAS
-		at = BOLAS_AT;
-		List<SmallFireball> mine = level.getEntitiesOfClass(SmallFireball.class, mob.getBoundingBox().inflate(RANGE),
-			ball -> ball.isAlive() && ball.getOwner() == mob);
-		o[at] = Math.min(mine.size() / 3.0, 2.0);
-		double bestMiss = Double.POSITIVE_INFINITY;
-		double bestTime = 0.0;
-		for (SmallFireball ball : mine) {
-			Vec3 p = ball.position();
-			Vec3 v = ball.getDeltaMovement();
-			Vec3 rel = targetCenter.subtract(p);
-			double speed2 = v.lengthSqr();
-			double t = speed2 > 1.0E-8 ? Math.max(0.0, rel.dot(v) / speed2) : 0.0;
-			double miss = rel.subtract(v.scale(t)).length();
-			if (miss < bestMiss) {
-				bestMiss = miss;
-				bestTime = t;
+		double reach = Reach.player(target);
+		int i = BASE;
+		out[i++] = f(ObsM1.clip(heightOverGround(mob) / 5.0, 0.0, 2.0));
+		out[i++] = f(ObsM1.clip(heightOverGround(target) / 5.0, 0.0, 2.0));
+		out[i++] = f(ObsM1.clip((target.getEyeY() - mob.getY(0.5)) / 4.0, -2.0, 2.0));
+		double blow = hitDistance(target, mob, 0.0);
+		double jumping = hitDistance(target, mob, JUMP_EYES);
+		out[i++] = f(ObsM1.clip(blow / 6.0, 0.0, 2.0));
+		out[i++] = f(ObsM1.clip(jumping / 6.0, 0.0, 2.0));
+		out[i++] = blow <= reach ? 1.0F : 0.0F;
+		out[i++] = jumping <= reach ? 1.0F : 0.0F;
+		out[i++] = state.phase == BlazePilot.CHARGING ? 1.0F : 0.0F;
+		out[i++] = state.phase == BlazePilot.CHARGING && state.chargeTotal > 0
+			? f(1.0 - (double) state.chargeLeft / state.chargeTotal) : 0.0F;
+		out[i++] = state.phase == BlazePilot.BURSTING ? 1.0F : 0.0F;
+		out[i++] = state.phase == BlazePilot.BURSTING
+			? f((BlazePilot.BURST - Math.min(BlazePilot.BURST, state.shots)) / 3.0) : 0.0F;
+		out[i++] = f(ObsM1.clip(Math.max(0, mind.cooldown) / 60.0, 0.0, 2.0));
+		out[i++] = BlazePilot.ready(mob, mind, target) ? 1.0F : 0.0F;
+		int fire = target.getRemainingFireTicks();
+		out[i++] = fire > 0 ? 1.0F : 0.0F;
+		out[i++] = f(ObsM1.clip(Math.max(0, fire) / 100.0, 0.0, 2.0));
+		int beside = 0;
+		double nearest = Double.MAX_VALUE;
+		for (Mob ally : groundAllies(mob, target)) {
+			double flat = Math.hypot(ally.getX() - target.getX(), ally.getZ() - target.getZ());
+			nearest = Math.min(nearest, flat);
+			if (flat <= BESIDE_PLAYER) {
+				beside++;
 			}
 		}
-		if (!mine.isEmpty()) {
-			o[at + 1] = ObsM1.clip(bestMiss / 4.0, 0.0, 2.0);
-			o[at + 2] = ObsM1.clip(bestTime / 20.0, 0.0, 2.0);
-		}
-		int batted = level.getEntitiesOfClass(SmallFireball.class, mob.getBoundingBox().inflate(BATTED_RANGE),
-			ball -> ball.isAlive() && ball.getOwner() == target).size();
-		o[at + 3] = Math.min(batted / 3.0, 2.0);
-
-		// ALIADOS
-		at = ALIADOS_AT;
-		int blazes = 0;
-		int ground = 0;
-		int round = 0;
-		Mob blaze0 = null;
-		Mob ground0 = null;
-		for (Mob other : ObsM1.allies(mob)) {
-			if (other.distanceToSqr(mob) > RANGE * RANGE) {
+		out[i++] = f(ObsM1.clip(beside / 5.0, 0.0, 2.0));
+		out[i++] = nearest == Double.MAX_VALUE ? 2.0F : f(ObsM1.clip(nearest / 8.0, 0.0, 2.0));
+		Vec3 muzzle = BlazePilot.muzzle(mob);
+		double toPlayer = muzzle.distanceTo(new Vec3(target.getX(), target.getY(0.5), target.getZ()));
+		out[i++] = f(ObsM1.clip(BlazePilot.flightTicks(toPlayer) / 20.0, 0.0, 3.0));
+		out[i++] = mob.isInWaterOrRain() ? 1.0F : 0.0F;
+		out[i++] = f(ObsM1.clip(BlazePilot.ownBallsInFlight(state, mob) / 3.0, 0.0, 2.0));
+		List<Fireball> balls = nearestBalls(target);
+		double cx = target.getX();
+		double cy = target.getY(0.5);
+		double cz = target.getZ();
+		AABB body = target.getBoundingBox();
+		for (int k = 0; k < BALLS; k++) {
+			if (k >= balls.size()) {
+				i += PER_BALL;
 				continue;
 			}
-			if (other.getType() == EntityTypes.BLAZE) {
-				blazes++;
-				if (blaze0 == null) {
-					blaze0 = other;
-				}
-			} else if (other.getTarget() == target) {
-				ground++;
-				if (ground0 == null) {
-					ground0 = other;
-				}
-				if (Math.hypot(other.getX() - target.getX(), other.getZ() - target.getZ()) <= CLOSE_TO_PLAYER) {
-					round++;
-				}
-			}
-		}
-		o[at] = Math.min(blazes / 4.0, 2.0);
-		if (blaze0 != null) {
-			double ax = blaze0.getX() - mob.getX();
-			double az = blaze0.getZ() - mob.getZ();
-			o[at + 1] = 1.0;
-			o[at + 2] = ObsM1.clip((ax * ux + az * uz) / 16.0, -2.0, 2.0);
-			o[at + 3] = ObsM1.clip((ax * rx + az * rz) / 16.0, -2.0, 2.0);
-			o[at + 4] = ObsM1.clip((blaze0.getY() - mob.getY()) / 4.0, -2.0, 2.0);
-		}
-		o[at + 5] = Math.min(ground / 5.0, 2.0);
-		if (ground0 != null) {
-			double ax = ground0.getX() - mob.getX();
-			double az = ground0.getZ() - mob.getZ();
-			o[at + 6] = 1.0;
-			o[at + 7] = ObsM1.clip((ax * ux + az * uz) / 16.0, -2.0, 2.0);
-			o[at + 8] = ObsM1.clip((ax * rx + az * rz) / 16.0, -2.0, 2.0);
-			o[at + 9] = ObsM1.clip(Math.hypot(target.getX() - ground0.getX(), target.getZ() - ground0.getZ()) / 16.0, 0.0, 2.0);
-		}
-		o[at + 10] = Math.min(round / 5.0, 2.0);
-
-		// ENTORNO
-		at = ENTORNO_AT;
-		o[at] = ceilingNear(level, mob.getX(), mob.getY() + mob.getBbHeight(), mob.getZ());
-		o[at + 1] = waterBelow(mob) ? 1.0 : 0.0;
-		o[at + 2] = waterNear(mob, ux, uz) ? 1.0 : 0.0;
-		for (int k = 0; k < 8; k++) {
-			double[] dir = ObsM1.direction(k + 1, ux, uz);
-			double px = mob.getX() + dir[0] * 2.0;
-			double pz = mob.getZ() + dir[1] * 2.0;
-			o[at + 3 + k] = solid(level, px, mob.getY() + 0.5, pz) || solid(level, px, mob.getY() + 1.5, pz) ? 1.0 : 0.0;
-		}
-
-		float[] out = new float[SIZE];
-		for (int i = 0; i < SIZE; i++) {
-			out[i] = (float) o[i];
+			Fireball ball = balls.get(k);
+			double qx = ball.getX() - cx;
+			double qy = ball.getY() - cy;
+			double qz = ball.getZ() - cz;
+			double[] closest = closestApproach(ball, body);
+			Entity owner = ball.getOwner();
+			out[i++] = 1.0F;
+			out[i++] = f(ObsM1.clip((qx * ux + qz * uz) / 16.0, -2.0, 2.0));
+			out[i++] = f(ObsM1.clip((qx * rx + qz * rz) / 16.0, -2.0, 2.0));
+			out[i++] = f(ObsM1.clip(qy / 4.0, -2.0, 2.0));
+			out[i++] = f(ObsM1.clip(closest[0] / 20.0, 0.0, 2.0));
+			out[i++] = f(ObsM1.clip(closest[1] / 2.0, 0.0, 1.0));
+			out[i++] = owner == mob ? 1.0F : 0.0F;
+			out[i++] = owner == target ? 1.0F : 0.0F;
 		}
 		return out;
 	}
 
-	private static boolean ranged(ItemStack stack) {
-		return stack.getItem() instanceof BowItem || stack.getItem() instanceof CrossbowItem;
-	}
-
-	/** Line of sight from the blaze's eyes to the player's middle: what yo_ve_obj reads and what a shot needs. */
-	public static boolean sees(Mob mob, Player target) {
-		return ObsM1.sees(mob, target.getX(), target.getY(0.5), target.getZ());
-	}
-
-	/** Whether the player's blow reaches the blaze now: from their eyes to the nearest point of its box, within their real reach. */
-	static boolean playerReaches(Mob mob, Player target) {
-		AABB box = mob.getBoundingBox();
-		Vec3 eye = target.getEyePosition();
-		double x = Math.max(box.minX, Math.min(box.maxX, eye.x));
-		double y = Math.max(box.minY, Math.min(box.maxY, eye.y));
-		double z = Math.max(box.minZ, Math.min(box.maxZ, eye.z));
-		return eye.distanceTo(new Vec3(x, y, z)) <= Reach.player(target);
+	private static float f(double v) {
+		return (float) v;
 	}
 
 	/**
-	 * How high an entity's feet are over the first block with collision in the column under its centre, searched
-	 * {@link #GROUND_DEPTH} blocks down: 0 standing, {@link #GROUND_DEPTH} when there is none that deep.
+	 * How high an entity's feet are over the ground under its box: the highest collision top at or below its feet in
+	 * any block column its box stands over (the simulator's suelo(x, z, half width)), {@link #GROUND_DEPTH} with none.
 	 */
-	public static double heightOverGround(net.minecraft.world.entity.Entity entity) {
-		Level level = entity.level();
+	public static double heightOverGround(Entity entity) {
 		double y = entity.getY();
+		return y - groundBelow(entity.level(), entity.getX(), entity.getZ(), entity.getBbWidth() / 2.0, y);
+	}
+
+	/** The ground under a box of half width {@code hw} at (x, z) whose feet are at {@code y}; y − GROUND_DEPTH with none. */
+	public static double groundBelow(Level level, double x, double z, double hw, double y) {
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-		int x = (int) Math.floor(entity.getX());
-		int z = (int) Math.floor(entity.getZ());
-		int top = (int) Math.floor(y);
-		for (int k = top; k >= top - GROUND_DEPTH; k--) {
-			pos.set(x, k, z);
-			var shape = level.getBlockState(pos).getCollisionShape(level, pos);
-			if (!shape.isEmpty()) {
-				double surface = k + shape.max(Direction.Axis.Y);
-				return ObsM1.clip(y - Math.min(surface, y), 0.0, GROUND_DEPTH);
+		int top = (int) Math.floor(y + 1.0E-3);
+		double best = y - GROUND_DEPTH;
+		for (int bx = (int) Math.floor(x - hw); bx <= (int) Math.floor(x + hw - 1.0E-6); bx++) {
+			for (int bz = (int) Math.floor(z - hw); bz <= (int) Math.floor(z + hw - 1.0E-6); bz++) {
+				for (int k = top; k >= top - GROUND_DEPTH && k + 1 > best; k--) {
+					pos.set(bx, k, bz);
+					var shape = level.getBlockState(pos).getCollisionShape(level, pos);
+					if (shape.isEmpty()) {
+						continue;
+					}
+					double surface = k + shape.max(Direction.Axis.Y);
+					if (surface <= y + 1.0E-3) {
+						best = Math.max(best, surface);
+						break;
+					}
+				}
 			}
 		}
-		return GROUND_DEPTH;
+		return best;
 	}
 
 	/**
-	 * How far above {@code headY} the first block with collision is, in the column at (x, z), searched
-	 * {@link #CEILING_RANGE} blocks up; {@link Double#POSITIVE_INFINITY} for none.
+	 * The simulator's distancia_golpe of the player to the blaze: from the player's eyes ({@code extra} higher) along
+	 * the ray to the blaze's middle at the eyes' height (kept 0.1 inside its box), how far until it enters the box.
 	 */
-	public static double ceiling(Level level, double x, double headY, double z) {
-		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-		int bx = (int) Math.floor(x);
-		int bz = (int) Math.floor(z);
-		int from = (int) Math.floor(headY);
-		for (int k = from; k <= from + CEILING_RANGE; k++) {
-			pos.set(bx, k, bz);
-			var shape = level.getBlockState(pos).getCollisionShape(level, pos);
-			if (!shape.isEmpty()) {
-				double bottom = k + shape.min(Direction.Axis.Y);
-				if (bottom >= headY - 1.0E-3) {
-					return bottom - headY;
+	public static double hitDistance(Player player, Mob blaze, double extra) {
+		AABB box = blaze.getBoundingBox();
+		double ex = player.getX();
+		double ey = player.getEyeY() + extra;
+		double ez = player.getZ();
+		double ay = Math.max(box.minY + 0.1, Math.min(box.maxY - 0.1, ey));
+		double dx = blaze.getX() - ex;
+		double dy = ay - ey;
+		double dz = blaze.getZ() - ez;
+		double n = Math.sqrt(dx * dx + dy * dy + dz * dz);
+		if (n < 1.0E-6) {
+			return 0.0;
+		}
+		double entry = rayEntry(ex, ey, ez, dx / n, dy / n, dz / n, box);
+		return entry < 0.0 ? n : entry;
+	}
+
+	/** Where a ray (unit direction) enters a box: 0 from inside, −1 when it misses. */
+	static double rayEntry(double ox, double oy, double oz, double dx, double dy, double dz, AABB box) {
+		double near = 0.0;
+		double far = Double.MAX_VALUE;
+		double[] o = {ox, oy, oz};
+		double[] d = {dx, dy, dz};
+		double[] lo = {box.minX, box.minY, box.minZ};
+		double[] hi = {box.maxX, box.maxY, box.maxZ};
+		for (int a = 0; a < 3; a++) {
+			if (Math.abs(d[a]) < 1.0E-12) {
+				if (o[a] < lo[a] || o[a] > hi[a]) {
+					return -1.0;
 				}
-				if (k + shape.max(Direction.Axis.Y) > headY) {
-					return 0.0;
-				}
+				continue;
+			}
+			double t1 = (lo[a] - o[a]) / d[a];
+			double t2 = (hi[a] - o[a]) / d[a];
+			near = Math.max(near, Math.min(t1, t2));
+			far = Math.min(far, Math.max(t1, t2));
+			if (near > far) {
+				return -1.0;
 			}
 		}
-		return Double.POSITIVE_INFINITY;
+		return near;
 	}
 
-	/** techo_cerca and obj_techo_cerca: (8 − distance to the ceiling) / 8, 0 for none within 8. */
-	private static double ceilingNear(Level level, double x, double headY, double z) {
-		double d = ceiling(level, x, headY, z);
-		return Double.isInfinite(d) ? 0.0 : ObsM1.clip((CEILING_RANGE - d) / CEILING_RANGE, 0.0, 1.0);
+	/** Hostiles on the ground (no blaze) fighting this player, within {@link #ALLY_RANGE} of them. */
+	static List<Mob> groundAllies(Mob self, Player target) {
+		return target.level().getEntitiesOfClass(Mob.class, target.getBoundingBox().inflate(ALLY_RANGE),
+			other -> other != self && other.isAlive() && other instanceof Enemy && !(other instanceof Blaze) && other.getTarget() == target);
 	}
 
-	/** Water in the column under it, before the ground and within {@link #GROUND_DEPTH}. */
-	private static boolean waterBelow(Mob mob) {
-		Level level = mob.level();
-		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-		int x = (int) Math.floor(mob.getX());
-		int z = (int) Math.floor(mob.getZ());
-		int top = (int) Math.floor(mob.getY());
-		for (int k = top; k >= top - GROUND_DEPTH; k--) {
-			pos.set(x, k, z);
-			if (level.getFluidState(pos).is(FluidTags.WATER)) {
-				return true;
-			}
-			if (!level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) {
-				return false;
+	/** The fireballs (anyone's) still in the fight, nearest the player's middle first, at most three. */
+	static List<Fireball> nearestBalls(Player target) {
+		Vec3 centre = new Vec3(target.getX(), target.getY(0.5), target.getZ());
+		List<Fireball> balls = target.level().getEntitiesOfClass(Fireball.class, target.getBoundingBox().inflate(BALL_RANGE),
+			ball -> ball.isAlive() && ball.tickCount <= BALL_LIFE);
+		balls.sort(java.util.Comparator.comparingDouble(ball -> ball.position().distanceToSqr(centre)));
+		return balls.size() > BALLS ? balls.subList(0, BALLS) : balls;
+	}
+
+	/**
+	 * A fireball's closest point to the (still) player's box over the next {@link #BALL_LOOKAHEAD} ticks, with its own
+	 * acceleration: {ticks until then, distance there}. As vanilla moves it (AbstractHurtingProjectile.tick): the
+	 * speed takes its step first, then the ball moves by it.
+	 */
+	static double[] closestApproach(AbstractHurtingProjectile ball, AABB body) {
+		double x = ball.getX();
+		double y = ball.getY();
+		double z = ball.getZ();
+		Vec3 v = ball.getDeltaMovement();
+		double vx = v.x;
+		double vy = v.y;
+		double vz = v.z;
+		double power = ball.accelerationPower;
+		double best = boxDistance(body, x, y, z);
+		int when = 0;
+		for (int k = 1; k <= BALL_LOOKAHEAD; k++) {
+			double n = Math.max(1.0E-9, Math.sqrt(vx * vx + vy * vy + vz * vz));
+			vx = (vx + vx / n * power) * BlazePilot.BALL_INERTIA;
+			vy = (vy + vy / n * power) * BlazePilot.BALL_INERTIA;
+			vz = (vz + vz / n * power) * BlazePilot.BALL_INERTIA;
+			x += vx;
+			y += vy;
+			z += vz;
+			double dist = boxDistance(body, x, y, z);
+			if (dist < best) {
+				best = dist;
+				when = k;
 			}
 		}
-		return false;
+		return new double[] {when, best};
 	}
 
-	/** Water in its own block or in the eight round it at 1.5, at its feet or one lower. */
-	private static boolean waterNear(Mob mob, double ux, double uz) {
-		if (mob.isInWater()) {
-			return true;
-		}
-		Level level = mob.level();
-		for (int k = 0; k <= 8; k++) {
-			double px = mob.getX();
-			double pz = mob.getZ();
-			if (k > 0) {
-				double[] dir = ObsM1.direction(k, ux, uz);
-				px += dir[0] * 1.5;
-				pz += dir[1] * 1.5;
-			}
-			for (int dy = 0; dy >= -1; dy--) {
-				if (level.getFluidState(BlockPos.containing(px, mob.getY() + dy, pz)).is(FluidTags.WATER)) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	private static boolean solid(Level level, double x, double y, double z) {
-		BlockPos pos = BlockPos.containing(x, y, z);
-		return !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
+	static double boxDistance(AABB box, double x, double y, double z) {
+		double dx = Math.max(0.0, Math.max(box.minX - x, x - box.maxX));
+		double dy = Math.max(0.0, Math.max(box.minY - y, y - box.maxY));
+		double dz = Math.max(0.0, Math.max(box.minZ - z, z - box.maxZ));
+		return Math.sqrt(dx * dx + dy * dy + dz * dz);
 	}
 }

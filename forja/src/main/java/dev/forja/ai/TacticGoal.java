@@ -106,6 +106,7 @@ public final class TacticGoal extends Goal {
 		}
 		this.struck = null;
 		this.mind.draw = 0;
+		BlazePilot.release(this.mob, this.mind);
 		if (this.mob instanceof Creeper creeper && this.mind.networked) {
 			creeper.setSwellDir(-1);
 		}
@@ -115,6 +116,11 @@ public final class TacticGoal extends Goal {
 	public void tick() {
 		Player target = this.mind.target;
 		if (target == null) {
+			return;
+		}
+		// A blaze on its own network (red_blaze_v1) flies and fires by its own executor (its rest, stagger and sight too).
+		if (this.mind.networked && this.mind.blaze != null) {
+			BlazePilot.tick(this.mob, this.mind, target);
 			return;
 		}
 		if (this.mind.cooldown > 0) {
@@ -167,11 +173,6 @@ public final class TacticGoal extends Goal {
 			if (this.mind.decision.tactic() != Tactic.EMBOSCAR || !this.ambush(target, now, true)) {
 				this.search(now);
 			}
-			return;
-		}
-		// A blaze on its own network (red_blaze_v1) flies and fires by its own executor, in 3D.
-		if (this.mind.networked && this.mind.blaze != null) {
-			BlazePilot.tick(this.mob, this.mind, target);
 			return;
 		}
 		Decision decision = this.mind.decision;

@@ -288,12 +288,12 @@ public final class Squad {
 	/** Whether it takes a slot on the ring: everything but the ones that fight from off it. */
 	static boolean onRing(Mob mob) {
 		MobFamily family = MobFamily.of(mob);
-		return family != MobFamily.ARQUERO && family != MobFamily.CREEPER;
+		return family != MobFamily.ARQUERO && family != MobFamily.CREEPER && family != MobFamily.BLAZE;
 	}
 
 	private static MobMind firstMelee(List<MobMind> members, MobMind except) {
 		for (MobMind mind : members) {
-			if (mind != except && MobFamily.of(mind.mob) != MobFamily.ARQUERO && MobFamily.of(mind.mob) != MobFamily.CREEPER) {
+			if (mind != except && onRing(mind.mob)) {
 				return mind;
 			}
 		}

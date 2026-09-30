@@ -30,6 +30,8 @@
 		"DrownedRainMixin",
 		"LivingEntityAiAccess",
 		"CreeperAiAccess",
+		"BlazeAccess",
+		"BlazeMixin",
 		"EnderManAccess",
 		"PiglinAiMixin",
 		"PlayerAffinityMixin",

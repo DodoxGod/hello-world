@@ -8,3 +8,8 @@ simulador externo (Rust), que sigue entrenando: puede haber versiones más nueva
 Para probarlas en el juego de desarrollo: copia estos archivos a `run/config/forja/redes/` (cliente) o a la carpeta
 que diga `iaCarpetaRedes` en `config/forja.json`. `MobAi.check` rechaza (y lo dice en el log) cualquier red cuyas
 entradas no coincidan en nombre y orden con las del mod; `/forja ia` dice cuántas cargó.
+
+`red_blaze.json` es la red propia del blaze: formato `red_blaze_v1` (contrato `docs/red_blaze_contrato.json`,
+explicado en `docs/red_blaze_contrato.md`), 324 entradas, 18 salidas, iteración 24 150, 2 ticks por decisión. Se
+copió el 2026-09-29 de `E:\IA\agente\minecraft\combate\forja_blaze\red_blaze.json`. El mod la busca en
+`redes_v4/` o en `redes/`.

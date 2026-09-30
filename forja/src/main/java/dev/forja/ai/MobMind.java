@@ -83,12 +83,11 @@ public final class MobMind {
 	 */
 	public long waitingSince = Long.MIN_VALUE / 2;
 	/**
-	 * A blaze driven by its own network (red_blaze_v1, Andy 2026-09-29): its last decision, null whenever anything
-	 * else drives it; the ticks of charge it holds for its next burst; and the vertical speed BlazePilot last set.
+	 * A blaze driven by its own network (red_blaze_v1, docs/red_blaze_contrato.json): its last decision, null whenever
+	 * anything else drives it, and the state of its burst and flight (BlazePilot), made the first time it is needed.
 	 */
 	public BlazeDecision blaze;
-	public int blazeCharge;
-	public double blazeVy;
+	public BlazePilot.State blazeState;
 
 	// --- v4 (docs/red_mob_v4_diseno.md): the state of the new mechanics, the same for a network and the rules
 

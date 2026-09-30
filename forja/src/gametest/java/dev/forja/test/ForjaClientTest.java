@@ -126,6 +126,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 			// One section by itself. Something that is judged by eye gets looked at a dozen times, and
 			// the whole file is five minutes a look: FORJA_SOLO=onda runs the ring and nothing else.
 			String solo = System.getenv("FORJA_SOLO");
+			// The blaze flown by its trained network (docs/red_blaze_contrato.json): hovering, the burst's warning, the burst.
+			if ("blaze".equals(solo)) {
+				BlazeFootage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("onda".equals(solo)) {
 				checkShockwave(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");

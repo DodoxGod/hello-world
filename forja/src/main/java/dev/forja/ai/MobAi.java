@@ -565,7 +565,10 @@ public final class MobAi {
 			thinkBlaze(mind, target, net);
 			return;
 		}
-		mind.blaze = null;
+		if (mind.blaze != null) {
+			BlazePilot.release(mob, mind);
+			mind.blaze = null;
+		}
 		// The v4 specials (the third slot) are only there for the rules and a v4 network: an older one never saw them.
 		if (mind.specials != null) {
 			mind.specials.hideV4 = net != null && !V4_FORMAT.equals(net.format);
@@ -658,22 +661,24 @@ public final class MobAi {
 	}
 
 	/**
-	 * A blaze network's decision (red_blaze_v1): ObsBlaze's 65 inputs, its own mask and heads, carried out by BlazePilot
-	 * (from TacticGoal). mind.decision gets the same decision in the ground mobs' terms, for what counts and shows them.
+	 * A blaze network's decision (red_blaze_v1, docs/red_blaze_contrato.json): ObsBlaze's 324 inputs, its own mask and
+	 * five heads, carried out by BlazePilot (from TacticGoal) every tick until the next one. mind.decision gets the same
+	 * decision in the ground mobs' terms, for what counts and shows them.
 	 */
 	private static void thinkBlaze(MobMind mind, Player target, NetBrain net) {
 		Mob mob = mind.mob;
 		if (mind.memory == null || mind.memory.length != net.memory) {
 			mind.resetMemory(net.memory);
 		}
+		mind.reachVersion = net.reachVersion;
+		if (mind.blaze == null) {
+			// taking over from vanilla: its flight starts level, its own burst from nothing
+			BlazePilot.release(mob, mind);
+		}
 		float[] obs = ObsBlaze.build(mob, target, mind);
 		boolean[] mask = BlazeBrain.mask(mob, mind, target);
 		float[] logits = net.forward(obs, mind.memory);
 		double temperature = CombatConfig.get().iaTemperatura * ForjaDifficulty.current().temperature * Threat.of(mob).temperature();
-		if (mind.blaze == null) {
-			// taking over from the rules: its vertical speed starts from the one it has
-			mind.blazeVy = mob.getDeltaMovement().y;
-		}
 		mind.blaze = BlazeBrain.sample(logits, temperature, mind.random, mask);
 		mind.decision = mind.blaze.asDecision();
 		mind.wantsRun = false;

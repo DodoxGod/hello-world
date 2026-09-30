@@ -1,5 +1,31 @@
 # Novedades
 
+## 2026-09-29 — El blaze con su red entrenada (red_blaze_v1 del simulador)
+
+- **Contrato:** `docs/red_blaze_contrato.json` es ahora el del simulador, copiado tal cual. Tiene 324 entradas (las
+  280 de v3b y 44 del blaze) y 18 salidas en 5 cabezas: mover, vertical, usar, adelanto y retirarse. El contrato de 65
+  entradas y 22 salidas de la sesión de la nube se quitó: solo hay un `red_blaze_v1`. La explicación, y en qué se
+  aparta el mod del simulador, está en `docs/red_blaze_contrato.md`.
+- **Red entrenada:** `redes_entrenadas/red_blaze.json` (iteración 24 150). Se carga de `redes_v4/` o de `redes/`.
+- **Con red, el blaze:**
+  - flota entre 2 y 5 bloques sobre el suelo y sube y baja despacio;
+  - avisa 20 ticks antes de cada ráfaga: se enciende como el blaze cargado de vanilla, con llamas que se le acercan y
+    un chisporroteo que sube de tono;
+  - dispara 3 bolas cada 6 ticks y espera 60;
+  - apunta por delante del jugador que se mueve;
+  - se retira subiendo;
+  - no ocupa hueco en el anillo de la escuadra.
+- **Sin red, o con `iaModo` en reglas,** el blaze es el de vanilla, como antes.
+- **Pruebas:** `BlazeGameTests` rehecho:
+  - nombres contra el contrato, la red entrenada carga y pasa la comprobación, 324 entradas finitas;
+  - con la red, vuelo en su banda, ráfagas de 3 tras el aviso, adelanto sobre un jugador que se mueve y distancia
+    de combate;
+  - sin red, vanilla;
+  - coste: unos 0,025 ms por tick y blaze;
+  - bolas que dan a un jugador quieto en 30 s: 18 de 18 con la red, de 0 a 4 de 9 con vanilla.
+
+  `FORJA_SOLO=blaze` saca capturas del vuelo, del aviso y de la ráfaga.
+
 ## 2026-09-29 — IA v4 de los monstruos: la memoria del mundo (paso M6)
 
 - **Los monstruos de un mundo recuerdan cómo los matas:** en llano, con flechas, desde arriba, en pasillos, con
