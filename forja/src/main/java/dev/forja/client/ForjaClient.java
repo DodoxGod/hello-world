@@ -133,8 +133,8 @@ public final class ForjaClient implements ClientModInitializer {
 		ShockwaveFx.register();
 		ScreenShake.register();
 		GearAura.register();
-		// Forged arrows fly like vanilla ones, so they use the vanilla renderer.
-		EntityRenderers.register(ModEntities.FLECHA_FORJADA, context -> new net.minecraft.client.renderer.entity.TippableArrowRenderer(context));
+		// Forged arrows: vanilla's arrow with the head in the colour of the tip's material.
+		EntityRenderers.register(ModEntities.FLECHA_FORJADA, ForgedArrowRenderer::new);
 		ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> addPartLines(stack, lines));
 		ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> addArmorLines(stack, lines));
 		net.fabricmc.fabric.api.client.rendering.v1.ClientTooltipComponentCallback.EVENT.register(
@@ -307,8 +307,16 @@ public final class ForjaClient implements ClientModInitializer {
 				added.add(Component.translatable("tooltip.forja.conjunto", parts.primary().displayName(), worn).withColor(worn >= 4 ? 0x55FF55 : 0xAAAAAA));
 				added.add(Component.translatable("tooltip.forja.conjunto.bono", Component.translatable("conjunto.forja." + parts.primary().getSerializedName())).withColor(worn >= 4 ? 0x55FF55 : 0x777777));
 			}
+			// An arrow's tip says what it does in flight and on impact (combat/ArrowTips); its materials' traits
+			// are what the tip does, so they are not listed again.
+			ForgeMaterial tip = dev.forja.combat.ArrowTips.tipOf(stack);
+			if (tip != null) {
+				for (Component line : dev.forja.combat.ArrowTips.describe(tip)) {
+					added.add(line.copy().withColor(0xFFB9D98C));
+				}
+			}
 			for (ForgeMaterial.Trait trait : ForgeMaterial.Trait.values()) {
-				if (trait != ForgeMaterial.Trait.NONE && parts.hasTrait(trait)) {
+				if (tip == null && trait != ForgeMaterial.Trait.NONE && parts.hasTrait(trait)) {
 					added.add(Component.translatable("tooltip.forja.rasgo", trait.displayName(), trait.description()).withColor(0xFFD37F));
 				}
 			}

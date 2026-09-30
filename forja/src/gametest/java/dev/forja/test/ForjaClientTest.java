@@ -12,6 +12,7 @@ import dev.forja.forge.ForgeStats;
 import dev.forja.forge.ForgeType;
 import dev.forja.item.PartItem;
 import dev.forja.item.TemplateItem;
+import dev.forja.material.ForgeMaterial;
 import dev.forja.menu.ForgeMenu;
 import dev.forja.menu.Station;
 import dev.forja.part.PartType;
@@ -220,6 +221,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 			}
 			if ("mana".equals(solo)) {
 				playMana(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
+			// Forged arrows (combat/ArrowTips): each tip in its own colour, stuck in a wall, and what its tooltip says.
+			if ("flechas".equals(solo)) {
+				filmArrows(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
@@ -16281,6 +16288,106 @@ public class ForjaClientTest implements FabricClientGameTest {
 			mc.options.fov().set(70);
 			mc.options.fovEffectScale().set(1.0);
 		});
+	}
+
+	/**
+	 * Forged arrows, each tip its own (Andy, 2026-09-30: every arrow looked and flew the same): a row of them stuck in
+	 * a wall of hay, the head of each in its material's colour (client/ForgedArrowRenderer), two in flight, and the
+	 * tooltip of a heavy tip and of two special ones.
+	 */
+	private static void filmArrows(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		int areaX = x + 40;
+		List<ForgeMaterial> tips = List.of(ForgeMaterial.MADERA, ForgeMaterial.HIERRO, ForgeMaterial.ORO, ForgeMaterial.COBRE, ForgeMaterial.AMATISTA,
+			ForgeMaterial.DIAMANTE, ForgeMaterial.NETHERITA, ForgeMaterial.ESMERALDA, ForgeMaterial.RESINA, ForgeMaterial.ECO, ForgeMaterial.SOLACERO,
+			ForgeMaterial.ACERO_VIVO);
+		server.runOnServer(s -> {
+			var level = connection.getServerLevel();
+			for (int dx = -6; dx <= 6; dx++) {
+				for (int dy = 0; dy <= 4; dy++) {
+					level.setBlockAndUpdate(new net.minecraft.core.BlockPos(areaX + dx, y + dy, z + 6), net.minecraft.world.level.block.Blocks.HAY_BLOCK.defaultBlockState());
+				}
+			}
+		});
+		tp(server, areaX + 0.5, y, z + 2.2, 0.0F, 8.0F);
+		context.waitTicks(20);
+		server.runOnServer(s -> {
+			var level = connection.getServerLevel();
+			var player = connection.getServerPlayer();
+			for (int i = 0; i < tips.size(); i++) {
+				ItemStack stack = Assembler.create(ForgeType.FLECHA, List.of(tips.get(i), ForgeMaterial.CUERO), level.registryAccess());
+				dev.forja.entity.ForgedArrow arrow = new dev.forja.entity.ForgedArrow(level, player, stack, new ItemStack(Items.BOW));
+				arrow.setPos(areaX - 2.2 + (i % 6) * 0.95, y + 1.1 + (i / 6) * 0.8, z + 4.8);
+				arrow.shoot(0.12, 0.0, 1.0, 1.2F, 0.0F);
+				arrow.pickup = net.minecraft.world.entity.projectile.arrow.AbstractArrow.Pickup.DISALLOWED;
+				level.addFreshEntity(arrow);
+			}
+		});
+		context.waitTicks(20);
+		int[] seen = context.computeOnClient(mc -> {
+			int arrows = 0;
+			int tipped = 0;
+			for (var entity : mc.level.entitiesForRendering()) {
+				if (entity instanceof dev.forja.entity.ForgedArrow arrow) {
+					arrows++;
+					tipped += arrow.tipMaterial() != null ? 1 : 0;
+				}
+			}
+			return new int[] {arrows, tipped};
+		});
+		log("flechas: " + seen[0] + " en el cliente, " + seen[1] + " saben de que es su punta");
+		check(seen[0] >= tips.size() && seen[1] == seen[0], "every forged arrow on the client should know its tip, got " + seen[1] + " of " + seen[0]);
+		shot(context, "flechas_01_clavadas");
+		tp(server, areaX + 1.8, y + 0.4, z + 4.2, 35.0F, 12.0F);
+		context.waitTicks(10);
+		shot(context, "flechas_02_de_cerca");
+		tp(server, areaX - 1.5, y + 0.6, z + 4.4, -40.0F, 10.0F);
+		context.waitTicks(10);
+		shot(context, "flechas_03_de_lado");
+		// Two in flight, a heavy one and a light one, loosed side by side from the same height.
+		tp(server, areaX + 4.5, y, z + 1.0, 90.0F, 0.0F);
+		context.waitTicks(10);
+		server.runOnServer(s -> {
+			var level = connection.getServerLevel();
+			var player = connection.getServerPlayer();
+			for (int i = 0; i < 2; i++) {
+				ForgeMaterial tip = i == 0 ? ForgeMaterial.NETHERITA : ForgeMaterial.VIDRIACERO;
+				ItemStack stack = Assembler.create(ForgeType.FLECHA, List.of(tip, ForgeMaterial.CUERO), level.registryAccess());
+				dev.forja.entity.ForgedArrow arrow = new dev.forja.entity.ForgedArrow(level, player, stack, new ItemStack(Items.BOW));
+				arrow.setPos(areaX + 1.0 - i * 0.6, y + 1.6, z - 2.0);
+				arrow.shoot(0.0, 0.0, 1.0, 1.0F, 0.0F);
+				arrow.pickup = net.minecraft.world.entity.projectile.arrow.AbstractArrow.Pickup.DISALLOWED;
+				level.addFreshEntity(arrow);
+			}
+		});
+		context.waitTicks(5);
+		shot(context, "flechas_04_en_vuelo");
+		// The tooltips: a heavy, hard tip and two special ones.
+		server.runOnServer(s -> {
+			var level = connection.getServerLevel();
+			var inventory = connection.getServerPlayer().getInventory();
+			inventory.clearContent();
+			inventory.setItem(0, Assembler.create(ForgeType.FLECHA, List.of(ForgeMaterial.NETHERITA, ForgeMaterial.CUERO), level.registryAccess()).copyWithCount(16));
+			inventory.setItem(1, Assembler.create(ForgeType.FLECHA, List.of(ForgeMaterial.RESINA, ForgeMaterial.CUERO), level.registryAccess()).copyWithCount(16));
+			inventory.setItem(2, Assembler.create(ForgeType.FLECHA, List.of(ForgeMaterial.ALMACERO, ForgeMaterial.CUERO), level.registryAccess()).copyWithCount(16));
+		});
+		context.waitTicks(5);
+		context.runOnClient(mc -> mc.gui.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
+		context.waitTicks(5);
+		for (int slot = 0; slot < 3; slot++) {
+			int index = slot;
+			double[] at = context.computeOnClient(mc -> {
+				double scale = mc.getWindow().getGuiScale();
+				double left = (mc.getWindow().getGuiScaledWidth() - 176) / 2.0;
+				double top = (mc.getWindow().getGuiScaledHeight() - 166) / 2.0;
+				return new double[] {(left + 8 + 18 * index + 8) * scale, (top + 142 + 8) * scale};
+			});
+			context.getInput().setCursorPos(at[0], at[1]);
+			context.waitTicks(5);
+			shot(context, "flechas_0" + (5 + slot) + "_tooltip_" + (slot == 0 ? "netherita" : slot == 1 ? "resina" : "almacero"));
+		}
+		context.getInput().setCursorPos(0, 0);
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+		context.waitTicks(5);
 	}
 
 	private static void shot(ClientGameTestContext context, String name) {

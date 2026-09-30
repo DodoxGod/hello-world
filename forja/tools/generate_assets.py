@@ -1920,6 +1920,26 @@ def generate_wings_textures():
         })
 
 
+def generate_arrow_entity_textures():
+    """The forged arrow in flight or stuck: vanilla's arrow split in two, the shaft and fletching as they are, and
+    the tip alone in grey, which client/ForgedArrowRenderer tints with the tip material's colour."""
+    arrow = Image.open(io.BytesIO(jar_read("assets/minecraft/textures/entity/projectiles/arrow.png"))).convert("RGBA")
+    shaft = arrow.copy()
+    tip = Image.new("RGBA", arrow.size, (0, 0, 0, 0))
+    # The head is the grey block in the middle of the two side views (x 13..18, the first five rows).
+    for y in range(0, 5):
+        for x in range(13, 19):
+            r, g, b, a = arrow.getpixel((x, y))
+            if a and abs(r - g) < 8 and abs(g - b) < 8:
+                value = min(255, int(r * 255 / 0xE2))
+                tip.putpixel((x, y), (value, value, value, a))
+                shaft.putpixel((x, y), (0, 0, 0, 0))
+    folder = ASSETS / "textures/entity/flecha_forjada"
+    folder.mkdir(parents=True, exist_ok=True)
+    shaft.save(folder / "asta.png")
+    tip.save(folder / "punta.png")
+
+
 def split_armor(sprite_path, lining):
     pixels = opaque(vanilla(sprite_path))
     return {p: (1 if lining(p, c, pixels) else 0, luminance(c)) for p, c in pixels.items()}
@@ -11920,6 +11940,7 @@ if __name__ == "__main__":
     generate_worn_gear_textures()
     generate_armor_textures()
     generate_wings_textures()
+    generate_arrow_entity_textures()
     generate_effect_textures()
     generate_shockwave_textures()
     generate_sky_textures()

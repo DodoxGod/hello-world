@@ -36,6 +36,10 @@ public final class AttackClassifier {
 		if (direct instanceof AbstractArrow arrow) {
 			double speed = arrow.getDeltaMovement().length();
 			double pen = ArmorMath.clamp(cfg.penArrowBase + speed * cfg.penArrowPerSpeed, 0.0, cfg.penArrowMax);
+			// A hard tip (combat/ArrowTips) goes through more on top of what its speed does.
+			if (arrow instanceof dev.forja.entity.ForgedArrow forged) {
+				pen = ArmorMath.clamp(pen + forged.tipPenetration(), 0.0, 1.0);
+			}
 			if (ChargedArrows.isCharged(arrow)) {
 				pen = ArmorMath.clamp(pen + cfg.chargedArrowExtraPenetration, 0.0, 1.0);
 			}

@@ -1,5 +1,26 @@
 # Novedades
 
+## 2026-09-30 — Cada punta de flecha, la suya
+
+Andy: "las flechas son todas iguales". Ahora la punta decide cómo vuela y qué hace (`combat/ArrowTips`), leído
+del material:
+
+- **Peso:** una punta densa pega más (hasta +8 % la netherita), sale algo más lenta, cae antes (hasta ×1,6) y
+  empuja más; una ligera vuela plana (la madera cae al 60 %) y pega algo menos.
+- **Dureza:** una punta dura atraviesa hasta un 30 % más de armadura (diamante, netherita, aceros).
+- **Especial**, por el rasgo del material: fuego (escoria), brasa (cinerio), sangrado (cuarzo, damasco), resina
+  (Lentitud II), marea (prismarina: vuela bajo el agua), salto (púrpur: el blanco se teletransporta), llanto
+  (Debilidad), eco (atraviesa a uno más), estrella (casi no cae), hueca (encuentra el hueco de la armadura),
+  chispa (voltaico: salta al enemigo de al lado), buscadora (almacero: se tuerce hacia lo que te caza), vidrio
+  (más rápida y plana, se rompe al acertar), sol y luna (más daño a pleno sol o a oscuras), viva (te cura),
+  fortuna (a veces sale crítica); y el oro marca (brilla), la amatista devuelve maná y el cobre da una descarga en
+  lo mojado.
+- **Se ve:** la cabeza de la flecha en vuelo va del color del material, y las especiales dejan una estela de su
+  color. El tooltip dice el peso, la caída, la armadura que atraviesa y el especial.
+- Frente a vanilla: ninguna punta se aleja más de un 20 % del daño de una flecha llana, y ningún especial dura
+  más que el efecto de una flecha con poción.
+- Pruebas `FlechasGameTests` (cada punta distinta y cada especial hace lo que dice) y `FORJA_SOLO=flechas`.
+
 ## 2026-09-30 — La magia, en su sitio
 
 Andy: las armas mágicas estaban rotas (el báculo mataba tres veces más rápido que el cuerpo a cuerpo, y con
