@@ -42,6 +42,16 @@ public final class CreatureSightings {
 				changed = true;
 			}
 		}
+		// And the synergies awake on anything the player carries: from now on the books name them.
+		for (int slot = 0; slot < client.player.getInventory().getContainerSize(); slot++) {
+			net.minecraft.world.item.ItemStack stack = client.player.getInventory().getItem(slot);
+			if (stack.isEmpty() || !stack.has(dev.forja.registry.ModComponents.UPGRADES)) {
+				continue;
+			}
+			for (dev.forja.upgrade.Synergy synergy : dev.forja.upgrade.Synergy.on(stack)) {
+				changed |= BookMemory.awoke(synergy.name());
+			}
+		}
 		if (changed) {
 			BookMemory.save();
 		}

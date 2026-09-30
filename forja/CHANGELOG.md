@@ -1,5 +1,25 @@
 # Novedades
 
+## 2026-09-30 — Probador por grupos, y pactos y sinergias en sombra
+
+- **Respuestas de Andy sobre el probador:**
+  - **Mejoras:** sin "descubrir". Todas se ven.
+  - **Grupos:** las listas del probador van por secciones (herramientas, armas, armadura, para todo...), plegadas:
+    cada grupo enseña sus nombres en una o dos líneas, y un clic en su cabecera lo abre con lo que hace cada mejora,
+    hasta dónde sube y su receta. Una espada nueva pasa de unas 10 páginas a 2.
+  - **Pactos en sombra** hasta que ese jugador los abre con su ofrenda: "Pacto sellado", sin nombre, efecto, receta
+    ni descripción. Solo se ve la ofrenda que lo abre. Vale para el capítulo de pactos, la lista de mejoras del
+    catálogo y el probador.
+  - **Sinergias en sombra** hasta que despiertan en algo que lleves encima: "???" en su capítulo, y en el probador
+    "despertaría una sinergia que aún no conoces". Lo despertado se guarda en el cliente.
+  - El tomo de creativo lo enseña todo.
+- **Libro II:** en la página de resistencias, un monstruo del mod que aún no has visto sale como "???", igual que en
+  el bestiario.
+- **Prueba del cliente:**
+  - sin pactos abiertos, todos en sombra en el catálogo y todos a la vista en el tomo;
+  - abierto uno en el servidor, solo ese sale de la sombra;
+  - un grupo del probador abierto se maqueta limpio.
+
 ## 2026-09-30 — Cada punta de flecha, la suya
 
 Andy: "las flechas son todas iguales". Ahora la punta decide cómo vuela y qué hace (`combat/ArrowTips`), leído

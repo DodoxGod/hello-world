@@ -1297,6 +1297,22 @@ public class ForjaClientTest implements FabricClientGameTest {
 			"a chestplate should list Protección and not Filo: " + probes);
 		check(probes.endsWith("bolsa igual"), "the probe must never move or take anything from the bag: " + probes);
 		check(!probes.contains("MAQUETACION"), "the book must lay out cleanly with a piece in the probe: " + probes);
+		// Pacts in shadow until the reader opens them (Andy, 2026-09-30): none open, every pact the catalogue lists is a
+		// shadow and the tome shows them all; one opened on the server, that one comes out.
+		server.runOnServer(s -> s.getPlayerList().getPlayers().getFirst().setAttached(dev.forja.upgrade.Pacts.UNLOCKED, List.of()));
+		context.waitTicks(5);
+		String sealed = context.computeOnClient(mc -> new GuideBookScreen(dev.forja.GuideBooks.Book.BIBLIOTECA).shadowedEntries()
+			+ " | " + new GuideBookScreen(dev.forja.GuideBooks.Book.TOMO).shadowedEntries());
+		server.runOnServer(s -> dev.forja.upgrade.Pacts.unlock(s.getPlayerList().getPlayers().getFirst(), dev.forja.upgrade.Upgrade.PACTO_DE_SED));
+		context.waitFor(mc -> dev.forja.upgrade.Pacts.unlocked(mc.player, dev.forja.upgrade.Upgrade.PACTO_DE_SED), 100);
+		String pactOpened = context.computeOnClient(mc -> new GuideBookScreen(dev.forja.GuideBooks.Book.BIBLIOTECA).shadowedEntries().toString());
+		server.runOnServer(s -> s.getPlayerList().getPlayers().getFirst().setAttached(dev.forja.upgrade.Pacts.UNLOCKED, List.of()));
+		log("libros, pactos: " + sealed + " || " + pactOpened);
+		String[] pactParts = sealed.split(" \\| ");
+		check(pactParts[0].contains("pact:PACTO_DE_SED:shadow") && !pactParts[0].contains(":seen"), "no pact opened, every pact in the catalogue is a shadow: " + pactParts[0]);
+		check(!pactParts[1].contains(":shadow"), "the tome shows every pact and synergy: " + pactParts[1]);
+		check(pactOpened.contains("pact:PACTO_DE_SED:seen") && pactOpened.contains("pact:PACTO_DE_VIDRIO:shadow"), "an opened pact comes out of the shadow, only it: " + pactOpened);
+
 		// Pictures: the probe with a sword in it, and the picker over the book.
 		context.runOnClient(mc -> {
 			GuideBookScreen anvil = new GuideBookScreen(dev.forja.GuideBooks.Book.YUNQUE);
@@ -1316,8 +1332,24 @@ public class ForjaClientTest implements FabricClientGameTest {
 			context.waitTicks(4);
 			context.takeScreenshot(TestScreenshotOptions.of(String.format(Locale.ROOT, "forja_libros_probador_%02d", spread)).disableCounterPrefix());
 		}
+		// A group unfolded: the sword's weapons, each with what it does and its recipe; clean, and folded again after.
+		String unfolded = context.computeOnClient(mc -> {
+			GuideBookScreen book = (GuideBookScreen) mc.gui.screen();
+			int folded = book.pageCount();
+			book.toggleGroup("caben:armas");
+			String foldLayout = book.overflowingPages() + " " + book.wideElements() + " " + book.elidedElements() + " " + book.rawKeys();
+			book.goToPage(book.chapterPage("probador") + 2);
+			return folded + " " + book.pageCount() + " " + foldLayout;
+		});
+		log("libros, probador plegado y abierto: " + unfolded);
+		String[] fold = unfolded.split(" ", 3);
+		check(Integer.parseInt(fold[0]) < Integer.parseInt(fold[1]) && fold[2].equals("[] [] [] []"),
+			"unfolding a group should add its entries and still lay out cleanly: " + unfolded);
+		context.waitTicks(4);
+		context.takeScreenshot(TestScreenshotOptions.of("forja_libros_probador_abierto").disableCounterPrefix());
 		context.runOnClient(mc -> {
 			GuideBookScreen book = (GuideBookScreen) mc.gui.screen();
+			book.toggleGroup("caben:armas");
 			book.goToPage(book.chapterPage("probador"));
 			book.openPicker();
 		});

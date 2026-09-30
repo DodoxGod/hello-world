@@ -541,3 +541,26 @@ BOOKS.update({
                                                    "With %s it would make \"%s\", but three are awake already: it would sleep."),
     "gui.forja.libros.probador.orbe": ("solo con el orbe de un evento", "only with an event's orb"),
 })
+
+# ---- pacts and synergies in shadow until opened or awakened, and the probe's groups (Andy, 2026-09-30)
+BOOKS.update({
+    "gui.forja.libros.pacto_sellado": ("Pacto sellado", "Sealed pact"),
+    "gui.forja.libros.pacto_sellado.desc": ("Qué da y qué cobra no se sabe hasta abrirlo. Se abre una vez, ofreciendo lo que pide en la estrella.",
+                                            "What it gives and what it costs is not known until it is opened. It opens once, offering what it asks at the star."),
+    "gui.forja.libros.pacto_sellado.corto": ("Se abre con una ofrenda en la estrella", "Opens with an offering at the star"),
+    "gui.forja.libros.sinergia_dormida.desc": (
+        "Una sinergia que aún no has despertado. Aparecerá aquí la primera vez que despierte en algo que lleves: dos "
+        "mejoras que se llevan bien, las dos al 50 %% o más.",
+        "A synergy you have not woken yet. It appears here the first time it wakes on something you carry: two upgrades "
+        "that get on, both at 50 %% or more."),
+    "gui.forja.libros.probador.grupo": ("%s (%s)", "%s (%s)"),
+    "gui.forja.libros.probador.sinergia_oculta": ("Con %s despertaría una sinergia que aún no conoces.",
+                                                  "With %s it would wake a synergy you do not know yet."),
+    "gui.forja.libros.probador.ofrenda": ("su ofrenda", "its offering"),
+})
+BOOKS.update({
+    "gui.forja.libros.probador.grupo": ("▸ %s (%s)", "▸ %s (%s)"),
+    "gui.forja.libros.probador.grupo_abierto": ("▾ %s (%s)", "▾ %s (%s)"),
+    "gui.forja.libros.probador.pliegues": ("Pulsa un grupo para abrirlo: qué hace cada mejora, hasta dónde sube y su receta.",
+                                           "Click a group to open it: what each upgrade does, how far it goes and its recipe."),
+})

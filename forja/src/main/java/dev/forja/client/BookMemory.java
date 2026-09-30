@@ -26,6 +26,8 @@ public final class BookMemory {
 	private static final java.util.Set<String> SEEN = new java.util.TreeSet<>();
 	/** Creatures whose page has been looked at since they were seen: their "nuevo" mark is gone. */
 	private static final java.util.Set<String> PAGE_READ = new java.util.TreeSet<>();
+	/** Synergies that have woken on something the player carried: the books name them from then on. */
+	private static final java.util.Set<String> SYNERGIES = new java.util.TreeSet<>();
 	private static boolean loaded;
 	private static boolean dirty;
 
@@ -76,6 +78,30 @@ public final class BookMemory {
 			return true;
 		}
 		return false;
+	}
+
+	/** A synergy woke on the player's gear. True the first time. */
+	public static boolean awoke(String synergy) {
+		load();
+		if (SYNERGIES.add(synergy)) {
+			dirty = true;
+			return true;
+		}
+		return false;
+	}
+
+	public static boolean knowsSynergy(String synergy) {
+		load();
+		return SYNERGIES.contains(synergy);
+	}
+
+	/** Forget every synergy, for the client test. Returns what was known. */
+	public static java.util.Set<String> forgetSynergies() {
+		load();
+		java.util.Set<String> was = new java.util.TreeSet<>(SYNERGIES);
+		SYNERGIES.clear();
+		dirty = true;
+		return was;
 	}
 
 	public static boolean hasSeen(String id) {
@@ -130,10 +156,10 @@ public final class BookMemory {
 		}
 		try {
 			JsonObject all = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
-			for (String list : new String[] {"vistos", "fichas_leidas"}) {
+			for (String list : new String[] {"vistos", "fichas_leidas", "sinergias"}) {
 				if (all.has(list) && all.get(list).isJsonArray()) {
 					for (var id : all.getAsJsonArray(list)) {
-						(list.equals("vistos") ? SEEN : PAGE_READ).add(id.getAsString());
+						(list.equals("vistos") ? SEEN : list.equals("sinergias") ? SYNERGIES : PAGE_READ).add(id.getAsString());
 					}
 				}
 			}
@@ -169,6 +195,9 @@ public final class BookMemory {
 		var pagesRead = new com.google.gson.JsonArray();
 		PAGE_READ.forEach(pagesRead::add);
 		all.add("fichas_leidas", pagesRead);
+		var synergies = new com.google.gson.JsonArray();
+		SYNERGIES.forEach(synergies::add);
+		all.add("sinergias", synergies);
 		try {
 			Files.createDirectories(file().getParent());
 			Files.writeString(file(), all.toString(), StandardCharsets.UTF_8);

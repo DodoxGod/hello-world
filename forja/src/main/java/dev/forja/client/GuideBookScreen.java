@@ -610,6 +610,29 @@ public class GuideBookScreen extends Screen {
 		return cards;
 	}
 
+	/** Pacts and synergies this book listed, as "pact:NAME:seen|shadow" and "synergy:NAME:...", for the client test. */
+	private final List<String> shadowed = new ArrayList<>();
+
+	public List<String> shadowedEntries() {
+		if (this.pages.isEmpty()) {
+			this.build();
+		}
+		return List.copyOf(this.shadowed);
+	}
+
+	/**
+	 * Whether the books show this pact: once the reader has opened it with its offering (Andy, 2026-09-30: pacts and
+	 * synergies stay in shadow until opened or awakened). The creative tome shows everything.
+	 */
+	boolean pactKnown(Upgrade pact) {
+		return this.book == GuideBooks.Book.TOMO || dev.forja.upgrade.Pacts.unlocked(this.minecraft.player, pact) && this.minecraft.player != null;
+	}
+
+	/** Whether the books show this synergy: once it has woken on something the reader carried (CreatureSightings). */
+	boolean synergyKnown(dev.forja.upgrade.Synergy synergy) {
+		return this.book == GuideBooks.Book.TOMO || BookMemory.knowsSynergy(synergy.name());
+	}
+
 	/** The chapters this book printed, in order, for the client test. */
 	public List<String> chapterKeys() {
 		if (this.pages.isEmpty()) {
@@ -1291,8 +1314,11 @@ public class GuideBookScreen extends Screen {
 				continue;
 			}
 			dev.forja.combat.CombatConfig.MobResistance resists = entry.getValue();
+			// One of the mod's own not seen yet stays a shadow here too, as in the bestiary (vanilla's are known).
+			boolean unseen = id.getNamespace().equals(dev.forja.Forja.MOD_ID) && this.book != GuideBooks.Book.TOMO
+				&& !BookMemory.hasSeen(id.toString());
 			body.add(new Text(Component.translatable("gui.forja.libros.combate.resiste",
-				Component.translatable("entity." + id.getNamespace() + "." + id.getPath()),
+				unseen ? Component.translatable("gui.forja.libros.bestiario.oculto") : Component.translatable("entity." + id.getNamespace() + "." + id.getPath()),
 				times(resists.slash), times(resists.blunt), times(resists.pierce)), INK_SOFT));
 		}
 		return body;
@@ -1467,19 +1493,71 @@ public class GuideBookScreen extends Screen {
 		now.stream().filter(fit -> fit.bench() < fit.greater()).findFirst().ifPresent(fit ->
 			body.add(new Text(Component.translatable("gui.forja.libros.probador.mesa", dev.forja.menu.Station.FORJA.capacity()), INK_SOFT)));
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.probador.caben", now.size())));
+		body.add(new Text(Component.translatable("gui.forja.libros.probador.pliegues"), INK_SOFT));
+		this.probeGroups(body, "caben", now, state.synergies());
 		for (dev.forja.upgrade.UpgradeFit.Fit fit : now) {
-			body.add(new FitEntry(fit, state.synergies()));
 			this.probeReport.add("fits:" + fit.upgrade().name());
 		}
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.probador.no_caben", not.size())));
 		if (not.isEmpty()) {
 			body.add(new Text(Component.translatable("gui.forja.libros.probador.ninguna"), INK_SOFT));
 		}
+		this.probeGroups(body, "no", not, state.synergies());
 		for (dev.forja.upgrade.UpgradeFit.Fit fit : not) {
-			body.add(new FitEntry(fit, state.synergies()));
 			this.probeReport.add("no:" + fit.upgrade().name() + ":" + fit.reason());
 		}
 		return body;
+	}
+
+	/**
+	 * One list of the probe, cut by the sections the upgrades are listed under everywhere else (tools, weapons,
+	 * armour, "para todo"...), each under a heading with its count: a new sword is then a handful of short lists
+	 * and not ten flat pages (Andy, 2026-09-30).
+	 */
+	private void probeGroups(List<Element> body, String list, List<dev.forja.upgrade.UpgradeFit.Fit> fits, int awake) {
+		for (String section : GuideText.UPGRADE_SECTIONS) {
+			List<dev.forja.upgrade.UpgradeFit.Fit> here = fits.stream().filter(fit -> GuideText.section(fit.upgrade()).equals(section)).toList();
+			if (here.isEmpty()) {
+				continue;
+			}
+			String key = list + ":" + section;
+			boolean open = OPEN_GROUPS.contains(key);
+			body.add(new GroupHeading(Component.translatable(open ? "gui.forja.libros.probador.grupo_abierto" : "gui.forja.libros.probador.grupo",
+				Component.translatable("gui.forja.libro.seccion." + section), here.size()), key));
+			if (!open) {
+				// Folded: the names only, on a line or two; a click on the heading unfolds the whole of each.
+				net.minecraft.network.chat.MutableComponent names = Component.empty();
+				for (int i = 0; i < here.size(); i++) {
+					if (i > 0) {
+						names.append(", ");
+					}
+					Upgrade upgrade = here.get(i).upgrade();
+					names.append(upgrade.isPact() && !this.pactKnown(upgrade) ? Component.translatable("gui.forja.libros.pacto_sellado") : upgrade.displayName());
+				}
+				body.add(new Text(names, INK));
+				continue;
+			}
+			for (dev.forja.upgrade.UpgradeFit.Fit fit : here) {
+				body.add(new FitEntry(fit, awake));
+			}
+		}
+	}
+
+	/** The probe's groups the reader has unfolded, kept while the game runs. */
+	private static final Set<String> OPEN_GROUPS = new java.util.HashSet<>();
+
+	/** Fold or unfold one of the probe's groups, and lay the book out again where the reader is. Public for the client test. */
+	public void toggleGroup(String key) {
+		if (!OPEN_GROUPS.remove(key)) {
+			OPEN_GROUPS.add(key);
+		}
+		int at = this.spread;
+		this.pages.clear();
+		this.chapters.clear();
+		this.creatures.clear();
+		this.shadowed.clear();
+		this.build();
+		this.goToPage(Math.min(at * 2, this.pages.size() - 1));
 	}
 
 	/**
@@ -1492,6 +1570,7 @@ public class GuideBookScreen extends Screen {
 		this.pages.clear();
 		this.chapters.clear();
 		this.creatures.clear();
+		this.shadowed.clear();
 		this.build();
 		this.goToPage(this.chapterPage("probador"));
 	}
@@ -2287,8 +2366,11 @@ public class GuideBookScreen extends Screen {
 		body.add(new Text(Component.translatable("gui.forja.libro.pactos_intro"), INK));
 		for (Upgrade pact : List.of(Upgrade.PACTO_DE_SED, Upgrade.PACTO_DE_VIDRIO, Upgrade.PACTO_DE_SOMBRA,
 			Upgrade.PACTO_DE_LA_PRISA)) {
-			body.add(new SubHeader(pact.displayName()));
-			body.add(new Text(pact.effect(100), INK_SOFT));
+			boolean known = this.pactKnown(pact);
+			this.shadowed.add("pact:" + pact.name() + ":" + (known ? "seen" : "shadow"));
+			// Sealed, it is a shadow: only the offering that opens it, which is the way in (Andy, 2026-09-30).
+			body.add(new SubHeader(known ? pact.displayName() : Component.translatable("gui.forja.libros.pacto_sellado")));
+			body.add(new Text(known ? pact.effect(100) : Component.translatable("gui.forja.libros.pacto_sellado.desc"), INK_SOFT));
 			net.minecraft.world.item.Item offering = dev.forja.upgrade.Pacts.offering(pact);
 			if (offering != null) {
 				body.add(new IconRow(List.of(new ItemStack(offering))));
@@ -2641,6 +2723,13 @@ public class GuideBookScreen extends Screen {
 			dev.forja.upgrade.Synergy.MOST), INK_SOFT));
 		for (dev.forja.upgrade.Synergy synergy : dev.forja.upgrade.Synergy.values()) {
 			body.add(new Spacer(2));
+			boolean known = this.synergyKnown(synergy);
+			this.shadowed.add("synergy:" + synergy.name() + ":" + (known ? "seen" : "shadow"));
+			if (!known) {
+				body.add(new SubHeader(Component.translatable("gui.forja.libros.bestiario.oculto")));
+				body.add(new Text(Component.translatable("gui.forja.libros.sinergia_dormida.desc"), INK_SOFT));
+				continue;
+			}
 			body.add(new SubHeader(synergy.displayName()));
 			body.add(new Text(Component.translatable("gui.forja.libro.sinergia_par", synergy.first.displayName(), synergy.second.displayName()), INK_SOFT));
 			body.add(new Text(synergy.description(), INK));
@@ -3920,9 +4009,15 @@ public class GuideBookScreen extends Screen {
 		}
 
 		private final Upgrade upgrade;
+		/** A pact the reader has not opened: its name, recipe and tooltip stay hidden. */
+		private final boolean sealed;
 
 		UpgradeEntry(Upgrade upgrade) {
 			this.upgrade = upgrade;
+			this.sealed = upgrade.isPact() && !GuideBookScreen.this.pactKnown(upgrade);
+			if (upgrade.isPact()) {
+				GuideBookScreen.this.shadowed.add("pact:" + upgrade.name() + ":" + (this.sealed ? "shadow" : "seen"));
+			}
 		}
 
 		@Override
@@ -3932,6 +4027,11 @@ public class GuideBookScreen extends Screen {
 
 		@Override
 		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			if (this.sealed) {
+				screen.small(g, Component.translatable("gui.forja.libros.pacto_sellado"), x, y + 1, INK_SOFT);
+				screen.small(g, Component.translatable("gui.forja.libros.pacto_sellado.corto"), x, y + 12, INK_SOFT);
+				return;
+			}
 			screen.small(g, this.upgrade.displayName(), x, y + 1, 0xFF000000 | GuideText.darken(this.upgrade.color));
 			int iconX = x;
 			boolean first = true;
@@ -3957,7 +4057,7 @@ public class GuideBookScreen extends Screen {
 
 		@Override
 		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
-			return GuideText.upgradeTooltip(this.upgrade);
+			return this.sealed ? null : GuideText.upgradeTooltip(this.upgrade);
 		}
 	}
 
@@ -4689,6 +4789,51 @@ public class GuideBookScreen extends Screen {
 		}
 	}
 
+	/** A heading inside a list: a section's name and its count, in the rubric, with a thin rule. */
+	private final class GroupHeading extends Element {
+		private final Component text;
+		/** The group this heading folds and unfolds, or null for one that does not. */
+		private final @Nullable String key;
+
+		GroupHeading(Component text, @Nullable String key) {
+			this.text = text;
+			this.key = key;
+		}
+
+		@Override
+		boolean click(GuideBookScreen screen) {
+			if (this.key == null) {
+				return false;
+			}
+			screen.toggleGroup(this.key);
+			return true;
+		}
+
+		@Override
+		int height() {
+			return 12;
+		}
+
+		@Override
+		int widest(Font font) {
+			return Math.round(font.width(this.text) * fitScale(font, this.text, CONTENT_W, SMALL));
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			if (this.key != null && over(mouseX, mouseY, x - 2, y, CONTENT_W + 4, 12)) {
+				g.fill(x - 2, y, x + CONTENT_W + 2, y + 12, PAPER_SHADE);
+			}
+			float scale = fitScale(screen.font, this.text, CONTENT_W, SMALL);
+			g.pose().pushMatrix();
+			g.pose().translate(x, y + 2);
+			g.pose().scale(scale, scale);
+			g.text(screen.font, this.text, 0, 0, 0xFF000000 | GuideText.RUBRIC, false);
+			g.pose().popMatrix();
+			g.fill(x, y + 10, x + CONTENT_W / 2, y + 11, BAND);
+		}
+	}
+
 	/** A creature not seen yet: a dark plate and a question mark where its portrait will be. */
 	private static final class CreatureShadow extends Element {
 		@Override
@@ -4788,9 +4933,18 @@ public class GuideBookScreen extends Screen {
 		private final Component head;
 		private final List<FormattedCharSequence> lines = new ArrayList<>();
 
+		/** A sealed pact: a shadow with only how it is opened. */
+		private final boolean sealed;
+
 		FitEntry(dev.forja.upgrade.UpgradeFit.Fit fit, int awake) {
 			this.fit = fit;
 			Upgrade upgrade = fit.upgrade();
+			this.sealed = upgrade.isPact() && !GuideBookScreen.this.pactKnown(upgrade);
+			if (this.sealed) {
+				this.head = Component.translatable("gui.forja.libros.pacto_sellado");
+				this.lines.addAll(GuideBookScreen.this.font.split(Component.translatable("gui.forja.libros.probador.razon.sealed"), WRAP));
+				return;
+			}
 			this.head = fit.fits()
 				? Component.translatable("gui.forja.libros.probador.sube", upgrade.displayName(), fit.current(), fit.greater())
 				: Component.translatable("gui.forja.libros.probador.esta", upgrade.displayName(), fit.current());
@@ -4804,6 +4958,11 @@ public class GuideBookScreen extends Screen {
 			}
 			for (dev.forja.upgrade.Synergy synergy : fit.pairs()) {
 				Upgrade other = synergy.first == upgrade ? synergy.second : synergy.first;
+				if (!GuideBookScreen.this.synergyKnown(synergy)) {
+					// It would wake one, but which is for the reader to find out.
+					parts.add(Component.translatable("gui.forja.libros.probador.sinergia_oculta", other.displayName()));
+					continue;
+				}
 				parts.add(Component.translatable(awake >= dev.forja.upgrade.Synergy.MOST ? "gui.forja.libros.probador.sinergia_dormida"
 					: "gui.forja.libros.probador.sinergia", other.displayName(), synergy.displayName()));
 			}
@@ -4841,6 +5000,14 @@ public class GuideBookScreen extends Screen {
 			}
 			int row = y + 9 + this.lines.size() * 8;
 			int iconX = x;
+			if (this.sealed) {
+				net.minecraft.world.item.Item offering = dev.forja.upgrade.Pacts.offering(upgrade);
+				if (offering != null) {
+					smallItem(g, new ItemStack(offering), iconX, row + 1);
+					screen.small(g, Component.translatable("gui.forja.libros.probador.ofrenda"), iconX + 14, row + 4, INK_SOFT);
+				}
+				return;
+			}
 			if (upgrade.options.isEmpty()) {
 				// Only the sky gives it: the flask's orb is the way.
 				smallItem(g, dev.forja.item.UpgradeOrbItem.create(upgrade, 100), iconX, row + 1);
@@ -4873,7 +5040,7 @@ public class GuideBookScreen extends Screen {
 
 		@Override
 		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
-			return GuideText.upgradeTooltip(this.fit.upgrade());
+			return this.sealed ? null : GuideText.upgradeTooltip(this.fit.upgrade());
 		}
 	}
 
