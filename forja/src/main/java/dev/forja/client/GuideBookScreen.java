@@ -594,6 +594,22 @@ public class GuideBookScreen extends Screen {
 		return broken;
 	}
 
+	/** Every book card in this book as "BOOK:lit" or "BOOK:dark", for the client test. */
+	public List<String> bookCards() {
+		if (this.pages.isEmpty()) {
+			this.build();
+		}
+		List<String> cards = new ArrayList<>();
+		for (List<Element> page : this.pages) {
+			for (Element element : page) {
+				if (element instanceof BookCard card) {
+					cards.add(card.target + ":" + (card.lit() ? "lit" : "dark"));
+				}
+			}
+		}
+		return cards;
+	}
+
 	/** The chapters this book printed, in order, for the client test. */
 	public List<String> chapterKeys() {
 		if (this.pages.isEmpty()) {
@@ -970,12 +986,13 @@ public class GuideBookScreen extends Screen {
 		lines.add(target.title().copy().withColor(0xFFE9A8));
 		if (!target.ready) {
 			lines.add(Component.translatable("gui.forja.libros.carta.pronto", target.when()));
+		} else if (target.unlock != null && !this.pathDone.contains(target.unlock)) {
+			// Not learned yet: only when it opens, never the recipe (Andy, 2026-09-29).
+			lines.add(Component.translatable("gui.forja.libros.carta.aprende", target.when()));
 		} else {
 			lines.add(Component.translatable("gui.forja.libros.receta", new ItemStack(Items.BOOK).getHoverName(),
 				new ItemStack(target.ingredient.get()).getHoverName()));
-			lines.add(target.unlock == null || this.pathDone.contains(target.unlock)
-				? Component.translatable("gui.forja.libros.carta.hazlo")
-				: Component.translatable("gui.forja.libros.carta.aprende", target.when()));
+			lines.add(Component.translatable("gui.forja.libros.carta.hazlo"));
 		}
 		return lines;
 	}
@@ -3874,14 +3891,19 @@ public class GuideBookScreen extends Screen {
 	// ------------------------------------------------------------------ elements of the books
 
 	/**
-	 * One book of the shelf: its cover in small, its name and what it is about, and then either "open it" (the
-	 * reader carries it; a click opens it) or how to make it — its recipe drawn, and when the recipe is learned.
-	 * A red seal marks a book carried and never opened; a thin bar, how much of it has been read.
+	 * One book of the shelf, the way the bestiary shows a creature not met yet (Andy, 2026-09-29): until its recipe
+	 * is learned the card is dark — a shadow of a book, a lock, and only the hint of when it opens; the recipe is not
+	 * shown at all. Learned, it lights up: its cover, its name, what it is about, its recipe drawn, and "open it"
+	 * when the reader carries it. A red seal marks a book whose recipe is new (learned and never opened); a thin
+	 * bar, how much of it has been read.
 	 */
 	private final class BookCard extends Element {
+		private static final int SHADOW = 0xFF2E2620;
+		private static final int SHADOW_INK = 0xFF8C7A62;
 		private final GuideBooks.Book target;
 		private final boolean readable;
-		private final boolean known;
+		/** Written and its recipe learned: the card is lit and the recipe shown. */
+		private final boolean unlocked;
 		private final boolean fresh;
 		private final ItemStack cover;
 		private final ItemStack ingredient;
@@ -3892,27 +3914,34 @@ public class GuideBookScreen extends Screen {
 		BookCard(GuideBooks.Book target) {
 			this.target = target;
 			this.readable = GuideBookScreen.this.canRead(target);
-			this.known = target.unlock == null || GuideBookScreen.this.pathDone.contains(target.unlock);
-			this.fresh = this.readable && target != GuideBookScreen.this.book && !BookMemory.wasOpened(target);
+			this.unlocked = target.ready && (target.unlock == null || GuideBookScreen.this.pathDone.contains(target.unlock));
+			this.fresh = this.unlocked && target != GuideBookScreen.this.book && !BookMemory.wasOpened(target);
 			Item item = target.item();
 			this.cover = item != null ? new ItemStack(item) : new ItemStack(Items.BOOK);
 			this.ingredient = new ItemStack(target.ingredient.get());
-			this.name = Component.literal(target.numeral() + " · ").append(target.title());
-			this.motto = target.motto();
-			int pages = target == GuideBookScreen.this.book ? -1 : pagesOf(target);
+			this.name = this.unlocked
+				? Component.literal(target.numeral() + " · ").append(target.title())
+				: Component.translatable("gui.forja.libros.carta.oculto", target.numeral());
+			this.motto = this.unlocked ? target.motto() : Component.empty();
+			int pages = target == GuideBookScreen.this.book || !this.unlocked ? -1 : pagesOf(target);
 			Component line;
 			if (!target.ready) {
 				line = Component.translatable("gui.forja.libros.carta.pronto", target.when());
+			} else if (!this.unlocked) {
+				line = Component.translatable("gui.forja.libros.carta.aprende", target.when());
 			} else if (this.readable) {
 				line = pages > 0
 					? Component.translatable("gui.forja.libros.carta.abrir", pages, minutes(pages))
 					: Component.translatable("gui.forja.libros.carta.tienes");
-			} else if (this.known) {
-				line = Component.translatable("gui.forja.libros.carta.hazlo");
 			} else {
-				line = Component.translatable("gui.forja.libros.carta.aprende", target.when());
+				line = Component.translatable("gui.forja.libros.carta.hazlo");
 			}
 			this.status = GuideBookScreen.this.font.split(line, WRAP);
+		}
+
+		/** Whether the card is lit: for the client test. */
+		boolean lit() {
+			return this.unlocked;
 		}
 
 		private int statusY() {
@@ -3939,54 +3968,61 @@ public class GuideBookScreen extends Screen {
 
 		@Override
 		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
-			int colour = 0xFF000000 | this.target.colour;
-			boolean hovered = this.readable && over(mouseX, mouseY, x - 2, y, CONTENT_W + 4, this.height() - 2);
-			if (hovered) {
+			int colour = this.unlocked ? 0xFF000000 | this.target.colour : SHADOW;
+			boolean hovered = this.readable && this.unlocked && over(mouseX, mouseY, x - 2, y, CONTENT_W + 4, this.height() - 2);
+			if (!this.unlocked) {
+				// The whole card in shadow, like a page of the bestiary for a creature never seen.
+				g.fill(x - 2, y, x + CONTENT_W + 2, y + this.height() - 2, 0x66241C14);
+			} else if (hovered) {
 				g.fill(x - 2, y, x + CONTENT_W + 2, y + this.height() - 2, PAPER_SHADE);
 			}
-			// The cover in small: its leather, a gilt edge, the book itself on it.
+			// The cover in small: its leather and a gilt edge when lit; when not, a dark book shape and a lock.
 			g.fill(x, y + 2, x + 22, y + 24, colour);
-			g.fill(x, y + 2, x + 22, y + 3, 0xFFD6B05A);
-			g.fill(x, y + 23, x + 22, y + 24, 0xFFD6B05A);
+			g.fill(x, y + 2, x + 22, y + 3, this.unlocked ? 0xFFD6B05A : 0xFF4A3E32);
+			g.fill(x, y + 23, x + 22, y + 24, this.unlocked ? 0xFFD6B05A : 0xFF4A3E32);
 			g.fill(x, y + 2, x + 1, y + 24, 0x60000000);
 			g.item(this.cover, x + 3, y + 5);
+			if (!this.unlocked) {
+				// Its silhouette: the book drawn, then blacked out over it.
+				g.fill(x + 3, y + 5, x + 19, y + 21, 0xE6120E0A);
+				lock(g, x + 8, y + 9, SHADOW_INK);
+			}
 			float scale = fitScale(screen.font, this.name, CONTENT_W - 26, 1.0F);
 			g.pose().pushMatrix();
 			g.pose().translate(x + 26, y + 3 + (1.0F - scale) * 4.0F);
 			g.pose().scale(scale, scale);
-			g.text(screen.font, this.name, 0, 0, this.target.ready ? 0xFF6B2A0E : INK_SOFT, false);
+			g.text(screen.font, this.name, 0, 0, this.unlocked ? 0xFF6B2A0E : SHADOW_INK, false);
 			g.pose().popMatrix();
-			float mottoScale = fitScale(screen.font, this.motto, CONTENT_W - 26, SMALL);
-			g.pose().pushMatrix();
-			g.pose().translate(x + 26, y + 14);
-			g.pose().scale(mottoScale, mottoScale);
-			g.text(screen.font, this.motto, 0, 0, INK_SOFT, false);
-			g.pose().popMatrix();
-			int ink = this.readable ? 0xFF000000 | GuideText.RUBRIC : this.known && this.target.ready ? INK : INK_SOFT;
+			if (this.unlocked) {
+				float mottoScale = fitScale(screen.font, this.motto, CONTENT_W - 26, SMALL);
+				g.pose().pushMatrix();
+				g.pose().translate(x + 26, y + 14);
+				g.pose().scale(mottoScale, mottoScale);
+				g.text(screen.font, this.motto, 0, 0, INK_SOFT, false);
+				g.pose().popMatrix();
+			}
+			int ink = !this.unlocked ? SHADOW_INK : this.readable ? 0xFF000000 | GuideText.RUBRIC : INK;
 			for (int i = 0; i < this.status.size(); i++) {
 				screen.small(g, this.status.get(i), x, y + this.statusY() + i * 8, ink);
 			}
-			// The recipe, drawn: a book and the ingredient make the book. A tick when it is learned, a lock when not.
 			int row = y + this.recipeY();
-			smallItem(g, new ItemStack(Items.BOOK), x + 2, row + 2);
-			screen.small(g, Component.literal("+"), x + 16, row + 5, INK_SOFT);
-			smallItem(g, this.ingredient, x + 22, row + 2);
-			screen.small(g, Component.literal("="), x + 36, row + 5, INK_SOFT);
-			smallItem(g, this.cover, x + 42, row + 2);
-			if (this.target.ready && this.known) {
-				g.fill(x + 57, row + 4, x + 64, row + 11, 0xFF5E7A34);
-				g.fill(x + 58, row + 7, x + 59, row + 8, PAPER);
-				g.fill(x + 59, row + 8, x + 60, row + 9, PAPER);
-				g.fill(x + 60, row + 7, x + 61, row + 8, PAPER);
-				g.fill(x + 61, row + 6, x + 62, row + 7, PAPER);
+			if (this.unlocked) {
+				// The recipe, drawn: a book and the ingredient make the book.
+				smallItem(g, new ItemStack(Items.BOOK), x + 2, row + 2);
+				screen.small(g, Component.literal("+"), x + 16, row + 5, INK_SOFT);
+				smallItem(g, this.ingredient, x + 22, row + 2);
+				screen.small(g, Component.literal("="), x + 36, row + 5, INK_SOFT);
+				smallItem(g, this.cover, x + 42, row + 2);
 			} else {
-				g.fill(x + 58, row + 7, x + 63, row + 11, INK_SOFT);
-				g.fill(x + 59, row + 4, x + 60, row + 7, INK_SOFT);
-				g.fill(x + 61, row + 4, x + 62, row + 7, INK_SOFT);
-				g.fill(x + 59, row + 4, x + 62, row + 5, INK_SOFT);
+				// Not learned: three dark slots and a lock, and nothing in them.
+				for (int slot = 0; slot < 3; slot++) {
+					g.fill(x + 2 + slot * 20, row + 2, x + 14 + slot * 20, row + 14, 0xFF3A3028);
+				}
+				screen.small(g, Component.literal("+"), x + 16, row + 5, SHADOW_INK);
+				screen.small(g, Component.literal("="), x + 36, row + 5, SHADOW_INK);
+				lock(g, x + 67, row + 4, SHADOW_INK);
 			}
-			// How much of it has been read, when it can be read at all.
-			if (this.readable) {
+			if (this.unlocked && this.readable) {
 				int pages = pagesOf(this.target);
 				float read = pages > 0 ? BookMemory.readShare(this.target, pages) : 0.0F;
 				int left = x + 70;
@@ -3995,6 +4031,7 @@ public class GuideBookScreen extends Screen {
 				g.fill(left, row + 6, left + Math.round((right - left) * read), row + 9, 0xFF5E7A34);
 			}
 			if (this.fresh) {
+				// "Nuevo": a red seal on the corner of a book just learned.
 				g.fill(x + CONTENT_W - 9, y + 1, x + CONTENT_W - 1, y + 9, 0xFFB02020);
 				g.fill(x + CONTENT_W - 6, y + 2, x + CONTENT_W - 4, y + 6, 0xFFFFE0C0);
 				g.fill(x + CONTENT_W - 6, y + 7, x + CONTENT_W - 4, y + 8, 0xFFFFE0C0);
@@ -4002,21 +4039,33 @@ public class GuideBookScreen extends Screen {
 			g.fill(x + 6, y + this.height() - 2, x + CONTENT_W - 6, y + this.height() - 1, PAPER_SHADE);
 		}
 
+		/** A small padlock: a shackle over a body, seven pixels wide. */
+		private static void lock(GuiGraphicsExtractor g, int x, int y, int ink) {
+			g.fill(x, y + 3, x + 6, y + 7, ink);
+			g.fill(x + 1, y, x + 2, y + 3, ink);
+			g.fill(x + 4, y, x + 5, y + 3, ink);
+			g.fill(x + 1, y, x + 5, y + 1, ink);
+		}
+
 		@Override
 		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
+			if (!this.unlocked) {
+				return List.of(this.name.copy().withColor(0xC9A96A), this.status.isEmpty() ? Component.empty()
+					: Component.translatable(this.target.ready ? "gui.forja.libros.carta.aprende" : "gui.forja.libros.carta.pronto", this.target.when()));
+			}
 			int row = y + this.recipeY();
 			if (over(mouseX, mouseY, x + 22, row + 2, 12, 12)) {
 				return this.ingredient;
 			}
 			if (over(mouseX, mouseY, x, y + 2, 22, 22) || over(mouseX, mouseY, x + 42, row + 2, 12, 12)) {
-				return this.target.ready ? (Object) this.cover : GuideBookScreen.this.whereToGet(this.target);
+				return this.cover;
 			}
 			return this.readable ? null : GuideBookScreen.this.whereToGet(this.target);
 		}
 
 		@Override
 		boolean click(GuideBookScreen screen) {
-			if (!this.readable || this.target == screen.book) {
+			if (!this.readable || !this.unlocked || this.target == screen.book) {
 				return false;
 			}
 			screen.minecraft.gui.setScreen(new GuideBookScreen(this.target));

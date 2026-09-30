@@ -1486,6 +1486,7 @@
   "gui.forja.libros.carta.tienes": "Lo llevas encima.",
   "gui.forja.libros.carta.hazlo": "Ya sabes hacerlo: en la mesa de crafteo.",
   "gui.forja.libros.carta.aprende": "Su receta se aprende %s.",
+  "gui.forja.libros.carta.oculto": "Libro %s · ???",
   "gui.forja.libros.receta": "Receta: %s y %s",
   "gui.forja.libros.en_libro": "En «%s»",
   "gui.forja.libros.info.cuaderno": "Para empezar · %2$s págs. · %3$s min",

@@ -1179,6 +1179,14 @@ public class ForjaClientTest implements FabricClientGameTest {
 		});
 		check(layout.isEmpty(), "every book must lay out cleanly (overflow, wide, cut, raw keys, misplaced, broken links): " + layout);
 
+		// Andy: a book not learned yet is a dark card with no recipe, like a creature the bestiary has not met; learned,
+		// it is lit. With nothing done only the notebook is lit; with the first template, book I too.
+		String cards = context.computeOnClient(mc -> GuideBookScreen.showing(dev.forja.GuideBooks.Book.BIBLIOTECA, java.util.Set.of()).bookCards()
+			+ " | " + GuideBookScreen.showing(dev.forja.GuideBooks.Book.BIBLIOTECA, java.util.Set.of("plantilla")).bookCards());
+		log("libros, tarjetas: " + cards);
+		check(cards.startsWith("[CUADERNO:lit, YUNQUE:dark, COMBATE:dark") && cards.contains("| [CUADERNO:lit, YUNQUE:lit, COMBATE:dark"),
+			"only learned books should be lit, and book I only after the first template: " + cards);
+
 		// G: with the notebook carried, the library; without it, the book in hand; without either, nothing.
 		String keys = context.computeOnClient(mc -> String.valueOf(dev.forja.client.ForjaClient.guideKeyOpens(mc.player)));
 		check(keys.equals("BIBLIOTECA"), "with the notebook carried G should open the library, it opens " + keys);

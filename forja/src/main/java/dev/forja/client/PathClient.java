@@ -28,6 +28,13 @@ public final class PathClient {
 		Map<AdvancementHolder, AdvancementProgress> forja$progress();
 	}
 
+	/**
+	 * Run after every advancements packet: what learned book recipes a recipe viewer may show changes with them
+	 * (compat/ForjaJeiPlugin sets it when JEI is there; without it, nothing).
+	 */
+	public static Runnable onProgress = () -> {
+	};
+
 	/** How many lines the path has put in chat since the game started, and the last of them, for the client test. */
 	public static int hintsShown;
 	public static @Nullable Component lastHint;
@@ -69,6 +76,7 @@ public final class PathClient {
 	 * which is what keeps it to one line per step and never the same line twice.
 	 */
 	public static void updated(ForjaPath.@Nullable Step before, ForjaPath.@Nullable Step after, boolean reset) {
+		onProgress.run();
 		if (reset || !ForjaPath.worthAHint(before, after) || !ForjaConfig.get().pistas) {
 			return;
 		}

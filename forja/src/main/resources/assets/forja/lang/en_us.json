@@ -1486,6 +1486,7 @@
   "gui.forja.libros.carta.tienes": "You are carrying it.",
   "gui.forja.libros.carta.hazlo": "You know how to make it: at the crafting table.",
   "gui.forja.libros.carta.aprende": "Its recipe is learned %s.",
+  "gui.forja.libros.carta.oculto": "Book %s · ???",
   "gui.forja.libros.receta": "Recipe: %s and %s",
   "gui.forja.libros.en_libro": "In \"%s\"",
   "gui.forja.libros.info.cuaderno": "To start with · %2$s pages · %3$s min",

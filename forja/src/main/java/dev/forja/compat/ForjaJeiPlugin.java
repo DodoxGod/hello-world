@@ -56,6 +56,49 @@ public class ForjaJeiPlugin implements IModPlugin {
 		return Forja.id("jei");
 	}
 
+	private static mezz.jei.api.runtime.@org.jspecify.annotations.Nullable IJeiRuntime runtime;
+
+	@Override
+	public void onRuntimeAvailable(mezz.jei.api.runtime.IJeiRuntime available) {
+		runtime = available;
+		dev.forja.client.PathClient.onProgress = ForjaJeiPlugin::showLearnedBooks;
+		showLearnedBooks();
+	}
+
+	@Override
+	public void onRuntimeUnavailable() {
+		runtime = null;
+		dev.forja.client.PathClient.onProgress = () -> {
+		};
+	}
+
+	/**
+	 * The guide's books are crafted from recipes learned along the way (GuideBooks), and a book's recipe is not to
+	 * be seen before it is learned (Andy, 2026-09-29). Vanilla's recipe book already keeps it out; JEI shows every
+	 * recipe it knows, so the ones not learned yet are hidden there, and shown again as they are learned.
+	 */
+	private static void showLearnedBooks() {
+		mezz.jei.api.runtime.IJeiRuntime jei = runtime;
+		if (jei == null) {
+			return;
+		}
+		java.util.Set<String> done = dev.forja.client.PathClient.done();
+		List<net.minecraft.world.item.crafting.RecipeHolder<net.minecraft.world.item.crafting.CraftingRecipe>> hide = new ArrayList<>();
+		List<net.minecraft.world.item.crafting.RecipeHolder<net.minecraft.world.item.crafting.CraftingRecipe>> show = new ArrayList<>();
+		jei.getRecipeManager().createRecipeLookup(mezz.jei.api.constants.RecipeTypes.CRAFTING).includeHidden().get().forEach(holder -> {
+			dev.forja.GuideBooks.Book book = dev.forja.GuideBooks.gatedBy(holder.id());
+			if (book != null) {
+				(done.contains(book.unlock) ? show : hide).add(holder);
+			}
+		});
+		if (!hide.isEmpty()) {
+			jei.getRecipeManager().hideRecipes(mezz.jei.api.constants.RecipeTypes.CRAFTING, hide);
+		}
+		if (!show.isEmpty()) {
+			jei.getRecipeManager().unhideRecipes(mezz.jei.api.constants.RecipeTypes.CRAFTING, show);
+		}
+	}
+
 	@Override
 	public void registerCategories(IRecipeCategoryRegistration registration) {
 		IGuiHelper gui = registration.getJeiHelpers().getGuiHelper();

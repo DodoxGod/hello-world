@@ -203,6 +203,7 @@ BOOKS = {
     "gui.forja.libros.carta.tienes": ("Lo llevas encima.", "You are carrying it."),
     "gui.forja.libros.carta.hazlo": ("Ya sabes hacerlo: en la mesa de crafteo.", "You know how to make it: at the crafting table."),
     "gui.forja.libros.carta.aprende": ("Su receta se aprende %s.", "Its recipe is learned %s."),
+    "gui.forja.libros.carta.oculto": ("Libro %s · ???", "Book %s · ???"),
     "gui.forja.libros.receta": ("Receta: %s y %s", "Recipe: %s and %s"),
     "gui.forja.libros.en_libro": ("En «%s»", "In \"%s\""),
     "gui.forja.libros.info.cuaderno": ("Para empezar · %2$s págs. · %3$s min", "To start with · %2$s pages · %3$s min"),
