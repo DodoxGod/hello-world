@@ -47,6 +47,10 @@ public class PercepcionGameTests {
 		CombatConfig.get().eliteChance = 0.0;
 		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(1, 1, 1));
 		zombie.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
+		// No idle stroll before its melee goal's first try (AlcanceGameTests.noStroll): a stroll changed the way it came
+		// to where it last saw the player, BUSCAR's fan of points goes on the way it came, and one fan (3 runs of 400)
+		// led it to the gap at the end of the wall, from where it saw the player again, honestly, and went on to them.
+		AlcanceGameTests.noStroll(zombie);
 		CombatGameTests.TestPlayer player = new CombatGameTests.TestPlayer(helper.getLevel());
 		Vec3 open = helper.absoluteVec(Vec3.atBottomCenterOf(new BlockPos(1, 1, 5)));
 		Vec3 hidden = helper.absoluteVec(Vec3.atBottomCenterOf(new BlockPos(6, 1, 1)));

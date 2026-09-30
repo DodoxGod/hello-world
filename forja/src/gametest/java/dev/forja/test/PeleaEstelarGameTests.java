@@ -121,11 +121,20 @@ public class PeleaEstelarGameTests {
 		});
 		helper.runAfterDelay(6 + FallenSmith.RISE_TICKS + 32, () -> {
 			helper.assertTrue(smith.wavesCalled() == 2, "no hay una tercera");
-			level.getEntitiesOfClass(Mob.class, new AABB(smith.blockPosition()).inflate(12.0), Apprentices::isApprentice).forEach(Mob::discard);
-			level.getEntitiesOfClass(Mob.class, new AABB(smith.blockPosition()).inflate(12.0), mob -> mob instanceof dev.forja.entity.WalkingAnvil).forEach(Mob::discard);
+			level.getEntitiesOfClass(Mob.class, ownGround(helper), Apprentices::isApprentice).forEach(Mob::discard);
+			level.getEntitiesOfClass(Mob.class, ownGround(helper), mob -> mob instanceof dev.forja.entity.WalkingAnvil).forEach(Mob::discard);
 			smith.discard();
 			helper.succeed();
 		});
+	}
+
+	/**
+	 * Where this test's apprentices can be: its box and four blocks round it, their rings being at most 7 from the
+	 * smith. It was 12 or 16 blocks round the smith, and the tests of a batch stand 13 apart: a test tidying up took the
+	 * apprentices of the one next door, which then found none of its four ("cuatro aprendices: 0").
+	 */
+	private static AABB ownGround(GameTestHelper helper) {
+		return helper.getBounds().inflate(4.0);
 	}
 
 	private static List<Mob> apprentices(GameTestHelper helper, FallenSmith smith) {
@@ -187,7 +196,7 @@ public class PeleaEstelarGameTests {
 				level.setBlockAndUpdate(StarFight.brazier(i), Blocks.AIR.defaultBlockState());
 			}
 			smith.discard();
-			level.getEntitiesOfClass(Mob.class, new AABB(smith.blockPosition()).inflate(16.0), Apprentices::isApprentice).forEach(Mob::discard);
+			level.getEntitiesOfClass(Mob.class, ownGround(helper), Apprentices::isApprentice).forEach(Mob::discard);
 			helper.succeed();
 		});
 	}
@@ -231,7 +240,7 @@ public class PeleaEstelarGameTests {
 		helper.assertTrue(loaded.wavesCalled() == 1, "la oleada sigue contada tras cargar");
 		helper.assertTrue(Math.abs(loaded.getHealth() - smith.getHealth()) < 0.01F, "y su vida: " + loaded.getHealth());
 		helper.assertTrue(loaded.phase() == 2, "y su fase");
-		level.getEntitiesOfClass(Mob.class, new AABB(smith.blockPosition()).inflate(12.0), Apprentices::isApprentice).forEach(Mob::discard);
+		level.getEntitiesOfClass(Mob.class, ownGround(helper), Apprentices::isApprentice).forEach(Mob::discard);
 		smith.discard();
 		// And the fight's own record on the level.
 		UUID someone = UUID.randomUUID();

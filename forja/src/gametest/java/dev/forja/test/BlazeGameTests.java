@@ -176,15 +176,15 @@ public class BlazeGameTests {
 	/**
 	 * Level ground for the flight: y 0 from −10 to 18 (the test's padding keeps its neighbours further off), its
 	 * chunks kept ticking while it lasts (outside the test's own box they are not, and a blaze there stands still).
+	 * Taking it up lets go of the chunks this test forced and only those (TestChunks): it let go of every chunk under
+	 * the ground, and one of them could be a chunk the framework keeps for the test next door.
 	 */
 	private static void floor(GameTestHelper helper, net.minecraft.world.level.block.Block block) {
 		boolean laying = block != net.minecraft.world.level.block.Blocks.AIR;
-		BlockPos low = helper.absolutePos(new BlockPos(FLOOR_FROM, 0, FLOOR_FROM));
-		BlockPos high = helper.absolutePos(new BlockPos(FLOOR_TO, 0, FLOOR_TO));
-		for (int cx = Math.min(low.getX(), high.getX()) >> 4; cx <= Math.max(low.getX(), high.getX()) >> 4; cx++) {
-			for (int cz = Math.min(low.getZ(), high.getZ()) >> 4; cz <= Math.max(low.getZ(), high.getZ()) >> 4; cz++) {
-				helper.getLevel().setChunkForced(cx, cz, laying);
-			}
+		if (laying) {
+			TestChunks.force(helper, FLOOR_FROM, FLOOR_TO);
+		} else {
+			TestChunks.release(helper);
 		}
 		for (int x = FLOOR_FROM; x <= FLOOR_TO; x++) {
 			for (int z = FLOOR_FROM; z <= FLOOR_TO; z++) {
@@ -485,10 +485,13 @@ public class BlazeGameTests {
 		Map<Blaze, List<Double>> ahead = new HashMap<>();
 		Map<Blaze, List<Double>> leads = new HashMap<>();
 		Set<Integer> seen = new HashSet<>();
+		// Which way the player was walking, tick by tick: a ball is judged against the way they went when it was thrown.
+		Map<Long, Double> phases = new HashMap<>();
 		helper.onEachTick(() -> {
 			long t = helper.getTick();
 			// to and fro along x, 12 blocks each way: across the told blaze's line (it is to the south, +z)
 			double phase = (t % 120) < 60 ? 1.0 : -1.0;
+			phases.put(t, phase);
 			double offset = (t % 120) < 60 ? (t % 60) * speed : (60 - t % 60) * speed;
 			Vec3 at = start.add(offset - 6.0, 0.0, 0.0);
 			velocity[0] = new Vec3(phase * speed, 0.0, 0.0);
@@ -497,7 +500,12 @@ public class BlazeGameTests {
 			for (Blaze blaze : new Blaze[] {told, own}) {
 				MobMind mind = MobAi.mind(blaze);
 				for (SmallFireball ball : fireballsOf(helper, blaze)) {
-					if (seen.add(ball.getId())) {
+					// A ball thrown about the tick the player turned round was aimed ahead of where they were going
+					// before the turn, and read against the new way it came out behind them (-2.5 among 3 to 4.6).
+					// Which way the blaze saw them go is not known then, so that ball is left out.
+					long thrown = t - ball.tickCount;
+					boolean sameWay = phases.getOrDefault(thrown - 1, phase) == phase && phases.getOrDefault(thrown, phase) == phase;
+					if (seen.add(ball.getId()) && sameWay) {
 						ahead.computeIfAbsent(blaze, b -> new ArrayList<>()).add(aheadOf(ball, new Vec3(at.x, player.getY(0.5), at.z), velocity[0]));
 						leads.computeIfAbsent(blaze, b -> new ArrayList<>()).add(mind.blaze == null ? -1.0 : mind.blaze.leadFactor());
 					}

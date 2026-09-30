@@ -23,9 +23,14 @@ final class TestChunks {
 
 	/** Forces the chunks under (-1, -1) to (size, size) that were not already forced. */
 	static void force(GameTestHelper helper, int size) {
+		force(helper, -1, size);
+	}
+
+	/** Forces the chunks under (from, from) to (to, to) that were not already forced. */
+	static void force(GameTestHelper helper, int from, int to) {
 		ServerLevel level = helper.getLevel();
-		BlockPos a = helper.absolutePos(new BlockPos(-1, 0, -1));
-		BlockPos c = helper.absolutePos(new BlockPos(size, 0, size));
+		BlockPos a = helper.absolutePos(new BlockPos(from, 0, from));
+		BlockPos c = helper.absolutePos(new BlockPos(to, 0, to));
 		List<ChunkPos> mine = FORCED.computeIfAbsent(helper, h -> new ArrayList<>());
 		for (int cx = Math.min(a.getX(), c.getX()) >> 4; cx <= Math.max(a.getX(), c.getX()) >> 4; cx++) {
 			for (int cz = Math.min(a.getZ(), c.getZ()) >> 4; cz <= Math.max(a.getZ(), c.getZ()) >> 4; cz++) {

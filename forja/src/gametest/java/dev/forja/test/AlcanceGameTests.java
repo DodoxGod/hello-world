@@ -56,6 +56,16 @@ public class AlcanceGameTests {
 		return zombie;
 	}
 
+	/**
+	 * Takes vanilla's idle stroll off a mob. Spawned a little over the ground, a mob's first try at its melee goal
+	 * finds no path (a mob in the air makes none) and the goal waits 20 ticks for its next try; meanwhile the stroll
+	 * may start, and a stroll that happened to head for the player took the flail zombie to a gap of 1.3 before it
+	 * ever fought (2 runs of 400). Where it stops when it goes in to strike is what is tested, not where it wanders.
+	 */
+	static void noStroll(Mob mob) {
+		((dev.forja.mixin.MobGoalsAccess) mob).forjaGoals().removeAllGoals(goal -> goal instanceof net.minecraft.world.entity.ai.goal.RandomStrollGoal);
+	}
+
 	/** A player holding this, with what it adds to their reach applied (a test player never ticks its equipment). */
 	private static CombatGameTests.TestPlayer holding(GameTestHelper helper, BlockPos pos, ItemStack weapon) {
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, pos);
@@ -106,6 +116,7 @@ public class AlcanceGameTests {
 		Zombie flail = armed(helper, new BlockPos(4, 1, 1), forged(ForgeType.MANGUAL));
 		Zombie bare = armed(helper, new BlockPos(4, 1, 6), ItemStack.EMPTY);
 		bare.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.0);
+		noStroll(flail);
 		flail.setTarget(near);
 		bare.setTarget(far);
 		double[] closest = {Double.MAX_VALUE};

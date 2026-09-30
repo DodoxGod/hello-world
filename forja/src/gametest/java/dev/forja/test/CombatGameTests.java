@@ -110,6 +110,19 @@ public class CombatGameTests {
 		dev.forja.ForjaConfig.get().grimorios = 0.0F;
 	}
 
+	/**
+	 * Stone under the test's box at y 0, the level {@link #player} stands on. Without it a mob spawned at y 1 drops
+	 * a block onto the world's floor and fights a test player hanging a block over its head (a test player never
+	 * falls), which is not the fight the test describes.
+	 */
+	static void floor(GameTestHelper helper) {
+		for (int x = 0; x < 8; x++) {
+			for (int z = 0; z < 8; z++) {
+				helper.setBlock(new BlockPos(x, 0, z), net.minecraft.world.level.block.Blocks.STONE);
+			}
+		}
+	}
+
 	/** A mob with nothing in its hands: vanilla gives some a spear or a sword, and a spear fights another way. */
 	static void emptyHands(net.minecraft.world.entity.Mob mob) {
 		mob.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
@@ -599,6 +612,7 @@ public class CombatGameTests {
 	/** A vanilla melee mob warns, then lands its blow on a player who stays put. */
 	@GameTest(maxTicks = 200)
 	public void telegraphedAttackHitsStillPlayer(GameTestHelper helper) {
+		floor(helper);
 		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
 		noRandomThreat();
 		Husk husk = helper.spawn(EntityTypes.HUSK, new BlockPos(2, 1, 1));
@@ -758,6 +772,25 @@ public class CombatGameTests {
 	}
 
 	/**
+	 * Every batch runs on a clear morning that stands still (test_environment: minecraft:default and each of
+	 * forja-test's lean on forja-test:estable). The test world is kept between runs, and its clock and weather with it:
+	 * one run went at noon, the next at night or in the rain, and what the tests saw with it (undead burning or not,
+	 * the light a torch gives, rain on a blaze) changed from run to run.
+	 */
+	@GameTest
+	public void testWorldIsAClearMorningThatStandsStill(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		long time = level.getOverworldClockTime();
+		helper.assertTrue(time % 24000L == 1000L, "la hora de las pruebas es la mañana (1000): " + time);
+		helper.assertTrue(!level.isRaining() && !level.isThundering(), "y sin lluvia");
+		helper.assertFalse(level.isDarkOutside(), "de día");
+		helper.assertFalse(level.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.ADVANCE_TIME), "la hora no avanza");
+		helper.assertFalse(level.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.ADVANCE_WEATHER), "ni el tiempo");
+		helper.assertFalse(CombatConfig.get().iaRepartirObjetivos, "las escuadras no pasan monstruos al jugador de otra prueba (TestDefaults)");
+		helper.succeed();
+	}
+
+	/**
 	 * A stunned mob lets go of its turn (Andy, 2026-09-26). The network's goal dropped its warning on a
 	 * stagger but kept the turn until its next blow, so in a group one stunned mob held the pack back.
 	 */
@@ -809,21 +842,56 @@ public class CombatGameTests {
 		});
 	}
 
+	/**
+	 * A skeleton's charged shot: a draw of its own length, a flash, and the arrow. What is tested is the shot, so
+	 * this skeleton is kept from what made it come and go (53 runs of 400 failed): its specials, which under the
+	 * rules start by chance on any tick and took over halfway through the 40-tick draw (a volley or a hop back
+	 * instead); an elite by chance (the test never turned them off), which took its place in a formation and never
+	 * drew; and the setting shared by every test (skeletonChargedEvery = 1), which charged the shots of the other
+	 * tests' skeletons while this one ran. Its own bow goal is told that the next shot is the charged one.
+	 */
 	@GameTest(maxTicks = 200)
 	public void skeletonFiresChargedShot(GameTestHelper helper) {
-		CombatConfig cfg = CombatConfig.get();
-		int previous = cfg.skeletonChargedEvery;
-		cfg.skeletonChargedEvery = 1;
+		floor(helper);
 		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
+		noRandomThreat();
 		Skeleton skeleton = helper.spawn(EntityTypes.SKELETON, new BlockPos(6, 1, 6));
 		skeleton.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
 		skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+		dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(skeleton);
+		helper.assertTrue(mind != null, "el esqueleto debería tener cerebro");
+		mind.specials = null;
+		nextShotCharged(helper, skeleton);
 		skeleton.setTarget(player);
 		helper.runAfterDelay(110, () -> {
-			cfg.skeletonChargedEvery = previous;
 			helper.assertTrue(CombatStats.count(skeleton, CombatStats.CHARGED_SHOT) > 0, "el esqueleto no hizo un disparo cargado");
 			helper.succeed();
 		});
+	}
+
+	/**
+	 * Sets this skeleton's bow goal to charge its next shot: the goal counts its shots and charges every
+	 * skeletonChargedEvery-th (RangedBowAttackGoalMixin), so the count is put one short of it.
+	 */
+	private static void nextShotCharged(GameTestHelper helper, Skeleton skeleton) {
+		int every = CombatConfig.get().skeletonChargedEvery;
+		helper.assertTrue(every > 0, "los disparos cargados están apagados: skeletonChargedEvery " + every);
+		for (var wrapped : ((dev.forja.mixin.MobGoalsAccess) skeleton).forjaGoals().getAvailableGoals()) {
+			if (wrapped.getGoal() instanceof net.minecraft.world.entity.ai.goal.RangedBowAttackGoal<?> goal) {
+				for (java.lang.reflect.Field field : net.minecraft.world.entity.ai.goal.RangedBowAttackGoal.class.getDeclaredFields()) {
+					if (field.getType() == int.class && field.getName().endsWith("shots")) {
+						try {
+							field.setAccessible(true);
+							field.setInt(goal, every - 1);
+							return;
+						} catch (ReflectiveOperationException failure) {
+							throw new IllegalStateException(failure);
+						}
+					}
+				}
+			}
+		}
+		helper.fail("no se encuentra la cuenta de disparos del arco del esqueleto (RangedBowAttackGoalMixin.forja$shots)");
 	}
 
 	@GameTest(maxTicks = 200)

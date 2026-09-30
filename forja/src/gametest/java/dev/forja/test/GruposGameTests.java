@@ -176,6 +176,12 @@ public class GruposGameTests {
 		CombatConfig.get().eliteChance = 0.0;
 		Zombie free = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(3, 1, 1));
 		Zombie walled = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(3, 1, 5));
+		// Where they were put, not where an idle stroll took them in the ten ticks before the blow: a stroll that ended
+		// by the box's edge left no room to land, and no hop was planned (3 runs of 2000). A helmet against the sun too.
+		for (Zombie zombie : List.of(free, walled)) {
+			AlcanceGameTests.noStroll(zombie);
+			zombie.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.LEATHER_HELMET));
+		}
 		CombatGameTests.TestPlayer player = new CombatGameTests.TestPlayer(level);
 		Vec3 at = helper.absoluteVec(new Vec3(1.5, 1.0, 1.5));
 		player.setPos(at.x, at.y, at.z);

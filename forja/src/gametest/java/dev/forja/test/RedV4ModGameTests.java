@@ -83,7 +83,11 @@ public class RedV4ModGameTests {
 		}
 	}
 
-	/** Clears what a test built: blocks back to air in the box, item entities and projectiles gone. */
+	/**
+	 * Clears what a test built: blocks back to air in the box, item entities and projectiles gone. The sweep reaches
+	 * four blocks past what was built, so a test that builds past its 8 x 8 box asks for padding: without it the
+	 * next test stood 5 blocks off, and two of them (10 and 12 wide) swept its mobs away when they finished.
+	 */
 	private static void clear(GameTestHelper helper, int size, int height) {
 		for (int x = -1; x <= size; x++) {
 			for (int z = -1; z <= size; z++) {
@@ -381,7 +385,7 @@ public class RedV4ModGameTests {
 	}
 
 	/** At 6 blocks, a zombie on the rules throws the slowness potion it carries at the player. */
-	@GameTest(maxTicks = 120)
+	@GameTest(padding = 16, maxTicks = 120)
 	public void zombieThrowsItsSplashPotion(GameTestHelper helper) {
 		floor(helper, 10);
 		CombatGameTests.TestPlayer player = player(helper, new BlockPos(7, 1, 1));
@@ -586,7 +590,7 @@ public class RedV4ModGameTests {
 	}
 
 	/** On flat ground the knockback arrow is never offered (nothing to bring down). */
-	@GameTest(maxTicks = 20)
+	@GameTest(padding = 16, maxTicks = 20)
 	public void knockbackArrowNotOnFlatGround(GameTestHelper helper) {
 		floor(helper, 12);
 		CombatGameTests.TestPlayer player = player(helper, new BlockPos(6, 1, 6));
@@ -785,8 +789,11 @@ public class RedV4ModGameTests {
 	/**
 	 * In a dark roofed room lit by one torch, a zombie on the rules without a turn puts the torch out (15 ticks of
 	 * striking, the torch drops); a lantern beside it never counts. With mobGriefing off it never does.
+	 *
+	 * <p>mobGriefing is the world's, not the test's: for its first hundred ticks it was off for every test of the batch
+	 * running beside this one. This test runs in a batch of its own (forja-test:reglas_de_mundo) for that.
 	 */
-	@GameTest(padding = 16, maxTicks = 400)
+	@GameTest(environment = "forja-test:reglas_de_mundo", padding = 16, maxTicks = 400)
 	public void zombiePutsOutTheTorchOnlyWithGriefing(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		boolean griefing = level.getGameRules().get(GameRules.MOB_GRIEFING);
@@ -854,8 +861,14 @@ public class RedV4ModGameTests {
 		});
 	}
 
-	/** A dark room: stone floor, walls and roof, from (0..9, 0..3, 0..9) with the inside (1..8, 1..2, 1..8) empty. */
+	/**
+	 * A dark room: stone floor, walls and roof, from (0..9, 0..3, 0..9) with the inside (1..8, 1..2, 1..8) empty. It
+	 * reaches past the test's 8 x 8 box, so its chunks are forced as {@link #floor}'s are (TestChunks): where the box
+	 * sat by a chunk's edge, a zombie that went round the far side of the room walked into a chunk that did not tick
+	 * entities and stood there frozen, its brain still deciding, for the rest of the test (7 runs of 400).
+	 */
 	private static void room(GameTestHelper helper) {
+		TestChunks.force(helper, 10);
 		for (int x = 0; x <= 9; x++) {
 			for (int z = 0; z <= 9; z++) {
 				for (int y = 0; y <= 3; y++) {
