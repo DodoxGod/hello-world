@@ -1,5 +1,26 @@
 # Novedades
 
+## 2026-09-29 — El Cementerio entre Estrellas: arreglos de la revisión de Andy (entrega 1b)
+
+- **Un sol bajo el vacío:** al fondo, recto abajo, un cuerpo enorme con halo rojo, 28 rayos que giran y parpadean,
+  dos coronas que giran una contra otra, un temblor de calor alrededor del núcleo y un núcleo blanco que ciega.
+  Se apaga al subir (entero hasta y = 110, apagado a y = 170), porque desde muy alto se dibujaba delante de la meseta.
+- **Las armas clavadas caen con su suelo:** si se quita el bloque de debajo desaparecen sin soltar nada; rotas a
+  mano tampoco sueltan nada, y no se pueden poner en el aire.
+- **Las armas clavadas se ven bien desde el sur:** la cara de atrás de cada arma llevaba la uv de la de delante y,
+  vista desde el norte, el arma salía tumbada. Arreglado en las 6 armas y las 3 inclinaciones.
+- **La meseta depende de la semilla** (`world/StarYardLayout`): el borde, de 2 a 4 ríos y su recorrido, los
+  puentes, de 5 a 9 islotes, las filas y fosas de tumbas, las forjas frías y el relieve cambian con cada mundo. La
+  arena es la misma en todos. Sigue sin ruido: 400 chunks de columnas en 0,07 s.
+- **El cielo se mueve:** una vuelta cada 12 minutos (antes 40, y no se notaba); la nebulosa deriva algo más deprisa,
+  respira y sus nudos se deslizan. **Estrellas fugaces:** unas 4 por minuto.
+- **Diseño (sin construir):** las respuestas de Andy (nombres, oricalco, 4 + 6 aprendices, revancha con fragua fría
+  en el centro, Estrella que pasa el tope de armadura, eventos) y una propuesta nueva, el **Reforjado estelar**: su
+  invulnerabilidad de la mitad solo se rompe con la dimensión (hierro estelar templado, molde celeste redirigido,
+  colada del brasero). En `docs/HERRERO_DIMENSION.md`.
+- **Pruebas:** `DimensionGameTests` en 5 semillas, `theSeedShapesThePlateauButNotTheArena` y
+  `aGraveFallsWithItsGroundAndDropsNothing`; `FORJA_SOLO=dimension` en dos mundos con semillas distintas.
+
 ## 2026-09-29 — El Cementerio entre Estrellas, la dimensión del Herrero Caído (primera entrega: la dimensión)
 
 - **Diseño entero** en `docs/HERRERO_DIMENSION.md`: portal con perlas de oricalco en el Bastión, la dimensión, la

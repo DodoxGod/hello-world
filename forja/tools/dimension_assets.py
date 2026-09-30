@@ -33,14 +33,19 @@ WEAPONS = {
     "pico": "item/iron_pickaxe.png",
 }
 
-# The three leans of a grave weapon: (uv of the sprite, rotation about z). The item sprites run from the
-# handle at bottom left to the head at top right; turned half round (uv 16,16,0,0) the head is at the
-# bottom, and 45 degrees then stands it straight up with its head in the ground. The third lean mirrors
+# The three leans of a grave weapon: (uv of the south face, uv of the north face, rotation about z). The
+# item sprites run from the handle at bottom left to the head at top right; turned half round the head is at
+# the bottom, and 45 degrees then stands it straight up with its head in the ground. The third lean mirrors
 # the sprite so it can lean the other way within the angles a model element is allowed.
+#
+# The two faces of the card need DIFFERENT uvs. A north face runs its u the other way along x from a south
+# face, so the same uv on both put the back of the card along the other diagonal: seen from the north
+# (looking south, Andy 2026-09-29) every weapon lay flat on its side. Each back face below is the one that
+# puts the handle and the head at the same points of the card as its front.
 TILTS = [
-    ([16, 16, 0, 0], 45.0),
-    ([16, 16, 0, 0], 22.5),
-    ([0, 16, 16, 0], -22.5),
+    ([16, 16, 0, 0], [0, 16, 16, 0], 45.0),
+    ([16, 16, 0, 0], [0, 16, 16, 0], 22.5),
+    ([0, 16, 16, 0], [16, 16, 0, 0], -22.5),
 ]
 
 FACING_Y = {"north": 0, "east": 90, "south": 180, "west": 270}
@@ -176,7 +181,7 @@ def blocks(gen):
     # The graves: one model per weapon and lean, turned by the blockstate for its four facings.
     variants = {}
     for weapon in WEAPONS:
-        for tilt, (uv, angle) in enumerate(TILTS):
+        for tilt, (uv, back, angle) in enumerate(TILTS):
             model = f"arma_clavada_{weapon}_{tilt}"
             texture = f"forja:block/arma_clavada_{weapon}"
             face = {"uv": uv, "texture": "#arma"}
@@ -188,7 +193,7 @@ def blocks(gen):
                     "to": [16, 14, 8],
                     "rotation": {"origin": [8, 6, 8], "axis": "z", "angle": angle},
                     "shade": False,
-                    "faces": {"north": dict(face), "south": dict(face)},
+                    "faces": {"north": {"uv": back, "texture": "#arma"}, "south": dict(face)},
                 }],
             })
             for facing, y in FACING_Y.items():

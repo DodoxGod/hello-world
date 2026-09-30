@@ -57,7 +57,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Two passes per chunk. The columns first — the plateau's strata, the arena, the rivers and their
  * walls, the falls, the graves — each of which depends on its own column alone. Then the cold forges,
- * which are small ruins a few blocks across: each belongs to a 24-block cell, and every chunk the ruin
+ * which are small ruins a few blocks across: each belongs to a cell of 22 to 26 blocks (the seed's), and every chunk the ruin
  * overlaps stamps the part of it that falls inside that chunk, so no chunk ever waits on another.
  */
 public final class StarYardGenerator extends ChunkGenerator {
@@ -83,8 +83,28 @@ public final class StarYardGenerator extends ChunkGenerator {
 	private static final BlockState BASALT = Blocks.BASALT.defaultBlockState();
 	private static final BlockState SMOOTH_BASALT = Blocks.SMOOTH_BASALT.defaultBlockState();
 
+	/** This world's plateau, drawn from its seed when the level first asks for the generator's state. */
+	private volatile @Nullable StarYardLayout layout;
+
 	public StarYardGenerator(Holder.Reference<Biome> biome) {
 		super(new FixedBiomeSource(biome));
+	}
+
+	/**
+	 * The one place a generator is told the world's seed: the level asks for this before it generates a
+	 * single chunk, so it is where the plateau is drawn.
+	 */
+	@Override
+	public ChunkGeneratorStructureState createState(net.minecraft.core.HolderLookup<net.minecraft.world.level.levelgen.structure.StructureSet> sets,
+		RandomState randomState, long seed) {
+		this.layout = StarYardLayout.of(seed);
+		return super.createState(sets, randomState, seed);
+	}
+
+	/** This world's layout; seed 0's if the level has not yet said which world it is (it always has by the first chunk). */
+	public StarYardLayout layout() {
+		StarYardLayout drawn = this.layout;
+		return drawn != null ? drawn : StarYardLayout.of(0L);
 	}
 
 	@Override
@@ -145,7 +165,8 @@ public final class StarYardGenerator extends ChunkGenerator {
 
 	@Override
 	public int getBaseHeight(int x, int z, Heightmap.Types type, LevelHeightAccessor heightAccessor, RandomState randomState) {
-		BlockState[] states = column(x, z);
+		StarYardLayout layout = this.layout();
+		BlockState[] states = column(layout, x, z);
 		for (int y = states.length - 1; y >= 0; y--) {
 			if (states[y] != null && type.isOpaque().test(states[y])) {
 				return MIN_Y + y + 1;
@@ -156,7 +177,8 @@ public final class StarYardGenerator extends ChunkGenerator {
 
 	@Override
 	public NoiseColumn getBaseColumn(int x, int z, LevelHeightAccessor heightAccessor, RandomState randomState) {
-		BlockState[] states = column(x, z);
+		StarYardLayout layout = this.layout();
+		BlockState[] states = column(layout, x, z);
 		for (int y = 0; y < states.length; y++) {
 			if (states[y] == null) {
 				states[y] = AIR;
@@ -171,9 +193,9 @@ public final class StarYardGenerator extends ChunkGenerator {
 	}
 
 	/** Everything the generator puts in one column, bottom (y 0) up, with null for air: for the tests too. */
-	public static BlockState[] column(int x, int z) {
+	public static BlockState[] column(StarYardLayout layout, int x, int z) {
 		BlockState[] states = new BlockState[HEIGHT];
-		fillColumn(x, z, (y, state, reshape) -> {
+		fillColumn(layout, x, z, (y, state, reshape) -> {
 			if (y >= MIN_Y && y < MIN_Y + HEIGHT) {
 				states[y - MIN_Y] = state;
 			}
@@ -185,6 +207,7 @@ public final class StarYardGenerator extends ChunkGenerator {
 
 	@Override
 	public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState randomState, StructureManager structureManager, ChunkAccess chunk) {
+		StarYardLayout layout = this.layout();
 		ChunkPos at = chunk.getPos();
 		int minX = at.getMinBlockX();
 		int minZ = at.getMinBlockZ();
@@ -195,15 +218,15 @@ public final class StarYardGenerator extends ChunkGenerator {
 			for (int lz = 0; lz < 16; lz++) {
 				int x = minX + lx;
 				int z = minZ + lz;
-				fillColumn(x, z, (y, state, reshape) -> put(chunk, pos.set(x, y, z), state, reshape, floor, surface));
+				fillColumn(layout, x, z, (y, state, reshape) -> put(chunk, pos.set(x, y, z), state, reshape, floor, surface));
 			}
 		}
 		// The cold forges, over the columns: every cell whose ruin could reach into this chunk.
-		for (int cellX = Math.floorDiv(minX - 8, FORGE_CELL); cellX <= Math.floorDiv(minX + 23, FORGE_CELL); cellX++) {
-			for (int cellZ = Math.floorDiv(minZ - 8, FORGE_CELL); cellZ <= Math.floorDiv(minZ + 23, FORGE_CELL); cellZ++) {
-				Forge forge = forgeAt(cellX, cellZ);
+		for (int cellX = Math.floorDiv(minX - 8, layout.forgeCell); cellX <= Math.floorDiv(minX + 23, layout.forgeCell); cellX++) {
+			for (int cellZ = Math.floorDiv(minZ - 8, layout.forgeCell); cellZ <= Math.floorDiv(minZ + 23, layout.forgeCell); cellZ++) {
+				Forge forge = forgeAt(layout, cellX, cellZ);
 				if (forge != null) {
-					stampForge(forge, minX, minZ, (x, y, z, state, reshape) -> put(chunk, pos.set(x, y, z), state, reshape, floor, surface));
+					stampForge(layout, forge, minX, minZ, (x, y, z, state, reshape) -> put(chunk, pos.set(x, y, z), state, reshape, floor, surface));
 				}
 			}
 		}
@@ -240,55 +263,55 @@ public final class StarYardGenerator extends ChunkGenerator {
 	 * Everything in the column at (x, z), bottom to top. The one place the plateau's look is decided;
 	 * see the doc's table in 2.3 for the zones.
 	 */
-	static void fillColumn(int x, int z, ColumnSink sink) {
+	static void fillColumn(StarYardLayout layout, int x, int z, ColumnSink sink) {
 		double cx = x + 0.5;
 		double cz = z + 0.5;
 		double r = StarYard.radius(cx, cz);
 		double theta = StarYard.bearing(cx, cz);
-		double reach = StarYard.edge(theta);
-		double river = StarYard.riverDistance(cx, cz);
+		double reach = layout.edge(theta);
+		double river = layout.riverDistance(cx, cz);
 		if (r >= reach) {
 			// Off the edge: a fall where a river pours over it, and the islets; otherwise the void.
 			if (river < StarYard.RIVER_HALF && r < reach + 2.2) {
-				int top = StarYard.surface(x, z) - 1;
+				int top = layout.surface(x, z) - 1;
 				BlockState fall = ModBlocks.METAL_FUNDIDO.defaultBlockState().setValue(MoltenMetalBlock.CAE, true);
 				for (int y = FALL_BOTTOM; y <= top; y++) {
 					sink.set(y, fall, false);
 				}
 			}
-			islets(x, z, sink);
+			islets(layout, x, z, sink);
 			return;
 		}
-		int top = StarYard.surface(x, z);
-		int bottom = StarYard.bottom(x, z);
+		int top = layout.surface(x, z);
+		int bottom = layout.bottom(x, z);
 		// The strata: basalt at the very bottom, blackstone, then the obsidian slab of the workshop.
 		for (int y = bottom; y < top; y++) {
-			sink.set(y, stratum(x, y, z, top, bottom, r), false);
+			sink.set(y, stratum(layout, x, y, z, top, bottom, r), false);
 		}
 		if (r <= StarYard.RIM) {
-			arena(x, z, r, theta, top, sink);
+			arena(layout, x, z, r, theta, top, sink);
 			return;
 		}
-		if (pillar(x, z, top, sink)) {
+		if (pillar(layout, x, z, top, sink)) {
 			return;
 		}
-		double ash = StarYard.APRON + 2.5 * Math.sin(5.0 * theta + 0.3) + (StarYard.hash(x, z, 3) % 3L);
+		double ash = StarYard.APRON + 2.5 * Math.sin(5.0 * theta + 0.3) + (layout.hash(x, z, 3) % 3L);
 		if (r < ash) {
-			apron(x, z, top, sink);
+			apron(layout, x, z, top, sink);
 			return;
 		}
 		// The ash plain, with its rivers, springs, graves and rim.
-		if (spring(x, z, cx, cz, top, river, sink)) {
+		if (spring(layout, x, z, cx, cz, top, river, sink)) {
 			return;
 		}
-		boolean bridge = StarYard.onBridge(cx, cz);
+		boolean bridge = layout.onBridge(cx, cz);
 		if (river < StarYard.RIVER_HALF) {
 			sink.set(top - 2, molten(), false);
 			sink.set(top - 1, molten(), false);
 			if (bridge) {
 				sink.set(top, BRICKS, false);
 				// The deck's two sides are walled over the bed, so nobody walks off a bridge into it.
-				double across = bridgeOffset(cx, cz);
+				double across = layout.bridgeOffset(cx, cz);
 				if (across >= 1.5) {
 					sink.set(top + 1, WALL, true);
 				}
@@ -306,28 +329,18 @@ public final class StarYardGenerator extends ChunkGenerator {
 		}
 		if (reach - r < 4.0) {
 			// The lip of the plateau: bare rock, nothing buried in it.
-			long h = StarYard.hash(x, z, 4) % 10L;
+			long h = layout.hash(x, z, 4) % 10L;
 			sink.set(top, h < 5 ? OBSIDIAN : h < 8 ? BLACKSTONE : BASALT, false);
 			return;
 		}
-		plain(x, z, cx, cz, r, top, river, sink);
+		plain(layout, x, z, cx, cz, r, top, river, sink);
 	}
 
 	private static BlockState molten() {
 		return ModBlocks.METAL_FUNDIDO.defaultBlockState();
 	}
 
-	/** How far across a bridge's deck this point is from its middle line. */
-	private static double bridgeOffset(double x, double z) {
-		double r = StarYard.radius(x, z);
-		double best = Double.MAX_VALUE;
-		for (double ring : StarYard.BRIDGES) {
-			best = Math.min(best, Math.abs(r - ring));
-		}
-		return best;
-	}
-
-	private static BlockState stratum(int x, int y, int z, int top, int bottom, double r) {
+	private static BlockState stratum(StarYardLayout layout, int x, int y, int z, int top, int bottom, double r) {
 		if (y == bottom) {
 			return BASALT;
 		}
@@ -339,7 +352,7 @@ public final class StarYardGenerator extends ChunkGenerator {
 		if (depth <= 4) {
 			return OBSIDIAN;
 		}
-		if (StarYard.hash(x * 31 + y, z, 5) % 97L == 0L) {
+		if (layout.hash(x * 31 + y, z, 5) % 97L == 0L) {
 			return CRYING;
 		}
 		return y % 9 == 0 || y % 9 == 1 ? BASALT : BLACKSTONE;
@@ -349,7 +362,7 @@ public final class StarYardGenerator extends ChunkGenerator {
 	 * The arena: flat obsidian, a crying obsidian disc where he will land, eight spokes and two rings,
 	 * and a low wall at 23 with four doors five wide. Nothing in it stands up to trip anybody.
 	 */
-	private static void arena(int x, int z, double r, double theta, int top, ColumnSink sink) {
+	private static void arena(StarYardLayout layout, int x, int z, double r, double theta, int top, ColumnSink sink) {
 		BlockState floor = OBSIDIAN;
 		double spoke = Math.abs(Math.IEEEremainder(theta, Math.PI / 4.0)) * r;
 		if (r < 3.0) {
@@ -359,10 +372,10 @@ public final class StarYardGenerator extends ChunkGenerator {
 		} else if (r >= 10.0 && r < 11.0) {
 			floor = CHISELED;
 		} else if (r >= 20.0) {
-			floor = StarYard.hash(x, z, 6) % 5L == 0L ? CRACKED : BRICKS;
+			floor = StarYard.hash(x, z, 6, 0L) % 5L == 0L ? CRACKED : BRICKS;
 		} else if (spoke < 0.55) {
 			floor = POLISHED;
-		} else if (StarYard.hash(x, z, 7) % 61L == 0L) {
+		} else if (StarYard.hash(x, z, 7, 0L) % 61L == 0L) {
 			floor = GILDED;
 		}
 		sink.set(top, floor, false);
@@ -372,7 +385,7 @@ public final class StarYardGenerator extends ChunkGenerator {
 	}
 
 	/** The four braziers at the arena's corners: a pillar of brick with molten metal in a bowl on top. */
-	private static boolean pillar(int x, int z, int top, ColumnSink sink) {
+	private static boolean pillar(StarYardLayout layout, int x, int z, int top, ColumnSink sink) {
 		for (int k = 0; k < 4; k++) {
 			double angle = Math.PI / 4.0 + k * Math.PI / 2.0;
 			int px = (int) Math.round(Math.cos(angle) * StarYard.PILLAR_RING);
@@ -397,7 +410,7 @@ public final class StarYardGenerator extends ChunkGenerator {
 	}
 
 	/** The apron between the arena and the ash: obsidian with a little of everything black in it. */
-	private static void apron(int x, int z, int top, ColumnSink sink) {
+	private static void apron(StarYardLayout layout, int x, int z, int top, ColumnSink sink) {
 		double ax = x + 0.5 - (StarYard.ARRIVAL.getX() + 0.5);
 		double az = z + 0.5 - (StarYard.ARRIVAL.getZ() + 0.5);
 		double arrival = Math.sqrt(ax * ax + az * az);
@@ -409,7 +422,7 @@ public final class StarYardGenerator extends ChunkGenerator {
 			sink.set(top, CRYING, false);
 			return;
 		}
-		long h = StarYard.hash(x, z, 8) % 100L;
+		long h = layout.hash(x, z, 8) % 100L;
 		sink.set(top, h < 68 ? OBSIDIAN : h < 80 ? BLACKSTONE : h < 92 ? POLISHED : h < 96 ? CRACKED : CRYING, false);
 	}
 
@@ -417,9 +430,9 @@ public final class StarYardGenerator extends ChunkGenerator {
 	 * Where each river rises: a round basin walled all round but for where the river leaves it, and a
 	 * lintel on two pillars across it with the metal pouring out from under it.
 	 */
-	private static boolean spring(int x, int z, double cx, double cz, int top, double river, ColumnSink sink) {
-		for (int k = 0; k < StarYard.RIVERS.length; k++) {
-			Vec3 source = StarYard.spring(k);
+	private static boolean spring(StarYardLayout layout, int x, int z, double cx, double cz, int top, double river, ColumnSink sink) {
+		for (int k = 0; k < layout.rivers.length; k++) {
+			Vec3 source = layout.spring(k);
 			double dx = cx - source.x;
 			double dz = cz - source.z;
 			double distance = Math.sqrt(dx * dx + dz * dz);
@@ -463,20 +476,20 @@ public final class StarYardGenerator extends ChunkGenerator {
 	}
 
 	/** The ash, and the graves in it. */
-	private static void plain(int x, int z, double cx, double cz, double r, int top, double river, ColumnSink sink) {
-		double patch = Math.sin(cx * 0.071 + Math.sin(cz * 0.05)) * Math.cos(cz * 0.064 - 0.8);
-		double outcrop = Math.sin(cx * 0.11 + 1.7) * Math.sin(cz * 0.097 + 0.4);
+	private static void plain(StarYardLayout layout, int x, int z, double cx, double cz, double r, int top, double river, ColumnSink sink) {
+		double patch = layout.patch(cx, cz);
+		double outcrop = layout.outcrop(cx, cz);
 		boolean nearWater = river < StarYard.BANK + 1.5;
 		if (outcrop > 0.86 && !nearWater) {
 			sink.set(top, SMOOTH_BASALT, false);
-			if (StarYard.hash(x, z, 9) % 3L != 0L) {
-				sink.set(top + 1, StarYard.hash(x, z, 10) % 2L == 0L ? SMOOTH_BASALT : BASALT, false);
+			if (layout.hash(x, z, 9) % 3L != 0L) {
+				sink.set(top + 1, layout.hash(x, z, 10) % 2L == 0L ? SMOOTH_BASALT : BASALT, false);
 			}
 			return;
 		}
 		BlockState ground = patch > 0.55 ? ModBlocks.CENIZA_PRENSADA.defaultBlockState() : ModBlocks.CENIZA.defaultBlockState();
-		BlockState grave = nearWater || nearSpring(cx, cz) ? null : grave(x, z, cx, cz, r);
-		if (grave != null && StarYard.hash(x, z, 22) % 5L == 0L) {
+		BlockState grave = nearWater || nearSpring(layout, cx, cz) ? null : grave(layout, x, z, cx, cz, r);
+		if (grave != null && layout.hash(x, z, 22) % 5L == 0L) {
 			ground = ModBlocks.CENIZA_PRENSADA.defaultBlockState();
 		}
 		sink.set(top, ground, false);
@@ -485,9 +498,9 @@ public final class StarYardGenerator extends ChunkGenerator {
 		}
 	}
 
-	private static boolean nearSpring(double cx, double cz) {
-		for (int k = 0; k < StarYard.RIVERS.length; k++) {
-			Vec3 source = StarYard.spring(k);
+	private static boolean nearSpring(StarYardLayout layout, double cx, double cz) {
+		for (int k = 0; k < layout.rivers.length; k++) {
+			Vec3 source = layout.spring(k);
 			if (Math.abs(cx - source.x) < 7.0 && Math.abs(cz - source.z) < 7.0) {
 				return true;
 			}
@@ -496,7 +509,7 @@ public final class StarYardGenerator extends ChunkGenerator {
 	}
 
 	/** Rows of graves round the arena out to 72, facing it; scattered ones, and fields of them, beyond. */
-	static @Nullable BlockState grave(int x, int z, double cx, double cz, double r) {
+	static @Nullable BlockState grave(StarYardLayout layout, int x, int z, double cx, double cz, double r) {
 		if (r < StarYard.APRON + 2.0) {
 			return null;
 		}
@@ -506,7 +519,7 @@ public final class StarYardGenerator extends ChunkGenerator {
 				return null;
 			}
 			double rr = 38.0 + 4.0 * ring;
-			int slots = (int) Math.round(Math.PI * 2.0 * rr / 3.2);
+			int slots = (int) Math.round(Math.PI * 2.0 * rr / layout.rowSpacing);
 			double theta = StarYard.bearing(cx, cz);
 			int slot = Math.floorMod((int) Math.round(theta / (Math.PI * 2.0) * slots), slots);
 			double at = slot * Math.PI * 2.0 / slots;
@@ -514,18 +527,18 @@ public final class StarYardGenerator extends ChunkGenerator {
 			if ((int) Math.floor(Math.cos(at) * rr) != x || (int) Math.floor(Math.sin(at) * rr) != z) {
 				return null;
 			}
-			if (StarYard.hash(ring, slot, 21) % 7L == 0L) {
+			if (layout.hash(ring, slot, 21) % 7L == 0L) {
 				return null;
 			}
 			Direction facing = Math.abs(cz) > Math.abs(cx) ? Direction.NORTH : Direction.EAST;
-			return graveState(StarYard.hash(ring, slot, 23), facing);
+			return graveState(layout.hash(ring, slot, 23), facing);
 		}
-		boolean field = StarYard.hash(x >> 4, z >> 4, 30) % 5L == 0L;
-		long roll = StarYard.hash(x, z, 31) % 1000L;
-		if (roll >= (field ? 160L : 50L)) {
+		boolean field = layout.hash(x >> 4, z >> 4, 30) % layout.pitEvery == 0L;
+		long roll = layout.hash(x, z, 31) % 1000L;
+		if (roll >= (field ? layout.pitGraves : layout.looseGraves)) {
 			return null;
 		}
-		long h = StarYard.hash(x, z, 32);
+		long h = layout.hash(x, z, 32);
 		return graveState(h, Direction.from2DDataValue((int) (h >> 40 & 3L)));
 	}
 
@@ -538,9 +551,9 @@ public final class StarYardGenerator extends ChunkGenerator {
 	}
 
 	/** The islets that float round the plateau: what is on the horizon when you look off the edge. */
-	private static void islets(int x, int z, ColumnSink sink) {
-		for (int i = 0; i < StarYard.ISLETS.length; i++) {
-			int[] islet = StarYard.ISLETS[i];
+	private static void islets(StarYardLayout layout, int x, int z, ColumnSink sink) {
+		for (int i = 0; i < layout.islets.length; i++) {
+			int[] islet = layout.islets[i];
 			double dx = x + 0.5 - islet[0];
 			double dz = z + 0.5 - islet[1];
 			double d = Math.sqrt(dx * dx + dz * dz);
@@ -549,14 +562,14 @@ public final class StarYardGenerator extends ChunkGenerator {
 				continue;
 			}
 			int top = islet[2] + (int) Math.round(Math.sin(x * 0.3) * Math.cos(z * 0.27));
-			int bottom = top - 2 - (int) Math.round((reach - d) * 1.4) - (int) (StarYard.hash(x, z, 40) & 1L);
+			int bottom = top - 2 - (int) Math.round((reach - d) * 1.4) - (int) (layout.hash(x, z, 40) & 1L);
 			for (int y = bottom; y < top; y++) {
 				sink.set(y, top - y <= 2 ? OBSIDIAN : y % 5 == 0 ? BASALT : BLACKSTONE, false);
 			}
 			boolean ash = d < reach * 0.55;
 			sink.set(top, ash ? ModBlocks.CENIZA.defaultBlockState() : OBSIDIAN, false);
-			if (ash && StarYard.hash(x, z, 41) % 12L == 0L) {
-				long h = StarYard.hash(x, z, 42);
+			if (ash && layout.hash(x, z, 41) % 12L == 0L) {
+				long h = layout.hash(x, z, 42);
 				sink.set(top + 1, graveState(h, Direction.from2DDataValue((int) (h >> 40 & 3L))), false);
 			}
 			return;
@@ -565,39 +578,37 @@ public final class StarYardGenerator extends ChunkGenerator {
 
 	// ------------------------------------------------------------------ the cold forges
 
-	static final int FORGE_CELL = 24;
-
 	/** One cold forge: where its floor's middle is, which of the three it is and which way it faces. */
 	record Forge(int x, int z, int floor, int kind, Rotation rotation) {
 	}
 
 	/** The forge of this cell, if it has one: one cell in two, away from the arena, the rivers and the edge. */
-	static @Nullable Forge forgeAt(int cellX, int cellZ) {
-		long h = StarYard.hash(cellX, cellZ, 50);
-		if (h % 2L != 0L) {
+	static @Nullable Forge forgeAt(StarYardLayout layout, int cellX, int cellZ) {
+		long h = layout.hash(cellX, cellZ, 50);
+		if (h % layout.forgeEvery != 0L) {
 			return null;
 		}
-		int x = cellX * FORGE_CELL + 12 + (int) (h >> 8 & 0xFFL) % 9 - 4;
-		int z = cellZ * FORGE_CELL + 12 + (int) (h >> 16 & 0xFFL) % 9 - 4;
+		int x = cellX * layout.forgeCell + layout.forgeCell / 2 + (int) (h >> 8 & 0xFFL) % 9 - 4;
+		int z = cellZ * layout.forgeCell + layout.forgeCell / 2 + (int) (h >> 16 & 0xFFL) % 9 - 4;
 		double cx = x + 0.5;
 		double cz = z + 0.5;
 		double r = StarYard.radius(cx, cz);
-		if (r < 76.0 || r > StarYard.edge(StarYard.bearing(cx, cz)) - 14.0) {
+		if (r < 76.0 || r > layout.edge(StarYard.bearing(cx, cz)) - 14.0) {
 			return null;
 		}
-		if (StarYard.riverDistance(cx, cz) < 12.0 || StarYard.onBridge(cx, cz)) {
+		if (layout.riverDistance(cx, cz) < 12.0 || layout.onBridge(cx, cz)) {
 			return null;
 		}
-		return new Forge(x, z, StarYard.surface(x, z), (int) (h >> 24 & 0xFFL) % 3, Rotation.values()[(int) (h >> 32 & 3L)]);
+		return new Forge(x, z, layout.surface(x, z), (int) (h >> 24 & 0xFFL) % 3, Rotation.values()[(int) (h >> 32 & 3L)]);
 	}
 
 	/** Every cold forge on the plateau, for the tests and for anyone who wants to find one. */
-	public static java.util.List<BlockPos> forges() {
+	public static java.util.List<BlockPos> forges(StarYardLayout layout) {
 		java.util.List<BlockPos> found = new java.util.ArrayList<>();
-		int cells = 200 / FORGE_CELL + 1;
+		int cells = 200 / layout.forgeCell + 1;
 		for (int i = -cells; i <= cells; i++) {
 			for (int j = -cells; j <= cells; j++) {
-				Forge forge = forgeAt(i, j);
+				Forge forge = forgeAt(layout, i, j);
 				if (forge != null) {
 					found.add(new BlockPos(forge.x(), forge.floor(), forge.z()));
 				}
@@ -607,8 +618,8 @@ public final class StarYardGenerator extends ChunkGenerator {
 	}
 
 	/** The part of this forge that falls inside the chunk starting at (minX, minZ). */
-	private static void stampForge(Forge forge, int minX, int minZ, BlockSink sink) {
-		long seed = StarYard.hash(forge.x(), forge.z(), 51);
+	private static void stampForge(StarYardLayout layout, Forge forge, int minX, int minZ, BlockSink sink) {
+		long seed = layout.hash(forge.x(), forge.z(), 51);
 		// Its floor first: level, cleared of graves and ash above it, filled below it.
 		for (int dx = -3; dx <= 3; dx++) {
 			for (int dz = -3; dz <= 3; dz++) {
@@ -618,7 +629,7 @@ public final class StarYardGenerator extends ChunkGenerator {
 					continue;
 				}
 				boolean corner = Math.abs(dx) == 3 && Math.abs(dz) == 3;
-				int local = StarYard.surface(x, z);
+				int local = layout.surface(x, z);
 				for (int y = forge.floor() + 1; y <= Math.max(local + 2, forge.floor() + 8); y++) {
 					sink.set(x, y, z, AIR, false);
 				}
@@ -626,7 +637,7 @@ public final class StarYardGenerator extends ChunkGenerator {
 					sink.set(x, y, z, BLACKSTONE, false);
 				}
 				BlockState floor = corner && forge.kind() == 1 ? ModBlocks.CENIZA.defaultBlockState()
-					: StarYard.hash(x, z, 52) % 10L < 3L ? CRACKED : BRICKS;
+					: layout.hash(x, z, 52) % 10L < 3L ? CRACKED : BRICKS;
 				sink.set(x, forge.floor(), z, floor, false);
 			}
 		}

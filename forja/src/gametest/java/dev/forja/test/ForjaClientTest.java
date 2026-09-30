@@ -91,6 +91,13 @@ public class ForjaClientTest implements FabricClientGameTest {
 			log("ALL CHECKS PASSED (solo mundo)");
 			return;
 		}
+		// El Cementerio entre Estrellas (docs/HERRERO_DIMENSION.md): two worlds with two seeds of their own, so
+		// the footage can show the same arena on two different plateaus.
+		if ("dimension".equals(System.getenv("FORJA_SOLO"))) {
+			DimensionFootage.run(context);
+			log("ALL CHECKS PASSED (solo dimension)");
+			return;
+		}
 		// Materials and ores need a real world with real ores in it, not the superflat below.
 		if ("materiales".equals(System.getenv("FORJA_SOLO"))) {
 			checkMaterials(context);
@@ -153,12 +160,6 @@ public class ForjaClientTest implements FabricClientGameTest {
 			// The Pararrayos de estrellas (block/StarRodBlock) catching a meteorite of the shower.
 			if ("pararrayos".equals(solo)) {
 				filmStarRod(context, server, connection, x, y, z);
-				log("ALL CHECKS PASSED (solo " + solo + ")");
-				return;
-			}
-			// El Cementerio entre Estrellas (docs/HERRERO_DIMENSION.md): in with /forja dimension, round it, and back.
-			if ("dimension".equals(solo)) {
-				DimensionFootage.film(context, server, connection);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}

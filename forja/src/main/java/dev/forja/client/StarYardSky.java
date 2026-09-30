@@ -45,6 +45,7 @@ import net.minecraft.world.phys.Vec3;
 public final class StarYardSky {
 	private static final Identifier GLOW = Forja.id("textures/environment/resplandor.png");
 	private static final Identifier FLAT = Forja.id("textures/environment/plano.png");
+	private static final Identifier CORONA = Forja.id("textures/environment/corona.png");
 
 	/** For the footage: the ash haze put out, to show the plateau as it is without it. */
 	public static boolean fogOff = false;
@@ -52,8 +53,15 @@ public final class StarYardSky {
 	/** One slot of the frame's submit order per layer, before anything translucent: see EventSkyRenderer#layer. */
 	private static final int FIRST_LAYER = -96;
 
-	/** A turn of the whole sky about the north-south line every forty minutes. */
-	private static final float TURN_SECONDS = 2400.0F;
+	/**
+	 * A turn of the whole sky about the north-south line every twelve minutes: half a degree a second,
+	 * calm but there to be seen if you stand and watch (Andy, 2026-09-29, after forty minutes proved too
+	 * slow to notice).
+	 */
+	private static final float TURN_SECONDS = 720.0F;
+	/** Shooting stars: about four a minute, each a fifth to a third of a second of light with a short tail. */
+	private static final float SHOOTING_PER_TICK = 4.0F / 1200.0F;
+	private static final List<Shooting> SHOOTING = new ArrayList<>();
 	/** How often a constellation is poured, and how the pour is timed inside that. */
 	private static final float POUR_EVERY = 40.0F;
 	private static final float POUR_RUN = 6.0F;
@@ -68,6 +76,28 @@ public final class StarYardSky {
 	private static final List<Constellation> CONSTELLATIONS = new ArrayList<>();
 
 	private record Star(Vec3 at, float size, int colour, float speed, float phase) {
+	}
+
+	/** A shooting star: where it starts, the way it goes (a unit tangent), how far, and its life in ticks. */
+	private static final class Shooting {
+		final Vec3 from;
+		final Vec3 way;
+		final float sweep;
+		final int life;
+		int age;
+
+		Shooting(Vec3 from, Vec3 way, float sweep, int life) {
+			this.from = from;
+			this.way = way;
+			this.sweep = sweep;
+			this.life = life;
+		}
+
+		/** Where the head is after {@code share} of its run: along a great circle from where it started. */
+		Vec3 at(float share) {
+			float angle = this.sweep * share;
+			return this.from.scale(Mth.cos(angle)).add(this.way.scale(Mth.sin(angle)));
+		}
 	}
 
 	/** A mould drawn in stars: its stars, and the lines between them as index pairs, in pouring order. */
@@ -195,16 +225,21 @@ public final class StarYardSky {
 		PoseStack pose = context.poseStack();
 		SubmitNodeCollector collector = context.submitNodeCollector();
 
-		// The burning floor of the void: a bowl of colour under the horizon, and a slow glow at the bottom.
-		layer(collector, 0).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> abyss(p, buffer, radius));
-		float breath = 1.0F + 0.12F * Mth.sin(time * Mth.TWO_PI / 7.0F);
-		layer(collector, 1).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
-			sprite(p, buffer, new Vec3(0.0, -1.0, 0.0), radius * 0.98F, radius * 1.1F * breath, 0xFF7A2A, 0.55F);
-			sprite(p, buffer, new Vec3(0.0, -1.0, 0.0), radius * 0.97F, radius * 0.45F * breath, 0xFFC070, 0.4F);
-		});
+		// The burning floor of the void: a bowl of colour under the horizon, and the sun at the bottom of it.
+		float heat = sunStrength(client.gameRenderer.mainCamera().position().y);
+		if (heat > 0.0F) {
+			layer(collector, 0).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> abyss(p, buffer, radius, heat));
+		}
+		if (heat > 0.0F) {
+			sun(collector, pose, radius, time, heat);
+		}
 		// The nebula, then the stars, then the moulds' lines and their stars over them.
-		layer(collector, 2).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> nebula(p, buffer, radius, spin));
-		layer(collector, 3).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
+		// The nebula drifts a little faster than the stars and breathes, so the band is seen to live.
+		float drift = spin * 1.35F + 0.04F * Mth.sin(time * 0.013F);
+		float breathe = 0.8F + 0.2F * Mth.sin(time * Mth.TWO_PI / 23.0F);
+		layer(collector, 12).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> nebula(p, buffer, radius, drift, breathe, time));
+		layer(collector, 16).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> shooting(p, buffer, radius, partial));
+		layer(collector, 13).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
 			for (Star star : STARS) {
 				Vec3 at = turn(star.at(), spin);
 				float alpha = starlight(at) * (0.7F + 0.3F * Mth.sin(time * star.speed() + star.phase()));
@@ -213,7 +248,7 @@ public final class StarYardSky {
 		});
 		int poured = (int) (time / POUR_EVERY) % CONSTELLATIONS.size();
 		float into = time % POUR_EVERY;
-		layer(collector, 4).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> {
+		layer(collector, 14).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> {
 			for (int i = 0; i < CONSTELLATIONS.size(); i++) {
 				Constellation c = CONSTELLATIONS.get(i);
 				lines(p, buffer, c, radius, spin, 1.0F, 0x9FB4FF, 0.28F, 0.0045F);
@@ -222,7 +257,7 @@ public final class StarYardSky {
 				}
 			}
 		});
-		layer(collector, 5).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
+		layer(collector, 15).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
 			for (int i = 0; i < CONSTELLATIONS.size(); i++) {
 				Constellation c = CONSTELLATIONS.get(i);
 				boolean hot = i == poured && into < POUR_RUN + POUR_HOLD + POUR_COOL;
@@ -234,6 +269,93 @@ public final class StarYardSky {
 				}
 			}
 		});
+	}
+
+	// ------------------------------------------------------------------ the sun under the void
+
+	private static final Vec3 DOWN = new Vec3(0.0, -1.0, 0.0);
+	private static final int RAYS = 28;
+
+	/**
+	 * How strong the sun below burns for a camera at this height: all of it up to 30 above the arena,
+	 * gone by 90 above it. It has to go: the sun hangs inside the distance the fog leaves clear, so from
+	 * high up the plateau is further away than the sun is, and the sun was drawn in front of it.
+	 */
+	static float sunStrength(double y) {
+		return (float) Mth.clamp(1.0 - (y - StarYard.SURFACE - 30.0) / 60.0, 0.0, 1.0);
+	}
+
+	/**
+	 * A sun far below the plateau (Andy, 2026-09-29: "como si estuvieras encima de un sol"): a wide red
+	 * haze, long rays turning slowly round it, two coronas turning against each other, a white-hot core
+	 * that is too bright to look at, and a shimmer of heat round the core. Each in its own layer, the
+	 * furthest first, for the reason EventSkyRenderer#layer gives.
+	 */
+	private static void sun(SubmitNodeCollector collector, PoseStack pose, float radius, float time, float heat) {
+		float breath = 1.0F + 0.08F * Mth.sin(time * Mth.TWO_PI / 7.0F);
+		layer(collector, 1).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
+			sprite(p, buffer, DOWN, radius * 0.99F, radius * 1.9F * breath, 0xFF3A0C, 0.6F * heat);
+			sprite(p, buffer, DOWN, radius * 0.985F, radius * 1.25F * breath, 0xFF6A1A, 0.55F * heat);
+		});
+		layer(collector, 2).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> rays(p, buffer, radius * 0.98F, time, heat));
+		layer(collector, 3).submitCustomGeometry(pose, RenderTypes.eyes(CORONA), (p, buffer) ->
+			rolled(p, buffer, DOWN, radius * 0.975F, radius * 1.05F * breath, time * 0.03F, 0xFF9A30, 0.8F * heat));
+		layer(collector, 4).submitCustomGeometry(pose, RenderTypes.eyes(CORONA), (p, buffer) ->
+			rolled(p, buffer, DOWN, radius * 0.97F, radius * 0.75F, -time * 0.05F, 0xFFD27A, 0.9F * heat));
+		layer(collector, 5).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
+			// The heat coming off it: blobs of light wandering round the core, never quite still.
+			for (int i = 0; i < 12; i++) {
+				float phase = i * 2.39996F;
+				float out = radius * (0.2F + 0.16F * (0.5F + 0.5F * Mth.sin(time * 0.7F + phase)));
+				float angle = phase + time * (0.05F + 0.02F * (i % 3));
+				Vec3 at = DOWN.add(new Vec3(Mth.cos(angle) * out / radius, 0.0, Mth.sin(angle) * out / radius)).normalize();
+				float flicker = 0.5F + 0.5F * Mth.sin(time * 3.1F + phase * 1.7F);
+				sprite(p, buffer, at, radius * 0.965F, radius * (0.1F + 0.05F * flicker), 0xFFB050, 0.35F * flicker * heat);
+			}
+		});
+		layer(collector, 6).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
+			sprite(p, buffer, DOWN, radius * 0.96F, radius * 0.5F * breath, 0xFFE9A0, 1.0F * heat);
+			sprite(p, buffer, DOWN, radius * 0.955F, radius * 0.3F, 0xFFFBE8, 1.0F * heat);
+			sprite(p, buffer, DOWN, radius * 0.95F, radius * 0.18F, 0xFFFFFF, heat);
+		});
+	}
+
+	/** Long thin rays out from the sun, each its own length and flicker, the whole crown turning slowly. */
+	private static void rays(PoseStack.Pose p, VertexConsumer buffer, float radius, float time, float heat) {
+		for (int i = 0; i < RAYS; i++) {
+			float angle = i * Mth.TWO_PI / RAYS + time * 0.015F + 0.3F * Mth.sin(i * 1.7F);
+			float length = 0.8F + 0.6F * (0.5F + 0.5F * Mth.sin(i * 2.3F + time * 0.21F));
+			float width = 0.018F + 0.02F * (0.5F + 0.5F * Mth.sin(i * 3.7F));
+			float alpha = heat * (0.35F + 0.25F * Mth.sin(time * 1.3F + i));
+			Vec3 along = new Vec3(Mth.cos(angle), 0.0, Mth.sin(angle));
+			Vec3 across = new Vec3(-Mth.sin(angle), 0.0, Mth.cos(angle));
+			float inner = 0.18F;
+			Vec3 a = DOWN.add(along.scale(inner)).add(across.scale(width)).normalize();
+			Vec3 b = DOWN.add(along.scale(inner)).subtract(across.scale(width)).normalize();
+			Vec3 tip = DOWN.add(along.scale(inner + length)).normalize();
+			quad(p, buffer,
+				scaled(a, radius), 0.0F, 0.0F, 0xFFE0A0, alpha,
+				scaled(b, radius), 1.0F, 0.0F, 0xFFE0A0, alpha,
+				scaled(tip, radius), 1.0F, 1.0F, 0xFF6A1E, 0.0F,
+				scaled(tip, radius), 0.0F, 1.0F, 0xFF6A1E, 0.0F);
+		}
+	}
+
+	/** A square sprite out along a direction, turned by {@code roll} about that line. */
+	private static void rolled(PoseStack.Pose p, VertexConsumer buffer, Vec3 towards, float distance, float size, float roll, int colour, float alpha) {
+		Vec3 up = Math.abs(towards.y) > 0.98 ? new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
+		Vec3 right = towards.cross(up).normalize();
+		Vec3 above = right.cross(towards).normalize();
+		float cos = Mth.cos(roll);
+		float sin = Mth.sin(roll);
+		Vec3 r = right.scale(cos).add(above.scale(sin)).scale(size);
+		Vec3 a = above.scale(cos).subtract(right.scale(sin)).scale(size);
+		Vec3 centre = towards.scale(distance);
+		quad(p, buffer,
+			scaled(centre.subtract(r).subtract(a), 1.0F), 0.0F, 1.0F, colour, alpha,
+			scaled(centre.add(r).subtract(a), 1.0F), 1.0F, 1.0F, colour, alpha,
+			scaled(centre.add(r).add(a), 1.0F), 1.0F, 0.0F, colour, alpha,
+			scaled(centre.subtract(r).add(a), 1.0F), 0.0F, 0.0F, colour, alpha);
 	}
 
 	/** How much of the poured constellation's outline the gold has run round, 0 to 1. */
@@ -277,7 +399,7 @@ public final class StarYardSky {
 	}
 
 	/** The bowl under the horizon: violet at its rim, garnet at thirty degrees down, ember at the bottom. */
-	private static void abyss(PoseStack.Pose p, VertexConsumer buffer, float radius) {
+	private static void abyss(PoseStack.Pose p, VertexConsumer buffer, float radius, float heat) {
 		int rings = 12;
 		int segments = 36;
 		for (int ring = 0; ring < rings; ring++) {
@@ -287,8 +409,8 @@ public final class StarYardSky {
 			float e1 = -d1 * Mth.HALF_PI;
 			int c0 = depthColour(d0);
 			int c1 = depthColour(d1);
-			float a0 = depthAlpha(d0);
-			float a1 = depthAlpha(d1);
+			float a0 = depthAlpha(d0) * heat;
+			float a1 = depthAlpha(d1) * heat;
 			for (int seg = 0; seg < segments; seg++) {
 				float t0 = seg * Mth.TWO_PI / segments;
 				float t1 = (seg + 1) * Mth.TWO_PI / segments;
@@ -315,7 +437,7 @@ public final class StarYardSky {
 	}
 
 	/** A band of nebula along a tilted great circle: faint, violet going amber, soft at both edges. */
-	private static void nebula(PoseStack.Pose p, VertexConsumer buffer, float radius, float spin) {
+	private static void nebula(PoseStack.Pose p, VertexConsumer buffer, float radius, float spin, float breathe, float time) {
 		int steps = 72;
 		Vec3 a = new Vec3(1.0, 0.25, 0.3).normalize();
 		Vec3 b = a.cross(new Vec3(0.2, 0.9, -0.4)).normalize();
@@ -329,8 +451,9 @@ public final class StarYardSky {
 			Vec3 m1 = a.scale(Mth.cos(t1)).add(b.scale(Mth.sin(t1)));
 			int c0 = mix(0x6A3FA0, 0xC07830, 0.5F + 0.5F * Mth.sin(t0 * 2.0F));
 			int c1 = mix(0x6A3FA0, 0xC07830, 0.5F + 0.5F * Mth.sin(t1 * 2.0F));
-			float alpha0 = 0.2F * (0.7F + 0.3F * Mth.sin(t0 * 5.0F));
-			float alpha1 = 0.2F * (0.7F + 0.3F * Mth.sin(t1 * 5.0F));
+			// Its brighter knots slide slowly along the band.
+			float alpha0 = 0.2F * breathe * (0.7F + 0.3F * Mth.sin(t0 * 5.0F - time * 0.02F));
+			float alpha1 = 0.2F * breathe * (0.7F + 0.3F * Mth.sin(t1 * 5.0F - time * 0.02F));
 			for (int side = -1; side <= 1; side += 2) {
 				Vec3 e0 = turn(m0.add(axis.scale(side * width0)).normalize(), spin);
 				Vec3 e1 = turn(m1.add(axis.scale(side * width1)).normalize(), spin);
@@ -345,6 +468,33 @@ public final class StarYardSky {
 					scaled(e0, radius), 0.0F, 1.0F, c0, 0.0F);
 			}
 		}
+	}
+
+	/** The shooting stars now in the sky: a bright head and a tail that thins to nothing behind it. */
+	private static void shooting(PoseStack.Pose p, VertexConsumer buffer, float radius, float partial) {
+		for (Shooting star : List.copyOf(SHOOTING)) {
+			float through = Mth.clamp((star.age + partial) / star.life, 0.0F, 1.0F);
+			float alpha = Math.min(1.0F, through * 5.0F) * (1.0F - through * through);
+			Vec3 head = star.at(through);
+			Vec3 tail = star.at(Math.max(0.0F, through - 0.35F));
+			Vec3 across = head.subtract(tail).cross(head).normalize().scale(0.0035);
+			quad(p, buffer,
+				scaled(tail, radius), 0.0F, 0.0F, 0x9FB4FF, 0.0F,
+				scaled(head.subtract(across).normalize(), radius), 1.0F, 0.0F, 0xFFFFFF, alpha,
+				scaled(head.add(across).normalize(), radius), 1.0F, 1.0F, 0xFFFFFF, alpha,
+				scaled(tail, radius), 0.0F, 1.0F, 0x9FB4FF, 0.0F);
+		}
+	}
+
+	/** Sends a shooting star across the sky, somewhere well above the horizon. For the footage too. */
+	public static void shoot(RandomSource random) {
+		Vec3 from = new Vec3(random.nextGaussian(), 0.6 + random.nextDouble() * 1.2, random.nextGaussian()).normalize();
+		Vec3 side = new Vec3(random.nextGaussian(), random.nextGaussian() * 0.3, random.nextGaussian());
+		Vec3 way = side.subtract(from.scale(side.dot(from))).normalize();
+		if (way.y > 0.0) {
+			way = way.scale(-1.0);
+		}
+		SHOOTING.add(new Shooting(from, way, 0.25F + random.nextFloat() * 0.3F, 5 + random.nextInt(4)));
 	}
 
 	/** The lines of a constellation, drawn as far round as {@code share} of its whole length. */
@@ -452,7 +602,7 @@ public final class StarYardSky {
 		// Looking down onto the plateau, what fills the view is ash and stone, not the void: the glow
 		// only takes the fog over where there is void under the camera to look into.
 		Vec3 eye = camera.position();
-		float overVoid = StarYard.onPlateau(Mth.floor(eye.x), Mth.floor(eye.z)) ? 0.3F : 1.0F;
+		float overVoid = open(Minecraft.getInstance().level, Mth.floor(eye.x), Mth.floor(eye.z)) ? 1.0F : 0.3F;
 		float share = Math.max(0.55F * overVoid * down * down * (3.0F - 2.0F * down), low);
 		share = Math.min(share, 0.75F);
 		if (share > 0.0F) {
@@ -470,6 +620,15 @@ public final class StarYardSky {
 	}
 
 	// ------------------------------------------------------------------ ash and embers
+
+	/**
+	 * Whether nothing at all stands in this column: off the plateau and the islets, over the open void.
+	 * Read off the client's own heightmap, because the shape of the plateau is the world's seed's and the
+	 * client is never told the seed.
+	 */
+	private static boolean open(ClientLevel level, int x, int z) {
+		return level == null || level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, x, z) <= level.getMinY();
+	}
 
 	/** How much ash is in the air at this height: light at the arena, eight times as thick at y 20. */
 	static float ashAt(double y) {
@@ -492,6 +651,11 @@ public final class StarYardSky {
 		ClientLevel level = client.level;
 		Player player = client.player;
 		RandomSource random = level.getRandom();
+		// The shooting stars: age the ones in flight, now and then send another.
+		SHOOTING.removeIf(star -> ++star.age > star.life);
+		if (random.nextFloat() < SHOOTING_PER_TICK) {
+			shoot(random);
+		}
 		// Embers out of the burning floor, anywhere under the player that is not under the plateau.
 		for (int i = 0; i < 3; i++) {
 			double x = player.getX() + (random.nextDouble() - 0.5) * 80.0;
@@ -499,7 +663,7 @@ public final class StarYardSky {
 			double y = Math.max(2.0, player.getY() - 10.0 - random.nextDouble() * 50.0);
 			int bx = Mth.floor(x);
 			int bz = Mth.floor(z);
-			if (StarYard.onPlateau(bx, bz) && y > StarYard.bottom(bx, bz) - 2) {
+			if (!open(level, bx, bz) && y > 8.0) {
 				continue;
 			}
 			level.addParticle(ModParticles.BRASA, true, false, x, y, z, 0.0, 0.03, 0.0);
