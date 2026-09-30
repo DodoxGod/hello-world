@@ -14,9 +14,9 @@ recompensa esperan a que Andy revise la dimensión. Cada sección dice en qué e
 |---|---|---|
 | 1 | Dimensión: terreno, arena, cielo, niebla, luz, partículas, sonido y música; `/forja dimension` | hecha y revisada por Andy |
 | 1b | Arreglos de la revisión: sol bajo el vacío, tumbas que caen con su suelo, tumbas vistas desde el sur, meseta según la semilla, estrellas fugaces y cielo que se mueve | hecha ("la dimensión está súper bien") |
-| 1c | Arreglos de la segunda revisión: el tinte del sol sin saltos, los eventos del mundo en este cielo, respiraderos muertos, constelaciones repartidas, ecos lejanos | en esta rama |
-| 2 | Oricalco, perla de oricalco, marco del portal, portal, vuelta, retirada de la invocación vieja | en esta rama |
-| 3 | Pelea nueva: llegada, fases a 2/3 y 1/3, aprendices en formación, eventos, reforjado estelar, persistencia, estrella de vuelta, revancha y recompensa | diseño aprobado en parte (ver 6); pendiente |
+| 1c | Arreglos de la segunda revisión: el tinte del sol sin saltos, los eventos del mundo en este cielo, respiraderos muertos, constelaciones repartidas, ecos lejanos | hecha |
+| 2 | Oricalco, perla de oricalco, marco del portal, portal, vuelta, retirada de la invocación vieja | hecha |
+| 3 | Pelea nueva: llegada, fases a 2/3 y 1/3, aprendices en formación, eventos mitad y mitad, reforjado estelar, persistencia, estrella de vuelta, revancha y recompensa | **hecha, en esta rama** |
 
 ---
 
@@ -383,7 +383,7 @@ Al cruzar 2/3 y 1/3:
 Si un puesto cae en un bloque sólido o fuera de la arena, el aprendiz sale en el punto libre más cercano del
 mismo anillo.
 
-### 3.6 Las constelaciones en la pelea (propuesta para Andy)
+### 3.6 Las constelaciones en la pelea (hecho)
 
 Andy (revisión 1b): durante la pelea **las constelaciones se encienden**. Cada una de las 8 lanza **un evento
 suyo**, y el **color** en que se enciende dice **lo fuerte** que es. Los tres eventos aprobados (meteoritos, molde
@@ -394,7 +394,8 @@ celeste y tormenta de ceniza) entran en este sistema.
 1. Se elige una constelación de las que están a **15° o más** sobre el horizonte. Siempre hay al menos 3, por
    `StarChart`.
 2. Sus líneas se encienden en su color (1 s).
-3. La **colada** de oro recorre el contorno en **3 s**, como la de ahora, con un tintineo que sube.
+3. La **colada** recorre el contorno en **3 s**, roja si ayuda al Herrero y menta si ayuda a los jugadores, con
+   su sonido (campana grave o amatista aguda).
 4. Al acabar la colada, el evento cae sobre la arena.
 5. En el suelo, el aviso propio de cada evento (anillos, líneas) aparece al empezar la colada: da 3 s para
    moverse.
@@ -412,21 +413,37 @@ estelar, salvo el Martillo (ver 3.7).
 | Azul estelar | 1,3 | — | 20 % | 25 % |
 | Carmesí | 1,7 | — | — | 15 % |
 
+**Mitad y mitad** (Andy, tercera revisión): **4 ayudan al Herrero** (la Égida sigue entre ellas) y **4 a los
+jugadores**. El color escala la fuerza en los dos bandos: un carmesí del lado de los jugadores es la mejor ayuda
+de la pelea, y uno del lado del Herrero, lo peor que puede caer.
+
+**El aviso dice de qué lado está**, por color y por sonido, antes de que caiga:
+
+| | Del Herrero | De los jugadores |
+|---|---|---|
+| Colada que recorre la constelación | **rojo** (hilo 0xFF3A2A) | **menta pálida** (0xB8FFE0) |
+| Sonido | campana grave (`bell_resonate`, tono 0,5) | amatista aguda (`amethyst_block_resonate`, tono 1,4) |
+| Texto sobre la barra | "Espada se enciende en carmesí: el cielo favorece al Herrero", en rojo | "…: el cielo está con vosotros", en menta |
+
+Las líneas de la constelación toman el color de su fuerza (plata, cobre, oro, azul estelar, carmesí); el hilo que
+las recorre, el del bando.
+
 **Las 8 constelaciones y su evento** (los números son a fuerza ×1; se multiplican por el color):
 
-| Constelación | Evento | Qué hace |
-|---|---|---|
-| **Espada** | *Tajo celeste* (el molde celeste) | El contorno de una espada de 16 bloques se dibuja en el suelo cruzando al jugador que el jefe mira. A los 3 s arde 2 s: **6 de daño** y fuego a quien lo pise (jugadores y aprendices). Si la línea pasa por un pilar, **vuelca su brasero** (ver 3.7). |
-| **Hacha** | *Hachazo* | Un cuarto de círculo de radio 12 desde el jefe hacia su objetivo se marca en el suelo; a los 3 s cae: **7 de daño** y empuje fuera. |
-| **Martillo** | *Lluvia de hierro estelar* (los meteoritos) | Cae **1 meteorito por jugador**, con el aviso de siempre. Plata y cobre: 1 por jugador; oro y azul: 2; carmesí: 3. Daño de meteorito × fuerza, sin cráter. Deja **hierro estelar**. El pararrayos funciona. |
-| **Lanza** | *Lanzas de luz* | Cinco lanzas de luz (plata 3, carmesí 8) caen en puntos marcados alrededor de los jugadores: aviso de 1,5 s y **5 de daño** en 1 bloque. Rápido y preciso. |
-| **Escudo** | *Égida* | El jefe gana un escudo de luz que absorbe **20 de daño** (plata 12, carmesí 34) durante 10 s. Es el único evento que le ayuda a él. |
-| **Yunque** | *Yunque caído* | Un yunque enorme cae donde está el objetivo, con un anillo de radio 3 durante 2 s: **10 de daño**. |
-| **Tenazas** | *Tenazas* | Arrastra a todos los jugadores **4 bloques** hacia el jefe (carmesí 7), sin daño. Le pone la onda a tiro. |
-| **Guadaña** | *Tormenta de ceniza* | La niebla se cierra a 20 bloques durante **8 s** (carmesí 14) con viento de 0,06 bloques por tick (× fuerza). El jefe ve menos: persigue hasta 16 bloques en vez de 48. |
+| Constelación | Bando | Evento | Qué hace |
+|---|---|---|---|
+| **Espada** | Herrero | *Tajo celeste* | Una línea de 16 bloques cruza al jugador que el jefe persigue (aviso de varillas del End en el suelo durante los 3 s de colada). Luego arde 2 s: **6 de daño** repartidos y fuego a quien la pise. Si pasa a menos de 2 bloques de un brasero lleno, **lo vuelca** (ver 3.7): lo único bueno que trae. |
+| **Hacha** | Herrero | *Hachazo* | Un cuarto de círculo de radio 12 desde el jefe hacia su objetivo, marcado con esporas carmesí; al caer, **7 de daño** y empuje hacia fuera. |
+| **Escudo** | Herrero | *Égida* | Un escudo de luz que absorbe **20 de daño** (plata 12, carmesí 34) durante 10 s. |
+| **Guadaña** | Herrero | *Tormenta de ceniza* | La niebla se cierra a 20 bloques durante **8 s** (carmesí 13,6 s) con viento de 0,06 bloques por tick. El jefe no pierde de vista a quien tenga a menos de 16 bloques. |
+| **Martillo** | Jugadores | *Lluvia de hierro estelar* | Meteoritos **sobre el Herrero**: plata y cobre 1, oro y azul 2, carmesí 3. **10 de daño** a lo que no sea un jugador a 3,5 bloques, sin cráter, y dejan **hierro estelar**. Durante el Reforjado cae además uno junto a cada jugador, para rellenar braseros. |
+| **Lanza** | Jugadores | *Lanzas de luz* | De 3 (plata) a 8 (carmesí) lanzas caen sobre el Herrero, sus aprendices y alrededor: **5 de daño** cada una, solo a lo que no es un jugador. |
+| **Yunque** | Jugadores | *Estrellas que curan* | Una lluvia de luz sobre cada jugador: **cura 4**, absorción 15 s (nivel II desde azul estelar) y regeneración 3 s. |
+| **Tenazas** | Jugadores | *Tenazas* | Aparta a los aprendices de los jugadores (lentitud 3 s) y saca de junto al Herrero al primer jugador con menos del 30 % de vida. |
 
-Números de partida en `config/forja.json` (`constelacionCada`, `constelacionFuerzas`, `constelacionPesos`…). Cada
-evento, con su aviso en el suelo y su color, se puede ver en el cielo desde cualquier punto de la arena.
+Cada cuánto: uno cada 30 a 40 s (600 + hasta 200 ticks); durante el Reforjado estelar, solo el Martillo, cada
+20 s. Los números están en `world/StarFight.java` (`SKY_MIN`, `SKY_SPREAD`, `REFORGE_SKY`, `STRENGTH`,
+`WEIGHTS`, `FOR_BOSS`).
 
 ### 3.7 El Reforjado estelar (aprobado por Andy, con cambios)
 
@@ -439,13 +456,13 @@ evento, con su aviso en el suelo y su color, se puede ver en el cielo desde cual
 **En la dimensión** (Andy, respuesta 1: inmortal, **sin tiempo**, hasta que le quiten el fuego):
 
 1. **Empieza** a la mitad de la vida (160): se arrodilla en el disco del centro, clava el martillo y enciende su
-   **fuego de forja**: **3 + 1 Brasas estelares por jugador extra (hasta 6)**, en un anillo de 9 a 12 bloques
-   alrededor de él, unidas a él por haces dorados.
+   **fuego de forja**: **3 + 1 Brasas estelares por jugador extra (hasta 6)**, en las cuatro diagonales a 10 bloques (la quinta y la sexta
+   a 14), unidas a él por haces de luz.
 2. **Es inmortal** mientras quede una brasa, **sin límite de tiempo**. No se cura (ya no hace falta: no pasa nada
    hasta que se rompan). Los aprendices y los golpes normales siguen.
 3. **Lo único que apaga las brasas es la colada del brasero:** golpear uno de los 4 braseros de los pilares (un
    proyectil, o subiendo) lo **vuelca**. Un chorro de metal fundido baja por el pilar y corre en línea recta hacia
-   el centro durante 3 s, de 1 bloque de ancho. **Apaga todas las brasas que toca** y quema a quien lo pise (el
+   el centro durante 3 s, de 3 bloques de ancho. **Apaga todas las brasas que toca** y quema a quien lo pise (el
    metal se enfría y desaparece; la arena no cambia). Hay que elegir el brasero cuya línea pase por más brasas.
 4. **Los braseros se vacían:** cada uno se vuelca **una vez** y queda vacío. Se rellena de dos maneras, que son
    las otras dos ideas convertidas en ayudas:
@@ -459,8 +476,8 @@ evento, con su aviso en el suelo y su color, se puede ver en el cielo desde cual
 7. **Una vez por pelea.** La persistencia (3.8) guarda si hubo reforjado, qué brasas quedan y qué braseros están
    vacíos.
 
-Números de partida: `reforjadoBrasasBase` 3, `reforjadoBrasasMax` 6, `reforjadoRellenoHierro` 4,
-`reforjadoMartilloCada` 400 ticks, `reforjadoAturdido` 100 ticks, `reforjadoAturdidoDano` 1,5.
+Números (en el código): `FallenSmith.EMBERS_BASE` 3, `EMBERS_MOST` 6, `STUN_TICKS` 100, `STUN_DAMAGE` 1,5;
+`StarFight.REFILL_IRON` 4, `REFORGE_SKY` 400 ticks, `FLOW_TICKS` 60.
 
 ### 3.8 Morir y volver
 
@@ -471,7 +488,7 @@ Números de partida: `reforjadoBrasasBase` 3, `reforjadoBrasasMax` 6, `reforjado
   aprendices vivos. **No se cura** (salvo por sus brasas durante el Reforjado estelar, como hoy).
 - **Se para mientras no haya ningún jugador en la dimensión:** no se mueve, no ataca, no cuenta esperas ni
   eventos. En cuanto entra alguien, sigue (sin volver a caer del cielo).
-- Lo guarda un `SavedData` de la dimensión: estado (esperando, en pelea, derrotado), el UUID del jefe, la fase, las
+- Lo guarda un adjunto de la dimensión (`forja:pelea_estelar`) y el propio jefe (fase, oleadas, brasas, aturdido): estado (esperando, en pelea, derrotado), el UUID del jefe, la fase, las
   oleadas hechas, los participantes (todo jugador que haya estado en la dimensión con la pelea en curso) y, por si
   el jefe se perdiera, su vida. Sobrevive a guardar y cargar el mundo.
 - Si alguien sale por la estrella de vuelta o se desconecta, cuenta igual que morir.
@@ -606,7 +623,21 @@ recoloreada.
   lejos desde dos islotes y desde lo alto, y cuatro vistas sin niebla. Hoja de contactos en
   `E:\IA\Claude\Forja_capturas_mejoras\dimension_herrero\hoja_de_contactos.jpg`.
 
-### Entregas 2 y 3
+### Entrega 3 (hecha)
+
+- **Servidor (`PeleaEstelarGameTests`):** las formaciones de 1 a 4 jugadores (y 4 + 6 con 10); las fases solo a
+  2/3 y 1/3, con aprendices que salen de la tierra y no se pueden dañar mientras suben; el Reforjado estelar (inmune
+  con brasas, braseros que se vuelcan y se rellenan con 4 hierros, la colada apaga las brasas, aturdido ×1,5); los
+  eventos mitad y mitad; guardar y cargar el jefe y el estado de la pelea; al morir, la estrella de vuelta, la fragua
+  fría y una Estrella por participante; las estadísticas de una pieza estrellada. `ArmaduraGameTests`: un juego
+  estrellado para más que sin estrellas y no pasa de netherita P4 + 5 + 2 por pieza.
+- **Cliente (`FORJA_SOLO=dimension`):** la pelea entera con comandos para acelerar: cae del cielo, se levanta, un
+  evento del Herrero (Espada) y uno de los jugadores (Lanza), la primera oleada saliendo de la tierra, el Reforjado
+  con sus brasas, la colada de un brasero, aturdido, la fase tres, su muerte, la estrella que cae, la estrella y la
+  fragua, y la vuelta al mundo con clic en la estrella. Hojas en
+  `E:\IA\Claude\Forja_capturas_mejoras\dimension_herrero\entrega_3\`.
+
+### Entregas 2 y 3 (lo que se preveía)
 
 - **Servidor:**
   - el oricalco y la perla se cuelan;
@@ -645,11 +676,10 @@ recoloreada.
 3. **Armadura estrellada** (+1 y +0,5 por pieza): aprobada.
 4. **Constelaciones en la pelea:** diseñadas en 3.6.
 
-**Por decidir:**
+**Tercera revisión (entrega 2):**
 
-1. **Las 8 constelaciones y los 5 colores (3.6):** ¿te gustan los eventos, las fuerzas (×0,6 a ×1,7), los
-   repartos por fase y que salga uno cada 30 a 40 s?
-2. **Égida (Escudo)** es el único evento que ayuda al jefe. ¿Lo dejas o lo cambias por otro que castigue?
-3. **Rellenar un brasero con 4 hierros estelares (3.7):** ¿es un buen precio?
-4. **Oricalco solo en la fundición (1.1):** con 14 ingredientes, hace falta una línea con doce cubas. ¿Te vale, o
-   prefieres una receta en dos pasos (dos "oricalcos en bruto" de 7 metales cada uno)?
+1. **Las 8 constelaciones, los 5 colores y uno cada 30 a 40 s:** aprobado.
+2. **Mitad y mitad:** 4 eventos ayudan al Herrero (la Égida entre ellos) y 4 a los jugadores; el aviso dice de qué
+   lado está por color y sonido (3.6).
+3. **Rellenar un brasero con 4 hierros estelares:** aprobado.
+4. **Oricalco con doce cubas:** aprobado.

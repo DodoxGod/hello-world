@@ -1,5 +1,35 @@
 # Novedades
 
+## 2026-09-29 — La pelea del Cementerio entre Estrellas (entrega 3)
+
+- **Cae del cielo:** al entrar en la dimensión sin pelea en curso, a los 3 s una estrella cae sobre la arena. Tarda
+  2 s, suelta una onda morada al tocar el suelo y el Herrero se levanta. Mientras cae y se asienta no se le puede
+  dañar.
+- **Fases a 2/3 y 1/3,** cada una con su animación: clava el martillo, 3 s invulnerable y onda.
+- **Aprendices que salen de la tierra** en polígonos alrededor del jefe: 4 + 3 por jugador extra (con 10, 4 + 6).
+  Suben 2 s, anillo a anillo, y no se les puede dañar hasta que salen.
+- **Reforjado estelar** a la mitad de la vida: es inmortal mientras ardan sus brasas estelares (3 + 1 por jugador
+  extra, hasta 6).
+  - Solo las apaga la colada de un brasero: se vuelca con un golpe o una flecha.
+  - Cada brasero se vuelca una vez; se rellena con 4 hierros estelares.
+  - Mientras dura, el Martillo lanza meteoritos cada 20 s.
+  - Al apagarse la última brasa queda aturdido 5 s y recibe ×1,5 de daño.
+- **Constelaciones mitad y mitad:** una cada 30–40 s, en 5 colores de fuerza.
+  - Espada, Hacha, Escudo (Égida) y Guadaña ayudan al Herrero: aviso en rojo, con campana.
+  - Martillo, Lanza, Yunque y Tenazas ayudan a los jugadores: aviso en menta, con amatista.
+  - El Martillo tira meteoritos sobre él, la Lanza lanzas de luz, el Yunque cura y las Tenazas apartan a los
+    aprendices y sacan al más herido.
+- **La pelea se conserva** tras morir, guardar y cargar, y se para cuando no hay nadie en la dimensión.
+- **Al morir:** cae la Estrella de vuelta (clic derecho: al portal por el que entraste). Aparece también una fragua
+  fría estelar para la revancha, que cuesta 1 perla de oricalco, 3 oricalcos, 1 estrella del Nether y 16 hierros
+  estelares.
+- **Estrella forjada** para cada participante, en la bolsa o guardada hasta que vuelva.
+  - Se pone en la forja mayor en una pieza terminada, una por pieza.
+  - Da tope de potencial 125 y +25 de potencial, ×1,12 al daño y al minado y ×1,5 a la durabilidad.
+  - En armadura da +1 de armadura y +0,5 de dureza por pieza.
+- **Pruebas:** `PeleaEstelarGameTests` nuevo y `ArmaduraGameTests.starredArmourMayPassTheCeiling`.
+  `FORJA_SOLO=dimension` filma la pelea entera.
+
 ## 2026-09-29 — El portal al Cementerio entre Estrellas (entrega 2) y los arreglos de la segunda revisión (1c)
 
 - **Oricalco:** una aleación de los 14 metales renovables del mod (hierro estelar, placa hueca, escoria, bronce,
