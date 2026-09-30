@@ -38,7 +38,8 @@
 			"dev.forja.test.PercepcionGameTests",
 			"dev.forja.test.RedV4GameTests",
 			"dev.forja.test.BlazeGameTests",
-			"dev.forja.test.DimensionGameTests"
+			"dev.forja.test.DimensionGameTests",
+			"dev.forja.test.PortalGameTests"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"

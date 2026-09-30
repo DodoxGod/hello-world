@@ -178,7 +178,18 @@ def rotunda(w, cx, cz, r, floor_y, height):
         for y in range(floor_y, floor_y + tier):
             w.put(cx + dx, y, cz + dz, "polished_blackstone_bricks")
         w.put(cx + dx, floor_y + tier, cz + dz, *slab("polished_blackstone_brick_slab")) if tier < 2 else w.put(cx + dx, floor_y + tier - 1, cz + dz, "chiseled_polished_blackstone")
-    w.put(cx, floor_y + 2, cz, "forja:fragua_apagada")
+    # The dead forge no longer wakes him (docs/HERRERO_DIMENSION.md, 1.3): its place on the dais is the star
+    # portal's empty frame, a 5 x 5 ring on the dais's top with a bracket facing in on each side and the
+    # 3 x 3 hole where four oricalco pearls will light the portal.
+    for dx in range(-2, 3):
+        for dz in range(-2, 3):
+            if abs(dx) <= 1 and abs(dz) <= 1:
+                w.put(cx + dx, floor_y + 1, cz + dz, "air")
+            elif dx == 0 or dz == 0:
+                facing = "west" if dx > 0 else "east" if dx < 0 else "north" if dz > 0 else "south"
+                w.put(cx + dx, floor_y + 1, cz + dz, "forja:mensula_estelar", {"facing": facing, "perla": "false"})
+            else:
+                w.put(cx + dx, floor_y + 1, cz + dz, "polished_blackstone_bricks")
     noise_origin()
 
 

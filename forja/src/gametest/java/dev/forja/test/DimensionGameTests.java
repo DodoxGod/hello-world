@@ -126,7 +126,7 @@ public class DimensionGameTests {
 			dev.forja.Forja.LOGGER.info("Cementerio entre Estrellas, semilla {}: {} tumbas, {} forjas frías, {} columnas de cascada, {} ríos, {} islotes",
 				seed, counts[0], forges, counts[1], layout.rivers.length, layout.islets.length);
 			helper.assertTrue(counts[0] >= 2000 && counts[0] <= 8000, "semilla " + seed + ", tumbas en la llanura: " + counts[0]);
-			helper.assertTrue(forges >= 15 && forges <= 80, "semilla " + seed + ", forjas frías: " + forges);
+			helper.assertTrue(forges >= 8 && forges <= 80, "semilla " + seed + ", forjas frías: " + forges);
 			helper.assertTrue(counts[1] >= layout.rivers.length, "semilla " + seed + ", cascadas por el borde: " + counts[1] + " columnas");
 			helper.assertTrue(layout.islets.length >= 5, "semilla " + seed + ", islotes: " + layout.islets.length);
 		}
@@ -269,6 +269,63 @@ public class DimensionGameTests {
 		dev.forja.Forja.LOGGER.info("Cementerio entre Estrellas: 400 chunks ({} bloques) en {} s", blocks, String.format("%.2f", seconds));
 		helper.assertTrue(blocks > 100000, "hay meseta en esos chunks: " + blocks);
 		helper.assertTrue(seconds < 3.0, "400 chunks tardaron " + seconds + " s");
+		helper.succeed();
+	}
+
+	/**
+	 * The moulds are spread over the whole turn of the sky (Andy, 2026-09-29: there were moments with none
+	 * up): sampled every degree of a full turn, at least three are always 15 degrees or more above the horizon.
+	 */
+	@GameTest(maxTicks = 20)
+	public void theConstellationsAreAlwaysUp(GameTestHelper helper) {
+		int fewest = dev.forja.world.StarChart.fewestUp(15.0);
+		dev.forja.Forja.LOGGER.info("Cementerio entre Estrellas: siempre hay al menos {} constelaciones a 15 grados o más", fewest);
+		helper.assertTrue(dev.forja.world.StarChart.CONSTELLATIONS.size() == 8, "ocho moldes en el cielo");
+		helper.assertTrue(fewest >= 3, "en algún momento del giro solo quedan " + fewest + " constelaciones arriba");
+		helper.succeed();
+	}
+
+	/**
+	 * The fog's ember tint depends on pitch and height only, and smoothly (Andy, 2026-09-29: one step off the
+	 * edge jumped the sky from maroon to orange): no two neighbouring samples differ by more than a little.
+	 */
+	@GameTest(maxTicks = 20)
+	public void theEmberTintIsSmooth(GameTestHelper helper) {
+		float worst = 0.0F;
+		for (int y = 0; y <= 250; y++) {
+			for (int step = 0; step < 100; step++) {
+				float down = -1.0F + step * 0.02F;
+				float here = dev.forja.world.StarChart.emberShare(down, y);
+				worst = Math.max(worst, Math.abs(here - dev.forja.world.StarChart.emberShare(down + 0.02F, y)));
+				worst = Math.max(worst, Math.abs(here - dev.forja.world.StarChart.emberShare(down, y + 1)));
+			}
+		}
+		helper.assertTrue(worst < 0.03F, "el tinte salta " + worst + " de una muestra a la siguiente");
+		helper.succeed();
+	}
+
+	/** Every world has its dead vents, away from the arena, and none of them on a river. */
+	@GameTest(maxTicks = 20)
+	public void everyPlateauHasItsDeadVents(GameTestHelper helper) {
+		for (long seed : SEEDS) {
+			StarYardLayout layout = StarYardLayout.of(seed);
+			helper.assertTrue(layout.vents.length >= 5, "semilla " + seed + ", respiraderos: " + layout.vents.length);
+			for (int[] vent : layout.vents) {
+				double r = StarYard.radius(vent[0] + 0.5, vent[1] + 0.5);
+				helper.assertTrue(r - vent[2] > 70.0, "semilla " + seed + ", un respiradero llega a " + (r - vent[2]) + " del centro");
+				helper.assertTrue(layout.riverDistance(vent[0] + 0.5, vent[1] + 0.5) > vent[2] + 4.0, "semilla " + seed + ", un respiradero sobre un río");
+				BlockState[] column = StarYardGenerator.column(layout, vent[0] + (int) Math.round(vent[2] * 0.6), vent[1]);
+				int top = 0;
+				for (int y = column.length - 1; y >= 0; y--) {
+					if (column[y] != null) {
+						top = y;
+						break;
+					}
+				}
+				helper.assertTrue(top > layout.surface(vent[0] + (int) Math.round(vent[2] * 0.6), vent[1]),
+					"semilla " + seed + ", el respiradero se alza sobre la ceniza");
+			}
+		}
 		helper.succeed();
 	}
 

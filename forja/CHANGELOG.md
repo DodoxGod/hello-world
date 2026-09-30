@@ -1,5 +1,38 @@
 # Novedades
 
+## 2026-09-29 — El portal al Cementerio entre Estrellas (entrega 2) y los arreglos de la segunda revisión (1c)
+
+- **Oricalco:** una aleación de los 14 metales renovables del mod (hierro estelar, placa hueca, escoria, bronce,
+  latón, peltre, electro, acero, cinerio, voltaico, acero estelar, obsidiacero, almacero y vidriacero).
+  - Se funde a calor de fundición en un crisol de una línea de fundición: 2 lingotes en el crisol y 12 de las cubas.
+    Salen 4 lingotes.
+  - No lleva nada que se acabe (damasco, solacero, lunacero) ni que solo dé el jefe.
+- **Perla de oricalco:** una perla de ender puesta en una mesa de colada, con 2 lingotes de oricalco vertidos
+  encima.
+- **El portal:** la fragua apagada de la Forja Profunda del Bastión es ahora un marco de 5 × 5 con 4 ménsulas
+  estelares.
+  - Con una perla de oricalco en cada una se enciende el portal estelar, para siempre.
+  - Al entrar te lleva a la plataforma de llegada de la dimensión.
+  - Para volver, un pozo encendido detrás de la plataforma te deja junto al marco por el que entraste; se guarda en
+    el jugador y sobrevive a morir.
+- **La invocación vieja se quita.** En los mundos ya hechos, un clic en una fragua apagada la abre en el marco vacío.
+- **Guía:** capítulo nuevo, "El Cementerio entre Estrellas".
+- **Arreglos de la revisión de Andy (1c):**
+  - El tinte de brasa de la niebla ya no salta: depende solo de hacia dónde miras y de la altura, y se suaviza.
+    Antes, un paso fuera del borde pasaba el cielo de granate a naranja de golpe.
+  - Los eventos del mundo (aurora, luna de sangre, meteoritos…) también tiñen este cielo, con sus partículas y
+    dibujos, pero sin luna ni sol.
+  - Respiraderos muertos: de 5 a 9 conos agrietados según la semilla, con cráter de escoria fría. Algunos humean,
+    otros llevan chimenea fría o canaleta de cobre.
+  - Las 8 constelaciones repartidas por todo el giro del cielo: siempre hay al menos 3 bien arriba.
+  - Ecos lejanos: un martillo, una campana o escombros, a 40–80 bloques, graves, que resuenan 2 o 3 veces.
+- **Diseño (sin construir):**
+  - el Reforjado estelar aprobado: inmortal hasta que la colada del brasero apague su fuego;
+  - la revancha con materiales renovables;
+  - las 8 constelaciones con sus eventos y los 5 colores de fuerza.
+- **Pruebas:** `PortalGameTests` (6) y 3 nuevas en `DimensionGameTests`. `FORJA_SOLO=dimension` enciende el portal
+  con clics, cruza y vuelve.
+
 ## 2026-09-29 — El Cementerio entre Estrellas: arreglos de la revisión de Andy (entrega 1b)
 
 - **Un sol bajo el vacío:** al fondo, recto abajo, un cuerpo enorme con halo rojo, 28 rayos que giran y parpadean,

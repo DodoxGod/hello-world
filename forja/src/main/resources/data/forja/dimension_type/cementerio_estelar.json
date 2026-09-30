@@ -2,10 +2,6 @@
   "ambient_light": 0.1,
   "attributes": {
     "minecraft:audio/ambient_sounds": {
-      "additions": {
-        "sound": "forja:ambient.cementerio.additions",
-        "tick_chance": 0.006
-      },
       "loop": "forja:ambient.cementerio.loop",
       "mood": {
         "block_search_extent": 8,

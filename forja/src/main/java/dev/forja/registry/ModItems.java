@@ -93,6 +93,10 @@ public final class ModItems {
 	/** The graveyard's ash (docs/HERRERO_DIMENSION.md). */
 	public static Item CENIZA;
 	public static Item CENIZA_PRENSADA;
+	/** Oricalco: the alloy of all the mod's renewable metals, and the pearl poured of it (docs/HERRERO_DIMENSION.md). */
+	public static Item ORICALCO;
+	public static Item PERLA_DE_ORICALCO;
+	public static Item MENSULA_ESTELAR;
 	public static Item HUEVO_HERRERO_CAIDO;
 	public static Item HUEVO_AUTOMATA;
 	public static Item HUEVO_CORAZA;
@@ -262,6 +266,11 @@ public final class ModItems {
 		PARARRAYOS = register("pararrayos", p -> new BlockItem(ModBlocks.PARARRAYOS, p), new Item.Properties().useBlockDescriptionPrefix());
 		CENIZA = register("ceniza", p -> new BlockItem(ModBlocks.CENIZA, p), new Item.Properties().useBlockDescriptionPrefix());
 		CENIZA_PRENSADA = register("ceniza_prensada", p -> new BlockItem(ModBlocks.CENIZA_PRENSADA, p), new Item.Properties().useBlockDescriptionPrefix());
+		ORICALCO = register("oricalco", Item::new, new Item.Properties().rarity(net.minecraft.world.item.Rarity.RARE).fireResistant());
+		PERLA_DE_ORICALCO = register("perla_de_oricalco", Item::new,
+			new Item.Properties().stacksTo(16).rarity(net.minecraft.world.item.Rarity.EPIC).fireResistant());
+		MENSULA_ESTELAR = register("mensula_estelar", p -> new BlockItem(ModBlocks.MENSULA_ESTELAR, p),
+			new Item.Properties().useBlockDescriptionPrefix().rarity(net.minecraft.world.item.Rarity.EPIC));
 		YUNQUE_PORTATIL = register("yunque_portatil", dev.forja.item.PortableAnvilItem::new,
 			new Item.Properties().stacksTo(1).durability(128).rarity(net.minecraft.world.item.Rarity.UNCOMMON)
 				.component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(
@@ -447,6 +456,9 @@ public final class ModItems {
 		stacks.add(new ItemStack(PARARRAYOS));
 		stacks.add(new ItemStack(CENIZA));
 		stacks.add(new ItemStack(CENIZA_PRENSADA));
+		stacks.add(new ItemStack(ORICALCO));
+		stacks.add(new ItemStack(PERLA_DE_ORICALCO));
+		stacks.add(new ItemStack(MENSULA_ESTELAR));
 		stacks.add(new ItemStack(TUBO_DE_CALOR));
 		stacks.add(new ItemStack(CALDERA));
 		stacks.add(new ItemStack(DEPOSITO_DE_CALOR));

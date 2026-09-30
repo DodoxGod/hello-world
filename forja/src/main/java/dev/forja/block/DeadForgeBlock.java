@@ -105,22 +105,23 @@ public class DeadForgeBlock extends Block {
 		if (!(level instanceof ServerLevel server) || !(player instanceof ServerPlayer smith)) {
 			return InteractionResult.SUCCESS;
 		}
-		if (!hasOffering(player)) {
-			for (Component line : describe(player)) {
-				smith.sendSystemMessage(line);
-			}
-			return InteractionResult.CONSUME;
-		}
-		if (!server.getEntitiesOfClass(FallenSmith.class, new net.minecraft.world.phys.AABB(pos).inflate(48.0)).isEmpty()) {
-			smith.sendSystemMessage(Component.translatable("gui.forja.fragua.ya"));
-			return InteractionResult.CONSUME;
-		}
-		for (Offering offering : OFFERING) {
-			take(player, offering);
-		}
-		FallenSmith.summon(server, pos.above());
-		smith.sendSystemMessage(Component.translatable("gui.forja.fragua.despierta"));
+		// It no longer wakes him (docs/HERRERO_DIMENSION.md, 1.3): he is fought in his own dimension now, and
+		// this forge opens into the frame of the portal there. The castle's own is already a frame; this is
+		// for the castles of worlds made before, and for the old ruins that carry one.
+		openFrame(server, pos);
+		smith.sendSystemMessage(Component.translatable("gui.forja.fragua.abre"));
 		return InteractionResult.SUCCESS;
+	}
+
+	/**
+	 * Turns a fragua apagada into an empty star portal frame: the forge sat one block up on the middle of
+	 * its dais, so the frame's ring goes on the dais's top, one below it, and the forge itself goes.
+	 */
+	public static void openFrame(ServerLevel level, BlockPos pos) {
+		level.setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+		StarBracketBlock.buildFrame(level, pos.below());
+		level.playSound(null, pos, net.minecraft.sounds.SoundEvents.END_PORTAL_FRAME_FILL, net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 0.5F);
+		level.sendParticles(dev.forja.registry.ModParticles.CENIZA, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 40, 1.5, 0.5, 1.5, 0.02);
 	}
 
 	private static void take(Player player, Offering offering) {

@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.forja.Forja;
 import dev.forja.registry.ModParticles;
+import dev.forja.world.StarChart;
 import dev.forja.world.StarYard;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
@@ -47,18 +48,15 @@ public final class StarYardSky {
 	private static final Identifier FLAT = Forja.id("textures/environment/plano.png");
 	private static final Identifier CORONA = Forja.id("textures/environment/corona.png");
 
+	/** For the footage: seconds added to the sky's clock, to show it minutes apart without waiting minutes. */
+	public static float skewSeconds = 0.0F;
+
 	/** For the footage: the ash haze put out, to show the plateau as it is without it. */
 	public static boolean fogOff = false;
 
 	/** One slot of the frame's submit order per layer, before anything translucent: see EventSkyRenderer#layer. */
 	private static final int FIRST_LAYER = -96;
 
-	/**
-	 * A turn of the whole sky about the north-south line every twelve minutes: half a degree a second,
-	 * calm but there to be seen if you stand and watch (Andy, 2026-09-29, after forty minutes proved too
-	 * slow to notice).
-	 */
-	private static final float TURN_SECONDS = 720.0F;
 	/** Shooting stars: about four a minute, each a fifth to a third of a second of light with a short tail. */
 	private static final float SHOOTING_PER_TICK = 4.0F / 1200.0F;
 	private static final List<Shooting> SHOOTING = new ArrayList<>();
@@ -73,7 +71,6 @@ public final class StarYardSky {
 	private static final int EMBER = 0xFF6A1E;
 
 	private static final List<Star> STARS = new ArrayList<>();
-	private static final List<Constellation> CONSTELLATIONS = new ArrayList<>();
 
 	private record Star(Vec3 at, float size, int colour, float speed, float phase) {
 	}
@@ -100,10 +97,6 @@ public final class StarYardSky {
 		}
 	}
 
-	/** A mould drawn in stars: its stars, and the lines between them as index pairs, in pouring order. */
-	private record Constellation(String name, List<Vec3> stars, int[][] lines, float length) {
-	}
-
 	private StarYardSky() {
 	}
 
@@ -116,7 +109,6 @@ public final class StarYardSky {
 			float size = 0.18F + random.nextFloat() * random.nextFloat() * 0.55F;
 			STARS.add(new Star(at, size, colour, 0.4F + random.nextFloat() * 1.6F, random.nextFloat() * Mth.TWO_PI));
 		}
-		buildConstellations();
 		LevelRenderEvents.COLLECT_SUBMITS.register(StarYardSky::collect);
 		ClientTickEvents.END_CLIENT_TICK.register(StarYardSky::tick);
 	}
@@ -127,65 +119,11 @@ public final class StarYardSky {
 		return level != null && level.dimension() == StarYard.LEVEL;
 	}
 
-	// ------------------------------------------------------------------ the constellations
-
-	/**
-	 * The eight moulds, each an outline in degrees across the sky round its centre, then hung at a
-	 * bearing and a height. Polylines, closed where the mould is closed.
-	 */
-	private static void buildConstellations() {
-		float s = 1.4F;
-		add("espada", 10, 40, s, new float[][] {
-			{0, 12}, {1.2F, 8}, {1.2F, -2}, {4, -2}, {4, -3}, {1, -3}, {1.8F, -8}, {0, -9.5F}, {-1.8F, -8}, {-1, -3}, {-4, -3}, {-4, -2}, {-1.2F, -2}, {-1.2F, 8}
-		}, true);
-		add("hacha", 55, 62, s, new float[][] {
-			{0.6F, -9}, {0.6F, 4}, {5, 1.5F}, {6, 6}, {5, 10.5F}, {0.6F, 8}, {0.6F, 9.5F}, {-0.6F, 9.5F}, {-0.6F, -9}
-		}, true);
-		add("martillo", 100, 35, s, new float[][] {
-			{0.5F, -9}, {0.5F, 5}, {5, 5}, {5, 9}, {-5, 9}, {-5, 5}, {-0.5F, 5}, {-0.5F, -9}
-		}, true);
-		add("lanza", 150, 55, s, new float[][] {
-			{0, -12}, {0, 6}, {1.5F, 8}, {0, 13}, {-1.5F, 8}, {0, 6}
-		}, false);
-		add("escudo", 195, 38, s, new float[][] {
-			{-5, 6}, {5, 6}, {5, 1}, {3, -4}, {0, -7}, {-3, -4}, {-5, 1}
-		}, true);
-		add("yunque", 240, 65, s, new float[][] {
-			{-8, 4}, {-3, 5}, {5, 5}, {5, 3}, {2, 1.5F}, {2, -2}, {4, -4}, {-4, -4}, {-2, -2}, {-2, 1.5F}, {-4, 2.5F}
-		}, true);
-		add("tenazas", 285, 42, s, new float[][] {
-			{-3, -9}, {1, 3}, {0.5F, 7}, {-1, 9}, {-1, 3}, {3, -9}
-		}, false);
-		add("guadana", 330, 58, s, new float[][] {
-			{0, -10}, {0, 9}, {-4, 10}, {-9, 8}, {-11, 5}, {-7, 7.2F}, {-3, 7.5F}, {0, 7}
-		}, false);
-	}
-
-	private static void add(String name, float bearing, float height, float scale, float[][] outline, boolean closed) {
-		double yaw = Math.toRadians(bearing);
-		double pitch = Math.toRadians(height);
-		Vec3 centre = new Vec3(Math.cos(pitch) * Math.sin(yaw), Math.sin(pitch), -Math.cos(pitch) * Math.cos(yaw));
-		Vec3 east = new Vec3(0.0, 1.0, 0.0).cross(centre).normalize();
-		Vec3 north = centre.cross(east).normalize();
-		List<Vec3> stars = new ArrayList<>();
-		for (float[] point : outline) {
-			double u = Math.tan(Math.toRadians(point[0] * scale));
-			double v = Math.tan(Math.toRadians(point[1] * scale));
-			stars.add(centre.add(east.scale(u)).add(north.scale(v)).normalize());
-		}
-		int count = closed ? stars.size() : stars.size() - 1;
-		int[][] lines = new int[count][];
-		float length = 0.0F;
-		for (int i = 0; i < count; i++) {
-			lines[i] = new int[] {i, (i + 1) % stars.size()};
-			length += (float) stars.get(i).subtract(stars.get((i + 1) % stars.size())).length();
-		}
-		CONSTELLATIONS.add(new Constellation(name, stars, lines, length));
-	}
+	// ------------------------------------------------------------------ the constellations (world/StarChart)
 
 	/** Which constellation is being poured at this game time, and how many seconds into its pour. */
 	public static int pouredAt(long gameTime) {
-		return (int) ((gameTime % 1_728_000L) / 20.0F / POUR_EVERY) % CONSTELLATIONS.size();
+		return (int) ((gameTime % 1_728_000L) / 20.0F / POUR_EVERY) % StarChart.CONSTELLATIONS.size();
 	}
 
 	public static float pourSecondsAt(long gameTime) {
@@ -194,17 +132,17 @@ public final class StarYardSky {
 
 	/** Where in the sky constellation {@code i} is at this game time, as a direction from the viewer. */
 	public static Vec3 constellationAt(int i, long gameTime) {
-		List<Vec3> stars = CONSTELLATIONS.get(i).stars();
+		List<Vec3> stars = StarChart.CONSTELLATIONS.get(i).stars();
 		Vec3 sum = Vec3.ZERO;
 		for (Vec3 star : stars) {
 			sum = sum.add(star);
 		}
-		return turn(sum.normalize(), (gameTime % 1_728_000L) / 20.0F / TURN_SECONDS * Mth.TWO_PI);
+		return StarChart.turn(sum.normalize(), StarChart.spin((gameTime % 1_728_000L) / 20.0));
 	}
 
 	/** The names of the moulds in the sky, in the order they are poured: for the tests and the guide. */
 	public static List<String> constellations() {
-		return CONSTELLATIONS.stream().map(Constellation::name).toList();
+		return StarChart.CONSTELLATIONS.stream().map(StarChart.Constellation::name).toList();
 	}
 
 	// ------------------------------------------------------------------ drawing
@@ -219,9 +157,9 @@ public final class StarYardSky {
 			return;
 		}
 		float partial = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
-		float time = (client.level.getGameTime() % 1_728_000L + partial) / 20.0F;
+		float time = (client.level.getGameTime() % 1_728_000L + partial) / 20.0F + skewSeconds;
 		float radius = Mth.clamp(SkyMood.clearTo * 0.72F, 48.0F, 120.0F);
-		float spin = time / TURN_SECONDS * Mth.TWO_PI;
+		float spin = StarChart.spin(time);
 		PoseStack pose = context.poseStack();
 		SubmitNodeCollector collector = context.submitNodeCollector();
 
@@ -241,16 +179,16 @@ public final class StarYardSky {
 		layer(collector, 16).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> shooting(p, buffer, radius, partial));
 		layer(collector, 13).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
 			for (Star star : STARS) {
-				Vec3 at = turn(star.at(), spin);
+				Vec3 at = StarChart.turn(star.at(), spin);
 				float alpha = starlight(at) * (0.7F + 0.3F * Mth.sin(time * star.speed() + star.phase()));
 				sprite(p, buffer, at, radius, star.size() * radius / 100.0F, star.colour(), alpha);
 			}
 		});
-		int poured = (int) (time / POUR_EVERY) % CONSTELLATIONS.size();
+		int poured = (int) (time / POUR_EVERY) % StarChart.CONSTELLATIONS.size();
 		float into = time % POUR_EVERY;
 		layer(collector, 14).submitCustomGeometry(pose, RenderTypes.eyes(FLAT), (p, buffer) -> {
-			for (int i = 0; i < CONSTELLATIONS.size(); i++) {
-				Constellation c = CONSTELLATIONS.get(i);
+			for (int i = 0; i < StarChart.CONSTELLATIONS.size(); i++) {
+				StarChart.Constellation c = StarChart.CONSTELLATIONS.get(i);
 				lines(p, buffer, c, radius, spin, 1.0F, 0x9FB4FF, 0.28F, 0.0045F);
 				if (i == poured) {
 					lines(p, buffer, c, radius * 0.995F, spin, pourShare(into), 0xFFC24A, pourAlpha(into), 0.0075F);
@@ -258,11 +196,11 @@ public final class StarYardSky {
 			}
 		});
 		layer(collector, 15).submitCustomGeometry(pose, RenderTypes.eyes(GLOW), (p, buffer) -> {
-			for (int i = 0; i < CONSTELLATIONS.size(); i++) {
-				Constellation c = CONSTELLATIONS.get(i);
+			for (int i = 0; i < StarChart.CONSTELLATIONS.size(); i++) {
+				StarChart.Constellation c = StarChart.CONSTELLATIONS.get(i);
 				boolean hot = i == poured && into < POUR_RUN + POUR_HOLD + POUR_COOL;
 				for (Vec3 star : c.stars()) {
-					Vec3 at = turn(star, spin);
+					Vec3 at = StarChart.turn(star, spin);
 					float alpha = starlight(at);
 					sprite(p, buffer, at, radius * 0.99F, radius * 0.012F, hot ? 0xFFE2A0 : 0xEAF0FF, alpha);
 					sprite(p, buffer, at, radius * 0.99F, radius * 0.03F, hot ? 0xFFA030 : 0x8FA8FF, 0.35F * alpha);
@@ -282,7 +220,7 @@ public final class StarYardSky {
 	 * high up the plateau is further away than the sun is, and the sun was drawn in front of it.
 	 */
 	static float sunStrength(double y) {
-		return (float) Mth.clamp(1.0 - (y - StarYard.SURFACE - 30.0) / 60.0, 0.0, 1.0);
+		return StarChart.sunStrength(y);
 	}
 
 	/**
@@ -370,13 +308,6 @@ public final class StarYardSky {
 		return 0.95F * Mth.clamp(1.0F - (into - POUR_RUN - POUR_HOLD) / POUR_COOL, 0.0F, 1.0F);
 	}
 
-	/** A direction in the sky turned about the north-south line by the sky's slow turn. */
-	private static Vec3 turn(Vec3 at, float spin) {
-		float cos = Mth.cos(spin);
-		float sin = Mth.sin(spin);
-		return new Vec3(at.x * cos - at.y * sin, at.x * sin + at.y * cos, at.z);
-	}
-
 	/**
 	 * How much a star shows where it is: full above 4 degrees, faded in over the horizon's first four, not
 	 * at all hard on the horizon (where it would be drawn over far ground), and fading into the glow below.
@@ -455,10 +386,10 @@ public final class StarYardSky {
 			float alpha0 = 0.2F * breathe * (0.7F + 0.3F * Mth.sin(t0 * 5.0F - time * 0.02F));
 			float alpha1 = 0.2F * breathe * (0.7F + 0.3F * Mth.sin(t1 * 5.0F - time * 0.02F));
 			for (int side = -1; side <= 1; side += 2) {
-				Vec3 e0 = turn(m0.add(axis.scale(side * width0)).normalize(), spin);
-				Vec3 e1 = turn(m1.add(axis.scale(side * width1)).normalize(), spin);
-				Vec3 c0v = turn(m0, spin);
-				Vec3 c1v = turn(m1, spin);
+				Vec3 e0 = StarChart.turn(m0.add(axis.scale(side * width0)).normalize(), spin);
+				Vec3 e1 = StarChart.turn(m1.add(axis.scale(side * width1)).normalize(), spin);
+				Vec3 c0v = StarChart.turn(m0, spin);
+				Vec3 c1v = StarChart.turn(m1, spin);
 				float s0 = starlight(c0v) * alpha0;
 				float s1 = starlight(c1v) * alpha1;
 				quad(p, buffer,
@@ -498,7 +429,7 @@ public final class StarYardSky {
 	}
 
 	/** The lines of a constellation, drawn as far round as {@code share} of its whole length. */
-	private static void lines(PoseStack.Pose p, VertexConsumer buffer, Constellation c, float radius, float spin,
+	private static void lines(PoseStack.Pose p, VertexConsumer buffer, StarChart.Constellation c, float radius, float spin,
 		float share, int colour, float alpha, float width) {
 		if (alpha <= 0.003F || share <= 0.0F) {
 			return;
@@ -514,7 +445,7 @@ public final class StarYardSky {
 			float part = Math.min(1.0F, left / length);
 			left -= length;
 			Vec3 end = from.add(to.subtract(from).scale(part));
-			segment(p, buffer, turn(from, spin), turn(end, spin), radius, colour, alpha, width);
+			segment(p, buffer, StarChart.turn(from, spin), StarChart.turn(end, spin), radius, colour, alpha, width);
 		}
 	}
 
@@ -597,14 +528,15 @@ public final class StarYardSky {
 	 * looks and the lower it is, and its reach opened up high in the air (and put out for the footage).
 	 */
 	public static void fog(FogData data, Camera camera) {
-		float down = Math.max(0.0F, -camera.forwardVector().y());
-		float low = (float) Mth.clamp((StarYard.SURFACE - camera.position().y) / 120.0, 0.0, 1.0);
-		// Looking down onto the plateau, what fills the view is ash and stone, not the void: the glow
-		// only takes the fog over where there is void under the camera to look into.
-		Vec3 eye = camera.position();
-		float overVoid = open(Minecraft.getInstance().level, Mth.floor(eye.x), Mth.floor(eye.z)) ? 1.0F : 0.3F;
-		float share = Math.max(0.55F * overVoid * down * down * (3.0F - 2.0F * down), low);
-		share = Math.min(share, 0.75F);
+		// Only the camera's pitch and height decide it, never what is in view: it used to ask whether the
+		// camera stood over the void, and one step off the edge snapped the whole sky from maroon to orange
+		// (Andy, 2026-09-29). Eased towards its target so no turn of the head can jump it either.
+		float target = emberShare(-camera.forwardVector().y(), camera.position().y);
+		long now = net.minecraft.util.Util.getMillis();
+		float dt = emberAt == 0L ? 1.0F : Mth.clamp((now - emberAt) / 1000.0F, 0.0F, 1.0F);
+		emberAt = now;
+		emberShown += (target - emberShown) * (1.0F - (float) Math.exp(-dt * 4.0));
+		float share = emberShown;
 		if (share > 0.0F) {
 			data.color.set(
 				Mth.lerp(share, data.color.x(), 1.0F),
@@ -619,6 +551,19 @@ public final class StarYardSky {
 		}
 	}
 
+	/** The fog's ember tint as last shown, and when: eased so it never jumps. */
+	private static float emberShown = 0.0F;
+	private static long emberAt = 0L;
+
+	/**
+	 * How far the fog leans to the void's ember glow, from how far down the camera looks (-1 to 1) and
+	 * how high it is. Smooth in both: looking down takes it up to 0.45, and being low takes it up to 0.75
+	 * (half at y 20). Fading, like the sun, as the camera climbs over the plateau.
+	 */
+	public static float emberShare(float down, double y) {
+		return StarChart.emberShare(down, y);
+	}
+
 	// ------------------------------------------------------------------ ash and embers
 
 	/**
@@ -628,6 +573,68 @@ public final class StarYardSky {
 	 */
 	private static boolean open(ClientLevel level, int x, int z) {
 		return level == null || level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, x, z) <= level.getMinY();
+	}
+
+	// ------------------------------------------------------------------ distant echoes
+
+	/**
+	 * A far-off hammer, a bell, a chime or falling rubble, heard as an echo of a time long gone (Andy,
+	 * 2026-09-29): somewhere 40 to 80 blocks away, low (pitch 0.5 to 0.75) and soft, and then again two
+	 * or three times, later and fainter and a shade lower each time, like the tail of a great hall's
+	 * reverb. Vanilla has no low-pass to muffle with, so the sounds are the ones that already ring or
+	 * rumble, and distance does the rest. Only here, and sparse: one every 8 to 25 seconds.
+	 */
+	private static final net.minecraft.sounds.SoundEvent[] ECHOED = {
+		net.minecraft.sounds.SoundEvents.ANVIL_LAND, net.minecraft.sounds.SoundEvents.ANVIL_USE,
+		net.minecraft.sounds.SoundEvents.BELL_RESONATE, net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_RESONATE,
+		net.minecraft.sounds.SoundEvents.SMITHING_TABLE_USE, net.minecraft.sounds.SoundEvents.GRINDSTONE_USE,
+		net.minecraft.sounds.SoundEvents.CHAIN_PLACE, net.minecraft.sounds.SoundEvents.BASALT_BREAK
+	};
+	/** The delays of the echo, in ticks after the first sound, and how much quieter each one is. */
+	private static final int[] ECHO_DELAYS = {8, 18, 30};
+	private static final float ECHO_FADE = 0.55F;
+
+	private record Echo(net.minecraft.sounds.SoundEvent sound, double x, double y, double z, float volume, float pitch, long at) {
+	}
+
+	private static final List<Echo> ECHOES = new ArrayList<>();
+	private static int nextEcho = 200;
+
+	private static void echoes(ClientLevel level, Player player, RandomSource random) {
+		long now = level.getGameTime();
+		ECHOES.removeIf(echo -> {
+			if (echo.at() > now) {
+				return false;
+			}
+			level.playLocalSound(echo.x(), echo.y(), echo.z(), echo.sound(), net.minecraft.sounds.SoundSource.AMBIENT,
+				echo.volume(), echo.pitch(), false);
+			return true;
+		});
+		if (--nextEcho > 0) {
+			return;
+		}
+		nextEcho = 160 + random.nextInt(340);
+		net.minecraft.sounds.SoundEvent sound = ECHOED[random.nextInt(ECHOED.length)];
+		double angle = random.nextDouble() * Math.PI * 2.0;
+		double far = 40.0 + random.nextDouble() * 40.0;
+		double x = player.getX() + Math.cos(angle) * far;
+		double z = player.getZ() + Math.sin(angle) * far;
+		double y = player.getY() + (random.nextDouble() - 0.5) * 20.0;
+		// Heard from this far only if it is loud: the game fades a sound out over sixteen blocks per
+		// point of volume, so five points carry it to eighty and it arrives here a quarter as loud.
+		float volume = 5.0F;
+		float pitch = 0.5F + random.nextFloat() * 0.25F;
+		ECHOES.add(new Echo(sound, x, y, z, volume, pitch, now));
+		int repeats = 2 + random.nextInt(2);
+		float fade = 1.0F;
+		for (int i = 0; i < repeats; i++) {
+			fade *= ECHO_FADE;
+			// Each echo comes back off something a little further away and to the side.
+			double off = far + 8.0 * (i + 1);
+			double turn = angle + (random.nextDouble() - 0.5) * 0.6;
+			ECHOES.add(new Echo(sound, player.getX() + Math.cos(turn) * off, y, player.getZ() + Math.sin(turn) * off,
+				volume * fade, Math.max(0.4F, pitch - 0.04F * (i + 1)), now + ECHO_DELAYS[i]));
+		}
 	}
 
 	/** How much ash is in the air at this height: light at the arena, eight times as thick at y 20. */
@@ -651,6 +658,7 @@ public final class StarYardSky {
 		ClientLevel level = client.level;
 		Player player = client.player;
 		RandomSource random = level.getRandom();
+		echoes(level, player, random);
 		// The shooting stars: age the ones in flight, now and then send another.
 		SHOOTING.removeIf(star -> ++star.age > star.life);
 		if (random.nextFloat() < SHOOTING_PER_TICK) {

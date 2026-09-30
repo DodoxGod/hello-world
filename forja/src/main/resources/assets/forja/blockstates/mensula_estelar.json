@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=south,perla=false": {
+      "model": "forja:block/mensula_estelar"
+    },
+    "facing=west,perla=false": {
+      "model": "forja:block/mensula_estelar",
+      "y": 90
+    },
+    "facing=north,perla=false": {
+      "model": "forja:block/mensula_estelar",
+      "y": 180
+    },
+    "facing=east,perla=false": {
+      "model": "forja:block/mensula_estelar",
+      "y": 270
+    },
+    "facing=south,perla=true": {
+      "model": "forja:block/mensula_estelar_perla"
+    },
+    "facing=west,perla=true": {
+      "model": "forja:block/mensula_estelar_perla",
+      "y": 90
+    },
+    "facing=north,perla=true": {
+      "model": "forja:block/mensula_estelar_perla",
+      "y": 180
+    },
+    "facing=east,perla=true": {
+      "model": "forja:block/mensula_estelar_perla",
+      "y": 270
+    }
+  }
+}

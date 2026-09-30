@@ -366,6 +366,35 @@ public final class ModBlocks {
 		)
 	);
 
+	/** Ménsula estelar: a bracket of the star portal's frame, where an oricalco pearl goes. See block/StarBracketBlock. */
+	public static final Block MENSULA_ESTELAR = register(
+		"mensula_estelar",
+		new dev.forja.block.StarBracketBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.COLOR_BLACK)
+				.strength(-1.0F, 3600000.0F)
+				.sound(SoundType.STONE)
+				.noLootTable()
+				.lightLevel(state -> state.getValue(dev.forja.block.StarBracketBlock.PERLA) ? 7 : 1)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("mensula_estelar")))
+		)
+	);
+
+	/** Portal estelar: the lit hole of the frame, to the Cementerio entre Estrellas and back. See block/StarPortalBlock. */
+	public static final Block PORTAL_ESTELAR = register(
+		"portal_estelar",
+		new dev.forja.block.StarPortalBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.COLOR_PURPLE)
+				.strength(-1.0F, 3600000.0F)
+				.noCollision()
+				.noLootTable()
+				.lightLevel(state -> 15)
+				.pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("portal_estelar")))
+		)
+	);
+
 	private ModBlocks() {
 	}
 

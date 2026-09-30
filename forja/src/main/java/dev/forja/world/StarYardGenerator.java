@@ -82,6 +82,9 @@ public final class StarYardGenerator extends ChunkGenerator {
 	private static final BlockState WALL = Blocks.POLISHED_BLACKSTONE_BRICK_WALL.defaultBlockState();
 	private static final BlockState BASALT = Blocks.BASALT.defaultBlockState();
 	private static final BlockState SMOOTH_BASALT = Blocks.SMOOTH_BASALT.defaultBlockState();
+	/** The copper of a vent's old chute, gone green long ago. */
+	private static final BlockState CHUTE = net.minecraft.core.registries.BuiltInRegistries.BLOCK
+		.getValue(net.minecraft.resources.Identifier.withDefaultNamespace("oxidized_cut_copper")).defaultBlockState();
 
 	/** This world's plateau, drawn from its seed when the level first asks for the generator's state. */
 	private volatile @Nullable StarYardLayout layout;
@@ -288,6 +291,9 @@ public final class StarYardGenerator extends ChunkGenerator {
 		for (int y = bottom; y < top; y++) {
 			sink.set(y, stratum(layout, x, y, z, top, bottom, r), false);
 		}
+		if (returnWell(x, z, top, sink)) {
+			return;
+		}
 		if (r <= StarYard.RIM) {
 			arena(layout, x, z, r, theta, top, sink);
 			return;
@@ -333,7 +339,96 @@ public final class StarYardGenerator extends ChunkGenerator {
 			sink.set(top, h < 5 ? OBSIDIAN : h < 8 ? BLACKSTONE : BASALT, false);
 			return;
 		}
+		if (vent(layout, x, z, cx, cz, top, sink)) {
+			return;
+		}
 		plain(layout, x, z, cx, cz, r, top, river, sink);
+	}
+
+	/**
+	 * A dead vent: a cone of basalt and blackstone rising 6 to 14 blocks over the ash, cracked, with a
+	 * shallow crater of trodden ash and cold slag at the top and a glowing crack or two of magma. Some
+	 * still smoke from a buried fire, some carry a cold brick chimney on the flank, some the green copper
+	 * chute the heat was once drawn down by.
+	 */
+	private static boolean vent(StarYardLayout layout, int x, int z, double cx, double cz, int top, ColumnSink sink) {
+		int index = layout.vent(cx, cz);
+		if (index < 0) {
+			return false;
+		}
+		int[] v = layout.vents[index];
+		double dx = cx - v[0] - 0.5;
+		double dz = cz - v[1] - 0.5;
+		double d = Math.sqrt(dx * dx + dz * dz);
+		double radius = v[2];
+		double crater = radius * 0.3;
+		double rise = v[3] * Math.pow(1.0 - d / radius, 1.3);
+		boolean inCrater = d < crater;
+		if (inCrater) {
+			rise = v[3] * Math.pow(1.0 - crater / radius, 1.3) - 3.0 * (1.0 - d / crater);
+		}
+		int peak = top + Math.max(0, (int) Math.round(rise));
+		long h = layout.hash(x, z, 60);
+		for (int y = top; y < peak; y++) {
+			sink.set(y, (y + (int) (h & 3L)) % 4 == 0 ? BASALT : BLACKSTONE, false);
+		}
+		double bearing = v[5] / 1000.0 * Math.PI * 2.0;
+		double along = dx * Math.cos(bearing) + dz * Math.sin(bearing);
+		double across = -dx * Math.sin(bearing) + dz * Math.cos(bearing);
+		if (inCrater) {
+			sink.set(peak, h % 7L == 0L ? Blocks.MAGMA_BLOCK.defaultBlockState() : ModBlocks.CENIZA_PRENSADA.defaultBlockState(), false);
+			// The smoke of a fire still buried in it: a campfire deep in the crater's middle.
+			if ((v[4] & 1) != 0 && Math.abs(dx) < 0.5 && Math.abs(dz) < 0.5) {
+				sink.set(peak, Blocks.CAMPFIRE.defaultBlockState().setValue(CampfireBlock.LIT, true).setValue(CampfireBlock.SIGNAL_FIRE, true), false);
+				sink.set(peak - 1, Blocks.HAY_BLOCK.defaultBlockState(), false);
+			}
+			return true;
+		}
+		if ((v[4] & 4) != 0 && along > crater && along < radius - 0.5 && Math.abs(across) < 0.6) {
+			sink.set(peak, CHUTE, false);
+			return true;
+		}
+		long pick = h % 100L;
+		BlockState skin = pick < 3 ? Blocks.MAGMA_BLOCK.defaultBlockState() : pick < 40 ? BASALT : pick < 65 ? SMOOTH_BASALT
+			: pick < 88 ? BLACKSTONE : Blocks.TUFF.defaultBlockState();
+		sink.set(peak, skin, false);
+		// The cold chimney, standing on the flank opposite the chute.
+		if ((v[4] & 2) != 0) {
+			int chimneyX = v[0] + (int) Math.round(-Math.cos(bearing) * radius * 0.55);
+			int chimneyZ = v[1] + (int) Math.round(-Math.sin(bearing) * radius * 0.55);
+			if (x == chimneyX && z == chimneyZ) {
+				int tall = 5 + (int) (h >> 8 & 3L);
+				for (int y = peak + 1; y <= peak + tall; y++) {
+					sink.set(y, y == peak + tall ? CHISELED : (h >> y & 3L) == 0L ? CRACKED : BRICKS, false);
+				}
+				sink.set(peak + tall + 1, WALL, true);
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * The way back (docs/HERRERO_DIMENSION.md, 1.3): a lit star portal behind the arrival platform, in a
+	 * frame whose four brackets already hold their pearls. It is the same block as the one in the castle,
+	 * and from here it takes you back where you came in.
+	 */
+	private static boolean returnWell(int x, int z, int top, ColumnSink sink) {
+		int dx = x - StarYard.RETURN_WELL.getX();
+		int dz = z - StarYard.RETURN_WELL.getZ();
+		if (Math.abs(dx) > 2 || Math.abs(dz) > 2) {
+			return false;
+		}
+		if (Math.abs(dx) <= 1 && Math.abs(dz) <= 1) {
+			sink.set(top, ModBlocks.PORTAL_ESTELAR.defaultBlockState(), false);
+			sink.set(top - 1, CRYING, false);
+		} else if (dx == 0 || dz == 0) {
+			Direction side = dx > 0 ? Direction.EAST : dx < 0 ? Direction.WEST : dz > 0 ? Direction.SOUTH : Direction.NORTH;
+			sink.set(top, ModBlocks.MENSULA_ESTELAR.defaultBlockState()
+				.setValue(dev.forja.block.StarBracketBlock.FACING, side.getOpposite()).setValue(dev.forja.block.StarBracketBlock.PERLA, true), false);
+		} else {
+			sink.set(top, CHISELED, false);
+		}
+		return true;
 	}
 
 	private static BlockState molten() {
@@ -596,7 +691,7 @@ public final class StarYardGenerator extends ChunkGenerator {
 		if (r < 76.0 || r > layout.edge(StarYard.bearing(cx, cz)) - 14.0) {
 			return null;
 		}
-		if (layout.riverDistance(cx, cz) < 12.0 || layout.onBridge(cx, cz)) {
+		if (layout.riverDistance(cx, cz) < 12.0 || layout.onBridge(cx, cz) || layout.nearVent(cx, cz, 6.0)) {
 			return null;
 		}
 		return new Forge(x, z, layout.surface(x, z), (int) (h >> 24 & 0xFFL) % 3, Rotation.values()[(int) (h >> 32 & 3L)]);

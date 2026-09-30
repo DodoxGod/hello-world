@@ -42,6 +42,12 @@ public final class StarYardLayout {
 	public final double[] bridges;
 	/** The islets: x, z, top y, radius. */
 	public final int[][] islets;
+	/**
+	 * The dead vents: the old cones the smiths once drew their heat from (Andy, 2026-09-29). Each one: x, z,
+	 * radius, height, what it has (bit 0 smoke, bit 1 a cold chimney, bit 2 a copper chute), and the
+	 * bearing of its chimney and chute in thousandths of a turn.
+	 */
+	public final int[][] vents;
 	/** The graves: spacing along a row, how many columns in a thousand hold one loose, and in a pit. */
 	public final double rowSpacing;
 	public final int looseGraves;
@@ -105,6 +111,31 @@ public final class StarYardLayout {
 			}
 		}
 		this.islets = placed.toArray(new int[0][]);
+		// Five to nine dead vents on the ash, away from the arena, the rivers, the bridges and each other.
+		int vented = 5 + random.nextInt(5);
+		List<int[]> cones = new ArrayList<>();
+		for (int tries = 0; cones.size() < vented && tries < 300; tries++) {
+			double angle = random.nextDouble() * Math.PI * 2.0;
+			int radius = 7 + random.nextInt(7);
+			double far = edge(angle) - radius - 8.0;
+			if (far < 88.0) {
+				continue;
+			}
+			double out = 88.0 + random.nextDouble() * (far - 88.0);
+			int x = (int) Math.round(Math.cos(angle) * out);
+			int z = (int) Math.round(Math.sin(angle) * out);
+			if (riverDistance(x + 0.5, z + 0.5) < radius + 8.0 || bridgeOffset(x + 0.5, z + 0.5) < radius + 4.0) {
+				continue;
+			}
+			boolean clear = true;
+			for (int[] other : cones) {
+				clear &= Math.hypot(x - other[0], z - other[1]) > radius + other[2] + 10;
+			}
+			if (clear) {
+				cones.add(new int[] {x, z, radius, 6 + random.nextInt(9), random.nextInt(8), random.nextInt(1000)});
+			}
+		}
+		this.vents = cones.toArray(new int[0][]);
 		this.rowSpacing = 3.0 + random.nextDouble() * 0.6;
 		this.looseGraves = 40 + random.nextInt(21);
 		this.pitGraves = 120 + random.nextInt(81);
@@ -235,6 +266,29 @@ public final class StarYardLayout {
 			best = Math.min(best, Math.abs(r - ring));
 		}
 		return best;
+	}
+
+	/** The dead vent this column is on, or -1: a handful of distances, one per vent. */
+	public int vent(double x, double z) {
+		for (int i = 0; i < this.vents.length; i++) {
+			int[] v = this.vents[i];
+			double dx = x - v[0] - 0.5;
+			double dz = z - v[1] - 0.5;
+			if (dx * dx + dz * dz < (double) v[2] * v[2]) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	/** Whether this point is within {@code margin} of any vent's foot. */
+	public boolean nearVent(double x, double z, double margin) {
+		for (int[] v : this.vents) {
+			if (Math.hypot(x - v[0] - 0.5, z - v[1] - 0.5) < v[2] + margin) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	// ------------------------------------------------------------------ randomness

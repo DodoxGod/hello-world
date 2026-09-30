@@ -443,6 +443,11 @@ public final class SkyMood {
 		if (showing == null) {
 			return 0.0F;
 		}
+		// The Cementerio entre Estrellas is always night: an event there shows as it would at midnight.
+		net.minecraft.client.multiplayer.ClientLevel here = net.minecraft.client.Minecraft.getInstance().level;
+		if (here != null && here.dimension() == dev.forja.world.StarYard.LEVEL) {
+			return blend;
+		}
 		float hour = switch (showing) {
 			case ECLIPSE -> 1.0F;
 			case VENTISCA, NIEBLA_DE_ALMAS -> Math.max(byTime(dayTime), 0.85F);
@@ -595,7 +600,8 @@ public final class SkyMood {
 		}
 		WorldEvents showing = showing();
 		net.minecraft.client.multiplayer.ClientLevel level = net.minecraft.client.Minecraft.getInstance().level;
-		if (showing == null || level == null || level.dimension() != net.minecraft.world.level.Level.OVERWORLD) {
+		if (showing == null || level == null || (level.dimension() != net.minecraft.world.level.Level.OVERWORLD
+			&& level.dimension() != dev.forja.world.StarYard.LEVEL)) {
 			return;
 		}
 		float weight = weight(level.getOverworldClockTime());

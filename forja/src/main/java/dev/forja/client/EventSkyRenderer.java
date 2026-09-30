@@ -79,7 +79,17 @@ public final class EventSkyRenderer {
 	private static void collect(LevelRenderContext context) {
 		WorldEvents showing = SkyMood.showing();
 		Minecraft client = Minecraft.getInstance();
-		if (showing == null || client.level == null || client.level.dimension() != Level.OVERWORLD) {
+		if (showing == null || client.level == null) {
+			return;
+		}
+		// The Cementerio entre Estrellas takes every event's sky too, but never a sun or a moon of one
+		// (Andy, 2026-09-29): it has none of its own, so the events that are drawn on one keep only their
+		// colours, stars, fog and particles there.
+		boolean graveyard = client.level.dimension() == dev.forja.world.StarYard.LEVEL;
+		if (client.level.dimension() != Level.OVERWORLD && !graveyard) {
+			return;
+		}
+		if (graveyard && (showing == WorldEvents.LUNA_DE_SANGRE || showing == WorldEvents.MAREA_VIVA || showing == WorldEvents.ECLIPSE)) {
 			return;
 		}
 		float partial = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);

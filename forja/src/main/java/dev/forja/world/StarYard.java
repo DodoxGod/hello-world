@@ -1,10 +1,8 @@
 package dev.forja.world;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.forja.Forja;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -14,7 +12,10 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
@@ -56,13 +57,10 @@ public final class StarYard {
 	public static final double PILLAR_RING = 28.0;
 	/** Where anyone arriving stands, north of the arena and looking into it. */
 	public static final BlockPos ARRIVAL = new BlockPos(0, SURFACE + 1, -30);
+	/** The middle of the lit portal back, behind the arrival platform (the frame reaches 2 round it). */
+	public static final BlockPos RETURN_WELL = new BlockPos(0, SURFACE, -37);
 	/** How close to the arena's edge molten metal is allowed: none nearer than this (the doc's 24 blocks). */
 	public static final double MOLTEN_CLEARANCE = 24.0;
-
-	private static final Map<UUID, Return> RETURNS = new HashMap<>();
-
-	private record Return(ResourceKey<Level> level, Vec3 pos, float yRot, float xRot) {
-	}
 
 	private StarYard() {
 	}
@@ -102,9 +100,29 @@ public final class StarYard {
 		return h & Long.MAX_VALUE;
 	}
 
-	// ------------------------------------------------------------------ going there, for testing
+	// ------------------------------------------------------------------ going and coming back
 
-	/** {@code /forja dimension} and {@code /forja dimension volver}. */
+	/**
+	 * Where a player came into the graveyard from: a dimension, a place and a heading. Kept on the player
+	 * (and through death), so the way back survives a log-out, a restart and a death in the fight.
+	 */
+	public record Return(String level, double x, double y, double z, float yRot) {
+		public static final Codec<Return> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+			Codec.STRING.fieldOf("dimension").forGetter(Return::level),
+			Codec.DOUBLE.fieldOf("x").forGetter(Return::x),
+			Codec.DOUBLE.fieldOf("y").forGetter(Return::y),
+			Codec.DOUBLE.fieldOf("z").forGetter(Return::z),
+			Codec.FLOAT.fieldOf("yaw").forGetter(Return::yRot)
+		).apply(instance, Return::new));
+	}
+
+	@SuppressWarnings("deprecation")
+	public static final AttachmentType<Return> RETURN = AttachmentRegistry.<Return>builder()
+		.persistent(Return.CODEC)
+		.copyOnDeath()
+		.buildAndRegister(Forja.id("vuelta_estelar"));
+
+	/** {@code /forja dimension} and {@code /forja dimension volver}, for testing. */
 	public static LiteralArgumentBuilder<CommandSourceStack> command() {
 		return Commands.literal("dimension")
 			.executes(c -> {
@@ -118,30 +136,50 @@ public final class StarYard {
 			}));
 	}
 
-	/** Sends a player to the arrival platform, looking into the arena, and remembers where they were. */
-	public static boolean enter(ServerPlayer player) {
-		ServerLevel yard = player.level().getServer().getLevel(LEVEL);
+	/** Remembers where this player is coming from, unless they are already in the graveyard. */
+	public static void remember(ServerPlayer player, Vec3 at, float yRot) {
+		if (player.level().dimension() != LEVEL) {
+			player.setAttached(RETURN, new Return(player.level().dimension().identifier().toString(), at.x, at.y, at.z, yRot));
+		}
+	}
+
+	/** Where a player arrives in the graveyard: the arrival platform, looking into the arena. */
+	public static @org.jspecify.annotations.Nullable TeleportTransition arrival(MinecraftServer server, TeleportTransition.PostTeleportTransition after) {
+		ServerLevel yard = server.getLevel(LEVEL);
 		if (yard == null) {
+			return null;
+		}
+		return new TeleportTransition(yard, Vec3.atBottomCenterOf(ARRIVAL), Vec3.ZERO, 0.0F, 0.0F, after);
+	}
+
+	/** Where a player leaving the graveyard goes: back where they came in, or to their own respawn point. */
+	public static TeleportTransition departure(ServerPlayer player, TeleportTransition.PostTeleportTransition after) {
+		Return back = player.getAttached(RETURN);
+		if (back != null) {
+			ServerLevel level = player.level().getServer().getLevel(
+				ResourceKey.create(Registries.DIMENSION, net.minecraft.resources.Identifier.parse(back.level())));
+			if (level != null) {
+				return new TeleportTransition(level, new Vec3(back.x(), back.y(), back.z()), Vec3.ZERO, back.yRot(), 0.0F, after);
+			}
+		}
+		return TeleportTransition.createDefault(player, after);
+	}
+
+	/** Sends a player to the arrival platform, and remembers where they were. */
+	public static boolean enter(ServerPlayer player) {
+		TeleportTransition there = arrival(player.level().getServer(), TeleportTransition.DO_NOTHING);
+		if (there == null) {
 			player.sendSystemMessage(Component.translatable("commands.forja.dimension.falta"));
 			return false;
 		}
-		if (player.level().dimension() != LEVEL) {
-			RETURNS.put(player.getUUID(), new Return(player.level().dimension(), player.position(), player.getYRot(), player.getXRot()));
-		}
-		Vec3 at = Vec3.atBottomCenterOf(ARRIVAL);
-		player.teleport(new TeleportTransition(yard, at, Vec3.ZERO, 0.0F, 0.0F, TeleportTransition.DO_NOTHING));
+		remember(player, player.position(), player.getYRot());
+		player.teleport(there);
 		player.sendSystemMessage(Component.translatable("commands.forja.dimension.llegas"));
 		return true;
 	}
 
-	/** Back to where {@link #enter} was used from, or to the player's own respawn point. */
+	/** Back to where the player came into the graveyard from, or to their own respawn point. */
 	public static void leave(ServerPlayer player) {
-		Return back = RETURNS.remove(player.getUUID());
-		ServerLevel level = back == null ? null : player.level().getServer().getLevel(back.level());
-		if (level != null) {
-			player.teleport(new TeleportTransition(level, back.pos(), Vec3.ZERO, back.yRot(), back.xRot(), TeleportTransition.DO_NOTHING));
-		} else {
-			player.teleport(TeleportTransition.createDefault(player, TeleportTransition.DO_NOTHING));
-		}
+		player.teleport(departure(player, TeleportTransition.DO_NOTHING));
 	}
 }

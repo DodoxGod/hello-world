@@ -54,6 +54,9 @@ final class DimensionFootage {
 			StarYardLayout layout = StarYardLayout.of(worldSeed);
 			log("dimension " + tag + ": seed '" + seed + "' = " + worldSeed + ", " + layout.rivers.length + " rios, "
 				+ layout.islets.length + " islotes, " + StarYardGenerator.forges(layout).size() + " forjas");
+			if (full) {
+				portalTrip(context, server, connection, tag);
+			}
 			enter(context, server, connection, tag);
 			if (full) {
 				film(context, server, connection, layout, tag);
@@ -62,6 +65,110 @@ final class DimensionFootage {
 			}
 			leave(context, server, connection);
 		}
+	}
+
+	/**
+	 * Delivery 2 with real clicks: an old dead forge on its dais, right-clicked, opens into the empty frame;
+	 * four oricalco pearls set one by one light it; stepping in takes the player to the graveyard's arrival
+	 * platform; the lit well behind the platform brings them back to stand just outside the frame.
+	 */
+	private static void portalTrip(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, String tag) {
+		String p = "dimension_" + tag + "_p";
+		server.runCommand("gamemode survival @a");
+		BlockPos spawn = server.computeOnServer(s -> connection.getServerPlayer().blockPosition());
+		int cx = spawn.getX() + 8;
+		int cy = spawn.getY() + 1;
+		int cz = spawn.getZ();
+		// Level ground, a dais top of chiseled blackstone, and the dead forge on it, as in the castle.
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d polished_blackstone_bricks", cx - 6, cy - 2, cz - 6, cx + 6, cy - 1, cz + 6));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d air", cx - 6, cy, cz - 6, cx + 6, cy + 6, cz + 6));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d chiseled_polished_blackstone", cx - 1, cy, cz - 1, cx + 1, cy, cz + 1));
+		server.runCommand(String.format(Locale.ROOT, "setblock %d %d %d forja:fragua_apagada", cx, cy + 1, cz));
+		server.runCommand("time set 13000");
+		standAndLook(context, server, cx + 0.5, cy, cz + 4.5, cx + 0.5, cy + 1.5, cz + 0.5);
+		context.runOnClient(mc -> {
+			if (!mc.gui.hud.isHidden()) {
+				mc.gui.hud.toggle();
+			}
+		});
+		shot(context, p + "1_fragua_apagada");
+		use(context);
+		String opened = server.computeOnServer(s -> connection.getServerLevel().getBlockState(new BlockPos(cx, cy, cz + 2)).toString());
+		log("dimension: after right-clicking the dead forge, south of it there is " + opened);
+		check(opened.contains("mensula_estelar"), "the dead forge should open into the frame: " + opened);
+		context.waitTicks(10);
+		shot(context, p + "2_marco_vacio");
+		// Four pearls, set by hand, the last from the south where the player will look from.
+		server.runCommand("item replace entity @a weapon.mainhand with forja:perla_de_oricalco 4");
+		int[][] sides = {{0, -1}, {1, 0}, {-1, 0}, {0, 1}};
+		for (int i = 0; i < sides.length; i++) {
+			int bx = cx + sides[i][0] * 2;
+			int bz = cz + sides[i][1] * 2;
+			standAndLook(context, server, cx + sides[i][0] * 4.5 + 0.5, cy, cz + sides[i][1] * 4.5 + 0.5, bx + 0.5, cy + 0.8, bz + 0.5);
+			use(context);
+			if (i == 2) {
+				check(!server.computeOnServer(s -> connection.getServerLevel().getBlockState(new BlockPos(cx, cy, cz)).is(dev.forja.registry.ModBlocks.PORTAL_ESTELAR)),
+					"three pearls should not light the portal");
+				shot(context, p + "3_tres_perlas");
+			}
+		}
+		boolean lit = server.computeOnServer(s -> connection.getServerLevel().getBlockState(new BlockPos(cx, cy, cz)).is(dev.forja.registry.ModBlocks.PORTAL_ESTELAR));
+		check(lit, "four pearls should light the portal");
+		standAndLook(context, server, cx + 0.5, cy + 2, cz + 5.5, cx + 0.5, cy, cz + 0.5);
+		context.waitTicks(30);
+		shot(context, p + "4_portal_encendido");
+		// In: step onto the lit hole.
+		server.runCommand(String.format(Locale.ROOT, "tp @a %.2f %.2f %.2f 0 20", cx + 0.5, cy + 1.2, cz + 0.5));
+		context.waitTicks(60);
+		boolean there = context.computeOnClient(mc -> StarYardSky.here());
+		check(there, "the star portal should take the player to the Cementerio entre Estrellas");
+		context.waitTicks(60);
+		shot(context, p + "5_llegada_por_el_portal");
+		// And back, through the lit well behind the arrival platform.
+		standAndLook(context, server, StarYard.RETURN_WELL.getX() + 0.5, S + 1, StarYard.RETURN_WELL.getZ() + 4.5,
+			StarYard.RETURN_WELL.getX() + 0.5, S, StarYard.RETURN_WELL.getZ() + 0.5);
+		shot(context, p + "6_pozo_de_vuelta");
+		server.runCommand(String.format(Locale.ROOT, "execute in %s run tp @a %.2f %.2f %.2f 180 10", DIM,
+			StarYard.RETURN_WELL.getX() + 0.5, S + 1.2, StarYard.RETURN_WELL.getZ() + 0.5));
+		context.waitTicks(80);
+		boolean back = context.computeOnClient(mc -> !StarYardSky.here());
+		check(back, "the lit well should take the player back");
+		String where = server.computeOnServer(s -> connection.getServerPlayer().position().toString());
+		double off = server.computeOnServer(s -> connection.getServerPlayer().position().distanceTo(new Vec3(cx + 0.5, cy, cz + 0.5)));
+		log("dimension: back from the graveyard at " + where + ", " + String.format(Locale.ROOT, "%.1f", off) + " from the portal");
+		check(off < 8.0, "back beside the frame: " + where);
+		context.waitTicks(30);
+		shot(context, p + "7_vuelta_junto_al_marco");
+		server.runCommand("time set noon");
+	}
+
+	/** Puts the (survival) player at a spot looking at a point, for a few ticks so it holds. */
+	private static void standAndLook(ClientGameTestContext context, TestServerContext server, double x, double y, double z, double lx, double ly, double lz) {
+		// The heading worked out here, from the eyes: "facing" on a survival player left the crosshair a block
+		// or so above what it was told to look at, and the right click went into the air.
+		double dx = lx - x;
+		double dy = ly - (y + 1.62);
+		double dz = lz - z;
+		float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+		float pitch = (float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
+		String dim = context.computeOnClient(mc -> mc.level.dimension().identifier().toString());
+		for (int tick = 0; tick < 5; tick++) {
+			server.runCommand(String.format(Locale.ROOT, "execute in %s run tp @a %.2f %.2f %.2f %.2f %.2f", dim, x, y, z, yaw, pitch));
+			context.waitTicks(1);
+		}
+		context.waitTicks(20);
+	}
+
+	/** One real right click: the use key held for a moment. */
+	private static void use(ClientGameTestContext context) {
+		String aim = context.computeOnClient(mc -> mc.player.position() + " looking at " + (mc.hitResult == null ? "nothing"
+			: mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult block ? block.getBlockPos().toShortString() + " " + mc.level.getBlockState(block.getBlockPos())
+			: mc.hitResult.getType().toString()));
+		log("dimension: right click from " + aim);
+		context.getInput().holdKey(options -> options.keyUse);
+		context.waitTicks(3);
+		context.getInput().releaseKey(options -> options.keyUse);
+		context.waitTicks(10);
 	}
 
 	private static void enter(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, String tag) {
@@ -193,6 +300,45 @@ final class DimensionFootage {
 		// Every grave weapon, every lean, from the four sides; and one that goes with its ground.
 		gravesFromFourSides(context, server, p);
 		graveGoesWithItsGround(context, server, connection, p);
+
+		// The sun's colour does not jump with what is in view (Andy, 2026-09-29): a wall across half the
+		// view from the edge, then the same view without it.
+		double wx = lx - ox * 3.0;
+		double wz = lz - oz * 3.0;
+		view(context, server, wx, S + 3, wz, lx + ox * 30, S - 45, lz + oz * 30, p + "29_sol_antes_del_muro");
+		server.runCommand(String.format(Locale.ROOT, "execute in %s run fill %d %d %d %d %d %d obsidian", DIM,
+			(int) Math.floor(lx - 1), S + 1, (int) Math.floor(lz - 1), (int) Math.floor(lx), S + 5, (int) Math.floor(lz)));
+		context.waitTicks(20);
+		shot(context, p + "30_sol_muro_puesto");
+		server.runCommand(String.format(Locale.ROOT, "execute in %s run fill %d %d %d %d %d %d air", DIM,
+			(int) Math.floor(lx - 1), S + 1, (int) Math.floor(lz - 1), (int) Math.floor(lx), S + 5, (int) Math.floor(lz)));
+		context.waitTicks(20);
+		shot(context, p + "31_sol_muro_quitado");
+		// A dead vent.
+		int[] vent = layout.vents[0];
+		double vx = vent[0] + 0.5;
+		double vz = vent[1] + 0.5;
+		Vec3 away = new Vec3(vx, 0, vz).normalize();
+		view(context, server, vx - away.x * (vent[2] + 14), S + 8, vz - away.z * (vent[2] + 14), vx, S + vent[3] * 0.6, vz, p + "32_respiradero");
+		view(context, server, vx + 3.5, S + vent[3] + 6, vz + 3.5, vx, S + vent[3] - 2, vz, p + "33_respiradero_crater");
+		// The sky minutes apart: the moulds are spread round the whole turn, so some are always up.
+		context.runOnClient(mc -> StarYardSky.skewSeconds = 0.0F);
+		view(context, server, 0.5, S + 2, 0.5, 0.5, S + 60, 1.5, p + "34_cielo_girando_0min");
+		context.runOnClient(mc -> StarYardSky.skewSeconds = 180.0F);
+		context.waitTicks(5);
+		shot(context, p + "35_cielo_girando_3min");
+		context.runOnClient(mc -> StarYardSky.skewSeconds = 360.0F);
+		context.waitTicks(5);
+		shot(context, p + "36_cielo_girando_6min");
+		context.runOnClient(mc -> StarYardSky.skewSeconds = 0.0F);
+		// A world event in the graveyard's sky: its colours, stars and particles, never its moon.
+		for (String event : new String[] {"aurora", "luna_de_sangre", "meteoritos"}) {
+			server.runCommand("execute as @a run forja evento " + event);
+			context.waitTicks(120);
+			view(context, server, 0.5, S + 2, -20.5, 0.5, S + 30, 20.5, p + "37_evento_" + event);
+			server.runOnServer(s -> dev.forja.world.WorldEvents.stop(s.getLevel(StarYard.LEVEL)));
+			context.waitTicks(120);
+		}
 
 		// Without the ash haze.
 		context.runOnClient(mc -> StarYardSky.fogOff = true);

@@ -39,10 +39,10 @@ abstract class SkyRendererMixin {
 		forja$moonOut = 0.0F;
 		forja$sunOut = 0.0F;
 		// The Cementerio entre Estrellas has no sun and no moon: only stars (client/StarYardSky).
-		if (level.dimension() == dev.forja.world.StarYard.LEVEL) {
+		boolean graveyard = level.dimension() == dev.forja.world.StarYard.LEVEL;
+		if (graveyard) {
 			forja$moonOut = 1.0F;
 			forja$sunOut = 1.0F;
-			return;
 		}
 		if (SkyMood.showing() == null) {
 			return;
@@ -51,7 +51,7 @@ abstract class SkyRendererMixin {
 		state.skyColor = SkyMood.tintSky(state.skyColor, time, partialTick);
 		// A meteor shower with no more stars in it than usual is just a purple night.
 		state.starBrightness = Math.min(1.0F, Math.max(SkyMood.starFloor(time), state.starBrightness * SkyMood.starFactor(time)));
-		if (level.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
+		if (!graveyard && level.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
 			forja$moonOut = SkyMood.hidesMoon(time);
 			forja$sunOut = SkyMood.hidesSun(time);
 		}

@@ -99,6 +99,8 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 	private int heat;
 	/** What is in the mould right now, and how much of it. Empty until a pour starts. */
 	private @Nullable Item metal;
+	/** What the pour that is finishing was of, for the one tick finish() needs it after clearing metal. */
+	private @Nullable Item lastPour;
 	private int amount;
 	/**
 	 * Whether this pour will come out rough: it went in on the last of the heat, or through a strainer
@@ -196,8 +198,19 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 
 	// ------------------------------------------------------------------ what lies on it
 
+	/** Oricalco poured over an ender pearl on the table makes an oricalco pearl (docs/HERRERO_DIMENSION.md, 1.2). */
+	public static final int PEARL_COST = 2;
+
+	/** Whether this is a pearl set on the table to have oricalco poured over it. */
+	public static boolean pearl(ItemStack stack) {
+		return stack.is(net.minecraft.world.item.Items.ENDER_PEARL);
+	}
+
 	/** What one pour off this mould or frame costs, or 0 if nothing castable is on the table. */
 	public static int cost(ItemStack pattern) {
+		if (pearl(pattern)) {
+			return PEARL_COST;
+		}
 		ForgeType type = CastingFrameItem.typeOf(pattern);
 		if (type != null) {
 			return CastingFrameItem.cost(type);
@@ -218,7 +231,7 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 
 	/** Whether this goes on a table at all. */
 	public static boolean pattern(ItemStack stack) {
-		return CastingFrameItem.typeOf(stack) != null || CastingMouldItem.partOf(stack) != null;
+		return CastingFrameItem.typeOf(stack) != null || CastingMouldItem.partOf(stack) != null || pearl(stack);
 	}
 
 	// ------------------------------------------------------------------ the work
@@ -312,6 +325,25 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 			if (held == null || tank.isSet() || tank.bankAmount() < cost) {
 				continue;
 			}
+			// A pearl takes oricalco and nothing else, on any table: it is a coat, not a part.
+			if (pearl(pattern)) {
+				if (held != dev.forja.registry.ModItems.ORICALCO || tank.drain(cost) < cost) {
+					continue;
+				}
+				this.metal = held;
+				this.amount = cost;
+				this.rough = false;
+				this.progress = 0;
+				this.startedAt = level.getGameTime();
+				if (level instanceof ServerLevel server) {
+					server.playSound(null, this.worldPosition, SoundEvents.BUCKET_EMPTY_LAVA, SoundSource.BLOCKS, 0.5F, 1.4F);
+				}
+				this.setChanged();
+				return;
+			}
+			if (held == dev.forja.registry.ModItems.ORICALCO) {
+				continue;
+			}
 			ForgeMaterial material = ForgeMaterial.fromInput(new ItemStack(held));
 			// The table's own stone has a limit, the one the casting box's material used to set: a slate
 			// table will not have diamond poured into it, however good the strainer on top.
@@ -371,11 +403,25 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 	private void finish(Level level, BlockPos pos) {
 		ItemStack pattern = this.frame();
 		ForgeMaterial material = this.metal == null ? null : ForgeMaterial.fromInput(new ItemStack(this.metal));
+		this.lastPour = this.metal;
 		this.progress = 0;
 		this.metal = null;
 		this.amount = 0;
 		boolean wasRough = this.rough;
 		this.rough = false;
+		if (pearl(pattern) && this.lastPour == dev.forja.registry.ModItems.ORICALCO) {
+			// The pearl is gone into the metal: the frame slot empties and the oricalco pearl comes out.
+			this.items.set(SLOT_FRAME, ItemStack.EMPTY);
+			this.items.set(SLOT_OUTPUT, new ItemStack(dev.forja.registry.ModItems.PERLA_DE_ORICALCO));
+			this.heat = Math.max(0, this.heat - SPEND);
+			if (level instanceof ServerLevel server) {
+				server.playSound(null, pos, SoundEvents.END_PORTAL_FRAME_FILL, SoundSource.BLOCKS, 0.6F, 1.3F);
+				server.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
+					pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5, 12, 0.25, 0.1, 0.25, 0.02);
+			}
+			this.setChanged();
+			return;
+		}
 		if (material == null) {
 			return;
 		}

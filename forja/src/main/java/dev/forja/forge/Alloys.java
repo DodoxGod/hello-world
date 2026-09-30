@@ -143,7 +143,19 @@ public final class Alloys {
 	public static final List<Recipe> EXTRA = List.of(
 		new Recipe("lingote_de_temple", Heat.CALIENTE,
 			List.of(new Part(() -> ModItems.alloy("acero_refractario"), 1), new Part(() -> Items.CLAY_BALL, 2)), 2,
-			() -> ModItems.LINGOTE_DE_TEMPLE)
+			() -> ModItems.LINGOTE_DE_TEMPLE),
+		// Oricalco (docs/HERRERO_DIMENSION.md, 1.1): one bar of every metal of the mod's own that can be
+		// made again and again. Two go in the pot and the rest come from the tanks on its line, the way any
+		// alloy of more than two does. Not the damascus line (netherite scrap runs out), not moon steel
+		// (echo shards do), not the smith's heart or living steel (only he gives those).
+		new Recipe("oricalco", Heat.FUNDIDA, List.of(
+			new Part(() -> ModItems.HIERRO_ESTELAR, 1), new Part(() -> ModItems.PLACA_HUECA, 1), new Part(() -> ModItems.ESCORIA, 1),
+			new Part(() -> ModItems.alloy("bronce"), 1), new Part(() -> ModItems.alloy("laton"), 1), new Part(() -> ModItems.alloy("peltre"), 1),
+			new Part(() -> ModItems.alloy("electro"), 1), new Part(() -> ModItems.alloy("acero"), 1), new Part(() -> ModItems.alloy("cinerio"), 1),
+			new Part(() -> ModItems.alloy("voltaico"), 1), new Part(() -> ModItems.alloy("acero_estelar"), 1),
+			new Part(() -> ModItems.alloy("obsidiacero"), 1), new Part(() -> ModItems.alloy("almacero"), 1),
+			new Part(() -> ModItems.alloy("vidriacero"), 1)), 4,
+			() -> ModItems.ORICALCO)
 	);
 
 	/** Everything the crucible will pour, alloy or not. */
@@ -161,6 +173,12 @@ public final class Alloys {
 	 * and making it a material would add it to the armour texture matrix for nothing at all.
 	 */
 	public static final java.util.Set<String> SHAPING_ONLY = java.util.Set.of("acero_refractario");
+
+	/**
+	 * Alloys of more ingredients than the forge table's star has points: only a crucible on a foundry line
+	 * makes them, two bars in the pot and the rest drawn from the tanks. Oricalco is fourteen metals.
+	 */
+	public static final java.util.Set<String> FOUNDRY_ONLY = java.util.Set.of("oricalco");
 
 	private Alloys() {
 	}

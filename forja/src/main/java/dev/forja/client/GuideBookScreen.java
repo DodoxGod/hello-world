@@ -617,6 +617,7 @@ public class GuideBookScreen extends Screen {
 		this.chapter("amenazas", this.threatsChapter());
 		this.chapter("bestiario", this.bestiaryChapter());
 		this.chapter("mundo", this.worldChapter());
+		this.chapter("cementerio", this.graveyardChapter());
 		this.chapter("estadisticas", this.statsChapter());
 
 		// Twenty chapters is too many for a flat list, so the index is grouped.
@@ -680,7 +681,7 @@ public class GuideBookScreen extends Screen {
 		SECTIONS.put("taller", List.of("primeros_pasos", "siguiente_paso", "mesas", "objetos", "piezas", "materiales", "rasgos", "aleaciones", "fundicion", "temple", "herrero", "tecnicas"));
 		SECTIONS.put("mejoras", List.of("mejoras", "potencial", "maestria", "sinergias", "pactos"));
 		SECTIONS.put("pelear", List.of("combate", "mana", "accesorios", "clases"));
-		SECTIONS.put("mundo", List.of("eventos", "encargos", "amenazas", "bestiario", "mundo"));
+		SECTIONS.put("mundo", List.of("eventos", "encargos", "amenazas", "bestiario", "mundo", "cementerio"));
 		SECTIONS.put("referencia", List.of("mi_taller", "estadisticas"));
 	}
 
@@ -714,9 +715,31 @@ public class GuideBookScreen extends Screen {
 			case "amenazas" -> new ItemStack(Items.CROSSBOW);
 			case "bestiario" -> new ItemStack(ModItems.CORAZON_DE_FORJA);
 			case "mundo" -> new ItemStack(Items.FILLED_MAP);
+			case "cementerio" -> new ItemStack(ModItems.PERLA_DE_ORICALCO);
 			case "estadisticas" -> new ItemStack(Items.PAPER);
 			default -> ItemStack.EMPTY;
 		};
+	}
+
+	/**
+	 * El Cementerio entre Estrellas (docs/HERRERO_DIMENSION.md): the way there. Oricalco out of every
+	 * renewable metal, the pearl cast over an ender pearl, the frame in the Bastion's deep forge, and back.
+	 */
+	private List<Element> graveyardChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.intro"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.cementerio.oricalco.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.HIERRO_ESTELAR), new ItemStack(ModItems.PLACA_HUECA), new ItemStack(ModItems.ESCORIA),
+			new ItemStack(ModItems.alloy("acero_estelar")), new ItemStack(ModItems.alloy("almacero")), new ItemStack(ModItems.ORICALCO))));
+		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.oricalco"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.cementerio.perla.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(Items.ENDER_PEARL), new ItemStack(ModItems.MESA_DE_LOSA), new ItemStack(ModItems.PERLA_DE_ORICALCO))));
+		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.perla", dev.forja.block.entity.CastingTableBlockEntity.PEARL_COST), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.cementerio.portal.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.MENSULA_ESTELAR), new ItemStack(ModItems.PERLA_DE_ORICALCO))));
+		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.portal"), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.vuelta"), INK_SOFT));
+		return body;
 	}
 
 	/** The cabinet, tucked into the chapter about the tables: it is workshop furniture, not a mechanic. */

@@ -1,0 +1,10 @@
+{
+  "parent": "minecraft:block/end_portal_frame_filled",
+  "textures": {
+    "particle": "forja:block/mensula_estelar_side",
+    "bottom": "minecraft:block/polished_blackstone",
+    "top": "forja:block/mensula_estelar_top",
+    "side": "forja:block/mensula_estelar_side",
+    "eye": "forja:block/mensula_estelar_perla"
+  }
+}

@@ -3407,6 +3407,8 @@ PICKAXE_BLOCKS = [
     # The Cementerio entre Estrellas (tools/dimension_assets.py): the graves break by hand anyway, and the
     # molten metal not at all; both are here so no block of the mod is in no tool's list.
     "forja:arma_clavada", "forja:metal_fundido",
+    # The star portal (tools/dimension_assets.py): unbreakable, like the end portal's frame, but in a list.
+    "forja:mensula_estelar", "forja:portal_estelar",
 ]
 
 

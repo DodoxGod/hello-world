@@ -250,11 +250,66 @@ def tags(gen):
     write_json(gen.RES / "data/minecraft/tags/block/mineable/pickaxe.json", tag(gen.PICKAXE_BLOCKS))
 
 
+ORICALCO = [(0.0, (46, 52, 18)), (0.35, (112, 128, 34)), (0.7, (196, 204, 76)), (1.0, (246, 244, 176))]
+STONE_FRAME = [(0.0, (16, 13, 20)), (0.5, (40, 34, 46)), (1.0, (84, 74, 90))]
+STARLIGHT = [(0.0, (24, 8, 40)), (0.45, (92, 34, 140)), (0.8, (230, 150, 70)), (1.0, (255, 236, 170))]
+
+
+def portal(gen):
+    """The oricalco bar and pearl, the star portal's bracket and the portal itself (docs/HERRERO_DIMENSION.md, 1)."""
+    items = gen.ASSETS / "textures/item"
+    blocks = gen.ASSETS / "textures/block"
+    items.mkdir(parents=True, exist_ok=True)
+    recolour(gen.vanilla("item/gold_ingot.png"), ORICALCO).save(items / "oricalco.png")
+    pearl = recolour(gen.vanilla("item/ender_pearl.png"), ORICALCO)
+    # A star caught in it: one white-gold pixel and its four neighbours, where the pearl's own glint is.
+    glint = ((6, 5, (255, 252, 214)), (5, 5, (236, 226, 150)), (7, 5, (236, 226, 150)), (6, 4, (236, 226, 150)), (6, 6, (236, 226, 150)))
+    for x, y, c in glint:
+        if pearl.getpixel((x, y))[3] > 0:
+            pearl.putpixel((x, y), (c[0], c[1], c[2], 255))
+    pearl.save(items / "perla_de_oricalco.png")
+    for name in ("oricalco", "perla_de_oricalco"):
+        write_json(gen.ASSETS / f"models/item/{name}.json", {"parent": "minecraft:item/generated", "textures": {"layer0": f"forja:item/{name}"}})
+        write_json(gen.ASSETS / f"items/{name}.json", {"model": {"type": "minecraft:model", "model": f"forja:item/{name}"}})
+    # The bracket: the end portal frame's shape, in the blackstone of the castle's deep forge, with the pearl for an eye.
+    recolour(gen.vanilla("block/end_portal_frame_top.png"), STONE_FRAME).save(blocks / "mensula_estelar_top.png")
+    recolour(gen.vanilla("block/end_portal_frame_side.png"), STONE_FRAME).save(blocks / "mensula_estelar_side.png")
+    recolour(gen.vanilla("block/end_portal_frame_eye.png"), ORICALCO).save(blocks / "mensula_estelar_perla.png")
+    textures = {"particle": "forja:block/mensula_estelar_side", "bottom": "minecraft:block/polished_blackstone",
+                "top": "forja:block/mensula_estelar_top", "side": "forja:block/mensula_estelar_side"}
+    write_json(gen.ASSETS / "models/block/mensula_estelar.json", {"parent": "minecraft:block/end_portal_frame", "textures": textures})
+    filled = dict(textures)
+    filled["eye"] = "forja:block/mensula_estelar_perla"
+    write_json(gen.ASSETS / "models/block/mensula_estelar_perla.json", {"parent": "minecraft:block/end_portal_frame_filled", "textures": filled})
+    turn = {"south": 0, "west": 90, "north": 180, "east": 270}
+    variants = {}
+    for pearl_set in (False, True):
+        for facing, y in turn.items():
+            entry = {"model": "forja:block/mensula_estelar" + ("_perla" if pearl_set else "")}
+            if y:
+                entry["y"] = y
+            variants[f"facing={facing},perla={'true' if pearl_set else 'false'}"] = entry
+    write_json(gen.ASSETS / "blockstates/mensula_estelar.json", {"variants": variants})
+    write_json(gen.ASSETS / "items/mensula_estelar.json", {"model": {"type": "minecraft:model", "model": "forja:block/mensula_estelar"}})
+    # The portal: the nether portal's swirl, every frame of it, turned to a violet night with gold in it.
+    recolour(whole(gen, "block/nether_portal.png"), STARLIGHT).save(blocks / "portal_estelar.png")
+    write_json(blocks / "portal_estelar.png.mcmeta", json.loads(gen.jar_read("assets/minecraft/textures/block/nether_portal.png.mcmeta")))
+    face = {"uv": [0, 0, 16, 16], "texture": "#portal"}
+    write_json(gen.ASSETS / "models/block/portal_estelar.json", {
+        "ambientocclusion": False,
+        "textures": {"portal": "forja:block/portal_estelar", "particle": "forja:block/portal_estelar"},
+        "elements": [{"from": [0, 12, 0], "to": [16, 12, 16], "shade": False,
+                      "faces": {"up": dict(face), "down": dict(face)}}],
+    })
+    write_json(gen.ASSETS / "blockstates/portal_estelar.json", {"variants": {"": {"model": "forja:block/portal_estelar"}}})
+
+
 def generate(gen):
     textures(gen)
     blocks(gen)
     particle(gen)
     sounds(gen)
+    portal(gen)
     tags(gen)
 
 

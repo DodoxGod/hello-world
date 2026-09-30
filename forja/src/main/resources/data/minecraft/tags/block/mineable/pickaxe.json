@@ -30,6 +30,8 @@
     "forja:caldera",
     "forja:deposito_de_calor",
     "forja:arma_clavada",
-    "forja:metal_fundido"
+    "forja:metal_fundido",
+    "forja:mensula_estelar",
+    "forja:portal_estelar"
   ]
 }
