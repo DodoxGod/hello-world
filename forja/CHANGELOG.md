@@ -1,5 +1,31 @@
 # Novedades
 
+## 2026-09-30 — Los libros III a VII, la estantería del herrero y el atril
+
+La guía ya son ocho libros en la estantería. Cada uno se fabrica, y su receta se aprende con el progreso.
+
+- **III · La fundición** (38 páginas; se aprende con la primera mejora). Primeras aleaciones, la línea de fundición
+  entera, y la mesa mayor como meta.
+- **IV · La mesa mayor** (49 páginas; se aprende al construir la mesa mayor). Potencial, sinergias y pactos (en
+  sombra), maestría, el herrero, técnicas, tu taller y accesorios.
+- **V · Clases** (22 páginas; se aprende con la primera parada). Las clases se abren la primera vez que abres el
+  libro. Hasta entonces, la K lo avisa y el servidor no deja elegir. Quien ya tenía clase la conserva.
+- **VI · El Bastión y el Herrero** (27 páginas; se aprende al encontrar una ruina). También lo vende el Forjador
+  de nivel 3, siempre, por 12 esmeraldas. Trata del mundo, los encargos, las ruinas, la historia del Herrero, el
+  castillo del Gremio y el portal estelar. El Guardián de Cuño sale en sombra hasta que lo ves.
+- **VII · El Cementerio entre Estrellas** (18 páginas; se aprende al encender el portal estelar o al entrar en su
+  mundo). Trata del viaje, la pelea y la recompensa, y trae la ficha del Herrero Caído (en sombra hasta verlo). Al
+  encenderse el portal aparece junto al marco el **atril del Herrero**, y un clic en él abre el libro.
+- **La estantería del herrero**: un sitio por libro. Un clic con un libro de la forja lo guarda en su sitio, y un
+  clic en su sitio lo devuelve. Un comparador cuenta los libros que tiene. Al romperla, suelta la estantería y los
+  libros.
+- **El yunque** explica los mangos y ataduras pesados y ligeros, con el dibujo de ambos mangos.
+- **El camino del herrero** gana un paso: técnica.
+- **Prueba del cliente:**
+  - los ocho libros se maquetan limpios;
+  - hay capturas de todos los libros y de la estantería con el atril.
+- **Hojas de contactos**, con copia .jpg de menos de 3 MB: `E:\IA\Claude\Forja_capturas_mejoras\libros\`.
+
 ## 2026-09-30 — Probador por grupos, y pactos y sinergias en sombra
 
 - **Respuestas de Andy sobre el probador:**
@@ -19,6 +45,8 @@
   - sin pactos abiertos, todos en sombra en el catálogo y todos a la vista en el tomo;
   - abierto uno en el servidor, solo ese sale de la sombra;
   - un grupo del probador abierto se maqueta limpio.
+
+
 
 ## 2026-09-30 — Cada punta de flecha, la suya
 

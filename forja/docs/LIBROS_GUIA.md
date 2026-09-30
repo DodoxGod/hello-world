@@ -533,3 +533,41 @@ cliente:
   partes con su pestaña.
 - **Bestiario.** Se escribe solo (client/CreatureSightings): una criatura cuenta como vista a 24 bloques o menos y
   con línea de vista. Lo visto se guarda en el cliente.
+
+### Tercera entrega (2026-09-30): el probador por grupos y los libros III a VII
+
+- **Probador.** Andy decidió que las mejoras no se descubren. Las listas del probador van por grupos plegables. Los
+  pactos y las sinergias quedan en sombra hasta que se abren o despiertan, en todos los libros menos el tomo.
+- **Libro II.** Se quedan sus 86 páginas. En la página de resistencias, los monstruos del mod que aún no has visto
+  (el Guardián de Cuño entre ellos) salen como "???".
+- **Páginas medidas en la prueba del cliente:**
+
+| Libro | Páginas | Capítulos (página donde empiezan) |
+|---|---:|---|
+| Cuaderno del aprendiz | 19 | bienvenida 4, primeras mesas 6, teclas 11, siguiente paso 13, los libros 15 |
+| I · El yunque | 32 | lo que ya sabes 5, mesas 7, cortar 13 (con mangos pesados y ligeros), estrella 18, temple 21, mejorar 23, probador 26, desarmar 27, estadísticas 30, siguiente 31 |
+| II · El arte del combate | 86 | como en la segunda entrega |
+| III · La fundición | 38 | lo que ya sabes 4, primeras aleaciones 5, la fundición 10, la mesa mayor 35, siguiente 37 |
+| IV · La mesa mayor | 49 | lo que ya sabes 5, potencial 7, sinergias 18, pactos 20, maestría 24, el herrero 33, técnicas 37, tu taller 42, accesorios 44, siguiente 48 |
+| V · Clases | 22 | lo que ya sabes 3, clases 5, siguiente 22 |
+| VI · El Bastión y el Herrero | 27 | lo que hay ahí fuera 4, mundo 5, encargos 12, ruinas 13, quién era el Herrero 19, el Bastión 21, el portal 24, siguiente 27 |
+| VII · El Cementerio entre Estrellas | 18 | el viaje 3, la pelea 5, la recompensa 13, el Herrero Caído 16, fin 17 |
+| Biblioteca | 93 | estantería 5, camino 10, catálogo 12 (objetos 13, piezas 36, materiales 45, rasgos 53, aleaciones 62, probador 68, mejoras 69, colores 93) |
+| Tomo (creativo) | 286 | la guía entera |
+
+- **Cómo se aprende cada libro:**
+  - III, con la primera mejora;
+  - IV, al construir la mesa mayor;
+  - V, con la primera parada;
+  - VI, al encontrar una ruina, o comprado al Forjador de nivel 3 por 12 esmeraldas (una oferta fija que se añade
+    a las que salen al azar);
+  - VII, al encender el portal estelar o al entrar en su mundo.
+- **Clases.** Se abren la primera vez que se abre el libro V (logro `leer_clases`). A quien ya tenía clase en un
+  mundo viejo se le da el logro al entrar.
+- **Atril y estantería.** El atril del Herrero se pone junto al marco en cuanto el portal se enciende, así que no
+  cambia el NBT del Bastión. La estantería guarda los libros en el estado del bloque (un sitio por libro, sin block
+  entity). Un comparador cuenta los libros que tiene. No abre la biblioteca: eso sigue siendo la tecla G con el
+  Cuaderno.
+- **Hojas de contactos**, cada una con copia .jpg de menos de 3 MB, en
+  `E:\IA\Claude\Forja_capturas_mejoras\libros\`: `portadas`, `cuaderno`, `yunque`, `combate`, `fundicion`,
+  `mesa_mayor`, `clases`, `bastion`, `cementerio`, `biblioteca`, `probador` y `estanteria`.
