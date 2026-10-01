@@ -800,12 +800,18 @@ public class RedV4ModGameTests {
 	 * striking, the torch drops); a lantern beside it never counts. With mobGriefing off it never does.
 	 *
 	 * <p>mobGriefing is the world's, not the test's: for its first hundred ticks it was off for every test of the batch
-	 * running beside this one. This test runs in a batch of its own (forja-test:reglas_de_mundo) for that.
+	 * running beside this one. This test runs in a batch of its own (forja-test:reglas_de_mundo) for that. The batch
+	 * turns mobGriefing on and gives the world its own value back when it ends (the environment's game_rules), so the
+	 * test leaves it on rather than putting back what it saw: run side by side with itself (FORJA_VERIFICAR) the copies
+	 * after the first saw it off, and the first of those to finish switched it off under the rest.
+	 *
+	 * <p>The light is waited for, not taken at a fixed tick: the room and the torch are set on the first tick and the
+	 * light engine works them out on its own thread, which the test server, running its ticks faster than the clock,
+	 * can leave behind. Tick 20 sometimes still found the room lit by the sky and the torch giving the player nothing.
 	 */
 	@GameTest(environment = "forja-test:reglas_de_mundo", padding = 16, maxTicks = 400)
 	public void zombiePutsOutTheTorchOnlyWithGriefing(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		boolean griefing = level.getGameRules().get(GameRules.MOB_GRIEFING);
 		room(helper);
 		BlockPos torch = new BlockPos(5, 1, 3);
 		helper.setBlock(torch, Blocks.TORCH);
@@ -831,7 +837,17 @@ public class RedV4ModGameTests {
 				dev.forja.combat.AttackTokens.tryAcquire(player, holder, turns);
 			}
 		});
-		helper.runAfterDelay(20, () -> {
+		// The light first: wait until the player's feet have the torch's light and none of the sky's, then forget
+		// whatever the scan cached while the room was still unlit, and look.
+		BlockPos feet = player.blockPosition();
+		int torchAtFeet = 14 - helper.absolutePos(torch).distManhattan(feet);
+		boolean[] seen = {false};
+		helper.startSequence().thenWaitUntil(() -> {
+			int block = level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, feet);
+			int sky = level.getBrightness(net.minecraft.world.level.LightLayer.SKY, feet);
+			helper.assertTrue(block >= torchAtFeet && sky == 0, "la luz de la sala aún sin calcular: bloque " + block + ", cielo " + sky);
+		}).thenExecute(() -> {
+			Lights.forget(player);
 			List<Lights.Torch> torches = Lights.near(player);
 			helper.assertTrue(torches.size() == 1, "solo la antorcha cuenta, el farol no: " + torches);
 			helper.assertTrue(torches.get(0).share() >= 3, "en la sala oscura la antorcha da luz al jugador: " + torches.get(0));
@@ -839,8 +855,12 @@ public class RedV4ModGameTests {
 			helper.assertTrue(obs[ObsV4.L_AT] == 1.0F && obs[ObsV4.L_AT + 4] > 0.1F, "luz0_presente y su aporte: " + obs[ObsV4.L_AT] + " " + obs[ObsV4.L_AT + 4]);
 			helper.assertTrue(obs[ObsV4.JUG_LUZ] < 1.0F, "jug_luz/15 en la sala oscura: " + obs[ObsV4.JUG_LUZ]);
 			helper.assertFalse(Lights.canPutOut(zombie, player), "sin mobGriefing no se apaga nada");
+			seen[0] = true;
 		});
+		// mobGriefing comes on at a fixed tick, the same for every copy run side by side, as it is the world's: the
+		// light has long been worked out by then (it takes a few ticks), and if not, that is the failure.
 		helper.runAfterDelay(100, () -> {
+			helper.assertTrue(seen[0], "a los 100 ticks la luz de la sala sigue sin calcular");
 			helper.assertTrue(helper.getBlockState(torch).is(Blocks.TORCH), "sin mobGriefing la antorcha sigue");
 			level.getGameRules().set(GameRules.MOB_GRIEFING, true, level.getServer());
 			Lights.forget(player);
@@ -860,7 +880,6 @@ public class RedV4ModGameTests {
 			helper.assertTrue(helper.getBlockState(new BlockPos(5, 1, 7)).is(Blocks.LANTERN), "el farol nunca se rompe");
 			boolean dropped = !level.getEntitiesOfClass(ItemEntity.class, new AABB(helper.absolutePos(torch)).inflate(3.0), e -> e.getItem().is(Items.TORCH)).isEmpty();
 			helper.assertTrue(dropped, "la antorcha rota se suelta para el jugador");
-			level.getGameRules().set(GameRules.MOB_GRIEFING, griefing, level.getServer());
 			zombie.discard();
 			for (Zombie holder : holders) {
 				dev.forja.combat.AttackTokens.releaseAll(holder);

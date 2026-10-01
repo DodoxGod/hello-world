@@ -1,6 +1,12 @@
 {
   "type": "minecraft:all_of",
   "definitions": [
-    "forja-test:estable"
+    "forja-test:estable",
+    {
+      "type": "minecraft:game_rules",
+      "rules": {
+        "minecraft:mob_griefing": true
+      }
+    }
   ]
 }
