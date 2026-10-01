@@ -302,7 +302,7 @@ public final class CombatAnims {
 		return t < 0.0F ? -1.0F : 1.0F - t;
 	}
 
-	/** The pressure on the local player right now (0 to 0.7), draining as the server's does. */
+	/** The pressure on the local player right now (0 to the cap, 0.6), draining as the server's does. */
 	public static float pressure(float partialTick) {
 		if (pressureAt == State.NEVER) {
 			return 0.0F;

@@ -117,15 +117,15 @@ public class DificultadGameTests {
 		helper.succeed();
 	}
 
-	/** Pressure: 0.10 a blow taken, and half that for a blow caught on a shield or parried. */
+	/** Pressure: 0.065 a blow taken, and half that for a blow caught on a shield or parried. */
 	@GameTest
 	public void blockedBlowsAddHalfThePressure(GameTestHelper helper) {
 		CombatGameTests.TestPlayer blocked = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
 		CombatGameTests.TestPlayer taken = CombatGameTests.player(helper, new BlockPos(1, 1, 4));
 		Pressure.onBlocked(blocked);
 		Pressure.onHit(taken);
-		helper.assertTrue(Math.abs(Pressure.of(taken) - 0.10) < 1.0E-9, "un golpe recibido, 0,10: " + Pressure.of(taken));
-		helper.assertTrue(Math.abs(Pressure.of(blocked) - 0.05) < 1.0E-9, "un golpe parado, 0,05: " + Pressure.of(blocked));
+		helper.assertTrue(Math.abs(Pressure.of(taken) - 0.065) < 1.0E-9, "un golpe recibido, 0,065: " + Pressure.of(taken));
+		helper.assertTrue(Math.abs(Pressure.of(blocked) - 0.0325) < 1.0E-9, "un golpe parado, 0,0325: " + Pressure.of(blocked));
 		helper.succeed();
 	}
 

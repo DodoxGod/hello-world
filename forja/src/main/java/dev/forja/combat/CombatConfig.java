@@ -195,11 +195,20 @@ public final class CombatConfig {
 	 * Pressure: armor penetration each blow a player takes adds to the next ones, up to a total cap. Andy,
 	 * 2026-09-29: it builds faster (0.07 -> 0.10 a blow), waits longer before draining (40 -> 60 ticks), and a
 	 * blow caught on a shield or parried adds {@link #pressureBlockedShare} of it too.
+	 * Andy, 2026-09-30: it starts at 0 and the cap is 60 %; a blow adds 0.065 (9 blows from none to the cap);
+	 * after 3 s without a blow it drains 0.0067 a tick (the cap to nothing in 90 ticks, 4.5 s).
 	 */
-	public double pressurePerHit = 0.10;
-	public double pressureMax = 0.70;
+	public double pressurePerHit = 0.065;
+	public double pressureMax = 0.60;
 	public int pressureDelayTicks = 60;
-	public double pressureDrainPerTick = 0.02;
+	public double pressureDrainPerTick = 0.0067;
+	/**
+	 * What the weapon and the attacker's rank can take of a player's armor in one blow before pressure (their
+	 * penetrations chained, then capped here), and what the three together can never pass (the same ceiling as
+	 * the pressure's own): a champion's axe on a fresh player takes 30 %, only sustained punishment reaches 60 %.
+	 */
+	public double penetrationBaseMax = 0.30;
+	public double penetrationTotalMax = 0.60;
 	public double pressureBlockedShare = 0.5;
 	/**
 	 * Gear against crowds (Andy, 2026-09-29: diamond with Protection IV made crowds harmless). By the player's
@@ -211,7 +220,7 @@ public final class CombatConfig {
 	/** More simultaneous attackers on the harder difficulties. */
 	public int attackersMaestro = 1;
 	public int attackersLeyenda = 2;
-	/** Armor penetration of a monster's blows by its threat, combined with Pressure's (the larger counts). */
+	/** Armor penetration of a monster's blows by its threat, chained with the weapon's and Pressure's (see Pressure.total). */
 	public double penetrationVeteran = 0.10;
 	public double penetrationElite = 0.20;
 	public double penetrationChampion = 0.35;

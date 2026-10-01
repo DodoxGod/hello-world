@@ -9,15 +9,18 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * Pressure: a player being hit again and again has no time to set their armor. Every blow they take adds
- * armor penetration to the next ones, on top of the weapon's own, up to a total cap; a few seconds without
- * being hit and it drains away. Being surrounded or caught in a chain of blows gets through any armor,
- * which is what makes a crowd dangerous to someone in the best plate.
+ * Pressure: a player being hit again and again has no time to set their armor. It starts at 0, every blow
+ * they take adds a step (about 9 blows from none to the cap, and a blow caught on a shield half a step), and
+ * it is armor penetration for the next blows, chained with the weapon's and the attacker's rank; 3 s without
+ * being hit and it drains away, from the cap to nothing in about 4.5 s. Being surrounded or caught in a chain
+ * of blows gets through any armor, which is what makes a crowd dangerous to someone in the best plate, but
+ * one blow alone never takes much of it (Andy, 2026-09-30: "tiene que existir un balance").
  *
  * <pre>
- * al recibir un golpe: p = min(máx, p(ahora) + porGolpe)
- * p(t) = max(0, p − max(0, t − último − espera) · vaciado)
- * penetración final = max(pen_arma, min(máx, pen_arma + p))
+ * al recibir un golpe: p = min(máx, p(ahora) + porGolpe)            (0,065 por golpe, máx 0,60)
+ * p(t) = max(0, p − max(0, t − último − espera) · vaciado)          (espera 60 ticks, vaciado 0,0067/tick)
+ * base  = min(0,30, 1 − (1 − arma)(1 − rango))
+ * total = min(0,60, 1 − (1 − base)(1 − p))
  * </pre>
  */
 public final class Pressure {
@@ -71,12 +74,28 @@ public final class Pressure {
 		}
 	}
 
-	/** The penetration a blow on this player gets, from the weapon's own and the pressure on them. */
-	public static double penetration(Player player, double weaponPenetration) {
-		double pressure = of(player);
-		if (pressure <= 0.0) {
-			return weaponPenetration;
-		}
-		return Math.max(weaponPenetration, Math.min(CombatConfig.get().pressureMax, weaponPenetration + pressure));
+	/** How much of the armor still holds, 1 with no pressure and 0 at the cap: what the HUD shows. */
+	public static double integrity(double pressure, double max) {
+		return max <= 0.0 ? 1.0 : Math.max(0.0, Math.min(1.0, 1.0 - pressure / max));
+	}
+
+	/** The penetration a blow on this player gets, from the weapon's own, the attacker's rank and the pressure on them. */
+	public static double penetration(Player player, double weaponPenetration, double rankPenetration) {
+		return total(weaponPenetration, rankPenetration, of(player), CombatConfig.get());
+	}
+
+	/**
+	 * The three chained: the weapon's and the rank's are capped together first (one blow alone never takes
+	 * more than {@code penetrationBaseMax} of the armor), then the pressure on top, and the whole is capped
+	 * at {@code penetrationTotalMax}.
+	 */
+	public static double total(double weapon, double rank, double pressure, CombatConfig cfg) {
+		double base = Math.min(cfg.penetrationBaseMax, chain(weapon, rank));
+		return Math.min(cfg.penetrationTotalMax, chain(base, pressure));
+	}
+
+	/** {@code 1 − (1 − a)(1 − b)}, each clamped to 0..1. */
+	public static double chain(double a, double b) {
+		return 1.0 - (1.0 - Math.max(0.0, Math.min(1.0, a))) * (1.0 - Math.max(0.0, Math.min(1.0, b)));
 	}
 }

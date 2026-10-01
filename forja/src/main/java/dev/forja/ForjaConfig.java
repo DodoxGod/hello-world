@@ -121,6 +121,17 @@ public final class ForjaConfig {
 				if (current.combate != null && current.combate.pressureDelayTicks == 40) {
 					current.combate.pressureDelayTicks = 60;
 				}
+				// And again (Andy, 2026-09-30): it starts at 0 and tops at 60 %, takes about 9 blows to get there and
+				// drains in 4.5 s. The defaults of the day before (0.10, 0.70, 0.02) follow the new ones.
+				if (current.combate != null && current.combate.pressurePerHit == 0.10) {
+					current.combate.pressurePerHit = 0.065;
+				}
+				if (current.combate != null && current.combate.pressureMax == 0.70) {
+					current.combate.pressureMax = 0.60;
+				}
+				if (current.combate != null && current.combate.pressureDrainPerTick == 0.02) {
+					current.combate.pressureDrainPerTick = 0.0067;
+				}
 				// Mana (Andy, 2026-09-30): very slow without a magic class. The old quick defaults follow the new ones.
 				if (current.combate != null && current.combate.manaRegenPerTick == 0.3F) {
 					current.combate.manaRegenPerTick = 0.02F;

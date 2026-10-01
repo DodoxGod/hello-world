@@ -416,11 +416,19 @@ BOOKS.update({
     "gui.forja.libros.combate.equipo.titulo": ("Tu equipo y la presión", "Your gear and pressure"),
     "gui.forja.libros.combate.equipo": (
         "Cuanto mejor es tu equipo (de 0 a 3 tramos), más fuerte pegan, un %1$s%% más por tramo, y más te atacan a la vez. "
-        "Y cada golpe que te llevas ayuda al siguiente, la **presión**: atraviesan más armadura, hasta un %2$s%%, aunque "
-        "lo pares con el escudo. Baja en cuanto dejan de darte.",
+        "Y cada golpe que te llevas ayuda al siguiente, la **presión**: empieza en 0 y sube con cada golpe (con el escudo, "
+        "la mitad), y mientras dura los golpes atraviesan más armadura. Un solo golpe nunca te quita más de un %3$s%% de "
+        "ella (arma y rango del monstruo juntos); solo una paliza seguida llega al tope, un %2$s%%, tras unos %4$s golpes. "
+        "Si pasan %5$s s sin que te den, baja poco a poco: del tope a cero en unos %6$s s. Lo ves en el escudito junto a "
+        "tu armadura: entero es armadura que aguanta; se vacía al recibir golpes, pasa de acero a naranja y a rojo, y a "
+        "cero **se rompe**, hasta que la presión empieza a bajar.",
         "The better your gear (tiers 0 to 3), the harder they hit, %1$s%% more per tier, and the more attack you at once. "
-        "And every blow you take helps the next, **pressure**: they go through more armour, up to %2$s%%, even when your "
-        "shield stops the blow. It drops as soon as they stop hitting you."),
+        "And every blow you take helps the next, **pressure**: it starts at 0 and grows with every blow (half with your "
+        "shield), and while it lasts blows go through more armour. A single blow never takes more than %3$s%% of it "
+        "(weapon and monster rank together); only sustained punishment reaches the cap, %2$s%%, after about %4$s blows. "
+        "After %5$s s without being hit it drops gradually: from the cap to zero in about %6$s s. You can see it in the "
+        "little shield beside your armour: full means armour that holds; it empties as you are hit, going from steel to "
+        "orange to red, and at zero it **breaks**, until the pressure starts to drop."),
     "gui.forja.libros.combate.tregua": ("Los monstruos de Forja no se hacen daño entre ellos.",
                                         "Forja's monsters do not hurt each other."),
     "gui.forja.libros.combate.rangos.resumen": (
@@ -432,10 +440,12 @@ BOOKS.update({
     "gui.forja.libros.combate.tope": (
         "Ningún golpe normal le quita a un monstruo más de una parte de su vida: el %1$s%% a uno corriente, el %2$s%% a un "
         "veterano, el %3$s%% a un élite y el %4$s%% a un campeón. Los remates y los golpes al aturdido pasan de ese tope. Y "
-        "sus golpes atraviesan tu armadura: el veterano un %5$s%%, el élite un %6$s%% y el campeón un %7$s%%.",
+        "sus golpes atraviesan tu armadura: el veterano un %5$s%%, el élite un %6$s%% y el campeón un %7$s%%, sumado al "
+        "arma y a la presión, pero entre arma y rango, de un golpe, nunca más de un %8$s%%.",
         "No ordinary blow takes more than a share of a monster's health: %1$s%% from a common one, %2$s%% from a veteran, "
         "%3$s%% from an elite and %4$s%% from a champion. Finishers and blows on the staggered go past that cap. And their "
-        "blows go through your armour: a veteran %5$s%%, an elite %6$s%% and a champion %7$s%%."),
+        "blows go through your armour: a veteran %5$s%%, an elite %6$s%% and a champion %7$s%%, added to the weapon's and "
+        "to pressure, but weapon and rank together never take more than %8$s%% in one blow."),
     "gui.forja.libros.combate.mundo.resumen": (
         "El mundo empieza peleas por su cuenta: **asedios** a tu forja, **ladrones** que se llevan lo que hiciste, enemigos "
         "que **vuelven**, **duelos** y bandas de **saqueadores**.",

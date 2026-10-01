@@ -1,5 +1,35 @@
 # Novedades
 
+## 2026-09-30 — Presión de armadura con balance e indicador en el HUD
+
+- **La presión empieza en 0** y crece con cada golpe que te llevas hasta un **máximo del 60 %** (antes 70 %). Cada golpe
+  suma 0,065 (un golpe parado, la mitad): de 0 al tope hacen falta unos **10 golpes** (9,2). Ningún golpe suma más de un
+  paso.
+- **Recuperación poco a poco.** Si pasan 3 s (60 ticks) sin que te den, baja 0,0067 por tick: del 60 % a 0 en **90 ticks
+  (4,5 s)**. Un golpe nuevo parte de donde iba y vuelve a esperar los 3 s.
+- **Arma, rango y presión se encadenan** (antes se cogía la mayor entre rango y presión):
+  `base = mín(0,30; 1 − (1 − arma)(1 − rango))` y `total = mín(0,60; 1 − (1 − base)(1 − presión))`; después, la dureza
+  frena el resultado como antes. El Brecha del arma cuenta como parte del arma.
+- **Balance (Andy: "no te pueden quitar el 60 % de la armadura de un golpe").** El arma y el rango de un monstruo juntos
+  nunca pasan del 30 % de tu armadura en un golpe (`penetrationBaseMax`); lo de los tres juntos nunca pasa del 60 %
+  (`penetrationTotalMax`). Un hacha de campeón (35 % y 35 %, que sin tope serían el 58 %) a un jugador sin presión se lleva
+  el 30 %; solo una paliza seguida llega al 60 %.
+- **Indicador en el HUD:** un escudito de 9 x 10 píxeles sobre la fila de la armadura, entre su final y el hambre (no tapa
+  corazones, maná ni estamina). Muestra cuánta armadura aguanta (`1 − presión / 0,60`): entero con 0 de presión, se vacía
+  con cada golpe (con un destello y una estela de lo perdido), pasa de acero a naranja y a rojo, y se rellena poco a poco al
+  bajar la presión. A 0 **se rompe**: se parte por una grieta, suena un crujido corto y salen esquirlas; sigue roto mientras
+  la presión esté al tope y, en cuanto empieza a bajar, las mitades se juntan. Se oculta sin presión y sin armadura puesta,
+  en creativo, en espectador y con F1. La presión ya viajaba al cliente (`CombatAnim.PRESSURE`): no hay mensaje nuevo.
+- Se quita la línea roja de presión bajo la barra de estamina (la sustituye el escudo).
+- **Configuración:** `pressurePerHit` 0,065, `pressureMax` 0,60, `pressureDrainPerTick` 0,0067, `penetrationBaseMax` 0,30,
+  `penetrationTotalMax` 0,60. Los valores por defecto antiguos (0,10, 0,70, 0,02) se migran solos; lo que alguien haya
+  escrito a mano se respeta.
+- **Guía:** el libro II (El arte del combate) explica la presión nueva, el tope del 30 % y el escudo; la sección de los
+  rangos lo menciona.
+- **Pruebas:** 8 nuevas en `PresionGameTests` (empieza en 0, sube un paso por golpe y topa en 0,60, parado suma la mitad,
+  fórmula encadenada con cifras a mano, los dos topes, hacha de campeón al 30 %, espera de 60 ticks y bajada gradual,
+  golpe nuevo en mitad de la bajada) y 2 ajustadas. Captura: `FORJA_SOLO=presion`.
+
 ## 2026-09-30 — Capitán 2
 
 - **Visión compartida.** Lo que ve un monstruo del grupo lo sabe el grupo: los que no ven al jugador y están a 32 bloques

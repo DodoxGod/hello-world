@@ -465,7 +465,7 @@ public class CombatGameTests {
 		helper.succeed();
 	}
 
-	/** Blows in a row build pressure, up to 0.7, and pressure gets through armor. */
+	/** Blows in a row build pressure, up to 0.6, and pressure gets through armor. */
 	@GameTest
 	public void pressureBuildsAndPierces(GameTestHelper helper) {
 		Zombie attacker = bareZombie(helper, new BlockPos(3, 1, 1));
@@ -479,7 +479,7 @@ public class CombatGameTests {
 			dev.forja.difficulty.Pressure.onHit(pressed);
 		}
 		double pressure = dev.forja.difficulty.Pressure.of(pressed);
-		helper.assertTrue(Math.abs(pressure - 0.7) < 1.0E-6, "la presión debería topar en 0,7: " + pressure);
+		helper.assertTrue(Math.abs(pressure - 0.6) < 1.0E-6, "la presión debería topar en 0,6: " + pressure);
 		DamageSource blow = helper.getLevel().damageSources().mobAttack(attacker);
 		float calm = hit(fresh, blow, 6F);
 		pressed.setHealth(pressed.getMaxHealth());

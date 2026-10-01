@@ -1450,7 +1450,9 @@ public class GuideBookScreen extends Screen {
 		body.add(new Text(Component.translatable("gui.forja.libros.combate.sentidos"), INK));
 		body.add(new Text(Component.translatable("gui.forja.libros.combate.sin_obras"), INK_SOFT));
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.equipo.titulo")));
-		body.add(new Text(Component.translatable("gui.forja.libros.combate.equipo", pct(cfg.mobDamagePerGearTier), pct(cfg.pressureMax)), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.equipo", pct(cfg.mobDamagePerGearTier), pct(cfg.pressureMax),
+			pct(cfg.penetrationBaseMax), Math.round(Math.ceil(cfg.pressureMax / cfg.pressurePerHit)), secs(cfg.pressureDelayTicks),
+			number((float) (cfg.pressureMax / cfg.pressureDrainPerTick / 20.0))), INK));
 		body.add(new Text(Component.translatable("gui.forja.libro.mundo.monstruos"), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libros.combate.tregua"), INK_SOFT));
 		return body;
@@ -1465,7 +1467,7 @@ public class GuideBookScreen extends Screen {
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.tope.titulo")));
 		body.add(new Text(Component.translatable("gui.forja.libros.combate.tope", pct(cfg.hitCapNormal), pct(cfg.hitCapVeteran),
 			pct(cfg.hitCapElite), pct(cfg.hitCapChampion), pct(cfg.penetrationVeteran), pct(cfg.penetrationElite),
-			pct(cfg.penetrationChampion)), INK));
+			pct(cfg.penetrationChampion), pct(cfg.penetrationBaseMax)), INK));
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.elites.titulo")));
 		body.add(new IconRow(List.of(new ItemStack(Items.TOTEM_OF_UNDYING), new ItemStack(Items.ROTTEN_FLESH), new ItemStack(Items.BONE))));
 		body.add(new Text(Component.translatable("gui.forja.libro.elites", Math.round(dev.forja.ForjaConfig.get().elites * 100),

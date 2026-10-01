@@ -217,17 +217,6 @@ public final class CombatHooks {
 		if (!staggered && (dev.forja.difficulty.Threat.of(target).guarded() || dev.forja.difficulty.Bosses.isBoss(target))) {
 			scaled *= (float) cfg.guardHealthShare;
 		}
-		// A player under pressure has no time to set their armor; a veteran, an elite or a champion finds the gaps
-		// in it anyway (Andy, 2026-09-29), and the larger of the two counts.
-		if (target instanceof Player victim) {
-			double own = attack.penetration();
-			if (source.getEntity() instanceof net.minecraft.world.entity.Mob mob) {
-				own = Math.max(own, dev.forja.difficulty.Threat.of(mob).penetration());
-			}
-			attack = new AttackProfile(attack.kind(), dev.forja.difficulty.Pressure.penetration(victim, own),
-				attack.zone(), attack.precise());
-		}
-
 		float result;
 		if (source.is(DamageTypeTags.BYPASSES_ARMOR)) {
 			result = scaled;
@@ -239,7 +228,19 @@ public final class CombatHooks {
 			if (weapon != null && target.level() instanceof ServerLevel level) {
 				breach = 1.0 - EnchantmentHelper.modifyArmorEffectiveness(level, weapon, target, source, 1.0F);
 			}
-			result = ArmorCalculator.apply(target, scaled, attack, breach);
+			double extra = breach;
+			if (target instanceof Player victim) {
+				// A player under pressure has no time to set their armor; a veteran, an elite or a champion finds the
+				// gaps in it anyway (Andy, 2026-09-29/30). Weapon (breach with it), rank and pressure are chained,
+				// the first two capped together and the whole capped too (Pressure.total), so nothing is left over.
+				double rank = source.getEntity() instanceof net.minecraft.world.entity.Mob mob
+					? dev.forja.difficulty.Threat.of(mob).penetration() : 0.0;
+				double weaponPen = dev.forja.difficulty.Pressure.chain(attack.penetration(), breach);
+				attack = new AttackProfile(attack.kind(), dev.forja.difficulty.Pressure.penetration(victim, weaponPen, rank),
+					attack.zone(), attack.precise());
+				extra = 0.0;
+			}
+			result = ArmorCalculator.apply(target, scaled, attack, extra);
 		}
 		return capped(target, source, result, staggered || finisher);
 	}
