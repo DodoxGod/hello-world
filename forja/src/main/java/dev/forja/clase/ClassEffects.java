@@ -102,6 +102,8 @@ public final class ClassEffects {
 	/** Drops whatever a skill left running (a class change, a reset, leaving the server). */
 	public static void forget(Player player) {
 		BUFFS.remove(player.getUUID());
+		SERVER_CACHE.remove(player.getUUID());
+		CLIENT_CACHE.remove(player.getUUID());
 	}
 
 	private static Cache cache(Player player) {

@@ -1,5 +1,9 @@
 # Novedades
 
+## 2026-10-01 — Liberar las cachés de clase al salir
+
+- El cambio o reinicio de clase y la desconexión borran también los cálculos de talentos guardados por UUID.
+
 ## 2026-10-01 — Conservar la calidad al grabar y cambiar piezas
 
 - Grabar un don o sustituir una pieza conserva el bono de calidad de una forja perfecta, una obra maestra o una colada basta al reescribir los atributos del objeto.
