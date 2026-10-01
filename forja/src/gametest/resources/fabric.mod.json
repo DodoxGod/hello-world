@@ -56,6 +56,7 @@
 			"dev.forja.test.CapitanMedidaGameTests",
 			"dev.forja.test.Capitan2GameTests",
 			"dev.forja.test.RedV4MundoGameTests",
+			"dev.forja.test.MiraGameTests",
 			"dev.forja.test.BlazeGameTests",
 			"dev.forja.test.DimensionGameTests",
 			"dev.forja.test.PortalGameTests",

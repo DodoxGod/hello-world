@@ -34,6 +34,10 @@ public final class ObsV4 {
 	/** The "formato" of a v4 mob network, and its sizes (docs/red_mob_v4_contrato.json). */
 	public static final String FORMAT = "red_mob_v4";
 	public static final int SIZE = 468;
+	/** Contract revision 4.1 (docs/red_mob_v4_contrato.json): the 468 plus block J (the player aims at me), and what a net says to be one. */
+	public static final int SIZE_41 = 472;
+	public static final String REVISION_41 = "4.1";
+	public static final int J_AT = 468;
 	public static final int BASE = 280;
 	/** The yo_arma_alcance a v4 network reads: always the full reach (contract, "alcance_v": 2). */
 	public static final int REACH_VERSION = 2;
@@ -72,6 +76,7 @@ public final class ObsV4 {
 	/** The 188 new names, in the contract's order. */
 	private static final List<String> NEW = new ArrayList<>();
 	private static List<String> all;
+	private static List<String> all41;
 
 	/** The player's look, averaged slowly: x, z of the mean and the tick it was last brought up to date. */
 	private static final Map<Player, double[]> LOOK = new WeakHashMap<>();
@@ -152,6 +157,16 @@ public final class ObsV4 {
 		return all;
 	}
 
+	/** The 472 names of revision 4.1: the 468 of 4.0, unchanged, and block J. */
+	public static synchronized List<String> names41() {
+		if (all41 == null) {
+			List<String> names = new ArrayList<>(names());
+			Collections.addAll(names, "jug_apunta_mi_caja", "jug_apunta_dist/6", "jug_golpe_listo", "jug_amenaza");
+			all41 = Collections.unmodifiableList(names);
+		}
+		return all41;
+	}
+
 	public static int size() {
 		return names().size();
 	}
@@ -161,7 +176,16 @@ public final class ObsV4 {
 	 * R, and 0 for every block not brought in yet. Sets the mind's reachVersion to 2 on the way, so what ObsV3 reads is
 	 * the v4 contract's.
 	 */
+	/** Revision 4.0's 468 inputs. */
 	public static float[] build(Mob mob, Player target, MobMind mind) {
+		return build(mob, target, mind, false);
+	}
+
+	/**
+	 * The observation of revision 4.0 (468) or, with {@code v41}, 4.1 (472): the 468 as always and block J, which is 0
+	 * unless the ladder turns the aim inputs on (Ladder.aimInputs, Extremo only) and the mob perceives the player.
+	 */
+	public static float[] build(Mob mob, Player target, MobMind mind, boolean v41) {
 		if (mind != null) {
 			mind.reachVersion = REACH_VERSION;
 		}
@@ -198,6 +222,13 @@ public final class ObsV4 {
 			MobItems.observe(mob, mind, target, now, out, C_AT);
 			ShieldPlay.observe(mob, mind, target, now, out, G_AT);
 			Lights.observe(mob, target, out, L_AT);
+		}
+		if (v41) {
+			out = java.util.Arrays.copyOf(out, SIZE_41);
+			long when = mob.level().getGameTime();
+			if (mind != null && dev.forja.difficulty.Ladder.current().aimInputs() && Perception.perceived(mind, when)) {
+				Aim.observe(mob, Perception.real(target), out, J_AT);
+			}
 		}
 		return out;
 	}

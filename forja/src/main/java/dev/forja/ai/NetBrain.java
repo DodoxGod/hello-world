@@ -42,6 +42,8 @@ public final class NetBrain {
 	 * 253 → 68); 1 when it has none, as every file before it.
 	 */
 	public final int contractVersion;
+	/** The v4 mob contract's revision the file says it is ("4.1": block J, 472 inputs); "4.0" when it says none. */
+	public final String revision;
 	private final float[][] w1;
 	private final float[] b1;
 	private final float[][] w2;
@@ -74,6 +76,7 @@ public final class NetBrain {
 		this.reachVersion = json.has("alcance_v") ? json.get("alcance_v").getAsInt() : 1;
 		this.format = json.has("formato") ? json.get("formato").getAsString() : null;
 		this.contractVersion = json.has("contrato_version") ? json.get("contrato_version").getAsInt() : 1;
+		this.revision = json.has("revision") ? json.get("revision").getAsString() : "4.0";
 		this.names = new ArrayList<>();
 		for (var name : json.getAsJsonArray("nombres_obs")) {
 			this.names.add(name.getAsString());

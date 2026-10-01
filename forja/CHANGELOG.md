@@ -1,5 +1,18 @@
 # Novedades
 
+## 2026-09-30 — Contrato 4.1: el jugador me apunta (bloque J)
+
+Responde a `docs/mod_spec_mira.md`. Las redes v4 con `"revision": "4.1"` reciben 472 entradas: las 468 de siempre y,
+al final, `jug_apunta_mi_caja`, `jug_apunta_dist/6`, `jug_golpe_listo` y `jug_amenaza`. Las redes 4.0 (sin campo) siguen
+cargando con sus 468, y su contrato queda en `docs/red_mob_v4_contrato_v40.json`.
+
+- **Un rayo por jugador y tick** (`ai/Aim`): la mirada real (ojos, `getViewVector`) hasta max(6, alcance), cortada por
+  bloques y por la primera entidad que se pueda elegir; cada mob solo compara su id.
+- Solo en Extremo (`Ladder.aimInputs()`) y con el mob percibiendo al jugador; si no, las cuatro valen 0 y no se lanza rayo.
+- `docs/red_mob_v4_mod_estado.md`, «Mira (v4.1)»: ninguna regla del mod reacciona a que el jugador salte; qué dispara
+  cada esquiva y cada bloqueo, con las cifras.
+- Pruebas: `MiraGameTests`.
+
 ## 2026-09-30 — Árboles de clase grandes, tres habilidades y sin Herrero
 
 Andy aprobó el diseño de `docs/ARBOLES.md` y pidió construirlo. Todos los números están en `tools/arboles_datos.py`:

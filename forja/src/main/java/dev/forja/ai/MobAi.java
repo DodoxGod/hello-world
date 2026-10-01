@@ -359,7 +359,7 @@ public final class MobAi {
 	}
 
 	/**
-	 * Why a v4 network cannot be used here, or null: its formato must be red_mob_v4, its inputs exactly ObsV4's 468 in
+	 * Why a v4 network cannot be used here, or null: its formato must be red_mob_v4, its inputs exactly ObsV4's 468 (revision 4.0, none in the file) or 472 ("revision": "4.1") in
 	 * the same order, and its outputs the contract's 53. Unlike v1..v3, a shorter prefix is not accepted: the contract
 	 * is one size.
 	 */
@@ -370,7 +370,10 @@ public final class MobAi {
 		if (!V4_FORMAT.equals(net.format)) {
 			return "formato '" + net.format + "': no es " + V4_FORMAT;
 		}
-		List<String> ours = ObsV4.names();
+		if (!"4.0".equals(net.revision) && !ObsV4.REVISION_41.equals(net.revision)) {
+			return "revisión '" + net.revision + "': el mod conoce la 4.0 (468 entradas) y la 4.1 (472)";
+		}
+		List<String> ours = ObsV4.REVISION_41.equals(net.revision) ? ObsV4.names41() : ObsV4.names();
 		if (net.inputs() != ours.size() || net.names.size() != ours.size()) {
 			return "espera " + net.inputs() + " entradas con " + net.names.size() + " nombres; la v4 tiene " + ours.size();
 		}
@@ -679,7 +682,7 @@ public final class MobAi {
 				seen = standIn != null ? standIn : target;
 			}
 			try {
-				obs = ObsV4.build(mob, seen, mind);
+				obs = ObsV4.build(mob, seen, mind, ObsV4.REVISION_41.equals(net.revision));
 				mask = mask(mob, mind, seen, net.outputs());
 			} finally {
 				Perception.release();

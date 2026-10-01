@@ -32,16 +32,21 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Step M1 of the v4 mob network (docs/red_mob_v4_diseno.md §6.1; Andy, 2026-09-29): ObsV4 gives the simulator's
- * contract (docs/red_mob_v4_contrato.json) name for name, a mob's v4 observation is 468 finite numbers, a v4 file in
+ * contract (docs/red_mob_v4_contrato_v40.json, revision 4.0; 4.1 is in MiraGameTests) name for name, a mob's v4 observation is 468 finite numbers, a v4 file in
  * redes_v4 is loaded, and a v4 network drives a zombie with what the executor can do today, the rest shut.
  */
 public class RedV4GameTests {
 	/** The contract the simulator wrote, found by walking up from the game's folder (the tests run a few folders down). */
-	private static Path contractFile() {
+	static Path contractFile() {
+		return contractFile("red_mob_v4_contrato.json");
+	}
+
+	/** A contract file of docs, by name (red_mob_v4_contrato.json is revision 4.1, red_mob_v4_contrato_v40.json the 4.0). */
+	static Path contractFile(String name) {
 		List<Path> starts = List.of(FabricLoader.getInstance().getGameDir().toAbsolutePath(), Path.of("").toAbsolutePath());
 		for (Path start : starts) {
 			for (Path at = start; at != null; at = at.getParent()) {
-				for (String relative : new String[] {"docs/red_mob_v4_contrato.json", "forja/docs/red_mob_v4_contrato.json"}) {
+				for (String relative : new String[] {"docs/" + name, "forja/docs/" + name}) {
 					Path file = at.resolve(relative);
 					if (Files.exists(file)) {
 						return file;
@@ -55,8 +60,8 @@ public class RedV4GameTests {
 	/** ObsV4.names() is the contract's nombres_obs, name for name and in order; its sizes, blocks and heads match the mod's. */
 	@GameTest
 	public void v4NamesMatchTheContract(GameTestHelper helper) throws java.io.IOException {
-		Path file = contractFile();
-		helper.assertTrue(file != null, "no se encuentra docs/red_mob_v4_contrato.json subiendo desde " + FabricLoader.getInstance().getGameDir());
+		Path file = contractFile("red_mob_v4_contrato_v40.json");
+		helper.assertTrue(file != null, "no se encuentra docs/red_mob_v4_contrato_v40.json subiendo desde " + FabricLoader.getInstance().getGameDir());
 		JsonObject contract = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
 		helper.assertTrue(contract.get("n_obs").getAsInt() == 468 && ObsV4.SIZE == 468, "n_obs debería ser 468: " + contract.get("n_obs"));
 		List<String> theirs = new ArrayList<>();
@@ -184,7 +189,12 @@ public class RedV4GameTests {
 	 * as given.
 	 */
 	static JsonObject fakeV4(long seed, float[] outBias) {
-		List<String> names = ObsV4.names();
+		return fakeV4(seed, outBias, false);
+	}
+
+	/** The same, of contract revision 4.1 (472 inputs, "revision": "4.1") when v41. */
+	static JsonObject fakeV4(long seed, float[] outBias, boolean v41) {
+		List<String> names = v41 ? ObsV4.names41() : ObsV4.names();
 		int n = names.size();
 		int hidden = 8;
 		int memory = 6;
@@ -194,6 +204,9 @@ public class RedV4GameTests {
 		json.addProperty("grupo", "cuerpo");
 		json.addProperty("ticks_por_decision", 2);
 		json.addProperty("alcance_v", ObsV4.REACH_VERSION);
+		if (v41) {
+			json.addProperty("revision", ObsV4.REVISION_41);
+		}
 		JsonArray namesJson = new JsonArray();
 		names.forEach(namesJson::add);
 		json.add("nombres_obs", namesJson);

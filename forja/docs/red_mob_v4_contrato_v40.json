@@ -1,18 +1,13 @@
 {
  "formato": "red_mob_v4_contrato",
  "version": 1,
- "revision": "4.1",
- "fecha": "2026-09-30",
+ "fecha": "2026-09-29",
  "formato_red": "red_mob_v4",
- "revisiones": {
-  "4.0": "29-09: 468 entradas (red_mob_v4_contrato_v40.json)",
-  "4.1": "30-09: 472 = las 468 de la 4.0 sin cambios + el bloque J al final (el jugador me apunta); el JSON de cada red lleva \"revision\": \"4.1\""
- },
  "carpeta_mod": "config/forja/redes_v4/red_<familia>.json",
  "alcance_v": 2,
  "ticks_por_decision": 2,
  "diseno": "red_mob_v4_diseno.md (29-09): §2 entradas, §3.1 salidas, §5.2 migración",
- "n_obs": 472,
+ "n_obs": 468,
  "n_obs_base": 280,
  "base": "las 280 primeras = red_mob_v3b (red_mob_v3_contrato.json + yo_estamina/100, yo_corriendo, aliados_corriendo/5) en el mismo orden y con el mismo cálculo; yo_arma_alcance/6 siempre con \"alcance_v\": 2. MobAi.check elige por `formato` (red_mob_v4), no por el prefijo de nombres.",
  "nombres_obs": [
@@ -483,11 +478,7 @@
   "mundo_exito_asedio",
   "mundo_jug_pilar",
   "mundo_jug_huye",
-  "mundo_confianza",
-  "jug_apunta_mi_caja",
-  "jug_apunta_dist/6",
-  "jug_golpe_listo",
-  "jug_amenaza"
+  "mundo_confianza"
  ],
  "bloques": [
   {
@@ -777,9 +768,7 @@
     "aliados_corriendo/5"
    ],
    "que": "red_mob_v3_contrato.json con correr (v3b) tal cual, en su orden, con \"alcance_v\": 2 (yo_arma_alcance/6 = el alcance real del arma de la tabla)",
-   "estado_simulador_S1": "calculado (= v3b)",
-   "estado_simulador_S2": "igual; con el mundo v4, luz/15 = la luz de su celda (cielo + antorchas; sin antorchas ni techo, la de siempre) y esp3_disponible/esp3_enfriamiento = el hueco 3 del arquero y la araña",
-   "estado_simulador_S3": "igual (luz/15 y el hueco 3, como el S2; el hueco 3 también el garfio de un zombi con caña)"
+   "estado_simulador_S1": "calculado (= v3b)"
   },
   {
    "bloque": "S",
@@ -804,9 +793,7 @@
     "soy_primero_sector"
    ],
    "que": "sectores (red_mob_v4_contrato.propuesta, sin cambios)",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "a 0 (llega en S3..S7)",
-   "estado_simulador_S3": "calculado como ObsV4.sectors (el hueco del anillo del Squad del simulador; arqueros y creepers: su ángulo en el último pase; creeper_encendido_cerca/7 = 2 sin ninguno)"
+   "estado_simulador_S1": "a 0 (llega en S2..S7)"
   },
   {
    "bloque": "R",
@@ -817,9 +804,7 @@
     "jug_alcance_min/6"
    ],
    "que": "alcance mínimo: yo_arma_alcance_min/6 (1/6 con lanza, 0 el resto) y jug_alcance_min/6 (la lanza del jugador no pega de cerca)",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "a 0 (llega en S3..S7)",
-   "estado_simulador_S3": "calculado (Reach.min del mob y del arma del jugador)"
+   "estado_simulador_S1": "a 0 (llega en S2..S7)"
   },
   {
    "bloque": "M",
@@ -858,9 +843,7 @@
     "capitan_vida_frac"
    ],
    "que": "mando: capitán, orden (one-hot de 9), edad, cuenta atrás, sector, formación (4), puesto (4) y su punto, cubierto, dónde está el capitán y su vida",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "a 0 (llega en S3..S7)",
-   "estado_simulador_S3": "calculado (Captain.observe): sin capitán orden_ninguna = 1 y formacion_libre = 1"
+   "estado_simulador_S1": "a 0 (llega en S2..S7)"
   },
   {
    "bloque": "Mo",
@@ -879,9 +862,7 @@
     "retirada_ticks/100"
    ],
    "que": "moral: moral del grupo y propia, bajas, huidos, furia (disponible, propia, agotado), ticks en retirada",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "a 0 (llega en S3..S7)",
-   "estado_simulador_S3": "calculado (moral del grupo y propia, bajas, huidos, furia, retirada)"
+   "estado_simulador_S1": "a 0 (llega en S2..S7)"
   },
   {
    "bloque": "P",
@@ -918,9 +899,7 @@
     "buscando/200"
    ],
    "que": "percepción: percibido, oído, edad, última posición conocida, 2 sonidos (tipo one-hot de 4), ticks buscando. Con la v4 el bloque obj_*, los jug_* y el marco 'delante' se calculan con la ESTIMACIÓN cuando no se le percibe",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "a 0 (llega en S3..S7)",
-   "estado_simulador_S3": "calculado (percibido: rayo a los ojos, alcance 32/48 y la regla de la noche; oído; estimación; el SUSTITUTO en la estimación cuando no lo percibe: las 468 se calculan contra él)"
+   "estado_simulador_S1": "a 0 (llega en S2..S7)"
   },
   {
    "bloque": "E",
@@ -950,9 +929,7 @@
     "yo_emboscado/200"
    ],
    "que": "emboscada y luz: oculto a 3 bloques en 8 direcciones (el orden de altura_r3_*), escondite, me ve, luz del jugador, pasillo, puerta, techo, ticks sin vernos, emboscados",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "calculado con el mundo v4 (oculto_r3_*, escondite cada 10 ticks, me_ve_jugador con el cono de 70° y luz ≥ 4 o < 8, jug_luz, pasillo, puerta, bajo techo, jug_sin_vernos) salvo emboscados/5 y yo_emboscado/200 (EMBOSCAR: S5)",
-   "estado_simulador_S3": "calculado como Ambush (escondite cada 10 ticks, oculto_r3_* cada 10 a la altura de sus ojos; puerta: un pasillo de 1–2 también cuenta; techo a 1–4 sobre el bloque de los ojos; jug_sin_vernos cada 10 ticks) y emboscados/5, yo_emboscado/200"
+   "estado_simulador_S1": "a 0 (llega en S2..S7)"
   },
   {
    "bloque": "A",
@@ -971,9 +948,7 @@
     "veo_jug_arriba"
    ],
    "que": "altura y pilar: sobre el suelo, pilar, torre, borde, caída si lo empujan, alcanzable, pared trepable, tiempo arriba, tira desde arriba, lo veo arriba",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "calculado con el mundo v4 (el suelo = la menor de las medianas a 2,5 y a 4 bloques; torre = ≥ 2,5 arriba y pared a la altura del pecho en ≥ 5 de 8 direcciones a 1,5–2,5)",
-   "estado_simulador_S3": "calculado como Heights (cada ≤ 10 ticks): suelo = mediana de 8 puntos a 2,5 sin los que son pared a la altura de los pies; torre con pared a 1, 2 o 3; borde en pasos de 0,5 hasta 4 (neutro 2); caída al empujar (0 con pared); alcanzable por familia; trepable por columnas; jug_arriba = ticks con sobre ≥ 2"
+   "estado_simulador_S1": "a 0 (llega en S2..S7)"
   },
   {
    "bloque": "O",
@@ -1002,9 +977,7 @@
     "objeto1_consumible"
    ],
    "que": "2 objetos en el suelo (≤ 12, del más cercano): posición, mejora/10, del jugador, tipo",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "a 0 (llega en S3..S7)",
-   "estado_simulador_S3": "calculado (GroundItems: 2 útiles a ≤ 12, mejora = valor del arma en sus manos − lo que lleva; escudo 3, consumible 1, caña 0,5)"
+   "estado_simulador_S1": "a 0 (llega en S2..S7)"
   },
   {
    "bloque": "C",
@@ -1031,9 +1004,7 @@
     "lanzamiento_ok"
    ],
    "que": "consumibles del mob, estado del consumo, efectos propios y del jugador, perla_destino_ok, lanzamiento_ok",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "a 0 (llega en S3..S7)",
-   "estado_simulador_S3": "calculado (MobKit/MobItems: mochila, enfriamiento común, consumiendo, efectos; perla_destino_ok y lanzamiento_ok solo con algo que usar)"
+   "estado_simulador_S1": "a 0 (llega en S2..S7)"
   },
   {
    "bloque": "G",
@@ -1047,9 +1018,7 @@
     "golpe_escudo_listo"
    ],
    "que": "escudo: ticks arriba, cuándo llega el golpe del jugador, si es fuerte, bloqueo reciente, golpe de escudo listo",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "a 0 (llega en S3..S7)",
-   "estado_simulador_S3": "calculado (ShieldPlay: ticks con el escudo, jug_golpe_en con 0,28 b/t y tope 20, golpe fuerte, bloqueo_hace neutro 1, golpe listo)"
+   "estado_simulador_S1": "a 0 (llega en S2..S7)"
   },
   {
    "bloque": "L",
@@ -1070,9 +1039,7 @@
     "luz1_alcanzable"
    ],
    "que": "2 fuentes de luz rompibles (≤ 16 del jugador y de mí): posición, aporte a la luz del jugador, alcanzable",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "calculado con el mundo v4 (antorchas a ≤ 16 del jugador y del mob; aporte = lo que baja la luz de sus pies sin ella)",
-   "estado_simulador_S3": "calculado como Lights (las 2 más cercanas AL JUGADOR, Manhattan; aporte = max(0, min(luz de bloque, emite − Manhattan) − max(las demás, cielo)); alcanzable = sitio donde estar a ≤ 4 de mi altura y sin ruta fallida en 100 ticks)"
+   "estado_simulador_S1": "a 0 (llega en S2..S7)"
   },
   {
    "bloque": "W",
@@ -1097,24 +1064,7 @@
     "mundo_confianza"
    ],
    "que": "vector de mundo (16): causas de muerte (8, suman 1), éxito por forma de atacar (5), estilo del jugador (2), confianza",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "a 0 (llega en S3..S7)",
-   "estado_simulador_S3": "los valores iniciales (causas 1/8, lo demás 0) y, en la pelea, las muertes (causa, lo que funcionó) y la confianza, como WorldMemory; sin campañas (S7) ni el estilo al acabar"
-  },
-  {
-   "bloque": "J",
-   "inicio": 468,
-   "n": 4,
-   "nombres": [
-    "jug_apunta_mi_caja",
-    "jug_apunta_dist/6",
-    "jug_golpe_listo",
-    "jug_amenaza"
-   ],
-   "que": "(revisión 4.1) el jugador me apunta: el rayo de su mirada da en MI caja (la entidad más cercana del rayo, sin bloque en medio, a ≤ max(6, jug_alcance)), la distancia por el rayo /6, su golpe vanilla listo (getAttackStrengthScale(0.5)) y la amenaza (apunta, a ≤ jug_alcance y golpe ≥ 0,9)",
-   "estado_simulador_S1": "a 0 (llega en S2..S7)",
-   "estado_simulador_S2": "a 0 (llega en S3..S7)",
-   "estado_simulador_S3": "calculado con forja={\"mira\": True} (py_mobs_v4l); sin ella, a 0"
+   "estado_simulador_S1": "a 0 (llega en S2..S7)"
   }
  ],
  "n_salidas": 53,
@@ -1343,9 +1293,7 @@
   "golpe_escudo (52)": "escudo arriba, bloqueo_hace < 20 ticks y alcanza",
   "en furia": "defensa 1–2, fintar, RETIRARSE, REAGRUPARSE, EMBOSCAR y objeto 6 prohibidos",
   "regla": "el índice 0 de cada softmax nunca se prohíbe (objeto_nada siempre 1); una Bernoulli prohibida sale 0",
-  "estado_S1": "en el simulador (paso S1) TODO lo nuevo está prohibido: 34..41 = 0, 42 = 1, 43..52 = 0",
-  "estado_S2": "con el mundo v4 (forja={\"mundo_v4\": True} o un escenario_v4): tactica_apagar_luz (40) = mob_griefing y luz0 presente y alcanzable (solo antorchas, §7.0.2); tactica_asediar (41) = jug_sobre_suelo ≥ 2 o jug_en_torre; especial_3 (23) del arquero (flecha de empuje) y de la araña (zarpazo) = listo y jugador arriba (≥ 2) o al borde (< 0,6) (la flecha, también con peligro detrás), a ≤ 20 y viéndolo (la flecha) o a < 2,5 (el zarpazo). Lo demás nuevo sigue prohibido. Sin el mundo v4, la del S1 bit a bit",
-  "estado_S3": "con las mecánicas (forja={\"mecanicas_v4\": True}): SECTOR (34) = tiene hueco; TIRO_LIBRE (35) = arquero y aliado en la línea; FORMACION (36) = capitán vivo y puesto con punto; EMBOSCAR (37) = escondite; BUSCAR (38) = no lo percibe, lo vio y hace < 600; RECOGER (39) = el útil más cercano a ≤ 3 de alto y a la vista; APAGAR_LUZ (40) = mob_griefing y luz0 alcanzable; ASEDIAR (41) como el S2; objeto k = MobItems.allowed (4, 5 y 7 solo percibiéndolo); furia (51) = Fury.allowed; golpe_escudo (52) = ShieldPlay.bashReady; en furia, defensa 1–2, fintar, RETIRARSE, REAGRUPARSE, EMBOSCAR y objeto 6 a 0"
+  "estado_S1": "en el simulador (paso S1) TODO lo nuevo está prohibido: 34..41 = 0, 42 = 1, 43..52 = 0"
  },
  "accion_simulador": [
   "mover 0..8",
@@ -1361,56 +1309,9 @@
   "golpe_escudo 0/1"
  ],
  "red": {
-  "forma": "472 → 128 → 128 (tanh) → GRUCell 96 → 53 (logits = [h2, mem]·w_out + b_out); la 4.0 era 468 → ...",
+  "forma": "468 → 128 → 128 (tanh) → GRUCell 96 → 53 (logits = [h2, mem]·w_out + b_out)",
   "calculo": "el de NetBrain.forward (igual que v3); cambian el muestreo (cabezas nuevas) y la carpeta"
  },
  "migracion_v3b": "1.ª capa: columnas 0..279 copiadas, 280..467 a 0; 2.ª capa copiada; GRU 64 → 96: las 64 copiadas y las 32 nuevas con todos sus pesos a 0 (z = 0,5, n = 0 → se quedan en 0); salida y crítico: columnas de las 32 nuevas a 0; logits nuevos: 8 tácticas = fila de ACERCARSE − 5, objeto nada = +3 (resto 0), furia y golpe de escudo p = 0,05. Con los bloques nuevos a 0, forward = v3b (< 1e-5).",
- "estado_simulador": "paso S1 (motor py_mobs_v4, forja={\"contrato\": \"v4\"}): observación = v3b + 188 ceros; máscara = v3b + todo lo nuevo prohibido; acción de 11 (una táctica 13..20 se ejecutaría como LIBRE; objeto, furia y golpe de escudo se ignoran); maestro de 11 (los 3 últimos a 0); por_mob = el de v3b (29).",
- "estado_simulador_S2": "paso S2 (el mismo motor, forja={\"contrato\": \"v4\", \"mundo_v4\": True} o \"escenario_v4\"): bloques E (salvo 385, 386), A, L y jug_luz calculados; APAGAR_LUZ (19) y ASEDIAR (20) con ejecutor; el especial 3 del arquero y la araña; el maestro los usa. Sin el mundo v4, el S1 bit a bit.",
- "mundo_v4": {
-  "luz": "por celda (el aire sobre el suelo): max(cielo, antorchas). BFS: −1 por paso horizontal y −1 por bloque de desnivel; no pasa entre columnas cuyo aire no se solapa en ≥ 1 bloque (paredes, techos). Cielo: 15 de día, `luz` (4) de noche, 0 bajo techo (se cuela por las aberturas). Antorcha 14, de almas 10 (de pared: a 1,5 sobre el suelo, 13/9 en su celda)",
-  "luces_rompibles": "solo antorcha, antorcha de pared, antorcha de almas y antorcha de almas de pared (§7.0.2), y solo con mob_griefing (opción `mob_griefing`, por defecto true)",
-  "apagar_luz": "ruta a luz0 (o luz1 si luz0 no se alcanza); a ≤ 2 en plano y ≤ 2 de alto, 15 ticks de aviso y la rompe",
-  "asediar": "jugador arriba: los de cuerpo a cuerpo a 8 (6, 10) de la base SIN línea de vista desde la cima si lo hay, desde su hueco del anillo girando de 20° en 20°; los arqueros a 12 (10, 14) CON línea y tiran; cuando baja (< 1), carga. Nunca rompe ni construye (§7.0.5)",
-  "hueco_3": "flecha de empuje (esqueleto, stray: aviso 20 tensando, empuje 0,9 + 0,15 arriba, daño 2 = × 0,5; enfriamiento 160–240; el escudo del jugador la para) y zarpazo de la araña (aviso 6, golpe + empuje 1,0 + 0,2 arriba; 80–120)",
-  "encerrado": "8 columnas alrededor ≥ 1,9 sobre sus pies y techo a ≤ 2,1: el combate acaba en empate (resultado \"encerrado\", por_combate 4, sin el −3 del fin por tiempo) (§7.0.5)",
-  "cuentas_por_mob": "LoteForja.v4() M × 9: bajarlo, dano_bajado, dano_arriba, expuesto, oscuridad, dano_oscuro, luces_rotas, empujes, encerrado (premios: entrenar_forja.PESOS_V4)",
-  "escenarios": "antorchas, interior, cueva, pilar, torre, bunker, pasillo, oscuridad (opción `escenario_v4`; apagados por defecto)"
- },
- "estado_simulador_S3": "paso S3 (motor py_mobs_v4b, forja={\"contrato\": \"v4\", \"mecanicas_v4\": True}, que enciende el mundo v4): todas las entradas como ObsV4.build del mod; con las mecánicas (forja={\"mecanicas_v4\": True}): SECTOR (34) = tiene hueco; TIRO_LIBRE (35) = arquero y aliado en la línea; FORMACION (36) = capitán vivo y puesto con punto; EMBOSCAR (37) = escondite; BUSCAR (38) = no lo percibe, lo vio y hace < 600; RECOGER (39) = el útil más cercano a ≤ 3 de alto y a la vista; APAGAR_LUZ (40) = mob_griefing y luz0 alcanzable; ASEDIAR (41) como el S2; objeto k = MobItems.allowed (4, 5 y 7 solo percibiéndolo); furia (51) = Fury.allowed; golpe_escudo (52) = ShieldPlay.bashReady; en furia, defensa 1–2, fintar, RETIRARSE, REAGRUPARSE, EMBOSCAR y objeto 6 a 0. Sin las mecánicas y con el mundo v4: las entradas igual (neutros incluidos) y la máscara del S2. Sin el mundo v4: el S1 bit a bit.",
- "neutros": {
-  "orden_ninguna / formacion_libre": "1 sin capitán (el mod; el diseño dudaba)",
-  "bloqueo_hace/20": "1 sin bloqueo o hace > 20 ticks",
-  "jug_borde/2": "2 sin borde en 4 bloques (el S2 daba 1: tope 2 y /2)",
-  "mundo_muerte_*": "1/8 cada una (el S1/S2 daban 0)",
-  "obj_edad/100, ultima_edad/200": "0 mientras lo percibe; 2 si nunca lo vio (400 ticks)",
-  "perla_destino_ok, lanzamiento_ok": "0 si no lleva perla / nada que lanzar",
-  "creeper_encendido_cerca/7": "2 sin ningún creeper encendido a < 7",
-  "tiro_punto_dist/4": "2 (sin punto) solo para un arquero con un aliado en la línea; si no, 0",
-  "moral_grupo, moral_propia": "calculadas siempre (≈ 1 sin bajas; los intrépidos ≥ 0,8)",
-  "sin el mundo v4": "el S1 (migración T0): los 188 nuevos a 0, como antes",
-  "jug_apunta_mi_caja, jug_apunta_dist/6, jug_golpe_listo, jug_amenaza": "(4.1) 0 sin percibir al jugador o sin objetivo"
- },
- "mecanicas_S3": {
-  "capitan": "Captain: el élite o campeón más fuerte; órdenes cada 10 ticks (reglas de §3.4 o capitan_red); una orden sigue mientras orden, formación y sector no cambien; muerto: sin_mando 200 ticks y golpe de moral; carga con cuenta 0/10/20/40 y +1 turno 40 ticks; puestos por tipo; MURO/PINZA/CUÑA/LIBRE y los puntos de cada orden; FORMACION (por el anillo si pasa a < 3,5 del jugador en CERCAR/HOSTIGAR/CARGA)",
-  "moral": "moral del grupo y propia (§4.3); furia: el 10 % del grupo (≥ 1 desde 5), tras un golpe de moral, +25 % de daño y +20 % de velocidad 200 ticks, luego 100 agotado (−20 %, sin turno); abandono: 100 ticks en RETIRARSE a > 20 (no es morir)",
-  "escudo": "ShieldPlay: golpe de escudo (4 de aviso, 0,8 + 0,15, −15 de estamina, corta la carga, 60 de enfriamiento); reglas: tras un bloqueo, la mitad; el muro de escudos solo sube el escudo si viene algo o a un brazo",
-  "oido": "Hearing (pasos 6/12, caer 10, poner bloque 16, comer 8, disparar 16, golpe 12; sin línea, la mitad), Perception (estimación y sustituto), HonestPerception (perdido tras 20 ticks: BUSCA o EMBOSCA), aburrimiento 600 ticks, escondites y EMBOSCAR",
-  "recoger": "GroundItems: armas que sueltan al morir (lo recogido siempre; lo de aparecer con p_suelta_arma) y sembradas (objetos_sembrados); RECOGER a 1,5 y 10 ticks; el arma a la mano y la de antes al repuesto; caña → garfio",
-  "consumibles": "MobKit (mochila al aparecer por amenaza) y MobItems (9 objetos, tiempos y enfriamientos de §5; arrojadiza a donde estará con 0,75; perla con lobSpeed, 2 de daño; carga de viento con 1,5, estallido 2,5 y empuje 1,2 + 0,6)",
-  "sector": "SECTOR (a su hueco por el anillo) y TIRO_LIBRE (Squad.clearLineStep)",
-  "no_hecho": "S7 (campañas y el estilo del jugador en W); el jugador de reglas no suelta objetos (del_jugador siempre 0); los arcos del suelo (un arquero no cambia de familia); la percepción del jugador de reglas (sigue viéndolo todo)"
- },
- "mira_v41": {
-  "entradas": {
-   "468 jug_apunta_mi_caja": "1 si el rayo de los ojos del jugador (pies + 1,62; agachado + 1,27) en la dirección de su mirada (getViewVector(1), cabeceo incluido) da en mi caja (getBoundingBox, sin inflar) ANTES que en cualquier otra entidad que se pueda elegir con el rayo (isPickable, no espectador, no el propio jugador) y que en un bloque (clip COLLIDER con el mismo rayo), a ≤ R = max(6, jug_alcance); si no, 0",
-   "469 jug_apunta_dist/6": "la distancia de los ojos a la entrada del rayo en mi caja (0 si los ojos están dentro) / 6, tope 2; 0 si jug_apunta_mi_caja = 0",
-   "470 jug_golpe_listo": "player.getAttackStrengthScale(0.5f) (0..1, continuo; 1 = golpe vanilla lleno)",
-   "471 jug_amenaza": "1 si jug_apunta_mi_caja = 1 y distancia ≤ jug_alcance (el alcance del golpe del jugador: el atributo entity_interaction_range con el arma de la mano, = jug_alcance/6 × 6) y jug_golpe_listo ≥ 0,9; si no, 0"
-  },
-  "neutros": "las 4 a 0 (el acuerdo con el mod): sin jugador objetivo, sin percibirlo (obj_percibido = 0: no se calculan contra la estimación) y en una red 4.0 migrada",
-  "coste": "un rayo por JUGADOR y tick (no por mob), compartido por todos los mobs que lo tienen de objetivo: el resultado es (entidad, distancia) y cada mob solo compara su id",
-  "simulador": "py_mobs_v4l, forja={\"mira\": True}. El jugador del simulador no tiene cabeceo: el rayo va en su dirección horizontal con el cabeceo hacia la altura de su objetivo (clamp(ojos, pies + 0,1, cabeza − 0,1), la de distancia_golpe); sin objetivo, horizontal",
-  "migracion_v40": "una red 4.0 (468) → 4.1 (472): columnas 468..471 de la 1.ª capa (w1) a 0; todo lo demás igual. Con el bloque J a 0, el mismo forward (exacto). El mod distingue las redes por \"revision\" del JSON (sin el campo = 4.0)"
- }
+ "estado_simulador": "paso S1 (motor py_mobs_v4, forja={\"contrato\": \"v4\"}): observación = v3b + 188 ceros; máscara = v3b + todo lo nuevo prohibido; acción de 11 (una táctica 13..20 se ejecutaría como LIBRE; objeto, furia y golpe de escudo se ignoran); maestro de 11 (los 3 últimos a 0); por_mob = el de v3b (29)."
 }

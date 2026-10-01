@@ -1034,6 +1034,64 @@ Ojo con las medidas anteriores de este documento: se hicieron con HERRERO y la c
 siguen así salvo la carrera: corren con `nivel` = EXTREMO y `dificultad` = HERRERO forzados (`TestDefaults`), o sea,
 todos los sistemas de Extremo con las cifras de Herrero y la carrera a ×1,315.
 
+## Mira (v4.1) (30-09; responde a `mod_spec_mira.md`)
+
+Hecho: el contrato 4.1 (472 entradas; la 4.0 con 468 queda en `red_mob_v4_contrato_v40.json`).
+
+- **Qué red es cuál.** `NetBrain.revision` lee `"revision"` del JSON (sin campo = "4.0"). `MobAi.checkV4` compara los
+  nombres con `ObsV4.names()` (468) o `ObsV4.names41()` (472: las 468 intactas más el bloque J) según la revisión; una red
+  de 468 que diga ser 4.1, o una revisión desconocida, se descarta con su motivo. `MobAi` llama a
+  `ObsV4.build(mob, seen, mind, revision == 4.1)`. Una 4.0 recibe exactamente las 468 de siempre.
+- **Rayo (`ai/Aim`).** Un `clip` COLLIDER más `ProjectileUtil.getEntityHitResult` (isPickable, sin espectadores ni el
+  propio jugador), con la mirada real (`getEyePosition`, `getViewVector(1)`, cabeceo incluido) y de largo
+  R = max(6, `Reach.player`). **Un rayo por jugador y tick**: se guarda `(tick, ojos, mirada, id, distancia)` y cada mob
+  solo compara su id (los ojos y la mirada van en la clave para que un cambio de mirada dentro del mismo tick no lea un
+  rayo viejo).
+- **Las cuatro.** 468 = el id es el mío; 469 = distancia por el rayo / 6 (tope 2; la del punto de entrada en la caja;
+  0 si no me apunta); 470 = `getAttackStrengthScale(0.5)` siempre que me perciba; 471 = apunta y distancia ≤
+  `Reach.player` y 470 ≥ 0,9.
+- **Neutros.** Las cuatro a 0 si el mob no percibe al jugador en ese tick (con el sustituto de Perception no se calcula
+  nada), si no hay cerebro, o fuera de Extremo (`Ladder.aimInputs()`): ni se lanza el rayo. Con una red 4.0 no hay bloque J.
+- **Pruebas** (`MiraGameTests`): contrato 4.1 y 4.0 nombre a nombre; la 4.0 carga con 468 y la 4.1 con 472; zombi a 2,5:
+  468 = 1, 469 = 2,2/6, 471 = 1; el de detrás, 0; a 4: apunta y no amenaza; a 7,7: 0; recién golpeado: 470 = el vanilla y
+  471 = 0; muro en medio: 0; neutros (no percibido, Pacífico a Difícil, 4.0: ningún rayo); un solo rayo con dos mobs; una
+  red 4.1 lleva un zombi con 472 entradas finitas.
+
+### ¿Hay una reacción POR REGLAS a que el jugador salte? No
+
+Se ha mirado todo el código de defensa (`MobDefense`, `Aggression`, `RuleBrain`, `ShieldPlay`, `HopBack`, `EnderDodge`,
+`MobActions`, `TacticGoal`, `PlayerHabits`): **ninguna regla mira si el jugador salta, cae o hace un crítico.** No hay
+`isCritical`, `fallDistance`, `onGround()` ni la velocidad vertical del jugador en ninguna decisión por reglas (el
+`onGround` que aparece es el del propio mob: solo esquiva o salta atrás desde el suelo). Lo que sí dispara cada esquiva
+o bloqueo, con las cifras:
+
+| Reacción | Qué la dispara | Cifras |
+|---|---|---|
+| **Esquiva de lado** (`MobDefense.dodge`, `Decision.defense = 2`) | **Por reglas, solo** `Aggression.charging(jugador)`, o sea `ChargedStrike.isCharging`: el jugador está CARGANDO el golpe de Forja (mantener el clic), no el enfriamiento vanilla. Además: a menos de 3,0 bloques del jugador (`mob.distanceTo`), sin escudo útil, `dodgeReady`, y el mob sin turno de ataque ni golpe en marcha (`windup == 0`, `!AttackTokens.holds`). También por la **red**, con la cabeza `defensa` = 2 (la máscara solo pide `dodgeReady && onGround`) | salto lateral de 0,6 y 0,25 arriba, lado al azar; 6 ticks sin recibir daño; espera de 60 ticks (`DODGE_COOLDOWN`); la esquiva evita el golpe entero (`allowDamage` devuelve false) |
+| **Retirarse del golpe cargado** (`RETIRARSE`) | Mismo disparo: jugador cargando, a menos de `Reach.outside(jugador, 4,0)` (4 con el alcance normal, más si su arma llega más), mob sin turno ni golpe en marcha, y sin escudo o con él roto | andar hacia atrás hasta salir de su alcance |
+| **Escudo arriba** (`CUBRIRSE`) | (a) por reglas, jugador cargando a menos de 4,0 con el mob con escudo y la guardia sana; (b) mob con escudo, sin turno, a menos de 8 bloques, y `ShieldPlay.incoming`: golpe en ≤ 3 ticks (`blowIn`: el mayor entre lo que falta de la recarga vanilla y `hueco / 0,28` bloques por tick, con hueco = distancia − alcance del jugador) o golpe fuerte (carga ≥ 0,8 del máximo, o arma de área recargada con el mob dentro de su radio) o arco/ballesta apuntando (coseno > 0,9); **o** a menos del alcance del jugador + 1 | parada si el escudo subió hace ≤ 4 ticks (rebota el golpe, jugador con lentitud 1 y debilidad 30 ticks, el mob responde con 4 ticks de aviso); si no, bloqueo normal, que le cuesta 0,7 de postura por daño |
+| **Salto atrás tras golpear** (`HopBack`) | El propio mob **acaba de dar un golpe**; no mira al jugador | 3 ticks de agachada, salto de 0,5 hacia atrás y 0,3 arriba (el creeper 0,25/0,2 al cortar el siseo), espera de 120 ticks, solo con sitio libre |
+| **Teletransporte del enderman** (`EnderDodge`) | Cualquier golpe con atacante vivo (no proyectiles ni daño sin autor), 34 % por golpe, sin postura rota | 4 a 8 bloques; espera de 140 ticks tras uno que salió bien |
+| **Golpe de escudo** (`ShieldPlay`) | Tuvo un bloqueo en los últimos 20 ticks y el jugador a su alcance | no es reacción a nada del jugador salvo a su golpe |
+
+Con el golpe vanilla ya recargado y entrando despacio con la mira encima, **nada por reglas** hace que el mob esquive:
+`blowIn` solo hace que el mob con escudo lo suba (fila «escudo», y solo si no tiene turno). Lo del salto no es una regla
+de Forja. Lo más probable de lo que Andy ve es una de estas tres cosas, o la suma:
+
+1. **La red v4 (Extremo, `redes_v4`)**: ve `obj_vy*5` (velocidad vertical del jugador), `obj_en_suelo` y
+   `obj_vel_hacia_mi*5` desde la base v3b, y el simulador entrena con un jugador de reglas que SALTA para dar críticos el
+   15 % de las veces; la red puede haber aprendido «jugador en el aire y acercándose: esquiva». Es la única vía donde el
+   salto cuenta, y es aprendida, no escrita. Hasta la 4.1 no tenía la mira ni el golpe listo, que es lo que explica que no
+   reaccione a la entrada lenta con el golpe cargado: no podía verlo.
+2. **Un golpe cargado de Forja a la vez**: si Andy salta mientras mantiene el clic, el mob ve `charging` (ver la tabla).
+3. **El hueco de la aproximación**: saltando se cierra más deprisa, el mob queda dentro de 3 bloques antes de que su turno
+   (`AttackTokens`) o su `windup` lo ocupen, y el esquive por reglas de la primera fila sale; andando despacio el mob suele
+   estar ya en `windup` o con el turno, y esas condiciones lo impiden.
+
+Para el simulador: no hay una regla del mod sobre el salto que copiar. Lo fiel es lo que hay: esquiva = `charging` (golpe
+cargado de Forja) a < 3 con `dodgeReady`, y escudo = `blowIn ≤ 3` o a < alcance + 1. Con la 4.1, `jug_amenaza` (apunta, a
+su alcance, golpe ≥ 0,9) es la señal vanilla equivalente a «golpe cargado» para una red.
+
 ## Rendimiento
 
 `RedV4PerfGameTests` (entorno propio, corre solo, chunks forzados): 30 mobs mezclados (zombis, algunos con escudo y

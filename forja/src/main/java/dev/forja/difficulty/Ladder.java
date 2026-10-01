@@ -39,7 +39,7 @@ import net.minecraft.world.level.gamerules.GameRuleCategory;
  * redes v4             no        no        no        no        sí       (config/forja/redes_v4, donde haya)
  * red del capitán      no        no        no        no        sí       (redes_v4/red_capitan.json, si está)
  * capitán 2            no        no        no        no        sí       (visión, sucesión, protección, órdenes 2, visible)
- * entradas de puntería v4.1 (cuando existan): solo Extremo
+ * entradas de puntería v4.1 no no no no sí (bloque J: aimInputs(); redes con "revision": "4.1")
  * carrera (del +35 %)  ×0,4     ×0,4      ×0,4      ×0,6      ×0,9     → +14 %, +14 %, +14 %, +21 %, +31,5 %
  * estamina fuertes     ×0,7     ×0,7      ×1        ×1        ×1       (veteranos, élites, campeones, mobs de Forja)
  * daño fuertes         ×0,7     ×0,7      ×1        ×1        ×1,25    (= el daño del preset)
@@ -199,7 +199,7 @@ public enum Ladder {
 		return this.preset;
 	}
 
-	/** Whether the v4.1 aim inputs, once they exist, are fed at this level: Extremo only. */
+	/** Whether the v4.1 aim inputs (block J, ai/Aim) are worked out at this level: Extremo only; elsewhere they read 0. */
 	public boolean aimInputs() {
 		return this == EXTREMO;
 	}
