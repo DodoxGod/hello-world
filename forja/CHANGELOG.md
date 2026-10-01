@@ -1,5 +1,9 @@
 # Novedades
 
+## 2026-10-01 — Revisión de calidad
+
+- `docs/REVISION_CODEX.md` reúne errores, propuestas de equilibrio, ideas y prioridades de mantenimiento verificadas contra código y documentos del mod.
+
 ## 2026-10-01 — Liberar las cachés de clase al salir
 
 - El cambio o reinicio de clase y la desconexión borran también los cálculos de talentos guardados por UUID.
