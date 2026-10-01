@@ -34,11 +34,13 @@ public final class RuinMood {
 	private static final ResourceKey<Structure> TUMULO = key("tumulo_del_herrero");
 	private static final ResourceKey<Structure> TALLER = key("taller_de_montana");
 	private static final ResourceKey<Structure> CAMPAMENTO = key("campamento_saqueadores");
+	/** The End ruin of the void forge (docs/ALEACIONES_NETHER_END.md). */
+	private static final ResourceKey<Structure> FRAGUA_DEL_VACIO = key("fragua_del_vacio");
 
 	/** All five, so one lookup can answer "am I in any of ours, and which". */
 	@SuppressWarnings("unchecked")
 	private static final ResourceKey<Structure>[] OURS = new ResourceKey[] {
-		FORJA_ABANDONADA, FRAGUA_CAIDA, TUMULO, TALLER, CAMPAMENTO,
+		FORJA_ABANDONADA, FRAGUA_CAIDA, TUMULO, TALLER, CAMPAMENTO, FRAGUA_DEL_VACIO,
 	};
 
 	private RuinMood() {
@@ -118,6 +120,12 @@ public final class RuinMood {
 			}
 			if (random.nextInt(8) == 0) {
 				level.playSound(null, x, y, z, SoundEvents.FIRE_AMBIENT, SoundSource.AMBIENT, 0.25F, 0.5F);
+			}
+		} else if (here == FRAGUA_DEL_VACIO) {
+			// The void forge: nothing burns out here, it drifts up, the way everything near the void forge does.
+			level.sendParticles(ParticleTypes.REVERSE_PORTAL, x, y + 1.0, z, 6, 3.5, 1.5, 3.5, 0.02);
+			if (random.nextInt(6) == 0) {
+				level.playSound(null, x, y, z, SoundEvents.PORTAL_AMBIENT, SoundSource.AMBIENT, 0.12F, 1.6F);
 			}
 		} else if (here == TUMULO) {
 			// The smith's barrow: nothing burns down here. What is left is what is left of him.

@@ -116,6 +116,15 @@ public class ForjaClientTest implements FabricClientGameTest {
 			log("ALL CHECKS PASSED (solo fragua_caida)");
 			return;
 		}
+		// The void forge's ruin, placed in the real End and photographed (FraguaVacioFootage).
+		if ("fragua_vacio".equals(System.getenv("FORJA_SOLO"))) {
+			try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
+				singleplayer.getConnection().waitForChunksRender();
+				FraguaVacioFootage.film(context, singleplayer.getServer());
+			}
+			log("ALL CHECKS PASSED (solo fragua_vacio)");
+			return;
+		}
 		if ("materiales".equals(System.getenv("FORJA_SOLO"))) {
 			checkMaterials(context);
 			log("ALL CHECKS PASSED (solo materiales)");

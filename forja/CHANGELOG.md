@@ -1,5 +1,26 @@
 # Novedades
 
+## 2026-10-01 — La Fragua del Vacío del End y el eterio
+
+- **Ruina nueva en el End** (`forja:fragua_del_vacio`): pequeña, de ladrillo de piedra del End y púrpura roto, en las
+  islas altas de fuera (bioma `end_highlands`), más o menos una cada 384 bloques. Sobre un altar de obsidiana, una
+  **fragua del vacío** fría; un yunque astillado, varas del End, un cofre y guardias: dos corazas vacías y un shulker.
+- **Un ojo de ender la enciende** y despierta a sus guardianes (se levantan dos corazas vacías más). Funciona como la
+  fragua de almas, con **perlas de ender** de combustible, y solo arde en el End. No se rompe.
+- **Eterio** (Aetherium), solo ahí: 2 acero + 1 caparazón de shulker + 4 coro reventado + 4 piedra del End → 2
+  lingotes. Ligero y rápido en la mano (mango +0,20), cabeza +3,0, 1200 de durabilidad, armadura 18.
+- Rasgo nuevo **Flotante**: lo que golpea (arma, herramienta o flecha) **se eleva** 1 s, como con la bala de un shulker,
+  una vez cada 3 s por objetivo y nunca un jefe. Con armadura de eterio, **el vacío te devuelve**: si caes al vacío
+  vuelves al último suelo firme, con caída lenta, y cada pieza pierde un 10 %; una vez cada 3 minutos (1,5 con el
+  conjunto). Conjunto: saltas más y +1 de dureza.
+- El cofre trae siempre la nota con la receta y un ojo de ender; a veces un lingote de muestra.
+- Lingote y kit de reparación de la familia de `tools/lingotes.py`: dos motas que se levantan de la barra.
+- Guía: libro VI, «Las fraguas lejanas», y libro III, «Aleaciones de fragua». JEI: «Fragua del vacío (End)».
+- Equilibrio: entra en la sección «Aleaciones de fragua frente a la netherita».
+- Pruebas: encender con ojo de ender, fundir solo en el End, la levitación (y no a un jefe), el vacío que te devuelve,
+  la plantilla, la estructura en las tierras altas y el botín. Sección de cliente nueva `FORJA_SOLO=fragua_vacio`, con
+  su hoja en `Forja_capturas_mejoras/aleacion_end`.
+
 ## 2026-10-01 — Magmacero, segunda aleación de la fragua de almas: la lava se vuelve suelo
 
 - **Magmacero** (Magmasteel), solo en la fragua de almas de la Fragua caída: 2 acero + 4 basalto + 4 piedra negra +

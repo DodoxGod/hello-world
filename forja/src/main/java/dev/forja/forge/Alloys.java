@@ -140,7 +140,10 @@ public final class Alloys {
 			new Part(() -> Items.SOUL_SOIL, 4)), 2),
 		/** Magmasteel: steel run with basalt, blackstone and magma cream. Heavy, and lava is a floor to it. */
 		new Recipe("magmacero", Heat.FUNDIDA, List.of(new Part(() -> ModItems.alloy("acero"), 2), new Part(() -> Items.BASALT, 4),
-			new Part(() -> Items.BLACKSTONE, 4), new Part(() -> Items.MAGMA_CREAM, 2)), 2)
+			new Part(() -> Items.BLACKSTONE, 4), new Part(() -> Items.MAGMA_CREAM, 2)), 2),
+		/** Aetherium: steel with a shulker's shell, popped chorus and end stone in it, at the void forge. It does not want to fall. */
+		new Recipe("eterio", Heat.FUNDIDA, List.of(new Part(() -> ModItems.alloy("acero"), 2), new Part(() -> Items.SHULKER_SHELL, 1),
+			new Part(() -> Items.POPPED_CHORUS_FRUIT, 4), new Part(() -> Items.END_STONE, 4)), 2)
 	);
 
 	/**
@@ -162,7 +165,8 @@ public final class Alloys {
 
 	private static final java.util.Map<String, Place> PLACES = java.util.Map.of(
 		"fatuo", Place.ALMAS,
-		"magmacero", Place.ALMAS
+		"magmacero", Place.ALMAS,
+		"eterio", Place.VACIO
 	);
 
 	/** Where this alloy is made. */

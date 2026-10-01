@@ -157,7 +157,13 @@ public enum ForgeMaterial implements StringRepresentable {
 	 * handle and a long life: armour and pickaxes, not blades. Lava cools under the feet of whoever wears it.
 	 */
 	MAGMACERO(0x6E3A2C, alloyTag("magmacero"), null, true, 1600, 7.0F, 3.0F, BlockTags.INCORRECT_FOR_DIAMOND_TOOL,
-		10, 1.55F, -0.20F, 0.90F, new int[]{3, 6, 8, 3}, 38, 2.5F, 0.1F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.VOLCANICO);
+		10, 1.55F, -0.20F, 0.90F, new int[]{3, 6, 8, 3}, 38, 2.5F, 0.1F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.VOLCANICO),
+	/**
+	 * Aetherium: steel, a shulker's shell, popped chorus and end stone, at the void forge of the End ruin and nowhere
+	 * else. Light and quick in the hand, thin as armour; what it is for is getting there and getting back.
+	 */
+	ETERIO(0x7A5FB0, alloyTag("eterio"), null, true, 1200, 8.5F, 3.0F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
+		22, 1.05F, 0.20F, 1.10F, new int[]{2, 6, 7, 3}, 30, 1.5F, 0F, SoundEvents.ARMOR_EQUIP_CHAIN, Trait.FLOTANTE);
 
 	/** A material's special effect, active when any part of the item uses it. */
 	public enum Trait {
@@ -203,7 +209,9 @@ public enum ForgeMaterial implements StringRepresentable {
 		/** It burns blue: its flame hurts what fire cannot and water does not put it out. Armor gives it to attackers. */
 		ESPECTRAL,
 		/** Lava cools into a crust under the feet of whoever wears it; its tools cut Nether stone half again as fast. */
-		VOLCANICO;
+		VOLCANICO,
+		/** What it strikes rises for a moment; whoever wears it, the void hands back. */
+		FLOTANTE;
 
 		public String id() {
 			return this.name().toLowerCase(Locale.ROOT);

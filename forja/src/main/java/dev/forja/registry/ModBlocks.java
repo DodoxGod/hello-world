@@ -52,6 +52,24 @@ public final class ModBlocks {
 	);
 
 	/**
+	 * The void forge of the End ruin (docs/ALEACIONES_NETHER_END.md): lit with an eye of ender, fed ender pearls, and
+	 * the only thing that makes aetherium, only in the End. Nothing breaks it. See block/FarForgeBlock.
+	 */
+	public static final Block FRAGUA_DEL_VACIO = register(
+		"fragua_del_vacio",
+		new dev.forja.block.FarForgeBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.SAND)
+				.strength(-1.0F, 3600000.0F)
+				.sound(SoundType.STONE)
+				.noLootTable()
+				.lightLevel(state -> state.getValue(dev.forja.block.FarForgeBlock.LIT) ? 13 : 4)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("fragua_del_vacio"))),
+			dev.forja.block.FarForgeBlock.Kind.VACIO
+		)
+	);
+
+	/**
 	 * Costra de magma: lava cooled under the feet of someone in magmasteel (the Volcánico trait), back to lava a few
 	 * seconds after nobody stands on it. Nothing breaks it and it drops nothing: it is lava, for a moment. See
 	 * block/MagmaCrustBlock.

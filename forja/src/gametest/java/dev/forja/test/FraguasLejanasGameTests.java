@@ -265,6 +265,151 @@ public class FraguasLejanasGameTests {
 		helper.succeed();
 	}
 
+	/** The void forge lights with an eye of ender (and not with a blaze rod), and two empty suits stand up beside it. */
+	@GameTest(maxTicks = 40)
+	public void theVoidForgeLightsWithAnEnderEye(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		BlockPos forge = helper.absolutePos(new BlockPos(4, 2, 4));
+		clear(level, forge, 4);
+		level.setBlockAndUpdate(forge, ModBlocks.FRAGUA_DEL_VACIO.defaultBlockState());
+		ServerPlayer player = CombatGameTests.player(helper, new BlockPos(4, 2, 1));
+		int suits = level.getEntitiesOfClass(dev.forja.entity.HollowArmor.class, new AABB(forge).inflate(8)).size();
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.BLAZE_ROD));
+		level.getBlockState(forge).useItemOn(player.getMainHandItem(), level, player, net.minecraft.world.InteractionHand.MAIN_HAND, hit(forge));
+		helper.assertFalse(level.getBlockState(forge).getValue(FarForgeBlock.LIT), "una vara de blaze no enciende la fragua del vacío");
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.ENDER_EYE));
+		level.getBlockState(forge).useItemOn(player.getMainHandItem(), level, player, net.minecraft.world.InteractionHand.MAIN_HAND, hit(forge));
+		helper.assertTrue(level.getBlockState(forge).getValue(FarForgeBlock.LIT), "un ojo de ender la enciende");
+		var risen = level.getEntitiesOfClass(dev.forja.entity.HollowArmor.class, new AABB(forge).inflate(8));
+		helper.assertTrue(risen.size() - suits == FarForgeBlock.Kind.VACIO.risen, "se levantan dos corazas vacías, hay " + (risen.size() - suits));
+		risen.forEach(net.minecraft.world.entity.Entity::discard);
+		helper.succeed();
+	}
+
+	/** Lit in the End it makes aetherium with ender pearls; it will not take the soul forge's soul soil, and away from the End it makes nothing. */
+	@GameTest(maxTicks = 40)
+	public void theVoidForgeMakesAetheriumInTheEndOnly(GameTestHelper helper) {
+		ServerLevel end = helper.getLevel().getServer().getLevel(Level.END);
+		BlockPos pos = new BlockPos(4100, 70, 4100);
+		clear(end, pos, 2);
+		end.setBlockAndUpdate(pos.below(), Blocks.CHEST.defaultBlockState());
+		end.setBlockAndUpdate(pos, ModBlocks.FRAGUA_DEL_VACIO.defaultBlockState().setValue(FarForgeBlock.LIT, true));
+		FarForgeBlockEntity forge = (FarForgeBlockEntity) end.getBlockEntity(pos);
+		helper.assertFalse(forge.takes(new ItemStack(Items.SOUL_SOIL)), "la fragua del vacío no quiere tierra de almas");
+		Alloys.Recipe aetherium = recipe("eterio");
+		fill(forge, aetherium, 1);
+		forge.addFuel(1);
+		tick(end, pos, FarForgeBlockEntity.BATCH_TICKS);
+		Container chest = (Container) end.getBlockEntity(pos.below());
+		helper.assertTrue(count(chest, ModItems.alloy("eterio")) == aetherium.output(), "una tanda de eterio en el End: " + count(chest, ModItems.alloy("eterio")));
+		end.setBlockAndUpdate(pos.below(), Blocks.AIR.defaultBlockState());
+		end.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+
+		ServerLevel nether = helper.getLevel().getServer().getLevel(Level.NETHER);
+		BlockPos there = NETHER_SPOT.offset(0, 0, 16);
+		clear(nether, there, 1);
+		nether.setBlockAndUpdate(there, ModBlocks.FRAGUA_DEL_VACIO.defaultBlockState().setValue(FarForgeBlock.LIT, true));
+		FarForgeBlockEntity away = (FarForgeBlockEntity) nether.getBlockEntity(there);
+		fill(away, aetherium, 1);
+		away.addFuel(1);
+		tick(nether, there, FarForgeBlockEntity.BATCH_TICKS + 5);
+		helper.assertTrue(away.fuel() == 1, "en el Nether la fragua del vacío no funde");
+		nether.setBlockAndUpdate(there, Blocks.AIR.defaultBlockState());
+		helper.succeed();
+	}
+
+	/** Flotante: an aetherium blade lifts what it strikes, not again for a while, and never a boss. */
+	@GameTest(maxTicks = 20)
+	public void aetheriumLiftsWhatItStrikes(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		Mob zombie = helper.spawn(net.minecraft.world.entity.EntityTypes.ZOMBIE, new BlockPos(3, 2, 3));
+		zombie.setNoAi(true);
+		ServerPlayer player = CombatGameTests.player(helper, new BlockPos(1, 2, 3));
+		ItemStack sword = Assembler.create(ForgeType.ESPADA, List.of(ForgeMaterial.ETERIO, ForgeMaterial.ETERIO, ForgeMaterial.ETERIO),
+			level.registryAccess());
+		TraitEffects.onHit(level, player, zombie, level.damageSources().playerAttack(player), sword);
+		helper.assertTrue(zombie.hasEffect(net.minecraft.world.effect.MobEffects.LEVITATION), "el golpe de eterio lo levanta");
+		zombie.removeAllEffects();
+		helper.assertFalse(TraitEffects.lift(level, zombie, player), "y no otra vez enseguida");
+		Mob wither = helper.spawn(net.minecraft.world.entity.EntityTypes.WITHER, new BlockPos(5, 2, 5));
+		wither.setNoAi(true);
+		helper.assertFalse(TraitEffects.lift(level, wither, player), "a un jefe no lo levanta");
+		wither.discard();
+		zombie.discard();
+		helper.succeed();
+	}
+
+	/** Flotante armour: fallen into the void, you are back on the last firm ground, falling slowly, and the pieces pay for it. */
+	@GameTest(maxTicks = 20)
+	public void theVoidHandsBackAnAetheriumWearer(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayerInLevel();
+		player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+		BlockPos ground = helper.absolutePos(new BlockPos(2, 1, 2));
+		level.setBlockAndUpdate(ground.below(), Blocks.STONE.defaultBlockState());
+		player.teleportTo(ground.getX() + 0.5, ground.getY(), ground.getZ() + 0.5);
+		player.setOnGround(true);
+		ItemStack boots = Assembler.create(ForgeType.BOTAS, List.of(ForgeMaterial.ETERIO, ForgeMaterial.CUERO), level.registryAccess());
+		player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, boots);
+		TraitEffects.rememberGround(level, player);
+		player.teleportTo(ground.getX() + 0.5, level.getMinY() - TraitEffects.VOID_DEPTH - 4, ground.getZ() + 0.5);
+		helper.assertTrue(TraitEffects.voidRescue(level, player), "el vacío lo devuelve");
+		helper.assertTrue(player.blockPosition().closerThan(ground, 1.5), "al último suelo firme: " + player.blockPosition() + " en vez de " + ground);
+		helper.assertTrue(player.hasEffect(net.minecraft.world.effect.MobEffects.SLOW_FALLING), "con caída lenta");
+		helper.assertTrue(player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET).getDamageValue() > 0, "y las botas lo pagan");
+		player.teleportTo(ground.getX() + 0.5, level.getMinY() - TraitEffects.VOID_DEPTH - 4, ground.getZ() + 0.5);
+		helper.assertFalse(TraitEffects.voidRescue(level, player), "no otra vez enseguida");
+		player.teleportTo(ground.getX() + 0.5, ground.getY(), ground.getZ() + 0.5);
+		helper.succeed();
+	}
+
+	/** The End ruin carries the cold void forge, its three guards and the chest with the note, and generates on the outer islands. */
+	@GameTest(maxTicks = 20)
+	public void theVoidRuinCarriesItsForge(GameTestHelper helper) {
+		var server = helper.getLevel().getServer();
+		StructureTemplate template = server.getStructureManager().get(Forja.id("fragua_del_vacio/fragua")).orElseThrow();
+		var forges = template.filterBlocks(BlockPos.ZERO, new StructurePlaceSettings(), ModBlocks.FRAGUA_DEL_VACIO);
+		helper.assertTrue(forges.size() == 1 && !forges.get(0).state().getValue(FarForgeBlock.LIT), "una fragua del vacío fría: " + forges.size());
+		boolean note = template.filterBlocks(BlockPos.ZERO, new StructurePlaceSettings(), Blocks.CHEST).stream()
+			.anyMatch(info -> info.nbt() != null && info.nbt().toString().contains("forja:chests/fragua_del_vacio"));
+		helper.assertTrue(note, "un cofre con el botín de la fragua del vacío");
+		ServerLevel level = helper.getLevel();
+		BlockPos origin = helper.absolutePos(new BlockPos(0, 1, 0));
+		template.placeInWorld(level, origin, origin, new StructurePlaceSettings(), level.getRandom(), 2);
+		AABB area = new AABB(origin).expandTowards(11, 8, 11);
+		int suits = level.getEntitiesOfClass(dev.forja.entity.HollowArmor.class, area).size();
+		int shulkers = level.getEntitiesOfClass(net.minecraft.world.entity.monster.Shulker.class, area).size();
+		helper.assertTrue(suits == 2 && shulkers == 1, "dos corazas y un shulker: " + suits + ", " + shulkers);
+		level.getEntitiesOfClass(Mob.class, area).forEach(net.minecraft.world.entity.Entity::discard);
+		var structures = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+		var ruin = structures.get(ResourceKey.create(Registries.STRUCTURE, Forja.id("fragua_del_vacio")));
+		helper.assertTrue(ruin.isPresent(), "la estructura forja:fragua_del_vacio existe");
+		var biomes = server.registryAccess().lookupOrThrow(Registries.BIOME);
+		helper.assertTrue(ruin.get().value().biomes().contains(biomes.getOrThrow(net.minecraft.world.level.biome.Biomes.END_HIGHLANDS)),
+			"y sale en las tierras altas del End");
+		helper.assertFalse(ruin.get().value().biomes().contains(biomes.getOrThrow(net.minecraft.world.level.biome.Biomes.THE_END)),
+			"y no en la isla del dragón");
+		helper.succeed();
+	}
+
+	/** The End ruin's chest always holds the note and an eye of ender to light its forge. */
+	@GameTest(maxTicks = 20)
+	public void theVoidRuinChestHoldsTheNote(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		LootTable table = level.getServer().reloadableRegistries().getLootTable(
+			ResourceKey.create(Registries.LOOT_TABLE, Forja.id("chests/fragua_del_vacio")));
+		LootParams params = new LootParams.Builder(level).withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(helper.absolutePos(BlockPos.ZERO)))
+			.create(LootContextParamSets.CHEST);
+		for (int roll = 0; roll < 5; roll++) {
+			List<ItemStack> drops = table.getRandomItems(params);
+			ItemStack paper = drops.stream().filter(stack -> stack.is(Items.PAPER)).findFirst().orElse(ItemStack.EMPTY);
+			var lore = paper.get(net.minecraft.core.component.DataComponents.LORE);
+			helper.assertTrue(lore != null && !lore.lines().isEmpty(), "siempre trae la nota con la receta: " + drops);
+			helper.assertTrue(drops.stream().anyMatch(stack -> stack.is(Items.ENDER_EYE)), "y un ojo de ender: " + drops);
+		}
+		helper.succeed();
+	}
+
 	/**
 	 * Nothing else makes them: not the forge table's star at any heat (Alloys.match, which the assembler uses too), not
 	 * the crucible, which will not even take their soul soil, and not the tanks.

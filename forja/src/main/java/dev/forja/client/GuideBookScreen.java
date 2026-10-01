@@ -2131,6 +2131,10 @@ public class GuideBookScreen extends Screen {
 		body.add(new IconRow(List.of(new ItemStack(ModItems.FRAGUA_DE_ALMAS), new ItemStack(Items.BLAZE_ROD),
 			new ItemStack(Items.BLAZE_POWDER), new ItemStack(ModItems.alloy("fatuo")), new ItemStack(ModItems.alloy("magmacero")))));
 		body.add(new Text(Component.translatable("gui.forja.libros.fraguas_lejanas.almas"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.fragua_lejana.vacio")));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.FRAGUA_DEL_VACIO), new ItemStack(Items.ENDER_EYE),
+			new ItemStack(Items.ENDER_PEARL), new ItemStack(ModItems.alloy("eterio")))));
+		body.add(new Text(Component.translatable("gui.forja.libros.fraguas_lejanas.vacio"), INK));
 		body.add(new ChapterLink("aleaciones_lejanas"));
 		return body;
 	}

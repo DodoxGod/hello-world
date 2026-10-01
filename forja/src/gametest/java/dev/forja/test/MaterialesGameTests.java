@@ -245,7 +245,7 @@ public class MaterialesGameTests {
 				|| id.getPath().equals("mensula_estelar") || id.getPath().equals("portal_estelar")
 				|| id.getPath().equals("brasa_estelar") || id.getPath().equals("estrella_de_vuelta") || id.getPath().equals("fragua_fria_estelar")
 				// The far forges cannot be broken either: each is its ruin's (docs/ALEACIONES_NETHER_END.md).
-				|| id.getPath().equals("fragua_de_almas")
+				|| id.getPath().equals("fragua_de_almas") || id.getPath().equals("fragua_del_vacio")
 				// Nor the magma crust, which is lava for a moment and goes back to it.
 				|| id.getPath().equals("costra_de_magma")) {
 				continue;

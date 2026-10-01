@@ -162,6 +162,9 @@ public final class GearAura {
 		if (parts.hasTrait(ForgeMaterial.Trait.VOLCANICO)) {
 			return random.nextFloat() < 0.25F ? ParticleTypes.LAVA : null;
 		}
+		if (parts.hasTrait(ForgeMaterial.Trait.FLOTANTE)) {
+			return random.nextFloat() < 0.5F ? ParticleTypes.REVERSE_PORTAL : null;
+		}
 		return null;
 	}
 

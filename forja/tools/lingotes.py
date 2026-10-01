@@ -180,6 +180,7 @@ GLYPHS = {
     # The far forge alloys (docs/ALEACIONES_NETHER_END.md).
     "fatuo": (".#..", "##.#", ".##."),
     "magmacero": ("#.#.", "#.#.", "####"),
+    "eterio": ("....", "#..#", ".##."),
     # The vanilla metals, which have a repair kit but no Forja ingot.
     "cobre": ("#.##", "#...", "####"),
     "hierro": ("####", "#..#", "####"),
@@ -354,6 +355,13 @@ def mark_a(bar, name):
                 put(x, y - 1, dark)
         for (x, y) in ((4, 8), (12, 5)):
             put(x, y, 4)
+    elif name == "eterio":
+        # Aetherium: two motes lifting off the bar, each a pale point with the shadow it left behind under it.
+        for (cx, cy) in ((6, 6), (10, 4)):
+            put(cx, cy, colour=(236, 214, 255))
+            put(cx, cy + 2, colour=(70, 40, 120))
+            put(cx + 1, cy + 2, dark)
+        put(8, 7, colour=(250, 244, 255))
     elif name == "oricalco":
         # Oricalco: one star caught in it, as in its pearl.
         put(8, 5, colour=(255, 252, 214))

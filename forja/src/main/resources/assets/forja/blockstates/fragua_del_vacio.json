@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "forja:block/fragua_del_vacio"
+    },
+    "lit=true": {
+      "model": "forja:block/fragua_del_vacio_encendida"
+    }
+  }
+}

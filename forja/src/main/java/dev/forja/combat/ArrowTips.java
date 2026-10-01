@@ -136,7 +136,9 @@ public final class ArrowTips {
 		/** Fatuo (Espectral): the blue fire, which burns what does not burn. */
 		FATUA,
 		/** Magmacero (Volcánico): a gob of magma that sticks, burning and weighing the target down. */
-		MAGMA;
+		MAGMA,
+		/** Eterio (Flotante): lifts what it hits, as a shulker's bullet does. */
+		LEVITA;
 
 		public String id() {
 			return this.name().toLowerCase(Locale.ROOT);
@@ -152,6 +154,7 @@ public final class ArrowTips {
 				case BRASA -> Component.translatable("flecha.forja.especial.brasa.desc", EMBER_SECONDS);
 				case FATUA -> Component.translatable("flecha.forja.especial.fatua.desc", dev.forja.upgrade.TraitEffects.SOUL_FLAME_TICKS / 20);
 				case MAGMA -> Component.translatable("flecha.forja.especial.magma.desc", MAGMA_SECONDS);
+				case LEVITA -> Component.translatable("flecha.forja.especial.levita.desc", dev.forja.upgrade.TraitEffects.LIFT_TICKS / 20);
 				case SANGRADO -> Component.translatable("flecha.forja.especial.sangrado.desc", BLEED_TICKS / 20);
 				case RESINA -> Component.translatable("flecha.forja.especial.resina.desc", RESIN_TICKS / 20);
 				case LLANTO -> Component.translatable("flecha.forja.especial.llanto.desc", WEAKNESS_TICKS / 20);
@@ -214,6 +217,7 @@ public final class ArrowTips {
 			case ASTRAL -> Special.HECHIZO;
 			case ESPECTRAL -> Special.FATUA;
 			case VOLCANICO -> Special.MAGMA;
+			case FLOTANTE -> Special.LEVITA;
 			default -> Special.NONE;
 		};
 	}
@@ -285,6 +289,7 @@ public final class ArrowTips {
 			case SALTO -> blink(level, target);
 			case FATUA -> dev.forja.upgrade.TraitEffects.soulFlame(level, target, shooter != null ? shooter : target,
 				dev.forja.upgrade.TraitEffects.SOUL_FLAME_TICKS);
+			case LEVITA -> dev.forja.upgrade.TraitEffects.lift(level, target, shooter);
 			case MAGMA -> {
 				target.igniteForSeconds(MAGMA_SECONDS);
 				target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, Math.round(MAGMA_SECONDS * 20.0F), 0), shooter);

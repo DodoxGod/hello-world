@@ -13,6 +13,59 @@ ALEACIONES = {
     "material.forja.magmacero": ("magmacero", "magmasteel"),
     "conjunto.forja.magmacero": ("+1 de armadura y +20 % de resistencia al empuje", "+1 armour and +20% knockback resistance"),
     "block.forja.costra_de_magma": ("Costra de magma", "Magma Crust"),
+    "item.forja.eterio": ("Eterio", "Aetherium"),
+    "material.forja.eterio": ("eterio", "aetherium"),
+    "conjunto.forja.eterio": (
+        "Saltas más, +1 de dureza y el vacío te devuelve el doble de a menudo",
+        "You jump higher, +1 toughness and the void hands you back twice as often"),
+    "trait.forja.flotante": ("Flotante", "Floating"),
+    "trait.forja.flotante.desc": (
+        "Lo que golpea se eleva un momento; a quien lo lleva, el vacío lo devuelve",
+        "What it strikes rises for a moment; whoever wears it, the void hands back"),
+    "trait.forja.flotante.largo": (
+        "Armas, herramientas y flechas levantan al objetivo 1 s (Levitación II), como mucho una vez cada 3 s y nunca a un "
+        "jefe. Con una pieza o más de armadura, si caes al vacío vuelves al último suelo firme donde estuviste, con caída "
+        "lenta, y cada pieza pierde un 10 % de durabilidad; una vez cada 3 minutos (1,5 con el conjunto).",
+        "Weapons, tools and arrows lift the target for 1 s (Levitation II), at most once every 3 s and never a boss. With "
+        "one armour piece or more, falling into the void puts you back on the last firm ground you stood on, with slow "
+        "falling, and every piece loses 10% durability; once every 3 minutes (1.5 with the full set)."),
+    "flecha.forja.especial.levita": ("Levita", "Lift"),
+    "flecha.forja.especial.levita.desc": ("lo levanta %s s", "lifts it for %s s"),
+    "gui.forja.eterio.vacio": ("El vacío te devuelve...", "The void hands you back..."),
+    "block.forja.fragua_del_vacio": ("Fragua del vacío", "Void Forge"),
+    "gui.forja.fragua_lejana.vacio": ("La fragua del vacío", "The void forge"),
+    "gui.forja.fragua_lejana.donde.vacio": (
+        "solo en la fragua del vacío de su ruina, en las islas del End",
+        "only at the void forge of its ruin, on the End's islands"),
+    "gui.forja.jei.fragua_lejana.vacio": ("Fragua del vacío (End)", "Void forge (End)"),
+    "gui.forja.fragua_lejana.fria.vacio": (
+        "La fragua del vacío está fría. Un %s la encendería.",
+        "The void forge is cold. An %s would light it."),
+    "gui.forja.fragua_lejana.enciende.vacio": (
+        "La fragua del vacío arde violeta... y lo que la guardaba se levanta.",
+        "The void forge burns violet... and what guarded it stands up."),
+    "gui.forja.fragua_lejana.no_va.vacio": (
+        "%s no va en la fragua del vacío: solo funde eterio.",
+        "%s does not go in the void forge: it only makes aetherium."),
+    "gui.forja.fragua_lejana.fuera.vacio": (
+        "Lejos del End, la fragua del vacío no prende: aquí no funde nada.",
+        "Away from the End the void forge will not take: it makes nothing here."),
+    "item.forja.nota_fragua_del_vacio": ("Nota de la fragua del vacío", "Void Forge Note"),
+    "item.forja.nota_fragua_del_vacio.eterio": (
+        "Eterio: 2 acero, 1 caparazón de shulker, 4 coro reventado, 4 piedra del End",
+        "Aetherium: 2 steel, 1 shulker shell, 4 popped chorus, 4 end stone"),
+    "item.forja.nota_fragua_del_vacio.fuego": (
+        "Un ojo de ender la enciende; las perlas de ender la alimentan",
+        "An eye of ender lights it; ender pearls feed it"),
+    "gui.forja.libros.fraguas_lejanas.vacio": (
+        "En las islas altas del End, más allá del dragón, quedan ruinas pequeñas de piedra del End y púrpura con una "
+        "fragua del vacío fría sobre un altar de obsidiana. Un ojo de ender la enciende y despierta a sus guardianes: se "
+        "levantan dos corazas vacías más. Funciona como la de almas, con perlas de ender de combustible (una por tanda), "
+        "y solo funde eterio, y solo en el End. Su cofre guarda la receta.",
+        "On the End's high islands, past the dragon, stand small ruins of end stone and purpur with a cold void forge on "
+        "an obsidian altar. An eye of ender lights it and wakes its guards: two more empty suits stand up. It works like "
+        "the soul forge, with ender pearls as fuel (one per batch), makes only aetherium and only in the End. Its chest "
+        "keeps the recipe."),
     "trait.forja.volcanico": ("Volcánico", "Volcanic"),
     "trait.forja.volcanico.desc": (
         "La lava que pisas se enfría en costra; sus picos cortan la piedra del Nether más deprisa",

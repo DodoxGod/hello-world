@@ -2,6 +2,7 @@ package dev.forja.upgrade;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -71,14 +72,24 @@ public final class TraitEffects {
 				entity.discard();
 			}
 		});
-		// Volcánico: every tick, like Frost Walker, but only for a player who has some on.
+		// Volcánico: every tick, like Frost Walker, but only for a player who has some on. Flotante: remember firm
+		// ground once a second, and hand back whoever has fallen into the void.
 		ServerTickEvents.END_LEVEL_TICK.register(level -> {
-			for (ServerPlayer player : level.players()) {
-				if (!player.isSpectator() && player.onGround()) {
+			boolean second = level.getGameTime() % 20 == 0;
+			for (ServerPlayer player : List.copyOf(level.players())) {
+				if (player.isSpectator()) {
+					continue;
+				}
+				if (player.onGround()) {
 					int pieces = armorPieces(player, ForgeMaterial.Trait.VOLCANICO);
 					if (pieces > 0) {
 						volcanicStep(level, player, pieces);
 					}
+				}
+				if (player.getY() < level.getMinY()) {
+					voidRescue(level, player);
+				} else if (second && armorPieces(player, ForgeMaterial.Trait.FLOTANTE) > 0) {
+					rememberGround(level, player);
 				}
 			}
 		});
@@ -159,6 +170,102 @@ public final class TraitEffects {
 		if (melee && spectral > 0) {
 			soulFlame(level, attacker, victim, SOUL_FLAME_ARMOR_TICKS * spectral);
 		}
+		// Flotante: what it strikes goes up for a moment.
+		if (parts != null && !weapon.isBroken() && parts.hasTrait(ForgeMaterial.Trait.FLOTANTE)) {
+			ForgeType.Kind kind = parts.type().kind;
+			if ((melee && (kind == ForgeType.Kind.WEAPON || kind == ForgeType.Kind.TOOL))
+				|| (kind == ForgeType.Kind.RANGED && source.getDirectEntity() instanceof AbstractArrow)) {
+				lift(level, victim, attacker);
+			}
+		}
+	}
+
+	/** How long a blow of aetherium lifts what it hits, and how hard. */
+	public static final int LIFT_TICKS = 20;
+	public static final int LIFT_AMPLIFIER = 1;
+	/** How long before the same target can be lifted again. */
+	public static final int LIFT_COOLDOWN = 60;
+	/** When each target may be lifted again. */
+	private static final Map<UUID, Long> LIFTED = new HashMap<>();
+
+	/**
+	 * Flotante: Levitation for a moment, as a shulker's bullet gives, once every {@link #LIFT_COOLDOWN} ticks for any one
+	 * target, and never to a boss. Returns whether it rose.
+	 */
+	public static boolean lift(ServerLevel level, LivingEntity victim, @org.jspecify.annotations.Nullable LivingEntity source) {
+		if (!victim.isAlive() || victim.getType().builtInRegistryHolder().is(net.fabricmc.fabric.api.tag.convention.v2.ConventionalEntityTypeTags.BOSSES)
+			|| victim instanceof dev.forja.entity.FallenSmith || victim instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon) {
+			return false;
+		}
+		long now = level.getGameTime();
+		Long ready = LIFTED.get(victim.getUUID());
+		if (ready != null && now < ready) {
+			return false;
+		}
+		if (LIFTED.size() > 256) {
+			LIFTED.values().removeIf(expiry -> expiry < now);
+		}
+		LIFTED.put(victim.getUUID(), now + LIFT_COOLDOWN);
+		victim.addEffect(new MobEffectInstance(MobEffects.LEVITATION, LIFT_TICKS, LIFT_AMPLIFIER), source);
+		level.sendParticles(ParticleTypes.REVERSE_PORTAL, victim.getX(), victim.getY(0.3), victim.getZ(), 14, 0.3, 0.2, 0.3, 0.05);
+		return true;
+	}
+
+	// ------------------------------------------------------------------ the void hands you back
+	/** How far under the bottom of the world the void hands an aetherium wearer back. */
+	public static final int VOID_DEPTH = 16;
+	/** How often it will, and with a full suit. */
+	public static final int VOID_COOLDOWN = 3600;
+	public static final int VOID_COOLDOWN_SET = 1800;
+	/** What it costs each piece of aetherium, a share of its durability. */
+	public static final float VOID_WEAR = 0.10F;
+	/** The slow falling it leaves you with. */
+	public static final int VOID_SLOW_FALL = 120;
+	/** The last firm ground each wearer stood on, and in which dimension. */
+	private static final Map<UUID, net.minecraft.core.GlobalPos> SAFE_GROUND = new HashMap<>();
+	/** When the void will hand each wearer back again. */
+	private static final Map<UUID, Long> VOID_READY = new HashMap<>();
+
+	/** Remembers where an aetherium wearer last stood on something solid. */
+	public static void rememberGround(ServerLevel level, ServerPlayer player) {
+		BlockPos under = player.blockPosition().below();
+		if (player.onGround() && level.getBlockState(under).isFaceSturdy(level, under, net.minecraft.core.Direction.UP)) {
+			SAFE_GROUND.put(player.getUUID(), net.minecraft.core.GlobalPos.of(level.dimension(), player.blockPosition()));
+		}
+	}
+
+	/**
+	 * Flotante armour: fallen into the void, the wearer is handed back to the last firm ground they stood on in this
+	 * dimension, with slow falling, at the cost of a tenth of every aetherium piece. Returns whether it did.
+	 */
+	public static boolean voidRescue(ServerLevel level, ServerPlayer player) {
+		if (player.getY() > level.getMinY() - VOID_DEPTH || armorPieces(player, ForgeMaterial.Trait.FLOTANTE) == 0) {
+			return false;
+		}
+		long now = level.getGameTime();
+		Long ready = VOID_READY.get(player.getUUID());
+		net.minecraft.core.GlobalPos ground = SAFE_GROUND.get(player.getUUID());
+		if ((ready != null && now < ready) || ground == null || ground.dimension() != level.dimension()) {
+			return false;
+		}
+		BlockPos to = ground.pos();
+		player.teleportTo(to.getX() + 0.5, to.getY(), to.getZ() + 0.5);
+		player.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+		player.resetFallDistance();
+		player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, VOID_SLOW_FALL, 0, false, true, true));
+		for (EquipmentSlot slot : ARMOR) {
+			ItemStack piece = player.getItemBySlot(slot);
+			ForgedParts parts = piece.get(ModComponents.PARTS);
+			if (parts != null && parts.hasTrait(ForgeMaterial.Trait.FLOTANTE) && piece.isDamageableItem()) {
+				piece.hurtAndBreak(Math.max(1, Math.round(piece.getMaxDamage() * VOID_WEAR)), player, slot);
+			}
+		}
+		boolean suit = ArmorSets.fullSet(player) == ForgeMaterial.ETERIO;
+		VOID_READY.put(player.getUUID(), now + (suit ? VOID_COOLDOWN_SET : VOID_COOLDOWN));
+		level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 0.6F);
+		level.sendParticles(ParticleTypes.REVERSE_PORTAL, player.getX(), player.getY(1.0), player.getZ(), 60, 0.4, 0.8, 0.4, 0.1);
+		player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("gui.forja.eterio.vacio").withColor(0xB98AE6));
+		return true;
 	}
 
 	// ------------------------------------------------------------------ the far forge alloys

@@ -112,7 +112,7 @@ public final class ModBlockEntities {
 	public static final BlockEntityType<FarForgeBlockEntity> FRAGUA_LEJANA = Registry.register(
 		BuiltInRegistries.BLOCK_ENTITY_TYPE,
 		FRAGUA_LEJANA_KEY,
-		new BlockEntityType<>(FarForgeBlockEntity::new, java.util.Set.of(ModBlocks.FRAGUA_DE_ALMAS))
+		new BlockEntityType<>(FarForgeBlockEntity::new, java.util.Set.of(ModBlocks.FRAGUA_DE_ALMAS, ModBlocks.FRAGUA_DEL_VACIO))
 	);
 
 	private ModBlockEntities() {

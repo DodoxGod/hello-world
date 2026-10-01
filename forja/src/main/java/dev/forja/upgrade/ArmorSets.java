@@ -102,6 +102,8 @@ public final class ArmorSets {
 			case FATUO -> List.of(Bonus.add(Attributes.ATTACK_DAMAGE, 1.0), Bonus.add(Attributes.BURNING_TIME, -0.5));
 			// Magmasteel: a wall of cooled stone, hard to push and harder to get through.
 			case MAGMACERO -> List.of(Bonus.add(Attributes.ARMOR, 1.0), Bonus.add(Attributes.KNOCKBACK_RESISTANCE, 0.2));
+			// Aetherium: lighter on its feet, and the void gives it back twice as often (TraitEffects.voidRescue).
+			case ETERIO -> List.of(Bonus.add(Attributes.JUMP_STRENGTH, 0.1), Bonus.add(Attributes.ARMOR_TOUGHNESS, 1.0));
 		};
 	}
 
