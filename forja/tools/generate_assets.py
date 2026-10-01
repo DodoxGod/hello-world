@@ -96,6 +96,7 @@ MATERIAL_COLORS = {
     "fatuo": 0x3A5466, "magmacero": 0x6E3A2C, "eterio": 0x7A5FB0,
     # The middle tier and the peak alloys (docs/ALEACIONES_CUMBRE.md).
     "espectracero": 0x4C8C9E, "corazon_de_volcan": 0xA8401C, "eclipse": 0x2B2350, "astralita": 0x5C7CFA,
+    "iracero": 0xB0142C, "egida": 0x8E6B3F, "arcanio": 0xE04FB0,
 }
 SPECIAL = {"arco", "escudo", "lanza", "ballesta", "cana"}
 DEFAULT_COLORS = {"HEAD": 0xE4E4E4, "PLATE": 0xE4E4E4, "HANDLE": 0xB8894F, "EXTRA": 0xB8894F, "LINING": 0xA86B3C}
@@ -3721,6 +3722,9 @@ ALLOY_COLORS = {
     "corazon_de_volcan": 0xA8401C,
     "eclipse": 0x2B2350,
     "astralita": 0x5C7CFA,
+    "iracero": 0xB0142C,
+    "egida": 0x8E6B3F,
+    "arcanio": 0xE04FB0,
 }
 
 # Some alloys are not one colour at all: they run one into another across the bar, left to right.
@@ -3728,6 +3732,7 @@ ALLOY_SIDEWAYS = {
     "almacero": (0x8FB3C4, 0x5FE5E2),        # the steel it is, running into soul blue
     "acero_estelar": (0xDCEAFF, 0xA894C8),   # the pale sky it is, running into silvered purple
     "corazon_de_volcan": (0x3A1E18, 0xFF9A2E),  # basalt running into lava
+    "iracero": (0x7A0E1E, 0xF2B640),            # dried blood running into the heart's gold
 }
 
 # And some run with the light instead: dark end purple, lit end blue.

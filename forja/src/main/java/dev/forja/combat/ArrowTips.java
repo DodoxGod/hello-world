@@ -97,6 +97,11 @@ public final class ArrowTips {
 	/** Astro (Sideral): mana for the archer, and how long the target glows. */
 	public static final float ASTRO_ARROW_MANA = 1.5F;
 	public static final int ASTRO_GLOW_TICKS = 60;
+	/** Ira (Iracundo): base damage per step of health the archer is missing. Guardia (Inquebrantable): how long the archer is covered. */
+	public static final float WRATH_ARROW_STEP = 0.5F;
+	public static final int GUARD_ARROW_TICKS = 60;
+	/** Arcana (Místico): the magic damage armour does not stop. */
+	public static final float ARCANE_ARROW_DAMAGE = 2.0F;
 
 	/** The one thing a tip does beyond its weight and hardness. */
 	public enum Special {
@@ -154,7 +159,13 @@ public final class ArrowTips {
 		/** Eclipse (Penumbra): blinds what stands in the dark. */
 		SOMBRA,
 		/** Astralita (Sideral): mana for the archer, and the target glows. */
-		ASTRO;
+		ASTRO,
+		/** Iracero (Iracundo): harder the worse the archer is doing, for that blow only. */
+		IRA,
+		/** Égida (Inquebrantable): covers whoever loosed it, Resistance I. */
+		GUARDIA,
+		/** Arcanio (Místico): magic damage that armour does not stop. */
+		ARCANA;
 
 		public String id() {
 			return this.name().toLowerCase(Locale.ROOT);
@@ -175,6 +186,9 @@ public final class ArrowTips {
 				case ARDOR -> Component.translatable("flecha.forja.especial.ardor.desc", String.format(Locale.ROOT, "%.2f", ARDOR_ARROW_STEP));
 				case SOMBRA -> Component.translatable("flecha.forja.especial.sombra.desc", SHADOW_ARROW_TICKS / 20);
 				case ASTRO -> Component.translatable("flecha.forja.especial.astro.desc", String.format(Locale.ROOT, "%.1f", ASTRO_ARROW_MANA));
+				case IRA -> Component.translatable("flecha.forja.especial.ira.desc", String.format(Locale.ROOT, "%.1f", WRATH_ARROW_STEP));
+				case GUARDIA -> Component.translatable("flecha.forja.especial.guardia.desc", GUARD_ARROW_TICKS / 20);
+				case ARCANA -> Component.translatable("flecha.forja.especial.arcana.desc", Math.round(ARCANE_ARROW_DAMAGE));
 				case SANGRADO -> Component.translatable("flecha.forja.especial.sangrado.desc", BLEED_TICKS / 20);
 				case RESINA -> Component.translatable("flecha.forja.especial.resina.desc", RESIN_TICKS / 20);
 				case LLANTO -> Component.translatable("flecha.forja.especial.llanto.desc", WEAKNESS_TICKS / 20);
@@ -242,6 +256,9 @@ public final class ArrowTips {
 			case ARDOR -> Special.ARDOR;
 			case PENUMBRA -> Special.SOMBRA;
 			case SIDERAL -> Special.ASTRO;
+			case IRACUNDO -> Special.IRA;
+			case INQUEBRANTABLE -> Special.GUARDIA;
+			case MISTICO -> Special.ARCANA;
 			default -> Special.NONE;
 		};
 	}
@@ -289,14 +306,15 @@ public final class ArrowTips {
 	}
 
 	/**
-	 * Ardor: base damage the tip adds (before the arrow's speed multiplies it) for each step of health the one who loosed
-	 * it is missing (docs/ALEACIONES_CUMBRE.md, 2.7), or 0 for any other tip.
+	 * Ira and Ardor: base damage the tip adds (before the arrow's speed multiplies it) for each step of health the one who
+	 * loosed it is missing (docs/ALEACIONES_CUMBRE.md, 2.4 and 2.7), or 0 for any other tip.
 	 */
 	public static float wrathBonus(Special special, net.minecraft.world.entity.@Nullable Entity owner) {
 		if (!(owner instanceof LivingEntity archer)) {
 			return 0.0F;
 		}
 		return switch (special) {
+			case IRA -> WRATH_ARROW_STEP * dev.forja.upgrade.TraitEffects.wrathSteps(archer);
 			case ARDOR -> ARDOR_ARROW_STEP * dev.forja.upgrade.TraitEffects.wrathSteps(archer);
 			default -> 0.0F;
 		};
@@ -349,6 +367,16 @@ public final class ArrowTips {
 					dev.forja.magic.Mana.give(player, ASTRO_ARROW_MANA);
 				}
 				target.addEffect(new MobEffectInstance(MobEffects.GLOWING, ASTRO_GLOW_TICKS, 0), shooter);
+			}
+			case GUARDIA -> {
+				if (shooter != null && shooter.isAlive()) {
+					shooter.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, GUARD_ARROW_TICKS, 0), shooter);
+				}
+			}
+			case ARCANA -> {
+				// Magic that goes round the armour, and that the hit's own invulnerability does not swallow.
+				dev.forja.upgrade.CombatUpgrades.sideDamage(level, target, level.damageSources().indirectMagic(arrow, shooter), ARCANE_ARROW_DAMAGE);
+				level.sendParticles(ParticleTypes.ENCHANT, target.getX(), target.getY(1.0), target.getZ(), 8, 0.3, 0.4, 0.3, 0.3);
 			}
 			case MAGMA -> {
 				target.igniteForSeconds(MAGMA_SECONDS);

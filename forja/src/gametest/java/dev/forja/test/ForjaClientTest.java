@@ -170,6 +170,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// The middle tier and the peak alloys (docs/ALEACIONES_CUMBRE.md, 4.3): ingots and kits, the crucible, the sets, the book.
+			if ("cumbre".equals(solo)) {
+				CumbreFootage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("onda".equals(solo)) {
 				checkShockwave(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");

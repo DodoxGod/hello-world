@@ -113,6 +113,14 @@ public final class ArmorSets {
 			case ECLIPSE -> List.of(Bonus.add(Attributes.SNEAKING_SPEED, 0.3));
 			// Astralite: a little harder, and a deeper mana bar (ASTRALITE_SET_MANA).
 			case ASTRALITA -> List.of(Bonus.add(Attributes.ARMOR_TOUGHNESS, 1.0));
+			// ---- the peak alloys (docs/ALEACIONES_CUMBRE.md, 2.5); none of them gives flat armour either.
+			// Wrathsteel: the best damage bonus of a set, and Strength II answers a bad wound (TraitEffects.onHurt).
+			case IRACERO -> List.of(Bonus.add(Attributes.ATTACK_DAMAGE, 3.0), Bonus.percent(Attributes.MOVEMENT_SPEED, 0.05));
+			// Aegis: the highest life of a set; the 25 % cap on a blow is in TraitEffects.bearerCap.
+			case EGIDA -> List.of(Bonus.add(Attributes.MAX_HEALTH, 10.0), Bonus.add(Attributes.ARMOR_TOUGHNESS, 4.0),
+				Bonus.add(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE, 1.0));
+			// Arcanium: the deepest mana bar of a set (magic/Mana, ARCANIUM_SET_MANA).
+			case ARCANIO -> List.of(Bonus.add(Attributes.ARMOR_TOUGHNESS, 2.0), Bonus.percent(Attributes.MOVEMENT_SPEED, 0.05));
 		};
 	}
 

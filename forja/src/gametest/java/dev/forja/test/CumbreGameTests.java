@@ -312,18 +312,19 @@ public class CumbreGameTests {
 		helper.succeed();
 	}
 
-	/** Every middle-tier alloy is a material every part takes, and every forged item can be made all of it, trait included. */
-	@GameTest(maxTicks = 20)
-	public void middleAndPeakMakeEveryPart(GameTestHelper helper) {
+	/** Every alloy of these ids is a material every part takes, and every forged item can be made all of it, trait included. */
+	private static void everyPart(GameTestHelper helper, java.util.Set<String> ids) {
 		List<String> wrong = new ArrayList<>();
 		int checked = 0;
-		for (String id : Alloys.ALL.stream().map(Alloys.Recipe::id).filter(id -> Alloys.MIDDLE.contains(id)).toList()) {
+		for (String id : Alloys.ALL.stream().map(Alloys.Recipe::id).filter(ids::contains).toList()) {
 			ForgeMaterial material = ForgeMaterial.fromInput(new ItemStack(ModItems.alloy(id)));
 			if (material == null || !material.getSerializedName().equals(id)) {
 				wrong.add(id + " no es un material");
 				continue;
 			}
 			helper.assertFalse(material.isBasic(), id + " se cuela, no se corta");
+			helper.assertTrue(material.displayStack().is(ModItems.alloy(id)), id + " vuelve en su lingote: " + material.displayStack());
+			helper.assertTrue(MeltTankBlockEntity.holds(ModItems.alloy(id)), "las cubas guardan " + id);
 			for (PartType type : PartType.values()) {
 				if (!type.accepts(material)) {
 					wrong.add(type.id() + " no acepta " + id);
@@ -346,6 +347,22 @@ public class CumbreGameTests {
 		}
 		helper.assertTrue(checked > 0, "no se probó nada");
 		helper.assertTrue(wrong.isEmpty(), String.join("; ", wrong));
+	}
+
+	/** The peak alloys are materials every part takes. */
+	@GameTest(maxTicks = 20)
+	public void peakAlloysMakeEveryPart(GameTestHelper helper) {
+		everyPart(helper, Alloys.PEAK);
+		helper.succeed();
+	}
+
+	/** And so are the four of the middle tier: the same check over both. */
+	@GameTest(maxTicks = 20)
+	public void middleAndPeakMakeEveryPart(GameTestHelper helper) {
+		java.util.Set<String> both = new java.util.HashSet<>(Alloys.MIDDLE);
+		both.addAll(Alloys.PEAK);
+		helper.assertTrue(both.size() == 7, "son siete");
+		everyPart(helper, both);
 		helper.succeed();
 	}
 
@@ -414,6 +431,23 @@ public class CumbreGameTests {
 		CombatHooks.capped(player, blow, 30.0F, false);
 		helper.assertTrue(TraitEffects.shelterReadyAt(player) - level.getGameTime() == TraitEffects.SHELTER_SET_COOLDOWN,
 			"con el conjunto la espera es " + TraitEffects.SHELTER_SET_COOLDOWN);
+		wear(helper, player, ForgeMaterial.CUERO, 0);
+		// With aegis as well the lower cap wins, and the shelter keeps its wait for a blow only it would have cut: two pieces
+		// of aegis cut to 35 %, under the shelter's 40 %.
+		player.setItemSlot(EquipmentSlot.HEAD, piece(helper, ForgeType.CASCO, ForgeMaterial.EGIDA));
+		player.setItemSlot(EquipmentSlot.CHEST, piece(helper, ForgeType.PECHERA, ForgeMaterial.EGIDA));
+		player.setItemSlot(EquipmentSlot.LEGS, piece(helper, ForgeType.GREBAS, ForgeMaterial.ESPECTRACERO));
+		player.setItemSlot(EquipmentSlot.FEET, piece(helper, ForgeType.BOTAS, ForgeMaterial.ESPECTRACERO));
+		TraitEffects.forgetShelter(player);
+		float both = CombatHooks.capped(player, blow, 30.0F, false);
+		helper.assertTrue(Math.abs(both - 7.0F) < EPS, "con égida y espectracero vale el tope más bajo, 35 %: " + both);
+		helper.assertTrue(TraitEffects.shelterReadyAt(player) <= level.getGameTime(), "y el amparo no gasta su espera: no fue él el que cortó");
+		// One piece of aegis cuts to 40 %, the same as the shelter: the aegis is the one that cuts.
+		wear(helper, player, ForgeMaterial.CUERO, 0);
+		player.setItemSlot(EquipmentSlot.HEAD, piece(helper, ForgeType.CASCO, ForgeMaterial.EGIDA));
+		player.setItemSlot(EquipmentSlot.CHEST, piece(helper, ForgeType.PECHERA, ForgeMaterial.ESPECTRACERO));
+		CombatHooks.capped(player, blow, 30.0F, false);
+		helper.assertTrue(TraitEffects.shelterReadyAt(player) <= level.getGameTime(), "y empatados tampoco");
 		wear(helper, player, ForgeMaterial.CUERO, 0);
 		TraitEffects.forgetShelter(player);
 		player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, all(helper, ForgeType.ESCUDO, ForgeMaterial.ESPECTRACERO));
@@ -599,9 +633,365 @@ public class CumbreGameTests {
 		helper.succeed();
 	}
 
-	/** The middle-tier ingots are rare and fireproof. */
+	// ------------------------------------------------------------------ the peak alloys: recipes and places
+
+	private static final List<String> PEAK_IDS = List.of("iracero", "egida", "arcanio");
+
+	/** Each peak recipe is the forge heart and at least two other alloys, at white heat, on a foundry line. */
+	@GameTest
+	public void cumbreRecipesUseTheHeartAndTwoAlloys(GameTestHelper helper) {
+		List<String> wrong = new ArrayList<>();
+		int[] output = {2, 1, 1};
+		for (int i = 0; i < PEAK_IDS.size(); i++) {
+			String id = PEAK_IDS.get(i);
+			Alloys.Recipe recipe = recipe(id);
+			if (recipe.inputs().stream().noneMatch(part -> part.item().get() == ModItems.CORAZON_DE_FORJA)) {
+				wrong.add(id + " no lleva corazón de forja");
+			}
+			long others = recipe.inputs().stream().filter(part -> {
+				ForgeMaterial material = ForgeMaterial.fromInput(new ItemStack(part.item().get()));
+				return material != null && material != ForgeMaterial.CORAZON;
+			}).count();
+			if (others < 2) {
+				wrong.add(id + " lleva " + others + " aleaciones además del corazón");
+			}
+			if (recipe.inputs().size() < 3) {
+				wrong.add(id + " tiene " + recipe.inputs().size() + " ingredientes");
+			}
+			if (recipe.heat() != Alloys.Heat.FORJA_BLANCA) {
+				wrong.add(id + " no es de calor blanco");
+			}
+			if (!Alloys.PEAK.contains(id) || !Alloys.WHITE_HEAT_ONLY.contains(id) || !Alloys.FOUNDRY_ONLY.contains(id)) {
+				wrong.add(id + " no está en PEAK, WHITE_HEAT_ONLY y FOUNDRY_ONLY");
+			}
+			if (Alloys.place(recipe) != Alloys.Place.ANY) {
+				wrong.add(id + " no se hace en cualquier sitio, sino en " + Alloys.place(recipe));
+			}
+			if (recipe.output() != output[i]) {
+				wrong.add(id + " saca " + recipe.output());
+			}
+		}
+		helper.assertTrue(Alloys.PEAK.size() == 3, "PEAK tiene las tres");
+		helper.assertTrue(wrong.isEmpty(), "recetas cumbre mal: " + wrong);
+		helper.succeed();
+	}
+
+	/**
+	 * Each peak alloy on an obsidian crucible: the forge heart and the alloy of its recipe in the two slots, the third in a
+	 * tank, an empty tank beside it. The empty tank ends up with the ingots, the slots empty.
+	 */
+	@GameTest
+	public void obsidianCruciblePoursEachPeakAlloy(GameTestHelper helper) {
+		// {id, what goes with the heart in the second slot, how many, the tank's alloy, how many}
+		Object[][] loads = {{"iracero", "acero_vivo", 1, "corazon_de_volcan", 2}, {"egida", "obsidiacero", 2, "espectracero", 2},
+			{"arcanio", "astralita", 2, "eclipse", 2}};
+		for (int i = 0; i < loads.length; i++) {
+			String id = (String) loads[i][0];
+			Alloys.Recipe recipe = recipe(id);
+			BlockPos at = POT.offset(0, 0, i * 4);
+			CrucibleBlockEntity pot = pot(helper, at, ModBlocks.CRISOL_DE_OBSIDIANA);
+			MeltTankBlockEntity third = tank(helper, at.east());
+			MeltTankBlockEntity empty = tank(helper, at.west());
+			third.fill(ModItems.alloy((String) loads[i][3]), (Integer) loads[i][4]);
+			pot.setItem(CrucibleBlockEntity.SLOT_FIRST, new ItemStack(ModItems.CORAZON_DE_FORJA));
+			pot.setItem(CrucibleBlockEntity.SLOT_SECOND, new ItemStack(ModItems.alloy((String) loads[i][1]), (Integer) loads[i][2]));
+			pot.setItem(CrucibleBlockEntity.SLOT_FUEL, new ItemStack(ModItems.ASCUA, 2));
+			run(helper, at, pot, CrucibleBlock.Tier.OBSIDIANA.cook + 10);
+			int made = recipe.output() + CrucibleBlock.Tier.OBSIDIANA.bonus;
+			helper.assertTrue(empty.bankMetal() == ModItems.alloy(id) && empty.bankAmount() == made,
+				id + ": la cuba vacía tiene " + made + " de " + id + ", hay " + empty.bankAmount() + " de " + empty.bankMetal());
+			helper.assertTrue(pot.getItem(CrucibleBlockEntity.SLOT_FIRST).isEmpty() && pot.getItem(CrucibleBlockEntity.SLOT_SECOND).isEmpty(),
+				id + ": los huecos quedan vacíos");
+			helper.assertTrue(third.bankAmount() == 0, id + ": y la tercera aleación sale de la cuba");
+		}
+		helper.succeed();
+	}
+
+	/** An iron crucible pours none of them, and neither does a table at molten heat. */
+	@GameTest
+	public void ironCrucibleAndTablesRefuseThem(GameTestHelper helper) {
+		Object[][] loads = {{"iracero", "acero_vivo", 1, "corazon_de_volcan", 2}, {"egida", "obsidiacero", 2, "espectracero", 2},
+			{"arcanio", "astralita", 2, "eclipse", 2}};
+		for (int i = 0; i < loads.length; i++) {
+			String id = (String) loads[i][0];
+			BlockPos at = POT.offset(0, 0, 12 + i * 4);
+			CrucibleBlockEntity pot = pot(helper, at, ModBlocks.CRISOL_DE_HIERRO);
+			MeltTankBlockEntity third = tank(helper, at.east());
+			MeltTankBlockEntity empty = tank(helper, at.west());
+			third.fill(ModItems.alloy((String) loads[i][3]), (Integer) loads[i][4]);
+			pot.setItem(CrucibleBlockEntity.SLOT_FIRST, new ItemStack(ModItems.CORAZON_DE_FORJA));
+			pot.setItem(CrucibleBlockEntity.SLOT_SECOND, new ItemStack(ModItems.alloy((String) loads[i][1]), (Integer) loads[i][2]));
+			pot.setItem(CrucibleBlockEntity.SLOT_FUEL, new ItemStack(ModItems.ASCUA, 2));
+			run(helper, at, pot, CrucibleBlock.Tier.HIERRO.cook + 10);
+			helper.assertTrue(empty.bankAmount() == 0, id + ": el crisol de hierro no cuela nada: " + empty.bankAmount() + " de " + empty.bankMetal());
+			helper.assertTrue(!pot.getItem(CrucibleBlockEntity.SLOT_FIRST).isEmpty() && third.bankAmount() == (Integer) loads[i][4],
+				id + ": y no gasta nada");
+			List<ItemStack> points = new ArrayList<>();
+			for (Alloys.Part part : recipe(id).inputs()) {
+				points.add(new ItemStack(part.item().get(), part.count()));
+			}
+			Alloys.Recipe made = Alloys.match(points, Alloys.Heat.FUNDIDA);
+			helper.assertTrue(made == null || !Alloys.PEAK.contains(made.id()), id + ": una mesa a calor de fundición no lo hace: " + made);
+		}
+		helper.succeed();
+	}
+
+	// ------------------------------------------------------------------ the peak alloys: numbers
+
+	/** Of every number it is for, each peak alloy holds the record (strictly, bar knockback resistance, where it ties). */
 	@GameTest(maxTicks = 20)
-	public void middleIngotsAreRareAndFireproof(GameTestHelper helper) {
+	public void cumbreSuperanAlCorazonEnLoSuyo(GameTestHelper helper) {
+		List<String> wrong = new ArrayList<>();
+		for (ForgeMaterial other : ForgeMaterial.values()) {
+			if (other != ForgeMaterial.IRACERO && other.attackDamageBonus >= ForgeMaterial.IRACERO.attackDamageBonus) {
+				wrong.add("iracero no pega más que " + other);
+			}
+			ForgeMaterial aegis = ForgeMaterial.EGIDA;
+			if (other != aegis && (other.durability >= aegis.durability || other.armorDurability >= aegis.armorDurability
+				|| other.toughness >= aegis.toughness || other.handleDurability >= aegis.handleDurability
+				|| other.knockbackResistance > aegis.knockbackResistance)) {
+				wrong.add("égida no supera a " + other + " en durabilidad, durab. de armadura, dureza, mango y empuje");
+			}
+			ForgeMaterial arcane = ForgeMaterial.ARCANIO;
+			if (other != arcane && (other.enchantability >= arcane.enchantability || other.miningSpeed >= arcane.miningSpeed
+				|| other.handleAttackSpeed >= arcane.handleAttackSpeed || other.handleMiningSpeed >= arcane.handleMiningSpeed)) {
+				wrong.add("arcanio no supera a " + other + " en encantabilidad, minado, mango rápido y mango de minado");
+			}
+		}
+		helper.assertTrue(wrong.isEmpty(), String.join("; ", wrong));
+		helper.succeed();
+	}
+
+	private static int armour(ForgeMaterial material) {
+		int total = 0;
+		for (net.minecraft.world.item.equipment.ArmorType slot : net.minecraft.world.item.equipment.ArmorType.values()) {
+			total += slot == net.minecraft.world.item.equipment.ArmorType.BODY ? 0 : material.defense(slot);
+		}
+		return total;
+	}
+
+	/** Whether a is at least b in every number a smith weighs: damage, durability, mining, enchanting, handle, armour, its wear, toughness. */
+	private static boolean atLeastInAll(ForgeMaterial a, ForgeMaterial b) {
+		return a.attackDamageBonus >= b.attackDamageBonus && a.durability >= b.durability && a.miningSpeed >= b.miningSpeed
+			&& a.enchantability >= b.enchantability && a.handleDurability >= b.handleDurability && a.handleAttackSpeed >= b.handleAttackSpeed
+			&& armour(a) >= armour(b) && a.armorDurability >= b.armorDurability && a.toughness >= b.toughness;
+	}
+
+	/** None is the better of the forge heart, or of another peak alloy, in everything at once, and none wears more than 21 armour. */
+	@GameTest(maxTicks = 20)
+	public void ningunaEsMejorEnTodo(GameTestHelper helper) {
+		List<String> wrong = new ArrayList<>();
+		List<ForgeMaterial> peaks = List.of(ForgeMaterial.IRACERO, ForgeMaterial.EGIDA, ForgeMaterial.ARCANIO);
+		for (ForgeMaterial peak : peaks) {
+			if (armour(peak) > 21) {
+				wrong.add(peak + " pasa de 21 de armadura: " + armour(peak));
+			}
+			if (atLeastInAll(peak, ForgeMaterial.CORAZON)) {
+				wrong.add(peak + " iguala o supera al corazón en todo");
+			}
+			for (ForgeMaterial other : peaks) {
+				if (other != peak && atLeastInAll(peak, other)) {
+					wrong.add(peak + " iguala o supera a " + other + " en todo");
+				}
+			}
+		}
+		helper.assertTrue(wrong.isEmpty(), String.join("; ", wrong));
+		helper.succeed();
+	}
+
+	// ------------------------------------------------------------------ the peak alloys: traits
+
+	/** Iracundo: a step for every fifth of health gone, a point of damage for each, up to four. */
+	@GameTest(maxTicks = 20)
+	public void wrathGrowsAsHealthFalls(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(2, 2, 2));
+		int[] health = {20, 16, 12, 8, 4};
+		for (int steps = 0; steps < health.length; steps++) {
+			player.setHealth(health[steps]);
+			helper.assertTrue(TraitEffects.wrathSteps(player) == steps, "con " + health[steps] + " de 20, " + steps + " escalones: " + TraitEffects.wrathSteps(player));
+		}
+		Mob zombie = zombie(helper, new BlockPos(4, 2, 2));
+		ItemStack sword = all(helper, ForgeType.ESPADA, ForgeMaterial.IRACERO);
+		player.setHealth(20.0F);
+		helper.assertTrue(Math.abs(TraitEffects.weaponBonus(level, player, zombie, sword)) < EPS, "a vida llena el iracero no suma nada");
+		player.setHealth(4.0F);
+		float bonus = TraitEffects.weaponBonus(level, player, zombie, sword);
+		helper.assertTrue(Math.abs(bonus - 4.0F) < EPS, "a 4 de 20 suma 4,0: " + bonus);
+		zombie.discard();
+		helper.succeed();
+	}
+
+	/** Iracundo armour: badly hurt, Strength I (II with the four pieces), once every thirty seconds. */
+	@GameTest(maxTicks = 20)
+	public void wrathArmourGivesStrengthOnceInThirtySeconds(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(2, 2, 2));
+		Mob zombie = zombie(helper, new BlockPos(4, 2, 2));
+		var blow = level.damageSources().mobAttack(zombie);
+		wear(helper, player, ForgeMaterial.IRACERO, 4);
+		player.setHealth(7.0F);
+		TraitEffects.onHurt(level, player, blow, 4.0F);
+		var strength = player.getEffect(MobEffects.STRENGTH);
+		helper.assertTrue(strength != null && strength.getAmplifier() == 1, "con las cuatro piezas, Fuerza II: " + strength);
+		player.removeEffect(MobEffects.STRENGTH);
+		TraitEffects.onHurt(level, player, blow, 4.0F);
+		helper.assertFalse(player.hasEffect(MobEffects.STRENGTH), "otra vez antes de " + TraitEffects.WRATH_COOLDOWN + " ticks no se renueva");
+		CombatGameTests.TestPlayer other = player(helper, new BlockPos(3, 2, 3));
+		wear(helper, other, ForgeMaterial.IRACERO, 1);
+		other.setHealth(7.0F);
+		TraitEffects.onHurt(level, other, blow, 4.0F);
+		var one = other.getEffect(MobEffects.STRENGTH);
+		helper.assertTrue(one != null && one.getAmplifier() == 0, "con una pieza, Fuerza I: " + one);
+		CombatGameTests.TestPlayer healthy = player(helper, new BlockPos(3, 2, 2));
+		wear(helper, healthy, ForgeMaterial.IRACERO, 4);
+		TraitEffects.onHurt(level, healthy, blow, 1.0F);
+		helper.assertFalse(healthy.hasEffect(MobEffects.STRENGTH), "y con la vida alta, nada");
+		zombie.discard();
+		helper.succeed();
+	}
+
+	/** Inquebrantable: the share goes from 40 % to 20 % with the pieces, and a blow armour reads is cut to it. */
+	@GameTest(maxTicks = 20)
+	public void aegisCapsTheBlow(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		float[] shares = {1.0F, 0.40F, 0.35F, 0.30F, 0.25F, 0.20F};
+		for (int n = 0; n < shares.length; n++) {
+			helper.assertTrue(Math.abs(TraitEffects.unyieldingShare(n) - shares[n]) < EPS, n + " piezas: " + TraitEffects.unyieldingShare(n));
+		}
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(2, 2, 2));
+		Mob zombie = zombie(helper, new BlockPos(4, 2, 2));
+		var blow = level.damageSources().mobAttack(zombie);
+		helper.assertTrue(Math.abs(CombatHooks.capped(player, blow, 30.0F, false) - 30.0F) < EPS, "sin égida un golpe de 30 pasa entero");
+		wear(helper, player, ForgeMaterial.EGIDA, 4);
+		helper.assertTrue(TraitEffects.unyieldingCount(player) == 4, "cuatro piezas, cuenta 4");
+		float capped = CombatHooks.capped(player, blow, 30.0F, false);
+		helper.assertTrue(Math.abs(capped - 5.0F) < EPS, "con el conjunto y 20 de vida, un golpe de 30 se corta a 5: " + capped);
+		helper.assertTrue(Math.abs(CombatHooks.capped(player, level.damageSources().fall(), 30.0F, false) - 30.0F) < EPS, "una caída pasa entera");
+		helper.assertTrue(Math.abs(CombatHooks.capped(player, level.damageSources().genericKill(), 30.0F, false) - 30.0F) < EPS, "y /kill");
+		helper.assertTrue(Math.abs(CombatHooks.capped(player, blow, 3.0F, false) - 3.0F) < EPS, "un golpe pequeño no se toca");
+		player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, all(helper, ForgeType.ESCUDO, ForgeMaterial.EGIDA));
+		helper.assertTrue(TraitEffects.unyieldingCount(player) == 5, "con un escudo de égida, 5");
+		helper.assertTrue(Math.abs(CombatHooks.capped(player, blow, 30.0F, false) - 4.0F) < EPS, "y se corta a 4 (20 %)");
+		wear(helper, player, ForgeMaterial.CUERO, 0);
+		player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, ItemStack.EMPTY);
+		helper.assertTrue(Math.abs(CombatHooks.capped(player, blow, 30.0F, false) - 30.0F) < EPS, "sin égida otra vez, 30");
+		zombie.discard();
+		helper.succeed();
+	}
+
+	/** Místico: a staff costs a quarter less, a wound gives mana, a pick gives mana, and the cheapest of the gear counts. */
+	@GameTest(maxTicks = 20)
+	public void mysticCheapensSpellsAndFeedsMana(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(2, 2, 2));
+		float plain = dev.forja.clase.ClassEffects.spellCostMultiplier(player);
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, all(helper, ForgeType.BACULO, ForgeMaterial.ARCANIO));
+		float staff = dev.forja.clase.ClassEffects.spellCostMultiplier(player);
+		helper.assertTrue(Math.abs(staff - plain * 0.75F) < EPS, "con un báculo de arcanio, ×0,75 del de sin él: " + staff + " contra " + plain);
+		player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, all(helper, ForgeType.GRIMORIO, ForgeMaterial.ARCANIO));
+		helper.assertTrue(Math.abs(dev.forja.clase.ClassEffects.spellCostMultiplier(player) - staff) < EPS, "con dos, una vez, no dos");
+		player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, all(helper, ForgeType.BACULO, ForgeMaterial.ASTRALITA));
+		helper.assertTrue(TraitEffects.gearSpellCost(player) <= 0.75F + EPS && TraitEffects.gearSpellCost(player) >= 0.75F - EPS,
+			"arcanio en una mano y astralita en la otra son ×0,75, no el producto: " + TraitEffects.gearSpellCost(player));
+		player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, ItemStack.EMPTY);
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+
+		Mob zombie = zombie(helper, new BlockPos(4, 2, 2));
+		wear(helper, player, ForgeMaterial.ARCANIO, 4);
+		Mana.set(player, 0.0F);
+		TraitEffects.onHurt(level, player, level.damageSources().mobAttack(zombie), 4.0F);
+		helper.assertTrue(Math.abs(Mana.value(player) - 6.0F) < EPS, "herido por 4 con 4 piezas, min(6, 4 x 0,5 x 4) = 6 de maná: " + Mana.value(player));
+		wear(helper, player, ForgeMaterial.ARCANIO, 1);
+		Mana.set(player, 0.0F);
+		TraitEffects.onHurt(level, player, level.damageSources().mobAttack(zombie), 4.0F);
+		helper.assertTrue(Math.abs(Mana.value(player) - 2.0F) < EPS, "con una pieza, 4 x 0,5 x 1 = 2: " + Mana.value(player));
+		wear(helper, player, ForgeMaterial.CUERO, 0);
+		Mana.set(player, 0.0F);
+		TraitEffects.workMana(level, player, helper.absolutePos(new BlockPos(5, 2, 5)), Blocks.STONE.defaultBlockState(),
+			all(helper, ForgeType.PICO, ForgeMaterial.ARCANIO));
+		helper.assertTrue(Math.abs(Mana.value(player) - 0.25F) < EPS, "un pico de arcanio que rompe piedra da 0,25: " + Mana.value(player));
+		helper.assertTrue(Mana.usesMana(all(helper, ForgeType.PICO, ForgeMaterial.ARCANIO)), "y su pico enciende la barra de maná");
+		zombie.discard();
+		helper.succeed();
+	}
+
+	// ------------------------------------------------------------------ the peak alloys: sets and arrows
+
+	/** The sets give what the design says: damage and speed, life and toughness, mana; the aegis gives no flat armour. */
+	@GameTest(maxTicks = 20)
+	public void peakSetsGiveTheirBonus(GameTestHelper helper) {
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(2, 2, 2));
+		float base = Mana.maxOf(player);
+		float health = player.getMaxHealth();
+		double toughness = player.getAttributeValue(Attributes.ARMOR_TOUGHNESS);
+		wear(helper, player, ForgeMaterial.IRACERO, 4);
+		ArmorSets.update(player);
+		helper.assertTrue(Math.abs(player.getAttributeValue(Attributes.ATTACK_DAMAGE) - (1.0 + 3.0)) < 0.01, "el iracero suma 3 de daño: " + player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+		helper.assertTrue(ArmorSets.bonuses(ForgeMaterial.IRACERO).stream().anyMatch(bonus -> bonus.attribute().equals(Attributes.MOVEMENT_SPEED)
+			&& Math.abs(bonus.amount() - 0.05) < 1.0E-6), "y un 5 % de velocidad");
+		wear(helper, player, ForgeMaterial.EGIDA, 4);
+		ArmorSets.update(player);
+		helper.assertTrue(Math.abs(player.getMaxHealth() - (health + 10.0F)) < EPS, "la égida da +10 de vida: " + player.getMaxHealth());
+		helper.assertTrue(player.getAttributeValue(Attributes.ARMOR_TOUGHNESS) >= toughness + ArmorSets.TOUGHNESS_BONUS + 4.0 - 0.01,
+			"y +4 de dureza sobre los +2 de todo conjunto: " + player.getAttributeValue(Attributes.ARMOR_TOUGHNESS));
+		helper.assertTrue(ArmorSets.bonuses(ForgeMaterial.EGIDA).stream().anyMatch(bonus -> bonus.attribute().equals(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE)
+			&& bonus.amount() == 1.0), "no te empujan las explosiones");
+		for (ForgeMaterial peak : List.of(ForgeMaterial.IRACERO, ForgeMaterial.EGIDA, ForgeMaterial.ARCANIO)) {
+			helper.assertFalse(ArmorSets.bonuses(peak).stream().anyMatch(bonus -> bonus.attribute().equals(Attributes.ARMOR)),
+				peak + ": su conjunto no da armadura plana");
+		}
+		wear(helper, player, ForgeMaterial.ARCANIO, 4);
+		ArmorSets.update(player);
+		helper.assertTrue(Math.abs(Mana.maxOf(player) - (base + 50.0F)) < EPS && Mana.ARCANIUM_SET_MANA == 50.0F,
+			"el arcanio suma 50 de maná máximo: " + (Mana.maxOf(player) - base));
+		helper.assertTrue(ArmorSets.bonuses(ForgeMaterial.ARCANIO).stream().anyMatch(bonus -> bonus.attribute().equals(Attributes.ARMOR_TOUGHNESS)
+			&& bonus.amount() == 2.0) && ArmorSets.bonuses(ForgeMaterial.ARCANIO).stream().anyMatch(bonus -> bonus.attribute().equals(Attributes.MOVEMENT_SPEED)
+			&& Math.abs(bonus.amount() - 0.05) < 1.0E-6), "+2 de dureza y +5 % de velocidad");
+		helper.assertTrue(Mana.carriesMana(player), "y con el conjunto la barra está a la vista");
+		wear(helper, player, ForgeMaterial.CUERO, 0);
+		ArmorSets.update(player);
+		helper.succeed();
+	}
+
+	/** The peak arrow tips: wrath, guard and arcane. */
+	@GameTest(maxTicks = 20)
+	public void peakArrowsDoTheirThing(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		helper.assertTrue(ArrowTips.special(ForgeMaterial.IRACERO) == ArrowTips.Special.IRA, "iracero: ira");
+		helper.assertTrue(ArrowTips.special(ForgeMaterial.EGIDA) == ArrowTips.Special.GUARDIA, "égida: guardia");
+		helper.assertTrue(ArrowTips.special(ForgeMaterial.ARCANIO) == ArrowTips.Special.ARCANA, "arcanio: arcana");
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(2, 2, 2));
+		player.setHealth(4.0F);
+		float wrath = ArrowTips.wrathBonus(ArrowTips.Special.IRA, player);
+		helper.assertTrue(Math.abs(wrath - 2.0F) < EPS, "la ira a 4 de 20 suma 2,0: " + wrath);
+		helper.assertTrue(Math.abs(ArrowTips.wrathBonus(ArrowTips.Special.GUARDIA, player)) < EPS, "y la guardia no suma daño");
+		player.setHealth(20.0F);
+		Mob zombie = zombie(helper, new BlockPos(4, 2, 2));
+		ArrowTips.onHit(level, null, player, zombie, ArrowTips.Special.GUARDIA);
+		helper.assertTrue(player.hasEffect(MobEffects.RESISTANCE), "la guardia da Resistencia al que dispara");
+		// The arcane tip: two points of magic that armour does not stop, on a zombie in diamond.
+		zombie.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.DIAMOND_HELMET));
+		zombie.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
+		zombie.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Items.DIAMOND_LEGGINGS));
+		zombie.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.DIAMOND_BOOTS));
+		zombie.invulnerableTime = 10;
+		float before = zombie.getHealth();
+		net.minecraft.world.entity.projectile.arrow.Arrow arrow = EntityTypes.ARROW.create(level, EntitySpawnReason.EVENT);
+		ArrowTips.onHit(level, arrow, player, zombie, ArrowTips.Special.ARCANA);
+		helper.assertTrue(before - zombie.getHealth() >= 2.0F - EPS, "la flecha arcana quita al menos 2 a un zombi con armadura de diamante: " + (before - zombie.getHealth()));
+		zombie.discard();
+		helper.succeed();
+	}
+
+	/** The three peak ingots are epic and fireproof, like the forge heart; the four of the middle tier are rare and fireproof. */
+	@GameTest(maxTicks = 20)
+	public void peakIngotsAreEpicAndFireproof(GameTestHelper helper) {
+		for (String id : Alloys.PEAK) {
+			ItemStack ingot = new ItemStack(ModItems.alloy(id));
+			helper.assertTrue(ingot.getRarity() == net.minecraft.world.item.Rarity.EPIC, id + " es épico: " + ingot.getRarity());
+			helper.assertTrue(ingot.has(net.minecraft.core.component.DataComponents.DAMAGE_RESISTANT), id + " no se quema");
+		}
 		for (String id : Alloys.MIDDLE) {
 			ItemStack ingot = new ItemStack(ModItems.alloy(id));
 			helper.assertTrue(ingot.getRarity() == net.minecraft.world.item.Rarity.RARE, id + " es raro: " + ingot.getRarity());

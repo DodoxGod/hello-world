@@ -176,7 +176,17 @@ public enum ForgeMaterial implements StringRepresentable {
 		24, 1.15F, 0.20F, 1.10F, new int[]{3, 6, 7, 3}, 34, 2.0F, 0.0F, SoundEvents.ARMOR_EQUIP_CHAIN, Trait.PENUMBRA),
 	/** Astralite: orichalcum, aetherium and star iron in the obsidian crucible. Magic comes cheaper to it, cheapest under the night sky. */
 	ASTRALITA(0x5C7CFA, alloyTag("astralita"), null, true, 1700, 9.5F, 3.5F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
-		25, 1.25F, 0.20F, 1.15F, new int[]{3, 6, 8, 3}, 38, 2.5F, 0.05F, SoundEvents.ARMOR_EQUIP_GOLD, Trait.SIDERAL);
+		25, 1.25F, 0.20F, 1.15F, new int[]{3, 6, 8, 3}, 38, 2.5F, 0.05F, SoundEvents.ARMOR_EQUIP_GOLD, Trait.SIDERAL),
+	// ------------------------------------------------ the peak alloys (docs/ALEACIONES_CUMBRE.md)
+	/** Wrathsteel: the heart poured with volcano heart and living steel. The hardest-hitting head in the mod, and it hits harder the closer you are to dying. */
+	IRACERO(0xB0142C, alloyTag("iracero"), null, true, 2000, 9.5F, 5.5F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
+		18, 1.40F, 0.10F, 1.10F, new int[]{3, 6, 8, 3}, 42, 3.0F, 0.05F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.IRACUNDO),
+	/** Aegis: the heart poured with spectresteel and obsidian steel. It outlasts everything, and no single blow gets through it whole. */
+	EGIDA(0x8E6B3F, alloyTag("egida"), null, true, 2800, 8.0F, 4.0F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
+		15, 1.85F, -0.25F, 0.90F, new int[]{3, 7, 8, 3}, 60, 5.0F, 0.15F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.INQUEBRANTABLE),
+	/** Arcanium: the heart poured with astralite and eclipse. The quickest hand, the best enchanting and spells for less. */
+	ARCANIO(0xE04FB0, alloyTag("arcanio"), null, true, 2100, 12.5F, 4.0F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
+		40, 1.30F, 0.35F, 1.25F, new int[]{3, 6, 8, 3}, 44, 3.0F, 0.0F, SoundEvents.ARMOR_EQUIP_GOLD, Trait.MISTICO);
 
 	/** A material's special effect, active when any part of the item uses it. */
 	public enum Trait {
@@ -232,7 +242,13 @@ public enum ForgeMaterial implements StringRepresentable {
 		/** Spells cost less with it in hand in the dark; armour and weapons turn the dark into mana. */
 		PENUMBRA,
 		/** Spells cost less with it in hand, less still at night under open sky; tools turn work into mana. */
-		SIDERAL;
+		SIDERAL,
+		/** It hits harder the closer its bearer is to dying; armour of it answers a bad wound with strength. */
+		IRACUNDO,
+		/** No single blow takes more than a share of its bearer's health; the more of it you carry, the smaller the share. */
+		INQUEBRANTABLE,
+		/** Spells cost a quarter less with it in hand; armour of it turns wounds into mana, tools turn work into mana. */
+		MISTICO;
 
 		public String id() {
 			return this.name().toLowerCase(Locale.ROOT);

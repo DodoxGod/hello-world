@@ -158,7 +158,18 @@ public final class Alloys {
 			new Part(() -> Items.CRYING_OBSIDIAN, 2)), 2),
 		/** Astralite: orichalcum, aetherium and star iron in the obsidian crucible; the Guild's metal has no quarry in it. */
 		new Recipe("astralita", Heat.FORJA_BLANCA, List.of(new Part(() -> ModItems.ORICALCO, 2), new Part(() -> ModItems.alloy("eterio"), 1),
-			new Part(() -> ModItems.HIERRO_ESTELAR, 2)), 2)
+			new Part(() -> ModItems.HIERRO_ESTELAR, 2)), 2),
+
+		// ---- the peak alloys (docs/ALEACIONES_CUMBRE.md): the forge heart and two alloys, white heat on a foundry line.
+		/** Wrathsteel: the heart, living steel and volcano heart. It hits harder the closer you are to dying. */
+		new Recipe("iracero", Heat.FORJA_BLANCA, List.of(new Part(() -> ModItems.CORAZON_DE_FORJA, 1), new Part(() -> ModItems.alloy("corazon_de_volcan"), 2),
+			new Part(() -> ModItems.alloy("acero_vivo"), 1)), 2),
+		/** Aegis: the heart, spectresteel and obsidian steel. No single blow gets through it whole. */
+		new Recipe("egida", Heat.FORJA_BLANCA, List.of(new Part(() -> ModItems.CORAZON_DE_FORJA, 1), new Part(() -> ModItems.alloy("espectracero"), 2),
+			new Part(() -> ModItems.alloy("obsidiacero"), 2)), 1),
+		/** Arcanium: the heart, astralite and eclipse. Cheaper spells, and work and wounds turn into mana. */
+		new Recipe("arcanio", Heat.FORJA_BLANCA, List.of(new Part(() -> ModItems.CORAZON_DE_FORJA, 1), new Part(() -> ModItems.alloy("astralita"), 2),
+			new Part(() -> ModItems.alloy("eclipse"), 2)), 1)
 	);
 
 	/**
@@ -235,7 +246,10 @@ public final class Alloys {
 
 	/** The alloys no table can reach: white heat, and therefore the obsidian crucible or nothing. */
 	public static final java.util.Set<String> WHITE_HEAT_ONLY = java.util.Set.of("solacero", "lunacero", "acero_vivo",
-		"astralita");
+		"astralita", "iracero", "egida", "arcanio");
+
+	/** The three of the forge heart and two alloys (docs/ALEACIONES_CUMBRE.md): the best the mod has, each at something different. */
+	public static final java.util.Set<String> PEAK = java.util.Set.of("iracero", "egida", "arcanio");
 
 	/** The four between the far forges and the forge heart (docs/ALEACIONES_CUMBRE.md, 2.7): two alloys and one more thing each. */
 	public static final java.util.Set<String> MIDDLE = java.util.Set.of("espectracero", "corazon_de_volcan", "eclipse", "astralita");
@@ -253,7 +267,7 @@ public final class Alloys {
 	 * Alloys of more ingredients than the forge table's star has points: only a crucible on a foundry line
 	 * makes them, two bars in the pot and the rest drawn from the tanks. Oricalco is fourteen metals.
 	 */
-	public static final java.util.Set<String> FOUNDRY_ONLY = java.util.Set.of("oricalco", "astralita");
+	public static final java.util.Set<String> FOUNDRY_ONLY = java.util.Set.of("oricalco", "astralita", "iracero", "egida", "arcanio");
 
 	private Alloys() {
 	}

@@ -485,3 +485,20 @@ Entrada nueva arriba: `## <fecha> — Aleaciones cumbre: iracero, égida y arcan
 (receta, salida, números clave, rasgo), una de dónde se hacen (crisol de obsidiana con cubas, mesa de almas), una de
 guía/JEI, una de pruebas (`CumbreGameTests`, `FORJA_SOLO=cumbre`, hoja en `Forja_capturas_mejoras/aleaciones_cumbre`)
 y lo que haya cambiado en umbrales según 4.2 (o «ningún umbral cambia»).
+
+## 5. Notas de la implementación (2026-10-01)
+
+Lo que el código obligó a decidir distinto de lo escrito arriba, sin cambiar el diseño:
+
+- **Eclipse con cabeza +3,0**, no +3,5. A +3,5 el buscador de `BalanceGameTests` sacaba la cabeza de vidriacero del hacha al
+  100 % de las cinco mejores combinaciones y la mediana cuerpo a cuerpo subía (báculo 0,71 s contra mediana 0,72 s y
+  `magiaEnSuSitio` fallaba). Es la bajada de 0,5 que prescribe 4.2. El resto de sus números no cambia.
+- **Con la cabeza de iracero** la mediana baja a 0,68 s y el grimorio de Mago queda a ×1,51: `MAGIC_TOME_CEILING` pasa a 1,6 y
+  `MAGIC_MAGE_CEILING` a 1,4, como dice 4.2 (el texto de `Report.java` que los cita, igual). Los demás umbrales no se mueven.
+- **El crisol de obsidiana saca un lingote más que la receta** (`Tier.OBSIDIANA.bonus`, que ya cuenta para todas): iracero
+  3, égida 2, arcanio 2 y astralita 3 por tanda. Las pruebas miden `salida + bonus`.
+- **Textos:** el conjunto de la égida acaba «ningún golpe pasa del 25 % de tu vida» (un `%` al final del texto no pasa
+  `check_formats`). Los rasgos sin argumentos escriben `%` y las flechas con argumentos `%%`.
+- **`shelterCapsOnceThenWaits`** comprueba la espera con `TraitEffects.shelterReadyAt` y `forgetShelter`, sin dejar pasar 400
+  ticks de prueba.
+- **JEI** es solo de compilación en la prueba de cliente: `cumbre_08_jei` se omite y el registro lo dice.

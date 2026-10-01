@@ -180,7 +180,9 @@ public final class ModItems {
 			// The middle tier and the peak alloys are rare or epic and fireproof, like the forge heart they are poured with
 			// (docs/ALEACIONES_CUMBRE.md, 2.2).
 			Item.Properties alloyProperties = new Item.Properties();
-			if (dev.forja.forge.Alloys.MIDDLE.contains(recipe.id())) {
+			if (dev.forja.forge.Alloys.PEAK.contains(recipe.id())) {
+				alloyProperties.rarity(net.minecraft.world.item.Rarity.EPIC).fireResistant();
+			} else if (dev.forja.forge.Alloys.MIDDLE.contains(recipe.id())) {
 				alloyProperties.rarity(net.minecraft.world.item.Rarity.RARE).fireResistant();
 			}
 			ALLOYS.put(recipe.id(), register(recipe.id(), Item::new, alloyProperties));

@@ -117,7 +117,16 @@ public final class GearAura {
 		if (parts == null) {
 			return null;
 		}
-		// The middle tier and the peak alloys (docs/ALEACIONES_CUMBRE.md, 2.7).
+		// The peak alloys and the middle tier (docs/ALEACIONES_CUMBRE.md, 2.4 and 2.7).
+		if (parts.hasTrait(ForgeMaterial.Trait.IRACUNDO)) {
+			return random.nextFloat() < 0.4F ? ParticleTypes.SMALL_FLAME : null;
+		}
+		if (parts.hasTrait(ForgeMaterial.Trait.INQUEBRANTABLE)) {
+			return random.nextFloat() < 0.3F ? ParticleTypes.WAX_ON : null;
+		}
+		if (parts.hasTrait(ForgeMaterial.Trait.MISTICO)) {
+			return random.nextFloat() < 0.6F ? ParticleTypes.WITCH : null;
+		}
 		if (parts.hasTrait(ForgeMaterial.Trait.AMPARO)) {
 			return random.nextFloat() < 0.4F ? ParticleTypes.SOUL : null;
 		}

@@ -558,7 +558,9 @@ public class ForgeMenu extends AbstractContainerMenu {
 						if (used.contains(dev.forja.material.ForgeMaterial.ESTELAR) || used.contains(dev.forja.material.ForgeMaterial.ACERO_ESTELAR)) {
 							ForjaAdvancements.award(player, "estelar");
 						}
-						if (used.contains(dev.forja.material.ForgeMaterial.CORAZON) || used.contains(dev.forja.material.ForgeMaterial.ACERO_VIVO)) {
+						if (used.contains(dev.forja.material.ForgeMaterial.CORAZON) || used.contains(dev.forja.material.ForgeMaterial.ACERO_VIVO)
+							|| used.contains(dev.forja.material.ForgeMaterial.IRACERO) || used.contains(dev.forja.material.ForgeMaterial.EGIDA)
+							|| used.contains(dev.forja.material.ForgeMaterial.ARCANIO)) {
 							ForjaAdvancements.award(player, "corazon");
 						}
 					}

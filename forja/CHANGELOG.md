@@ -1,5 +1,43 @@
 # Novedades
 
+## 2026-10-01 — Aleaciones cumbre: iracero, égida y arcanio, y su escalón intermedio
+
+- **Iracero** (Wrathsteel, ataque): 1 corazón de forja + 2 corazón de volcán + 1 acero vivo → 2 lingotes. Cabeza **+5,5**
+  (la más alta del mod), 2000 de durabilidad, armadura 20. Rasgo **Iracundo**: las armas pegan +1 por cada 20 % de vida que
+  te falta (hasta +4); la armadura da Fuerza I (II con el conjunto) si un golpe te deja bajo el 40 %, una vez cada 30 s;
+  las flechas, +0,5 por escalón. Conjunto: +3 de daño y +5 % de velocidad.
+- **Égida** (Aegis, defensa): 1 corazón + 2 espectracero + 2 obsidiacero → 1 lingote. 2800 de durabilidad, mango ×1,85,
+  armadura de 60 de durabilidad y 5,0 de dureza, empuje 0,15. Rasgo **Inquebrantable**: lo que la armadura deja pasar de un
+  golpe no pasa del 40 % de tu vida con una pieza, 5 puntos menos por cada pieza más (o en la mano): 25 % con el conjunto,
+  20 % con un escudo. No vale contra caídas, el vacío ni nada que la armadura no lea. Flechas: Resistencia I 3 s. Conjunto:
+  +10 de vida, +4 de dureza, no te empujan las explosiones.
+- **Arcanio** (Arcanium, magia y utilidad): 1 corazón + 2 astralita + 2 eclipse → 1 lingote. Encantabilidad 40, minado
+  12,5, mango +0,35 y ×1,25. Rasgo **Místico**: hechizos un 25 % más baratos, la armadura devuelve maná por cada golpe
+  recibido (0,5 por punto de daño y pieza, hasta 6), las herramientas 0,25 por bloque, las flechas 2 de daño mágico que
+  la armadura no para. Conjunto: +50 de maná máximo, +2 de dureza y +5 % de velocidad.
+- **El escalón intermedio**, cuatro aleaciones de dos aleaciones y un material más, cada una con el rasgo flojo de la
+  cumbre que alimenta: **espectracero** (2 fatuo + 1 almacero + 1 lágrima de ghast, fragua de almas; Amparo: ningún golpe
+  pasa del 40 % de la vida, una vez cada 20 s, y el que pegó arde en llama fatua), **corazón de volcán** (2 magmacero +
+  1 solacero + 4 bloques de magma, fragua de almas; Ardor: +0,5 por escalón de vida perdida y fuego), **eclipse** (2 eterio
+  + 1 lunacero + 2 obsidiana llorona, fragua del vacío; Penumbra: hechizos más baratos a oscuras y maná por golpear o ser
+  golpeado en la oscuridad) y **astralita** (2 oricalco + 1 eterio + 2 hierro estelar, crisol de obsidiana con cubas;
+  Sideral: hechizos más baratos, más aún de noche a cielo abierto, y maná por bloque). Cada una sale 2 por tanda.
+  Conjuntos sin armadura plana; el eclipse sale con cabeza +3,0 (ver equilibrio).
+- **Dónde se hacen**: las tres cumbre y la astralita, en un **crisol de obsidiana en una línea de fundición** (corazón y
+  una aleación en los huecos, la otra en una cuba), a calor blanco; sus piezas se cuelan en una **mesa de almas**. Lingotes
+  épicos (los intermedios, raros) y a prueba de fuego. El crisol de obsidiana saca un lingote más que la receta, como con
+  todas.
+- Guía: libro III, «Aleaciones cumbre» (también en el tomo). JEI: «Crisol de obsidiana con cubas». Textos nuevos en
+  `tools/lang_cumbre.py`; lingotes y kits de la familia de `tools/lingotes.py`; logro «corazón» también con las cumbre.
+- Pruebas: `CumbreGameTests` (recetas, crisol de obsidiana y de hierro, fraguas lejanas, cada rasgo, conjuntos, flechas y
+  que ninguna sea mejor en todo) y la sección de cliente `FORJA_SOLO=cumbre`, con su hoja en
+  `Forja_capturas_mejoras/aleaciones_cumbre`. `MaterialesGameTests.everyAlloyCanBePoured` deja pasar las recetas de
+  línea de fundición de más de dos ingredientes.
+- Equilibrio: el eclipse a +3,5 desplazaba la cabeza de vidriacero del hacha entre las cinco mejores y subía la mediana
+  cuerpo a cuerpo; con +3,0 (la bajada de 0,5 que prescribe el diseño) no. Con la cabeza de iracero la mediana baja y el
+  grimorio de Mago queda a ×1,51: `MAGIC_TOME_CEILING` pasa de 1,5 a 1,6 y `MAGIC_MAGE_CEILING` de 1,3 a 1,4, como dice el
+  diseño. `ArmaduraGameTests` no cambia.
+
 ## 2026-10-01 — La Fragua del Vacío del End y el eterio
 
 - **Ruina nueva en el End** (`forja:fragua_del_vacio`): pequeña, de ladrillo de piedra del End y púrpura roto, en las

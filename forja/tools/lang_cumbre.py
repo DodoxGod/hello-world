@@ -6,6 +6,55 @@ Same shape as their dicts: full key -> (Spanish, English). In a text that takes 
 """
 
 CUMBRE = {
+    # ---- the peak alloys
+    "item.forja.iracero": ("Iracero", "Wrathsteel"),
+    "material.forja.iracero": ("iracero", "wrathsteel"),
+    "item.forja.egida": ("Égida", "Aegis"),
+    "material.forja.egida": ("égida", "aegis"),
+    "item.forja.arcanio": ("Arcanio", "Arcanium"),
+    "material.forja.arcanio": ("arcanio", "arcanium"),
+    "conjunto.forja.iracero": (
+        "+3 de daño y +5 % de velocidad; su ira da Fuerza II", "+3 damage and +5% speed; its wrath gives Strength II"),
+    "conjunto.forja.egida": (
+        "+10 de vida, +4 de dureza y no te empujan las explosiones; ningún golpe pasa del 25 % de tu vida",
+        "+10 health, +4 toughness and explosions do not push you; no blow takes more than 25% of your health"),
+    "conjunto.forja.arcanio": (
+        "+50 de maná máximo, +2 de dureza y +5 % de velocidad", "+50 max mana, +2 toughness and +5% speed"),
+    "trait.forja.iracundo": ("Iracundo", "Wrathful"),
+    "trait.forja.iracundo.desc": (
+        "Pega más cuanto más cerca estás de morir", "Hits harder the closer you are to dying"),
+    "trait.forja.iracundo.largo": (
+        "Armas: +1 de daño por cada 20 % de vida que te falta, hasta +4. Armadura: si un golpe te deja por debajo del 40 %, "
+        "Fuerza I 6 s (II con el conjunto), una vez cada 30 s. Flechas: +0,5 por cada 20 % que te falta.",
+        "Weapons: +1 damage for every 20% of health you are missing, up to +4. Armour: a blow that leaves you under 40% "
+        "gives Strength I for 6 s (II with the full set), once every 30 s. Arrows: +0.5 for every 20% missing."),
+    "trait.forja.inquebrantable": ("Inquebrantable", "Unyielding"),
+    "trait.forja.inquebrantable.desc": (
+        "Ningún golpe te quita más de una parte de tu vida", "No single blow takes more than a share of your health"),
+    "trait.forja.inquebrantable.largo": (
+        "Lo que la armadura deja pasar de un golpe no pasa del 40 % de tu vida máxima con una pieza, y 5 puntos menos por "
+        "cada pieza más o si la llevas en la mano: 25 % con el conjunto, 20 % con el conjunto y un arma o escudo de égida. "
+        "No vale contra caídas, el vacío ni nada que la armadura no lea. Flechas: Resistencia I 3 s al que dispara.",
+        "What armour lets through of a blow never passes 40% of your max health with one piece, 5 points less for each "
+        "piece more or if you hold it: 25% with the full set, 20% with the set and an aegis weapon or shield. Not against "
+        "falls, the void or anything armour does not read. Arrows: Resistance I for 3 s to the archer."),
+    "trait.forja.mistico": ("Místico", "Mystic"),
+    "trait.forja.mistico.desc": (
+        "Hechizos más baratos; heridas y trabajo dan maná", "Cheaper spells; wounds and work give mana"),
+    "trait.forja.mistico.largo": (
+        "En la mano: los hechizos cuestan un 25 % menos. Armadura: cada golpe recibido da 0,5 de maná por punto de daño y "
+        "pieza, hasta 6. Herramientas: 0,25 de maná por bloque. Flechas: 2 de daño mágico que la armadura no para.",
+        "In hand: spells cost 25% less. Armour: every blow taken gives 0.5 mana per point of damage and piece, up to 6. "
+        "Tools: 0.25 mana per block. Arrows: 2 magic damage armour does not stop."),
+    "flecha.forja.especial.ira": ("Ira", "Wrath"),
+    "flecha.forja.especial.ira.desc": (
+        "+%s por cada 20 %% de vida que te falta", "+%s for every 20%% of health you are missing"),
+    "flecha.forja.especial.guardia": ("Guardia", "Guard"),
+    "flecha.forja.especial.guardia.desc": ("Resistencia I %s s al que dispara", "Resistance I for %s s to the archer"),
+    "flecha.forja.especial.arcana": ("Arcana", "Arcane"),
+    "flecha.forja.especial.arcana.desc": (
+        "%s de daño mágico que la armadura no para", "%s magic damage armour does not stop"),
+
     # ---- the middle tier: two alloys and one more thing each
     "item.forja.espectracero": ("Espectracero", "Spectresteel"),
     "material.forja.espectracero": ("espectracero", "spectresteel"),

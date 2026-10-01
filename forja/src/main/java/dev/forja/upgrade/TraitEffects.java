@@ -372,6 +372,14 @@ public final class TraitEffects {
 			bonus += MOON_DAMAGE;
 			level.sendParticles(ParticleTypes.SCULK_SOUL, victim.getX(), victim.getY(1.0), victim.getZ(), 6, 0.3, 0.3, 0.3, 0.01);
 		}
+		// Iracundo (docs/ALEACIONES_CUMBRE.md, 2.4): a full point of damage for every step of health its bearer is missing.
+		if (has(weapon, ForgeMaterial.Trait.IRACUNDO)) {
+			int steps = wrathSteps(attacker);
+			if (steps > 0) {
+				bonus += WRATH_DAMAGE * steps;
+				level.sendParticles(ParticleTypes.FLAME, victim.getX(), victim.getY(0.9), victim.getZ(), 2 * steps, 0.25, 0.25, 0.25, 0.01);
+			}
+		}
 		// Ardor (docs/ALEACIONES_CUMBRE.md, 2.7): the worse its bearer is doing, the harder it hits, and past two steps
 		// the blow sets the target alight.
 		if (has(weapon, ForgeMaterial.Trait.ARDOR)) {
@@ -546,6 +554,33 @@ public final class TraitEffects {
 	private static final Map<UUID, Long> ARDOR_GUARDS = new HashMap<>();
 	private static final Map<UUID, Long> SHELTERS = new HashMap<>();
 
+	// ------------------------------------------------------------------ the peak alloys (docs/ALEACIONES_CUMBRE.md, 2.4)
+	/** Iracundo: damage per step of health missing; how long the Strength an armour answers a bad wound with lasts, and how often. */
+	public static final float WRATH_DAMAGE = 1.0F;
+	public static final int WRATH_STRENGTH_TICKS = 120;
+	public static final int WRATH_COOLDOWN = 600;
+	/** Inquebrantable: the share of its max health a bearer lets through of one blow is {@code BASE - PER * pieces}. */
+	public static final float UNYIELDING_BASE = 0.45F;
+	public static final float UNYIELDING_PER = 0.05F;
+	/** Místico: the price of a spell, the mana a wound gives per point of damage and piece (and at most), and a block of work. */
+	public static final float MYSTIC_COST = 0.75F;
+	public static final float MYSTIC_HURT_MANA = 0.5F;
+	public static final float MYSTIC_HURT_CAP = 6.0F;
+	public static final float MYSTIC_BLOCK_MANA = 0.25F;
+	/** When each bearer of Iracundo armour may be answered with Strength again. */
+	private static final Map<UUID, Long> WRATH_GUARDS = new HashMap<>();
+
+	/** Inquebrantable: the pieces of armour whole with it, and one more if either hand holds something whole with it; at most 5. */
+	public static int unyieldingCount(LivingEntity entity) {
+		int count = armorPieces(entity, ForgeMaterial.Trait.INQUEBRANTABLE) + (inHand(entity, ForgeMaterial.Trait.INQUEBRANTABLE) ? 1 : 0);
+		return Math.min(5, count);
+	}
+
+	/** The share of its max health a bearer of {@code count} of them lets through of one blow: 1 with none, 40 % with one, 20 % with five. */
+	public static float unyieldingShare(int count) {
+		return count <= 0 ? 1.0F : UNYIELDING_BASE - UNYIELDING_PER * count;
+	}
+
 	/**
 	 * How far down an entity's health has gone, in steps of {@link #WRATH_STEP}: 0 at full health, 1 under 80 %, 2 under
 	 * 60 %, 3 under 40 % and 4 at 20 % or less. What Iracundo and Ardor read.
@@ -604,8 +639,22 @@ public final class TraitEffects {
 			cap = max * SHELTER_SHARE;
 			shelter = true;
 		}
+		// Inquebrantable: the cap that is always there. When it is the lower of the two it is the one that cuts, and Amparo
+		// keeps its wait for a blow only it would have cut.
+		int unyielding = unyieldingCount(target);
+		if (unyielding > 0) {
+			float lower = max * unyieldingShare(unyielding);
+			if (lower <= cap) {
+				cap = lower;
+				shelter = false;
+			}
+		}
 		if (damage <= cap) {
 			return damage;
+		}
+		if (!shelter) {
+			level.sendParticles(ParticleTypes.WAX_ON, target.getX(), target.getY(1.0), target.getZ(), 10, 0.4, 0.5, 0.4, 0.0);
+			level.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 0.6F, 0.8F);
 		}
 		if (shelter) {
 			if (SHELTERS.size() > 256) {
@@ -628,7 +677,12 @@ public final class TraitEffects {
 	 * are not cheaper than the better of them.
 	 */
 	public static float gearSpellCost(Player player) {
-		return Math.min(siderealCost(player), penumbraCost(player));
+		return Math.min(mysticCost(player), Math.min(siderealCost(player), penumbraCost(player)));
+	}
+
+	/** Místico: every spell costs a quarter less with it in a hand, once, however many hands hold it. */
+	public static float mysticCost(Player player) {
+		return inHand(player, ForgeMaterial.Trait.MISTICO) ? MYSTIC_COST : 1.0F;
 	}
 
 	/** Sideral: spells cost a tenth less with it in a hand, a fifth at night under open sky without rain. */
@@ -656,16 +710,17 @@ public final class TraitEffects {
 			|| state.getDestroySpeed(level, pos) <= 0.0F) {
 			return;
 		}
-		float mana = parts.hasTrait(ForgeMaterial.Trait.SIDERAL) ? SIDEREAL_BLOCK_MANA : 0.0F;
+		float mana = (parts.hasTrait(ForgeMaterial.Trait.SIDERAL) ? SIDEREAL_BLOCK_MANA : 0.0F)
+			+ (parts.hasTrait(ForgeMaterial.Trait.MISTICO) ? MYSTIC_BLOCK_MANA : 0.0F);
 		if (mana > 0.0F) {
 			dev.forja.magic.Mana.give(player, mana);
 		}
 	}
 
 	/**
-	 * What armour answers a blow with, once it has landed (CombatUpgrades, AFTER_DAMAGE): Ardor's fire resistance, which a full
-	 * suit makes a fire put out, once in a while and only when the wound leaves the bearer badly hurt, and Penumbra's mana for
-	 * a wound taken in the dark.
+	 * What armour answers a blow with, once it has landed (CombatUpgrades, AFTER_DAMAGE): Iracundo's Strength and Ardor's fire
+	 * resistance (which a full suit makes a fire put out), each once in a while and only when the wound leaves the bearer
+	 * badly hurt, Místico's mana for every wound and Penumbra's for a wound taken in the dark.
 	 */
 	public static void onHurt(ServerLevel level, LivingEntity victim, DamageSource source, float damageTaken) {
 		if (damageTaken <= 0.0F) {
@@ -673,6 +728,19 @@ public final class TraitEffects {
 		}
 		long now = level.getGameTime();
 		boolean badly = victim.getHealth() < victim.getMaxHealth() * WRATH_ARMOR_THRESHOLD;
+		int wrath = armorPieces(victim, ForgeMaterial.Trait.IRACUNDO);
+		if (wrath > 0 && badly) {
+			Long ready = WRATH_GUARDS.get(victim.getUUID());
+			if (ready == null || now >= ready) {
+				if (WRATH_GUARDS.size() > 256) {
+					WRATH_GUARDS.values().removeIf(expiry -> expiry < now);
+				}
+				WRATH_GUARDS.put(victim.getUUID(), now + WRATH_COOLDOWN);
+				victim.addEffect(new MobEffectInstance(MobEffects.STRENGTH, WRATH_STRENGTH_TICKS, wrath >= 4 ? 1 : 0), victim);
+				level.sendParticles(ParticleTypes.FLAME, victim.getX(), victim.getY(1.0), victim.getZ(), 12, 0.3, 0.5, 0.3, 0.02);
+				level.playSound(null, victim.getX(), victim.getY(), victim.getZ(), SoundEvents.RAVAGER_ROAR, SoundSource.PLAYERS, 0.5F, 1.4F);
+			}
+		}
 		int ardor = armorPieces(victim, ForgeMaterial.Trait.ARDOR);
 		if (ardor > 0 && badly) {
 			Long ready = ARDOR_GUARDS.get(victim.getUUID());
@@ -689,6 +757,11 @@ public final class TraitEffects {
 			}
 		}
 		if (victim instanceof Player player && !dev.forja.magic.Mana.exempt(player)) {
+			int mystic = armorPieces(victim, ForgeMaterial.Trait.MISTICO);
+			if (mystic > 0) {
+				dev.forja.magic.Mana.give(player, Math.min(MYSTIC_HURT_CAP, damageTaken * MYSTIC_HURT_MANA * mystic));
+				level.sendParticles(ParticleTypes.ENCHANT, victim.getX(), victim.getY(1.0), victim.getZ(), 6, 0.3, 0.5, 0.3, 0.2);
+			}
 			int penumbra = armorPieces(victim, ForgeMaterial.Trait.PENUMBRA);
 			if (penumbra > 0 && inDark(level, victim)) {
 				dev.forja.magic.Mana.give(player, Math.min(PENUMBRA_HURT_CAP, damageTaken * PENUMBRA_HURT_MANA * penumbra));

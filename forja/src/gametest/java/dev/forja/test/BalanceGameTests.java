@@ -169,8 +169,8 @@ public class BalanceGameTests {
 	 * <ul>
 	 *   <li>without a magic class the staff and the tome kill no sooner than the median melee weapon, and over a
 	 *       long fight do at most half its damage: magic is for the moment, not the weapon;</li>
-	 *   <li>a Mago with its talents kills no sooner than the quickest melee weapon and no later than 1.3 times the
-	 *       median (1.5 for the tome, whose area bites everything on the rune and is fought here one mob at a time):
+	 *   <li>a Mago with its talents kills no sooner than the quickest melee weapon and no later than 1.4 times the
+	 *       median (1.6 for the tome, whose area bites everything on the rune and is fought here one mob at a time):
 	 *       level with melee, not above it;</li>
 	 *   <li>and nothing magic takes a warden or the Herrero Caído apart clearly faster (a tenth) than the quickest melee
 	 *       weapon; with Enjambre on the staff it used to take a second.</li>
@@ -281,8 +281,8 @@ public class BalanceGameTests {
 	static final double MAGIC_PLAIN_FLOOR = 1.0;
 	static final double MAGIC_PLAIN_SUSTAINED = 0.5;
 	static final double MAGIC_MAGE_FLOOR = 1.0;
-	static final double MAGIC_MAGE_CEILING = 1.3;
-	static final double MAGIC_TOME_CEILING = 1.5;
+	static final double MAGIC_MAGE_CEILING = 1.4;
+	static final double MAGIC_TOME_CEILING = 1.6;
 	/** Against the big ones a fully built Mago may come level with the quickest melee weapon, within a tenth. */
 	static final double MAGIC_BIG_FLOOR = 0.9;
 

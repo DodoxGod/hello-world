@@ -181,6 +181,10 @@ GLYPHS = {
     "fatuo": (".#..", "##.#", ".##."),
     "magmacero": ("#.#.", "#.#.", "####"),
     "eterio": ("....", "#..#", ".##."),
+    # The peak alloys (docs/ALEACIONES_CUMBRE.md).
+    "iracero": (".#.#", "#.#.", "####"),
+    "egida": ("####", "#..#", ".##."),
+    "arcanio": (".##.", "#..#", "#..#"),
     # The middle tier (docs/ALEACIONES_CUMBRE.md, 2.7).
     "espectracero": ("#..#", ".##.", ".##."),
     "corazon_de_volcan": ("..#.", ".###", "####"),
@@ -375,6 +379,30 @@ def mark_a(bar, name):
         put(8, 6, dark)
         put(7, 6, 2)
         put(9, 6, 2)
+    elif name == "iracero":
+        # Wrathsteel: a seam of the heart's fire breaking through, gold over a black channel, two sparks thrown off it.
+        for (x, y) in axis(7.6):
+            zig = 1 if x % 2 == 0 else 0
+            put(x, y + zig, colour=(255, 214, 120))
+            put(x, y + zig + 1, 0)
+        for (x, y) in ((5, 5), (11, 4)):
+            put(x, y, colour=(255, 120, 60))
+    elif name == "egida":
+        # Aegis: a round shield boss in the middle of the top, lit rim over a dark ring, a rivet at each end.
+        for (x, y) in ((7, 5), (9, 5), (8, 4)):
+            put(x, y, 4)
+        put(8, 5, colour=(255, 236, 190))
+        for (x, y) in ((7, 6), (9, 6), (8, 6)):
+            put(x, y, dark)
+        for (x, y) in ((4, 7), (12, 4)):
+            put(x, y, colour=(255, 236, 190))
+            put(x, y + 1, dark)
+    elif name == "arcanio":
+        # Arcanium: a small rune of three lit points round a point of enchanting blue, a shadow under each.
+        for (x, y) in ((6, 6), (10, 4), (8, 7)):
+            put(x, y, colour=(255, 220, 250))
+            put(x, y + 1, dark)
+        put(8, 5, colour=(120, 230, 255))
     elif name == "espectracero":
         # Spectresteel: a seam of soul blue along the bar and one pale wisp rising off it.
         for (x, y) in axis(7.6):

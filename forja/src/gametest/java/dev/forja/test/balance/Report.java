@@ -162,7 +162,7 @@ public final class Report {
 			+ "y todos los nodos de su árbol grande menos las claves (docs/ARBOLES.md: lo que tiene un Mago en el nivel 50). "
 			+ "El báculo y el grimorio son los mejores de cada escenario sin clase. Las pruebas (`magiaEnSuSitio`) exigen que, "
 			+ "sin clase, la magia no mate antes que la mediana cuerpo a cuerpo ni sostenga más de la mitad de su daño, y que el Mago "
-			+ "quede entre la más rápida cuerpo a cuerpo y 1,3 veces la mediana (1,5 el grimorio, cuyo área muerde a todo lo que pisa la runa "
+			+ "quede entre la más rápida cuerpo a cuerpo y 1,4 veces la mediana (1,6 el grimorio, cuyo área muerde a todo lo que pisa la runa "
 			+ "y aquí pelea contra un solo mob). Contra los grandes, nada mágico puede matar claramente (un 10 %) antes que la más rápida "
 			+ "cuerpo a cuerpo.");
 		this.line("");

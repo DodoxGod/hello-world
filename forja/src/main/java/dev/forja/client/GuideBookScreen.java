@@ -2167,7 +2167,10 @@ public class GuideBookScreen extends Screen {
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.aleaciones_cumbre.intermedias")));
 		this.alloyRows(body, dev.forja.forge.Alloys.MIDDLE);
 		body.add(new Text(Component.translatable("gui.forja.libros.aleaciones_cumbre.donde"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.cap.aleaciones_cumbre")));
+		this.alloyRows(body, dev.forja.forge.Alloys.PEAK);
 		this.alloyTraits(body, dev.forja.forge.Alloys.MIDDLE);
+		this.alloyTraits(body, dev.forja.forge.Alloys.PEAK);
 		body.add(new ChapterLink("aleaciones_lejanas"));
 		return body;
 	}
