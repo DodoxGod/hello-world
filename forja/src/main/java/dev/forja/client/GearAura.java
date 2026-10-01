@@ -130,6 +130,10 @@ public final class GearAura {
 		if (parts.hasTrait(ForgeMaterial.Trait.ESTELAR)) {
 			return ParticleTypes.END_ROD;
 		}
+		if (parts.hasTrait(ForgeMaterial.Trait.ASTRAL)) {
+			// Orichalcum: the enchanting table's glyphs, drifting off it now and then.
+			return random.nextFloat() < 0.5F ? ParticleTypes.ENCHANT : null;
+		}
 		if (parts.hasTrait(ForgeMaterial.Trait.ANIMADO)) {
 			return dev.forja.registry.ModParticles.ALMA;
 		}

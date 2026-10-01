@@ -35,7 +35,7 @@ su línea, como cualquier aleación de más de dos ingredientes (`MeltNetwork`).
 | Calor | **Fundido** (lava, farol de pavesa, o más) |
 | Entra | 1 lingote de cada uno de los **14** metales de abajo |
 | Sale | **4** lingotes de oricalco (`forja:oricalco`) |
-| Tipo | Metal **solo de colada**: va a las cubas y se cuela, pero no es material de forja |
+| Tipo | Metal **de colada** y, desde el 2026-10-01, **material de forja** para cualquier pieza (1.4) |
 
 **Los 14 y de dónde salen (todos renovables):**
 
@@ -66,8 +66,8 @@ Coste: 4 perlas piden 8 lingotes de oricalco, es decir, **2 tandas**.
 En la **mesa de colada**: una **perla de ender** en la mesa, como si fuera un molde (`CastingTableBlockEntity.pearl`), y
 oricalco en una cuba de su línea. La mesa vierte **2 lingotes** (`PEARL_COST`), enfría como siempre (`COOK`) y
 sale una **perla de oricalco** (`forja:perla_de_oricalco`, épica, de 16 en 16). La perla de ender se gasta. Vale
-**cualquier mesa**: es un baño, no una pieza, y no sale basta ni limpia. Una perla solo acepta oricalco, y el
-oricalco solo se cuela sobre perlas.
+**cualquier mesa**: es un baño, no una pieza, y no sale basta ni limpia. Una perla solo acepta oricalco. (El oricalco
+ya no se cuela solo sobre perlas: desde 1.4 también va a moldes y marcos, en una mesa de almas.)
 
 Texturas: el lingote es el de toda la familia de lingotes de Forja (`tools/lingotes.py`, variante A, con la
 rampa del oricalco y su estrella); la perla, la de ender vanilla recoloreada al dorado verdoso del oricalco
@@ -96,6 +96,74 @@ rampa del oricalco y su estrella); la perla, la de ender vanilla recoloreada al 
   Vale para los castillos ya generados y para la estructura vieja `fragua_caida`.
 - **Se quitó:** la invocación en el mundo normal y la ofrenda (8 hierros estelares, 4 damascos, estrella del Nether
   y fragmento de eco). La prueba `theOldForgeNoLongerSummons` lo comprueba.
+
+### 1.4 El oricalco como **metal de forja** (hecho, 2026-10-01)
+
+Andy: el oricalco tiene que ser material de forja y valer para **todas las piezas** (cabezas, hojas, mangos, ataduras,
+placas, forros...), como los demás metales. Ahora es `ForgeMaterial.ORICALCO`, entra por la etiqueta `forja:oricalco`
+(su lingote de siempre) y su rasgo es nuevo: **Astral**.
+
+**Dónde va en la escalera.** Es la aleación más cara del mod que se puede repetir: catorce lingotes, varios de ellos ya
+aleaciones de aleaciones (obsidiacero, almacero, vidriacero), por cuatro de oricalco; tres y medio por lingote. Pero es
+renovable y no pide nada que solo dé el jefe. Así que va **en el nivel de la netherita, al lado del damasco y el
+almacero**, y **por debajo** de los aceros de forja blanca (solacero, lunacero, acero vivo) y del corazón de forja, que
+cuestan algo que se acaba o una pelea con el Herrero.
+
+| | Oricalco | Damasco | Almacero | Solacero | Corazón |
+|---|---|---|---|---|---|
+| Cabeza: durabilidad / minado / daño | 1650 / 8,5 / +3,5 | 1400 / 8,0 / +4,0 | 1300 / 7,5 / +3,5 | 1700 / 9,0 / +4,0 | 2400 / 9,5 / +4,5 |
+| Nivel de minado | netherita | netherita | netherita | netherita | netherita |
+| Encantabilidad | **30** (la más alta) | 15 | 20 | 20 | 25 |
+| Mango: durabilidad / ataque / minado | ×1,30 / +0,15 / ×1,10 | ×1,45 / +0,05 / ×1,05 | ×1,30 / +0,10 / ×1,05 | ×1,45 / +0,10 / ×1,10 | ×1,60 / +0,10 / ×1,15 |
+| Armadura (botas, grebas, pechera, casco) | 3 / 6 / 8 / 3 = 20 | 3 / 6 / 8 / 3 | 3 / 6 / 8 / 3 | 3 / 6 / 8 / 3 | 3 / 7 / 8 / 3 |
+| Durabilidad de armadura / dureza / empuje | 36 / 2,5 / 0,05 | 34 / 2,5 / 0,05 | 32 / 2,0 / 0,05 | 40 / 3,0 / 0,05 | 48 / 3,5 / 0,1 |
+| Rasgo | **Astral** | Afilado | Animado | Solar | Llanto |
+
+**No es mejor que todo.** Pega menos que el damasco, el solacero y el corazón; dura menos que el solacero, el
+obsidiacero y el corazón; su mango es más rápido que el del damasco pero mucho menos que el del vidriacero (+0,30) o el
+del electro (+0,25). Su armadura es la de la netherita (20), como la del damasco y el almacero, así que no toca la
+prueba de armaduras (netherita con Protección IV más cinco puntos). Lo que tiene que nadie más tiene es la magia: la
+encantabilidad más alta del mod y el rasgo.
+
+**El rasgo: Astral** (`ForgeMaterial.Trait.ASTRAL`, en `magic/Mana`). El metal del Gremio y del portal es el metal por
+el que corre la magia:
+
+- **+10 % de regeneración de maná** por cada pieza de armadura puesta y por cada mano que empuña algo que lleve oricalco
+  en **cualquier parte** (como todos los rasgos: una guarda de oricalco basta). Es un Flujo pequeño y gratis, sin peso
+  de carga.
+- **Con hierro estelar, el doble.** Si la misma pieza lleva también el rasgo Estelar (hierro estelar o acero estelar),
+  esa pieza da +20 %. Las dos cosas que caen del cielo se entienden: un pico de oricalco con mango de hierro estelar,
+  una pechera de oricalco con forro de acero estelar.
+- **Conjunto entero** (placas de oricalco en las cuatro piezas): **+25 de maná máximo** (lo que da Reserva al 100 % en
+  una pieza) y +1 de dureza.
+- Una pieza rota no da nada. Una pieza con oricalco hace que se vea la barra de maná.
+- **Flechas:** una punta de oricalco es de **Hechizo**, como la de amatista: devuelve maná al acertar.
+- Partículas: los glifos de la mesa de encantamientos salen de vez en cuando de lo que lo lleva (`GearAura`).
+
+El tope: seis cosas con oricalco y hierro estelar a la vez (cuatro piezas y las dos manos) son +120 %, el doble de
+Flujo al 100 % en las cuatro piezas; cuesta seis piezas de oricalco y otras tantas de hierro o acero estelar. El
+simulador de `BalanceGameTests` no cuenta la regeneración que dan el equipo ni las mejoras (supone un jugador sin
+armadura y la regeneración de su clase), así que Astral vale 0 en sus tablas, como las mejoras de área.
+
+**Cómo se trabaja: se cuela.** No está en `ForgeMaterial.BASIC`: la mesa de piezas no lo corta. Se funde y se cuela como
+cualquier metal: lingotes al crisol o el oricalco que sale del crisol a las cubas, y de ahí a un **molde o un marco**
+sobre una mesa de colada. Con 1650 de durabilidad, **solo lo aguanta la mesa de almas** (la de piedra negra llega a
+1600); un colador tiene que ser de algo de 1650 o más (oricalco, solacero, lunacero, obsidiacero, acero vivo, corazón)
+para que salga limpio. Su color fundido sale de `ForgeMaterial.molten` con su color (verde dorado, `0xCFD45A`), igual
+para la cuba, el canal, la mesa, el crisol y el caño: antes, al no ser material, se pintaba gris en las cubas. Fundir un
+objeto de oricalco en el crisol devuelve lingotes de oricalco (`displayStack`). La perla sigue igual: una perla de
+ender en cualquier mesa con 2 lingotes encima.
+
+**Kit de reparación:** el oricalco tiene el suyo (`kit_de_reparacion_oricalco`, la variante B ya dibujada en
+`tools/lingotes.py`). Los kits salían de `ModItems.alloy` y el oricalco no está en `Alloys.ALL` (su lingote se registra
+aparte), así que hay una lista corta de metales propios con lingote fuera de `ALL`: `RepairKits.OWN_METALS` en Java y
+`REPAIR_KIT_OWN` en `generate_assets.py`.
+
+**Dónde se cuenta:** nombre en los tres idiomas (oricalco / orichalcum), origen, conjunto y rasgo en
+`tools/generate_lang.py`; libro VI, capítulo del portal estelar, «El oricalco en la forja» (`tools/lang_libros.py`);
+JEI, página de información del lingote. Pruebas: `OricalcoGameTests` (todas las piezas y todos los objetos, colada en
+mesa de almas y no en la de piedra negra, Astral con y sin hierro estelar, conjunto y pieza rota, kit) y
+`KitsGameTests.everyMetalHasAKitARecipeAndATexture`, que ahora exige el kit de oricalco.
 
 ---
 

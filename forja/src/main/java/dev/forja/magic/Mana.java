@@ -79,6 +79,13 @@ public final class Mana {
 	/** Amatista: a full set of it is a reservoir. Eco: a full set of it hums with what comes back. */
 	public static final float AMETHYST_SET_MANA = 40.0F;
 	public static final float ECHO_SET_REGEN = 0.3F;
+	/**
+	 * Oricalco (ForgeMaterial.Trait.ASTRAL): each piece worn and each hand holding something of it makes mana come
+	 * back this much faster, and twice this when the same piece also carries star iron's trait (star iron or star
+	 * steel). A full suit of it deepens the bar as well. Design in docs/HERRERO_DIMENSION.md, 1.4.
+	 */
+	public static final float ORICHALCUM_REGEN = 0.10F;
+	public static final float ORICHALCUM_SET_MANA = 25.0F;
 	/** A refused cast says so no oftener than this, in ticks: holding the button on an empty bar is not a drum roll. */
 	private static final int DENY_SOUND_EVERY = 8;
 
@@ -163,6 +170,9 @@ public final class Mana {
 		if (ArmorSets.fullSet(entity) == ForgeMaterial.AMATISTA) {
 			max += AMETHYST_SET_MANA;
 		}
+		if (ArmorSets.fullSet(entity) == ForgeMaterial.ORICALCO) {
+			max += ORICHALCUM_SET_MANA;
+		}
 		// The class (clase/ClassEffects): a Mago's bar is deeper.
 		return entity instanceof Player player ? max * (1.0F + dev.forja.clase.ClassEffects.manaMaxBonus(player)) : max;
 	}
@@ -191,7 +201,29 @@ public final class Mana {
 		float meditation = Math.max(Upgrades.fraction(entity.getMainHandItem(), Upgrade.MEDITACION),
 			Upgrades.fraction(entity.getOffhandItem(), Upgrade.MEDITACION));
 		factor += Upgrade.meditationRegen(meditation);
+		factor += astralRegen(entity);
 		return entity instanceof Player player ? factor * (1.0F + dev.forja.clase.ClassEffects.manaRegenBonus(player)) : factor;
+	}
+
+	/**
+	 * What oricalco adds to how fast mana comes back: {@link #ORICHALCUM_REGEN} for each worn piece and each hand
+	 * whose item has the Astral trait, doubled for one that also has star iron's. Broken gear gives nothing.
+	 */
+	public static float astralRegen(LivingEntity entity) {
+		float total = 0.0F;
+		for (EquipmentSlot slot : ARMOUR) {
+			total += astral(entity.getItemBySlot(slot));
+		}
+		return total + astral(entity.getMainHandItem()) + astral(entity.getOffhandItem());
+	}
+
+	/** One item's share of {@link #astralRegen}. */
+	public static float astral(ItemStack stack) {
+		ForgedParts parts = stack.get(ModComponents.PARTS);
+		if (parts == null || stack.isBroken() || !parts.hasTrait(ForgeMaterial.Trait.ASTRAL)) {
+			return 0.0F;
+		}
+		return parts.hasTrait(ForgeMaterial.Trait.ESTELAR) ? 2.0F * ORICHALCUM_REGEN : ORICHALCUM_REGEN;
 	}
 
 	/** Whether there is this much to spend. On the client, what the server last said. */
@@ -309,6 +341,9 @@ public final class Mana {
 		if (parts == null) {
 			return false;
 		}
+		if (parts.hasTrait(ForgeMaterial.Trait.ASTRAL)) {
+			return true;
+		}
 		if (parts.type() == ForgeType.BACULO || parts.type() == ForgeType.GRIMORIO || parts.type() == ForgeType.FAROL) {
 			return true;
 		}
@@ -338,7 +373,7 @@ public final class Mana {
 			}
 		}
 		ForgeMaterial set = ArmorSets.fullSet(player);
-		return set == ForgeMaterial.AMATISTA || set == ForgeMaterial.ECO;
+		return set == ForgeMaterial.AMATISTA || set == ForgeMaterial.ECO || set == ForgeMaterial.ORICALCO;
 	}
 
 	/** Whether the bar has ever had a reason to be on this player's screen. */

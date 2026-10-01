@@ -32,7 +32,7 @@ import org.jspecify.annotations.Nullable;
  * forge heart and the self-mending traits all still work as before.
  *
  * <p>Which metals get one is read from the material list, not written out: every material that has an alloy
- * ingot of its own ({@link ModItems#alloy}), plus the vanilla metals a head can be cast from. An alloy added
+ * ingot of its own ({@link ModItems#alloy}, or {@link #OWN_METALS}), plus the vanilla metals a head can be cast from. An alloy added
  * to Alloys.ALL and ForgeMaterial gets its kit, its recipe and its texture without touching this file
  * (tools/generate_assets.py writes the data from ALLOY_COLORS the same way).
  */
@@ -44,6 +44,12 @@ public final class RepairKits {
 	public static final Set<ForgeMaterial> VANILLA_METALS = Collections.unmodifiableSet(
 		EnumSet.of(ForgeMaterial.COBRE, ForgeMaterial.HIERRO, ForgeMaterial.ORO, ForgeMaterial.NETHERITA));
 
+	/**
+	 * Metals of the mod's own whose ingot is not one of Alloys.ALL, so {@link ModItems#alloy} does not know them:
+	 * oricalco, poured in the foundry from fourteen metals (Alloys.EXTRA). Its kit is made of forja:oricalco.
+	 */
+	public static final Set<ForgeMaterial> OWN_METALS = Collections.unmodifiableSet(EnumSet.of(ForgeMaterial.ORICALCO));
+
 	private static final Map<ForgeMaterial, Item> KITS = new EnumMap<>(ForgeMaterial.class);
 
 	private RepairKits() {
@@ -51,7 +57,8 @@ public final class RepairKits {
 
 	/** Whether this material gets a kit. Called while items register, after the alloy ingots. */
 	public static boolean hasKit(ForgeMaterial material) {
-		return material.canBeHead && (VANILLA_METALS.contains(material) || ModItems.alloy(material.getSerializedName()) != null);
+		return material.canBeHead && (VANILLA_METALS.contains(material) || OWN_METALS.contains(material)
+			|| ModItems.alloy(material.getSerializedName()) != null);
 	}
 
 	/** The item id of one material's kit. */

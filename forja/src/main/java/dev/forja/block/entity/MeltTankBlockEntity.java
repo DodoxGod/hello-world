@@ -141,7 +141,7 @@ public class MeltTankBlockEntity extends BlockEntity {
 				}
 			}
 		}
-		// Oricalco is no gear metal and goes into nothing else, but it is poured into tanks and cast from them.
+		// Oricalco is a poured forge material now, so the first test takes it; kept so a tank never turns it away.
 		return item == dev.forja.registry.ModItems.ORICALCO;
 	}
 

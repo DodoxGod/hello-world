@@ -2122,6 +2122,13 @@ public class GuideBookScreen extends Screen {
 		body.add(new IconRow(List.of(new ItemStack(ModItems.HIERRO_ESTELAR), new ItemStack(ModItems.PLACA_HUECA), new ItemStack(ModItems.ESCORIA),
 			new ItemStack(ModItems.alloy("acero_estelar")), new ItemStack(ModItems.alloy("almacero")), new ItemStack(ModItems.ORICALCO))));
 		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.oricalco"), INK_SOFT));
+		// Oricalco is a forge material too (docs/HERRERO_DIMENSION.md, 1.4): any part, cast on a soul table.
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.oricalco_forja.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.MESA_DE_ALMAS),
+			Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.ORICALCO), Assembler.createPart(PartType.HOJA, ForgeMaterial.ORICALCO),
+			Assembler.createPart(PartType.PLACA_PECHERA, ForgeMaterial.ORICALCO), new ItemStack(ModItems.HIERRO_ESTELAR))));
+		body.add(new Text(Component.translatable("gui.forja.libros.oricalco_forja",
+			Math.round(dev.forja.magic.Mana.ORICHALCUM_REGEN * 100), Math.round(dev.forja.magic.Mana.ORICHALCUM_SET_MANA)), INK));
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.cementerio.perla.titulo")));
 		body.add(new IconRow(List.of(new ItemStack(Items.ENDER_PEARL), new ItemStack(ModItems.MESA_DE_LOSA), new ItemStack(ModItems.PERLA_DE_ORICALCO))));
 		body.add(new Text(Component.translatable("gui.forja.libro.cementerio.perla", dev.forja.block.entity.CastingTableBlockEntity.PEARL_COST), INK_SOFT));

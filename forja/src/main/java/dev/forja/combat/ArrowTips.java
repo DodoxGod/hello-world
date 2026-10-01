@@ -202,6 +202,8 @@ public final class ArrowTips {
 			case NOCTURNO -> Special.LUNA;
 			case VIVO -> Special.VIVA;
 			case AFORTUNADO -> Special.FORTUNA;
+			// Orichalcum carries magic as amethyst does: its tip hands the archer mana.
+			case ASTRAL -> Special.HECHIZO;
 			default -> Special.NONE;
 		};
 	}

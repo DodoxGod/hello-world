@@ -1132,3 +1132,20 @@ BOOKS.update({
         "main part (the head, blade or plate, the one it is named after) is of that metal. Mending good gear is cheaper "
         "at the star; the kit is for when the star is far away."),
 })
+
+# ---- book VI, "El portal estelar": oricalco as a forge material (ForgeMaterial.ORICALCO, docs/HERRERO_DIMENSION.md
+# 1.4). A block of its own, so it never collides with other work on the lines above.
+BOOKS.update({
+    "gui.forja.libros.oricalco_forja.titulo": ("El oricalco en la forja", "Orichalcum at the forge"),
+    "gui.forja.libros.oricalco_forja": (
+        "No solo abre el portal: el oricalco es un metal de forja, y vale para **cualquier pieza**. Se cuela, no se "
+        "corta, y solo lo aguanta una **mesa de almas**. Pega algo menos que el damasco y dura algo menos que el "
+        "solacero, pero es el metal por el que corre la magia: con su rasgo, **Astral**, el maná vuelve un %s%% más "
+        "rápido por cada pieza puesta o empuñada, y el doble si esa pieza lleva también **hierro o acero estelar**. "
+        "Un conjunto entero da %s de maná máximo más.",
+        "It does not only open the portal: orichalcum is a forge metal, and it works for **any part**. It is cast, not "
+        "cut, and only a **soul table** takes it. It hits a little softer than damascus and lasts a little less than sun "
+        "steel, but it is the metal magic runs through: with its trait, **Astral**, mana comes back %s%% faster for each "
+        "piece worn or held, twice as fast if that piece also carries **star iron or star steel**. A full suit adds %s "
+        "max mana."),
+})

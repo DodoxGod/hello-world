@@ -179,11 +179,14 @@ public class KitsGameTests {
 		var forja = FabricLoader.getInstance().getModContainer("forja").orElseThrow();
 		List<ForgeMaterial> expected = new ArrayList<>();
 		for (ForgeMaterial material : ForgeMaterial.values()) {
-			if (material.canBeHead && (RepairKits.VANILLA_METALS.contains(material) || ModItems.alloy(material.getSerializedName()) != null)) {
+			if (material.canBeHead && (RepairKits.VANILLA_METALS.contains(material) || RepairKits.OWN_METALS.contains(material)
+				|| ModItems.alloy(material.getSerializedName()) != null)) {
 				expected.add(material);
 			}
 		}
-		helper.assertTrue(expected.size() >= 19, "deberían ser al menos 19 metales (15 aleaciones y 4 vanilla), son " + expected.size());
+		helper.assertTrue(expected.size() >= 20, "deberían ser al menos 20 metales (15 aleaciones, el oricalco y 4 vanilla), son " + expected.size());
+		// Oricalco is a forge material with an ingot of its own outside Alloys.ALL: its kit must not be forgotten.
+		helper.assertTrue(expected.contains(ForgeMaterial.ORICALCO), "el oricalco debería tener su kit: " + expected);
 		helper.assertTrue(RepairKits.materials().equals(expected), "los kits deberían ser " + expected + ", son " + RepairKits.materials());
 		List<String> wrong = new ArrayList<>();
 		java.util.Map<String, com.google.gson.JsonObject> langs = new java.util.HashMap<>();

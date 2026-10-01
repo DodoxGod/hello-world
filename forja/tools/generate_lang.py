@@ -2743,6 +2743,36 @@ GUI.update({
 })
 
 
+# Oricalco as a forge material (ForgeMaterial.ORICALCO, docs/HERRERO_DIMENSION.md 1.4). A block of its own, so it
+# never collides with other work on the material lines above.
+TRAITS["astral"] = (
+    ("Astral", "Astral"),
+    ("El maná vuelve antes, y más junto al hierro estelar", "Mana comes back sooner, more so beside star iron"),
+    ("Cada pieza puesta y cada mano que la empuña: el maná vuelve un 10% más rápido, un 20% si la misma pieza lleva "
+     "también hierro o acero estelar. Flechas: te devuelven maná al acertar.",
+     "Each piece worn and each hand holding it: mana comes back 10% faster, 20% if the same piece also carries star "
+     "iron or star steel. Arrows: give you mana back when they hit."),
+)
+GUI.update({
+    "material.forja.oricalco": ("oricalco", "orichalcum"),
+    "material.forja.oricalco.origen": (
+        "lingotes de oricalco: un lingote de cada uno de los catorce metales renovables, a calor de fundición en el "
+        "crisol de una línea",
+        "orichalcum ingots: one ingot of each of the fourteen renewable metals, at molten heat in a foundry line's "
+        "crucible"),
+    "conjunto.forja.oricalco": ("+25 de maná máximo y +1 de dureza", "+25 max mana and +1 toughness"),
+    "gui.forja.jei.oricalco": (
+        "El metal del Gremio. Se hace en el crisol de una línea de fundición con un lingote de cada uno de los catorce "
+        "metales renovables, y se cuela como cualquier metal: en un molde o un marco sobre una mesa de almas. Vale para "
+        "todas las piezas. Su rasgo, Astral: el maná vuelve antes con cada pieza puesta o empuñada, y el doble si la "
+        "pieza lleva también hierro o acero estelar. Dos lingotes sobre una perla de ender hacen una perla de oricalco.",
+        "The Guild's metal. It is made in a foundry line's crucible from one ingot of each of the fourteen renewable "
+        "metals, and it is cast like any metal: in a mould or a frame on a soul table. It works for every part. Its "
+        "trait, Astral: mana comes back sooner with each piece worn or held, twice as much if the piece also carries "
+        "star iron or star steel. Two ingots over an ender pearl make an orichalcum pearl."),
+})
+
+
 def build(index):
     lang = {}
     for key, names in GUI.items():

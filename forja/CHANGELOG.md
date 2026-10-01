@@ -1,5 +1,28 @@
 # Novedades
 
+## 2026-10-01 — El oricalco, material de forja
+
+- **El oricalco es ahora un material de forja** (`ForgeMaterial.ORICALCO`) y vale para **todas las piezas**: cabezas,
+  hojas, puntas, mangos, ataduras, guardas, placas, forros, cuerdas, núcleos... Entra con su lingote de siempre
+  (`forja:oricalco`, ahora también etiqueta). Diseño y razones en `docs/HERRERO_DIMENSION.md`, 1.4.
+- **Escalón:** nivel de netherita, junto al damasco y el almacero, por debajo del solacero, el lunacero, el acero vivo y
+  el corazón. Cabeza 1650 de durabilidad, 8,5 de minado, +3,5 de daño; encantabilidad 30 (la más alta del mod); mango
+  ×1,30 / +0,15 / ×1,10; armadura 3/6/8/3 (20, como la netherita), 36 de durabilidad, 2,5 de dureza.
+- **Rasgo nuevo, Astral:** +10 % de regeneración de maná por cada pieza puesta y cada mano con oricalco en cualquier
+  parte; el doble (+20 %) si la misma pieza lleva también hierro o acero estelar. Conjunto entero: +25 de maná máximo y
+  +1 de dureza. Las puntas de flecha de oricalco son de Hechizo (devuelven maná). Una pieza rota no da nada.
+- **Se cuela, no se corta:** solo en la **mesa de almas** (la de piedra negra llega a 1600). La mesa de colada ya no
+  rechaza el oricalco en moldes y marcos; la perla sigue igual. En las cubas, el canal y el crisol se ve ahora verde
+  dorado en vez de gris, y fundir algo de oricalco devuelve oricalco.
+- **Kit de reparación de oricalco** (`kit_de_reparacion_oricalco`): `RepairKits.OWN_METALS` / `REPAIR_KIT_OWN` para los
+  metales propios cuyo lingote no está en `Alloys.ALL`.
+- Nombres, origen, conjunto y rasgo en los tres idiomas; libro VI (portal estelar), «El oricalco en la forja»; JEI,
+  página del lingote. `docs/EQUILIBRIO.md`: el oricalco en las tablas de materiales.
+- Pruebas: `OricalcoGameTests` (todas las piezas y objetos, colada en mesa de almas y no en la de brasa, Astral con y
+  sin hierro estelar, conjunto, pieza rota, kit); `KitsGameTests` exige el kit de oricalco; `MaterialesGameTests` acepta
+  materiales que salen del crisol fuera de `Alloys.ALL`. `FORJA_SOLO=oricalco` fotografía piezas, objetos, tooltips y
+  el conjunto puesto; `tools/hoja_oricalco.py` hace la hoja.
+
 ## 2026-10-01 — Kits de reparación (variante B)
 
 - **Nuevo objeto: el kit de reparación de cada metal** (`forja:kit_de_reparacion_<material>`), con la barra sellada del

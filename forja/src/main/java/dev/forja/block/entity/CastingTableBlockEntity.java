@@ -341,9 +341,8 @@ public class CastingTableBlockEntity extends BlockEntity implements WorldlyConta
 				this.setChanged();
 				return;
 			}
-			if (held == dev.forja.registry.ModItems.ORICALCO) {
-				continue;
-			}
+			// Oricalco used to be poured on pearls and nothing else; it is a forge material now (ForgeMaterial.ORICALCO)
+			// and goes into moulds and frames like any other poured metal, on a table whose stone holds it.
 			ForgeMaterial material = ForgeMaterial.fromInput(new ItemStack(held));
 			// The table's own stone has a limit, the one the casting box's material used to set: a slate
 			// table will not have diamond poured into it, however good the strainer on top.

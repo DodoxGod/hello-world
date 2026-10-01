@@ -155,6 +155,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// Oricalco as a forge material (docs/HERRERO_DIMENSION.md, 1.4): its parts, its gear and a suit of it worn.
+			if ("oricalco".equals(solo)) {
+				OricalcoFootage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("onda".equals(solo)) {
 				checkShockwave(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");

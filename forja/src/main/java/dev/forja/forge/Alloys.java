@@ -144,6 +144,9 @@ public final class Alloys {
 		new Recipe("lingote_de_temple", Heat.CALIENTE,
 			List.of(new Part(() -> ModItems.alloy("acero_refractario"), 1), new Part(() -> Items.CLAY_BALL, 2)), 2,
 			() -> ModItems.LINGOTE_DE_TEMPLE),
+		// Oricalco is a forge material too since 2026-10-01 (ForgeMaterial.ORICALCO, docs/HERRERO_DIMENSION.md 1.4). It
+		// stays in this list because its ingot is registered on its own (ModItems.ORICALCO, rare and fireproof) and
+		// the guide's alloy pages are laid out for a handful of ingredients, not fourteen.
 		// Oricalco (docs/HERRERO_DIMENSION.md, 1.1): one bar of every metal of the mod's own that can be
 		// made again and again. Two go in the pot and the rest come from the tanks on its line, the way any
 		// alloy of more than two does. Not the damascus line (netherite scrap runs out), not moon steel

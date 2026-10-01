@@ -134,7 +134,16 @@ public enum ForgeMaterial implements StringRepresentable {
 	 */
 	ESCORIA(0x7A6A5E, TagKey.create(net.minecraft.core.registries.Registries.ITEM, dev.forja.Forja.id("escoria")), null,
 		true, 140, 4.5F, 1.0F, BlockTags.INCORRECT_FOR_STONE_TOOL, 8, 0.85F, 0.05F, 0.95F, new int[]{1, 3, 4, 1}, 10, 0F, 0F,
-		SoundEvents.ARMOR_EQUIP_GENERIC, Trait.IGNEO);
+		SoundEvents.ARMOR_EQUIP_GENERIC, Trait.IGNEO),
+	/**
+	 * Orichalcum: the Guild's metal, one bar of every renewable metal of the mod poured together, and what the star
+	 * portal's pearls are coated in (docs/HERRERO_DIMENSION.md, 1.1). Poured, never cut, and only a soul table or
+	 * better takes it. It sits with soul steel and damascus, under the white-heat steels and the forge heart: it is
+	 * not the hardest thing you can hold, it is the one magic runs through ({@link Trait#ASTRAL}). Design in
+	 * docs/HERRERO_DIMENSION.md, 1.4.
+	 */
+	ORICALCO(0xCFD45A, alloyTag("oricalco"), null, true, 1650, 8.5F, 3.5F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
+		30, 1.30F, 0.15F, 1.10F, new int[]{3, 6, 8, 3}, 36, 2.5F, 0.05F, SoundEvents.ARMOR_EQUIP_GOLD, Trait.ASTRAL);
 
 	/** A material's special effect, active when any part of the item uses it. */
 	public enum Trait {
@@ -174,7 +183,9 @@ public enum ForgeMaterial implements StringRepresentable {
 		/** Worth nothing at noon: in the dark it hits harder, walks quieter and sees further. */
 		NOCTURNO,
 		/** It feeds: every kill mends it, and once it is whole the rest goes to you. */
-		VIVO;
+		VIVO,
+		/** The Guild's metal: mana comes back faster for each piece of it worn or held, twice as fast beside star iron. */
+		ASTRAL;
 
 		public String id() {
 			return this.name().toLowerCase(Locale.ROOT);
@@ -343,6 +354,7 @@ public enum ForgeMaterial implements StringRepresentable {
 			case HUECO -> dev.forja.registry.ModItems.PLACA_HUECA;
 			case CORAZON -> dev.forja.registry.ModItems.CORAZON_DE_FORJA;
 			case ESCORIA -> dev.forja.registry.ModItems.ESCORIA;
+			case ORICALCO -> dev.forja.registry.ModItems.ORICALCO;
 			// Anything that reaches this was added without an item of its own. Nothing is safer to hand
 			// back than netherite was, and MaterialesGameTests fails on it.
 			default -> Items.AIR;

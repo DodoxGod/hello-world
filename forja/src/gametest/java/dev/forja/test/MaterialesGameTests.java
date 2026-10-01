@@ -145,7 +145,9 @@ public class MaterialesGameTests {
 				missing.add(id + ": the guide does not say where it comes from");
 			}
 			Item item = material.displayStack().getItem();
-			if (BuiltInRegistries.ITEM.getKey(item).getNamespace().equals(Forja.MOD_ID) && !alloy && !dropped().containsKey(item)) {
+			// Oricalco is poured by the crucible too, from Alloys.EXTRA rather than ALL (its ingot is registered on its own).
+			boolean poured = Alloys.POURABLE.stream().anyMatch(recipe -> recipe.result().is(item));
+			if (BuiltInRegistries.ITEM.getKey(item).getNamespace().equals(Forja.MOD_ID) && !alloy && !poured && !dropped().containsKey(item)) {
 				missing.add(id + ": " + BuiltInRegistries.ITEM.getKey(item) + " comes from nowhere");
 			}
 		}

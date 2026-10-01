@@ -90,6 +90,8 @@ MATERIAL_COLORS = {
     "solacero": 0xFFC341, "lunacero": 0x5A6CC0, "acero_vivo": 0xE8231A,
     # Skimmed off a melt rather than poured out of one.
     "escoria": 0x7A6A5E,
+    # The Guild's metal, poured from fourteen (docs/HERRERO_DIMENSION.md, 1.4): the green gold of its ingot.
+    "oricalco": 0xCFD45A,
 }
 SPECIAL = {"arco", "escudo", "lanza", "ballesta", "cana"}
 DEFAULT_COLORS = {"HEAD": 0xE4E4E4, "PLATE": 0xE4E4E4, "HANDLE": 0xB8894F, "EXTRA": 0xB8894F, "LINING": 0xA86B3C}
@@ -3744,10 +3746,15 @@ REPAIR_KIT_VANILLA = {
 }
 
 
+# Metals of the mod's own with an ingot that is not in ALLOY_COLORS (RepairKits.OWN_METALS): oricalco, whose bar
+# tools/dimension_assets.py draws. Its kit is made of forja:<name> like an alloy's.
+REPAIR_KIT_OWN = ("oricalco",)
+
+
 def repair_kit_materials():
     """Every metal with a repair kit, in ForgeMaterial's order (RepairKits.hasKit is the Java side of this)."""
     order = java_enum_names("src/main/java/dev/forja/material/ForgeMaterial.java", stop_at="public enum Trait")
-    return [name for name in order if name in REPAIR_KIT_VANILLA or name in ALLOY_COLORS]
+    return [name for name in order if name in REPAIR_KIT_VANILLA or name in REPAIR_KIT_OWN or name in ALLOY_COLORS]
 
 
 def repair_kit_ingot(material):
@@ -11480,6 +11487,8 @@ def generate_data():
     write_json(DATA / "tags/item/corazon_de_forja.json", tag(["forja:corazon_de_forja"]))
     write_json(DATA / "tags/item/placa_hueca.json", tag(["forja:placa_hueca"]))
     write_json(DATA / "tags/item/escoria.json", tag(["forja:escoria"]))
+    # Oricalco is a forge material (ForgeMaterial.ORICALCO) and points at its ingot through this tag.
+    write_json(DATA / "tags/item/oricalco.json", tag(["forja:oricalco"]))
     for name in ALLOY_COLORS:
         write_json(DATA / f"tags/item/{name}.json", tag([f"forja:{name}"]))
     shutil.rmtree(RES / "data/minecraft/tags/enchantment", ignore_errors=True)

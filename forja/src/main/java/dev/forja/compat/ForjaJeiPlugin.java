@@ -134,6 +134,9 @@ public class ForjaJeiPlugin implements IModPlugin {
 			registration.addItemStackInfo(new ItemStack(dev.forja.forge.RepairKits.kit(material)),
 				Component.translatable("gui.forja.jei.kit_de_reparacion", dev.forja.forge.RepairKits.AMOUNT, material.displayName()));
 		}
+		// Oricalco's fourteen-metal recipe is wider than the alloy page, and that it is a forge material at all is news:
+		// its ingot says both (ForgeMaterial.ORICALCO, docs/HERRERO_DIMENSION.md 1.4).
+		registration.addItemStackInfo(new ItemStack(ModItems.ORICALCO), Component.translatable("gui.forja.jei.oricalco"));
 	}
 
 	/** The parts an item is made of, shown as the star would take them. */

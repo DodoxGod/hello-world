@@ -95,6 +95,8 @@ public final class ArmorSets {
 			case LUNACERO -> List.of(Bonus.add(Attributes.SNEAKING_SPEED, 0.4), Bonus.add(Attributes.ATTACK_DAMAGE, 2.0));
 			// Living steel: the last set in the mod, and the kill healing doubles with it on.
 			case ACERO_VIVO -> List.of(Bonus.add(Attributes.MAX_HEALTH, 8.0), Bonus.add(Attributes.ARMOR_TOUGHNESS, 3.0));
+			// Orichalcum: the Guild's suit. The deeper mana bar is in magic/Mana (ORICHALCUM_SET_MANA).
+			case ORICALCO -> List.of(Bonus.add(Attributes.ARMOR_TOUGHNESS, 1.0));
 		};
 	}
 
