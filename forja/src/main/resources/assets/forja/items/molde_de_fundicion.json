@@ -291,7 +291,10 @@
               "model": "forja:item/molde/borde_escudo"
             }
           }
-        ]
+        ],
+        "fallback": {
+          "type": "minecraft:empty"
+        }
       }
     ]
   }

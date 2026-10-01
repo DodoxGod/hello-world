@@ -156,6 +156,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// Every item and block of the mod, icons and placed (ObjetosVisualFootage): to judge the textures and models.
+			if ("objetos_visual".equals(solo)) {
+				ObjetosVisualFootage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			// Every material in every handle and binding shape (Andy, 2026-09-30): the bench, the star, the hand, a wall.
 			if ("mangos_todos".equals(solo)) {
 				MangosTodosFootage.film(context, server, connection, x, y, z);

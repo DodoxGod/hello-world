@@ -235,7 +235,10 @@
               "model": "forja:item/marco/escudo"
             }
           }
-        ]
+        ],
+        "fallback": {
+          "type": "minecraft:empty"
+        }
       }
     ]
   }

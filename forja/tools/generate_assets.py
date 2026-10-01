@@ -9296,8 +9296,10 @@ def generate_melt_tank_assets():
                 "type": "minecraft:composite",
                 "models": [
                     {"type": "minecraft:model", "model": f"forja:item/{kind}/base"},
+                    # An empty mould or frame is the plain plate: without a fallback it drew the missing-model
+                    # checkerboard, which is what the creative tab and JEI showed for both.
                     {"type": "minecraft:select", "property": "minecraft:custom_model_data", "index": 0,
-                     "cases": cases},
+                     "cases": cases, "fallback": {"type": "minecraft:empty"}},
                 ],
             },
         })
@@ -11941,6 +11943,11 @@ if __name__ == "__main__":
     # so every model written before it — the moulds, the frames, the strainer's grate — was deleted
     # minutes after being made and the items rendered as missing models in game.
     shutil.rmtree(ASSETS / "models/item", ignore_errors=True)
+    # The visual pass on items and blocks (tools/visual_objetos.py): its drawings replace the weaker ones here
+    # before anything is drawn, so they go through the same pipeline as the rest.
+    import sys as _sys_visual
+    import visual_objetos
+    visual_objetos.apply(_sys_visual.modules[__name__])
     generate_item_textures()
     generate_worn_gear_textures()
     generate_armor_textures()
