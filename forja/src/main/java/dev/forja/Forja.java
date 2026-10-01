@@ -35,6 +35,7 @@ public final class Forja implements ModInitializer {
 		ModComponents.init();
 		ModBlocks.init();
 		ModItems.init();
+		dev.forja.forge.RepairKitRecipe.register();
 		ModMenus.init();
 		ModEntities.init();
 		dev.forja.block.entity.ModBlockEntities.init();

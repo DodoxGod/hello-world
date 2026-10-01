@@ -1,5 +1,28 @@
 # Novedades
 
+## 2026-10-01 — Kits de reparación (variante B)
+
+- **Nuevo objeto: el kit de reparación de cada metal** (`forja:kit_de_reparacion_<material>`), con la barra sellada del
+  gremio de `hoja_lingotes.jpg` (variante B) como dibujo. Hay uno por cada metal que puede ser la parte principal de una
+  pieza: las 15 aleaciones que son material (bronce, latón, peltre, acero, electro, damasco, acero estelar, obsidiacero,
+  cinerio, voltaico, almacero, vidriacero, solacero, lunacero, acero vivo) y cobre, hierro, oro y netherita: 19.
+- **Receta:** 2 lingotes del metal, 1 cuero y 1 cuerda, sin forma. Se aprende (libro de recetas) al tener un lingote de
+  ese metal, como las mesas y los sellos.
+- **Uso:** el kit y una pieza forjada en cualquier mesa de crafteo, en cualquier casilla: la pieza sale con **+300 de uso**,
+  sin pasar del máximo, y con todo lo demás igual (piezas, mejoras, potencial, maestría, nombre, encantamientos). Saca
+  de roto a lo que estaba roto. Solo vale si la **parte principal** es de ese metal: la que da nombre a la pieza
+  (`ForgedParts.primary()`: la cabeza de las herramientas, la hoja o punta de las armas, la placa de las armaduras). Con
+  otro metal, sin desgaste o con algo más en la mesa, no sale nada.
+- **Precio:** 150 de uso por lingote. La estrella da un cuarto del máximo por lingote, así que el kit solo sale más barato
+  en piezas de menos de 600 de uso (metales baratos: cobre, hierro, oro, bronce, latón, peltre, electro); de acero para
+  arriba reparar en la estrella cuesta menos lingotes. El kit es para el camino. Las demás formas de reparar no cambian.
+- Los kits salen de la lista de materiales: una aleación nueva en `Alloys.ALL`/`ForgeMaterial` y en `ALLOY_COLORS`
+  tiene su kit, receta, textura y nombre sin tocar nada más (`forge/RepairKits.java`, `generate_assets.repair_kit_materials()`).
+- JEI: cada kit tiene su página de información. Libro I, «Desarmar y reparar»: cómo se hace y cómo se usa.
+- Pruebas: `KitsGameTests` (+300 con datos intactos y tope, otro metal no da nada, una pieza rota vuelve, cada metal tiene
+  kit, receta, logro de receta, modelo, textura y nombre). `FORJA_SOLO=kits` fotografía los lingotes y los kits en una
+  mesa de crafteo; `tools/hoja_kits.py` hace la hoja.
+
 ## 2026-10-01 — Lingotes nuevos: una sola familia (variante A)
 
 - Todos los lingotes del mod (las 16 aleaciones, el oricalco y el lingote de temple) se dibujan ahora a mano con la

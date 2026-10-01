@@ -127,6 +127,13 @@ public class ForjaJeiPlugin implements IModPlugin {
 			assemblies.add(new Assembly(type, parts, Assembler.create(type, materials)));
 		}
 		registration.addRecipes(ASSEMBLIES, assemblies);
+
+		// The repair kits (forge/RepairKits) are used through a special recipe whose result depends on the piece put in,
+		// which neither the recipe book nor JEI can list: each kit gets an information page saying what it mends.
+		for (ForgeMaterial material : dev.forja.forge.RepairKits.materials()) {
+			registration.addItemStackInfo(new ItemStack(dev.forja.forge.RepairKits.kit(material)),
+				Component.translatable("gui.forja.jei.kit_de_reparacion", dev.forja.forge.RepairKits.AMOUNT, material.displayName()));
+		}
 	}
 
 	/** The parts an item is made of, shown as the star would take them. */

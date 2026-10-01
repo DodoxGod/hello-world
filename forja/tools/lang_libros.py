@@ -1117,3 +1117,18 @@ BOOKS.update({
         "Click with a forge book and it goes to its place; click on a book in the shelf and it comes back to your hand. A "
         "comparator counts how many it holds."),
 })
+
+# ---- book I, "Desarmar y reparar": the repair kits (forge/RepairKits.java). A block of its own, so it never
+# collides with other work on the lines above.
+BOOKS.update({
+    "gui.forja.libros.kit_de_reparacion.titulo": ("Kits de reparación", "Repair kits"),
+    "gui.forja.libros.kit_de_reparacion": (
+        "Para el camino: dos lingotes de un metal, un cuero y una cuerda hacen su **kit de reparación**. Ponlo con una "
+        "pieza en la mesa de crafteo y la pieza sale con **+%s de uso**, con todo lo demás igual. Solo vale si su parte "
+        "principal (la cabeza, la hoja o la placa, la que le da nombre) es de ese metal. En la estrella sale más barato "
+        "reparar lo bueno; el kit es para cuando la estrella queda lejos.",
+        "For the road: two ingots of a metal, a leather and a string make its **repair kit**. Put it with a piece in a "
+        "crafting grid and the piece comes out with **+%s durability**, everything else the same. It only works if its "
+        "main part (the head, blade or plate, the one it is named after) is of that metal. Mending good gear is cheaper "
+        "at the star; the kit is for when the star is far away."),
+})

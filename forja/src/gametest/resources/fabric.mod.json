@@ -65,7 +65,8 @@
 			"dev.forja.test.PeleaEstelarGameTests",
 			"dev.forja.test.AprendicesGameTests",
 			"dev.forja.test.RedFinitaGameTests",
-			"dev.forja.test.GarfioGameTests"
+			"dev.forja.test.GarfioGameTests",
+			"dev.forja.test.KitsGameTests"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"

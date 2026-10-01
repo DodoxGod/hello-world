@@ -2723,6 +2723,25 @@ _sys.path.insert(0, str(Path(__file__).resolve().parent))
 from arboles import lang_entries  # noqa: E402
 GUI.update(lang_entries())
 
+# The repair kits (forge/RepairKits.java): one per metal, named in build() from the material's own name.
+from generate_assets import repair_kit_materials  # noqa: E402
+REPAIR_KITS = repair_kit_materials()
+GUI.update({
+    "tooltip.forja.kit_de_reparacion": ("+%s de uso a piezas cuya parte principal sea de %s",
+                                        "+%s durability to pieces whose main part is %s"),
+    "tooltip.forja.kit_de_reparacion.uso": ("Ponlo con la pieza en la mesa de crafteo",
+                                            "Put it with the piece in a crafting grid"),
+    "gui.forja.jei.kit_de_reparacion": (
+        "Pon este kit y una pieza forjada en cualquier mesa de crafteo, en cualquier casilla: la pieza sale con "
+        "+%s de uso (sin pasar de su máximo) y con todo lo demás igual: piezas, mejoras, potencial, maestría y "
+        "nombre. Solo vale si la parte principal de la pieza es de %s: la cabeza de una herramienta, la hoja de "
+        "un arma, la placa de una armadura, la que le da nombre.",
+        "Put this kit and a forged piece in any crafting grid, in any slots: the piece comes out with +%s "
+        "durability (never past its maximum) and everything else the same: parts, upgrades, potential, mastery "
+        "and name. It only works if the piece's main part is %s: a tool's head, a weapon's blade, an armour's "
+        "plate, the part it is named after."),
+})
+
 
 def build(index):
     lang = {}
@@ -2730,6 +2749,10 @@ def build(index):
         lang[key] = names[index]
     for key, names in MATERIALS.items():
         lang[f"material.forja.{key}"] = names[index]
+    for key in REPAIR_KITS:
+        metal = lang[f"material.forja.{key}"]
+        lang[f"item.forja.kit_de_reparacion_{key}"] = (f"Kit de reparación de {metal}" if index == 0
+                                                       else f"{metal.title()} Repair Kit")
     for key, names in PARTS.items():
         lang[f"item.forja.{key}"] = names[index]
         lang[f"part.forja.{key}"] = names[index]

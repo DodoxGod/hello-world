@@ -176,6 +176,14 @@ public final class ModItems {
 		for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.ALL) {
 			ALLOYS.put(recipe.id(), register(recipe.id(), Item::new, new Item.Properties()));
 		}
+		// A repair kit for every metal a main part can be (forge/RepairKits), read off the material list, so a new
+		// alloy gets its kit with its ingot.
+		for (ForgeMaterial material : ForgeMaterial.values()) {
+			if (dev.forja.forge.RepairKits.hasKit(material)) {
+				dev.forja.forge.RepairKits.put(material, register(dev.forja.forge.RepairKits.id(material),
+					p -> new dev.forja.item.RepairKitItem(material, p), new Item.Properties().stacksTo(16)));
+			}
+		}
 		JARRA = register("jarra", dev.forja.item.EssenceJarItem::new, new Item.Properties().stacksTo(16));
 		// Fire-resistant, like netherite: there is one per fallen smith, he dies next to his own forge with
 		// fire lit round him, and a heart that burned up in it was two alloys and a crucible gone for good.
@@ -481,6 +489,9 @@ public final class ModItems {
 		stacks.add(new ItemStack(HIERRO_ESTELAR));
 		for (Item ingot : ALLOYS.values()) {
 			stacks.add(new ItemStack(ingot));
+		}
+		for (ForgeMaterial material : dev.forja.forge.RepairKits.materials()) {
+			stacks.add(new ItemStack(dev.forja.forge.RepairKits.kit(material)));
 		}
 		stacks.add(new ItemStack(JARRA));
 		stacks.add(new ItemStack(CORAZON_DE_FORJA));

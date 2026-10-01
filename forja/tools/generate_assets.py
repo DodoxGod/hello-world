@@ -3732,6 +3732,67 @@ def generate_alloy_textures():
         lingotes.variant_a(name).save(ASSETS / f"textures/item/{name}.png")
 
 
+# ---------------------------------------------------------------- the repair kits (forge/RepairKits.java)
+
+# The vanilla metals a main part can be cast from, and the ingot each kit is made of. Every alloy in
+# ALLOY_COLORS gets a kit too, made of its own ingot (forja:<name>), so a new alloy gets one with no edit here.
+REPAIR_KIT_VANILLA = {
+    "cobre": "minecraft:copper_ingot",
+    "hierro": "minecraft:iron_ingot",
+    "oro": "minecraft:gold_ingot",
+    "netherita": "minecraft:netherite_ingot",
+}
+
+
+def repair_kit_materials():
+    """Every metal with a repair kit, in ForgeMaterial's order (RepairKits.hasKit is the Java side of this)."""
+    order = java_enum_names("src/main/java/dev/forja/material/ForgeMaterial.java", stop_at="public enum Trait")
+    return [name for name in order if name in REPAIR_KIT_VANILLA or name in ALLOY_COLORS]
+
+
+def repair_kit_ingot(material):
+    return REPAIR_KIT_VANILLA.get(material, f"forja:{material}")
+
+
+def generate_repair_kit_textures():
+    """One kit per metal: the guild-sealed bar of tools/lingotes.py (variant B, Andy 2026-10-01)."""
+    import lingotes
+    for name in repair_kit_materials():
+        lingotes.variant_b(name).save(ASSETS / f"textures/item/kit_de_reparacion_{name}.png")
+
+
+def generate_repair_kit_recipes():
+    """Each kit's own recipe, its recipe-book unlock, and the one special recipe that uses any of them.
+
+    A kit is two ingots of its metal, one leather (the roll it comes in) and one string (what ties it):
+    150 uses per ingot. The forge star gives a quarter of a piece's maximum per ingot, so the kit beats it
+    only on pieces under 600 uses (copper, iron, gold and the first alloys: cheap metals, where carrying
+    the ingots back to a table is the whole cost) and loses to it on everything from steel up, where the
+    ingots are dear and the table is the place to mend. It is the repair for the road, paid for in ingots.
+    """
+    for name in repair_kit_materials():
+        kit = f"kit_de_reparacion_{name}"
+        ingot = repair_kit_ingot(name)
+        write_json(DATA / f"recipe/{kit}.json", {
+            "type": "minecraft:crafting_shapeless",
+            "category": "equipment",
+            "ingredients": [ingot, ingot, "minecraft:leather", "minecraft:string"],
+            "result": {"id": f"forja:{kit}"},
+        })
+        # Hidden until learned, like the tables and the seals: an ingot of the metal in the inventory teaches it.
+        write_json(DATA / f"advancement/recipes/equipment/{kit}.json", {
+            "parent": "minecraft:recipes/root",
+            "criteria": {
+                "has_material": {"trigger": "minecraft:inventory_changed", "conditions": {"items": [{"items": ingot}]}},
+                "has_the_recipe": {"trigger": "minecraft:recipe_unlocked", "conditions": {"recipe": f"forja:{kit}"}},
+            },
+            "requirements": [["has_material", "has_the_recipe"]],
+            "rewards": {"recipes": [f"forja:{kit}"]},
+        })
+    # The use: a kit and a forged piece anywhere in the grid (forge/RepairKitRecipe.java).
+    write_json(DATA / "recipe/reparar_con_kit.json", {"type": "forja:kit_de_reparacion"})
+
+
 def generate_star_iron_texture():
     """Star iron: a lump of pale metal with the light still in it."""
     rows = [
@@ -4180,7 +4241,8 @@ def generate_models():
     })
     for simple in ("hierro_estelar", "corazon_de_forja", "yunque_portatil", "placa_hueca",
                    "martillo_del_maestro", "ascua", "escoria",
-                   *[f"huevo_{mob}" for mob in SPAWN_EGGS], *ALLOY_COLORS):
+                   *[f"huevo_{mob}" for mob in SPAWN_EGGS], *ALLOY_COLORS,
+                   *[f"kit_de_reparacion_{name}" for name in repair_kit_materials()]):
         write_json(ASSETS / f"models/item/{simple}.json", {"parent": "minecraft:item/generated", "textures": {"layer0": f"forja:item/{simple}"}})
         write_json(ASSETS / f"items/{simple}.json", {"model": {"type": "minecraft:model", "model": f"forja:item/{simple}"}})
     write_json(ASSETS / "models/item/talisman.json", {"parent": "minecraft:item/generated", "textures": {"layer0": "forja:item/talisman", "layer1": "forja:item/talisman_marco"}})
@@ -11460,6 +11522,7 @@ def generate_data():
         "result": {"id": "forja:plantilla", "count": 2},
     })
     generate_seal_recipes()
+    generate_repair_kit_recipes()
     generate_talisman_recipes()
     generate_jar_recipe()
     write_json(DATA / "recipe/yunque_portatil.json", {
@@ -11913,6 +11976,7 @@ if __name__ == "__main__":
     generate_mountain_workshop()
     generate_talisman_textures()
     generate_alloy_textures()
+    generate_repair_kit_textures()
     generate_casting_tables()
     generate_heat_line_assets()
     generate_star_iron_texture()

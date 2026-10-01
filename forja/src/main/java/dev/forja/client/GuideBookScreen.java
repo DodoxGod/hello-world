@@ -1459,6 +1459,17 @@ public class GuideBookScreen extends Screen {
 		body.add(new IconRow(List.of(broken)));
 		body.add(new Text(Component.translatable("gui.forja.libro.mundo.rotos"), INK));
 		body.add(new Text(Component.translatable("gui.forja.libros.reparar"), INK_SOFT));
+		// The repair kits (forge/RepairKits): how one is made, and what it does in the grid, shown with iron.
+		Item kit = dev.forja.forge.RepairKits.kit(ForgeMaterial.HIERRO);
+		if (kit != null) {
+			body.add(new SubHeader(Component.translatable("gui.forja.libros.kit_de_reparacion.titulo")));
+			body.add(new Crafting(new Item[] {Items.IRON_INGOT, Items.IRON_INGOT, null, Items.LEATHER, Items.STRING, null, null, null, null},
+				new ItemStack(kit)));
+			body.add(new Text(Component.translatable("gui.forja.libros.kit_de_reparacion", dev.forja.forge.RepairKits.AMOUNT), INK));
+			ItemStack mended = dev.forja.forge.RepairKits.repair(broken, ForgeMaterial.HIERRO);
+			body.add(new Crafting(new ItemStack[] {new ItemStack(kit), broken.copy(), ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY,
+				ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY}, mended));
+		}
 		return body;
 	}
 
@@ -4350,6 +4361,14 @@ public class GuideBookScreen extends Screen {
 		Crafting(Item[] items, ItemStack result) {
 			for (int i = 0; i < 9; i++) {
 				this.grid[i] = items[i] == null ? ItemStack.EMPTY : new ItemStack(items[i]);
+			}
+			this.result = result;
+		}
+
+		/** A grid of stacks rather than items, for a recipe whose inputs carry data (a worn piece, say). */
+		Crafting(ItemStack[] stacks, ItemStack result) {
+			for (int i = 0; i < 9; i++) {
+				this.grid[i] = i < stacks.length && stacks[i] != null ? stacks[i] : ItemStack.EMPTY;
 			}
 			this.result = result;
 		}

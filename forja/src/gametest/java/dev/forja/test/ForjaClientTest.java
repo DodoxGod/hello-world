@@ -149,6 +149,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// The ingots (tools/lingotes.py, variant A) and the repair kits (variant B, forge/RepairKits) in a crafting table.
+			if ("kits".equals(solo)) {
+				KitsFootage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("onda".equals(solo)) {
 				checkShockwave(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");
