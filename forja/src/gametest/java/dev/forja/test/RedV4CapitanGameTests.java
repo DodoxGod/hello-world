@@ -219,6 +219,13 @@ public class RedV4CapitanGameTests {
 		boolean[] extraTurn = {false};
 		boolean[] allIn = {false};
 		long[] last = {Long.MIN_VALUE};
+		List<List<String>> did = new ArrayList<>();
+		for (int i = 0; i < mobs.size(); i++) {
+			did.add(new ArrayList<>());
+		}
+		int[] most = {-1};
+		long[] mostAt = {-1};
+		boolean[] dueled = {false};
 		helper.onEachTick(() -> {
 			Captain.Group g = Captain.group(player);
 			long now = helper.getLevel().getGameTime();
@@ -241,6 +248,20 @@ public class RedV4CapitanGameTests {
 				}
 				// all in (one may be busy with something of its own: a blow on its way, a step back from a charged one)
 				allIn[0] |= in >= mobs.size() - 1;
+				// what each one did in the charge, for the failure message: its tactics in order, and where the most were in
+				for (int i = 0; i < mobs.size(); i++) {
+					MobMind mind = MobAi.mind(mobs.get(i));
+					String tactic = mind == null ? "sin mente" : mind.decision.tactic().name();
+					List<String> seen = did.get(i);
+					if (seen.isEmpty() || !seen.get(seen.size() - 1).equals(tactic)) {
+						seen.add(tactic);
+					}
+				}
+				if (in > most[0]) {
+					most[0] = in;
+					mostAt[0] = now - start;
+				}
+				dueled[0] |= dev.forja.ai.Duels.of(player) != null;
 			}
 		});
 		helper.runAfterDelay(25, () -> {
@@ -249,7 +270,16 @@ public class RedV4CapitanGameTests {
 		// the first charge came by tick 22; the next may not before 40 + CHARGE_REST ticks after it (140)
 		helper.runAfterDelay(120, () -> {
 			helper.assertTrue(extraTurn[0], "la carga da un turno más");
-			helper.assertTrue(allIn[0], "en la carga todos van al ataque");
+			if (!allIn[0]) {
+				StringBuilder what = new StringBuilder();
+				for (int i = 0; i < mobs.size(); i++) {
+					Mob mob = mobs.get(i);
+					what.append(i == 0 ? "capitán" : "miembro " + i).append(String.format(" (a %.1f): ", mob.distanceTo(player)))
+						.append(String.join(" → ", did.get(i))).append(i + 1 < mobs.size() ? "; " : "");
+				}
+				helper.fail("en la carga todos van al ataque: como mucho " + most[0] + " de " + mobs.size() + " (tick " + mostAt[0]
+					+ ", la carga en el " + (first[0] - start) + (dueled[0] ? ", con un duelo en marcha" : "") + "). " + what);
+			}
 			helper.assertTrue(charges[0] == 1, "entre carga y carga, descanso: " + charges[0] + " cargas");
 			CaptainBrain.override(player, null);
 			CaptainBrain.overridePieces(player, null);

@@ -110,6 +110,14 @@ public final class Duels {
 		if (group != null && group.captain == mob && group.members.size() > 3) {
 			return false;
 		}
+		// Nor before the group is first led: the captain is picked on the first Squad pass (every 10 ticks), and an elite
+		// that challenged in the ticks before it led its group with every member watching the duel, deaf to its orders
+		// (a charge with nobody in). A big group that may get a captain waits for that pass; once it has led (or lost
+		// its captain), the rule above decides.
+		boolean unled = group == null || group.captain == null && group.captainDiedAt <= Long.MIN_VALUE / 4;
+		if (unled && company + 1 > 3 && CaptainBrain.enabled(player)) {
+			return false;
+		}
 		start(mob, player);
 		return true;
 	}
