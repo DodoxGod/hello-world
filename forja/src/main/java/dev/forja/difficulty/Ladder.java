@@ -169,13 +169,19 @@ public enum Ladder {
 		return overrideValue;
 	}
 
-	/** A level by name (pacifico, facil, normal, dificil, extremo; accents and case aside), or null. */
+	/**
+	 * A level by name (pacifico, facil, normal, dificil, implacable; accents and case aside), or null. {@code extremo} is the
+	 * level's old name and still works (the ids stay: the level is {@link #EXTREMO}).
+	 */
 	public static Ladder parse(String name) {
 		if (name == null) {
 			return null;
 		}
 		String plain = java.text.Normalizer.normalize(name.trim(), java.text.Normalizer.Form.NFD).replaceAll("\\p{M}", "")
 			.toUpperCase(Locale.ROOT);
+		if (plain.equals("IMPLACABLE")) {
+			return EXTREMO;
+		}
 		for (Ladder level : values()) {
 			if (level.name().equals(plain)) {
 				return level;

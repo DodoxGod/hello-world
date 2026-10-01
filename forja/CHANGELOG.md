@@ -1,5 +1,14 @@
 # Novedades
 
+## 2026-10-01 — "Extremo" pasa a llamarse "Implacable" (Relentless)
+
+- El escalón de dificultad por encima de Difícil se llama ahora **Implacable** (en inglés **Relentless**): «Extremo» chocaba
+  con el nombre en español del modo Hardcore de Minecraft, que el propio mod llama «un mundo extremo (hardcore)».
+- Solo cambia el nombre que se ve (botón de dificultad, opciones del mundo, regla del mundo, libros y mensajes). Los ids
+  siguen igual (`extremo`, `forja:extremo`, claves de idioma), así que los mundos guardados siguen funcionando.
+- `/forja dificultad implacable` es el nombre nuevo y el que se sugiere; `/forja dificultad extremo` sigue valiendo.
+- Pruebas: `theCommandSetsBoth` prueba los dos nombres; `DificultadFootage` espera «Implacable».
+
 ## 2026-10-01 — Segunda pasada visual: Molde Roto, lingotes, ceniza, farol de pavesa y armadura
 
 - **Molde Roto:** su generador vuelve a coincidir con el modelo del agarre a dos manos y pasa por el pintor de los

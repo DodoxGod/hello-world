@@ -20,12 +20,12 @@ import net.minecraft.world.Difficulty;
  * FORJA_SOLO=dificultad: the difficulty ladder (difficulty/Ladder) on Minecraft's own button, played with real clicks.
  *
  * <ul>
- *   <li>The world creation screen: Normal → Difícil → <b>Extremo</b>; then Hardcore, where the same button stays open
- *   as the Difícil ⇄ Extremo toggle;</li>
- *   <li>a hardcore world created on Extremo is Extremo on the server, and still is when it is saved, closed and opened
- *   again; its world options show "Extremo" (locked, as hardcore locks it);</li>
+ *   <li>The world creation screen: Normal → Difícil → <b>Implacable</b>; then Hardcore, where the same button stays open
+ *   as the Difícil ⇄ Implacable toggle;</li>
+ *   <li>a hardcore world created on Implacable is Implacable on the server, and still is when it is saved, closed and opened
+ *   again; its world options show "Implacable" (locked, as hardcore locks it);</li>
  *   <li>an ordinary world: the world options' button (pause menu → Options → World options) clicked from Normal to
- *   Difícil to Extremo puts the server on Extremo.</li>
+ *   Difícil to Implacable puts the server on Implacable.</li>
  * </ul>
  * The pictures (dificultad_*.png) go to the run's screenshots; Andy's copies are in Forja_capturas_mejoras/dificultad.
  */
@@ -51,16 +51,16 @@ final class DificultadFootage {
 		clickDifficulty(context);
 		expect(context, "Difícil", "un clic: Difícil");
 		clickDifficulty(context);
-		expect(context, "Extremo", "dos clics: Extremo");
+		expect(context, "Implacable", "dos clics: Implacable");
 		check(context.computeOnClient(mc -> state(mc).getGameRules().get(Ladder.EXTREMO_RULE) && state(mc).getDifficulty() == Difficulty.HARD),
 			"el mundo por crear lleva HARD y la bandera");
 		hoverDifficulty(context);
 		shot(context, "dificultad_01_crear_extremo");
-		// Hardcore: vanilla shuts the difficulty button; ours stays open, Difícil or Extremo
+		// Hardcore: vanilla shuts the difficulty button; ours stays open, Difícil or Implacable
 		clickWidget(context, w -> w instanceof CycleButton<?> b && b.getValue() instanceof WorldCreationUiState.SelectedGameMode);
 		context.waitTicks(2);
 		check(context.computeOnClient(mc -> state(mc).isHardcore()), "modo extremo (hardcore) elegido");
-		expect(context, "Extremo", "en hardcore sigue en Extremo");
+		expect(context, "Implacable", "en hardcore sigue en Implacable");
 		check(context.computeOnClient(mc -> difficultyButton(mc).active), "en hardcore el botón sigue abierto");
 		hoverDifficulty(context);
 		shot(context, "dificultad_02_hardcore_extremo");
@@ -70,7 +70,7 @@ final class DificultadFootage {
 		hoverDifficulty(context);
 		shot(context, "dificultad_03_hardcore_dificil");
 		clickDifficulty(context);
-		expect(context, "Extremo", "en hardcore, otro clic: Extremo otra vez");
+		expect(context, "Implacable", "en hardcore, otro clic: Implacable otra vez");
 		context.setScreen(TitleScreen::new);
 	}
 
@@ -78,7 +78,7 @@ final class DificultadFootage {
 		return ((CreateWorldScreen) mc.gui.screen()).getUiState();
 	}
 
-	// ------------------------------------------------------------------ a hardcore world on Extremo, saved and opened again
+	// ------------------------------------------------------------------ a hardcore world on Implacable, saved and opened again
 
 	private static void hardcoreWorld(ClientGameTestContext context) {
 		TestWorldSave save;
@@ -89,11 +89,11 @@ final class DificultadFootage {
 			save = singleplayer.getWorldSave();
 			TestServerContext server = singleplayer.getServer();
 			context.waitTicks(20);
-			check(server.computeOnServer(s -> s.isHardcore() && Ladder.world(s) == Ladder.EXTREMO), "el mundo hardcore nace en Extremo");
-			check(context.computeOnClient(mc -> dev.forja.client.LadderClient.extremo()), "el cliente sabe que es Extremo");
+			check(server.computeOnServer(s -> s.isHardcore() && Ladder.world(s) == Ladder.EXTREMO), "el mundo hardcore nace en Implacable");
+			check(context.computeOnClient(mc -> dev.forja.client.LadderClient.extremo()), "el cliente sabe que es Implacable");
 			context.waitFor(mc -> mc.gui.overlay() == null, 600);
 			openWorldOptions(context);
-			expect(context, "Extremo", "las opciones del mundo dicen Extremo");
+			expect(context, "Implacable", "las opciones del mundo dicen Implacable");
 			check(context.computeOnClient(mc -> !difficultyButton(mc).active), "en hardcore, bloqueado como en vanilla");
 			shot(context, "dificultad_04_opciones_hardcore_extremo");
 			context.setScreen(() -> null);
@@ -101,8 +101,8 @@ final class DificultadFootage {
 		try (TestSingleplayerContext again = save.open()) {
 			context.waitTicks(20);
 			check(again.getServer().computeOnServer(s -> s.isHardcore() && Ladder.world(s) == Ladder.EXTREMO),
-				"guardado, cerrado y abierto de nuevo, sigue en Extremo");
-			log("dificultad: el mundo hardcore vuelve en Extremo");
+				"guardado, cerrado y abierto de nuevo, sigue en Implacable");
+			log("dificultad: el mundo hardcore vuelve en Implacable");
 		}
 	}
 
@@ -122,13 +122,13 @@ final class DificultadFootage {
 			check(server.computeOnServer(s -> Ladder.world(s) == Ladder.DIFICIL), "el servidor, en Difícil");
 			clickDifficulty(context);
 			context.waitTicks(5);
-			expect(context, "Extremo", "otro clic: Extremo");
+			expect(context, "Implacable", "otro clic: Implacable");
 			check(server.computeOnServer(s -> s.getWorldData().getDifficulty() == Difficulty.HARD && Ladder.world(s) == Ladder.EXTREMO),
-				"el servidor, en Extremo (HARD con la bandera)");
+				"el servidor, en Implacable (HARD con la bandera)");
 			shot(context, "dificultad_05_opciones_extremo");
 			clickDifficulty(context);
 			context.waitTicks(5);
-			expect(context, "Pacífico", "y tras Extremo vuelve a Pacífico");
+			expect(context, "Pacífico", "y tras Implacable vuelve a Pacífico");
 			check(server.computeOnServer(s -> Ladder.world(s) == Ladder.PACIFICO), "el servidor, en Pacífico, sin bandera");
 			context.setScreen(() -> null);
 		}

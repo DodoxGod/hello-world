@@ -81,11 +81,11 @@ public final class ForjaCommand {
 							String.format(java.util.Locale.ROOT, "%.2f", gear), dev.forja.difficulty.GearScore.tier(gear)), false);
 						return 1;
 					})
-					// Sets the world's level (Ladder): its vanilla difficulty and the Extremo flag, as the button does,
+					// Sets the world's level (Ladder): its vanilla difficulty and the Implacable flag (id extremo; "extremo" still works as a name), as the button does,
 					// but past a locked difficulty, as /difficulty does.
 					.then(Commands.argument("nivel", StringArgumentType.word())
 						.suggests((c, builder) -> SharedSuggestionProvider.suggest(java.util.Arrays.stream(dev.forja.difficulty.Ladder.values())
-							.map(d -> d.name().toLowerCase(java.util.Locale.ROOT)), builder))
+							.map(d -> d == dev.forja.difficulty.Ladder.EXTREMO ? "implacable" : d.name().toLowerCase(java.util.Locale.ROOT)), builder))
 						.executes(c -> {
 							String name = StringArgumentType.getString(c, "nivel");
 							dev.forja.difficulty.Ladder chosen = dev.forja.difficulty.Ladder.parse(name);

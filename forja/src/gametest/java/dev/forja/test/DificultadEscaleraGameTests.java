@@ -282,7 +282,7 @@ public class DificultadEscaleraGameTests {
 		helper.succeed();
 	}
 
-	/** /forja dificultad <nivel> sets the world's difficulty and flag together; an unknown name changes nothing. */
+	/** /forja dificultad <nivel> (implacable, or its old name extremo) sets the world's difficulty and flag together; an unknown name changes nothing. */
 	@GameTest
 	public void theCommandSetsBoth(GameTestHelper helper) {
 		MinecraftServer server = helper.getLevel().getServer();
@@ -291,8 +291,9 @@ public class DificultadEscaleraGameTests {
 		try {
 			var source = server.createCommandSourceStack().withSuppressedOutput();
 			Object[][] cases = {
-				{"extremo", Difficulty.HARD, true},
+				{"implacable", Difficulty.HARD, true},
 				{"facil", Difficulty.EASY, false},
+				{"extremo", Difficulty.HARD, true},
 				{"dificil", Difficulty.HARD, false},
 				{"extremo", Difficulty.HARD, true},
 				{"normal", Difficulty.NORMAL, false},

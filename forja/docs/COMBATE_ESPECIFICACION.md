@@ -149,12 +149,12 @@ peso sale de la fórmula. Se pueden cambiar en `materiales` con la clave `cota_d
 ### Dificultad (fase 0b; paquete `dev.forja.difficulty`)
 
 **Escalera** (Andy, 2026-09-30; `difficulty/Ladder.java` es la única fuente): el botón de dificultad de Minecraft
-(Opciones → Opciones del mundo, y la pantalla de crear mundo) va Pacífico → Fácil → Normal → Difícil → **Extremo**. Extremo
+(Opciones → Opciones del mundo, y la pantalla de crear mundo) va Pacífico → Fácil → Normal → Difícil → **Implacable**. Implacable
 es HARD más la regla de juego del mundo `forja:extremo` (se guarda en el mundo y se manda a los clientes). En un mundo
-extremo (hardcore) el mismo botón, al crearlo, alterna Difícil y Extremo. `/difficulty` sigue valiendo (`/difficulty hard`
+extremo (hardcore) el mismo botón, al crearlo, alterna Difícil y Implacable. `/difficulty` sigue valiendo (`/difficulty hard`
 es Difícil) y `/forja dificultad pacifico|facil|normal|dificil|extremo` pone las dos cosas; sin argumento muestra el estado.
 
-| | Pacífico | Fácil | Normal | Difícil | Extremo |
+| | Pacífico | Fácil | Normal | Difícil | Implacable |
 |---|---|---|---|---|---|
 | Cifras (abajo) | APRENDIZ | APRENDIZ | HERRERO | HERRERO | MAESTRO |
 | Reglas de Forja en mobs vanilla (cerebro, avisos, turnos, anillo, capitán de reglas, percepción honesta) | no | no | sí | sí | sí |
@@ -179,7 +179,7 @@ velocidad = base × (1 + 0,35 · f), y el cerco base × (1 + 1,3 · f); andar no
 |---|---|---|---|---|---|---|---|
 | APRENDIZ (Fácil) | ×0,8 | ×0,7 | ×0,8 | ×0,5 | ×1,4 | ×1,3 | ×0,8 |
 | HERRERO (Normal, Difícil) | ×1 | ×1 | ×1 | ×1 | ×1 | ×1 | ×1 |
-| MAESTRO (Extremo) | ×1,3 | ×1,25 | ×1,2 | ×1,5 | ×0,85 | ×0,8 | ×1,3 |
+| MAESTRO (Implacable) | ×1,3 | ×1,25 | ×1,2 | ×1,5 | ×0,85 | ×0,8 | ×1,3 |
 | LEYENDA (solo forzada) | ×1,7 | ×1,5 | ×1,4 | ×2,2 | ×0,7 | ×0,6 | ×1,7 |
 
 **Configuración** (solo para administradores): `nivel` ("auto" o un nivel) fuerza el nivel de todo el servidor;

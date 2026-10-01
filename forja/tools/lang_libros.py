@@ -481,10 +481,10 @@ BOOKS.update({
         "At night, in the dark and more than 12 blocks away, they cannot follow you by sight; in the rain their arrows fly "
         "worse."),
     "gui.forja.libros.combate.dificultad.resumen": (
-        "La **dificultad** de Forja es la de Minecraft, con un escalón más por encima de Difícil: **Extremo**. Cada "
+        "La **dificultad** de Forja es la de Minecraft, con un escalón más por encima de Difícil: **Implacable**. Cada "
         "escalón suma sistemas al anterior. Este mod es duro y no es para todos: si te sobra, baja un escalón. Además se "
         "**adapta** a cómo te va, y cada noche que sobrevives el mundo se endurece un poco.",
-        "Forja's **difficulty** is Minecraft's, with one more step above Hard: **Extreme**. Each step adds systems to the "
+        "Forja's **difficulty** is Minecraft's, with one more step above Hard: **Relentless**. Each step adds systems to the "
         "one before. This mod is tough and not for everyone: if it is too much, go down a step. It also **adapts** to how "
         "you are doing, and every night you survive the world gets a little harder."),
     "gui.forja.libros.combate.dificultad.nivel.pacifico": (
@@ -518,10 +518,10 @@ BOOKS.update({
         "new orders), more veterans and elites and more damage. Running, they go %6$s%% faster."),
     "gui.forja.libros.combate.dificultad.boton": (
         "Se cambia con el botón de dificultad de Minecraft (Opciones, y al crear el mundo), que tras Difícil pasa a "
-        "Extremo, o con **/forja dificultad extremo** (dificil, normal…). Un mundo extremo (hardcore) es Difícil o "
-        "Extremo: se elige al crearlo.",
+        "Implacable, o con **/forja dificultad implacable** (dificil, normal…). Un mundo extremo (hardcore) es Difícil o "
+        "Implacable: se elige al crearlo.",
         "It is changed with Minecraft's difficulty button (Options, and when creating the world), which goes on from Hard "
-        "to Extreme, or with **/forja dificultad extremo** (dificil, normal…). A hardcore world is Hard or Extreme: you "
+        "to Relentless, or with **/forja dificultad implacable** (dificil, normal…). A hardcore world is Hard or Relentless: you "
         "choose when you create it."),
     "gui.forja.libros.combate.dificultad_actual": ("La de este mundo: %s.", "This world's: %s."),
     "gui.forja.libros.combate.adaptativa.titulo": ("Se adapta a ti", "It adapts to you"),
@@ -826,16 +826,16 @@ BOOKS.update({
     "gui.forja.libros.cementerio.fuerza.titulo": ("Su fuerza", "His strength"),
     "gui.forja.libros.cementerio.fuerza": (
         "Cuánto aguanta depende del nivel: para uno solo y sin equipo, %s de vida en Fácil, %s en Normal, %s en Difícil y "
-        "%s en Extremo. Crece un %s %% por cada tramo de equipo de quien le pelea, como los demás monstruos, y otro tanto "
+        "%s en Implacable. Crece un %s %% por cada tramo de equipo de quien le pelea, como los demás monstruos, y otro tanto "
         "entero por cada jugador de más; lo que pase de lo que el juego deja tener a una criatura se lo quita a cada golpe "
         "que recibe. Cada fase le pone más armadura, golpes avisados más fuertes y esperas más cortas, pero los avisos duran "
-        "lo mismo. En Difícil y Extremo enciende una brasa más al reforjarse y saca %s guardianes (%s en Extremo).",
+        "lo mismo. En Difícil y Implacable enciende una brasa más al reforjarse y saca %s guardianes (%s en Implacable).",
         "How much he takes depends on the level: for one player with no gear, %s health on Easy, %s on Normal, %s on Hard "
-        "and %s on Extreme. He grows %s %% for every tier of gear of whoever fights him, like every other monster, and as "
+        "and %s on Relentless. He grows %s %% for every tier of gear of whoever fights him, like every other monster, and as "
         "much again for every extra player; whatever goes past what the game lets a creature have is taken off every blow "
         "he gets instead. Every stage gives him more armour, harder warned blows and shorter waits, but the warnings last "
-        "just as long. On Hard and Extreme he lights one more ember when he reforges and calls up %s keepers (%s on "
-        "Extreme)."),
+        "just as long. On Hard and Relentless he lights one more ember when he reforges and calls up %s keepers (%s on "
+        "Relentless)."),
     "gui.forja.libros.cementerio.furia": (
         "Bajo un tercio se **enfurece**: la forja de su pecho arde violeta hasta el final, es un %s %% más rápido, su golpe "
         "normal pega un %s %% más y la lluvia de estrellas no para. Los aprendices de la segunda oleada salen con un %s %% más de "

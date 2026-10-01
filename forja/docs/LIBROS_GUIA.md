@@ -187,7 +187,7 @@ Rangos y peleas del mundo:
 
 Dificultad:
 
-- **La escalera de dificultad** (`Ladder`): el botón de Minecraft con un escalón más, Extremo, y lo que enciende cada
+- **La escalera de dificultad** (`Ladder`): el botón de Minecraft con un escalón más, Implacable, y lo que enciende cada
   nivel (tabla en el capítulo, con sus cifras).
 - La **dificultad adaptativa** y `/forja dificultad`.
 - Las **noches** que endurecen el mundo (`Nights`).

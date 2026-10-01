@@ -54,7 +54,7 @@ Los grandes, al 100 % (segundos para matar; «> 120» si no cae en dos minutos):
 
 ## Herrero Caído
 
-Andy, 2026-09-30: «parece que puedes llegar a estar muy fuerte, o el Herrero Caído es muy débil, hazlo más fuerte». Objetivo: un jugador bien equipado de final de juego, solo, tarda de 3 a 5 minutos de pelea de verdad en Difícil (más en Extremo, menos en Normal y Fácil), y el jefe puede matar a un jugador equipado que se descuida. En Pacífico no hay pelea: un mundo pacífico no guarda ningún monstruo, tampoco a él. Lo mide `SmithFight` y lo exige `BalanceGameTests.herreroEnSuSitio`.
+Andy, 2026-09-30: «parece que puedes llegar a estar muy fuerte, o el Herrero Caído es muy débil, hazlo más fuerte». Objetivo: un jugador bien equipado de final de juego, solo, tarda de 3 a 5 minutos de pelea de verdad en Difícil (más en Implacable, menos en Normal y Fácil), y el jefe puede matar a un jugador equipado que se descuida. En Pacífico no hay pelea: un mundo pacífico no guarda ningún monstruo, tampoco a él. Lo mide `SmithFight` y lo exige `BalanceGameTests.herreroEnSuSitio`.
 
 **Qué se mide en el jefe de verdad** (vestido con su mangual y su placa, del tamaño que le da la pelea por nivel, jugadores y equipo, en cada una de sus tres fases y aturdido), por el mismo camino de daño del juego: lo que le quita un golpe de cada arma, lo que les quitan a sus aprendices y a los yunques andantes, y lo que quita cada golpe suyo (el normal, el revés, la onda, el garfio y las estrellas) a un jugador con la armadura de referencia (placa de obsidiacero sobre cuero, Protección al 100 % en las cuatro piezas y Vitalidad en la pechera), recién llegado y con la presión de una pelea larga.
 
@@ -79,8 +79,8 @@ Vida de base 400 (antes 320), por el nivel, +100 % por cada jugador de más que 
 |---|---|---|---|---|---|---|---|
 | facil | 1:30 – 3:00 | 1:31 | **1:52** | 256 → 360 | 23 / 13 s → 24 / 10 s | 51 s / 44 s | 11 % (estrellas, fase 3) / 11 % (estrellas, fase 3) |
 | normal | 2:00 – 4:00 | 2:29 | **3:17** | 512 → 700 | 10 / 7 s → 10 / 5 s | 25 s / 20 s | 13 % (golpe, fase 3) / 15 % (golpe, fase 3) |
-| dificil | 3:00 – 5:00 | 2:29 | **4:25** | 512 → 910 | 10 / 7 s → 9 / 4 s | 24 s / 18 s | 15 % (estrellas, fase 3) / 15 % (golpe, fase 3) |
-| extremo | 4:00 – 7:00 | 3:07 | **5:41** | 666 → 1120 | 8 / 5 s → 7 / 3 s | 20 s / 14 s | 17 % (golpe, fase 3) / 19 % (golpe, fase 3) |
+| dificil | 3:00 – 5:00 | 2:29 | **4:25** | 512 → 910 | 10 / 7 s → 10 / 4 s | 26 s / 19 s | 15 % (estrellas, fase 3) / 15 % (estrellas, fase 3) |
+| extremo | 4:00 – 7:00 | 3:07 | **5:41** | 666 → 1120 | 8 / 5 s → 7 / 3 s | 20 s / 15 s | 17 % (estrellas, fase 3) / 18 % (golpe, fase 3) |
 
 ### Tiempo de pelea por equipo (minutos: solo / dos jugadores; entre paréntesis, antes)
 
@@ -118,8 +118,8 @@ Segundos hasta morir con su vida entera. *Descuidado*: se queda delante y se lo 
 | guerrero | extremo | 36 | 7 / 5 / 3 s | 18 s / 16 s / 13 s | 18 % (golpe, fase 3) / 20 % (golpe, fase 3) |
 | estrella | facil | 36 | 24 / 18 / 10 s | 51 s / 52 s / 44 s | 11 % (estrellas, fase 3) / 11 % (estrellas, fase 3) |
 | estrella | normal | 36 | 10 / 7 / 5 s | 25 s / 24 s / 20 s | 13 % (golpe, fase 3) / 15 % (golpe, fase 3) |
-| estrella | dificil | 36 | 9 / 7 / 4 s | 24 s / 22 s / 18 s | 15 % (estrellas, fase 3) / 15 % (golpe, fase 3) |
-| estrella | extremo | 36 | 7 / 5 / 3 s | 20 s / 17 s / 14 s | 17 % (golpe, fase 3) / 19 % (golpe, fase 3) |
+| estrella | dificil | 36 | 10 / 7 / 4 s | 26 s / 23 s / 19 s | 15 % (estrellas, fase 3) / 15 % (estrellas, fase 3) |
+| estrella | extremo | 36 | 7 / 5 / 3 s | 20 s / 18 s / 15 s | 17 % (estrellas, fase 3) / 18 % (golpe, fase 3) |
 | mago | facil | 32 | 20 / 15 / 10 s | 42 s / 46 s / 39 s | 7 % (golpe, fase 3) / 7 % (estrellas, fase 3) |
 | mago | normal | 32 | 8 / 6 / 4 s | 20 s / 20 s / 17 s | 17 % (golpe, fase 3) / 18 % (golpe, fase 3) |
 | mago | dificil | 32 | 8 / 6 / 4 s | 21 s / 21 s / 18 s | 16 % (golpe, fase 3) / 17 % (golpe, fase 3) |

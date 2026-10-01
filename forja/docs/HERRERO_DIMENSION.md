@@ -463,9 +463,9 @@ Cada cuánto: uno cada 30 a 40 s (600 + hasta 200 ticks); durante el Reforjado e
 **En la dimensión** (Andy, respuesta 1: inmortal, **sin tiempo**, hasta que le quiten el fuego):
 
 1. **Empieza** a la mitad de la vida: se arrodilla en el disco del centro, clava el martillo y enciende su
-   **fuego de forja**: **3 Brasas estelares en Fácil y Normal, 4 en Difícil y Extremo, y 1 más por jugador extra (hasta 6)**,
+   **fuego de forja**: **3 Brasas estelares en Fácil y Normal, 4 en Difícil y Implacable, y 1 más por jugador extra (hasta 6)**,
    en las cuatro diagonales a 10 bloques (la quinta y la sexta a 14), unidas a él por haces de luz. Con 4, uno solo
-   tiene que volcar los cuatro braseros. En Difícil salen además **2 aprendices guardianes** y en Extremo **3**
+   tiene que volcar los cuatro braseros. En Difícil salen además **2 aprendices guardianes** y en Implacable **3**
    (2026-09-30).
 2. **Es inmortal** mientras quede una brasa, **sin límite de tiempo**. No se cura (ya no hace falta: no pasa nada
    hasta que se rompan). Los aprendices y los golpes normales siguen.
@@ -537,24 +537,24 @@ Números (en el código): `FallenSmith.Grade.embers` 3/3/4/4 y `keepers` 0/0/2/3
 ### 3.11 Más fuerte (Andy, 2026-09-30: «hazlo más fuerte»)
 
 Un Mago o un cuerpo a cuerpo de nivel 50 lo mataba en unos 20 s de golpes. Ahora la pelea de un jugador bien equipado
-de final de juego, solo, dura **de 3 a 5 minutos en Difícil** (más en Extremo, menos en Normal y Fácil), y la prueba
+de final de juego, solo, dura **de 3 a 5 minutos en Difícil** (más en Implacable, menos en Normal y Fácil), y la prueba
 `BalanceGameTests.herreroEnSuSitio` lo exige. Medido en `docs/EQUILIBRIO.md`, sección «Herrero Caído» (antes y
 después, solo y con dos jugadores, por nivel y por equipo, y lo que aguanta un jugador delante de él). Todos los números
 están en `FallenSmith`.
 
-- **Vida:** 400 de base (antes 320), por el nivel (`Grade`): Fácil 0,9, Normal 1, Difícil 1,3 y Extremo 1,6; **+100 %
+- **Vida:** 400 de base (antes 320), por el nivel (`Grade`): Fácil 0,9, Normal 1, Difícil 1,3 y Implacable 1,6; **+100 %
   por cada jugador de más** que haya estado en la pelea y **+25 % por tramo de equipo** (`GearScore`, 0 a 3) de los que le
   pelean, más 1,5 de armadura por tramo. Solo sube mientras dura la pelea, y conserva la parte de vida que tenía. Lo
   que pase del techo de vida del juego (1024) se lo quita a cada golpe que recibe (`bulk`).
 - **Por fase (1 / 2 / 3):** armadura +0 / +3 / +6, dureza +0 / +2 / +4, daño de los golpes avisados ×1 / ×1,2 / ×1,4 y
   esperas ×1 / ×0,85 / ×0,7. Los avisos (las animaciones) duran lo mismo: se siguen leyendo.
-- **Por nivel:** golpes avisados ×0,85 / ×1 / ×1,15 / ×1,3 y esperas ×1,15 / ×1 / ×0,9 / ×0,8 (Fácil a Extremo), encima
+- **Por nivel:** golpes avisados ×0,85 / ×1 / ×1,15 / ×1,3 y esperas ×1,15 / ×1 / ×0,9 / ×0,8 (Fácil a Implacable), encima
   del daño que cada nivel da a todos los monstruos.
 - **Golpes avisados de base:** revés 9 (antes 7), onda 10 (antes 8), garfio 5 (antes 4), estrellas 10 (antes 9).
 - **Furia bajo un tercio** (desde la segunda oleada): +15 % de velocidad, +20 % a su golpe normal, la forja violeta
   hasta el final y un aviso en el chat.
 - **Segunda oleada:** +40 % de vida y +3 de armadura.
-- **Reforjado:** 4 brasas en Difícil y Extremo, y 2 o 3 guardianes (3.7).
+- **Reforjado:** 4 brasas en Difícil y Implacable, y 2 o 3 guardianes (3.7).
 - **Se mantiene:** un tercio de daño de lo que no es un jugador, La forja reclama (ahora salta con **32** de vida
   intentada por los grandes, lo que era la décima parte de sus 320: si no, un gólem tendría que pegarle treinta veces a
   un Herrero grande), el bloqueo de la arena, el Reforjado inmortal, el 30 % de penetración por golpe y el tope por
