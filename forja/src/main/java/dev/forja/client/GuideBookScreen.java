@@ -1977,8 +1977,11 @@ public class GuideBookScreen extends Screen {
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.cementerio.llegada.titulo")));
 		body.add(new Text(Component.translatable("gui.forja.libros.cementerio.llegada"), INK));
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.cementerio.fases.titulo")));
-		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_fases", Math.round(dev.forja.entity.FallenSmith.HEALTH),
-			dev.forja.entity.FallenSmith.EMBERS), INK));
+		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_fases",
+			dev.forja.entity.FallenSmith.healthFor(dev.forja.difficulty.Ladder.current()), dev.forja.entity.FallenSmith.embersFor(1)), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.cementerio.fuerza.titulo")));
+		body.add(this.smithStrength(INK));
+		body.add(this.smithFury(INK));
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.cementerio.braseros.titulo")));
 		body.add(new Text(Component.translatable("gui.forja.libros.cementerio.braseros", dev.forja.world.StarFight.REFILL_IRON), INK));
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.cementerio.constelaciones.titulo")));
@@ -1987,7 +1990,8 @@ public class GuideBookScreen extends Screen {
 		body.add(new Text(Component.translatable("gui.forja.libro.ataques.herrero", Math.round(dev.forja.entity.FallenSmith.WAVE_DAMAGE)), INK));
 		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_defensa"), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_reclama",
-			dev.forja.entity.FallenSmith.RECLAIM_WINDOW / 20, Math.round(dev.forja.entity.FallenSmith.RECLAIM_RADIUS),
+			dev.forja.entity.FallenSmith.RECLAIM_WINDOW / 20, Math.round(dev.forja.entity.FallenSmith.RECLAIM_HEAVY_DAMAGE),
+			Math.round(dev.forja.entity.FallenSmith.RECLAIM_RADIUS),
 			dev.forja.entity.FallenSmith.RECLAIM_COOLDOWN / 20), INK_SOFT));
 		return body;
 	}
@@ -2016,8 +2020,27 @@ public class GuideBookScreen extends Screen {
 		body.add(new Text(Component.translatable("gui.forja.libros.cementerio.ficha"), INK_SOFT));
 		this.creature(body, true, "herrero_caido", level -> new dev.forja.entity.FallenSmith(dev.forja.registry.ModEntities.HERRERO_CAIDO, level),
 			new IconRow(List.of(new ItemStack(ModItems.CORAZON_DE_FORJA), new ItemStack(ModItems.YUNQUE_DEL_HERRERO), new ItemStack(ModItems.ESTRELLA_FORJADA))),
-			new Text(Component.translatable("gui.forja.libro.bestiario.herrero", Math.round(dev.forja.entity.FallenSmith.HEALTH)), INK));
+			new Text(Component.translatable("gui.forja.libro.bestiario.herrero",
+				dev.forja.entity.FallenSmith.healthFor(dev.forja.difficulty.Ladder.current())), INK));
 		return body;
+	}
+
+	/** His strength by level, gear and players (FallenSmith: Grade, GEAR_HEALTH_PER_TIER, HEALTH_PER_PLAYER). */
+	private Text smithStrength(int colour) {
+		return new Text(Component.translatable("gui.forja.libros.cementerio.fuerza",
+			dev.forja.entity.FallenSmith.healthFor(dev.forja.difficulty.Ladder.FACIL),
+			dev.forja.entity.FallenSmith.healthFor(dev.forja.difficulty.Ladder.NORMAL),
+			dev.forja.entity.FallenSmith.healthFor(dev.forja.difficulty.Ladder.DIFICIL),
+			dev.forja.entity.FallenSmith.healthFor(dev.forja.difficulty.Ladder.EXTREMO),
+			pct(dev.forja.entity.FallenSmith.GEAR_HEALTH_PER_TIER),
+			dev.forja.entity.FallenSmith.grade(dev.forja.difficulty.Ladder.DIFICIL).keepers(),
+			dev.forja.entity.FallenSmith.grade(dev.forja.difficulty.Ladder.EXTREMO).keepers()), colour);
+	}
+
+	/** His fury under a third (FallenSmith.ENRAGE_SPEED, ENRAGE_DAMAGE, WAVE_HEALTH). */
+	private Text smithFury(int colour) {
+		return new Text(Component.translatable("gui.forja.libros.cementerio.furia", pct(dev.forja.entity.FallenSmith.ENRAGE_SPEED),
+			pct(dev.forja.entity.FallenSmith.ENRAGE_DAMAGE), pct(dev.forja.entity.FallenSmith.WAVE_HEALTH[1])), colour);
 	}
 
 	/** The end of the guide. */
@@ -2832,11 +2855,14 @@ public class GuideBookScreen extends Screen {
 		body.add(new IconRow(List.of(new ItemStack(ModItems.FRAGUA_APAGADA), new ItemStack(ModItems.PERLA_DE_ORICALCO),
 			new ItemStack(ModItems.CORAZON_DE_FORJA))));
 		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido"), INK));
-		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_fases", Math.round(dev.forja.entity.FallenSmith.HEALTH),
-			dev.forja.entity.FallenSmith.EMBERS), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_fases",
+			dev.forja.entity.FallenSmith.healthFor(dev.forja.difficulty.Ladder.current()), dev.forja.entity.FallenSmith.embersFor(1)), INK_SOFT));
+		body.add(this.smithStrength(INK_SOFT));
+		body.add(this.smithFury(INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_defensa"), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.herrero_caido_reclama",
-			dev.forja.entity.FallenSmith.RECLAIM_WINDOW / 20, Math.round(dev.forja.entity.FallenSmith.RECLAIM_RADIUS),
+			dev.forja.entity.FallenSmith.RECLAIM_WINDOW / 20, Math.round(dev.forja.entity.FallenSmith.RECLAIM_HEAVY_DAMAGE),
+			Math.round(dev.forja.entity.FallenSmith.RECLAIM_RADIUS),
 			dev.forja.entity.FallenSmith.RECLAIM_COOLDOWN / 20), INK_SOFT));
 		return body;
 	}
@@ -2919,7 +2945,8 @@ public class GuideBookScreen extends Screen {
 				new IconRow(List.of(
 					new ItemStack(ModItems.CORAZON_DE_FORJA), new ItemStack(ModItems.YUNQUE_DEL_HERRERO), new ItemStack(ModItems.FRAGUA_APAGADA)
 				)),
-				new Text(Component.translatable("gui.forja.libro.bestiario.herrero", Math.round(dev.forja.entity.FallenSmith.HEALTH)), INK),
+				new Text(Component.translatable("gui.forja.libro.bestiario.herrero",
+					dev.forja.entity.FallenSmith.healthFor(dev.forja.difficulty.Ladder.current())), INK),
 				new Text(Component.translatable("gui.forja.libro.ataques.herrero",
 					Math.round(dev.forja.entity.FallenSmith.WAVE_DAMAGE)), INK_SOFT),
 				new Text(Component.translatable("gui.forja.libro.yunque"), INK_SOFT));

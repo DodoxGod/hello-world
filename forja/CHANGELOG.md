@@ -1,5 +1,32 @@
 # Novedades
 
+## 2026-09-30 — El Herrero Caído, más fuerte
+
+Andy: «parece que puedes llegar a estar muy fuerte, o el Herrero Caído es muy débil, hazlo más fuerte». Un Mago o un
+cuerpo a cuerpo de nivel 50 lo mataba en unos 20 s de golpes. Ahora un jugador de final de juego bien equipado (la
+mejor arma estrellada, Guerrero de nivel 50, armadura estrellada) tarda, solo, **1:52 en Fácil, 3:17 en Normal, 4:25
+en Difícil y 5:41 en Extremo** (antes 1:31, 2:29, 2:29 y 3:07), y con dos jugadores 1:27, 2:34, 3:25 y 4:20.
+
+- **Se mide** (`balance/SmithFight`, sección «Herrero Caído» de `docs/EQUILIBRIO.md`): el jefe de verdad, vestido y del
+  tamaño de cada pelea, por fase y aturdido; un jugador con la armadura de referencia; tiempo de pelea y supervivencia
+  por nivel, solo y con dos, para cuatro equipos, antes y después.
+- **Vida:** 400 de base (antes 320) × el nivel (0,9 / 1 / 1,3 / 1,6), +100 % por jugador de más y +25 % por tramo de
+  equipo de quien le pelea. Pasado el techo de 1024, lo que sobra se lo quita a cada golpe.
+- **Por fase:** más armadura (+3 / +6) y dureza (+2 / +4), golpes avisados ×1,2 / ×1,4 y esperas ×0,85 / ×0,7. Por nivel,
+  golpes avisados ×0,85 a ×1,3 y esperas ×1,15 a ×0,8. Los avisos duran lo mismo.
+- **Golpes avisados:** revés 9, onda 10, garfio 5, estrellas 10.
+- **Furia** bajo un tercio: +15 % de velocidad, +20 % a su golpe normal, la forja violeta hasta el final y aviso en el
+  chat.
+- **Segunda oleada** de aprendices: +40 % de vida y +3 de armadura.
+- **Reforjado:** 4 brasas en Difícil y Extremo, y 2 o 3 aprendices guardianes al empezar.
+- **Se mantiene** el tercio de daño ajeno, el bloqueo de la arena, el Reforjado inmortal, el 30 % de penetración y el
+  tope por golpe del 8 %. La forja reclama salta ahora con 32 de vida intentada por los grandes (la décima parte de sus
+  320 de antes).
+- Ningún golpe suyo quita la mitad de la vida a un jugador equipado; uno que se descuida dura de 4 a 10 s delante de él
+  en Difícil.
+- Guía: libros VI y VII con su vida por nivel, sus brasas, «Su fuerza» y la furia.
+- Pruebas: `BalanceGameTests.herreroEnSuSitio` (la ventana de cada nivel) y `PeleaEstelarGameTests.theSmithGrowsWithTheFight`.
+
 ## 2026-09-30 — Iconos en los nodos de los árboles de clase
 
 Andy: «se ve bastante bien el árbol, pero le faltan iconos». Cada nodo de los seis árboles lleva ahora su icono, elegido

@@ -321,7 +321,8 @@ Coordenadas con el centro de la arena en (0, 0). La superficie base está en **y
 
 Golpe, onda, garfio, lluvia de estrellas (una estrella por llamada, con su aviso de 20 ticks), "La forja
 reclama", el daño de un tercio de lo que no es un jugador (`jefeDanoAjeno` = 0,333) y el bloqueo de construir y
-romper a menos de 32 bloques del jefe vivo. La vida sigue en 320.
+romper a menos de 32 bloques del jefe vivo. La vida era 320 hasta el 2026-09-30; desde entonces crece con el nivel,
+los jugadores y su equipo (3.11).
 
 ### 3.2 La llegada: cae del cielo
 
@@ -338,9 +339,9 @@ Cuando un jugador entra en la dimensión y no hay pelea en curso:
 
 | Fase | Vida | Qué cambia |
 |---|---|---|
-| 1 | 100 % a 66,7 % (320 a 213) | golpe, onda, "La forja reclama". **Sin aprendices.** |
-| 2 | 66,7 % a 33,3 % (213 a 107) | primera oleada; se suma el garfio; **a la mitad (160), el Reforjado estelar** (3.7) |
-| 3 | 33,3 % a 0 | segunda oleada; lluvia de estrellas, yunques del final |
+| 1 | 100 % a 66,7 % | golpe, onda, "La forja reclama". **Sin aprendices.** |
+| 2 | 66,7 % a 33,3 % | primera oleada; se suma el garfio; **a la mitad, el Reforjado estelar** (3.7); más armadura y esperas más cortas (3.11) |
+| 3 | 33,3 % a 0 | segunda oleada, más dura; lluvia de estrellas, yunques del final; **furia** (3.11) |
 
 Las fases viejas (75 %, 50 % y 25 %) desaparecen. Una fase solo se pasa una vez, aunque se cure (no se cura).
 
@@ -455,9 +456,11 @@ Cada cuánto: uno cada 30 a 40 s (600 + hasta 200 ticks); durante el Reforjado e
 
 **En la dimensión** (Andy, respuesta 1: inmortal, **sin tiempo**, hasta que le quiten el fuego):
 
-1. **Empieza** a la mitad de la vida (160): se arrodilla en el disco del centro, clava el martillo y enciende su
-   **fuego de forja**: **3 + 1 Brasas estelares por jugador extra (hasta 6)**, en las cuatro diagonales a 10 bloques (la quinta y la sexta
-   a 14), unidas a él por haces de luz.
+1. **Empieza** a la mitad de la vida: se arrodilla en el disco del centro, clava el martillo y enciende su
+   **fuego de forja**: **3 Brasas estelares en Fácil y Normal, 4 en Difícil y Extremo, y 1 más por jugador extra (hasta 6)**,
+   en las cuatro diagonales a 10 bloques (la quinta y la sexta a 14), unidas a él por haces de luz. Con 4, uno solo
+   tiene que volcar los cuatro braseros. En Difícil salen además **2 aprendices guardianes** y en Extremo **3**
+   (2026-09-30).
 2. **Es inmortal** mientras quede una brasa, **sin límite de tiempo**. No se cura (ya no hace falta: no pasa nada
    hasta que se rompan). Los aprendices y los golpes normales siguen.
 3. **Lo único que apaga las brasas es la colada del brasero:** golpear uno de los 4 braseros de los pilares (un
@@ -476,7 +479,8 @@ Cada cuánto: uno cada 30 a 40 s (600 + hasta 200 ticks); durante el Reforjado e
 7. **Una vez por pelea.** La persistencia (3.8) guarda si hubo reforjado, qué brasas quedan y qué braseros están
    vacíos.
 
-Números (en el código): `FallenSmith.EMBERS_BASE` 3, `EMBERS_MOST` 6, `STUN_TICKS` 100, `STUN_DAMAGE` 1,5;
+Números (en el código): `FallenSmith.Grade.embers` 3/3/4/4 y `keepers` 0/0/2/3 por nivel, `EMBERS_MOST` 6,
+`STUN_TICKS` 100, `STUN_DAMAGE` 1,5;
 `StarFight.REFILL_IRON` 4, `REFORGE_SKY` 400 ticks, `FLOW_TICKS` 60.
 
 ### 3.8 Morir y volver
@@ -523,6 +527,32 @@ Números (en el código): `FallenSmith.EMBERS_BASE` 3, `EMBERS_MOST` 6, `STUN_TI
 - **Recompensa de la revancha:** la de siempre (corazón de forja, una leyenda, el martillo del maestro; el yunque del
   Herrero solo la primera vez) y **otra Estrella forjada por participante**.
 - **Límite:** una Estrella por pieza, así que repetirla solo sirve para estrellar más piezas.
+
+### 3.11 Más fuerte (Andy, 2026-09-30: «hazlo más fuerte»)
+
+Un Mago o un cuerpo a cuerpo de nivel 50 lo mataba en unos 20 s de golpes. Ahora la pelea de un jugador bien equipado
+de final de juego, solo, dura **de 3 a 5 minutos en Difícil** (más en Extremo, menos en Normal y Fácil), y la prueba
+`BalanceGameTests.herreroEnSuSitio` lo exige. Medido en `docs/EQUILIBRIO.md`, sección «Herrero Caído» (antes y
+después, solo y con dos jugadores, por nivel y por equipo, y lo que aguanta un jugador delante de él). Todos los números
+están en `FallenSmith`.
+
+- **Vida:** 400 de base (antes 320), por el nivel (`Grade`): Fácil 0,9, Normal 1, Difícil 1,3 y Extremo 1,6; **+100 %
+  por cada jugador de más** que haya estado en la pelea y **+25 % por tramo de equipo** (`GearScore`, 0 a 3) de los que le
+  pelean, más 1,5 de armadura por tramo. Solo sube mientras dura la pelea, y conserva la parte de vida que tenía. Lo
+  que pase del techo de vida del juego (1024) se lo quita a cada golpe que recibe (`bulk`).
+- **Por fase (1 / 2 / 3):** armadura +0 / +3 / +6, dureza +0 / +2 / +4, daño de los golpes avisados ×1 / ×1,2 / ×1,4 y
+  esperas ×1 / ×0,85 / ×0,7. Los avisos (las animaciones) duran lo mismo: se siguen leyendo.
+- **Por nivel:** golpes avisados ×0,85 / ×1 / ×1,15 / ×1,3 y esperas ×1,15 / ×1 / ×0,9 / ×0,8 (Fácil a Extremo), encima
+  del daño que cada nivel da a todos los monstruos.
+- **Golpes avisados de base:** revés 9 (antes 7), onda 10 (antes 8), garfio 5 (antes 4), estrellas 10 (antes 9).
+- **Furia bajo un tercio** (desde la segunda oleada): +15 % de velocidad, +20 % a su golpe normal, la forja violeta
+  hasta el final y un aviso en el chat.
+- **Segunda oleada:** +40 % de vida y +3 de armadura.
+- **Reforjado:** 4 brasas en Difícil y Extremo, y 2 o 3 guardianes (3.7).
+- **Se mantiene:** un tercio de daño de lo que no es un jugador, La forja reclama (ahora salta con **32** de vida
+  intentada por los grandes, lo que era la décima parte de sus 320: si no, un gólem tendría que pegarle treinta veces a
+  un Herrero grande), el bloqueo de la arena, el Reforjado inmortal, el 30 % de penetración por golpe y el tope por
+  golpe del 8 % (con su vida de ahora no recorta ningún golpe de la referencia: es la red contra un golpe suelto enorme).
 
 ---
 

@@ -61,8 +61,11 @@ import net.minecraft.world.phys.Vec3;
  * <p>What he leaves behind is his heart, and one piece of what he was carrying.
  */
 public class FallenSmith extends Monster implements GeoEntity {
-	/** How much health he has: this is not a mob you meet by accident. Before the level, the players and their gear. */
-	public static final double HEALTH = 320.0;
+	/**
+	 * How much health he has: this is not a mob you meet by accident. Before the level, the players and their gear
+	 * (healthFactor). It was 320 until 2026-09-30, when a level-50 class killed him in twenty seconds.
+	 */
+	public static final double HEALTH = 400.0;
 
 	// ------------------------------------------------------------------ how strong he is
 	// docs/EQUILIBRIO.md, "Herrero Caído": every number here is measured there, and BalanceGameTests.herreroEnSuSitio
@@ -70,18 +73,27 @@ public class FallenSmith extends Monster implements GeoEntity {
 
 	/**
 	 * What each level of the ladder makes of him: his health (on top of the per-player and gear factors), the damage
-	 * of his telegraphed moves and how soon they come back, the embers of the Reforjado, the apprentices that come up
-	 * to keep them, and how many apprentices more each wave brings. Pacífico has no fight: a peaceful world keeps no
-	 * monster, him included.
+	 * of his telegraphed moves and how soon they come back, the embers of the Reforjado and the apprentices that come up
+	 * to keep them. On top of what the level does to every monster (Ladder: the damage of its preset). Pacífico has no
+	 * fight: a peaceful world keeps no monster, him included.
+	 *
+	 * <pre>
+	 *            vida  daño avisado  esperas  brasas  guardianes
+	 * Fácil      0,90  ×0,85         ×1,15    3       0
+	 * Normal     1,00  ×1,00         ×1,00    3       0
+	 * Difícil    1,30  ×1,15         ×0,90    4       2
+	 * Extremo    1,60  ×1,30         ×0,80    4       3
+	 * </pre>
 	 */
-	public record Grade(double health, double moveDamage, double cooldown, int embers, int keepers, int extraApprentices) {
+	public record Grade(double health, double moveDamage, double cooldown, int embers, int keepers) {
 	}
 
 	public static Grade grade(dev.forja.difficulty.Ladder level) {
 		return switch (level) {
-			case PACIFICO, FACIL -> new Grade(0.8, 1.0, 1.0, 3, 0, 0);
-			case NORMAL, DIFICIL -> new Grade(1.0, 1.0, 1.0, 3, 0, 0);
-			case EXTREMO -> new Grade(1.3, 1.0, 1.0, 3, 0, 0);
+			case PACIFICO, FACIL -> new Grade(0.9, 0.85, 1.15, 3, 0);
+			case NORMAL -> new Grade(1.0, 1.0, 1.0, 3, 0);
+			case DIFICIL -> new Grade(1.3, 1.15, 0.9, 4, 2);
+			case EXTREMO -> new Grade(1.6, 1.3, 0.8, 4, 3);
 		};
 	}
 
@@ -90,10 +102,19 @@ public class FallenSmith extends Monster implements GeoEntity {
 		return grade(dev.forja.difficulty.Ladder.current());
 	}
 
-	/** Health for each player past the first who has been in the fight: a share of his own. */
-	public static final double HEALTH_PER_PLAYER = 0.0;
-	/** Health and armour for the gear of whoever fights him (difficulty/GearScore), by its tier (0 to 3). */
-	public static final double GEAR_HEALTH_PER_TIER = 0.2;
+	/** Health for each player past the first who has been in the fight: as much again as one player's. */
+	public static final double HEALTH_PER_PLAYER = 1.0;
+
+	/**
+	 * The most health the game lets any creature have (the ceiling of Attributes.MAX_HEALTH, 1024). What he should have
+	 * past it, he has as bulk instead: every blow on him is divided by {@link #bulk()}, which comes to the same fight.
+	 */
+	public static final double MOST_HEALTH = ((net.minecraft.world.entity.ai.attributes.RangedAttribute) Attributes.MAX_HEALTH.value()).getMaxValue();
+	/**
+	 * Health and armour for the gear of whoever fights him (difficulty/GearScore), by its tier (0 to 3), as every monster
+	 * that comes up near a player grows (Scaling), a little more for him: a quarter a tier where they take a fifth.
+	 */
+	public static final double GEAR_HEALTH_PER_TIER = 0.25;
 	public static final double GEAR_ARMOR_PER_TIER = 1.5;
 
 	/**
@@ -106,27 +127,37 @@ public class FallenSmith extends Monster implements GeoEntity {
 		return grade(level).health * preset * (1.0 + HEALTH_PER_PLAYER * Math.max(0, fighters - 1)) * (1.0 + GEAR_HEALTH_PER_TIER * tier);
 	}
 
+	/** His health on a level for one player with no gear to speak of: what the guide says. */
+	public static long healthFor(dev.forja.difficulty.Ladder level) {
+		return Math.round(HEALTH * healthFactor(level, 1, 0.0));
+	}
+
 	/** The armour the gear of the ones fighting him adds. */
 	public static double gearArmor(dev.forja.difficulty.Ladder level, double gear) {
 		return level.gear ? GEAR_ARMOR_PER_TIER * dev.forja.difficulty.GearScore.tier(gear) : 0.0;
 	}
 
-	/** Armour and toughness he takes on in each stage (1 to 3), on top of his own. */
-	public static final double[] STAGE_ARMOR = {0.0, 0.0, 0.0};
-	public static final double[] STAGE_TOUGHNESS = {0.0, 0.0, 0.0};
+	/** Armour and toughness he takes on in each stage (1 to 3), on top of his own: the forge closes round him. */
+	public static final double[] STAGE_ARMOR = {0.0, 3.0, 6.0};
+	public static final double[] STAGE_TOUGHNESS = {0.0, 2.0, 4.0};
 	/** What his telegraphed moves (backhand, shockwave, hook, the stars) hit for in each stage, times the level's. */
-	public static final float[] STAGE_DAMAGE = {1.0F, 1.0F, 1.0F};
-	/** How long his moves take to come back in each stage, times the level's. */
-	public static final double[] STAGE_COOLDOWN = {1.0, 1.0, 1.0};
-	/** His fury in the last stage: this much faster, and his plain blow this much heavier. */
-	public static final double ENRAGE_SPEED = 0.0;
-	public static final double ENRAGE_DAMAGE = 0.0;
-	/** How much more health the apprentices of each wave come up with (first, second). */
-	public static final double[] WAVE_HEALTH = {0.0, 0.0};
+	public static final float[] STAGE_DAMAGE = {1.0F, 1.2F, 1.4F};
+	/** How long his moves take to come back in each stage, times the level's. Their wind-ups never change: still readable. */
+	public static final double[] STAGE_COOLDOWN = {1.0, 0.85, 0.7};
+	/**
+	 * His fury, from the second wave of apprentices on (under a third of his health): this much faster, and his plain
+	 * blow this much heavier. The forge in his chest burns violet for the rest of the fight, and everybody is told.
+	 */
+	public static final double ENRAGE_SPEED = 0.15;
+	public static final double ENRAGE_DAMAGE = 0.2;
+	/** How much more health the apprentices of each wave come up with (first, second), on all they already have. */
+	public static final double[] WAVE_HEALTH = {0.0, 0.4};
+	/** And how much more armour the second wave wears. */
+	public static final double SECOND_WAVE_ARMOR = 3.0;
 	/** How often he calls the stars down in his last stage, before the stage's cooldown. */
 	public static final int STARFALL_EVERY = 60;
 	/** What the stars do to whoever is under them, before the stage's damage. */
-	public static final float STARFALL_DAMAGE = 9.0F;
+	public static final float STARFALL_DAMAGE = 10.0F;
 
 	/** Ticks the reforge stage keeps him out of reach. */
 	public static final int REFORGE_TICKS = 160;
@@ -185,7 +216,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 	public static final int WAVE_COOLDOWN = 160;
 	public static final int WAVE_TICKS = 20;
 	public static final double WAVE_REACH = 9.0;
-	public static final float WAVE_DAMAGE = 8.0F;
+	public static final float WAVE_DAMAGE = 10.0F;
 	/** How far off the floor your feet have to be for the ring to pass under them: most of a jump, not a hop. */
 	public static final double WAVE_CLEARANCE = 0.5;
 
@@ -226,8 +257,10 @@ public class FallenSmith extends Monster implements GeoEntity {
 	 * <p>It goes off when, within the last {@link #RECLAIM_WINDOW} ticks, either {@link #RECLAIM_CROWD}
 	 * different creatures that are nobody's have tried to hurt him, or the heavy ones among them (anything
 	 * with {@link #RECLAIM_HEAVY_HEALTH} health or more: an iron golem, a ravager, a warden, a wither) have
-	 * between them tried to take {@link #RECLAIM_HEAVY_SHARE} of his health, counted after
-	 * {@code jefeDanoAjeno}: a warden gets there in three blows and a golem in about seven. A player, a
+	 * between them tried to take {@link #RECLAIM_HEAVY_DAMAGE} of his health, counted after
+	 * {@code jefeDanoAjeno}: a warden gets there in three blows and a golem in about seven. It was a tenth of his
+	 * health while he had 320; it stays at what that was now he grows with the fight (2026-09-30), or a golem would
+	 * have to pound a big one for thirty blows before he answered. A player, a
 	 * player's pet (anything tamed or owned: wolves, cats, parrots, horses), his apprentices and the rest
 	 * of Forja's own side never count and are never taken, so a player with a dog never sees it.
 	 *
@@ -244,18 +277,18 @@ public class FallenSmith extends Monster implements GeoEntity {
 	public static final int RECLAIM_WINDOW = 200;
 	public static final int RECLAIM_CROWD = 3;
 	public static final double RECLAIM_HEAVY_HEALTH = 100.0;
-	public static final float RECLAIM_HEAVY_SHARE = 0.10F;
+	public static final float RECLAIM_HEAVY_DAMAGE = 32.0F;
 
 	/** The backhand: close range, fast, and the one he punishes you with for standing next to him. */
 	public static final int STRIKE_COOLDOWN = 90;
 	public static final double STRIKE_REACH = 4.5;
-	public static final float STRIKE_DAMAGE = 7.0F;
+	public static final float STRIKE_DAMAGE = 9.0F;
 
 	/** The hook: how often he can throw the claw, how far it reaches and what the pull costs you. */
 	public static final int HOOK_COOLDOWN = 220;
 	public static final double HOOK_MIN = 5.0;
 	public static final double HOOK_MAX = 16.0;
-	public static final float HOOK_DAMAGE = 4.0F;
+	public static final float HOOK_DAMAGE = 5.0F;
 
 	/** The violet the forge burns with once he stops holding back, matching the model's hot plate. */
 	private static final net.minecraft.core.particles.DustParticleOptions VIOLET =
@@ -672,9 +705,10 @@ public class FallenSmith extends Monster implements GeoEntity {
 			level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 1.0F, 1.8F);
 			return false;
 		}
-		// Stunned when his forge is put out: every blow lands half as hard again.
+		// Stunned when his forge is put out: every blow lands half as hard again. And past the game's ceiling on health, what
+		// he should have over it is taken off every blow instead (bulk).
 		float stun = this.stunned > 0 ? STUN_DAMAGE : 1.0F;
-		return super.hurtServer(level, source, damage * stun * dev.forja.difficulty.Bosses.othersShare(source));
+		return super.hurtServer(level, source, (float) (damage * stun * dev.forja.difficulty.Bosses.othersShare(source) / this.bulk()));
 	}
 
 	@Override
@@ -693,7 +727,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 		if (this.raging > 0) {
 			this.raging--;
 		}
-		boolean hot = this.reforging > 0 || this.raging > 0 || this.getHealth() / this.getMaxHealth() <= 0.25F;
+		boolean hot = this.reforging > 0 || this.raging > 0 || this.enraged();
 		if (this.isReforging() != this.entityData.get(DATA_REFORGING)) {
 			this.entityData.set(DATA_REFORGING, this.isReforging());
 		}
@@ -925,6 +959,12 @@ public class FallenSmith extends Monster implements GeoEntity {
 		level.sendParticles(dev.forja.registry.ModParticles.CHISPA,
 			this.getX(), this.getY(1.2), this.getZ(), 50, 0.6, 0.8, 0.6, 0.6);
 		this.standUpAnvils(level);
+		// His fury starts here (enraged: the second wave), and everyone in the fight is told so.
+		for (ServerPlayer player : level.players()) {
+			if (player.distanceToSqr(this) <= 60.0 * 60.0) {
+				player.sendSystemMessage(Component.translatable("gui.forja.pelea.furia").withColor(0xC460FF));
+			}
+		}
 	}
 
 	/** Six walking anvils, in a ring round him, as the last quarter opens. */
@@ -1167,11 +1207,14 @@ public class FallenSmith extends Monster implements GeoEntity {
 			apprentice.snapTo(at.x, floor - RISE_DEPTH, at.z, (float) Math.toDegrees(Math.atan2(-offsets.get(i).x, offsets.get(i).z)) + 180.0F, 0.0F);
 			dev.forja.world.Elites.makeElite(apprentice, level.getRandom());
 			dev.forja.world.ApprenticeKits.equip(apprentice, roles.get(i), i, salt, level.getRandom());
-			// The later waves come up harder: more health, on top of the elite's.
+			// The later waves come up harder: more health on all they have, and more plate.
 			var health = apprentice.getAttribute(Attributes.MAX_HEALTH);
-			if (sturdier > 0.0 && health != null) {
+			var plates = apprentice.getAttribute(Attributes.ARMOR);
+			if (sturdier > 0.0 && health != null && plates != null) {
 				health.addPermanentModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(WAVE, sturdier,
-					net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
+					net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+				plates.addPermanentModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(WAVE, SECOND_WAVE_ARMOR,
+					net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE));
 				apprentice.setHealth(apprentice.getMaxHealth());
 			}
 			apprentice.setCustomName(Component.translatable("entity.forja.aprendiz"));
@@ -1425,7 +1468,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 				heavy += blow.damage();
 			}
 		}
-		return who.size() >= RECLAIM_CROWD || heavy >= this.getMaxHealth() * RECLAIM_HEAVY_SHARE;
+		return who.size() >= RECLAIM_CROWD || heavy >= RECLAIM_HEAVY_DAMAGE;
 	}
 
 	/** Whether La forja reclama is under way, for the tests and the footage. */
@@ -1690,9 +1733,9 @@ public class FallenSmith extends Monster implements GeoEntity {
 		return Math.min(EMBERS_MOST, grade().embers() + Math.max(1, players) - 1);
 	}
 
-	/** How many apprentices a wave brings for this many players: the formation's (docs 3.5), and the level's extra. */
+	/** How many apprentices a wave brings for this many players: the formation's (docs 3.5). */
 	public static int apprenticesFor(int players) {
-		return dev.forja.world.Formation.count(Math.max(1, players)) + grade().extraApprentices();
+		return dev.forja.world.Formation.count(Math.max(1, players));
 	}
 
 	/**
@@ -1733,15 +1776,37 @@ public class FallenSmith extends Monster implements GeoEntity {
 		this.resize();
 	}
 
+	/**
+	 * How much more health he should have than the game lets him: 1 until healthFactor takes him past MOST_HEALTH, and
+	 * then what every blow on him is divided by. Worked out from the fight each time, so a reload never loses it.
+	 */
+	public double bulk() {
+		double wanted = HEALTH * healthFactor(dev.forja.difficulty.Ladder.current(), Math.max(1, this.peakFighters), this.peakGear);
+		return Math.max(1.0, wanted / MOST_HEALTH);
+	}
+
+	/** The health he fights with, bulk and all: what a fight against him has to take off. */
+	public double fightHealth() {
+		return this.getMaxHealth() * this.bulk();
+	}
+
 	/** Puts his size on: the health and armour of healthFactor and gearArmor, keeping the share of health he had. */
 	private void resize() {
 		dev.forja.difficulty.Ladder ladder = dev.forja.difficulty.Ladder.current();
-		double factor = healthFactor(ladder, Math.max(1, this.peakFighters), this.peakGear);
+		double factor = Math.min(healthFactor(ladder, Math.max(1, this.peakFighters), this.peakGear), MOST_HEALTH / HEALTH);
 		double armor = gearArmor(ladder, this.peakGear);
 		var health = this.getAttribute(Attributes.MAX_HEALTH);
 		var plates = this.getAttribute(Attributes.ARMOR);
 		if (health == null || plates == null) {
 			return;
+		}
+		// A boss saved before he sized himself still carries what Scaling put on him then: it goes, or he would count it twice.
+		var old = dev.forja.Forja.id("dificultad");
+		if (health.getModifier(old) != null || plates.getModifier(old) != null) {
+			float before = this.getHealth() / this.getMaxHealth();
+			health.removeModifier(old);
+			plates.removeModifier(old);
+			this.setHealth(Math.max(1.0F, before * this.getMaxHealth()));
 		}
 		var now = health.getModifier(SIZE);
 		var nowArmor = plates.getModifier(SIZE);

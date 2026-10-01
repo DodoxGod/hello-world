@@ -161,7 +161,7 @@ public class PeleaEstelarGameTests {
 		helper.runAfterDelay(FallenSmith.PHASE_GUARD + 14, () -> {
 			helper.assertTrue(smith.isReforging() && smith.starReforge() == 1, "a la mitad, el Reforjado");
 			List<BlockPos> embers = smith.embersAt();
-			helper.assertTrue(embers.size() == 3, "tres brasas con un jugador: " + embers.size());
+			helper.assertTrue(embers.size() == FallenSmith.embersFor(1), FallenSmith.embersFor(1) + " brasas con un jugador en este nivel: " + embers.size());
 			for (BlockPos at : embers) {
 				helper.assertTrue(level.getBlockState(at).is(ModBlocks.BRASA_ESTELAR), "brasa encendida en " + at);
 			}
@@ -171,8 +171,8 @@ public class PeleaEstelarGameTests {
 			float before = smith.getHealth();
 			smith.hurtServer(level, level.damageSources().playerAttack(player), 20.0F);
 			helper.assertTrue(smith.getHealth() == before, "inmortal mientras arde");
-			// Tip three braseros: the ones on the three fires' diagonals.
-			for (int i = 0; i < 3; i++) {
+			// Tip the braseros on the fires' diagonals (one a fire, four at most: the fifth and sixth share a diagonal).
+			for (int i = 0; i < Math.min(4, embers.size()); i++) {
 				helper.assertTrue(StarFight.tip(level, i), "se vuelca el brasero " + i);
 			}
 			helper.assertFalse(StarFight.full(level, 0), "y queda vacío");
@@ -199,6 +199,57 @@ public class PeleaEstelarGameTests {
 			level.getEntitiesOfClass(Mob.class, ownGround(helper), Apprentices::isApprentice).forEach(Mob::discard);
 			helper.succeed();
 		});
+	}
+
+	/**
+	 * Andy, 2026-09-30, "hazlo más fuerte": he is sized to the fight (the level, every player who has been in it, their
+	 * gear) and keeps the share of health he had; what would pass the game's ceiling on health becomes bulk, taken off
+	 * every blow; and each stage puts on armour, shorter waits and harder warned blows, the last one his fury. How long
+	 * the whole fight takes is BalanceGameTests.herreroEnSuSitio's.
+	 */
+	@GameTest(maxTicks = 20)
+	public void theSmithGrowsWithTheFight(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		FallenSmith smith = helper.spawn(ModEntities.HERRERO_CAIDO, new BlockPos(4, 1, 4));
+		smith.setNoAi(true);
+		smith.sizedByHand = true;
+		smith.scaleFor(1, 0.0);
+		float alone = smith.getMaxHealth();
+		helper.assertTrue(Math.abs(alone - FallenSmith.healthFor(dev.forja.difficulty.Ladder.current())) < 1.0F,
+			"uno solo sin equipo: " + alone + " frente a " + FallenSmith.healthFor(dev.forja.difficulty.Ladder.current()));
+		smith.invulnerableTime = 0;
+		float before = smith.getHealth();
+		smith.hurtServer(level, level.damageSources().magic(), 10.0F);
+		float plain = before - smith.getHealth();
+		smith.setHealth(smith.getMaxHealth() * 0.5F);
+		smith.scaleFor(2, 0.0);
+		helper.assertTrue(smith.fightHealth() >= alone * (1.0 + FallenSmith.HEALTH_PER_PLAYER) - 1.0,
+			"un segundo jugador lo hace mayor: " + alone + " → " + smith.fightHealth());
+		helper.assertTrue(Math.abs(smith.getHealth() / smith.getMaxHealth() - 0.5F) < 0.01F, "y conserva su parte de vida");
+		smith.scaleFor(4, 1.0);
+		helper.assertTrue(smith.getMaxHealth() <= FallenSmith.MOST_HEALTH && smith.bulk() > 1.0,
+			"con cuatro bien equipados pasa del techo: " + smith.getMaxHealth() + ", bulk " + smith.bulk());
+		smith.setHealth(smith.getMaxHealth());
+		smith.invulnerableTime = 0;
+		before = smith.getHealth();
+		smith.hurtServer(level, level.damageSources().magic(), 10.0F);
+		float bulky = before - smith.getHealth();
+		helper.assertTrue(Math.abs(bulky - plain / smith.bulk()) < 0.05F, "lo que pasa del techo lo pierde cada golpe: " + plain + " → " + bulky
+			+ " (bulk " + smith.bulk() + ")");
+		smith.stageForProbe(1);
+		int wait = smith.cooldown(FallenSmith.WAVE_COOLDOWN);
+		float wave = smith.moveDamage(FallenSmith.WAVE_DAMAGE);
+		double armour = smith.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
+		double speed = smith.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+		helper.assertFalse(smith.enraged(), "en la fase 1 no está furioso");
+		smith.stageForProbe(3);
+		helper.assertTrue(smith.enraged(), "en la 3 sí");
+		helper.assertTrue(smith.cooldown(FallenSmith.WAVE_COOLDOWN) < wait, "sus golpes vuelven antes");
+		helper.assertTrue(smith.moveDamage(FallenSmith.WAVE_DAMAGE) > wave, "y pegan más");
+		helper.assertTrue(smith.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR) > armour, "con más armadura");
+		helper.assertTrue(smith.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED) > speed, "y más rápido");
+		smith.discard();
+		helper.succeed();
 	}
 
 	/** Half and half: four constellations help him and four the players, and each phase's colours add to 100. */

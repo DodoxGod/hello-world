@@ -373,7 +373,7 @@ public class JefeGameTests {
 		});
 	}
 
-	/** One golem alone does not set it off with a blow or two; one pounding him for a tenth of his health does. */
+	/** One golem alone does not set it off with a blow or two; one pounding him for FallenSmith.RECLAIM_HEAVY_DAMAGE does. */
 	@GameTest(padding = 16, maxTicks = 100)
 	public void aGolemPoundingHimAloneIsReclaimed(GameTestHelper helper) {
 		Runnable restore = plainSpawns();
@@ -388,7 +388,7 @@ public class JefeGameTests {
 		});
 		helper.runAfterDelay(8, () -> {
 			early[0] = smith.isReclaiming();
-			// Ten of its hardest, at a third each: a tenth of him and a little more.
+			// Ten of its hardest, at a third each: RECLAIM_HEAVY_DAMAGE and a little more.
 			for (int blow = 0; blow < 10; blow++) {
 				smith.invulnerableTime = 0;
 				smith.hurtServer(level, level.damageSources().mobAttack(golem), 10.0F);

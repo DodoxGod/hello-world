@@ -224,10 +224,39 @@ public final class Report {
 		List<String> kits = new ArrayList<>();
 		for (SmithFight.Kit kit : SmithFight.Kit.values()) {
 			SmithFight.Gear gear = fight.gear.get(kit);
-			kits.add("**" + kit.name().toLowerCase(Locale.ROOT) + "**: " + kit.label + " (" + gear.weapon.type.id() + ", equipo "
+			kits.add("**" + kit.name().toLowerCase(Locale.ROOT) + "**" + (kit == SmithFight.Kit.ESTRELLA ? " (la referencia)" : "") + ": "
+				+ kit.label + " (" + gear.weapon.type.id() + ", equipo "
 				+ f(gear.score, 2) + ", vida " + f(gear.maxHealth, 0) + ")");
 		}
-		this.line("Los equipos: " + String.join("; ", kits) + ".");
+		this.line("Los equipos (todos con herrero de nivel 10, armadura de referencia con Maestría 10, y la puntuación de equipo de "
+			+ "`GearScore` que ve el jefe): " + String.join("; ", kits) + ".");
+		this.line("");
+		this.line("### Sus números ahora");
+		this.line("");
+		this.line("Vida de base " + f(dev.forja.entity.FallenSmith.HEALTH, 0) + " (antes 320), por el nivel, +"
+			+ pct(dev.forja.entity.FallenSmith.HEALTH_PER_PLAYER) + " por cada jugador de más que haya estado en la pelea y +"
+			+ pct(dev.forja.entity.FallenSmith.GEAR_HEALTH_PER_TIER) + " y +" + f(dev.forja.entity.FallenSmith.GEAR_ARMOR_PER_TIER, 1)
+			+ " de armadura por tramo de equipo (0 a 3) de quienes le pelean, como cualquier monstruo (`Scaling`, que da +"
+			+ pct(cfg.gearHealthPerTier) + "). Pasado el techo de vida del juego (" + f(dev.forja.entity.FallenSmith.MOST_HEALTH, 0)
+			+ "), lo que sobra se lo quita a cada golpe (`bulk`). Por fase (1 / 2 / 3): armadura +"
+			+ join(dev.forja.entity.FallenSmith.STAGE_ARMOR) + ", dureza +" + join(dev.forja.entity.FallenSmith.STAGE_TOUGHNESS)
+			+ ", daño de los golpes avisados ×" + join(dev.forja.entity.FallenSmith.STAGE_DAMAGE) + " y esperas ×"
+			+ join(dev.forja.entity.FallenSmith.STAGE_COOLDOWN) + " (los avisos no cambian). Furia bajo un tercio: +"
+			+ pct(dev.forja.entity.FallenSmith.ENRAGE_SPEED) + " de velocidad y +" + pct(dev.forja.entity.FallenSmith.ENRAGE_DAMAGE)
+			+ " a su golpe normal. Segunda oleada de aprendices: +" + pct(dev.forja.entity.FallenSmith.WAVE_HEALTH[1]) + " de vida y +"
+			+ f(dev.forja.entity.FallenSmith.SECOND_WAVE_ARMOR, 0) + " de armadura. Golpes avisados de base: revés "
+			+ f(dev.forja.entity.FallenSmith.STRIKE_DAMAGE, 0) + " (antes 7), onda " + f(dev.forja.entity.FallenSmith.WAVE_DAMAGE, 0)
+			+ " (antes 8), garfio " + f(dev.forja.entity.FallenSmith.HOOK_DAMAGE, 0) + " (antes 4), estrellas "
+			+ f(dev.forja.entity.FallenSmith.STARFALL_DAMAGE, 0) + " (antes 9). Encima, el daño de cada nivel a todos los monstruos "
+			+ "(`Ladder`) y el de su tramo de equipo (`GearScore.damageFactor`).");
+		this.line("");
+		this.table("Nivel", "Vida de uno solo sin equipo", "Daño avisado", "Esperas", "Brasas del Reforjado (uno solo)", "Guardianes al reforjarse");
+		for (dev.forja.difficulty.Ladder level : SmithFight.LEVELS) {
+			dev.forja.entity.FallenSmith.Grade grade = dev.forja.entity.FallenSmith.grade(level);
+			// The level's own figures, whatever preset the tests force: what a world on that level gets.
+			this.row(level.name().toLowerCase(Locale.ROOT), String.valueOf(Math.round(dev.forja.entity.FallenSmith.HEALTH * grade.health())),
+				"×" + f(grade.moveDamage(), 2), "×" + f(grade.cooldown(), 2), String.valueOf(grade.embers()), String.valueOf(grade.keepers()));
+		}
 		this.line("");
 		this.line("### La referencia, sola: antes y ahora");
 		this.line("");
@@ -303,9 +332,30 @@ public final class Report {
 			}
 		}
 		this.line("");
+		SmithFight.Row hard = fight.row(dev.forja.difficulty.Ladder.DIFICIL, 1, SmithFight.Kit.ESTRELLA);
 		this.line("El tope por golpe del jefe (`hitCapBoss`) es el " + pct(cfg.hitCapBoss) + " de su vida por golpe normal de un jugador "
-			+ "(los remates y los golpes al aturdido lo pasan).");
+			+ "(los remates y los golpes al aturdido lo pasan). Con su vida de ahora recorta el " + pct(hard.capped) + " de los golpes de la "
+			+ "referencia en Difícil: no es lo que marca el ritmo de la pelea, sino la red contra un golpe suelto enorme, y se queda como "
+			+ "estaba. Un golpe de algo que no es un jugador le sigue haciendo un " + pct(cfg.jefeDanoAjeno) + ", y La forja reclama sigue "
+			+ "saltando con " + f(dev.forja.entity.FallenSmith.RECLAIM_HEAVY_DAMAGE, 0) + " de vida intentada por los grandes (lo que era "
+			+ "una décima parte de sus 320).");
 		this.line("");
+	}
+
+	private static String join(double[] values) {
+		List<String> parts = new ArrayList<>();
+		for (double value : values) {
+			parts.add(f(value, value == Math.rint(value) ? 0 : 2));
+		}
+		return String.join(" / ", parts);
+	}
+
+	private static String join(float[] values) {
+		double[] wide = new double[values.length];
+		for (int i = 0; i < values.length; i++) {
+			wide[i] = values[i];
+		}
+		return join(wide);
 	}
 
 	private static String minutes(double seconds) {

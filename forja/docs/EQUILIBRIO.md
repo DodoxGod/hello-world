@@ -47,10 +47,85 @@ Los grandes, al 100 % (segundos para matar; «> 120» si no cae en dos minutos):
 | Arma | Warden | Herrero Caído |
 |---|---|---|
 | báculo con Enjambre, sin clase | > 120 | > 120 |
-| báculo con Enjambre, Mago | 5,9 | 21,9 |
+| báculo con Enjambre, Mago | 5,9 | 40,3 |
 | grimorio, sin clase | > 120 | > 120 |
-| grimorio, Mago | 17,7 | 39,4 |
-| guanteletes (la más rápida cuerpo a cuerpo) | 5,9 | 19,9 |
+| grimorio, Mago | 17,7 | 53,6 |
+| guanteletes (la más rápida cuerpo a cuerpo) | 5,9 | 25,0 |
+
+## Herrero Caído
+
+Andy, 2026-09-30: «parece que puedes llegar a estar muy fuerte, o el Herrero Caído es muy débil, hazlo más fuerte». Objetivo: un jugador bien equipado de final de juego, solo, tarda de 3 a 5 minutos de pelea de verdad en Difícil (más en Extremo, menos en Normal y Fácil), y el jefe puede matar a un jugador equipado que se descuida. En Pacífico no hay pelea: un mundo pacífico no guarda ningún monstruo, tampoco a él. Lo mide `SmithFight` y lo exige `BalanceGameTests.herreroEnSuSitio`.
+
+**Qué se mide en el jefe de verdad** (vestido con su mangual y su placa, del tamaño que le da la pelea por nivel, jugadores y equipo, en cada una de sus tres fases y aturdido), por el mismo camino de daño del juego: lo que le quita un golpe de cada arma, lo que les quitan a sus aprendices y a los yunques andantes, y lo que quita cada golpe suyo (el normal, el revés, la onda, el garfio y las estrellas) a un jugador con la armadura de referencia (placa de obsidiacero sobre cuero, Protección al 100 % en las cuatro piezas y Vitalidad en la pechera), recién llegado y con la presión de una pelea larga.
+
+**Qué es modelo** (los números están en `SmithFight`): el daño por segundo de un jugador contra cada fase es la pelea tick a tick de este informe durante 120 s; el tiempo que pasa pegándole es lo que queda tras esquivar cada movimiento suyo cada vez que vuelve (onda 1,5 s, revés 1,0 s, estrellas 1,0 s, garfio desde lejos 1,5 s; un 15 % de moverse y seguirle cuerpo a cuerpo y un 10 % desde lejos; los eventos del cielo de su lado); las pausas son las de la pelea (levantarse, las dos llamadas de aprendices, el aturdido); el Reforjado cuesta 6 s por brasa más la última colada; los aprendices de las dos oleadas (y los guardianes de las brasas) y los seis yunques se matan uno tras otro con la misma arma, pegándoles el 80 % del tiempo. Con dos jugadores se reparten el daño, los aprendices y las brasas; el que no persigue solo esquiva la onda y el cielo. No cuenta la regeneración, las pociones ni las constelaciones que le hacen daño.
+
+Los equipos (todos con herrero de nivel 10, armadura de referencia con Maestría 10, y la puntuación de equipo de `GearScore` que ve el jefe): **cc**: la mejor arma cuerpo a cuerpo al 100 % con Maestría 10, sin clase (guanteletes, equipo 0,77, vida 26); **guerrero**: la misma, Guerrero de nivel 50 (guanteletes, equipo 0,91, vida 36); **estrella** (la referencia): la misma estrellada, Guerrero de nivel 50, armadura estrellada (guanteletes, equipo 0,95, vida 36); **mago**: báculo con Enjambre estrellado, Mago de nivel 50, armadura estrellada (baculo, equipo 0,92, vida 32).
+
+### Sus números ahora
+
+Vida de base 400 (antes 320), por el nivel, +100 % por cada jugador de más que haya estado en la pelea y +25 % y +1,5 de armadura por tramo de equipo (0 a 3) de quienes le pelean, como cualquier monstruo (`Scaling`, que da +20 %). Pasado el techo de vida del juego (1024), lo que sobra se lo quita a cada golpe (`bulk`). Por fase (1 / 2 / 3): armadura +0 / 3 / 6, dureza +0 / 2 / 4, daño de los golpes avisados ×1 / 1,20 / 1,40 y esperas ×1 / 0,85 / 0,70 (los avisos no cambian). Furia bajo un tercio: +15 % de velocidad y +20 % a su golpe normal. Segunda oleada de aprendices: +40 % de vida y +3 de armadura. Golpes avisados de base: revés 9 (antes 7), onda 10 (antes 8), garfio 5 (antes 4), estrellas 10 (antes 9). Encima, el daño de cada nivel a todos los monstruos (`Ladder`) y el de su tramo de equipo (`GearScore.damageFactor`).
+
+| Nivel | Vida de uno solo sin equipo | Daño avisado | Esperas | Brasas del Reforjado (uno solo) | Guardianes al reforjarse |
+|---|---|---|---|---|---|
+| facil | 360 | ×0,85 | ×1,15 | 3 | 0 |
+| normal | 400 | ×1,00 | ×1,00 | 3 | 0 |
+| dificil | 520 | ×1,15 | ×0,90 | 4 | 2 |
+| extremo | 640 | ×1,30 | ×0,80 | 4 | 3 |
+
+### La referencia, sola: antes y ahora
+
+| Nivel | Objetivo | Antes | Ahora | Vida del jefe antes → ahora | Descuidado aguanta (fase 1 / 3), antes → ahora | Atento aguanta (fase 1 / 3) | Golpe más grande: recién llegado / con presión |
+|---|---|---|---|---|---|---|---|
+| facil | 1:30 – 3:00 | 1:31 | **1:52** | 256 → 360 | 23 / 13 s → 23 / 10 s | 48 s / 42 s | 11 % (estrellas, fase 3) / 11 % (estrellas, fase 3) |
+| normal | 2:00 – 4:00 | 2:29 | **3:17** | 512 → 700 | 10 / 7 s → 9 / 5 s | 24 s / 19 s | 14 % (golpe, fase 3) / 15 % (golpe, fase 3) |
+| dificil | 3:00 – 5:00 | 2:29 | **4:25** | 512 → 910 | 10 / 7 s → 9 / 4 s | 24 s / 18 s | 15 % (estrellas, fase 3) / 15 % (golpe, fase 3) |
+| extremo | 4:00 – 7:00 | 3:07 | **5:41** | 666 → 1120 | 8 / 5 s → 7 / 3 s | 20 s / 15 s | 17 % (estrellas, fase 3) / 18 % (golpe, fase 3) |
+
+### Tiempo de pelea por equipo (minutos: solo / dos jugadores; entre paréntesis, antes)
+
+| Equipo | facil | normal | dificil | extremo |
+|---|---|---|---|---|
+| cc | 2:09 / 1:40 (1:43 / 0:59) | 3:57 / 3:04 (2:56 / 1:29) | 5:15 / 4:04 (2:56 / 1:29) | 6:50 / 5:11 (3:45 / 1:48) |
+| guerrero | 1:57 / 1:31 (1:35 / 0:55) | 3:29 / 2:43 (2:38 / 1:21) | 4:41 / 3:37 (2:38 / 1:21) | 6:02 / 4:35 (3:19 / 1:36) |
+| estrella | 1:52 / 1:27 (1:31 / 0:54) | 3:17 / 2:34 (2:29 / 1:18) | 4:25 / 3:25 (2:29 / 1:18) | 5:41 / 4:20 (3:07 / 1:31) |
+| mago | 2:17 / 1:46 (1:46 / 1:02) | 4:05 / 3:09 (3:00 / 1:33) | 5:18 / 4:04 (3:00 / 1:33) | 6:35 / 5:03 (3:45 / 1:50) |
+
+### De qué está hecha la pelea de la referencia, sola
+
+*Sin parar*: lo que tardaría pegándole sin esquivar nada, sin pausas ni aprendices (la cuenta de antes, contra un maniquí). *Tope*: golpes del jugador que el tope por golpe recorta en la fase 1.
+
+| Nivel | Vida | Daño/s por fase (1 / 2 / 3 / aturdido) | Tiempo pegándole por fase | Sin parar | Pegándole | Pausas | Reforjado | Aprendices y yunques | Total | Tope |
+|---|---|---|---|---|---|---|---|---|---|---|
+| facil | 360 | 13,6 / 11,2 / 11,4 / 17,8 | 50 % / 46 % / 30 % | 30 s | 64 s | 12 s | 21 s | 15 s | **112 s** | 0 % |
+| normal | 700 | 11,9 / 11,2 / 11,4 / 17,8 | 47 % / 42 % / 30 % | 61 s | 141 s | 12 s | 21 s | 23 s | **197 s** | 0 % |
+| dificil | 910 | 11,6 / 11,2 / 11,4 / 17,8 | 44 % / 38 % / 30 % | 80 s | 199 s | 12 s | 27 s | 28 s | **265 s** | 0 % |
+| extremo | 1120 | 10,5 / 10,2 / 10,3 / 16,1 | 40 % / 34 % / 30 % | 99 s | 267 s | 12 s | 27 s | 35 s | **341 s** | 0 % |
+
+### Lo que aguanta un jugador delante de él, solo
+
+Segundos hasta morir con su vida entera. *Descuidado*: se queda delante y se lo come todo (su golpe cada 1,4 s, el revés, la onda, el garfio y las estrellas cada vez que vuelven, y 2 aprendices pegándole desde la fase 2), con la presión de una pelea larga. *Atento*: esquiva lo avisado y se come la mitad de sus golpes normales y el garfio (el mago, solo los golpes); ∞ si nada le alcanza. Golpe más grande: lo más que quita un solo golpe suyo, en cualquier fase, a ese jugador de su vida, recién llegado y con la armadura gastada por la presión de una pelea larga (la prueba exige menos del 50 % y del 80 %).
+
+| Equipo | Nivel | Vida del jugador | Descuidado (fase 1 / 2 / 3) | Atento (fase 1 / 2 / 3) | Golpe más grande: recién llegado / con presión |
+|---|---|---|---|---|---|
+| cc | facil | 26 | 13 / 10 / 6 s | 27 s / 28 s / 24 s | 16 % (estrellas, fase 3) / 16 % (estrellas, fase 3) |
+| cc | normal | 26 | 6 / 4 / 3 s | 14 s / 13 s / 11 s | 23 % (golpe, fase 3) / 26 % (golpe, fase 3) |
+| cc | dificil | 26 | 5 / 4 / 3 s | 15 s / 13 s / 11 s | 23 % (golpe, fase 3) / 26 % (golpe, fase 3) |
+| cc | extremo | 26 | 4 / 3 / 2 s | 12 s / 10 s / 8 s | 29 % (golpe, fase 3) / 32 % (golpe, fase 3) |
+| guerrero | facil | 36 | 21 / 16 / 9 s | 45 s / 46 s / 39 s | 11 % (estrellas, fase 3) / 11 % (estrellas, fase 3) |
+| guerrero | normal | 36 | 9 / 6 / 4 s | 23 s / 21 s / 17 s | 15 % (golpe, fase 3) / 16 % (golpe, fase 3) |
+| guerrero | dificil | 36 | 8 / 6 / 4 s | 22 s / 20 s / 16 s | 16 % (golpe, fase 3) / 17 % (golpe, fase 3) |
+| guerrero | extremo | 36 | 7 / 5 / 3 s | 18 s / 16 s / 13 s | 18 % (golpe, fase 3) / 20 % (golpe, fase 3) |
+| estrella | facil | 36 | 23 / 17 / 10 s | 48 s / 49 s / 42 s | 11 % (estrellas, fase 3) / 11 % (estrellas, fase 3) |
+| estrella | normal | 36 | 9 / 7 / 5 s | 24 s / 23 s / 19 s | 14 % (golpe, fase 3) / 15 % (golpe, fase 3) |
+| estrella | dificil | 36 | 9 / 7 / 4 s | 24 s / 22 s / 18 s | 15 % (estrellas, fase 3) / 15 % (golpe, fase 3) |
+| estrella | extremo | 36 | 7 / 5 / 3 s | 20 s / 18 s / 15 s | 17 % (estrellas, fase 3) / 18 % (golpe, fase 3) |
+| mago | facil | 32 | 20 / 15 / 10 s | 42 s / 46 s / 39 s | 7 % (golpe, fase 3) / 7 % (estrellas, fase 3) |
+| mago | normal | 32 | 8 / 6 / 4 s | 21 s / 21 s / 18 s | 16 % (golpe, fase 3) / 17 % (golpe, fase 3) |
+| mago | dificil | 32 | 8 / 6 / 4 s | 20 s / 20 s / 17 s | 16 % (golpe, fase 3) / 18 % (golpe, fase 3) |
+| mago | extremo | 32 | 6 / 4 / 3 s | 16 s / 16 s / 14 s | 21 % (golpe, fase 3) / 23 % (golpe, fase 3) |
+
+El tope por golpe del jefe (`hitCapBoss`) es el 8 % de su vida por golpe normal de un jugador (los remates y los golpes al aturdido lo pasan). Con su vida de ahora recorta el 0 % de los golpes de la referencia en Difícil: no es lo que marca el ritmo de la pelea, sino la red contra un golpe suelto enorme, y se queda como estaba. Un golpe de algo que no es un jugador le sigue haciendo un 33 %, y La forja reclama sigue saltando con 32 de vida intentada por los grandes (lo que era una décima parte de sus 320).
 
 ## Las siete sospechas, medidas
 
@@ -222,7 +297,7 @@ En negrita el tipo más rápido contra ese mob. "—": no se le puede hacer dañ
 | enderman | 0,45 | 0,50 | 0,45 | 0,40 | 0,90 | 0,60 | 0,45 | 0,50 | **0,29** | 0,45 | 0,75 | 0,89 |
 | blaze | 0,35 | 0,25 | 0,45 | 0,40 | 0,45 | 0,50 | 0,45 | 0,42 | **0,20** | 0,45 | 0,40 | 0,80 |
 | piglin_brute | 0,70 | 0,50 | 0,54 | 0,80 | 1,00 | 1,00 | 0,90 | 0,60 | **0,40** | 0,90 | 0,83 | 1,60 |
-| herrero_caido *(Forja)* | 31,65 | 23,42 | 32,13 | 31,07 | 43,96 | 43,91 | 33,63 | 35,77 | **19,84** | 32,17 | > 120 | > 120 |
+| herrero_caido *(Forja)* | 39,86 | 29,31 | 40,38 | 39,08 | 55,35 | 55,37 | 42,31 | 45,24 | **25,05** | 40,44 | > 120 | > 120 |
 | automata_de_forja *(Forja)* | 2,40 | 1,91 | 2,25 | 2,25 | 4,00 | 1,79 | 2,63 | 1,38 | **0,80** | 2,25 | 1,40 | 2,40 |
 | coraza_vacia *(Forja)* | 4,90 | 4,51 | 4,50 | 4,80 | 4,98 | **1,75** | 4,50 | 3,50 | 2,35 | 4,52 | 31,80 | 5,15 |
 | pavesa *(Forja)* | 0,12 | 0,08 | 0,15 | 0,13 | 0,15 | 0,17 | 0,15 | 0,17 | **0,02** | 0,15 | 0,30 | 0,65 |
@@ -262,7 +337,7 @@ En negrita el tipo más rápido contra ese mob. "—": no se le puede hacer dañ
 | enderman | 0,90 | 1,08 | 1,00 | 1,00 | 1,50 | 1,00 | 1,00 | 1,00 | **0,89** | 1,00 | 1,50 | 2,00 |
 | blaze | **0,40** | 0,59 | 0,50 | 0,50 | 0,70 | 0,50 | 0,50 | 0,50 | 0,43 | 0,50 | 0,80 | 1,00 |
 | piglin_brute | 1,35 | 1,38 | **1,00** | **1,00** | 1,65 | **1,00** | **1,00** | **1,00** | 1,14 | **1,00** | 2,00 | 2,00 |
-| herrero_caido *(Forja)* | 56,50 | 53,66 | 49,50 | 60,80 | 83,50 | 83,50 | 56,65 | 72,10 | **49,36** | 59,98 | > 120 | > 120 |
+| herrero_caido *(Forja)* | 71,50 | 67,20 | 62,50 | 76,70 | 104,50 | 104,50 | 71,50 | 90,97 | **61,94** | 75,63 | > 120 | > 120 |
 | automata_de_forja *(Forja)* | 5,00 | 5,41 | 3,50 | 4,04 | 9,10 | 2,50 | 6,00 | 2,40 | **2,25** | 4,34 | 3,00 | 4,00 |
 | coraza_vacia *(Forja)* | 6,00 | 6,40 | 5,50 | 6,00 | 6,60 | 4,50 | 5,40 | 3,48 | **1,79** | 6,00 | 32,25 | 7,45 |
 | pavesa *(Forja)* | 0,40 | 0,23 | 0,50 | 0,35 | 0,50 | 0,50 | 0,50 | 0,35 | **0,18** | 0,35 | 0,30 | 0,80 |
@@ -302,7 +377,7 @@ En negrita el tipo más rápido contra ese mob. "—": no se le puede hacer dañ
 | enderman | 1,50 | 1,50 | **1,00** | 1,30 | 2,50 | 1,50 | 1,50 | 1,40 | 1,25 | 1,50 | 2,00 | 2,00 |
 | blaze | **0,50** | 0,60 | **0,50** | **0,50** | 1,00 | 0,85 | **0,50** | **0,50** | **0,50** | **0,50** | 1,00 | 1,00 |
 | piglin_brute | **1,50** | 2,00 | **1,50** | **1,50** | 2,50 | 1,95 | 1,60 | **1,50** | **1,50** | **1,50** | 2,50 | 3,00 |
-| herrero_caido *(Forja)* | 61,00 | 67,20 | 72,00 | 68,25 | 97,00 | 96,00 | 67,80 | 77,50 | **52,75** | 73,45 | > 120 | > 120 |
+| herrero_caido *(Forja)* | 76,50 | 84,30 | 90,75 | 85,80 | > 120 | > 120 | 85,20 | 97,50 | **66,25** | 92,30 | > 120 | > 120 |
 | automata_de_forja *(Forja)* | 6,00 | 7,50 | 6,00 | 5,85 | 12,35 | 2,50 | 7,15 | **2,40** | 3,50 | 6,50 | 4,00 | 4,95 |
 | coraza_vacia *(Forja)* | 6,50 | 7,00 | 6,60 | 6,60 | 7,50 | **1,50** | 6,00 | 4,50 | **1,50** | 2,50 | 47,20 | 29,50 |
 | pavesa *(Forja)* | 0,50 | 0,30 | 0,50 | 0,50 | 0,50 | 0,50 | 0,50 | 0,50 | **0,25** | 0,50 | 0,50 | 1,00 |
@@ -330,9 +405,9 @@ Para cada pelea de 2 s o más al 100 %, el TTK simulado dividido por la cuenta s
 | hacha | 5 | ×0,80 | ×0,62 – ×1,80 | coraza_vacia (4,8 s simulado, 2,7 s estimado) |
 | lanza | 6 | ×0,83 | ×0,62 – ×1,71 | coraza_vacia (5,0 s simulado, 2,9 s estimado) |
 | mazo | 3 | ×0,42 | ×0,25 – ×0,97 | guardian_de_cuno (2,5 s simulado, 10,2 s estimado) |
-| tridente | 4 | ×0,95 | ×0,37 – ×2,09 | automata_de_forja (2,6 s simulado, 7,0 s estimado) |
-| mangual | 4 | ×1,01 | ×0,30 – ×2,25 | guardian_de_cuno (2,5 s simulado, 8,4 s estimado) |
-| guanteletes | 2 | ×1,31 | ×1,01 – ×1,31 | coraza_vacia (2,4 s simulado, 1,8 s estimado) |
+| tridente | 4 | ×0,96 | ×0,37 – ×2,09 | automata_de_forja (2,6 s simulado, 7,0 s estimado) |
+| mangual | 4 | ×0,97 | ×0,30 – ×2,25 | guardian_de_cuno (2,5 s simulado, 8,4 s estimado) |
+| guanteletes | 2 | ×1,31 | ×1,02 – ×1,31 | coraza_vacia (2,4 s simulado, 1,8 s estimado) |
 | guadana | 6 | ×0,79 | ×0,62 – ×1,60 | coraza_vacia (4,5 s simulado, 2,8 s estimado) |
 | baculo | 2 | ×1,73 | ×0,09 – ×1,73 | guardian_de_cuno (2,8 s simulado, 32,9 s estimado) |
 | grimorio | 4 | ×0,22 | ×0,12 – ×0,49 | percutor (2,4 s simulado, 19,8 s estimado) |
@@ -346,13 +421,13 @@ Cada preset multiplica la vida de los monstruos, el tope por golpe y la barra de
 | espada | 0,57 | ×0,54 | ×1,00 | ×1,21 | ×1,46 |
 | daga | 0,44 | ×0,63 | ×1,00 | ×1,21 | ×1,67 |
 | espadon | 0,65 | ×0,51 | ×1,00 | ×1,23 | ×1,38 |
-| hacha | 0,60 | ×0,54 | ×1,00 | ×1,20 | ×1,40 |
-| lanza | 0,84 | ×0,69 | ×1,00 | ×1,21 | ×1,67 |
+| hacha | 0,61 | ×0,54 | ×1,00 | ×1,20 | ×1,40 |
+| lanza | 0,85 | ×0,69 | ×1,00 | ×1,21 | ×1,67 |
 | mazo | 0,61 | ×0,64 | ×1,00 | ×1,38 | ×1,60 |
-| tridente | 0,67 | ×0,59 | ×1,00 | ×1,22 | ×1,50 |
-| mangual | 0,56 | ×0,58 | ×1,00 | ×1,35 | ×1,54 |
+| tridente | 0,68 | ×0,59 | ×1,00 | ×1,22 | ×1,50 |
+| mangual | 0,57 | ×0,58 | ×1,00 | ×1,35 | ×1,54 |
 | guanteletes | 0,24 | ×0,68 | ×1,00 | ×1,31 | ×1,75 |
-| guadana | 0,66 | ×0,53 | ×1,00 | ×1,19 | ×1,38 |
+| guadana | 0,67 | ×0,53 | ×1,00 | ×1,19 | ×1,38 |
 | baculo | 0,69 | ×0,76 | ×1,00 | ×1,21 | ×1,76 |
 | grimorio | 1,21 | ×0,64 | ×1,00 | ×1,22 | ×1,45 |
 
@@ -510,7 +585,7 @@ Vida y tope por golpe en HERRERO, sin veteranos ni élites (un veterano es ×1,5
 | enderman | 40 | 18,0 | 29 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 | se teletransporta ante proyectiles; esquiva el 34 % de los golpes teletransportándose (7 s sin esquivar tras hacerlo), no modelado |
 | blaze | 20 | 9,0 | 17 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 |  |
 | piglin_brute | 50 | 22,5 | 35 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 / 1,25 | 1,00 |  |
-| herrero_caido *(Forja)* | 320 | 25,6 | 197 | 0,30 / 0,75 | 0,31 / 0,78 | 0,32 / 0,79 | 0,50 | jefe: guardia al 50 %, tope por golpe del 8 %, postura sólo tras sus golpes pesados, fases de reforja invulnerables |
+| herrero_caido *(Forja)* | 400 | 32,0 | 245 | 0,30 / 0,75 | 0,31 / 0,78 | 0,32 / 0,79 | 0,50 | jefe: guardia al 50 %, tope por golpe del 8 %, postura sólo tras sus golpes pesados, fases de reforja invulnerables; aquí sin vestir y con su vida de base: la pelea de verdad está en «Herrero Caído» |
 | automata_de_forja *(Forja)* | 70 | 31,5 | 85 | 0,52 / 0,65 | 0,76 / 0,95 | 0,49 / 0,62 | 1,10 |  |
 | coraza_vacia *(Forja)* | 45 | 20,3 | 32 | 0,48 / 0,60 | 0,95 / 1,18 | 0,67 / 0,83 | 0,45 | se hace el muerto una vez al 30 % (3 s invulnerable, modelado); lo no forjado le hace un 35 % |
 | pavesa *(Forja)* | 12 | 5,4 | 12 | 1,19 / 1,49 | 1,21 / 1,51 | 1,21 / 1,52 | 1,00 |  |

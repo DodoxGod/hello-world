@@ -13,6 +13,8 @@ import dev.forja.test.balance.Build;
 import dev.forja.test.balance.Fight;
 import dev.forja.test.balance.Probe;
 import dev.forja.test.balance.Report;
+import dev.forja.test.balance.SmithFight;
+import dev.forja.difficulty.Ladder;
 import dev.forja.test.balance.Target;
 import dev.forja.upgrade.CombatUpgrades;
 import dev.forja.upgrade.Frenzy;
@@ -89,7 +91,7 @@ public class BalanceGameTests {
 	 * The guard: fails only on what is clearly wrong and new. A weapon type that another beats against
 	 * every mob at 0, 50 and 100 % (2 % or more, everywhere); a plain material of a higher tier worse in every
 	 * stat of a part than a plain one of a lower tier; a weapon type that cannot kill a mob it can hurt within
-	 * two minutes, bare.
+	 * two minutes, bare (a boss aside: herreroEnSuSitio holds him to a fight of minutes).
 	 */
 	@GameTest(environment = ENVIRONMENT, maxTicks = 40)
 	public void equilibrioSinDominados(GameTestHelper helper) {
@@ -129,7 +131,8 @@ public class BalanceGameTests {
 						continue;
 					}
 				}
-				if (target.hurtable() && result != null && result.killedShare < 0.999) {
+				// A boss is a fight of minutes on purpose (Andy, 2026-09-30): herreroEnSuSitio holds him to his own window.
+				if (target.hurtable() && result != null && result.killedShare < 0.999 && !target.boss) {
 					problems.add(type.id() + " sin mejoras no mata a " + target.id + " en " + (Analysis.MAX_TICKS / 20) + " s"
 						+ (magic ? " ni con el maná de un Mago" : ""));
 				}
@@ -194,6 +197,59 @@ public class BalanceGameTests {
 							+ " s, antes que la más rápida cuerpo a cuerpo (" + fmt(melee[foe]) + " s)");
 					}
 				}
+			}
+		}
+		helper.assertTrue(problems.isEmpty(), String.join("; ", problems));
+		helper.succeed();
+	}
+
+	/**
+	 * Andy, 2026-09-30: "parece que puedes llegar a estar muy fuerte, o el Herrero Caído es muy débil, hazlo más fuerte".
+	 * His fight, measured on the real boss (balance/SmithFight), on every level with a fight:
+	 * <ul>
+	 *   <li>the reference endgame kit (the quickest melee weapon at 100 %, starred, a Guerrero at level 50, starred
+	 *       armour), alone, beats him within the level's window (SmithFight.WINDOW: 3 to 5 minutes in Difícil);</li>
+	 *   <li>no other kit, alone, beats him in less than SmithFight.FASTEST_SHARE of the window's start;</li>
+	 *   <li>two players beat him sooner than one, but not in half the time: he grows with them;</li>
+	 *   <li>no blow of his takes half of a geared player's health, whichever stage, nor four fifths of it once the pressure of a
+	 *       long fight has worn their armour down: nothing unavoidable kills outright;</li>
+	 *   <li>and from Difícil on, a careless geared player standing in front of him dies within SmithFight.CARELESS_MOST
+	 *       seconds even in his first stage.</li>
+	 * </ul>
+	 */
+	@GameTest(environment = ENVIRONMENT, maxTicks = 40)
+	public void herreroEnSuSitio(GameTestHelper helper) {
+		Report written = report(helper);
+		SmithFight fight = written.smith;
+		List<String> problems = new java.util.ArrayList<>();
+		helper.assertTrue(fight != null && !fight.rows.isEmpty(), "la pelea del Herrero no se midió");
+		for (Ladder level : SmithFight.LEVELS) {
+			String at = " en " + level.name().toLowerCase(java.util.Locale.ROOT);
+			double[] window = SmithFight.WINDOW.get(level);
+			SmithFight.Row solo = fight.row(level, 1, SmithFight.Kit.ESTRELLA);
+			if (solo.seconds < window[0] || solo.seconds > window[1]) {
+				problems.add("la referencia sola tarda " + fmt(solo.seconds) + " s" + at + ", fuera de " + fmt(window[0]) + "–" + fmt(window[1]) + " s");
+			}
+			SmithFight.Row duo = fight.row(level, 2, SmithFight.Kit.ESTRELLA);
+			if (duo.seconds >= solo.seconds || duo.seconds < solo.seconds * 0.5) {
+				problems.add("dos jugadores tardan " + fmt(duo.seconds) + " s" + at + " frente a " + fmt(solo.seconds) + " s solo");
+			}
+			for (SmithFight.Kit kit : SmithFight.Kit.values()) {
+				SmithFight.Row row = fight.row(level, 1, kit);
+				if (row.seconds < window[0] * SmithFight.FASTEST_SHARE) {
+					problems.add(kit.name().toLowerCase(java.util.Locale.ROOT) + " lo mata en " + fmt(row.seconds) + " s" + at);
+				}
+				if (row.worst >= SmithFight.MOST_OF_ONE_HIT) {
+					problems.add("un golpe suyo quita el " + fmt(row.worst * 100.0) + " % de la vida a " + kit.name().toLowerCase(java.util.Locale.ROOT)
+						+ at + ": " + row.worstMove);
+				}
+				if (row.worstPressed >= SmithFight.MOST_UNDER_PRESSURE) {
+					problems.add("con la presión al máximo, un golpe suyo quita el " + fmt(row.worstPressed * 100.0) + " % de la vida a "
+						+ kit.name().toLowerCase(java.util.Locale.ROOT) + at + ": " + row.worstPressedMove);
+				}
+			}
+			if (level.ordinal() >= Ladder.DIFICIL.ordinal() && solo.careless[0] > SmithFight.CARELESS_MOST) {
+				problems.add("un jugador equipado que se descuida aguanta " + fmt(solo.careless[0]) + " s en la fase 1" + at);
 			}
 		}
 		helper.assertTrue(problems.isEmpty(), String.join("; ", problems));

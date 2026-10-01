@@ -323,7 +323,8 @@ public final class Probe {
 			return "inmune mientras le queden sellos en su sala";
 		}
 		if (mob instanceof dev.forja.entity.FallenSmith) {
-			return "jefe: guardia al 50 %, tope por golpe del 8 %, postura sólo tras sus golpes pesados, fases de reforja invulnerables";
+			return "jefe: guardia al 50 %, tope por golpe del 8 %, postura sólo tras sus golpes pesados, fases de reforja invulnerables; "
+				+ "aquí sin vestir y con su vida de base: la pelea de verdad está en «Herrero Caído»";
 		}
 		if (mob instanceof dev.forja.entity.LivingSlag) {
 			return "los cortes de 3 o más lo parten en trozos que hay que matar aparte";

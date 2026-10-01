@@ -808,6 +808,26 @@ BOOKS.update({
         "Only the pour of one of the arena's braziers puts out his embers: tip it with a blow or an arrow, and it pours on "
         "the ember in front of it. Each brazier tips once; it is refilled with %s star irons. While he reforges, his "
         "hammer calls down meteorites. When the last ember goes out he is stunned for a few seconds and takes more damage."),
+    "gui.forja.libros.cementerio.fuerza.titulo": ("Su fuerza", "His strength"),
+    "gui.forja.libros.cementerio.fuerza": (
+        "Cuánto aguanta depende del nivel: para uno solo y sin equipo, %s de vida en Fácil, %s en Normal, %s en Difícil y "
+        "%s en Extremo. Crece un %s %% por cada tramo de equipo de quien le pelea, como los demás monstruos, y otro tanto "
+        "entero por cada jugador de más; lo que pase de lo que el juego deja tener a una criatura se lo quita a cada golpe "
+        "que recibe. Cada fase le pone más armadura, golpes avisados más fuertes y esperas más cortas, pero los avisos duran "
+        "lo mismo. En Difícil y Extremo enciende una brasa más al reforjarse y saca %s guardianes (%s en Extremo).",
+        "How much he takes depends on the level: for one player with no gear, %s health on Easy, %s on Normal, %s on Hard "
+        "and %s on Extreme. He grows %s %% for every tier of gear of whoever fights him, like every other monster, and as "
+        "much again for every extra player; whatever goes past what the game lets a creature have is taken off every blow "
+        "he gets instead. Every stage gives him more armour, harder warned blows and shorter waits, but the warnings last "
+        "just as long. On Hard and Extreme he lights one more ember when he reforges and calls up %s keepers (%s on "
+        "Extreme)."),
+    "gui.forja.libros.cementerio.furia": (
+        "Bajo un tercio se **enfurece**: la forja de su pecho arde violeta hasta el final, es un %s %% más rápido, su golpe "
+        "normal pega un %s %% más y la lluvia de estrellas no para. Los aprendices de la segunda oleada salen con un %s %% más de "
+        "vida y más armadura.",
+        "Under a third he is **enraged**: the forge in his chest burns violet to the end, he is %s %% faster, his plain blow "
+        "hits %s %% harder and the star shower keeps coming. The apprentices of the second wave come up with %s %% more health "
+        "and more armour."),
     "gui.forja.libros.cementerio.constelaciones.titulo": ("Las constelaciones", "The constellations"),
     "gui.forja.libros.cementerio.constelaciones": (
         "Cada medio minuto una de las ocho constelaciones del cielo se enciende y actúa. Espada, Hacha, Escudo y Guadaña "

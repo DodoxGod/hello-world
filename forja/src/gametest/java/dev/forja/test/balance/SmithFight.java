@@ -120,9 +120,9 @@ public final class SmithFight {
 
 	/** What the players fight him with. */
 	public enum Kit {
-		CC("mejor arma cuerpo a cuerpo al 100 %, sin clase", null, false, false),
+		CC("la mejor arma cuerpo a cuerpo al 100 % con Maestría 10, sin clase", null, false, false),
 		GUERRERO("la misma, Guerrero de nivel 50", PlayerClass.GUERRERO, false, false),
-		ESTRELLA("la misma estrellada, Guerrero de nivel 50, armadura estrellada (referencia)", PlayerClass.GUERRERO, true, false),
+		ESTRELLA("la misma estrellada, Guerrero de nivel 50, armadura estrellada", PlayerClass.GUERRERO, true, false),
 		MAGO("báculo con Enjambre estrellado, Mago de nivel 50, armadura estrellada", PlayerClass.MAGO, true, true);
 
 		public final String label;
@@ -407,7 +407,7 @@ public final class SmithFight {
 		}
 		smith.sizedByHand = true;
 		smith.scaleFor(players, gear.score);
-		row.health = smith.getMaxHealth();
+		row.health = smith.fightHealth();
 
 		// What a blow of his kit takes off him in each stage, and stunned.
 		Target[] stages = new Target[4];
@@ -449,7 +449,8 @@ public final class SmithFight {
 		for (int i = 0; i < 3; i++) {
 			team[i] = row.uptime[i] + (players - 1) * free[i];
 		}
-		double health = row.health;
+		// What the blows have to take off: his health as the game holds it; the bulk past its ceiling is already in every blow measured.
+		double health = smith.getMaxHealth();
 		double stun = Math.min(health / 6.0, row.dps[3] * players * FallenSmith.STUN_TICKS / 20.0);
 		row.raw = (health / 3.0 / row.dps[0] + health / 6.0 / dps2Above + health / 6.0 / row.dps[1] + health / 3.0 / row.dps[2]) / players;
 		row.hitting = health / 3.0 / (row.dps[0] * team[0])
@@ -563,7 +564,9 @@ public final class SmithFight {
 		ApprenticeKits.equip(mob, role, archer ? 2 : 0, 5, random);
 		if (sturdier > 0.0) {
 			mob.getAttribute(Attributes.MAX_HEALTH).addPermanentModifier(new AttributeModifier(dev.forja.Forja.id("oleada"), sturdier,
-				AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
+				AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+			mob.getAttribute(Attributes.ARMOR).addPermanentModifier(new AttributeModifier(dev.forja.Forja.id("oleada"),
+				FallenSmith.SECOND_WAVE_ARMOR, AttributeModifier.Operation.ADD_VALUE));
 		}
 		this.sizedLikeScaling(mob, ladder, gear.score);
 		Target target = this.probe.measureEntity(mob, "aprendiz", "Aprendiz", true);
