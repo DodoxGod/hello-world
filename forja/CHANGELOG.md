@@ -1,5 +1,10 @@
 # Novedades
 
+## 2026-10-01 — Mestizaje en los atributos reales
+
+- La ficha y los componentes del equipo forjado comparten el cálculo final de piezas, mejoras, Maestría, don, calidad, estrella y Mestizaje. El bono de materiales distintos modifica también el daño, minado y armadura efectivos.
+- Se ajusta el daño del proyectil del báculo para conservar su lugar frente a las armas cuerpo a cuerpo tras el cambio.
+
 ## 2026-10-01 — Revisión de calidad
 
 - `docs/REVISION_CODEX.md` reúne errores, propuestas de equilibrio, ideas y prioridades de mantenimiento verificadas contra código y documentos del mod.

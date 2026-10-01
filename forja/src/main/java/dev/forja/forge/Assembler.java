@@ -175,11 +175,7 @@ public final class Assembler {
 		ForgeType type = parts.type();
 		List<ForgeMaterial> materials = parts.materials();
 		ForgeMaterial primary = parts.primary();
-		ForgeStats.Sheet stats = ForgeStats.sheet(parts, upgrades, mastery, perk);
-		stats.scale(quality);
-		if (sink.starred()) {
-			ForgedStar.apply(stats);
-		}
+		ForgeStats.Sheet stats = ForgeStats.finalSheet(parts, upgrades, mastery, perk, quality, sink.starred());
 
 		sink.set(ModComponents.PARTS, parts);
 		sink.set(DataComponents.CUSTOM_MODEL_DATA, colors(parts));

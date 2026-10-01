@@ -239,7 +239,7 @@ public final class Spellcasting {
 	 * melee weapon of the same tier, a Mago's a little faster, and neither goes on for long without mana.
 	 */
 	public static float boltDamage(ForgeMaterial core) {
-		return Math.max(2.5F, 2.5F + core.attackDamageBonus * 0.5F);
+		return Math.max(2.5F, 2.5F + core.attackDamageBonus * 0.4F);
 	}
 
 	/** What the tome's area does when it opens, and {@link #BITE_SHARE} of it again every half second on the rune. */

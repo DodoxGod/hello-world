@@ -821,10 +821,9 @@ public final class Report {
 		// Mestizaje
 		if (!fd.mestizaje.isEmpty()) {
 			double[] sword = fd.mestizaje.getOrDefault(ForgeType.ESPADA, fd.mestizaje.values().iterator().next());
-			this.line("- **El Mestizaje sale en la ficha pero no en el golpe.** `ForgeStats.sheet(stack)` suma el "
-				+ pct(sword[0]) + " de mezclar rasgos, pero `Assembler.write` escribe los atributos sin él: una espada de damasco con mango "
-				+ "de vidriacero y guarda de eco enseña " + f(sword[1], 2) + " de daño y pega " + f(sword[2], 2) + ". Pasa igual en armaduras "
-				+ "y herramientas (sólo arcos, flechas, escudos y alas leen la ficha con el Mestizaje dentro).");
+			this.line("- **El Mestizaje se aplica al atributo real.** Una espada de damasco con mango de vidriacero "
+				+ "y guarda de eco recibe " + pct(sword[0]) + " por mezclar rasgos: la ficha enseña " + f(sword[1], 2)
+				+ " de daño y el atributo da " + f(sword[2], 2) + ".");
 		}
 		// Magic
 		Double staff = an.reports.get(ForgeType.BACULO).best.get(Analysis.Scenario.MAXIMO).geo;

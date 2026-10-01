@@ -131,17 +131,24 @@ public final class ForgeStats {
 
 	/** Every stat of an assembled item, straight off the stack: parts, upgrades, Maestria, gift and press. */
 	public static Sheet sheet(ItemStack stack, dev.forja.part.ForgedParts parts) {
-		Sheet sheet = sheet(
+		Sheet sheet = finalSheet(
 			parts, stack.getOrDefault(dev.forja.registry.ModComponents.UPGRADES, dev.forja.upgrade.Upgrades.EMPTY),
-			Mastery.level(stack), Perk.of(stack)
+			Mastery.level(stack), Perk.of(stack), Quality.bonus(stack), ForgedStar.starred(stack)
 		);
-		sheet.scale(Quality.bonus(stack) + mixBonus(parts));
-		if (ForgedStar.starred(stack)) {
-			ForgedStar.apply(sheet);
-		}
 		if (Oxidation.full(stack)) {
 			// Copper that has gone all the way green holds together better than new copper.
 			sheet.durability = Math.round(sheet.durability * (1.0F + Oxidation.PATINA_DURABILITY));
+		}
+		return sheet;
+	}
+
+	/** The final numbers shared by the item components and the tooltip. */
+	public static Sheet finalSheet(dev.forja.part.ForgedParts parts, Upgrades upgrades, int mastery,
+		@org.jspecify.annotations.Nullable Perk perk, float quality, boolean starred) {
+		Sheet sheet = sheet(parts, upgrades, mastery, perk);
+		sheet.scale(quality + mixBonus(parts));
+		if (starred) {
+			ForgedStar.apply(sheet);
 		}
 		return sheet;
 	}
