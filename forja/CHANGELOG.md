@@ -1,5 +1,9 @@
 # Novedades
 
+## 2026-10-01 — Conservar la calidad al grabar y cambiar piezas
+
+- Grabar un don o sustituir una pieza conserva el bono de calidad de una forja perfecta, una obra maestra o una colada basta al reescribir los atributos del objeto.
+
 ## 2026-10-01 — Fraguas lejanas portátiles y aliento de dragón
 
 - **Se rompen y se llevan a casa**: la fragua de almas y la del vacío se rompen como la obsidiana (dureza 50, resistencia

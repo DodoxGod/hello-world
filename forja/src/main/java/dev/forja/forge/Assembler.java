@@ -634,7 +634,7 @@ public final class Assembler {
 		ItemStack result = gear.copyWithCount(1);
 		int damage = result.getDamageValue();
 		result.set(ModComponents.DON, perk.id());
-		write(parts, result.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY), Mastery.level(result), perk, 0.0F,
+		write(parts, result.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY), Mastery.level(result), perk, Quality.bonus(result),
 			BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM, sink(result));
 		HiddenEnchantments.write(result, registries);
 		result.setDamageValue(Math.min(damage, result.getMaxDamage()));
@@ -684,7 +684,7 @@ public final class Assembler {
 		int oldMax = Math.max(1, result.getMaxDamage());
 		int oldDamage = result.getDamageValue();
 		write(new ForgedParts(type, materials, variants), result.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY), Mastery.level(result),
-			Perk.of(result), 0.0F, BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM, sink(result));
+			Perk.of(result), Quality.bonus(result), BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM, sink(result));
 		int newMax = result.getMaxDamage();
 		// A fresh head or plate is a repair; other parts keep the same wear ratio.
 		// A new head or plate is a fresh edge; otherwise wear carries over, and broken gear stays broken.
