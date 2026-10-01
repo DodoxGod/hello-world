@@ -1073,15 +1073,19 @@ public class FallenSmith extends Monster implements GeoEntity {
 		List<Vec3> offsets = dev.forja.world.Formation.offsets(count);
 		List<Integer> rings = dev.forja.world.Formation.ringOf(count);
 		double floor = this.getY();
+		// Each one has a calling of its own (world/ApprenticeKits): the melee ones come up as wither skeletons and
+		// the archers as plain skeletons, which are the ones that can draw a bow.
+		List<dev.forja.world.ApprenticeKits.Role> roles = dev.forja.world.ApprenticeKits.wave(offsets.size(), level.getRandom());
+		int salt = level.getRandom().nextInt(64);
 		for (int i = 0; i < offsets.size(); i++) {
-			Mob apprentice = (Mob) net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE
-				.getValue(net.minecraft.world.entity.EntityTypeIds.WITHER_SKELETON).create(level, EntitySpawnReason.EVENT);
+			Mob apprentice = roles.get(i).body().create(level, EntitySpawnReason.EVENT);
 			if (apprentice == null) {
 				continue;
 			}
 			Vec3 at = this.position().add(offsets.get(i));
 			apprentice.snapTo(at.x, floor - RISE_DEPTH, at.z, (float) Math.toDegrees(Math.atan2(-offsets.get(i).x, offsets.get(i).z)) + 180.0F, 0.0F);
 			dev.forja.world.Elites.makeElite(apprentice, level.getRandom());
+			dev.forja.world.ApprenticeKits.equip(apprentice, roles.get(i), i, salt, level.getRandom());
 			apprentice.setCustomName(Component.translatable("entity.forja.aprendiz"));
 			// His, not just more elites: they go for whatever goes for him.
 			dev.forja.world.Apprentices.enlist(apprentice);

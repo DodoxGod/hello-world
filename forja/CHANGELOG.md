@@ -1,5 +1,30 @@
 # Novedades
 
+## 2026-09-30 — Los aprendices del Herrero Caído, con equipo de final de juego
+
+Andy: «los aprendices no tienen armadura, siempre llevan las mismas armas y a veces hasta de madera; es el final del
+juego, que lleven equipo muy bueno».
+
+- **Armadura completa.** Casco, pechera, grebas y botas forjados en aleaciones de final de juego (acero estelar,
+  solacero, lunacero, obsidiacero, damasco, netherita, acero vivo, almacero; los forros, de las mismas). Ocho conjuntos;
+  cada aprendiz lleva uno y a veces el casco o las botas del vecino. Con la placa de verdad, el +8 de armadura de
+  los campeones se les quita. Pechera con Protección.
+- **Armas distintas.** Espada, espadón, hacha, martillo, maza, lanza, guadaña, daga y mangual, sin repetir en la
+  oleada, y arco para uno de cada tres. Nada de madera, piedra, hierro ni cuero: ni en el arma, ni en los mangos, ni en
+  el escudo (lo llevan los de una mano: espada, hacha, maza, lanza y daga). Cada arma, entre 2 y 3 mejoras de su
+  oficio, del 50 al 90 % (lo que se alcanza sin fundente) y dentro de lo que cabe en la pieza (Potencial 80),
+  y Maestría 5.
+- **Los arqueros disparan.** Un esqueleto atrofiado no sabe tirar con arco; uno normal sí (y los mixins ya le enseñan
+  que un arco forjado es un arco). Por eso el cuerpo sigue al oficio: los de cuerpo a cuerpo salen como esqueletos
+  atrofiados y los arqueros como esqueletos. No hay ballesteros: solo un saqueador dispara ballesta.
+- **No sueltan nada.** Probabilidad de soltar una pieza: 0 (`ApprenticeKits.PIECE_DROP_CHANCE`) y ya no dan la
+  «leyenda» de campeón al morir.
+- **Equilibrio.** Siguen siendo campeones: a un jugador con netherita completa le quitan entre 2 y 5,5 puntos de
+  vida por golpe, ningún golpe pasa de la base del 30 % de la armadura (`Pressure.total`), y a ellos un golpe de
+  jugador no les quita más del 12 % de su vida (tope de campeón).
+- Pruebas: `AprendicesGameTests` (armadura completa, armas distintas, sin madera ni piedra, los arqueros disparan,
+  equilibrio). Captura: `FORJA_SOLO=dimension FORJA_PELEA_SOLO=1 FORJA_APRENDICES=1 ./gradlew runClientGameTest`.
+
 ## 2026-09-30 — Mangos y ataduras de cualquier material
 
 Andy: «todos los materiales para todas las piezas; al final el jugador decide si quiere un mango ligero usando

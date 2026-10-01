@@ -146,6 +146,10 @@ public final class Elites {
 
 	/** One piece, chosen at random out of everything it was carrying. */
 	private static void drop(ServerLevel level, LivingEntity entity) {
+		// The smith's apprentices wear his best work and give none of it up, bar the chance Andy allows (none).
+		if (entity instanceof Mob mob && Apprentices.isApprentice(mob) && level.getRandom().nextFloat() >= ApprenticeKits.PIECE_DROP_CHANCE) {
+			return;
+		}
 		List<ItemStack> carried = new ArrayList<>();
 		for (EquipmentSlot slot : EquipmentSlot.values()) {
 			ItemStack stack = entity.getItemBySlot(slot);

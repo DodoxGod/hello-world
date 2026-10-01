@@ -66,6 +66,9 @@ final class DimensionFootage {
 				leave(context, server, connection);
 			} else {
 				fight(context, server, connection, tag);
+				if (System.getenv("FORJA_APRENDICES") != null) {
+					return;
+				}
 				enter(context, server, connection, tag);
 				overview(context, server, connection, layout, tag);
 				leave(context, server, connection);
@@ -461,8 +464,22 @@ final class DimensionFootage {
 		shot(context, p + "10_salen_de_la_tierra");
 		context.waitTicks(18);
 		shot(context, p + "11_medio_fuera");
+		if (System.getenv("FORJA_APRENDICES") != null) {
+			shot(context, "aprendices_0_saliendo");
+		}
 		context.waitTicks(40);
 		shot(context, p + "12_aprendices_fuera");
+		if (System.getenv("FORJA_APRENDICES") != null) {
+			// Just the wave, for looking at the apprentices' gear (world/ApprenticeKits): from the front and close.
+			Vec3 at = server.computeOnServer(s -> dev.forja.world.StarFight.boss(yard(s)).position());
+			hover(context, server, connection, at.x, at.y + 3.0, at.z + 9.0, at.x, at.y + 1.2, at.z);
+			context.waitTicks(20);
+			shot(context, "aprendices_2_de_cerca");
+			hover(context, server, connection, at.x + 7.0, at.y + 2.0, at.z + 4.0, at.x, at.y + 1.2, at.z);
+			context.waitTicks(10);
+			shot(context, "aprendices_3_de_lado");
+			return;
+		}
 		log("dimension: after two thirds, " + smith(server));
 		check(smith(server).contains("waves 1"), "the first wave should have come at two thirds: " + smith(server));
 		// The Reforjado estelar.
