@@ -110,6 +110,8 @@ public class AssemblerMachineBlockEntity extends BlockEntity implements WorldlyC
 
 	private NonNullList<ItemStack> items = NonNullList.withSize(SIZE, ItemStack.EMPTY);
 	private int progress;
+	/** Fuelle's share of a tick, carried over until it makes a whole one. */
+	private float boost;
 	private Alloys.Heat heat = Alloys.Heat.FRIA;
 	private int heatIn;
 	private int job = JOB_EMPTY;
@@ -268,7 +270,14 @@ public class AssemblerMachineBlockEntity extends BlockEntity implements WorldlyC
 		}
 		machine.job = job;
 		if (job == JOB_WORKING) {
-			if (++machine.progress >= work(machine.heat)) {
+			// Fuelle (the forge in every tree): a smith standing near drives it faster, a tick more now and then.
+			machine.boost += dev.forja.clase.ClassEffects.foundryBoost(level, pos);
+			int step = 1;
+			if (machine.boost >= 1.0F) {
+				machine.boost -= 1.0F;
+				step++;
+			}
+			if ((machine.progress += step) >= work(machine.heat)) {
 				// Like a press at the forge table: heat that came down a heat pipe is paid for, per piece.
 				dev.forja.forge.HeatSources.Supply supply = dev.forja.forge.HeatSources.at(level, pos);
 				if (supply.piped()) {
@@ -303,7 +312,8 @@ public class AssemblerMachineBlockEntity extends BlockEntity implements WorldlyC
 			}
 		}
 		// A decent press, by nobody in particular, at no particular table: the floor of what a forge gives.
-		made.set(ModComponents.POTENCIAL, dev.forja.forge.Potential.atForge(QUALITY, null, null, false));
+		made.set(ModComponents.POTENCIAL, Math.min(dev.forja.forge.Potential.MOST,
+			dev.forja.forge.Potential.atForge(QUALITY, null, null, false) + dev.forja.clase.ClassEffects.assemblerPotential(level, pos)));
 		// Still hot off the star, like anything forged, so a smith waiting at the chest can quench it. Not a
 		// handful of arrows: the hour they were made would keep every handful from stacking with the last.
 		if (made.getMaxStackSize() == 1 && level instanceof ServerLevel server) {

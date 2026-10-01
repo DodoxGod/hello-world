@@ -23,6 +23,10 @@ public final class ClassNetwork {
 		public static final byte CHOOSE = 0;
 		public static final byte LEARN = 1;
 		public static final byte SKILL = 2;
+		/** "Probar" then "Aplicar": several nodes at once, comma-separated, learned in that order. */
+		public static final byte LEARN_PLAN = 3;
+		/** The Vela del olvido: these nodes off the tree, comma-separated. */
+		public static final byte FORGET = 4;
 		public static final CustomPacketPayload.Type<Action> TYPE = new CustomPacketPayload.Type<>(Forja.id("clase_accion"));
 		public static final StreamCodec<RegistryFriendlyByteBuf, Action> STREAM_CODEC = StreamCodec.composite(
 			ByteBufCodecs.BYTE, Action::kind, ByteBufCodecs.STRING_UTF8, Action::arg, Action::new);
@@ -39,7 +43,9 @@ public final class ClassNetwork {
 		/** A class taken or changed. */
 		CHOSEN,
 		/** The emblem was used: open the choice screen to change. */
-		OPEN_CHANGE
+		OPEN_CHANGE,
+		/** The Vela del olvido was used: open the tree to pick what to forget. */
+		OPEN_FORGET
 	}
 
 	/** Server to client. */
@@ -80,6 +86,13 @@ public final class ClassNetwork {
 		}
 	}
 
+	/** The candle in hand opens the tree in its "forget" form. */
+	public static void openForget(ServerPlayer player) {
+		if (ServerPlayNetworking.canSend(player, Notice.TYPE)) {
+			ServerPlayNetworking.send(player, new Notice((byte) Toast.OPEN_FORGET.ordinal(), "", 0));
+		}
+	}
+
 	static void handle(ServerPlayer player, Action action) {
 		switch (action.kind()) {
 			case Action.CHOOSE -> {
@@ -88,13 +101,10 @@ public final class ClassNetwork {
 					tryChoose(player, chosen);
 				}
 			}
-			case Action.LEARN -> {
-				Talent talent = Talent.byId(action.arg());
-				if (talent != null) {
-					ClassProgress.unlock(player, talent);
-				}
-			}
-			case Action.SKILL -> ClassSkills.use(player, "2".equals(action.arg()) ? 2 : 1, false);
+			case Action.LEARN -> ClassProgress.unlock(player, action.arg());
+			case Action.LEARN_PLAN -> ClassProgress.unlockAll(player, split(action.arg()));
+			case Action.FORGET -> forget(player, split(action.arg()));
+			case Action.SKILL -> ClassSkills.use(player, "3".equals(action.arg()) ? 3 : "2".equals(action.arg()) ? 2 : 1, false);
 			default -> {
 			}
 		}
@@ -121,6 +131,57 @@ public final class ClassNetwork {
 		}
 		ClassProgress.choose(player, chosen);
 		return true;
+	}
+
+	private static java.util.List<String> split(String text) {
+		java.util.List<String> out = new java.util.ArrayList<>();
+		for (String part : text.split(",")) {
+			if (!part.isBlank() && out.size() < 200) {
+				out.add(part.trim());
+			}
+		}
+		return out;
+	}
+
+	/**
+	 * The Vela del olvido: these nodes come off if together they are worth no more than a candle takes and what
+	 * stays still hangs from the origin. One candle is spent (not in creative); without one, nothing happens.
+	 */
+	public static boolean forget(ServerPlayer player, java.util.List<String> ids) {
+		int most = dev.forja.item.OblivionCandleItem.POINTS;
+		if (!ClassProgress.canForget(ClassProgress.data(player), ids, most)) {
+			player.sendOverlayMessage(Component.translatable("gui.forja.vela.no_puede", most));
+			return false;
+		}
+		ItemStack candle = find(player, dev.forja.item.OblivionCandleItem.class);
+		if (!player.isCreative()) {
+			if (candle.isEmpty()) {
+				player.sendOverlayMessage(Component.translatable("gui.forja.vela.falta"));
+				return false;
+			}
+			candle.shrink(1);
+		}
+		ClassProgress.forget(player, ids);
+		player.level().playSound(null, player.getX(), player.getY(), player.getZ(), net.minecraft.sounds.SoundEvents.CANDLE_EXTINGUISH,
+			net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 0.8F);
+		player.sendOverlayMessage(Component.translatable("gui.forja.vela.hecho", ids.size()).withColor(0xFFF0C070));
+		return true;
+	}
+
+	private static ItemStack find(ServerPlayer player, Class<?> kind) {
+		for (InteractionHand hand : InteractionHand.values()) {
+			ItemStack held = player.getItemInHand(hand);
+			if (kind.isInstance(held.getItem())) {
+				return held;
+			}
+		}
+		var inventory = player.getInventory();
+		for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+			if (kind.isInstance(inventory.getItem(slot).getItem())) {
+				return inventory.getItem(slot);
+			}
+		}
+		return ItemStack.EMPTY;
 	}
 
 	private static ItemStack findEmblem(ServerPlayer player) {

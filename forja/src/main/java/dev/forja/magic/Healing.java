@@ -7,7 +7,7 @@ import java.util.UUID;
 import dev.forja.clase.ClassEffects;
 import dev.forja.clase.ClassEvents;
 import dev.forja.clase.PlayerClass;
-import dev.forja.clase.Talent;
+import dev.forja.clase.Hooks;
 import dev.forja.material.ForgeMaterial;
 import dev.forja.part.ForgedParts;
 import dev.forja.registry.ModComponents;
@@ -111,34 +111,75 @@ public final class Healing {
 
 	/**
 	 * Mends {@code target} by {@code amount} as {@code healer}'s doing: the heal itself, and what a Curandero's
-	 * talents hang on it — Renuevo, Bendición, Purificar, Vínculo — and the class experience it is worth.
+	 * tree hangs on it — Rocío, Florecer, Milagro, Mártir, Renuevo, Bendición, Purificar, Vínculo — and the class
+	 * experience it is worth.
 	 *
 	 * @return what it actually mended
 	 */
 	public static float mend(ServerLevel level, @Nullable LivingEntity healer, LivingEntity target, float amount) {
+		return mend(level, healer, target, amount, false);
+	}
+
+	/** {@code blooming}: this is one second of a Florecer, already spread out, not a heal to spread again. */
+	private static float mend(ServerLevel level, @Nullable LivingEntity healer, LivingEntity target, float amount, boolean blooming) {
 		if (amount <= 0.0F || !target.isAlive()) {
 			return 0.0F;
 		}
-		boolean low = target.getHealth() < target.getMaxHealth() * Talent.CURANDERO_BENDICION.numbers[0];
+		Player player = healer instanceof Player p ? p : null;
+		if (player != null && !blooming) {
+			float[] dew = ClassEffects.hook(player, Hooks.ROCIO);
+			if (dew != null && target.getHealth() < target.getMaxHealth() * dew[0] && ClassEffects.dewReady(player, Math.round(dew[2] * 20.0F))) {
+				amount *= 1.0F + dew[1];
+			}
+			float[] bloom = ClassEffects.hook(player, Hooks.FLORECER);
+			if (bloom != null) {
+				// Florecer: the heal comes over a few seconds, half again as much, instead of at once.
+				int seconds = Math.max(1, Math.round(bloom[1]));
+				float each = amount * bloom[0] / seconds;
+				java.util.UUID healerId = player.getUUID();
+				for (int s = 1; s <= seconds; s++) {
+					dev.forja.clase.ClassSkills.later(level, s * 20, () -> {
+						Player still = level.getPlayerByUUID(healerId);
+						if (still != null) {
+							mend(level, still, target, each, true);
+						}
+					});
+				}
+				level.sendParticles(ParticleTypes.HAPPY_VILLAGER, target.getX(), target.getY() + target.getBbHeight() * 0.6, target.getZ(), 8, 0.3, 0.3, 0.3, 0.0);
+				return 0.0F;
+			}
+		}
+		float[] blessing = player == null ? null : ClassEffects.hook(player, Hooks.BENDICION);
+		boolean low = blessing != null && target.getHealth() < target.getMaxHealth() * blessing[0];
 		float before = target.getHealth();
 		target.heal(amount);
 		float mended = target.getHealth() - before;
-		if (healer instanceof Player player) {
-			if (ClassEffects.has(player, Talent.CURANDERO_RENUEVO)) {
-				target.addEffect(new MobEffectInstance(MobEffects.REGENERATION, Math.round(Talent.CURANDERO_RENUEVO.numbers[0] * 20.0F), 0), player);
+		if (player != null) {
+			float[] renewal = ClassEffects.hook(player, Hooks.RENUEVO);
+			if (renewal != null && !blooming) {
+				target.addEffect(new MobEffectInstance(MobEffects.REGENERATION, Math.round(renewal[0] * 20.0F), 0), player);
 			}
-			if (low && ClassEffects.has(player, Talent.CURANDERO_BENDICION)) {
-				target.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, Math.round(Talent.CURANDERO_BENDICION.numbers[1] * 20.0F), 0), player);
+			if (low) {
+				target.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, Math.round(blessing[1] * 20.0F), 0), player);
 			}
-			if (ClassEffects.has(player, Talent.CURANDERO_PURIFICAR)) {
+			if (ClassEffects.has(player, Hooks.PURIFICAR)) {
 				target.removeEffect(MobEffects.POISON);
 				target.removeEffect(MobEffects.WITHER);
 				target.removeEffect(MobEffects.WEAKNESS);
 				target.removeEffect(MobEffects.SLOWNESS);
 			}
+			float[] miracle = ClassEffects.hook(player, Hooks.MILAGRO);
+			if (miracle != null && mended > 0.0F && target.getHealth() >= target.getMaxHealth()) {
+				target.setAbsorptionAmount(Math.max(target.getAbsorptionAmount(), miracle[0]));
+			}
 			if (target != player && mended > 0.0F) {
-				if (ClassEffects.has(player, Talent.CURANDERO_VINCULO)) {
-					player.heal(mended * Talent.CURANDERO_VINCULO.numbers[0]);
+				float[] bond = ClassEffects.hook(player, Hooks.VINCULO);
+				if (bond != null) {
+					player.heal(mended * bond[0]);
+				}
+				float[] martyr = ClassEffects.hook(player, Hooks.MARTIR);
+				if (martyr != null && player.getHealth() > 1.0F && ClassEffects.martyrReady(player)) {
+					player.setHealth(Math.max(1.0F, player.getHealth() - martyr[0]));
 				}
 				if (ClassEffects.is(player, PlayerClass.CURANDERO)) {
 					float owed = OWED.getOrDefault(player.getUUID(), 0.0F) + mended;

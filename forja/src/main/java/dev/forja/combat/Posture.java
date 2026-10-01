@@ -87,6 +87,12 @@ public final class Posture {
 		add(entity, max(entity), now);
 	}
 
+	/** Posture points straight onto the bar (the class skills and nodes that say "N de postura"). */
+	public static void push(LivingEntity entity, double amount, long now) {
+		if (entity instanceof Player || !CombatConfig.get().posture || amount <= 0.0) return;
+		add(entity, amount, now);
+	}
+
 	/** A plain parry: part of the attacker's balance, as a share of the whole bar. */
 	public static void shake(LivingEntity entity, double share, long now) {
 		if (entity instanceof Player || !CombatConfig.get().posture) return;

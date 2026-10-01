@@ -49,6 +49,10 @@ public final class ModComponents {
 	public static final DataComponentType<Integer> POTENCIAL = register(
 		"potencial", b -> b.persistent(com.mojang.serialization.Codec.intRange(0, 100)).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.VAR_INT)
 	);
+	/** Load on top of what the potential gives, from the smith who forged it (Carga honda, docs/ARBOLES.md). */
+	public static final DataComponentType<Integer> CARGA_EXTRA = register(
+		"carga_extra", b -> b.persistent(com.mojang.serialization.Codec.intRange(0, 20)).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.VAR_INT)
+	);
 
 	/**
 	 * Which slots of an assembled piece hold a part that was poured clean, one bit a slot. A mask and not

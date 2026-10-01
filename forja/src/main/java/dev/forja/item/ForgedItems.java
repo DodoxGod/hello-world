@@ -296,6 +296,11 @@ public final class ForgedItems {
 		public boolean releaseUsing(ItemStack stack, Level level, LivingEntity entity, int remainingTime) {
 			int duration = this.getUseDuration(stack, entity);
 			int held = Math.round((duration - remainingTime) * drawSpeed(stack) * dev.forja.clase.ClassEffects.drawSpeedMultiplier(entity));
+			// Ráfaga (the Arquero's tree): drawn far enough, the bow already shoots as if fully drawn.
+			float full = dev.forja.clase.ClassEffects.fullDrawAt(entity);
+			if (full < 1.0F && net.minecraft.world.item.BowItem.getPowerForTime(held) >= full) {
+				held = Math.max(held, 20);
+			}
 			return super.releaseUsing(stack, level, entity, duration - held);
 		}
 

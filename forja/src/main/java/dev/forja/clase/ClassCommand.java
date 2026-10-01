@@ -17,7 +17,7 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * {@code /forja clase ...} for testing and admins, never charging for anything: pick a class, set the level
  * or the experience, learn a talent or everything the points allow, empty the tree, take the class away, and
- * fire a skill without its wait. Every sub-command takes an optional player at the end.
+ * fire a skill without its wait; grant a milestone, or list them. Every sub-command takes an optional player at the end.
  */
 public final class ClassCommand {
 	private ClassCommand() {
@@ -39,8 +39,9 @@ public final class ClassCommand {
 			.then(Commands.literal("xp").then(Commands.argument("xp", IntegerArgumentType.integer(1))
 				.executes(c -> xp(c, c.getSource().getPlayerOrException()))
 				.then(Commands.argument("jugador", EntityArgument.player()).executes(c -> xp(c, EntityArgument.getPlayer(c, "jugador"))))))
-			.then(Commands.literal("aprender").then(Commands.argument("talento", StringArgumentType.word())
-				.suggests((c, b) -> SharedSuggestionProvider.suggest(Arrays.stream(Talent.values()).map(Talent::id), b))
+			.then(Commands.literal("aprender").then(Commands.argument("talento", StringArgumentType.greedyString())
+				.suggests((c, b) -> SharedSuggestionProvider.suggest(Arrays.stream(PlayerClass.values())
+					.flatMap(clazz -> clazz.tree().nodes.stream().map(node -> node.id)).distinct(), b))
 				.executes(c -> learn(c, c.getSource().getPlayerOrException()))
 				.then(Commands.argument("jugador", EntityArgument.player()).executes(c -> learn(c, EntityArgument.getPlayer(c, "jugador"))))))
 			.then(Commands.literal("puntos")
@@ -52,7 +53,14 @@ public final class ClassCommand {
 			.then(Commands.literal("quitar")
 				.executes(c -> clear(c, c.getSource().getPlayerOrException()))
 				.then(Commands.argument("jugador", EntityArgument.player()).executes(c -> clear(c, EntityArgument.getPlayer(c, "jugador")))))
-			.then(Commands.literal("habilidad").then(Commands.argument("tecla", IntegerArgumentType.integer(1, 2))
+			.then(Commands.literal("hito").then(Commands.argument("hito", StringArgumentType.word())
+				.suggests((c, b) -> SharedSuggestionProvider.suggest(ClassTree.milestones().stream().map(ClassTree.Milestone::id), b))
+				.executes(c -> milestone(c, c.getSource().getPlayerOrException()))
+				.then(Commands.argument("jugador", EntityArgument.player()).executes(c -> milestone(c, EntityArgument.getPlayer(c, "jugador"))))))
+			.then(Commands.literal("hitos")
+				.executes(c -> milestones(c, c.getSource().getPlayerOrException()))
+				.then(Commands.argument("jugador", EntityArgument.player()).executes(c -> milestones(c, EntityArgument.getPlayer(c, "jugador")))))
+			.then(Commands.literal("habilidad").then(Commands.argument("tecla", IntegerArgumentType.integer(1, 3))
 				.executes(c -> skill(c, c.getSource().getPlayerOrException()))
 				.then(Commands.argument("jugador", EntityArgument.player()).executes(c -> skill(c, EntityArgument.getPlayer(c, "jugador"))))));
 	}
@@ -65,7 +73,7 @@ public final class ClassCommand {
 			return 0;
 		}
 		c.getSource().sendSuccess(() -> Component.translatable("commands.forja.clase.info", player.getDisplayName(), clazz.displayName(),
-			data.level(), data.xp(), data.points(), Integer.bitCount(data.mask())), false);
+			data.level(), data.xp(), data.points(), data.nodes().size(), data.milestonePoints()), false);
 		return 1;
 	}
 
@@ -104,35 +112,57 @@ public final class ClassCommand {
 	}
 
 	private static int learn(CommandContext<CommandSourceStack> c, ServerPlayer player) {
-		Talent talent = Talent.byId(StringArgumentType.getString(c, "talento"));
-		if (talent == null) {
-			c.getSource().sendFailure(Component.translatable("commands.forja.clase.desconocida"));
-			return 0;
-		}
-		ClassProgress.Refusal why = ClassProgress.check(player, talent);
+		String id = StringArgumentType.getString(c, "talento").trim();
+		ClassProgress.Refusal why = ClassProgress.check(player, id);
 		if (why != ClassProgress.Refusal.NONE) {
 			c.getSource().sendFailure(Component.translatable("gui.forja.talento.no." + why.name().toLowerCase(java.util.Locale.ROOT)));
 			return 0;
 		}
-		ClassProgress.unlock(player, talent);
+		ClassProgress.unlock(player, id);
 		return info(c, player);
 	}
 
-	/** Learns down the tree, branch by branch, while the points last. */
+	/** Learns outwards from the origin, the cheapest first, while the points last. */
 	private static int learnAll(CommandContext<CommandSourceStack> c, ServerPlayer player) {
 		if (!hasClass(c, player)) {
 			return 0;
 		}
+		ClassTree.Tree tree = ClassProgress.clazz(player).tree();
 		boolean learned = true;
 		while (learned) {
 			learned = false;
-			for (Talent talent : ClassProgress.clazz(player).talents()) {
-				if (ClassProgress.check(player, talent) == ClassProgress.Refusal.NONE && ClassProgress.unlock(player, talent)) {
-					learned = true;
+			ClassTree.Node best = null;
+			for (ClassTree.Node node : tree.nodes) {
+				if (ClassProgress.check(player, node.id) == ClassProgress.Refusal.NONE && (best == null || node.cost < best.cost)) {
+					best = node;
 				}
+			}
+			if (best != null) {
+				ClassProgress.set(player, ClassProgress.data(player).plus(best.id));
+				learned = true;
 			}
 		}
 		return info(c, player);
+	}
+
+	private static int milestone(CommandContext<CommandSourceStack> c, ServerPlayer player) {
+		String id = StringArgumentType.getString(c, "hito");
+		if (ClassTree.milestone(id) == null) {
+			c.getSource().sendFailure(Component.translatable("commands.forja.clase.desconocida"));
+			return 0;
+		}
+		ClassProgress.reach(player, id);
+		return info(c, player);
+	}
+
+	private static int milestones(CommandContext<CommandSourceStack> c, ServerPlayer player) {
+		ClassData data = ClassProgress.data(player);
+		for (ClassTree.Milestone milestone : ClassTree.milestones()) {
+			boolean done = data.hasMilestone(milestone.id());
+			c.getSource().sendSuccess(() -> Component.literal(done ? "✔ " : "· ").append(milestone.displayName())
+				.append(" (+" + milestone.points() + ")").withColor(done ? 0xFF7FD34E : 0xFF9A9A9A), false);
+		}
+		return data.milestones().size();
 	}
 
 	private static int reset(CommandContext<CommandSourceStack> c, ServerPlayer player) {

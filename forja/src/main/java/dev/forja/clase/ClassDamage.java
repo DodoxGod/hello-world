@@ -17,7 +17,6 @@ import org.jspecify.annotations.Nullable;
  *   <li>Guerrero and Asesino: magic x0.4.</li>
  *   <li>Tanque: everything x0.67 (melee, projectiles and magic).</li>
  *   <li>Curandero: magic x1/3 and melee x0.5; its magic still heals allies as before (magic/Healing).</li>
- *   <li>Herrero: nothing.</li>
  * </ul>
  *
  * <p><b>How they combine.</b> These are <em>factors</em>, applied last and multiplied, never added. The class
@@ -71,7 +70,6 @@ public final class ClassDamage {
 			case MAGO -> blow == Blow.MELEE ? MAGO_MELEE : 1.0F;
 			case CURANDERO -> blow == Blow.MAGIC ? CURANDERO_MAGIC : blow == Blow.MELEE ? CURANDERO_MELEE : 1.0F;
 			case ARQUERO -> blow == Blow.MELEE ? ARQUERO_MELEE : 1.0F;
-			case HERRERO -> 1.0F;
 		};
 	}
 

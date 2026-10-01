@@ -348,8 +348,9 @@ public final class Spellcasting {
 		if (player.getCooldowns().isOnCooldown(stack)) {
 			return InteractionResult.FAIL;
 		}
-		// Not even a tap's worth in the bar: a fizzle and a flash of the bar, and the arm stays down.
-		if (!Mana.canAfford(player, tapCost(stack, type))) {
+		// Not even a tap's worth in the bar: a fizzle and a flash of the bar, and the arm stays down. Sangre por
+		// maná (the Mago's tree) pays the rest in health when it lets go.
+		if (!Mana.canAfford(player, tapCost(stack, type)) && !dev.forja.clase.ClassEffects.has(player, dev.forja.clase.Hooks.SANGRE_POR_MANA)) {
 			Mana.deny(player);
 			return InteractionResult.FAIL;
 		}
@@ -418,12 +419,33 @@ public final class Spellcasting {
 		if (level instanceof ServerLevel server) {
 			stopGathering(caster);
 			// Canalización (clase/ClassEffects): a mage's charge fills sooner, so the ticks held count for more.
-			float charge = chargeShare(type, Math.round(held / dev.forja.clase.ClassEffects.spellChargeMultiplier(player)));
+			int counted = Math.round(held / dev.forja.clase.ClassEffects.spellChargeMultiplier(player));
+			float charge = chargeShare(type, counted);
+			// Carga profunda: a full charge held a while longer comes out stronger (ClassEffects.spellShape).
+			float[] deep = dev.forja.clase.ClassEffects.hook(player, dev.forja.clase.Hooks.CARGA_PROFUNDA);
+			dev.forja.clase.ClassEffects.noteOverheld(player, deep != null && counted >= chargeTicks(type) + Math.round(deep[0] * 20.0F));
 			boolean free = Mana.exempt(player);
 			// The class's price (Mago, Curandero with the lantern...) on everything below: the bar is read as
 			// though it held that much more or less.
 			float price = dev.forja.clase.ClassEffects.spellCostMultiplier(player);
 			float mana = free ? Float.MAX_VALUE : Mana.value(player) / Math.max(0.01F, price);
+			float[] blood = dev.forja.clase.ClassEffects.hook(player, dev.forja.clase.Hooks.SANGRE_POR_MANA);
+			if (blood != null && !free && mana + 1.0E-4F < tapCost(stack, type)) {
+				// Sangre por maná: what the bar lacks for a tap is paid in health, never down to the last point.
+				float missing = (tapCost(stack, type) - Mana.value(player) / Math.max(0.01F, price)) * price;
+				float health = missing / blood[1] * blood[0];
+				if (player.getHealth() - health >= 1.0F) {
+					player.setHealth(player.getHealth() - health);
+					Mana.set(player, 0.0F);
+					server.sendParticles(net.minecraft.core.particles.ParticleTypes.DAMAGE_INDICATOR, player.getX(), player.getY(1.0), player.getZ(), 4, 0.3, 0.3, 0.3, 0.0);
+					Mana.cast(player, 0.0F);
+					cast(server, player, stack, type, null, 0.0F, 0.0F);
+					player.getCooldowns().addCooldown(stack, Math.max(2, Math.round(cooldown(stack, type) * dev.forja.clase.ClassEffects.spellCooldownMultiplier(player))));
+					stack.hurtAndBreak(1, player, hand.asEquipmentSlot());
+					player.swing(hand);
+					return true;
+				}
+			}
 			if (mana + 1.0E-4F < tapCost(stack, type)) {
 				// Spent between the press and the release (a blade's Filo arcano, a blink): nothing leaves.
 				Mana.deny(player);
@@ -501,7 +523,8 @@ public final class Spellcasting {
 		boolean big = overcharged(server, caster, stack, core.color);
 		float power = (big ? 1.0F + Upgrade.overchargeBonus(Upgrades.fraction(stack, Upgrade.SOBRECARGA)) : 1.0F)
 			* (1.0F + (CHARGE_BONUS + dev.forja.clase.ClassEffects.chargeBonusExtra(caster)) * Math.max(0.0F, Math.min(1.0F, charge)))
-			* dev.forja.clase.ClassEffects.spellDamageMultiplier(caster);
+			* dev.forja.clase.ClassEffects.spellDamageMultiplier(caster)
+			* dev.forja.clase.ClassEffects.spellShape(caster, charge);
 		if (pour > 0.0F) {
 			power *= 1.0F + pour;
 			big = true;

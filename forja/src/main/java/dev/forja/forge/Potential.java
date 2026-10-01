@@ -168,7 +168,8 @@ public final class Potential {
 	}
 
 	public static int capacity(ItemStack stack) {
-		return capacity(of(stack));
+		// Carga honda: the smith who forged it left room for more (clase/ClassEffects.capacityBonus).
+		return capacity(of(stack)) + stack.getOrDefault(ModComponents.CARGA_EXTRA, 0);
 	}
 
 	/** What is on the piece already, weighed. */

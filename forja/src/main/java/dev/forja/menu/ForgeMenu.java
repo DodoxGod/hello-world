@@ -542,6 +542,11 @@ public class ForgeMenu extends AbstractContainerMenu {
 					// And with a ceiling on its upgrades that is its own: this press, this smith, this table.
 					// What its parts add was marked slot by slot when the star put them together.
 					result.set(ModComponents.POTENCIAL, dev.forja.forge.Potential.atForge(quality, player, this.station, this.wholeWorkshop()));
+					// Carga honda (the forge in every tree): room for more upgrades than the potential alone gives.
+					int deeper = dev.forja.clase.ClassEffects.capacityBonus(player);
+					if (deeper > 0) {
+						result.set(ModComponents.CARGA_EXTRA, deeper);
+					}
 					dev.forja.forge.SmithRecord.add(player, dev.forja.forge.SmithRecord.FORGED);
 					// What it was forged from: the star's iron, the Smith's heart (two goals nothing used to award).
 					dev.forja.part.ForgedParts made = result.get(ModComponents.PARTS);
@@ -561,6 +566,8 @@ public class ForgeMenu extends AbstractContainerMenu {
 						Assembler.rewrite(result, net.minecraft.core.registries.BuiltInRegistries.BLOCK, net.minecraft.core.registries.BuiltInRegistries.ITEM);
 						dev.forja.forge.SmithLevel.award(player, dev.forja.forge.SmithLevel.XP_PERFECT);
 						ForjaAdvancements.award(player, "perfecta");
+						// Forja al rojo: a perfect press sets the arm alight for a while.
+						dev.forja.clase.ClassEffects.perfectForge(player);
 					}
 					dev.forja.forge.Mastery.addExperience(player, result, dev.forja.forge.SmithLevel.masteryHeadStart(player) + quality * 20);
 					// Alma de forja: now and then something of the smith stays in the piece.

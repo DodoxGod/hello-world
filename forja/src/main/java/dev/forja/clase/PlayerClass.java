@@ -15,9 +15,11 @@ import org.jspecify.annotations.Nullable;
 import static dev.forja.clase.ClassStat.*;
 
 /**
- * The seven classes (docs/CLASES.md). A class is its base numbers, the active skill it comes with, and the
- * talent tree in {@link Talent}. The order here is the order of the choice screen, and the ids are what the
- * attachment saves, so a class is never renamed.
+ * The six classes (docs/CLASES.md). A class is its base numbers, the active skill it comes with, and its big
+ * tree ({@link ClassTree}, docs/ARBOLES.md), which holds its other two skills. The order here is the order of the
+ * choice screen, and the ids are what the attachment saves, so a class is never renamed. There was a seventh, the
+ * Herrero: Andy (2026-09-30) took it out and put the forge in every tree; a save that still says "herrero"
+ * reads as no class (ClassProgress.migrate).
  */
 public enum PlayerClass {
 	/** Melee and endurance: stamina, posture, parries. */
@@ -55,11 +57,7 @@ public enum PlayerClass {
 	ARQUERO(0x8DBF4A, () -> Assembler.create(ForgeType.ARCO, Assembler.defaultMaterials(ForgeType.ARCO)),
 		List.of(MAX_HEALTH.of(-0.10F), MOVE_SPEED.of(0.08F), PROJECTILE_DAMAGE.of(0.15F), DRAW_SPEED.of(0.10F), DODGE_DISTANCE.of(0.20F),
 			DODGE_COOLDOWN.of(-0.15F), FALL_DAMAGE.of(-0.25F)),
-		ActiveSkill.SALTO_ATRAS),
-	/** Forging: perfect strikes, potential, cheaper repairs, the foundry. */
-	HERRERO(0xE8923A, () -> Assembler.create(ForgeType.MARTILLO, List.of(ForgeMaterial.HIERRO, ForgeMaterial.MADERA, ForgeMaterial.CUERO)),
-		List.of(MAX_HEALTH.of(0.05F), MINING.of(0.15F), FORGE_WINDOW.of(0.01F), POTENTIAL.of(5), REPAIR.of(0.25F)),
-		ActiveSkill.TEMPLE_DE_CAMPANA);
+		ActiveSkill.SALTO_ATRAS);
 
 	public final int color;
 	private final Supplier<ItemStack> icon;
@@ -118,18 +116,23 @@ public enum PlayerClass {
 		return ClassDamage.factor(this, blow);
 	}
 
-	/** The talents of this class, in tree order. */
-	public List<Talent> talents() {
-		return Talent.of(this);
+	/** This class's tree. */
+	public ClassTree.Tree tree() {
+		return ClassTree.tree(this);
 	}
 
-	/** The skill on the second key: the tree's last node. */
+	/** The skill on the second key (B), a node of the tree. */
 	public ActiveSkill secondSkill() {
-		for (Talent talent : this.talents()) {
-			if (talent.skill != null) {
-				return talent.skill;
-			}
-		}
-		throw new IllegalStateException(this + " has no second skill");
+		return ActiveSkill.byId(this.tree().skill(2).id);
+	}
+
+	/** The skill on the third key (N), deep in the tree. */
+	public ActiveSkill thirdSkill() {
+		return ActiveSkill.byId(this.tree().skill(3).id);
+	}
+
+	/** The skill on a key: 1 V, 2 B, 3 N. */
+	public ActiveSkill skill(int key) {
+		return key == 1 ? this.firstSkill : key == 2 ? this.secondSkill() : this.thirdSkill();
 	}
 }

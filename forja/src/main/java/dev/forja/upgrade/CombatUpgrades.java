@@ -334,7 +334,7 @@ public final class CombatUpgrades {
 			player.sendOverlayMessage(Component.translatable(perfect ? "gui.forja.parada" : "gui.forja.parada_normal"));
 		}
 		dev.forja.combat.ParryRhythm.landed(defender);
-		dev.forja.clase.ClassEvents.onParry(defender);
+		dev.forja.clase.ClassEvents.onParry(defender, source.getEntity());
 		RIPOSTE.put(defender, level.getServer().getTickCount() + (perfect ? RIPOSTE_TICKS * 2 : RIPOSTE_TICKS));
 		if (source.getDirectEntity() instanceof Projectile projectile && projectile.isAlive() && source.getEntity() instanceof LivingEntity archer) {
 			PENDING_REFLECT.add(new Reflected(projectile, archer, level.getGameTime()));

@@ -195,7 +195,12 @@ public final class CombatHooks {
 		// The classes (clase/ClassEffects): what the one who struck adds, and what the one struck shrugs off.
 		scaled *= dev.forja.clase.ClassEffects.dealt(source, target, staggered, attack.precise() && attack.zone() == HitZone.HEAD);
 		if (target instanceof Player classed) {
-			scaled *= dev.forja.clase.ClassEffects.taken(classed, source);
+			scaled *= dev.forja.clase.ClassEffects.taken(classed, source, scaled);
+			// Other players' trees: a Tanque's shield in front (Muralla viva), a Curandero's Lazo vital.
+			scaled *= dev.forja.clase.ClassEffects.sheltered(classed, source, scaled);
+		}
+		if (charged && source.getEntity() instanceof Player striker) {
+			dev.forja.clase.ClassEvents.onChargedHit(striker, target);
 		}
 		// Each mob takes each kind of blow its own way.
 		scaled *= (float) dev.forja.difficulty.MobResistances.factor(target, attack.kind());

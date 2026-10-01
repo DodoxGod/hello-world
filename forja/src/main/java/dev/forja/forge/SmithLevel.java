@@ -74,8 +74,6 @@ public final class SmithLevel {
 		if (!(player instanceof ServerPlayer server) || amount <= 0) {
 			return;
 		}
-		// The Herrero's class experience is what the forge teaches the smith.
-		dev.forja.clase.ClassEvents.onSmithXp(player, amount);
 		int before = level(player);
 		server.setAttached(EXPERIENCE, experience(player) + amount);
 		int after = level(player);

@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:candle",
+    "minecraft:amethyst_shard",
+    "minecraft:amethyst_shard",
+    "minecraft:ghast_tear"
+  ],
+  "result": {
+    "id": "forja:vela_del_olvido"
+  }
+}

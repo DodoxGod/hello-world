@@ -10,7 +10,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Everything a class or a talent can change, as one number each. A class's base and every talent it has
+ * Everything a class or a node of its tree can change, as one number each. A class's base and every talent it has
  * learned add their numbers together (docs/CLASES.md: "todos los porcentajes se suman"), and whatever
  * reads the stat applies the total once.
  *
@@ -75,7 +75,13 @@ public enum ClassStat {
 	/** Extra share every upgrade takes, like the smith's Maestria. */
 	UPGRADE_BONUS(Unit.POINTS, false),
 	/** Damage with hammers, maces, pickaxes and axes. */
-	SMITH_WEAPON(Unit.PERCENT, false);
+	SMITH_WEAPON(Unit.PERCENT, false),
+	/** How much faster the assemblers near the player work (Fuelle). */
+	FOUNDRY_SPEED(Unit.PERCENT, false),
+	/** Extra load (how many upgrades fit) on what the player forges (Carga honda). */
+	CAPACITY(Unit.POINTS, false),
+	/** Extra potential on what the assemblers near the player make (Ajuste fino). */
+	ASSEMBLER_POTENTIAL(Unit.POINTS, false);
 
 	/** One number of a class or a talent: "vida −30 %" is {@code new Mod(MAX_HEALTH, -0.30F)}. */
 	public record Mod(ClassStat stat, float value) {

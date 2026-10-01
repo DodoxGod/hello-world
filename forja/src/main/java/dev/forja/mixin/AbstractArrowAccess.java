@@ -13,4 +13,8 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface AbstractArrowAccess {
 	@Accessor("baseDamage")
 	double forjaBaseDamage();
+
+	/** Flecha perforante (the Arquero's tree, clase/ClassEvents.shot): how many foes a fully drawn arrow goes through. */
+	@org.spongepowered.asm.mixin.gen.Invoker("setPierceLevel")
+	void forja$setPierceLevel(byte level);
 }

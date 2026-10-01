@@ -32,6 +32,9 @@ public final class GearScore {
 
 	/** What a class at the top level adds to the score. */
 	public static final double CLASS_WEIGHT = 0.08;
+	/** All the points a class can have spent at the top (docs/ARBOLES.md): levels and every milestone. */
+	public static final int CLASS_POINTS = dev.forja.clase.ClassTree.levelPoints(dev.forja.clase.ClassTree.maxLevel())
+		+ dev.forja.clase.ClassTree.allMilestonePoints();
 
 	private GearScore() {
 	}
@@ -53,8 +56,9 @@ public final class GearScore {
 		double mastery = Mastery.level(player.getMainHandItem()) / (double) Mastery.MAX_LEVEL;
 		double smith = SmithLevel.level(player) / (double) SmithLevel.MAX_LEVEL;
 		double armor = Mth.clamp(player.getArmorValue() / 30.0, 0.0, 1.0);
-		// A seasoned class counts like better gear (docs/CLASES.md): nothing at all without one.
-		double clazz = dev.forja.clase.ClassProgress.data(player).level() / (double) dev.forja.clase.ClassProgress.MAX_LEVEL;
+		// A seasoned class counts like better gear (docs/CLASES.md, docs/ARBOLES.md): the points spent on its tree,
+		// against all a player can have at the top. Nothing at all without a class.
+		double clazz = Math.min(1.0, dev.forja.clase.ClassProgress.data(player).spent() / (double) CLASS_POINTS);
 		return Mth.clamp(0.35 * weapon + 0.20 * upgrades + 0.15 * mastery + 0.10 * smith + 0.20 * armor + CLASS_WEIGHT * clazz, 0.0, 1.0);
 	}
 

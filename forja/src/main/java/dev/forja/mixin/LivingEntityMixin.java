@@ -64,4 +64,15 @@ abstract class LivingEntityMixin {
 			cir.setReturnValue(false);
 		}
 	}
+
+	/** Paso quedo (the Asesino's tree): sneaking, a monster sees you from that much less far. */
+	@Inject(method = "getVisibilityPercent", at = @At("RETURN"), cancellable = true)
+	private void forja$softStep(net.minecraft.world.entity.Entity looker, CallbackInfoReturnable<Double> cir) {
+		if ((Object) this instanceof net.minecraft.server.level.ServerPlayer player && player.isShiftKeyDown()) {
+			float[] soft = dev.forja.clase.ClassEffects.hook(player, dev.forja.clase.Hooks.PASO_QUEDO);
+			if (soft != null) {
+				cir.setReturnValue(cir.getReturnValue() * soft[0]);
+			}
+		}
+	}
 }

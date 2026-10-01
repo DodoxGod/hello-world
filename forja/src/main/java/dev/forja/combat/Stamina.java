@@ -273,6 +273,8 @@ public final class Stamina {
 		Data data = data(player);
 		long now = player.level().getGameTime();
 		if (now + DODGE_COOLDOWN_SLACK < data.dodgeCooldownUntil) return;
+		// Fortaleza's price: no dodging with a shield in the other hand.
+		if (!dev.forja.clase.ClassEffects.canDodge(player)) return;
 		// The class (clase/ClassEffects): what a dodge costs, how long it shields you and how soon the next one comes.
 		float dodgeCost = cost(player, cfg.dodgeCost) * dev.forja.clase.ClassEffects.dodgeCostMultiplier(player);
 		if (!exempt(player)) {
@@ -294,6 +296,8 @@ public final class Stamina {
 		}
 		data.dodgeCooldownUntil = now + Math.round(cfg.dodgeCooldownTicks * dev.forja.clase.ClassEffects.dodgeCooldownMultiplier(player));
 		CombatFeedback.dodge(player);
+		// The tree's dodges (clase/ClassEvents.onDodge): Espejismo, Sin sombra, Parpadeo.
+		dev.forja.clase.ClassEvents.onDodge(player);
 		double length = Math.sqrt(x * x + z * z);
 		if (Double.isFinite(length) && length > 1.0E-4) {
 			CombatAnim.broadcast(player, CombatAnim.Kind.DODGE, cfg.dodgeIframeTicks + 4, (float) (x / length), (float) (z / length));

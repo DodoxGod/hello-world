@@ -303,7 +303,52 @@ def medallion(ga):
     }})
 
 
+def candle(ga):
+    """The Vela del olvido (docs/ARBOLES.md): a short lilac candle of amethyst wax, a drip down its side, and a
+    pale ghost-blue flame, the colour of the ghast's tear that goes into it."""
+    image = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    wax_light, wax, wax_dark = (214, 176, 236, 255), (168, 122, 204, 255), (112, 74, 150, 255)
+    outline = (46, 28, 66, 255)
+    # The body: columns 5 to 10, rows 7 to 14, lit from the left.
+    for y in range(7, 15):
+        for x in range(5, 11):
+            colour = wax_light if x == 6 else wax_dark if x == 10 else wax
+            image.putpixel((x, y), colour)
+        image.putpixel((4, y), outline)
+        image.putpixel((11, y), outline)
+    for x in range(4, 12):
+        image.putpixel((x, 15), outline)
+    # The top, a little melted: a rim lighter than the body and a hollow round the wick.
+    for x in range(5, 11):
+        image.putpixel((x, 6), outline if x in (5, 10) else wax_light)
+    image.putpixel((7, 7), wax_dark)
+    image.putpixel((8, 7), wax_dark)
+    # A drip running down the front.
+    for y in (7, 8, 9, 10):
+        image.putpixel((9, y), wax_light)
+    image.putpixel((9, 11), (190, 150, 222, 255))
+    # The wick and the flame: white at the heart, ghost blue around it.
+    image.putpixel((8, 5), (40, 30, 30, 255))
+    flame = {(8, 4): (240, 252, 255, 255), (8, 3): (196, 236, 250, 255), (7, 4): (150, 210, 240, 255), (9, 4): (150, 210, 240, 255),
+             (8, 2): (140, 200, 236, 255), (7, 3): (110, 176, 226, 220), (9, 3): (110, 176, 226, 220), (8, 1): (110, 176, 226, 160)}
+    for at, colour in flame.items():
+        image.putpixel(at, colour)
+    image.save(ga.ASSETS / "textures/item/vela_del_olvido.png")
+    ga.write_json(ga.ASSETS / "models/item/vela_del_olvido.json",
+                  {"parent": "minecraft:item/generated", "textures": {"layer0": "forja:item/vela_del_olvido"}})
+    ga.write_json(ga.ASSETS / "items/vela_del_olvido.json",
+                  {"model": {"type": "minecraft:model", "model": "forja:item/vela_del_olvido"}})
+    # Cheap, but from the Nether: a candle, two amethyst shards and a ghast tear (docs/ARBOLES.md, "Reiniciar").
+    ga.write_json(ga.DATA / "recipe/vela_del_olvido.json", {
+        "type": "minecraft:crafting_shapeless",
+        "category": "misc",
+        "ingredients": ["minecraft:candle", "minecraft:amethyst_shard", "minecraft:amethyst_shard", "minecraft:ghast_tear"],
+        "result": {"id": "forja:vela_del_olvido"},
+    })
+
+
 def generate(ga):
     class_gui(ga)
     emblem(ga)
     medallion(ga)
+    candle(ga)

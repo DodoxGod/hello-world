@@ -677,12 +677,12 @@ BOOKS.update({
     "gui.forja.libros.clases.cerradas": ("Las clases se abren con su libro: hazlo y léelo (libro y esmeralda).",
                                          "The classes open with their book: make it and read it (a book and an emerald)."),
     "gui.forja.libros.clases_sabes": (
-        "Una clase es tu forma de pelear, o de forjar: siete, cada una con sus números, dos habilidades y un árbol de "
-        "talentos que crece con la experiencia. Abrir este libro por primera vez es lo que las abre: desde ahora "
-        "puedes elegir la tuya con **%s** o con el botón de aquí abajo. La primera es gratis.",
-        "A class is your way of fighting, or of forging: seven, each with its numbers, two skills and a talent tree "
-        "that grows with experience. Opening this book for the first time is what opens them: from now on you can "
-        "choose yours with **%s** or with the button below. The first one is free."),
+        "Una clase es tu forma de pelear: seis, cada una con sus números, tres habilidades y un árbol grande que crece "
+        "con la experiencia y con los hitos, y en el que también está la forja. Abrir este libro por primera vez es lo "
+        "que las abre: desde ahora puedes elegir la tuya con **%s** o con el botón de aquí abajo. La primera es gratis.",
+        "A class is your way of fighting: six, each with its numbers, three skills and a big tree that grows with "
+        "experience and milestones, and where the forge is too. Opening this book for the first time is what opens "
+        "them: from now on you can choose yours with **%s** or with the button below. The first one is free."),
     "gui.forja.libros.clases_siguiente": (
         "Con tu clase elegida, lo que queda está ahí fuera: las ruinas, el castillo del Herrero y lo que hay más allá.",
         "With your class chosen, what is left is out there: the ruins, the Smith's castle and what lies beyond."),

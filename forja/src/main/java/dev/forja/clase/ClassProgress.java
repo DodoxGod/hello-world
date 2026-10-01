@@ -1,5 +1,13 @@
 package dev.forja.clase;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import dev.forja.Forja;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
@@ -12,32 +20,36 @@ import net.minecraft.world.entity.player.Player;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A player's class, level, experience and talents (docs/CLASES.md): the attachment that holds them, and
- * everything that changes them. The attachment is persistent, kept through death and synced to its own
- * player, whose screens and dodge read it.
+ * A player's class, level, experience, tree and milestones (docs/CLASES.md, docs/ARBOLES.md): the attachment
+ * that holds them, and everything that changes them. The attachment is persistent, kept through death and
+ * synced to its own player, whose screens and dodge read it.
+ *
+ * <p>The cap, the points a level gives and the experience curve are the tree file's ({@link ClassTree}): Andy
+ * (2026-09-30) wanted about 87 % of a tree bought at the top, with a higher cap and fewer points a level.
  */
 public final class ClassProgress {
-	public static final int MAX_LEVEL = 15;
-	/** Experience from level N to N+1: {@code FIRST_STEP + STEP_GROWTH * (N - 1)}. */
-	public static final int FIRST_STEP = 80;
-	public static final int STEP_GROWTH = 40;
-	/** "Cada nivel da puntos": one per level, the first included. */
-	public static final int POINTS_PER_LEVEL = 1;
+	public static final int MAX_LEVEL = ClassTree.maxLevel();
 
 	/**
-	 * The class keys (Andy, 2026-09-29: K, V and B by default, rebindable). client/ClassClient registers a
-	 * KeyMapping under each name in the Forja category, and every text that names one of them does it with
-	 * {@link #key}, which the client fills with whatever the player has bound — never with a letter.
+	 * The class keys (Andy, 2026-09-29: K, V and B by default, and N for the third skill since the big trees;
+	 * all rebindable). client/ClassClient registers a KeyMapping under each name in the Forja category, and every
+	 * text that names one of them does it with {@link #key}, which the client fills with whatever the player has
+	 * bound — never with a letter.
 	 */
 	public static final String KEY_TREE = "key.forja.clase_arbol";
 	public static final String KEY_SKILL_1 = "key.forja.habilidad_1";
 	public static final String KEY_SKILL_2 = "key.forja.habilidad_2";
+	public static final String KEY_SKILL_3 = "key.forja.habilidad_3";
 	/** The guide's key (client/ForjaClient), named in the reminder to pick a class. */
 	public static final String KEY_GUIDE = "key.forja.guia";
 
 	/** A key as the player has it bound, for a text: resolved on the client, so it follows the Controls screen. */
 	public static Component key(String name) {
 		return Component.keybind(name);
+	}
+
+	public static String skillKey(int slot) {
+		return slot == 1 ? KEY_SKILL_1 : slot == 2 ? KEY_SKILL_2 : KEY_SKILL_3;
 	}
 
 	public static final AttachmentType<ClassData> DATA = AttachmentRegistry.create(Forja.id("clase"), builder -> builder
@@ -62,13 +74,13 @@ public final class ClassProgress {
 		return data(player).playerClass();
 	}
 
-	public static boolean has(@Nullable Player player, Talent talent) {
-		return data(player).has(talent);
+	public static boolean has(@Nullable Player player, String node) {
+		return data(player).has(node);
 	}
 
 	/** Experience needed to go from this level to the next. */
 	public static int step(int level) {
-		return FIRST_STEP + STEP_GROWTH * (Math.max(1, level) - 1);
+		return ClassTree.firstStep() + ClassTree.stepGrowth() * (Math.max(1, level) - 1);
 	}
 
 	/** Experience in total to reach a level from nothing (level 1 is 0). */
@@ -80,10 +92,6 @@ public final class ClassProgress {
 		return total;
 	}
 
-	public static int pointsAt(int level) {
-		return Math.max(0, level) * POINTS_PER_LEVEL;
-	}
-
 	/** Writes the data and puts the attributes on to match. */
 	public static void set(ServerPlayer player, ClassData data) {
 		player.setAttached(DATA, data);
@@ -91,9 +99,32 @@ public final class ClassProgress {
 	}
 
 	/**
+	 * A save from before the big trees (docs/ARBOLES.md, "Migración"): its old talents go and their points come
+	 * back by themselves; a Herrero — a class that no longer exists — is left with no class to choose again.
+	 * Andy (2026-09-30): nobody plays the mod yet, so nothing more than that. Run when the player joins.
+	 */
+	public static boolean migrate(ServerPlayer player) {
+		ClassData data = data(player);
+		if (data.version() >= ClassData.VERSION && (data.clazz().isEmpty() || data.playerClass() != null)) {
+			return false;
+		}
+		boolean known = data.playerClass() != null;
+		boolean hadTalents = data.legacyMask() != 0;
+		set(player, data.migrated(known ? data.clazz() : "", known ? data.level() : 0, known ? data.xp() : 0));
+		ClassEffects.forget(player);
+		if (!known && !data.clazz().isEmpty()) {
+			player.sendSystemMessage(Component.translatable("gui.forja.clase.herrero_retirado", key(KEY_TREE)).withColor(0xFFF0C070));
+		} else if (hadTalents) {
+			player.sendSystemMessage(Component.translatable("gui.forja.clase.arbol_nuevo", data(player).points(), key(KEY_TREE)).withColor(0xFFF0C070));
+		}
+		return true;
+	}
+
+	/**
 	 * Takes a class. The first time is free; after that it is a change, which the caller has paid for (the
 	 * Medallón del olvido, or a command). Andy (2026-09-29): a change does not keep the level — the new class
-	 * starts at level 1 with no experience, like the first one; only the count of changes is carried over.
+	 * starts at level 1 with no experience, like the first one; only the count of changes and the milestones,
+	 * which are the player's, are carried over.
 	 */
 	public static void choose(ServerPlayer player, PlayerClass chosen) {
 		ClassData before = data(player);
@@ -108,8 +139,7 @@ public final class ClassProgress {
 		}
 		boolean change = before.playerClass() != null;
 		int level = 1;
-		int xp = 0;
-		set(player, new ClassData(chosen.id(), level, xp, 0, 0L, 0L, before.changes() + (change ? 1 : 0)));
+		set(player, before.withClass(chosen.id(), level, 0, before.changes() + (change ? 1 : 0)));
 		ClassEffects.forget(player);
 		player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.8F, 1.2F);
 		player.sendSystemMessage(change ? Component.translatable("gui.forja.clase.cambiada", chosen.displayName())
@@ -118,15 +148,15 @@ public final class ClassProgress {
 		dev.forja.ForjaAdvancements.award(player, "clase");
 	}
 
-	/** Leaves the player without a class (commands only). */
+	/** Leaves the player without a class (commands only). The milestones stay: they are the player's. */
 	public static void clear(ServerPlayer player) {
-		set(player, ClassData.NONE);
+		set(player, data(player).withClass("", 0, 0, data(player).changes()));
 		ClassEffects.forget(player);
 	}
 
 	/**
 	 * Class experience. Nothing without a class; levels are said out loud — a sound, a toast and a line in
-	 * the chat — and each brings its point.
+	 * the chat — and each brings its points.
 	 */
 	public static void award(Player player, int amount) {
 		if (!(player instanceof ServerPlayer server) || amount <= 0) {
@@ -160,56 +190,171 @@ public final class ClassProgress {
 		int clamped = Math.max(1, Math.min(MAX_LEVEL, level));
 		ClassData next = data.withLevel(clamped, totalFor(clamped));
 		// Fewer points than are spent: the tree is emptied rather than left owing.
-		if (next.spent() > pointsAt(clamped)) {
-			next = next.withMask(0);
+		if (next.spent() > next.earned()) {
+			next = next.withNodes(List.of());
 		}
 		set(player, next);
 	}
+
+	// ------------------------------------------------------------------ the tree
 
 	public enum Refusal {
 		NONE,
 		NO_CLASS,
 		OTHER_CLASS,
 		ALREADY,
+		/** Not next to anything learned. */
 		PREREQUISITE,
+		/** The other keystone of its branch is learned. */
+		EXCLUDED,
 		POINTS
 	}
 
-	/** Why this talent cannot be learned right now, or NONE if it can. */
-	public static Refusal check(Player player, Talent talent) {
-		ClassData data = data(player);
-		if (data.playerClass() == null) {
+	/** Why this node cannot be learned on top of what {@code data} has, or NONE if it can. */
+	public static Refusal check(ClassData data, String id) {
+		ClassTree.Tree tree = data.tree();
+		if (tree == null) {
 			return Refusal.NO_CLASS;
 		}
-		if (talent.owner != data.playerClass()) {
+		ClassTree.Node node = tree.node(id);
+		if (node == null) {
 			return Refusal.OTHER_CLASS;
 		}
-		if (data.has(talent)) {
+		if (node.kind == ClassTree.Kind.ORIGEN || data.has(id)) {
 			return Refusal.ALREADY;
 		}
-		if (!talent.prerequisitesMet(data.mask())) {
+		if (node.excludes != null && data.has(node.excludes)) {
+			return Refusal.EXCLUDED;
+		}
+		if (!reachable(tree, data, node)) {
 			return Refusal.PREREQUISITE;
 		}
-		if (data.points() < talent.cost()) {
+		if (data.points() < node.cost) {
 			return Refusal.POINTS;
 		}
 		return Refusal.NONE;
 	}
 
-	public static boolean unlock(ServerPlayer player, Talent talent) {
-		if (check(player, talent) != Refusal.NONE) {
+	public static Refusal check(Player player, String id) {
+		return check(data(player), id);
+	}
+
+	/** Whether a node touches the origin or something learned. */
+	public static boolean reachable(ClassTree.Tree tree, ClassData data, ClassTree.Node node) {
+		for (String link : node.links) {
+			ClassTree.Node other = tree.node(link);
+			if (other != null && (other.kind == ClassTree.Kind.ORIGEN || data.has(link))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static boolean unlock(ServerPlayer player, String id) {
+		if (check(player, id) != Refusal.NONE) {
 			return false;
 		}
 		ClassData data = data(player);
-		set(player, data.withMask(data.mask() | 1 << talent.index()));
+		set(player, data.plus(id));
 		player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.7F, 1.3F);
-		player.sendSystemMessage(Component.translatable("gui.forja.talento.aprendido", talent.displayName()).withColor(0xFFF0C070));
+		ClassTree.Node node = data.tree().node(id);
+		player.sendOverlayMessage(Component.translatable("gui.forja.talento.aprendido", node.displayName(data.playerClass())).withColor(0xFFF0C070));
 		return true;
 	}
 
-	/** Empties the tree and gives every point back (the emblem on your own class, or a command). */
+	/**
+	 * A plan from the tree's "Probar" (a list of nodes in the order they were picked): learned one by one, each
+	 * checked as it comes, stopping at the first that cannot be. Says how many were learned.
+	 */
+	public static int unlockAll(ServerPlayer player, List<String> plan) {
+		int learned = 0;
+		for (String id : plan) {
+			if (check(player, id) != Refusal.NONE) {
+				break;
+			}
+			set(player, data(player).plus(id));
+			learned++;
+		}
+		if (learned > 0) {
+			player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.7F, 1.3F);
+			player.sendOverlayMessage(Component.translatable("gui.forja.arbol.aplicado", learned).withColor(0xFFF0C070));
+		}
+		return learned;
+	}
+
+	/** Empties the tree and gives every point back (the medallion on your own class, or a command). */
 	public static void resetTalents(ServerPlayer player) {
-		set(player, data(player).withMask(0));
+		set(player, data(player).withNodes(List.of()));
 		ClassEffects.forget(player);
+	}
+
+	/**
+	 * Whether these learned nodes can go together (the Vela del olvido): all learned, none of them the origin,
+	 * worth no more than {@code most} points, and what stays still all hangs from the origin.
+	 */
+	public static boolean canForget(ClassData data, Collection<String> ids, int most) {
+		ClassTree.Tree tree = data.tree();
+		if (tree == null || ids.isEmpty()) {
+			return false;
+		}
+		int cost = 0;
+		for (String id : ids) {
+			ClassTree.Node node = tree.node(id);
+			if (node == null || !data.has(id) || node.kind == ClassTree.Kind.ORIGEN) {
+				return false;
+			}
+			cost += node.cost;
+		}
+		if (cost > most) {
+			return false;
+		}
+		Set<String> kept = new HashSet<>(data.nodes());
+		kept.removeAll(ids);
+		return connected(tree, kept);
+	}
+
+	/** Whether every node in {@code owned} hangs from the origin through owned nodes. */
+	public static boolean connected(ClassTree.Tree tree, Set<String> owned) {
+		Set<String> seen = new HashSet<>();
+		Deque<String> open = new ArrayDeque<>();
+		open.add(tree.origin().id);
+		while (!open.isEmpty()) {
+			String id = open.poll();
+			for (String link : tree.node(id).links) {
+				if (owned.contains(link) && seen.add(link)) {
+					open.add(link);
+				}
+			}
+		}
+		return seen.containsAll(owned);
+	}
+
+	/** Takes nodes off the tree, their points back (the Vela del olvido checks and pays first). */
+	public static void forget(ServerPlayer player, Collection<String> ids) {
+		ClassData data = data(player);
+		List<String> kept = new ArrayList<>(data.nodes());
+		kept.removeAll(ids);
+		set(player, data.withNodes(kept));
+		ClassEffects.forget(player);
+	}
+
+	// ------------------------------------------------------------------ milestones
+
+	/**
+	 * A milestone reached: once per player, whatever the class (or none). Its points are spendable as the level
+	 * allows ({@link ClassData#usableMilestonePoints}). Said with a sound and a line in the chat.
+	 */
+	public static boolean reach(ServerPlayer player, String id) {
+		ClassTree.Milestone milestone = ClassTree.milestone(id);
+		ClassData data = data(player);
+		if (milestone == null || data.hasMilestone(id)) {
+			return false;
+		}
+		set(player, data.withMilestone(id));
+		player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 0.6F, 1.2F);
+		ClassData after = data(player);
+		player.sendSystemMessage(Component.translatable(after.waitingMilestonePoints() > 0 ? "gui.forja.hito.logrado_espera" : "gui.forja.hito.logrado",
+			milestone.displayName(), milestone.points(), after.waitingMilestonePoints()).withColor(0xFFF0C070));
+		return true;
 	}
 }
