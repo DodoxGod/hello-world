@@ -104,6 +104,9 @@ public final class ClassEffects {
 		BUFFS.remove(player.getUUID());
 		SERVER_CACHE.remove(player.getUUID());
 		CLIENT_CACHE.remove(player.getUUID());
+		ClassSkills.forget(player);
+		ClassEvents.forget(player);
+		dev.forja.magic.Healing.forget(player);
 	}
 
 	private static Cache cache(Player player) {

@@ -1,5 +1,9 @@
 # Novedades
 
+## 2026-10-01 — Limpiar los estados efímeros de clase
+
+- Desconexión, cambio de clase y reinicio vacían las protecciones de Segunda vida y los restos de experiencia de Tanque y Curandero. Las protecciones vencidas también desaparecen sin esperar un golpe.
+
 ## 2026-10-01 — Mestizaje en los atributos reales
 
 - La ficha y los componentes del equipo forjado comparten el cálculo final de piezas, mejoras, Maestría, don, calidad, estrella y Mestizaje. El bono de materiales distintos modifica también el daño, minado y armadura efectivos.

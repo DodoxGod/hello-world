@@ -1,10 +1,14 @@
 package dev.forja.test;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import dev.forja.clase.ClassDamage;
 import dev.forja.clase.ClassEffects;
+import dev.forja.clase.ClassEvents;
 import dev.forja.clase.ClassProgress;
+import dev.forja.clase.ClassSkills;
 import dev.forja.clase.PlayerClass;
 import dev.forja.combat.CombatConfig;
 import dev.forja.combat.Stamina;
@@ -28,6 +32,61 @@ import net.minecraft.world.item.ItemStack;
 
 /** Las clases y el farol de curación (docs/CLASES.md), tras unir la rama forja-clases con el maná. */
 public class ClasesGameTests {
+	@GameTest
+	public void ephemeralClassStateIsForgotten(GameTestHelper helper) throws ReflectiveOperationException {
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
+		ClassProgress.choose(player, PlayerClass.TANQUE);
+		seedClassState(player);
+		ClassProgress.choose(player, PlayerClass.CURANDERO);
+		assertClassStateEmpty(helper, player, "class change");
+		seedClassState(player);
+		ClassProgress.resetTalents(player);
+		assertClassStateEmpty(helper, player, "reset");
+		seedClassState(player);
+		ClassEffects.forget(player); // The disconnect callback uses this same path.
+		assertClassStateEmpty(helper, player, "disconnect");
+		ClassProgress.clear(player);
+		helper.succeed();
+	}
+
+	@GameTest
+	public void expiredWardIsRemovedWithoutDamage(GameTestHelper helper) throws ReflectiveOperationException {
+		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
+		ward(player.getUUID(), player.getUUID(), helper.getLevel().getGameTime() - 1);
+		helper.assertTrue(!ClassSkills.warded(player), "expired ward cannot protect");
+		helper.assertTrue(!map(ClassSkills.class, "WARDS").containsKey(player.getUUID()), "expired ward must leave the map");
+		helper.succeed();
+	}
+
+	private static void seedClassState(CombatGameTests.TestPlayer player) throws ReflectiveOperationException {
+		UUID id = player.getUUID();
+		map(ClassEvents.class, "TANK_OWED").put(id, 1.0F);
+		map(Healing.class, "OWED").put(id, 1.0F);
+		ward(id, id, player.level().getGameTime() + 100);
+	}
+
+	private static void assertClassStateEmpty(GameTestHelper helper, CombatGameTests.TestPlayer player, String event)
+		throws ReflectiveOperationException {
+		UUID id = player.getUUID();
+		helper.assertTrue(!map(ClassEvents.class, "TANK_OWED").containsKey(id), event + " retained tank XP");
+		helper.assertTrue(!map(Healing.class, "OWED").containsKey(id), event + " retained healing XP");
+		helper.assertTrue(!map(ClassSkills.class, "WARDS").containsKey(id), event + " retained a ward");
+	}
+
+	private static void ward(UUID target, UUID owner, long until) throws ReflectiveOperationException {
+		Class<?> type = Class.forName("dev.forja.clase.ClassSkills$Ward");
+		var constructor = type.getDeclaredConstructor(UUID.class, long.class, float.class);
+		constructor.setAccessible(true);
+		map(ClassSkills.class, "WARDS").put(target, constructor.newInstance(owner, until, 0.5F));
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Map<UUID, Object> map(Class<?> owner, String name) throws ReflectiveOperationException {
+		var field = owner.getDeclaredField(name);
+		field.setAccessible(true);
+		return (Map<UUID, Object>) field.get(null);
+	}
+
 	private static ItemStack lantern(GameTestHelper helper) {
 		return Assembler.create(ForgeType.FAROL, List.of(ForgeMaterial.ESMERALDA, ForgeMaterial.ORO, ForgeMaterial.MADERA),
 			helper.getLevel().registryAccess());

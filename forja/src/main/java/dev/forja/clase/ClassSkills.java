@@ -58,7 +58,7 @@ public final class ClassSkills {
 	public static final String KNIFE_TAG = "forja_daga";
 
 	/** Segunda vida: who is warded, until when, and with what share of their health a lethal blow leaves them. */
-	private record Ward(long until, float share) {
+	private record Ward(UUID owner, long until, float share) {
 	}
 
 	private static final Map<UUID, Ward> WARDS = new HashMap<>();
@@ -71,8 +71,17 @@ public final class ClassSkills {
 	private ClassSkills() {
 	}
 
+	static void forget(Player player) {
+		UUID id = player.getUUID();
+		WARDS.entrySet().removeIf(entry -> entry.getKey().equals(id) || entry.getValue().owner.equals(id));
+	}
+
 	public static void register() {
-		ServerTickEvents.END_SERVER_TICK.register(server -> SHIELDED.keySet().removeIf(ClassSkills::shieldSpent));
+		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			SHIELDED.keySet().removeIf(ClassSkills::shieldSpent);
+			long now = server.overworld().getGameTime();
+			WARDS.entrySet().removeIf(entry -> entry.getValue().until < now);
+		});
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			if (LATER.isEmpty()) {
 				return;
@@ -464,7 +473,7 @@ public final class ClassSkills {
 				if (!mana(player, n[3])) {
 					return false;
 				}
-				WARDS.put(target.getUUID(), new Ward(level.getGameTime() + ActiveSkill.ticks(n[1]), n[2]));
+				WARDS.put(target.getUUID(), new Ward(player.getUUID(), level.getGameTime() + ActiveSkill.ticks(n[1]), n[2]));
 				level.sendParticles(ParticleTypes.TOTEM_OF_UNDYING, target.getX(), target.getY() + 1.0, target.getZ(), 30, 0.4, 0.6, 0.4, 0.2);
 				level.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.PLAYERS, 1.0F, 1.2F);
 			}
@@ -861,7 +870,11 @@ public final class ClassSkills {
 	/** Whether Segunda vida is still waiting on someone (tests and the tooltip). */
 	public static boolean warded(LivingEntity entity) {
 		Ward ward = WARDS.get(entity.getUUID());
-		return ward != null && ward.until >= entity.level().getGameTime();
+		if (ward != null && ward.until < entity.level().getGameTime()) {
+			WARDS.remove(entity.getUUID());
+			return false;
+		}
+		return ward != null;
 	}
 
 	/** One turn of the Torbellino: everything hostile around takes a share of the weapon and a shove of posture. */

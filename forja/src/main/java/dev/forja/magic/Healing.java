@@ -74,6 +74,10 @@ public final class Healing {
 	private Healing() {
 	}
 
+	public static void forget(Player player) {
+		OWED.remove(player.getUUID());
+	}
+
 	/** What the beam mends: 1.5 and six tenths of the núcleo's bite. */
 	public static float beamHeal(ForgeMaterial core) {
 		return 1.5F + 0.6F * core.attackDamageBonus;

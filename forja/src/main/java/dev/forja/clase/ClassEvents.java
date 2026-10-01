@@ -76,6 +76,10 @@ public final class ClassEvents {
 	private ClassEvents() {
 	}
 
+	static void forget(Player player) {
+		TANK_OWED.remove(player.getUUID());
+	}
+
 	public static void register() {
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			ServerPlayer player = handler.player;
