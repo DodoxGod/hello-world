@@ -3,6 +3,7 @@
 ## 2026-10-01 — Pactos de sed y de vidrio más caros
 
 - Cada uno da 5 de potencial (antes 10) y pesa 2 en la carga de la pieza (antes 0); la mesa los rechaza por falta de carga como a cualquier mejora que pesa. Los pactos de sombra y de la prisa quedan como estaban y los costes narrativos no cambian. El libro y el informe de equilibrio usan las mismas cifras (`Potential.pactPotential`).
+
 ## 2026-10-01 — Tablas generadas por las pruebas de servidor
 
 - `runGametest` regenera `MATERIALES.md` y `MEJORAS.md` y comprueba que haya una fila por material y mejora. La tabla de materiales incluye ya las aleaciones recientes.
