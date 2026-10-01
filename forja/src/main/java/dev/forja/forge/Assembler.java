@@ -272,6 +272,11 @@ public final class Assembler {
 		}
 	}
 
+	/** The Nether's own stone, which a Volcánico pick cuts faster: data/forja/tags/block/piedra_volcanica.json. */
+	public static final TagKey<Block> VOLCANIC_STONE = TagKey.create(net.minecraft.core.registries.Registries.BLOCK, Forja.id("piedra_volcanica"));
+	/** How much faster. */
+	public static final float VOLCANIC_MINING = 1.5F;
+
 	/** Extra entity reach of the scythe's long shaft. */
 	public static final float GUADANA_REACH = 0.75F;
 
@@ -349,6 +354,16 @@ public final class Assembler {
 		// Tier comes from the first head; every head mines its own block family at its own speed.
 		List<Tool.Rule> rules = new ArrayList<>();
 		rules.add(Tool.Rule.deniesDrops(blocks.getOrThrow(parts.primary().incorrectBlocksForDrops)));
+		// Volcánico: a pick of magmasteel cuts the Nether's own stone half again as fast (docs/ALEACIONES_NETHER_END.md).
+		if (parts.hasTrait(ForgeMaterial.Trait.VOLCANICO)) {
+			for (int slot = 0; slot < type.slots.size(); slot++) {
+				if (type.mineableFor(type.slots.get(slot)) == BlockTags.MINEABLE_WITH_PICKAXE) {
+					float speed = stats.miningSpeeds[slot] * VOLCANIC_MINING;
+					blocks.get(VOLCANIC_STONE).ifPresent(stone -> rules.add(Tool.Rule.minesAndDrops(stone, speed)));
+					break;
+				}
+			}
+		}
 		for (int slot = 0; slot < type.slots.size(); slot++) {
 			TagKey<Block> mineable = type.mineableFor(type.slots.get(slot));
 			if (mineable != null) {

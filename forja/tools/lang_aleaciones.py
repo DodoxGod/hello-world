@@ -9,6 +9,24 @@ ALEACIONES = {
     "item.forja.fatuo": ("Fatuo", "Wispfire"),
     "material.forja.fatuo": ("fatuo", "wispfire"),
     "conjunto.forja.fatuo": ("+1 de daño y el fuego te dura la mitad", "+1 damage and fire lasts half as long on you"),
+    "item.forja.magmacero": ("Magmacero", "Magmasteel"),
+    "material.forja.magmacero": ("magmacero", "magmasteel"),
+    "conjunto.forja.magmacero": ("+1 de armadura y +20 % de resistencia al empuje", "+1 armour and +20% knockback resistance"),
+    "block.forja.costra_de_magma": ("Costra de magma", "Magma Crust"),
+    "trait.forja.volcanico": ("Volcánico", "Volcanic"),
+    "trait.forja.volcanico.desc": (
+        "La lava que pisas se enfría en costra; sus picos cortan la piedra del Nether más deprisa",
+        "Lava you walk on cools into crust; its picks cut Nether stone faster"),
+    "trait.forja.volcanico.largo": (
+        "Con armadura, la lava que pisas se enfría en costra de magma (radio 1 con una pieza, 2 con dos o tres, 3 con "
+        "las cuatro), que aguanta mientras alguien está encima y vuelve a ser lava unos segundos después. Sus picos cortan "
+        "netherrack, basalto, piedra negra, magma y ladrillo del Nether un 50 % más deprisa.",
+        "Worn, lava you walk on cools into magma crust (radius 1 with one piece, 2 with two or three, 3 with all four) "
+        "that holds while anyone stands on it and turns back to lava a few seconds later. Its picks cut netherrack, "
+        "basalt, blackstone, magma and nether brick 50% faster."),
+    "flecha.forja.especial.magma": ("Magma", "Magma"),
+    "flecha.forja.especial.magma.desc": (
+        "se le pega: lo prende y lo frena %s s", "sticks to it: sets it alight and slows it for %s s"),
 
     # ---- the traits
     "trait.forja.espectral": ("Espectral", "Spectral"),
@@ -42,6 +60,7 @@ ALEACIONES = {
     "gui.forja.fragua_lejana.no_va.almas": (
         "%s no va en la fragua de almas: solo funde fatuo y magmacero.",
         "%s does not go in the soul forge: it only makes wispfire and magmasteel."),
+
     "gui.forja.fragua_lejana.fuera.almas": (
         "Lejos del Nether, el fuego de almas no prende: aquí no funde nada.",
         "Away from the Nether the soul fire will not take: it makes nothing here."),
@@ -64,6 +83,9 @@ ALEACIONES = {
     "item.forja.nota_fragua_de_almas.fatuo": (
         "Fatuo: 2 hierro, 1 chatarra de netherita, 4 tierra de almas",
         "Wispfire: 2 iron, 1 netherite scrap, 4 soul soil"),
+    "item.forja.nota_fragua_de_almas.magmacero": (
+        "Magmacero: 2 acero, 4 basalto, 4 piedra negra, 2 crema de magma",
+        "Magmasteel: 2 steel, 4 basalt, 4 blackstone, 2 magma cream"),
     "item.forja.nota_fragua_de_almas.fuego": (
         "Una vara de blaze la enciende; polvo de blaze la alimenta",
         "A blaze rod lights it; blaze powder feeds it"),

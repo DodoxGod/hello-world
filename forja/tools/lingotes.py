@@ -179,6 +179,7 @@ GLYPHS = {
     "lingote_de_temple": None,
     # The far forge alloys (docs/ALEACIONES_NETHER_END.md).
     "fatuo": (".#..", "##.#", ".##."),
+    "magmacero": ("#.#.", "#.#.", "####"),
     # The vanilla metals, which have a repair kit but no Forja ingot.
     "cobre": ("#.##", "#...", "####"),
     "hierro": ("####", "#..#", "####"),
@@ -345,6 +346,14 @@ def mark_a(bar, name):
             put(cx + 1, cy, colour=(34, 104, 150))
             put(cx - 1, cy + 1, dark)
             put(cx, cy + 1, colour=(34, 104, 150))
+    elif name == "magmacero":
+        # Magmasteel: basalt cooling along the bar, the magma still glowing in the joints, a shadow over each.
+        for (x, y) in axis(7.6):
+            if x % 4 != 0:
+                put(x, y, colour=(255, 138, 40) if x % 4 != 2 else (255, 214, 120))
+                put(x, y - 1, dark)
+        for (x, y) in ((4, 8), (12, 5)):
+            put(x, y, 4)
     elif name == "oricalco":
         # Oricalco: one star caught in it, as in its pearl.
         put(8, 5, colour=(255, 252, 214))

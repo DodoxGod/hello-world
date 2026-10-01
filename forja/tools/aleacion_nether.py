@@ -16,6 +16,8 @@ GA = None
 # The ingots themselves are tools/lingotes.py's, like every other alloy's (variant A, with each of these three
 # alloys' own mark on its top face), and so are their repair kits (variant B): nothing to draw here.
 
+MAGMA = (255, 138, 40)
+MAGMA_HOT = (255, 214, 120)
 SOUL = (95, 211, 224)
 SOUL_DEEP = (34, 104, 150)
 SOUL_WHITE = (214, 250, 252)
@@ -89,6 +91,46 @@ def far_forge_block(name):
     GA.write_json(GA.ASSETS / f"items/{name}.json", {"model": {"type": "minecraft:model", "model": f"forja:block/{name}"}})
 
 
+# ---------------------------------------------------------------------------- the magma crust
+
+def magma_crust():
+    """Costra de magma: lava gone dark on top, cracked into plates, the glow still in the cracks."""
+    rng = random.Random(661)
+    crust = Image.new("RGBA", (16, 16))
+    for y in range(16):
+        for x in range(16):
+            g = rng.randint(-10, 10)
+            crust.putpixel((x, y), (max(0, 58 + g), max(0, 40 + g), max(0, 36 + g), 255))
+    # Cracks between plates, a lit line with its dark edge, the way a cooling skin breaks up.
+    cracks = [((0, 5), (5, 4), (9, 7), (15, 6)), ((3, 15), (6, 10), (9, 7)), ((9, 7), (12, 12), (15, 13)),
+              ((0, 11), (3, 15))]
+    for line in cracks:
+        for (x0, y0), (x1, y1) in zip(line, line[1:]):
+            steps = max(abs(x1 - x0), abs(y1 - y0))
+            for i in range(steps + 1):
+                x = round(x0 + (x1 - x0) * i / steps)
+                y = round(y0 + (y1 - y0) * i / steps)
+                crust.putpixel((x % 16, y % 16), (MAGMA_HOT if rng.random() < 0.25 else MAGMA) + (255,))
+                crust.putpixel((x % 16, (y + 1) % 16), (34, 22, 20, 255))
+    folder = GA.ASSETS / "textures/block"
+    crust.save(folder / "costra_de_magma.png")
+    GA.write_json(GA.ASSETS / "models/block/costra_de_magma.json",
+                  {"parent": "minecraft:block/cube_all", "textures": {"all": "forja:block/costra_de_magma"}})
+    GA.write_json(GA.ASSETS / "blockstates/costra_de_magma.json", {"variants": {"": {"model": "forja:block/costra_de_magma"}}})
+
+
+def volcanic_stone_tag():
+    """The Nether's own stone, which a Volcánico pick cuts half again as fast (forge/Assembler.VOLCANIC_STONE)."""
+    GA.write_json(GA.DATA / "tags/block/piedra_volcanica.json", {"replace": False, "values": [
+        "minecraft:netherrack", "minecraft:basalt", "minecraft:polished_basalt", "minecraft:smooth_basalt",
+        "minecraft:blackstone", "minecraft:polished_blackstone", "minecraft:polished_blackstone_bricks",
+        "minecraft:cracked_polished_blackstone_bricks", "minecraft:chiseled_polished_blackstone",
+        "minecraft:gilded_blackstone", "minecraft:magma_block", "minecraft:nether_bricks",
+        "minecraft:cracked_nether_bricks", "minecraft:chiseled_nether_bricks", "minecraft:red_nether_bricks",
+        "minecraft:crimson_nylium", "minecraft:warped_nylium",
+    ]})
+
+
 # ---------------------------------------------------------------------------- the blue fire's icon
 
 def soul_flame_icon():
@@ -157,14 +199,16 @@ def loot_table(name, guaranteed, rolls, entries):
 def fallen_forge_loot():
     """The Fragua caída's own chest: the note that says what its forge is for, and what lights and feeds it."""
     loot_table("fragua_caida",
-               [note("nota_fragua_de_almas", ["fatuo", "fuego"]), counted("minecraft:blaze_rod", 1, 1, 2)],
+               [note("nota_fragua_de_almas", ["fatuo", "magmacero", "fuego"]), counted("minecraft:blaze_rod", 1, 1, 2)],
                (2, 4),
                [counted("minecraft:blaze_powder", 10, 2, 6),
                 counted("minecraft:soul_soil", 10, 4, 8),
                 counted("minecraft:iron_ingot", 8, 1, 4),
                 counted("minecraft:magma_cream", 5, 1, 3),
                 counted("minecraft:basalt", 5, 4, 8),
+                counted("minecraft:blackstone", 5, 4, 8),
                 counted("forja:fatuo", 3, 1, 2),
+                counted("forja:magmacero", 3, 1, 2),
                 counted("minecraft:netherite_scrap", 1, 1, 1)])
 
 
@@ -174,5 +218,7 @@ def generate(ga):
     soul_forge_textures()
     far_forge_block("fragua_de_almas")
     soul_flame_icon()
+    magma_crust()
+    volcanic_stone_tag()
     fallen_forge_loot()
     print("aleacion_nether: far forges written")

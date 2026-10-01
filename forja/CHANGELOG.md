@@ -1,5 +1,22 @@
 # Novedades
 
+## 2026-10-01 — Magmacero, segunda aleación de la fragua de almas: la lava se vuelve suelo
+
+- **Magmacero** (Magmasteel), solo en la fragua de almas de la Fragua caída: 2 acero + 4 basalto + 4 piedra negra +
+  2 crema de magma → 2 lingotes, con el mismo polvo de blaze por tanda. Pesado y duradero (1600, mango ×1,55 pero
+  lento), nivel de diamante, cabeza +3,0, armadura 20 con dureza 2,5: metal de armadura y de pico, no de hoja.
+- Rasgo nuevo **Volcánico**: con armadura de magmacero, **la lava que pisas se enfría en costra de magma**
+  (`forja:costra_de_magma`) que aguanta mientras alguien está encima y vuelve a ser lava entre 4 y 6 s después; radio 1
+  con una pieza, 2 con dos o tres y 3 con las cuatro. Los **picos** de magmacero cortan netherrack, basalto, piedra
+  negra, magma y ladrillo del Nether un 50 % más deprisa (etiqueta `forja:piedra_volcanica`). La punta de flecha se
+  pega: prende y frena 2 s. Conjunto: +1 de armadura y +20 % de resistencia al empuje.
+- La nota del cofre de la ruina trae también su receta, y el cofre a veces un lingote de muestra y piedra negra.
+- Lingote y kit de reparación de la familia de `tools/lingotes.py`: magma encendido en las juntas del basalto.
+- Equilibrio: entra en la sección «Aleaciones de fragua frente a la netherita» (no es netherita mejor y no está en
+  ninguna de las mejores armas).
+- Pruebas: `theSoulForgeMakesMagmasteelToo`, `magmasteelCoolsTheLavaUnderfoot`, `magmasteelPicksCutNetherStone`; la
+  sección `FORJA_SOLO=fragua_caida` filma su armadura junto a la de fatuo y la costra en el canal de lava.
+
 ## 2026-10-01 — La Fragua caída enciende una fragua de almas: el fatuo, primera aleación del Nether
 
 - **La ruina del Nether ya no abre un marco de portal** (eso lo hace la Forja Profunda del Bastión). Sobre su altar hay

@@ -159,6 +159,9 @@ public final class GearAura {
 		if (parts.hasTrait(ForgeMaterial.Trait.ESPECTRAL)) {
 			return random.nextFloat() < 0.6F ? ParticleTypes.SOUL_FIRE_FLAME : null;
 		}
+		if (parts.hasTrait(ForgeMaterial.Trait.VOLCANICO)) {
+			return random.nextFloat() < 0.25F ? ParticleTypes.LAVA : null;
+		}
 		return null;
 	}
 

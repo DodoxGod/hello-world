@@ -52,6 +52,25 @@ public final class ModBlocks {
 	);
 
 	/**
+	 * Costra de magma: lava cooled under the feet of someone in magmasteel (the Volcánico trait), back to lava a few
+	 * seconds after nobody stands on it. Nothing breaks it and it drops nothing: it is lava, for a moment. See
+	 * block/MagmaCrustBlock.
+	 */
+	public static final Block COSTRA_DE_MAGMA = register(
+		"costra_de_magma",
+		new dev.forja.block.MagmaCrustBlock(
+			BlockBehaviour.Properties.of()
+				.mapColor(MapColor.NETHER)
+				.strength(-1.0F, 3600000.0F)
+				.sound(SoundType.BASALT)
+				.noLootTable()
+				.pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)
+				.lightLevel(state -> 3)
+				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("costra_de_magma")))
+		)
+	);
+
+	/**
 	 * The anvil of the fallen smith, which he leaves behind. Standing on its own next to a forge table it
 	 * is worth the other two tables: the master's anvil is a whole workshop by itself.
 	 */

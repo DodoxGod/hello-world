@@ -120,7 +120,19 @@ final class FraguaCaidaFootage {
 		look(context, server, cx, oy + 5, oz + 15.5, cx, oy + 2.2, cz, "fragua_caida_08_fragua_de_almas_encendida");
 		look(context, server, ox + 7.5, oy + 4.2, oz + 5.4, ox + 7.5, oy + 2.8, oz + 7.5, "fragua_caida_09_hogar_de_almas_cerca");
 		look(context, server, ox + 7.5, oy + 4.3, oz + 10.8, ox + 7.5, oy + 2.8, oz + 8.5, "fragua_caida_10_equipo_de_las_aleaciones");
-		look(context, server, ox + 10.6, oy + 3.6, oz + 8.5, ox + 7.5, oy + 2.9, oz + 8.5, "fragua_caida_11_equipo_de_lado");
+		look(context, server, ox + 11.6, oy + 3.4, oz + 7.0, ox + 7.5, oy + 2.9, oz + 8.5, "fragua_caida_11_equipo_de_lado");
+
+		// Volcánico: a suit of magmasteel standing in the lava channel by the gap in the south wall, and the crust it
+		// cools round itself.
+		int cooled = server.computeOnServer(s -> {
+			ServerLevel level = s.getLevel(Level.NETHER);
+			var walker = stand(level, ox + 7.5, oy + 1.0, oz + 12.5, dev.forja.material.ForgeMaterial.MAGMACERO);
+			walker.setNoGravity(true);
+			return dev.forja.upgrade.TraitEffects.volcanicStep(level, walker, 4);
+		});
+		log("fragua caida: costra de magma, " + cooled + " bloques");
+		check(cooled > 0, "el magmacero deberia enfriar la lava del canal");
+		look(context, server, ox + 7.5, oy + 3.4, oz + 17.0, ox + 7.5, oy + 1.2, oz + 12.5, "fragua_caida_12_costra_de_magma");
 
 		context.runOnClient(mc -> {
 			if (mc.gui.hud.isHidden()) {
@@ -131,7 +143,8 @@ final class FraguaCaidaFootage {
 	}
 
 	/** An armour stand in a full suit of one material, with a sword of it in the hand and a pickaxe in the other. */
-	private static void stand(ServerLevel level, double x, double y, double z, dev.forja.material.ForgeMaterial material) {
+	private static net.minecraft.world.entity.decoration.ArmorStand stand(ServerLevel level, double x, double y, double z,
+		dev.forja.material.ForgeMaterial material) {
 		var registries = level.registryAccess();
 		var stand = new net.minecraft.world.entity.decoration.ArmorStand(level, x, y, z);
 		stand.setYRot(0.0F);
@@ -148,6 +161,7 @@ final class FraguaCaidaFootage {
 		stand.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, dev.forja.forge.Assembler.create(dev.forja.forge.ForgeType.PICO,
 			java.util.List.of(material, material, material), registries));
 		level.addFreshEntity(stand);
+		return stand;
 	}
 
 	/** The spectator camera at (x, y, z) looking at (tx, ty, tz), a few ticks to let the chunks and light settle, then the shot. */

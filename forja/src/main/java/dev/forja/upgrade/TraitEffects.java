@@ -71,6 +71,50 @@ public final class TraitEffects {
 				entity.discard();
 			}
 		});
+		// Volcánico: every tick, like Frost Walker, but only for a player who has some on.
+		ServerTickEvents.END_LEVEL_TICK.register(level -> {
+			for (ServerPlayer player : level.players()) {
+				if (!player.isSpectator() && player.onGround()) {
+					int pieces = armorPieces(player, ForgeMaterial.Trait.VOLCANICO);
+					if (pieces > 0) {
+						volcanicStep(level, player, pieces);
+					}
+				}
+			}
+		});
+	}
+
+	/** How far the lava cools round someone in magmasteel: one piece a block, two or three two, a full suit three. */
+	public static int volcanicRadius(int pieces) {
+		return pieces >= 4 ? 3 : pieces >= 2 ? 2 : 1;
+	}
+
+	/**
+	 * Volcánico: the lava under and round the walker's feet cools into crust (block/MagmaCrustBlock), still lava
+	 * sources only and only where nothing stands on top. Returns how many cooled.
+	 */
+	public static int volcanicStep(ServerLevel level, LivingEntity walker, int pieces) {
+		int radius = volcanicRadius(pieces);
+		BlockPos below = walker.blockPosition().below();
+		double reach = (radius + 0.5) * (radius + 0.5);
+		int cooled = 0;
+		for (BlockPos pos : BlockPos.betweenClosed(below.offset(-radius, 0, -radius), below.offset(radius, 0, radius))) {
+			double dx = pos.getX() + 0.5 - walker.getX();
+			double dz = pos.getZ() + 0.5 - walker.getZ();
+			if (dx * dx + dz * dz > reach) {
+				continue;
+			}
+			BlockState state = level.getBlockState(pos);
+			if (state.is(net.minecraft.world.level.block.Blocks.LAVA) && state.getFluidState().isSource()
+				&& level.getBlockState(pos.above()).isAir()) {
+				level.setBlockAndUpdate(pos, dev.forja.registry.ModBlocks.COSTRA_DE_MAGMA.defaultBlockState());
+				cooled++;
+			}
+		}
+		if (cooled > 0) {
+			level.playSound(null, walker.getX(), walker.getY(), walker.getZ(), SoundEvents.LAVA_EXTINGUISH, SoundSource.PLAYERS, 0.15F, 1.4F);
+		}
+		return cooled;
 	}
 
 	public static int armorPieces(LivingEntity entity, ForgeMaterial.Trait trait) {

@@ -93,7 +93,7 @@ MATERIAL_COLORS = {
     # The Guild's metal, poured from fourteen (docs/HERRERO_DIMENSION.md, 1.4): the green gold of its ingot.
     "oricalco": 0xCFD45A,
     # Only at their own far forge (docs/ALEACIONES_NETHER_END.md, tools/aleacion_nether.py).
-    "fatuo": 0x3A5466,
+    "fatuo": 0x3A5466, "magmacero": 0x6E3A2C,
 }
 SPECIAL = {"arco", "escudo", "lanza", "ballesta", "cana"}
 DEFAULT_COLORS = {"HEAD": 0xE4E4E4, "PLATE": 0xE4E4E4, "HANDLE": 0xB8894F, "EXTRA": 0xB8894F, "LINING": 0xA86B3C}
@@ -3546,7 +3546,7 @@ def generate_master_hammer_texture():
 # One list, here, and check_tool_tags() makes sure no block is left out of every list again.
 PICKAXE_BLOCKS = [
     "forja:mesa_de_forja", "forja:mesa_de_forja_mayor", "forja:mesa_de_piezas", "forja:mesa_de_extraccion",
-    "forja:fragua_apagada", "forja:fragua_de_almas", "forja:yunque_del_herrero", "forja:farol_de_pavesa",
+    "forja:fragua_apagada", "forja:fragua_de_almas", "forja:costra_de_magma", "forja:yunque_del_herrero", "forja:farol_de_pavesa",
     "forja:crisol_de_barro", "forja:crisol_de_hierro", "forja:crisol_de_obsidiana",
     "forja:cuba_de_colada", "forja:cano_de_colada", "forja:llave_de_paso",
     "forja:conducto_de_colada", "forja:conducto_de_acero", "forja:conducto_de_damasco",
@@ -3712,6 +3712,7 @@ ALLOY_COLORS = {
     "acero_vivo": 0xE8231A,
     # The far forges (docs/ALEACIONES_NETHER_END.md): only their own forge makes them, but their bars are the family's.
     "fatuo": 0x3A5466,
+    "magmacero": 0x6E3A2C,
 }
 
 # Two alloys are not one colour at all: they run one into another across the bar, left to right.

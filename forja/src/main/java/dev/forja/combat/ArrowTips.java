@@ -85,6 +85,8 @@ public final class ArrowTips {
 	public static final float LUCK_CRIT = 0.25F;
 	/** Conductora: base damage it adds to a wet target. */
 	public static final float WET_BONUS = 0.6F;
+	/** Magma: how long the gob of magma burns and weighs the target down. */
+	public static final float MAGMA_SECONDS = 2.0F;
 	/** Hechizo: mana it gives back to whoever loosed it. */
 	public static final float SPELL_MANA = 3.0F;
 
@@ -132,7 +134,9 @@ public final class ArrowTips {
 		/** Cobre: on something wet (in water or rain) the hit carries a shock. */
 		CONDUCTORA,
 		/** Fatuo (Espectral): the blue fire, which burns what does not burn. */
-		FATUA;
+		FATUA,
+		/** Magmacero (Volcánico): a gob of magma that sticks, burning and weighing the target down. */
+		MAGMA;
 
 		public String id() {
 			return this.name().toLowerCase(Locale.ROOT);
@@ -147,6 +151,7 @@ public final class ArrowTips {
 				case FUEGO -> Component.translatable("flecha.forja.especial.fuego.desc", FIRE_SECONDS);
 				case BRASA -> Component.translatable("flecha.forja.especial.brasa.desc", EMBER_SECONDS);
 				case FATUA -> Component.translatable("flecha.forja.especial.fatua.desc", dev.forja.upgrade.TraitEffects.SOUL_FLAME_TICKS / 20);
+				case MAGMA -> Component.translatable("flecha.forja.especial.magma.desc", MAGMA_SECONDS);
 				case SANGRADO -> Component.translatable("flecha.forja.especial.sangrado.desc", BLEED_TICKS / 20);
 				case RESINA -> Component.translatable("flecha.forja.especial.resina.desc", RESIN_TICKS / 20);
 				case LLANTO -> Component.translatable("flecha.forja.especial.llanto.desc", WEAKNESS_TICKS / 20);
@@ -208,6 +213,7 @@ public final class ArrowTips {
 			// Orichalcum carries magic as amethyst does: its tip hands the archer mana.
 			case ASTRAL -> Special.HECHIZO;
 			case ESPECTRAL -> Special.FATUA;
+			case VOLCANICO -> Special.MAGMA;
 			default -> Special.NONE;
 		};
 	}
@@ -279,6 +285,11 @@ public final class ArrowTips {
 			case SALTO -> blink(level, target);
 			case FATUA -> dev.forja.upgrade.TraitEffects.soulFlame(level, target, shooter != null ? shooter : target,
 				dev.forja.upgrade.TraitEffects.SOUL_FLAME_TICKS);
+			case MAGMA -> {
+				target.igniteForSeconds(MAGMA_SECONDS);
+				target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, Math.round(MAGMA_SECONDS * 20.0F), 0), shooter);
+				level.sendParticles(ParticleTypes.LAVA, target.getX(), target.getY(0.6), target.getZ(), 4, 0.2, 0.2, 0.2, 0.0);
+			}
 			case CHISPA -> spark(level, arrow, shooter, target);
 			case SOL -> {
 				if (target.isInvertedHealAndHarm() && dev.forja.upgrade.TraitEffects.inSun(level, target)) {

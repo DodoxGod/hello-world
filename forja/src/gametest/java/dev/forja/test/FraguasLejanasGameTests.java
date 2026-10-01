@@ -178,6 +178,93 @@ public class FraguasLejanasGameTests {
 		helper.succeed();
 	}
 
+	/** Magmasteel comes out of the same soul forge, from its own four ingredients, with the same fuel. */
+	@GameTest(maxTicks = 40)
+	public void theSoulForgeMakesMagmasteelToo(GameTestHelper helper) {
+		ServerLevel nether = helper.getLevel().getServer().getLevel(Level.NETHER);
+		BlockPos pos = NETHER_SPOT.offset(16, 0, 0);
+		clear(nether, pos, 2);
+		nether.setBlockAndUpdate(pos.below(), Blocks.CHEST.defaultBlockState());
+		nether.setBlockAndUpdate(pos, ModBlocks.FRAGUA_DE_ALMAS.defaultBlockState().setValue(FarForgeBlock.LIT, true));
+		FarForgeBlockEntity forge = (FarForgeBlockEntity) nether.getBlockEntity(pos);
+		Alloys.Recipe magmasteel = recipe("magmacero");
+		fill(forge, magmasteel, 2);
+		forge.addFuel(2);
+		tick(nether, pos, FarForgeBlockEntity.BATCH_TICKS * 2);
+		Container chest = (Container) nether.getBlockEntity(pos.below());
+		int made = count(chest, ModItems.alloy("magmacero"));
+		helper.assertTrue(made == magmasteel.output() * 2, "dos tandas, " + magmasteel.output() * 2 + " lingotes de magmacero; hay " + made);
+		helper.assertTrue(forge.fuel() == 0 && forge.hearth().isEmpty(), "y no queda nada: " + forge.fuel() + ", " + forge.hearth());
+		nether.setBlockAndUpdate(pos.below(), Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
+		nether.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+		helper.succeed();
+	}
+
+	/**
+	 * Volcánico: in magmasteel boots the lava round your feet cools into crust you can stand on (more pieces, wider),
+	 * and with nobody on it the crust goes back to lava.
+	 */
+	@GameTest(maxTicks = 40)
+	public void magmasteelCoolsTheLavaUnderfoot(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		BlockPos centre = helper.absolutePos(new BlockPos(4, 1, 4));
+		for (int dx = -4; dx <= 4; dx++) {
+			for (int dz = -4; dz <= 4; dz++) {
+				level.setBlockAndUpdate(centre.offset(dx, -1, dz), Blocks.STONE.defaultBlockState());
+				level.setBlockAndUpdate(centre.offset(dx, 0, dz), Blocks.LAVA.defaultBlockState());
+				level.setBlockAndUpdate(centre.offset(dx, 1, dz), Blocks.AIR.defaultBlockState());
+				level.setBlockAndUpdate(centre.offset(dx, 2, dz), Blocks.AIR.defaultBlockState());
+			}
+		}
+		ServerPlayer player = CombatGameTests.player(helper, new BlockPos(4, 2, 4));
+		player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET,
+			Assembler.create(ForgeType.BOTAS, List.of(ForgeMaterial.MAGMACERO, ForgeMaterial.CUERO), level.registryAccess()));
+		int pieces = TraitEffects.armorPieces(player, ForgeMaterial.Trait.VOLCANICO);
+		helper.assertTrue(pieces == 1, "las botas de magmacero son volcánicas: " + pieces);
+		int one = TraitEffects.volcanicStep(level, player, pieces);
+		helper.assertTrue(level.getBlockState(centre).is(ModBlocks.COSTRA_DE_MAGMA), "la lava bajo los pies se hace costra");
+		helper.assertTrue(one >= 5 && one <= 9, "con una pieza, un bloque alrededor: " + one);
+		player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD,
+			Assembler.create(ForgeType.CASCO, List.of(ForgeMaterial.MAGMACERO, ForgeMaterial.CUERO), level.registryAccess()));
+		player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST,
+			Assembler.create(ForgeType.PECHERA, List.of(ForgeMaterial.MAGMACERO, ForgeMaterial.CUERO), level.registryAccess()));
+		player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.LEGS,
+			Assembler.create(ForgeType.GREBAS, List.of(ForgeMaterial.MAGMACERO, ForgeMaterial.CUERO), level.registryAccess()));
+		int more = TraitEffects.volcanicStep(level, player, TraitEffects.armorPieces(player, ForgeMaterial.Trait.VOLCANICO));
+		helper.assertTrue(level.getBlockState(centre.offset(3, 0, 0)).is(ModBlocks.COSTRA_DE_MAGMA) && more > one,
+			"con las cuatro, tres bloques: " + more);
+		// Nobody on the far one: its tick sends it back to lava. The one under the player holds.
+		BlockPos far = centre.offset(3, 0, 0);
+		level.getBlockState(far).tick(level, far, level.getRandom());
+		helper.assertTrue(level.getBlockState(far).is(Blocks.LAVA), "sin nadie encima vuelve a ser lava");
+		// The test player is not in the world, so something that is stands where he was.
+		var standing = helper.spawn(net.minecraft.world.entity.EntityTypes.ARMOR_STAND, new BlockPos(4, 2, 4));
+		level.getBlockState(centre).tick(level, centre, level.getRandom());
+		helper.assertTrue(level.getBlockState(centre).is(ModBlocks.COSTRA_DE_MAGMA), "con alguien encima aguanta");
+		standing.discard();
+		for (BlockPos pos : BlockPos.betweenClosed(centre.offset(-4, 0, -4), centre.offset(4, 0, 4))) {
+			level.setBlockAndUpdate(pos, Blocks.STONE.defaultBlockState());
+		}
+		helper.succeed();
+	}
+
+	/** A magmasteel pick cuts netherrack and blackstone half again as fast as a plain one of the same speed would. */
+	@GameTest(maxTicks = 20)
+	public void magmasteelPicksCutNetherStone(GameTestHelper helper) {
+		var registries = helper.getLevel().registryAccess();
+		ItemStack magma = Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.MAGMACERO, ForgeMaterial.MAGMACERO, ForgeMaterial.MAGMACERO), registries);
+		float stone = magma.getDestroySpeed(Blocks.STONE.defaultBlockState());
+		float netherrack = magma.getDestroySpeed(Blocks.NETHERRACK.defaultBlockState());
+		float blackstone = magma.getDestroySpeed(Blocks.BLACKSTONE.defaultBlockState());
+		helper.assertTrue(Math.abs(netherrack - stone * dev.forja.forge.Assembler.VOLCANIC_MINING) < 0.01F
+			&& Math.abs(blackstone - netherrack) < 0.01F, "piedra " + stone + ", netherrack " + netherrack + ", piedra negra " + blackstone);
+		ItemStack fatuo = Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.FATUO, ForgeMaterial.FATUO, ForgeMaterial.FATUO), registries);
+		helper.assertTrue(Math.abs(fatuo.getDestroySpeed(Blocks.NETHERRACK.defaultBlockState()) - fatuo.getDestroySpeed(Blocks.STONE.defaultBlockState())) < 0.01F,
+			"un pico que no es volcánico pica igual el netherrack que la piedra");
+		helper.assertTrue(magma.isCorrectToolForDrops(Blocks.BLACKSTONE.defaultBlockState()), "y la piedra negra sigue cayendo");
+		helper.succeed();
+	}
+
 	/**
 	 * Nothing else makes them: not the forge table's star at any heat (Alloys.match, which the assembler uses too), not
 	 * the crucible, which will not even take their soul soil, and not the tanks.

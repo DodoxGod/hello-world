@@ -137,7 +137,10 @@ public final class Alloys {
 		// place(). The heat is what they read as in the guide and the crucible's melting; no table reaches them.
 		/** Wispfire: iron and netherite scrap run through soul soil in blue fire. It burns what does not burn. */
 		new Recipe("fatuo", Heat.FUNDIDA, List.of(new Part(() -> Items.IRON_INGOT, 2), new Part(() -> Items.NETHERITE_SCRAP, 1),
-			new Part(() -> Items.SOUL_SOIL, 4)), 2)
+			new Part(() -> Items.SOUL_SOIL, 4)), 2),
+		/** Magmasteel: steel run with basalt, blackstone and magma cream. Heavy, and lava is a floor to it. */
+		new Recipe("magmacero", Heat.FUNDIDA, List.of(new Part(() -> ModItems.alloy("acero"), 2), new Part(() -> Items.BASALT, 4),
+			new Part(() -> Items.BLACKSTONE, 4), new Part(() -> Items.MAGMA_CREAM, 2)), 2)
 	);
 
 	/**
@@ -158,7 +161,8 @@ public final class Alloys {
 	}
 
 	private static final java.util.Map<String, Place> PLACES = java.util.Map.of(
-		"fatuo", Place.ALMAS
+		"fatuo", Place.ALMAS,
+		"magmacero", Place.ALMAS
 	);
 
 	/** Where this alloy is made. */

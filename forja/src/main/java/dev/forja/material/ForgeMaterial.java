@@ -151,7 +151,13 @@ public enum ForgeMaterial implements StringRepresentable {
 	 * burns blazes, wither skeletons and ghasts, which nothing else in the mod does.
 	 */
 	FATUO(0x3A5466, alloyTag("fatuo"), null, true, 1000, 8.0F, 3.0F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
-		18, 1.25F, 0.10F, 1.05F, new int[]{3, 6, 7, 3}, 30, 2.0F, 0F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.ESPECTRAL);
+		18, 1.25F, 0.10F, 1.05F, new int[]{3, 6, 7, 3}, 30, 2.0F, 0F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.ESPECTRAL),
+	/**
+	 * Magmasteel: steel run with basalt, blackstone and magma cream at the same soul forge. Diamond tier, a slow heavy
+	 * handle and a long life: armour and pickaxes, not blades. Lava cools under the feet of whoever wears it.
+	 */
+	MAGMACERO(0x6E3A2C, alloyTag("magmacero"), null, true, 1600, 7.0F, 3.0F, BlockTags.INCORRECT_FOR_DIAMOND_TOOL,
+		10, 1.55F, -0.20F, 0.90F, new int[]{3, 6, 8, 3}, 38, 2.5F, 0.1F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.VOLCANICO);
 
 	/** A material's special effect, active when any part of the item uses it. */
 	public enum Trait {
@@ -195,7 +201,9 @@ public enum ForgeMaterial implements StringRepresentable {
 		/** The Guild's metal: mana comes back faster for each piece of it worn or held, twice as fast beside star iron. */
 		ASTRAL,
 		/** It burns blue: its flame hurts what fire cannot and water does not put it out. Armor gives it to attackers. */
-		ESPECTRAL;
+		ESPECTRAL,
+		/** Lava cools into a crust under the feet of whoever wears it; its tools cut Nether stone half again as fast. */
+		VOLCANICO;
 
 		public String id() {
 			return this.name().toLowerCase(Locale.ROOT);

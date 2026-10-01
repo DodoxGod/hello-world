@@ -100,6 +100,8 @@ public final class ArmorSets {
 			// ---- the far forge alloys (docs/ALEACIONES_NETHER_END.md)
 			// Wispfire: the blue fire is yours to give, and the plain one does not hold on to you for long.
 			case FATUO -> List.of(Bonus.add(Attributes.ATTACK_DAMAGE, 1.0), Bonus.add(Attributes.BURNING_TIME, -0.5));
+			// Magmasteel: a wall of cooled stone, hard to push and harder to get through.
+			case MAGMACERO -> List.of(Bonus.add(Attributes.ARMOR, 1.0), Bonus.add(Attributes.KNOCKBACK_RESISTANCE, 0.2));
 		};
 	}
 

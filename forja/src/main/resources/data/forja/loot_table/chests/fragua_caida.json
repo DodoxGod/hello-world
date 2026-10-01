@@ -26,6 +26,11 @@
                   "color": "gray"
                 },
                 {
+                  "translate": "item.forja.nota_fragua_de_almas.magmacero",
+                  "italic": false,
+                  "color": "gray"
+                },
+                {
                   "translate": "item.forja.nota_fragua_de_almas.fuego",
                   "italic": false,
                   "color": "gray"
@@ -142,7 +147,37 @@
         },
         {
           "type": "minecraft:item",
+          "name": "minecraft:blackstone",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 4,
+                "max": 8
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
           "name": "forja:fatuo",
+          "weight": 3,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 2
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "forja:magmacero",
           "weight": 3,
           "functions": [
             {
