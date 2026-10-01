@@ -106,6 +106,16 @@ public class ForjaClientTest implements FabricClientGameTest {
 			return;
 		}
 		// Materials and ores need a real world with real ores in it, not the superflat below.
+		// The fallen forge of the Nether, placed in a real Nether and photographed (FraguaCaidaFootage).
+		if ("fragua_caida".equals(System.getenv("FORJA_SOLO"))) {
+			try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
+				singleplayer.getConnection().waitForChunksRender();
+				Vec3 spawn = singleplayer.getServer().computeOnServer(s -> singleplayer.getConnection().getServerPlayer().position());
+				FraguaCaidaFootage.film(context, singleplayer.getServer(), singleplayer.getConnection(), (int) spawn.x, (int) spawn.y, (int) spawn.z);
+			}
+			log("ALL CHECKS PASSED (solo fragua_caida)");
+			return;
+		}
 		if ("materiales".equals(System.getenv("FORJA_SOLO"))) {
 			checkMaterials(context);
 			log("ALL CHECKS PASSED (solo materiales)");
