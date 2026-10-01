@@ -1,5 +1,9 @@
 # Novedades
 
+## 2026-10-01 — Tablas generadas por las pruebas de servidor
+
+- `runGametest` regenera `MATERIALES.md` y `MEJORAS.md` y comprueba que haya una fila por material y mejora. La tabla de materiales incluye ya las aleaciones recientes.
+
 ## 2026-10-01 — Rescate seguro del vacío
 
 - El eterio comprueba suelo firme y dos bloques libres antes de devolver al jugador; si el punto recordado está ocupado, busca un lugar cercano y luego más alto.

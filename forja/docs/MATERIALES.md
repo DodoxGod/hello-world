@@ -1,6 +1,6 @@
 # Materiales
 
-Esta lista la escribe el propio test, igual que la de mejoras.
+Esta lista la escribe `./gradlew runGametest`, igual que la de mejoras.
 El **rasgo** lo lleva cualquier pieza hecha de ese material; el **conjunto** es lo que dan las
 cuatro placas de armadura del mismo material puestas a la vez.
 
@@ -13,7 +13,7 @@ cuatro placas de armadura del mismo material puestas a la vez.
 | cobre | 190 | 5.0 | +1.0 | - | +15% de velocidad de minado |
 | hierro | 250 | 6.0 | +2.0 | - | +2 corazones |
 | oro | 32 | 12.0 | +0.0 | - | +2 de suerte |
-| amatista | 350 | 7.0 | +2.0 | - | +1 de daño |
+| amatista | 350 | 7.0 | +2.0 | - | +1 de daño y +40 de maná máximo |
 | diamante | 1561 | 8.0 | +3.0 | - | +2 de dureza extra |
 | obsidiana | 1100 | 5.5 | +3.0 | - | las explosiones no te empujan |
 | netherita | 2031 | 9.0 | +4.0 | - | el fuego te dura la mitad |
@@ -23,7 +23,7 @@ cuatro placas de armadura del mismo material puestas a la vez.
 | cuarzo | 220 | 7.0 | +3.0 | Afilado | +25% de daño de barrido |
 | púrpura | 600 | 6.5 | +2.0 | Del End | 25% menos gravedad y caes 4 bloques más sin daño |
 | obsidiana llorona | 1300 | 5.5 | +3.0 | Llanto | +3 corazones |
-| eco | 1000 | 7.5 | +2.5 | Resonante | +30% de velocidad agachado |
+| eco | 1000 | 7.5 | +2.5 | Resonante | +30% de velocidad agachado y el maná vuelve un 30% más rápido |
 | resina | 200 | 5.0 | +1.5 | Pegajoso | la arena de almas y la nieve no te frenan |
 | corazón de forja | 2400 | 9.5 | +4.5 | Llanto | +4 corazones, +4 de dureza y el fuego se te apaga solo |
 | bronce | 320 | 5.5 | +1.5 | - | +1 de armadura y +1 corazón |
@@ -45,3 +45,14 @@ cuatro placas de armadura del mismo material puestas a la vez.
 | lunacero | 1700 | 8.0 | +4.0 | Nocturno | +40% agachado y +2 de daño |
 | acero vivo | 2200 | 9.0 | +4.5 | Vivo | +4 corazones, +3 de dureza y cada muerte cura el doble |
 | escoria | 140 | 4.5 | +1.0 | Ígneo | El fuego te dura un 60% menos |
+| oricalco | 1650 | 8.5 | +3.5 | Astral | +25 de maná máximo y +1 de dureza |
+| fatuo | 1000 | 8.0 | +3.0 | Espectral | +1 de daño y el fuego te dura la mitad |
+| magmacero | 1600 | 7.0 | +3.0 | Volcánico | +1 de armadura y +20 % de resistencia al empuje |
+| eterio | 1200 | 8.5 | +3.0 | Flotante | Saltas más, +1 de dureza y el vacío te devuelve el doble de a menudo |
+| espectracero | 2000 | 7.5 | +3.5 | Amparo | +2 de dureza, +4 de vida, el fuego te dura menos y el amparo vuelve cada 15 s |
+| corazón de volcán | 1800 | 8.5 | +4.0 | Ardor | +2 de daño y el fuego te dura mucho menos |
+| eclipse | 1500 | 9.0 | +3.0 | Penumbra | +20 de maná máximo y andas agachado más deprisa |
+| astralita | 1700 | 9.5 | +3.5 | Sideral | +30 de maná máximo y +1 de dureza |
+| iracero | 2000 | 9.5 | +5.5 | Iracundo | +3 de daño y +5 % de velocidad; su ira da Fuerza II |
+| égida | 2800 | 8.0 | +4.0 | Inquebrantable | +10 de vida, +4 de dureza y no te empujan las explosiones; ningún golpe pasa del 25 % de tu vida |
+| arcanio | 2100 | 12.5 | +4.0 | Místico | +50 de maná máximo, +2 de dureza y +5 % de velocidad |

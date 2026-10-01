@@ -463,7 +463,6 @@ public class ForjaClientTest implements FabricClientGameTest {
 			shotNewMobs(context, server, connection, x, y, z);
 			shotMouldCopy(context, server, connection, x, y, z);
 			checkMiningUpgrades(server, connection, x, y, z);
-			writeUpgradeDoc(server, connection);
 			checkBalanceLimits(server, connection);
 			checkPartsCabinet(context, server, connection, x, y, z);
 			checkMobPortraits(context, server, connection, x, y, z);
@@ -8062,87 +8061,6 @@ public class ForjaClientTest implements FabricClientGameTest {
 		check(bestArmor <= 24, "no full set should pass 24 armor before upgrades, got " + bestArmor);
 	}
 
-	private static void writeUpgradeDoc(TestServerContext server, TestServerConnection connection) {
-		String markdown = server.computeOnServer(s -> {
-			StringBuilder out = new StringBuilder();
-			out.append("# Mejoras\n\n");
-			out.append("Esta lista la escribe el propio test (`./gradlew runClientGameTest`), así que no se queda vieja.\n");
-			out.append("Cada objeto suma el porcentaje indicado; las que dicen \"+\" necesitan los dos objetos juntos.\n\n");
-			out.append("| Mejora | Va en | Se alimenta con | Al 100% |\n|---|---|---|---|\n");
-			for (Upgrade upgrade : Upgrade.values()) {
-				List<String> types = new ArrayList<>();
-				for (ForgeType type : ForgeType.values()) {
-					if (upgrade.appliesTo(type)) {
-						types.add(Component.translatable("item.forja." + type.id()).getString());
-					}
-				}
-				String where = types.size() == ForgeType.values().length ? "todo"
-					: types.size() > 6 ? types.size() + " objetos" : String.join(", ", types);
-				List<String> feeds = new ArrayList<>();
-				for (Upgrade.Option option : upgrade.options) {
-					List<String> items = new ArrayList<>();
-					for (var requirement : option.requirements()) {
-						items.add(requirement.displayStack().getHoverName().getString());
-					}
-					feeds.add(String.join(" + ", items) + " " + option.percent() + "%");
-				}
-				String food = feeds.isEmpty() ? "solo de un evento" : String.join(" / ", feeds);
-				out.append("| ").append(upgrade.displayName().getString())
-					.append(" | ").append(where)
-					.append(" | ").append(food)
-					.append(" | ").append(upgrade.effect(100).getString().replace("|", "/"))
-					.append(" |\n");
-			}
-			out.append("\n## Sinergias\n\n");
-			out.append("Dos mejoras al ").append(dev.forja.upgrade.Synergy.THRESHOLD).append("% en la misma pieza.\n\n");
-			out.append("| Sinergia | Pareja | Qué hace |\n|---|---|---|\n");
-			for (dev.forja.upgrade.Synergy synergy : dev.forja.upgrade.Synergy.values()) {
-				out.append("| ").append(synergy.displayName().getString())
-					.append(" | ").append(synergy.first.displayName().getString())
-					.append(" + ").append(synergy.second.displayName().getString())
-					.append(" | ").append(synergy.description().getString())
-					.append(" |\n");
-			}
-			return out.toString();
-		});
-		String materials = server.computeOnServer(s -> {
-			StringBuilder out = new StringBuilder();
-			out.append("# Materiales\n\n");
-			out.append("Esta lista la escribe el propio test, igual que la de mejoras.\n");
-			out.append("El **rasgo** lo lleva cualquier pieza hecha de ese material; el **conjunto** es lo que dan las\n");
-			out.append("cuatro placas de armadura del mismo material puestas a la vez.\n\n");
-			out.append("| Material | Durabilidad | Minado | Daño | Rasgo | Conjunto |\n|---|---|---|---|---|---|\n");
-			for (dev.forja.material.ForgeMaterial material : dev.forja.material.ForgeMaterial.values()) {
-				// The set bonus already has a sentence written for it, the same one the tooltip shows.
-				String written = Component.translatable("conjunto.forja." + material.getSerializedName()).getString();
-				List<String> bonuses = dev.forja.upgrade.ArmorSets.bonuses(material).isEmpty()
-					? List.of() : List.of(written);
-				out.append("| ").append(material.displayName().getString())
-					.append(" | ").append(material.durability)
-					.append(" | ").append(String.format(Locale.ROOT, "%.1f", material.miningSpeed))
-					.append(" | ").append(String.format(Locale.ROOT, "%+.1f", material.attackDamageBonus))
-					.append(" | ").append(material.trait == dev.forja.material.ForgeMaterial.Trait.NONE
-						? "-" : material.trait.displayName().getString())
-					.append(" | ").append(bonuses.isEmpty() ? "-" : String.join(", ", bonuses))
-					.append(" |\n");
-			}
-			return out.toString();
-		});
-		try {
-			// The run directory is build/run/clientGameTest, so the project is three levels up.
-			java.nio.file.Path root = net.fabricmc.loader.api.FabricLoader.getInstance().getGameDir()
-				.getParent().getParent().getParent();
-			java.nio.file.Path docs = root.resolve("docs");
-			java.nio.file.Files.createDirectories(docs);
-			java.nio.file.Files.writeString(docs.resolve("MEJORAS.md"), markdown);
-			java.nio.file.Files.writeString(docs.resolve("MATERIALES.md"), materials);
-			log("docs: escritos MEJORAS.md (" + Upgrade.values().length + " mejoras, "
-				+ dev.forja.upgrade.Synergy.values().length + " sinergias) y MATERIALES.md ("
-				+ dev.forja.material.ForgeMaterial.values().length + " materiales)");
-		} catch (java.io.IOException failure) {
-			check(false, "the tables should be writable: " + failure.getMessage());
-		}
-	}
 
 	private static void checkNewCombatUpgrades(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
 		// Resaca and Tempano: the two upgrades the new events leave behind.

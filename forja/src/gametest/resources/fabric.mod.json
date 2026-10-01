@@ -70,7 +70,8 @@
 			"dev.forja.test.RedFinitaGameTests",
 			"dev.forja.test.GarfioGameTests",
 			"dev.forja.test.KitsGameTests",
-			"dev.forja.test.ForjadoRevisionGameTests"
+			"dev.forja.test.ForjadoRevisionGameTests",
+			"dev.forja.test.GeneratedDocs"
 		],
 		"fabric-client-gametest": [
 			"dev.forja.test.ForjaClientTest"

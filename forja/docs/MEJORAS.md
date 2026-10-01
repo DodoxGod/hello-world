@@ -1,83 +1,83 @@
 # Mejoras
 
-Esta lista la escribe el propio test (`./gradlew runClientGameTest`), así que no se queda vieja.
+Esta lista la escribe `./gradlew runGametest`, así que no se queda vieja.
 Cada objeto suma el porcentaje indicado; las que dicen "+" necesitan los dos objetos juntos.
 
 | Mejora | Va en | Se alimenta con | Al 100% |
 |---|---|---|---|
 | Lanzacabezas | Pico, Hacha, Pala, Martillo, Picahacha, Daga | Pistón + Bola de slime + Perla de ender 25% | Lanza la cabeza y mina 16 bloques |
 | Veta | Pico, Martillo, Picahacha | Cuarzo del Nether 4% / Cuarzo 16% | Rompe vetas de hasta 48 bloques |
-| Excavación | Pico, Pala, Martillo, Picahacha | TNT + Pistón 25% | Mina en área de 5x5 |
-| Leñador | Hacha, Picahacha | Retoño de roble 5% | Tala árboles de hasta 128 troncos |
+| Excavación | Pico, Pala, Martillo, Picahacha | Dinamita + Pistón 25% | Mina en área de 5x5 |
+| Leñador | Hacha, Picahacha | Brote de roble 5% | Tala árboles de hasta 128 troncos |
 | Fundición | 8 objetos | Vara de blaze + Bloque de carbón 20% | 100% de fundir lo que minas |
 | Telequinesis | 8 objetos | Perla de ender + Tolva 25% | 100% de mandar al inventario lo que minas y lo que cosechas |
-| Cosechador | Azada, Guadaña | Hueso molido 2% / Bloque de huesos 18% | Cosecha y resiembra 5x5 |
+| Cosechador | Azada, Guadaña | Polvo de hueso 2% / Bloque de huesos 18% | Cosecha y resiembra 5x5 |
 | Eficiencia | 8 objetos | Azúcar 2% | Eficiencia V |
 | Fortuna | 8 objetos | Lapislázuli 2% / Bloque de lapislázuli 18% | Fortuna III |
 | Toque de seda | 8 objetos | Telaraña 25% | Toque de seda |
-| Alcance | 19 objetos | Vara del End 10% | +3 bloques de alcance, +1.5 para golpear |
+| Alcance | 20 objetos | Vara del End 10% | +3 bloques de alcance, +1.5 para golpear |
 | Luz | 8 objetos | Piedra luminosa 4% | 100% de poner una de tus antorchas al minar a oscuras |
-| Sabiduría | 19 objetos | Libro 5% | +100% de experiencia de monstruos y +3 por mineral |
-| Vampirismo | 12 objetos | Lágrima de ghast + Carne podrida 20% | Te cura 30% del daño que haces |
-| Decapitador | 12 objetos | Hueso 4% | 25% de soltar la cabeza del enemigo |
-| Onda de choque | 12 objetos | Carga de viento + Pólvora 20% | Salpica 60% del daño a monstruos cercanos |
-| Tormenta | 12 objetos | Pararrayos + Polvo de piedra luminosa 20% | 30% de soltar una descarga eléctrica |
-| Escarcha | 12 objetos | Bola de nieve 1% / Hielo 4% / Hielo comprimido 36% | Congela y ralentiza 5 s |
-| Veneno | 12 objetos | Papa venenosa 5% / Ojo de araña 8% | Envenena 7 s |
-| Crítico | 12 objetos | Pedernal + Pluma 10% | 30% de crítico (+50% de daño) |
-| Furia | 12 objetos | Granos de cacao 2% | +0.6 de velocidad de ataque |
-| Ejecución | 12 objetos | Verruga del Nether 5% | +50% de daño a enemigos con menos de 30% de vida |
-| Matagigantes | 12 objetos | Membrana de phantom 10% | +40% de daño a enemigos con más vida máxima que tú |
-| Filo | 12 objetos | Fragmento de amatista 4% / Bloque de amatista 16% | Filo V |
-| Castigo | 12 objetos | Carne podrida 2% | Castigo V |
-| Perdición de artrópodos | 12 objetos | Hilo 2% | Perdición de los artrópodos V |
-| Brecha | 12 objetos | Diamante 10% | Fisura IV |
-| Aspecto ígneo | 12 objetos | Polvo de blaze 5% / Carga de fuego 10% | Aspecto de fuego II |
-| Empuje | 12 objetos | Pistón 10% | Empuje II |
-| Botín | 12 objetos | Esmeralda 10% / Bloque de esmeralda 90% | Saqueo III |
+| Sabiduría | 20 objetos | Libro 5% | +100% de experiencia de monstruos y +3 por mineral |
+| Vampirismo | 13 objetos | Lágrima de ghast + Carne podrida 20% | Te cura 30% del daño que haces |
+| Decapitador | 13 objetos | Hueso 4% | 25% de soltar la cabeza del enemigo |
+| Onda de choque | 13 objetos | Carga de viento + Pólvora 20% | Salpica 60% del daño a monstruos cercanos |
+| Tormenta | 13 objetos | Pararrayos + Polvo de piedra luminosa 20% | 30% de soltar una descarga eléctrica |
+| Escarcha | 13 objetos | Bola de nieve 1% / Hielo 4% / Hielo compacto 36% | Congela y ralentiza 5 s |
+| Veneno | 13 objetos | Patata venenosa 5% / Ojo de araña 8% | Envenena 7 s |
+| Crítico | 13 objetos | Pedernal + Pluma 10% | 30% de crítico (+50% de daño) |
+| Furia | 13 objetos | Semillas de cacao 2% | +0.6 de velocidad de ataque |
+| Ejecución | 13 objetos | Verruga del Nether 5% | +50% de daño a enemigos con menos de 30% de vida |
+| Matagigantes | 13 objetos | Membrana de fantasma 10% | +40% de daño a enemigos con más vida máxima que tú |
+| Filo | 13 objetos | Fragmento de amatista 4% / Bloque de amatista 16% | Filo V |
+| Castigo | 13 objetos | Carne podrida 2% | Golpeo V |
+| Perdición de artrópodos | 13 objetos | Hilo 2% | Perdición de los artrópodos V |
+| Brecha | 13 objetos | Diamante 10% | Fisura IV |
+| Aspecto ígneo | 13 objetos | Polvo de blaze 5% / Carga ígnea 10% | Aspecto ígneo II |
+| Empuje | 13 objetos | Pistón 10% | Empuje II |
+| Botín | 13 objetos | Esmeralda 10% / Bloque de esmeralda 90% | Botín III |
 | Filo arrasador | Espada, Daga, Espadón, Guadaña | Tijeras 20% | Barrido III |
 | Embestida | Lanza | Azúcar 4% | Estocada III |
 | Densidad | Mazo | Placa de presión para peso elevado 4% / Núcleo pesado 50% | Densidad V |
 | Estallido de viento | Mazo | Vara de breeze 10% | Aeroimpulso III |
 | Poder | Arco, Ballesta | Flecha 2% | Poder V |
 | Retroceso | Arco, Ballesta | Pistón 10% | Retroceso II |
-| Llama | Arco, Ballesta | Carga de fuego 25% | Fuego |
+| Llama | Arco, Ballesta | Carga ígnea 25% | Fuego |
 | Infinidad | Arco, Ballesta | Flecha espectral + Bloque de oro 20% | Infinidad |
 | Tensión | Arco | Hilo 2% | Tensa 50% más rápido |
 | Multidisparo | Arco, Ballesta | Flecha + Pluma 25% | Multidisparo |
-| Carga rápida | Ballesta | Gancho de hilo 10% | Carga rápida III |
+| Carga rápida | Ballesta | Gancho de cuerda 10% | Carga rápida III |
 | Perforación | Ballesta | Pedernal 5% | Perforación IV |
 | Retorno | Hacha, Picahacha, Daga, Tridente | Perla de ender 20% | 100% de que el arma lanzada vuelva a tu mano |
-| Lluvia estelar | 19 objetos | solo de un evento | 25% de que el golpe traiga una estrella encima |
-| Conductor | 12 objetos | solo de un evento | La descarga salta a 6 bloques del objetivo |
-| Siega de almas | 12 objetos | solo de un evento | Cada muerte te cura 2 corazones |
+| Lluvia estelar | 20 objetos | solo de un evento | 25% de que el golpe traiga una estrella encima |
+| Conductor | 13 objetos | solo de un evento | La descarga salta a 6 bloques del objetivo |
+| Siega de almas | 13 objetos | solo de un evento | Cada muerte te cura 2 corazones |
 | Aurora | Casco, Pechera, Grebas, Botas | solo de un evento | 30% de anular el daño mágico |
-| Carnicero | 12 objetos | solo de un evento | +8% de daño por cada enemigo cerca |
-| Sombra larga | 19 objetos | solo de un evento | Invisible 3 s después de matar |
+| Carnicero | 13 objetos | solo de un evento | +8% de daño por cada enemigo cerca |
+| Sombra larga | 20 objetos | solo de un evento | Invisible 3 s después de matar |
 | Témpano | Casco, Pechera, Grebas, Botas | solo de un evento | 35 de congelar a quien te golpea de cerca |
 | Rescoldo | Casco, Pechera, Grebas, Botas | solo de un evento | el fuego te cura el 90% de lo que te haría |
-| Resaca | 12 objetos | solo de un evento | El golpe arrastra al enemigo hacia ti (40) |
+| Resaca | 13 objetos | solo de un evento | El golpe arrastra al enemigo hacia ti (40) |
 | Punta afilada | Flecha | Pedernal 10% / Cuarzo del Nether 30% | +50% de daño de la flecha |
-| Asta ligera | Flecha | Pluma 10% / Membrana de phantom 30% | +25% de velocidad de la flecha |
+| Asta ligera | Flecha | Pluma 10% / Membrana de fantasma 30% | +25% de velocidad de la flecha |
 | Punta envenenada | Flecha | Ojo de araña + Ojo de araña fermentado 20% | Envenena 5 s |
 | Punta ígnea | Flecha | Polvo de blaze 15% | Prende 5 s |
-| Punta perforante | Flecha | Lingote de hierro 20% / Fragmento de netherita 50% | Atraviesa 3 cuerpos |
+| Punta perforante | Flecha | Lingote de hierro 20% / Fragmentos de netherita 50% | Atraviesa 3 cuerpos |
 | Herradura | Barda, Armadura de lobo | Lingote de hierro 12% / Bloque de hierro 40% | La montura corre un 20% más |
 | Peto | Barda, Armadura de lobo | Lingote de cobre 10% / Bloque de cobre en bruto 30% | +4 de armadura para la montura |
 | Corriente | Tridente | Fragmento de prismarina 15% / Corazón del mar 40% | En agua o lluvia, usarlo te lanza (3) |
 | Canalización | Tridente | Lingote de cobre 20% / Pararrayos 45% | 50 de llamar al rayo en tormenta |
 | Sirga | Gancho | Cadena de hierro 15% / Bloque de hierro 40% | El gancho tira un 60% más fuerte |
-| Soga larga | Gancho | Hilo 12% / Correa 35% | +14 bloques de soga: llega más lejos y arrastra más |
-| Pacto de sed | 12 objetos | Carne podrida + Polvo de redstone 25% | +32% de daño, pero cada golpe te cuesta 4 de hambre |
-| Pacto de vidrio | 12 objetos | Vidrio 25% | +40% de daño y 50% menos de durabilidad |
-| Pacto de sombra | Casco, Pechera, Grebas, Botas | Saco de tinta + Membrana de phantom 25% | Invisible al agacharte (al 100%) y 25% menos de armadura en la pieza |
+| Soga larga | Gancho | Hilo 12% / Rienda 35% | +14 bloques de soga: llega más lejos y arrastra más |
+| Pacto de sed | 13 objetos | Carne podrida + Polvo de redstone 25% | +32% de daño, pero cada golpe te cuesta 4 de hambre |
+| Pacto de vidrio | 13 objetos | Cristal 25% | +40% de daño y 50% menos de durabilidad |
+| Pacto de sombra | Casco, Pechera, Grebas, Botas | Saco de tinta + Membrana de fantasma 25% | Invisible al agacharte (al 100%) y 25% menos de armadura en la pieza |
 | Pacto de la prisa | 8 objetos | Azúcar + Crema de magma 25% | Mina un 45% más rápido y aguanta un 45% menos |
 | Aturdimiento | Mangual | Lingote de cobre 10% / Campana 30% | Deja aturdido 1.5 s a quien golpeas |
 | Segunda cabeza | Mangual | Cadena de hierro + Lingote de hierro 25% | 70% del golpe a todo lo que rodea al objetivo |
 | Ráfaga | Guanteletes | Azúcar 8% / Pata de conejo 25% | 35% de que el puñetazo golpee dos veces |
 | Nudillos de hierro | Guanteletes | Lingote de hierro 12% / Bloque de hierro 40% | Hasta +50% de daño según el frenesí |
 | Desgarro | Daga, Guadaña | Pedernal 10% / Cuarzo del Nether 30% | Hasta 4 heridas de sangrado a la vez |
-| Aerodinámica | Alas | Elytra 50% | Cambia 100% de la reserva de vuelo por velocidad |
+| Aerodinámica | Alas | Élitros 50% | Cambia 100% de la reserva de vuelo por velocidad |
 | Propulsión | Alas | Pólvora 4% / Cohete de fuegos artificiales 30% | Impulso de 1.2 al agacharte y saltar, gasta pólvora |
 | Cebo | Caña | Semillas de trigo 5% / Bacalao crudo 20% | Atracción III |
 | Suerte del mar | Caña | Caparazón de nautilo 20% / Corazón del mar 100% | Suerte marina III |
@@ -88,21 +88,21 @@ Cada objeto suma el porcentaje indicado; las que dicen "+" necesitan los dos obj
 | Absorción | Escudo | Pepita de oro 2% / Lingote de oro 18% | 100% de ganar 2 corazones de absorción al bloquear |
 | Repulsión | Escudo | Pistón pegajoso 10% | Empuja a quien golpea tu escudo (fuerza 1.6) |
 | Magnetismo | Casco, Pechera, Grebas, Botas | Lingote de hierro 2% / Bloque de hierro 18% | Atrae objetos a 8 bloques |
-| Vitalidad | Pechera | Manzana de oro + Rebanada de sandía brillante 25% | +3 corazones de vida |
+| Vitalidad | Pechera | Manzana dorada + Rodaja de sandía reluciente 25% | +3 corazones de vida |
 | Resorte | Botas | Bola de slime 4% / Bloque de slime 36% | Saltas más y aguantas 6 bloques más de caída |
 | Presteza | Grebas | Polvo de redstone 1% / Bloque de redstone 9% | +25% de velocidad al caminar |
-| Visión nocturna | Casco | Zanahoria de oro 10% | Visión nocturna activa |
+| Visión nocturna | Casco | Zanahoria dorada 10% | Visión nocturna activa |
 | Represalia ígnea | Pechera | Crema de magma 5% / Bloque de magma 20% | Quema 6 s a quien te golpea |
 | Regeneración | Casco, Pechera, Grebas, Botas | Lágrima de ghast 10% | Recupera 0.5 corazones cada 5 s |
 | Zancada | Botas | Piel de conejo 10% | Subes escalones de 1.1 bloques sin saltar |
-| Nutrición | Pechera | Pan 5% / Paca de heno 45% | 100% de recuperar hambre cada 5 s |
+| Nutrición | Pechera | Pan 5% / Bala de heno 45% | 100% de recuperar hambre cada 5 s |
 | Sonar | Casco | Catalejo 25% / Fragmento resonante 50% | Hace brillar a los monstruos a 16 bloques |
-| Purificación | Casco, Pechera, Grebas, Botas | Botella de miel 10% | 100% de quitarte veneno y marchitamiento cada 5 s |
-| Anclaje | Botas | Barras de hierro 4% / Yunque 20% | 60% menos de empuje, tirones y embestidas incluidos |
-| Aislante | Casco, Pechera, Grebas, Botas | Bola de arcilla 2% / Arcilla 18% | 1.5 s menos de fuego encima por segundo |
+| Purificación | Casco, Pechera, Grebas, Botas | Frasco con miel 10% | 100% de quitarte veneno y marchitamiento cada 5 s |
+| Anclaje | Botas | Barrotes de hierro 4% / Yunque 20% | 60% menos de empuje, tirones y embestidas incluidos |
+| Aislante | Casco, Pechera, Grebas, Botas | Bola de arcilla 2% / Bloque de arcilla 18% | 1.5 s menos de fuego encima por segundo |
 | Temple | Casco, Pechera, Grebas, Botas | Polvo de blaze 5% / Vara de blaze 12% | los efectos malos se te pasan un 50% antes |
 | Protección | Casco, Pechera, Grebas, Botas | Lingote de cobre 2% / Bloque de cobre 18% | Protección IV |
-| Prot. contra fuego | Casco, Pechera, Grebas, Botas | Hielo 4% / Hielo comprimido 36% | Protección contra el fuego IV |
+| Prot. contra fuego | Casco, Pechera, Grebas, Botas | Hielo 4% / Hielo compacto 36% | Protección contra el fuego IV |
 | Prot. contra explosiones | Casco, Pechera, Grebas, Botas | Pólvora 2% | Protección contra explosiones IV |
 | Prot. contra proyectiles | Casco, Pechera, Grebas, Botas | Flecha 2% | Protección contra proyectiles IV |
 | Espinas | Casco, Pechera, Grebas, Botas | Cactus 2% | Espinas III |
@@ -111,20 +111,34 @@ Cada objeto suma el porcentaje indicado; las que dicen "+" necesitan los dos obj
 | Caída de pluma | Botas | Pluma 2% | Caída de pluma IV |
 | Agilidad acuática | Botas | Saco de tinta 2% | Agilidad acuática III |
 | Paso helado | Botas | Hielo azul 25% | Paso helado II |
-| Velocidad de alma | Botas | Arena de almas 2% | Velocidad de alma III |
-| Sigilo veloz | Grebas | Lana blanca 2% | Sigilo rápido III |
+| Velocidad de alma | Botas | Arena de almas 2% | Velocidad del alma III |
+| Sigilo veloz | Grebas | Lana blanca 2% | Sigilo veloz III |
 | Irrompible | todo | Obsidiana 4% | Irrompibilidad III |
-| Reparación | todo | Botella con experiencia + Lingote de oro 10% | Reparación |
+| Reparación | todo | Frasco con experiencia + Lingote de oro 10% | Reparación |
 | Autorreparación | todo | Bloque de musgo 5% | Repara 4 de durabilidad cada 5 s |
-| Recocido | todo | Polvo de blaze + Arcilla 20% | +15 de potencial: más sitio para todas las demás mejoras |
-| Conjuro veloz | Báculo, Grimorio | Polvo de piedra luminosa 2% / Piedra luminosa 8% | Conjura 40% más rápido |
-| Sobrecarga | Báculo, Grimorio | Bloque de redstone + Fragmento de amatista 20% | Cada 4.º hechizo sale más grande y con +100% de daño |
-| Resonancia | Báculo, Grimorio | Fragmento resonante + Fragmento de amatista 25% | El hechizo se repite con el 50% del daño |
-| Prisma | Báculo | Cristales de prismarina + Vidrio 20% | Abanico de tres: los dos de los lados, al 60% del daño |
+| Recocido | todo | Polvo de blaze + Bloque de arcilla 20% | +15 de potencial: más sitio para todas las demás mejoras |
+| Conjuro veloz | Báculo, Grimorio | Polvo de piedra luminosa 2% / Piedra luminosa 8% | Conjura 20% más rápido |
+| Sobrecarga | Báculo, Grimorio | Bloque de redstone + Fragmento de amatista 20% | Cada 4.º hechizo sale más grande y con +50% de daño |
+| Resonancia | Báculo, Grimorio | Fragmento resonante + Fragmento de amatista 25% | El hechizo se repite con el 20% del daño |
+| Prisma | Báculo | Cristales de prismarina + Cristal 20% | Abanico de tres que se reparte el daño del hechizo; cada lateral pesa un 60% del central |
 | Buscador | Báculo | Ojo de ender + Pluma 25% | El proyectil gira 12° por tic hacia quien te ataca |
-| Tinta indeleble | Grimorio | Saco de tinta 5% / Saco de tinta brillante 15% | La runa dura 6 s más |
+| Tinta indeleble | Grimorio | Saco de tinta 5% / Saco de tinta luminosa 15% | La runa dura 6 s más |
 | Vórtice | Grimorio | Telaraña + Perla de ender 20% | Cada mordisco arrastra 0.9 bloques hacia el centro de la runa |
-| Santuario | Grimorio | Rebanada de sandía brillante 10% | Sobre tu propia runa te curas 0.5 corazones por segundo |
+| Santuario | Grimorio | Rodaja de sandía reluciente 10% | Sobre tu propia runa te curas 0.5 corazones por segundo |
+| Concentración | Báculo, Grimorio | Lapislázuli 4% / Bloque de lapislázuli 36% | Los hechizos cuestan un 35% menos de maná |
+| Sifón | Báculo, Grimorio | Lágrima de ghast + Lapislázuli 20% | Si el hechizo alcanza algo, te devuelve el 50% del maná que costó |
+| Descarga | Báculo, Grimorio | Carga ígnea + Bloque de lapislázuli 20% | Con la carga llena vuelca todo el maná: +10% de daño por cada 10 de maná de más, hasta el doble |
+| Meditación | Báculo, Grimorio | Vela 4% / Fruta chorus horneada 15% | En la mano: el maná vuelve un 40% más rápido |
+| Reserva | Casco, Pechera, Grebas, Botas | Lapislázuli 4% / Bloque de lapislázuli 36% | +25 de maná máximo |
+| Flujo | Casco, Pechera, Grebas, Botas | Fragmento de amatista 5% / Bloque de amatista 20% | El maná vuelve un 15% más rápido |
+| Filo arcano | Espada, Daga, Espadón, Lanza, Guadaña | Lapislázuli + Fragmento de amatista 20% | Cada golpe gasta 5 de maná y suma un 40% de daño mágico |
+| Estallido arcano | Espada, Daga, Espadón, Lanza, Guadaña | Lapislázuli + Carga de viento 20% | El golpe cargado a tope gasta 20 de maná y estalla: 60% del golpe a todo lo que hay a 3 bloques |
+| Paso arcano | Espada, Daga, Espadón, Lanza, Guadaña | Lapislázuli + Perla de ender 20% | Esquivar con ella en la mano gasta 15 de maná y te lleva un 80% más lejos |
+| Aguante | Casco, Pechera, Grebas, Botas | Filete asado 4% | +15 de estamina máxima |
+| Fuelle | Casco, Pechera, Grebas, Botas | Cuero 4% | La estamina vuelve un 20% más rápido |
+| Quiebro | Botas | Pata de conejo 10% | La esquiva te lleva un 50% más lejos |
+| Impulso | Grebas | Pistón 8% | La embestida de los guanteletes te lleva un 60% más lejos |
+| Soltura | Casco, Pechera, Grebas, Botas | Panal 6% | Saltar, esquivar y los ataques especiales cuestan un 35% menos de estamina |
 
 ## Sinergias
 
@@ -158,5 +172,5 @@ Dos mejoras al 50% en la misma pieza.
 | Siega negra | Cosechador + Siega de almas | la siega de la guadaña te cura medio corazón por enemigo arrastrado |
 | Firme | Anclaje + Temple | las botas aguantan mucho más y el lamento de la coraza no te toca |
 | Salamandra | Rescoldo + Prot. contra fuego | el fuego te devuelve entero lo que te quitaba, y te apaga |
-| Enjambre | Prisma + Buscador | el abanico del báculo pasa a cinco proyectiles, y todos persiguen |
+| Enjambre | Prisma + Buscador | el abanico del báculo pasa a cinco proyectiles que se reparten el hechizo, y todos persiguen |
 | Colapso | Vórtice + Tinta indeleble | al apagarse, la runa estalla con el 75% del daño con que se abrió |
