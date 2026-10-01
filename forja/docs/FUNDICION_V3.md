@@ -68,11 +68,11 @@ hacia abajo por el **portacolador** al **molde** de la mesa de colada → la pie
 
 **Mezcladora**:
 
-| Mezcladora · calor FUNDIDA (tubo: sangre de blaze, ×1,5) · crisol de obsidiana pegado: no | | | |
+| Mezcladora · calor FUNDIDA (tubo: sangre de blaze, ×1,5) | | | |
 |---|---|---|---|
 | **Aleación** | **Ingredientes** (tienes / pide) | **Calor** | **Estado** |
-| ▶ Damasco | acero 1872/288 mB · chatarra de netherita 3/1 | fundida ✔ | listo · alcanza para 3 |
-| Obsidiacero | acero 1872/288 · obsidiana 0/144 mB | fundida ✔ | *gris* · faltan 144 mB de obsidiana |
+| ▶ Damasco (→ 144 mB) | acero 1872/144 mB · chatarra de netherita 3/1 | fundida ✔ | listo · alcanza para 3 |
+| Obsidiacero (→ 144 mB) | acero 1872/144 · obsidiana 0/1 (o 144 mB fundida) | fundida ✔ | *gris* · falta 1 obsidiana |
 | Solacero | damasco 144/144 · vara de blaze 0/3 | forja blanca ✘ | *gris* · faltan 3 varas de blaze; necesita forja blanca |
 | Cantidad | `[1] [4] [16] [∞]` | | `[Empezar]` `[Parar]` |
 | Progreso | Damasco 2/4 · ▓▓▓░░ · 180/240 t | | Sale a: almacén A |
@@ -124,13 +124,15 @@ hacia abajo por el **portacolador** al **molde** de la mesa de colada → la pie
 | Pieza suelta o equipo forjado | recuperación (sección 9) | cada parte, su material |
 | Cualquier otra cosa (carbón, redstone, vara de blaze, chatarra de netherita, cuarzo…) | — | **no se funde**: es un *aditivo* de la mezcladora; el crisol lo rechaza con aviso |
 
-**Ingrediente de receta, fluido o aditivo** (`MixerRecipes.form(Part)`): es FLUIDO si el crisol lo funde
-(`meltsTo` no vacío) **salvo el corazón de forja**, que siempre es ADITIVO (entero) para que las cumbre y el acero vivo
-cuesten exactamente un corazón por unidad. Fluidos: lingotes de cobre/hierro/oro, aleaciones, hierro estelar, placa
-hueca, escoria, oricalco, obsidiana, obsidiana llorona. Aditivos: carbón, amatista, ladrillo de resina, chatarra de
-netherita, arcilla, ascua, redstone, cuarzo, vara de blaze, fragmento de eco, corazón de forja (y en las fraguas lejanas:
-tierra de almas, basalto, piedra negra, crema de magma, caparazón de shulker, coro reventado, piedra del End, lágrima de
-ghast, bloque de magma).
+**Ingrediente de receta: METAL o ADITIVO** (`MixerRecipes.form(Part)`, lista fija, decidida por Andy el 2026-10-01):
+
+| Clase | Qué es | En la mezcladora |
+|---|---|---|
+| **METAL** (suma volumen) | lingotes de cobre, hierro, oro y netherita; **todas las aleaciones** (oricalco incluido); sus fluidos | entra como mB del almacén (o lingotes en el hogar de una fragua lejana); **suma** a la salida |
+| **ADITIVO** (se gasta, no suma) | carbón, amatista, ladrillo de resina, arcilla, ascua, redstone, cuarzo, vara de blaze, fragmento de eco, **chatarra de netherita** (es chatarra, no lingote), **hierro estelar** (mineral de la estrella, aún sin refinar), **placa hueca** (reliquia), **escoria**, obsidiana, obsidiana llorona, **corazón de forja**; en las fraguas: tierra de almas, basalto, piedra negra, crema de magma, caparazón de shulker, coro reventado, piedra del End, lágrima de ghast, bloque de magma | ítem en las 4 ranuras de aditivo (u hogar). Un aditivo que el crisol funde (hierro estelar, placa hueca, escoria, obsidiana, obsidiana llorona) vale también como **144 mB de su fluido** del almacén; el corazón, solo entero |
+
+Hierro estelar, placa hueca, escoria, obsidiana y corazón se siguen fundiendo en el crisol para **colar piezas** de esos
+materiales; lo de "aditivo" solo dice cómo cuentan en una aleación.
 
 ---
 
@@ -184,18 +186,34 @@ camino tiene un **presupuesto de calor** de 200.
 | **Fragua del vacío** | eterio, eclipse | ídem |
 
 Cambios en `Alloys`: nuevo `STAR`; `Alloys.match` (la mesa) solo mira `STAR`; se **quitan** `FOUNDRY_ONLY` (ya no
-significa nada) y `WHITE_HEAT_ONLY` (pasa a `recipe.heat() == FORJA_BLANCA`). Recetas, calores y cantidades: **iguales**.
+significa nada) y `WHITE_HEAT_ONLY` (pasa a `recipe.heat() == FORJA_BLANCA`). Calores: **iguales**. Las recetas de `STAR`
+no cambian en la mesa; las de mezcladora y fraguas cambian según 4.4 (`Recipe.inputs`/`output` de `Alloys.ALL` y `EXTRA`
+pasan a ser las ajustadas, para que guía, JEI y máquinas digan lo mismo).
+
+**Receta de la mezcladora (cara a propósito, para que la mesa siga siendo el camino del principio):** en la mesa de
+crafteo, forma fija
+
+| | | |
+|---|---|---|
+| lingote de acero | **lingote de netherita** | lingote de acero |
+| obsidiana | **crisol de hierro** | obsidiana |
+| lingote de acero | caldero | lingote de acero |
+
+= 4 acero + 1 netherita + 2 obsidiana + 1 crisol de hierro + 1 caldero. No lleva damasco porque el damasco ya **solo** sale
+de la mezcladora (sería el huevo y la gallina); el lingote de netherita (4 chatarras + 4 oro) es el freno de Nether. La
+fabricadora: 4 acero + 1 crisol de hierro + 1 tolva + 2 bloques de hierro + 1 yunque (cara, pero sin Nether).
 
 ### 4.2 Reglas
 
 | Regla | Valor |
 |---|---|
-| Receta en mB | Cada ingrediente FLUIDO = cantidad × 144 mB; ADITIVO = ítems en sus 4 ranuras. Salida = `output` × 144 mB del material |
+| Receta en mB | Cada METAL = cantidad × 144 mB; ADITIVO = ítems en sus 4 ranuras (o 144 mB de su fluido si se funde) |
+| **Salida: se conserva el volumen** | Salida = **suma de los mB de METAL** que entran (144 + 144 → 288). Los aditivos no suman. Sin bonus de ningún tipo (se quita el +1 del crisol de obsidiana) |
+| **Excepción: corazón** | Recetas con corazón de forja (acero vivo, iracero, égida, arcanio): salida = **(corazones + lingotes de acero vivo de la receta) × 144 mB**; los demás metales se gastan enteros sin sumar. Así cada lingote lleva exactamente un corazón (el suelto o el que ya va dentro del acero vivo) |
 | Tanda | Una tanda = la receta una vez. Al **empezar** cada tanda reserva y saca todo (fluidos y aditivos); si falta algo, no empieza |
 | Cantidad | `1 / 4 / 16 / ∞` (∞ = hasta que falte algo); se para y dice por qué |
 | Calor | `max(Alloys.heatAt(pos), calor del crisol encendido pegado)`; tiene que alcanzar `recipe.heat()` |
 | Crisol pegado | Un crisol con combustible **calienta lo que toca** (mezcladora, fabricadora) a su tier mientras eso trabaja, y gasta ascuas a su ritmo normal |
-| Bonus | **+144 mB por tanda** si hay un **crisol de obsidiana encendido pegado**, salvo `NO_TIER_BONUS` y fraguas lejanas (= el +1 lingote del crisol de obsidiana de hoy) |
 | Tiempo por tanda | TEMPLADA 100 t · CALIENTE 160 t · FUNDIDA 240 t · FORJA_BLANCA 400 t · cumbre (`PEAK`) y oricalco 600 t; × 100 / `speed` del fluido de calor (sangre de blaze 150 → ×0,67) + el tiempo de traer el metal |
 | Salida | Al almacén por la regla de llenado; si no cabe, se queda en la mezcladora (hasta 1296 mB) con "almacén lleno" |
 | Faltan ingredientes | La fila sale gris con cada falta: "faltan 144 mB de damasco", "falta 1 corazón de forja (aditivo)", "necesita forja blanca (tienes fundida)", "sin almacén conectado", "conducto tapado en x y z" |
@@ -204,10 +222,50 @@ significa nada) y `WHITE_HEAT_ONLY` (pasa a `recipe.heat() == FORJA_BLANCA`). Re
 ### 4.3 Fraguas lejanas como mezcladoras especiales
 
 - Se conectan a la red como una mezcladora (los conductos las alcanzan). Menú = el de la mezcladora con solo sus recetas.
-- Ingredientes FLUIDO: primero lingotes del hogar (144 c/u, como hoy, para usarla en su ruina sin almacén), luego mB
-  del almacén. ADITIVOS: siempre del hogar (`HEARTH = 4`).
-- Calor y combustible: **sin cambios** (su dimensión o su fluido por tubo). Tanda: `BATCH_TICKS = 200`. Sin bonus.
-- Salida: al almacén si está conectada; si no, como hoy (tolva debajo o encima de la fragua).
+- **Las dos vías (decisión de Andy):** el hogar sigue aceptando **lingotes a mano** (144 mB cada uno, para usarla en su
+  ruina sin almacén) y además saca METAL del almacén por la red. Primero gasta lo del hogar, luego el almacén. ADITIVOS:
+  siempre del hogar (`HEARTH = 4`).
+- Misma regla de volumen y mismas recetas ajustadas (4.4) por las dos vías.
+- Calor y combustible: **sin cambios** (su dimensión o su fluido por tubo). Tanda: `BATCH_TICKS = 200`.
+- Salida: al almacén si está conectada; si no, como hoy (tolva debajo o encima de la fragua), en lingotes.
+
+### 4.4 Reequilibrio por conservación de volumen
+
+Regla de ajuste: **lo escaso por lingote se queda como hoy** (chatarra, corazón, hierro estelar, placa hueca, lágrima,
+solacero, lunacero, almacero…); lo barato y renovable (acero, hierro, cobre) puede bajar algo. "Sin ajustar" = la receta
+de hoy aplicando solo la conservación de volumen. Coste por lingote = entradas ÷ lingotes que salen.
+
+| Receta | Hoy (entradas → sale) | Sin ajustar daría | **V3 (entradas → sale)** | Coste por lingote hoy → V3 |
+|---|---|---|---|---|
+| Bronce | 2 cobre + 1 hierro → 3 | 3 | igual | igual |
+| Latón | 2 cobre + 1 oro → 3 | 3 | igual | igual |
+| Peltre (mezcladora; la mesa sigue → 3) | 2 cobre + 1 ladrillo de resina → 3 | 2 | **2 cobre + 1 resina → 2** | cobre 0,67 → 1; resina 0,33 → 0,5 (algo más caro que en la mesa, adrede) |
+| Acero | 2 hierro + 2 carbón → 2 | 2 | igual | igual |
+| Electro | 2 oro + 1 amatista → 2 | 2 | igual | igual |
+| **Damasco** | 2 acero + 1 chatarra → 1 | 2 | **1 acero + 1 chatarra → 1** | chatarra 1 → 1; acero 2 → 1 |
+| **Acero estelar** | 1 acero + 1 hierro estelar → 2 | 1 (más caro) | **2 acero + 1 hierro estelar → 2** | estelar 0,5 → 0,5; acero 0,5 → 1 |
+| **Obsidiacero** | 2 acero + 1 obsidiana → 1 | 2 | **1 acero + 1 obsidiana → 1** | obsidiana 1 → 1; acero 2 → 1 |
+| Cinerio | 2 acero + 4 ascuas → 2 | 2 | igual | igual |
+| Voltaico | 2 latón + 4 redstone + 1 amatista → 2 | 2 | igual | igual |
+| Almacero | 1 acero estelar + 2 placas huecas → 1 | 1 | igual (la placa es aditivo) | igual |
+| Vidriacero | 1 obsidiacero + 4 cuarzo → 1 | 1 | igual | igual |
+| Solacero | 1 damasco + 3 varas de blaze → 1 | 1 | igual | igual |
+| Lunacero | 1 obsidiacero + 3 ecos → 1 | 1 | igual | igual |
+| Acero vivo | 1 corazón + 2 damasco → 1 | 1 (regla del corazón) | igual | igual: 1 corazón por lingote |
+| **Astralita** | 2 oricalco + 1 eterio + 2 hierro estelar → 2 | 3 | **2 oricalco + 1 eterio + 4 hierro estelar → 3** | oricalco 1 → 0,67; eterio 0,5 → 0,33; estelar 1 → 1,33 (lo escaso total casi igual) |
+| **Oricalco** | 1 de cada uno de 14 (11 metales + estelar, placa, escoria) → 4 | 11 | **1 de cada uno de los 11 metales + 3 hierro estelar + 3 placas huecas + 3 escorias → 11** | estelar, placa y escoria 0,25 → 0,27 (lo que lo frena); cada metal común 0,25 → 0,09 |
+| Fatuo (almas) | 2 hierro + 1 chatarra + 4 tierra de almas → 2 | 2 | igual | igual |
+| Magmacero (almas) | 2 acero + 4 basalto + 4 piedra negra + 2 crema de magma → 2 | 2 | igual | igual |
+| Eterio (vacío) | 2 acero + 1 shulker + 4 coro + 4 piedra del End → 2 | 2 | igual | igual |
+| **Espectracero** (almas) | 2 fatuo + 1 almacero + 1 lágrima → 2 | 3 | **1 fatuo + 1 almacero + 1 lágrima → 2** | almacero y lágrima 0,5 → 0,5; fatuo 1 → 0,5 |
+| **Corazón de volcán** (almas) | 2 magmacero + 1 solacero + 4 magma → 2 | 3 | **1 magmacero + 1 solacero + 4 magma → 2** | solacero 0,5 → 0,5; magma 2 → 2; magmacero 1 → 0,5 |
+| **Eclipse** (vacío) | 2 eterio + 1 lunacero + 2 obsidiana llorona → 2 | 3 | **1 eterio + 1 lunacero + 2 obsidiana llorona → 2** | lunacero 0,5 → 0,5; llorona 1 → 1; eterio 1 → 0,5 |
+| Iracero | 1 corazón + 2 corazón de volcán + 1 acero vivo → 2 | 2 (regla del corazón) | igual | igual: 2 corazones → 2 lingotes |
+| Égida | 1 corazón + 2 espectracero + 2 obsidiacero → 1 | 1 | igual | igual |
+| Arcanio | 1 corazón + 2 astralita + 2 eclipse → 1 | 1 | igual | igual |
+
+Resumen: ninguna receta sale más barata en lo escaso; damasco, obsidiacero, oricalco y las tres de la fragua de dos
+aleaciones se ajustan para no multiplicarse; peltre en la mezcladora y acero estelar piden algo más de metal común.
 
 ---
 
@@ -270,7 +328,8 @@ El ítem `colador` gana dos datos: **malla** (`forja:malla` = FINA | GRUESA) y *
 | Un tapón | Corta la red como una llave cerrada (invalida la caché por cambio de estado) |
 | **Recalentar la máquina** | Al volver el calor, la máquina deshace sus tapones de uno en uno, **1 cada 20 t** desde ella hacia fuera; el metal vuelve a la tanda; luego sigue. Sin pérdida |
 | **Calor externo** | Un tubo de calor con fluido o un bloque caliente (lava, magma, fuego, farol) pegado a un tapón con calor ≥ `meltHeat` del metal lo deshace en **100 t**; si no es de ningún trabajo, el metal va al almacén con sitio más cercano |
-| **Limpiar a mano** | Mayús + clic derecho con un pico en el tapón: lo quita al instante, **el metal se pierde** (16 mB). Romper el conducto tapado: suelta el conducto, el metal se pierde |
+| **Limpiar a mano** | Mayús + clic derecho con un pico en el tapón: lo quita al instante y suelta **1 rebaba** de ese metal (16 mB). Romper el conducto tapado: suelta el conducto **y** la rebaba. **El metal no se pierde** (decisión de Andy) |
+| **Rebaba** | Ítem nuevo `rebaba` con dos componentes: material y mB (`forja:rebaba` = {material, mB}); apila con la misma; tooltip "Rebaba de acero · 16 mB". El crisol la funde al **100 %** en su metal, sin mirar el tier (es metal suelto, no una pieza) |
 | Fabricadora a media colada | Al reanudar, la pieza sale **basta** |
 | Parar un trabajo | Solo con la máquina caliente: devuelve lo que tiene al almacén. Fraguada, "Parar" está gris |
 | Crisol sin calor | Igual que hoy (no funde); lo que ya mandó está en el almacén, que no fragua |
@@ -333,15 +392,16 @@ montadora. Lo que falta para cerrar del todo va en la fase POSTERIOR (sección 1
 
 | Punto | Hoy | V3 | ¿Más barato? |
 |---|---|---|---|
-| Aleaciones | N lingotes → M lingotes | N × 144 mB → M × 144 mB, mismas recetas | No (igual) |
-| +1 lingote de obsidiana | crisol de obsidiana, por colada, salvo cumbre | +144 mB por tanda con crisol de obsidiana pegado, salvo cumbre y lejanas | Igual (adrede) |
-| Corazón de forja | 1 por receta | aditivo entero, 1 por tanda | Igual |
+| Aleaciones | N lingotes → M lingotes | **se conserva el volumen de METAL**; recetas ajustadas en 4.4 | No en lo escaso (tabla 4.4); algo menos de acero en damasco, obsidiacero y las de dos aleaciones |
+| +1 lingote de obsidiana | crisol de obsidiana, por colada, salvo cumbre | **se quita** (ni crisol ni aliento) | Más caro con crisol de obsidiana (adrede: decisión de Andy) |
+| Corazón de forja | 1 por lingote | aditivo entero; salida = (corazones + acero vivo) × 144 mB | Igual |
 | Mena | 1 = 1 lingote | 1 = 144 mB | Igual |
 | Piezas coladas | `cost` lingotes | `cost` × 144 mB | Igual |
 | Recuperación | 50/75/100 % del material de la 1.ª parte | 50/75/100 % sana, 30/45/60 % rota, cada parte su material | Algo más generosa en piezas mixtas (adrede, lo pidió Andy); rota, más cara |
 | Coladores | duran para siempre | se gastan; fino más | Más caro (adrede) |
 | Damasco, cinerio, voltaico… en la mesa | sí (sobre lava/magma) | solo mezcladora | Más caro al principio (adrede: "las buenas por la mezcladora") |
-| Tapones | — | pérdida solo si se pican (16 mB/bloque) | Más caro si te descuidas |
+| Tapones | — | el metal vuelve como rebaba (picar o romper) | Igual: solo cuesta tiempo |
+| Receta de la mezcladora | — | 4 acero + 1 netherita + 2 obsidiana + crisol de hierro + caldero | La mesa sigue siendo el camino del principio |
 
 Las pruebas de equilibrio (`BalanceGameTests`, `ArmaduraGameTests`) no deben moverse: los materiales no cambian.
 
@@ -355,7 +415,7 @@ Las pruebas de equilibrio (`BalanceGameTests`, `ArmaduraGameTests`) no deben mov
 | Sección | Capítulos ahora | Capítulos V3 |
 |---|---|---|
 | `fundicion_calor` | `fundicion_sabes`, `primeras_aleaciones` | `fundicion_sabes` (reescrito: 144/16/1296 mB), `primeras_aleaciones` (solo `STAR`; "las buenas, en la mezcladora") |
-| `fundicion_linea` | `fundicion` | `fundicion_crisol` (crisol + qué se funde + recuperación), `fundicion_almacen` (cubas, panel, conductos y caudal), `fundicion_mezcladora` (lista, faltas, bonus de obsidiana), `fundicion_fabricadora` (pila, moldero, lingotera, cofre), `fundicion_colador` (fino/grueso, desgaste, basta), `fundicion_tapones` (calor, tapones, recalentar, picar) |
+| `fundicion_linea` | `fundicion` | `fundicion_crisol` (crisol + qué se funde + recuperación), `fundicion_almacen` (cubas, panel, conductos y caudal), `fundicion_mezcladora` (lista, faltas, el volumen se conserva, aditivos que no suman, regla del corazón), `fundicion_fabricadora` (pila, moldero, lingotera, cofre), `fundicion_colador` (fino/grueso, desgaste, basta), `fundicion_tapones` (calor, tapones, recalentar, picar) |
 | `fundicion_mayor` | `mesa_mayor`, `aleaciones_lejanas`, `aleaciones_cumbre`, `fundicion_siguiente` | igual, con `aleaciones_lejanas` (fraguas en la red) y `aleaciones_cumbre` (mezcladora a forja blanca, corazón como aditivo) reescritos |
 
 Se quita el capítulo `fundicion`. También hay que repasar los textos de `tools/lang_aleaciones.py` y `lang_cumbre.py` que
@@ -369,7 +429,7 @@ dicen "crisol de obsidiana en una línea" o "en una cuba".
 |---|---|
 | Cola de trabajos | Mezcladora y fabricadora: lista de hasta 8 trabajos (receta/pieza + material + cantidad); se hacen en orden, el que no puede se salta con aviso |
 | Conductos y chorros del color del metal | `MeltFlowRenderer` tiñe la ranura con `material.color`; el chorro de la fabricadora y las capas de la cuba, del mismo color; tapón = color oscurecido |
-| Moldes mejores, menos metal perdido | Toda colada deja **rebaba** (ítem `rebaba` con su material y mB, se refunde al 100 %): molde de acero refractario 10 % del coste, de damasco 5 %, de vidriacero 0 %. El metal no se pierde, se pierde tiempo; los moldes mejores se cortan en la caja de moldeo de damasco |
+| Moldes mejores, menos metal perdido | Toda colada deja **rebaba** (el ítem `rebaba` del núcleo, sección 6): molde de acero refractario 10 % del coste, de damasco 5 %, de vidriacero 0 %. El metal no se pierde, se pierde tiempo; los moldes mejores se cortan en la caja de moldeo de damasco |
 | Redstone y comparadores | Panel: elige un metal → comparador 0–15 por lingotes. Mezcladora y fabricadora: señal = pausa; comparador por estado. Fabricadora "mantener N en el cofre" (cuela solo si hay menos) |
 | Tolvas por todas partes | Cofre de piezas pegado a la montadora le pasa las piezas que pide su marco; la montadora deja lo montado en el cofre pegado |
 | Sonidos y partículas | `ModSounds`: mezcla burbujeando, chorro, tapón que cruje, tapón que se deshace, colador que se rompe; partículas de metal en el chorro y vapor al recalentar |
@@ -385,9 +445,9 @@ sin sustituto.
 
 | Tanda | Contenido | Pruebas (`T/`) |
 |---|---|---|
-| **1. Metal en mB, almacén, crisol y mezcladora** | `Mb`; `MetalStore` multifluido (sustituye `MeltDeposit`), cuba y su renderer por capas, ítem de cuba con su parte; panel; caudal y presupuesto de calor en conductos; crisol reescrito (huecos por tier 3/6/9, cualquier metal, sin salida, sin aleaciones, recuperación nueva, calienta lo que toca); `Alloys.STAR`, `match` de la mesa, fuera `FOUNDRY_ONLY`/`WHITE_HEAT_ONLY`; `MixerRecipes` + mezcladora (bloque, entidad, menú, pantalla); mesa de colada y caja de moldeo adaptadas a sacar mB (`cost × 144`) para que colar siga funcionando; quitar el caño y el colador puesto **todavía no** | `AlmacenGameTests`: `unidadesYTexto` ("1872 mB (13 lingotes)"), `cubasPegadasVariosMetales`, `llenaPrimeroElMismoMetal`, `cubaRotaGuardaSuParte`, `panelSumaDosAlmacenes`, `comparadorDeCuba`, `bronceLargoNoLlega`, `tuboDeCalorAlargaElConducto`, `redNoSeRecorreCadaTick`. `CrisolV3GameTests`: `fundeCualquierMetal`, `esperaSinAlmacen`, `rechazaAditivos`, `recuperacionPorTier`, `piezaMixtaCadaMaterial`, `rotaDevuelveMenos`. `MezcladoraGameTests`: `bronceDeMb`, `cadaAleacionTieneQuienLaHaga` (mesa, mezcladora o fragua), `faltaDiceCuanto`, `calorInsuficienteNoEmpieza`, `bonusSoloConObsidianaPegada`, `cumbreSinBonusUnCorazon`, `cantidadInfinitaParaAlFaltar`, `salidaEsperaAlmacenLleno`. Reescribir: `FundicionGameTests`, `CalorGameTests`, `OricalcoGameTests`, `CumbreGameTests`, `MesaGameTests`, `MaterialesGameTests.everyAlloyCanBePoured` |
+| **1. Metal en mB, almacén, crisol y mezcladora** | `Mb`; `MetalStore` multifluido (sustituye `MeltDeposit`), cuba y su renderer por capas, ítem de cuba con su parte; panel; caudal y presupuesto de calor en conductos; crisol reescrito (huecos por tier 3/6/9, cualquier metal, sin salida, sin aleaciones, recuperación nueva, calienta lo que toca); `Alloys.STAR`, `match` de la mesa, fuera `FOUNDRY_ONLY`/`WHITE_HEAT_ONLY`; `MixerRecipes` + mezcladora (bloque, entidad, menú, pantalla); mesa de colada y caja de moldeo adaptadas a sacar mB (`cost × 144`) para que colar siga funcionando; quitar el caño y el colador puesto **todavía no** | `AlmacenGameTests`: `unidadesYTexto` ("1872 mB (13 lingotes)"), `cubasPegadasVariosMetales`, `llenaPrimeroElMismoMetal`, `cubaRotaGuardaSuParte`, `panelSumaDosAlmacenes`, `comparadorDeCuba`, `bronceLargoNoLlega`, `tuboDeCalorAlargaElConducto`, `redNoSeRecorreCadaTick`. `CrisolV3GameTests`: `fundeCualquierMetal`, `esperaSinAlmacen`, `rechazaAditivos`, `recuperacionPorTier`, `piezaMixtaCadaMaterial`, `rotaDevuelveMenos`. `MezcladoraGameTests`: `bronceDeMb`, `cadaAleacionTieneQuienLaHaga` (mesa, mezcladora o fragua), `faltaDiceCuanto`, `calorInsuficienteNoEmpieza`, `seConservaElVolumen` (144 + 144 → 288), `aditivosNoSuman`, `sinBonusNiConObsidiana`, `reglaDelCorazon` (acero vivo 1, iracero 2, égida 1, arcanio 1), `recetasAjustadas` (cada fila de 4.4), `aditivoFundidoVale`, `recetaDeLaMezcladora`, `cantidadInfinitaParaAlFaltar`, `salidaEsperaAlmacenLleno`. Reescribir: `FundicionGameTests`, `CalorGameTests`, `OricalcoGameTests`, `CumbreGameTests`, `MesaGameTests`, `MaterialesGameTests.everyAlloyCanBePoured` |
 | **2. Fabricadora, portacolador, moldero, lingotera** | Fabricadora (bloque, entidad, menú, pantalla); portacolador (sustituye `StrainerBlock`, se quita el bloque `colador`); colador con malla y usos, receta del fino; mesa de colada sin calor ni cubas; moldero; lingotera; se quita `cano_de_colada` y la lógica de caídas (`DROP`, `FALL_BLEED`) | `FabricadoraGameTests`: `pilaIncompletaAvisa`, `cuelaPiezaDelMolde`, `cuelaHerramientaDelMarco`, `lingoteraSacaLingotes`, `finoDaMejora`, `gruesoMasRapidoSinMejora`, `sinColadorSaleBasta`, `coladorQueNoAguantaSeRompe`, `coladorSeGastaYSeCambia`, `mesaLimitaElMaterial`, `moldeVaYVuelveDelMoldero`, `faltaMetalDiceCuanto`, `perlaDeOricalco` |
-| **3. Calor: parada, tapones; fraguas lejanas en la red** | Parada a los 20 t, tapones (estado, BE, render), deshacer al recalentar y por calor externo, picar con pico, colada interrumpida = basta; `FarForgeBlockEntity` como mezcladora especial (menú, mB del almacén, salida a la red) | `TaponesGameTests`: `sinCalorSeParaYTapa`, `maximoDieciseisTapones`, `taponCortaLaRed`, `recalentarDeshaceUnoPorSegundo`, `tuboDeCalorDeshaceTapon`, `picarPierdeElMetal`, `coladaInterrumpidaSaleBasta`, `pararSoloEnCaliente`. Reescribir `FraguasLejanasGameTests` (+ `fraguaSacaDelAlmacen`, `fraguaSinRedComoAntes`, `fraguaSinBonus`) |
+| **3. Calor: parada, tapones; fraguas lejanas en la red** | Parada a los 20 t, tapones (estado, BE, render), deshacer al recalentar y por calor externo, picar con pico, colada interrumpida = basta; `FarForgeBlockEntity` como mezcladora especial (menú, mB del almacén, salida a la red) | `TaponesGameTests`: `sinCalorSeParaYTapa`, `maximoDieciseisTapones`, `taponCortaLaRed`, `recalentarDeshaceUnoPorSegundo`, `tuboDeCalorDeshaceTapon`, `picarDaRebaba`, `romperTapadoDaRebaba`, `rebabaSeFundeEntera`, `coladaInterrumpidaSaleBasta`, `pararSoloEnCaliente`. Reescribir `FraguasLejanasGameTests` (+ `fraguaSacaDelAlmacen`, `fraguaSinRedComoAntes` (lingotes a mano), `fraguaConservaVolumen`) |
 | **4. Cofre de piezas, automatización, integración** | Cofre de piezas (bloque, entidad, menú agrupado); salidas automáticas; comparadores de la sección 10; JEI (categorías mezcladora y fabricadora; quitar las del crisol de aleaciones) y Jade; `/forja fundicion` (`command/FoundryDemo`) con la línea nueva; castillo (`tools/castillo*.py`: cambiar `cano_de_colada`/colador por la pila nueva, regenerar `.nbt`); `ForjaPath` si nombra bloques quitados | `CofrePiezasGameTests`: `soloPiezasYEquipo`, `recibeDeLaMesa`, `vistaAgrupada`, `tolvaSacaEnOrden`. `LineaSinManosGameTests`: `menaAPiezaSinTocar` (tolva→crisol→almacén→mezcladora ∞→fabricadora ∞→cofre→montadora). Reescribir `MontadoraGameTests` y lo que falle de `PathGameTests`/`PortalGameTests`/`CombatGameTests`/`MangosGameTests` |
 | **5. Libro III y grabación** | Capítulos de la sección 12; `LibrosGameTests` al día; sección de cliente `FundicionV3Footage` + hoja (sección 16); `CumbreFootage`/`VideoVisualFootage` sin bloques quitados | `LibrosGameTests` (capítulos nuevos existen y tienen texto); grabación de cliente |
 | (6. Posterior) | Sección 13, cuando Andy lo pida | Una prueba por extra |
@@ -403,7 +463,7 @@ sin sustituto.
 | `J/forge/Mb.java` | NUEVO (1): unidades y texto |
 | `J/forge/MixerRecipes.java` | NUEVO (1): receta → fluidos mB + aditivos + salida + tiempo; `form(Part)` |
 | `J/forge/Recovery.java` | NUEVO (1): % por tier, rota, mB por parte |
-| `J/forge/Alloys.java` | CAMBIA (1): `STAR`; `match` solo `STAR`; fuera `FOUNDRY_ONLY`, `WHITE_HEAT_ONLY` |
+| `J/forge/Alloys.java` | CAMBIA (1): `STAR`; `match` solo `STAR`; fuera `FOUNDRY_ONLY`, `WHITE_HEAT_ONLY` y `NO_TIER_BONUS` (ya no hay bonus; la regla del corazón vive en `MixerRecipes`); recetas ajustadas de 4.4 en `ALL`/`EXTRA` |
 | `J/block/entity/MetalStore.java` | NUEVO (1), sustituye a `MeltDeposit.java` (BORRAR) |
 | `J/block/entity/MeltTankBlockEntity.java`, `J/block/MeltTankBlock.java` | CAMBIAN (1): parte multifluido, sin calor, ítem con su parte, abre el panel |
 | `J/block/entity/MeltNetwork.java` | CAMBIA (1–3): almacenes multifluido, camino con caudal/pérdida, tapones como cortes, sin caños |
@@ -418,6 +478,7 @@ sin sustituto.
 | `J/block/StrainerBlock.java`, `J/block/entity/StrainerBlockEntity.java` | BORRAR (2) |
 | `J/item/StrainerItem.java` | CAMBIA (2): malla, usos, tooltip |
 | `J/item/IngotMouldItem.java` (lingotera) | NUEVO (2) |
+| `J/item/ScrapItem.java` (rebaba) | NUEVO (3): componente material + mB; el crisol la funde al 100 % |
 | `J/block/CastingTableBlock.java`, `J/block/entity/CastingTableBlockEntity.java`, `J/client/CastingTableRenderer.java` | CAMBIAN (1) mB; (2) sin calor ni cubas, recibe de la fabricadora |
 | `J/block/MouldStoreBlock.java`, `J/block/entity/MouldStoreBlockEntity.java`, `J/menu/MouldStoreMenu.java`, `J/client/MouldStoreScreen.java` | NUEVOS (2) |
 | `J/block/entity/CastingBoxBlockEntity.java` | CAMBIA (1): baño en mB |
@@ -489,10 +550,12 @@ Hoja: `tools/hoja_fundicion_v3.py` (copia de `hoja_oricalco.py`) junta las captu
 
 ---
 
-## 18. Preguntas abiertas para Andy
+## 18. Decisiones de Andy (2026-10-01)
 
-1. ¿La cuba rota guarda su metal como una caja de shulker (propuesto) o se pierde?
-2. El +1 lingote solo con crisol de obsidiana pegado a la mezcladora (igual que hoy). ¿Vale también el aliento de forja?
-3. Damasco, cinerio, voltaico y demás salen de la mesa de forja y pasan a solo mezcladora. ¿De acuerdo?
-4. Picar un tapón pierde sus 16 mB por bloque. ¿O lo devolvemos como rebaba?
-5. La fragua lejana sigue aceptando lingotes en el hogar (para usarla en su ruina sin almacén). ¿La dejamos o solo red?
+1. La cuba rota **guarda su metal**, como una caja de shulker (3.1).
+2. **Ningún lingote de bonus.** La mezcla **conserva el volumen de METAL** (144 + 144 → 288); los aditivos se gastan sin
+   sumar; las recetas con corazón dan un lingote por corazón; las recetas que se abarataban se ajustan (4.2, 4.4).
+3. Las aleaciones buenas, **solo en la mezcladora**; la estrella guarda las básicas. La mezcladora es cara de hacer
+   (4 acero + netherita + 2 obsidiana + crisol de hierro + caldero, 4.1).
+4. Picar o romper un tapón **devuelve su metal** como rebaba (6).
+5. Las fraguas lejanas siguen aceptando **lingotes a mano** en el hogar, además de la red (4.3).
