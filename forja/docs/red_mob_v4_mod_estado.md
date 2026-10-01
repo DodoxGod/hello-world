@@ -997,6 +997,43 @@ El resto de `mod_spec_v4c.md` no pide nada nuevo al mod. `red_capitan.json` se c
 `config/forja/redes_v4/red_capitan.json` como dice, y manda aunque `iaCapitanReglas` esté apagado (prueba
 `aCaptainNetworkGivesTheOrders`).
 
+## Escalera de dificultad (30-09): el simulador copia Extremo
+
+Desde la escalera (`difficulty/Ladder.java`, la tabla entera está ahí y en el libro II) cada nivel de Minecraft enciende
+sus sistemas. Las redes v4 y la red del capitán **solo corren en Extremo**, así que el simulador copia Extremo:
+
+| | Difícil | **Extremo** (lo que copia el simulador) |
+|---|---|---|
+| redes | v3 (`redes`) | v4 (`redes_v4`) donde la haya; si no, la v3 |
+| capitán | de reglas | `red_capitan.json` si está; si no, el de reglas |
+| capitán 2 (visión, sucesión, protección, órdenes 2, visible) | no | sí |
+| reglas, avisos, turnos, anillo, penetración y presión, escalado por equipo | sí | sí |
+| cifras (`ForjaDifficulty`) | HERRERO | **MAESTRO** |
+| carrera, factor f del bono | 0,6 | **0,9** |
+
+**La fórmula exacta de la carrera** (`MobSprint.runMultiplier`, `Ladder.sprintMultiplier`): solo se recorta el bono, la
+velocidad al andar no cambia.
+
+```
+correr  = base × (1 + 0,35 × f)          Extremo: base × 1,315   (Difícil ×1,21; Normal y Fácil ×1,14)
+cerco   = base × (1 + (2,3 − 1) × f)     Extremo: base × 2,17    (el modo rodeo, rodeoSpeed 2,3)
+```
+
+En el juego es el sprint de vanilla (modificador ×1,3, `ADD_MULTIPLIED_TOTAL` 0,3) por el modificador `forja:carrera`
+(`ADD_MULTIPLIED_TOTAL`) de valor `correr / 1,3 − 1`: en Extremo +0,011538 (cerco +0,669231); en Difícil es negativo,
+−0,069231, porque +21 % queda por debajo del +30 % del sprint de vanilla. El aliento no cambia: 100, gasta 2 por tick
+(1,4 en el cerco), recupera 1 por tick tras 20 sin correr y vuelve a correr desde 25. Solo en Fácil los fuertes
+(veteranos, élites, campeones, monstruos de Forja) tienen el 70 %: 70 de aliento y el 70 % de la barra de postura.
+
+**Las cifras de Extremo (MAESTRO)**: en la observación `dif_maestro` = 1 (y los otros tres `dif_*` a 0); vida ×1,3, daño a
+los jugadores ×1,25, postura ×1,2, probabilidad de veterano y élite ×1,5, tope por golpe ×0,85, temperatura de las redes
+×0,8, botín ×1,3 y amago mínimo 0,15. En la fórmula del daño de la cuarta tanda, «dificultad (HERRERO 1)» pasa a ser
+**1,25**.
+
+Ojo con las medidas anteriores de este documento: se hicieron con HERRERO y la carrera a ×1,35. Las pruebas del servidor
+siguen así salvo la carrera: corren con `nivel` = EXTREMO y `dificultad` = HERRERO forzados (`TestDefaults`), o sea,
+todos los sistemas de Extremo con las cifras de Herrero y la carrera a ×1,315.
+
 ## Rendimiento
 
 `RedV4PerfGameTests` (entorno propio, corre solo, chunks forzados): 30 mobs mezclados (zombis, algunos con escudo y

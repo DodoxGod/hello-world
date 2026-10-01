@@ -148,14 +148,43 @@ peso sale de la fórmula. Se pueden cambiar en `materiales` con la clave `cota_d
 
 ### Dificultad (fase 0b; paquete `dev.forja.difficulty`)
 
-**Selector** (`dificultad` en la configuración o `/forja dificultad <nivel>`; sin argumento muestra el estado):
+**Escalera** (Andy, 2026-09-30; `difficulty/Ladder.java` es la única fuente): el botón de dificultad de Minecraft
+(Opciones → Opciones del mundo, y la pantalla de crear mundo) va Pacífico → Fácil → Normal → Difícil → **Extremo**. Extremo
+es HARD más la regla de juego del mundo `forja:extremo` (se guarda en el mundo y se manda a los clientes). En un mundo
+extremo (hardcore) el mismo botón, al crearlo, alterna Difícil y Extremo. `/difficulty` sigue valiendo (`/difficulty hard`
+es Difícil) y `/forja dificultad pacifico|facil|normal|dificil|extremo` pone las dos cosas; sin argumento muestra el estado.
 
-| Dificultad | Vida mobs | Daño mobs | Postura | Amenaza | Tope por golpe | Temperatura | Botín |
+| | Pacífico | Fácil | Normal | Difícil | Extremo |
+|---|---|---|---|---|---|
+| Cifras (abajo) | APRENDIZ | APRENDIZ | HERRERO | HERRERO | MAESTRO |
+| Reglas de Forja en mobs vanilla (cerebro, avisos, turnos, anillo, capitán de reglas, percepción honesta) | no | no | sí | sí | sí |
+| Mobs de Forja | reglas | reglas | reglas | + redes | + redes |
+| Penetración de armadura (presión, arma y rango) | no | no | sí | sí | sí |
+| Redes v3 (`redes`, también la del blaze) | no | no | no | sí | sí |
+| Redes v4 (`redes_v4`) | no | no | no | no | sí |
+| Red del capitán | no | no | no | no | sí |
+| Capitán 2 (visión, sucesión, protección, órdenes 2, visible) | no | no | no | no | sí |
+| Entradas de puntería v4.1 (cuando existan) | no | no | no | no | sí |
+| Bono de carrera (+35 % × f) | +14 % | +14 % | +14 % | +21 % | +31,5 % |
+| Aguante de los fuertes (postura y aliento) | ×0,7 | ×0,7 | ×1 | ×1 | ×1 |
+| Escalado por equipo (`GearScore`) | no | no | sí | sí | sí |
+
+"Los fuertes" son veteranos, élites, campeones, jefes y monstruos de Forja. En Fácil (y Pacífico) un mob vanilla corriente
+es vanilla del todo: su IA, su vida y su daño; las cifras de APRENDIZ (daño ×0,7) solo valen para los fuertes. La carrera:
+velocidad = base × (1 + 0,35 · f), y el cerco base × (1 + 1,3 · f); andar no cambia.
+
+**Cifras** (`ForjaDifficulty`; las elige el nivel, la configuración solo las fuerza como administrador):
+
+| Cifras | Vida mobs | Daño mobs | Postura | Amenaza | Tope por golpe | Temperatura | Botín |
 |---|---|---|---|---|---|---|---|
-| APRENDIZ | ×0,8 | ×0,7 | ×0,8 | ×0,5 | ×1,4 | ×1,3 | ×0,8 |
-| HERRERO (por defecto) | ×1 | ×1 | ×1 | ×1 | ×1 | ×1 | ×1 |
-| MAESTRO | ×1,3 | ×1,25 | ×1,2 | ×1,5 | ×0,85 | ×0,8 | ×1,3 |
-| LEYENDA | ×1,7 | ×1,5 | ×1,4 | ×2,2 | ×0,7 | ×0,6 | ×1,7 |
+| APRENDIZ (Fácil) | ×0,8 | ×0,7 | ×0,8 | ×0,5 | ×1,4 | ×1,3 | ×0,8 |
+| HERRERO (Normal, Difícil) | ×1 | ×1 | ×1 | ×1 | ×1 | ×1 | ×1 |
+| MAESTRO (Extremo) | ×1,3 | ×1,25 | ×1,2 | ×1,5 | ×0,85 | ×0,8 | ×1,3 |
+| LEYENDA (solo forzada) | ×1,7 | ×1,5 | ×1,4 | ×2,2 | ×0,7 | ×0,6 | ×1,7 |
+
+**Configuración** (solo para administradores): `nivel` ("auto" o un nivel) fuerza el nivel de todo el servidor;
+`dificultad` ("auto" o unas cifras) fuerza solo las cifras. Un `config/forja.json` de antes se migra una vez
+(`dificultadRevision`): su HERRERO, el valor por defecto de entonces, pasa a "auto"; otra elección se queda como forzado.
 
 **Niveles de amenaza** (etiqueta de entidad; se decide una vez, la primera vez que el mob hostil entra al mundo):
 

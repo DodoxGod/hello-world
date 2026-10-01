@@ -36,7 +36,8 @@ abstract class RangedBowAttackGoalMixin {
 	@Unique
 	private boolean forja$chargedShot() {
 		CombatConfig cfg = CombatConfig.get();
-		return cfg.enabled && cfg.skeletonChargedEvery > 0 && (forja$shots + 1) % cfg.skeletonChargedEvery == 0;
+		return cfg.enabled && cfg.skeletonChargedEvery > 0 && dev.forja.difficulty.Ladder.thinks(mob)
+			&& (forja$shots + 1) % cfg.skeletonChargedEvery == 0;
 	}
 
 	/** A forged bow is a bow: without this the goal would not even start for a skeleton holding one. */
@@ -71,7 +72,8 @@ abstract class RangedBowAttackGoalMixin {
 	/** Covering fire, the other half: holding for a clear line, it steps aside to get one. */
 	@Inject(method = "tick", at = @At("TAIL"))
 	private void forja$clearTheLine(CallbackInfo ci) {
-		if (CombatConfig.get().enabled && mob.isUsingItem() && mob.getTicksUsingItem() >= 15 && mob.getTarget() instanceof net.minecraft.world.entity.player.Player player) {
+		if (CombatConfig.get().enabled && dev.forja.difficulty.Ladder.thinks(mob) && mob.isUsingItem() && mob.getTicksUsingItem() >= 15
+			&& mob.getTarget() instanceof net.minecraft.world.entity.player.Player player) {
 			dev.forja.ai.Squad.stepToClearLine(mob, player);
 		}
 	}

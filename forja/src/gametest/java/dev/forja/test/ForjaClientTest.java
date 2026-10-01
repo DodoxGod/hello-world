@@ -99,6 +99,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 			log("ALL CHECKS PASSED (solo dimension)");
 			return;
 		}
+		// The difficulty ladder on Minecraft's own button (DificultadFootage): its own worlds, made and opened again.
+		if ("dificultad".equals(System.getenv("FORJA_SOLO"))) {
+			DificultadFootage.run(context);
+			log("ALL CHECKS PASSED (solo dificultad)");
+			return;
+		}
 		// Materials and ores need a real world with real ores in it, not the superflat below.
 		if ("materiales".equals(System.getenv("FORJA_SOLO"))) {
 			checkMaterials(context);

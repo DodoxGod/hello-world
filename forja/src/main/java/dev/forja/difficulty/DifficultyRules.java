@@ -6,6 +6,8 @@ public final class DifficultyRules {
 	}
 
 	public static void register() {
+		// The ladder first: every rule below asks it what the level turns on.
+		Ladder.register();
 		java.util.Objects.requireNonNull(Adaptive.VALUE);
 		java.util.Objects.requireNonNull(Nights.COUNT);
 		java.util.Objects.requireNonNull(Nights.LAST_DAY);

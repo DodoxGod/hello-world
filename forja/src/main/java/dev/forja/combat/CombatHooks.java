@@ -199,13 +199,15 @@ public final class CombatHooks {
 		}
 		// Each mob takes each kind of blow its own way.
 		scaled *= (float) dev.forja.difficulty.MobResistances.factor(target, attack.kind());
-		// Monsters hit players as hard as the difficulty, their own threat and how the player is doing say.
+		// Monsters hit players as hard as the difficulty, their own threat and how the player is doing say. On a level
+		// without Forja's rules (Fácil) a plain vanilla monster hits as vanilla's does (Ladder.mobDamage), and the gear
+		// tier counts only where the level scales by it.
 		if (source.getEntity() instanceof net.minecraft.world.entity.Mob mob && mob instanceof net.minecraft.world.entity.monster.Enemy
 			&& target instanceof Player victim) {
-			scaled *= (float) (dev.forja.difficulty.ForjaDifficulty.current().damage
+			scaled *= (float) (dev.forja.difficulty.Ladder.mobDamage(mob)
 				* dev.forja.difficulty.Threat.of(mob).damage * dev.forja.difficulty.Adaptive.damageMultiplier(victim)
 				* dev.forja.ai.Personality.damage(mob, victim)
-				* dev.forja.difficulty.GearScore.damageFactor(dev.forja.difficulty.GearScore.tier(victim)));
+				* dev.forja.difficulty.GearScore.damageFactor(dev.forja.difficulty.Ladder.gearTier(victim)));
 		}
 		if (source.getEntity() != null) {
 			Posture.onHit(target, attack.kind(), (float) (scaled * postureScale), now);
@@ -229,7 +231,11 @@ public final class CombatHooks {
 				breach = 1.0 - EnchantmentHelper.modifyArmorEffectiveness(level, weapon, target, source, 1.0F);
 			}
 			double extra = breach;
-			if (target instanceof Player victim) {
+			if (target instanceof Player && !dev.forja.difficulty.Ladder.current().penetration) {
+				// A level without armor penetration (Fácil): a blow on a player gets through their armor as in vanilla,
+				// the enchantment's breach aside; neither the weapon's own bite nor the attacker's rank nor pressure.
+				attack = new AttackProfile(attack.kind(), 0.0, attack.zone(), attack.precise());
+			} else if (target instanceof Player victim) {
 				// A player under pressure has no time to set their armor; a veteran, an elite or a champion finds the
 				// gaps in it anyway (Andy, 2026-09-29/30). Weapon (breach with it), rank and pressure are chained,
 				// the first two capped together and the whole capped too (Pressure.total), so nothing is left over.

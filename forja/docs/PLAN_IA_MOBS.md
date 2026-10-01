@@ -156,7 +156,7 @@ ganado** (romper la postura y rematar). La IA no sirve de nada si el mob no vive
 | D10 | Dificultad por distancia y profundidad | Más nivel lejos del spawn, en el Nether y bajo tierra |
 | D11 | Dificultad adaptativa | Sube un poco si ganas sin recibir daño y baja si mueres mucho; con límites y visible en la configuración |
 | D12 | Noches progresivas **con techo** | Cada noche sobrevivida hace la horda algo más lista y un poco más grande, pero el tamaño crece despacio y tiene un **tope fijo** (configurable). En la noche 1000 no aparecen 100 zombis: a partir del tope sube la calidad (nivel de amenaza, IA, equipo), no la cantidad |
-| D13 | Selector de dificultad | Aprendiz, Herrero, Maestro y Leyenda, en la configuración y con `/forja dificultad`; cambia los multiplicadores de todo lo anterior y la temperatura de las redes |
+| D13 | Selector de dificultad | Desde el 2026-09-30, la escalera (`Ladder`): el botón de Minecraft, Pacífico → Fácil → Normal → Difícil → Extremo, decide qué sistemas corren y qué cifras (Aprendiz, Herrero, Maestro; Leyenda solo forzada en la configuración); también `/forja dificultad` |
 | D14 | Recompensa por riesgo | Más botín, maestría y materiales raros en las dificultades altas |
 | D15 | Modo "sin encantamientos mezclados" | Opción que desactiva los encantamientos vanilla que se combinan con las mejoras de Forja |
 

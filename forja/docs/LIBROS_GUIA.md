@@ -187,7 +187,8 @@ Rangos y peleas del mundo:
 
 Dificultad:
 
-- **Las cuatro dificultades de Forja:** Aprendiz, Herrero, Maestro y Leyenda (`ForjaDifficulty`).
+- **La escalera de dificultad** (`Ladder`): el botón de Minecraft con un escalón más, Extremo, y lo que enciende cada
+  nivel (tabla en el capítulo, con sus cifras).
 - La **dificultad adaptativa** y `/forja dificultad`.
 - Las **noches** que endurecen el mundo (`Nights`).
 

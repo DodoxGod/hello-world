@@ -77,7 +77,8 @@ public final class EnderDodge {
 	 */
 	public static boolean dodges(EnderMan ender, DamageSource source, float amount) {
 		double chance = CombatConfig.get().endermanDodgeChance;
-		if (chance <= 0.0 || !ender.isAlive() || ender.level().isClientSide()
+		// Forja's rules (Ladder): below Normal an enderman blinks only as vanilla's does.
+		if (chance <= 0.0 || !ender.isAlive() || ender.level().isClientSide() || !dev.forja.difficulty.Ladder.thinks(ender)
 			|| !(source.getEntity() instanceof LivingEntity attacker) || attacker == ender
 			|| source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)
 			// Vanilla's: it already blinks from every projectile and thrown potion.

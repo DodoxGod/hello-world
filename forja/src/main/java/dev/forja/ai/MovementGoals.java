@@ -30,7 +30,7 @@ public final class MovementGoals {
 
 		@Override
 		public boolean canUse() {
-			return this.mob.getTarget() == null && this.mind.lastSeen != null
+			return this.mob.getTarget() == null && this.mind.lastSeen != null && MobAi.thinks(this.mob)
 				&& this.mob.level().getGameTime() - this.mind.lastSeenAt < MEMORY
 				&& this.mob.distanceToSqr(this.mind.lastSeen) > 2.0;
 		}
@@ -63,7 +63,7 @@ public final class MovementGoals {
 		@Override
 		public boolean canUse() {
 			net.minecraft.core.BlockPos home = Personality.home(this.mob);
-			return this.mob.getTarget() == null && home != null && this.mob.getRandom().nextInt(
+			return this.mob.getTarget() == null && home != null && MobAi.thinks(this.mob) && this.mob.getRandom().nextInt(
 				this.mob.blockPosition().distSqr(home) > 16.0 * 16.0 ? 40 : PATROL_EVERY) == 0;
 		}
 
@@ -103,7 +103,7 @@ public final class MovementGoals {
 
 		@Override
 		public boolean canUse() {
-			if (this.mob.getTarget() != null) {
+			if (this.mob.getTarget() != null || !MobAi.thinks(this.mob)) {
 				return false;
 			}
 			this.noise = Personality.heard(this.mob);
@@ -151,7 +151,7 @@ public final class MovementGoals {
 			}
 			// Not while it is drawing itself (it would drop the shot), and not while the player is drawing on it
 			// (the spec: high ground is sought when the player is not aiming - a climbing archer is an easy mark).
-			if (this.mind.networked || !(this.mob.getTarget() instanceof Player player) || now < this.nextLook
+			if (this.mind.networked || !MobAi.thinks(this.mob) || !(this.mob.getTarget() instanceof Player player) || now < this.nextLook
 				|| this.mob.isUsingItem() || aiming(player) || this.mob.distanceTo(player) > 16.0 || this.mob.distanceTo(player) < 8.0) {
 				return false;
 			}

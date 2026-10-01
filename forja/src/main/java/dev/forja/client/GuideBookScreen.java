@@ -1440,7 +1440,7 @@ public class GuideBookScreen extends Screen {
 		body.add(new Summary(Component.translatable("gui.forja.libros.combate.enemigos.resumen")));
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.aviso.titulo")));
 		body.add(new Text(Component.translatable("gui.forja.libros.combate.aviso",
-			pct(dev.forja.difficulty.ForjaDifficulty.APRENDIZ.feint), pct(dev.forja.difficulty.ForjaDifficulty.LEYENDA.feint)), INK));
+			pct(dev.forja.difficulty.Ladder.NORMAL.ownPreset().feint), pct(dev.forja.difficulty.Ladder.EXTREMO.ownPreset().feint)), INK));
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.anillo.titulo")));
 		body.add(new Text(Component.translatable("gui.forja.libros.combate.anillo", cfg.maxSimultaneousAttackers), INK));
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.grupos.titulo")));
@@ -1495,17 +1495,20 @@ public class GuideBookScreen extends Screen {
 		return body;
 	}
 
-	/** Forja's own difficulty, the adaptive one and the nights. */
+	/** The difficulty ladder (difficulty/Ladder): what each step of Minecraft's button turns on, then the adaptive one and the nights. */
 	private List<Element> difficultyChapter() {
 		List<Element> body = new ArrayList<>();
 		body.add(new Summary(Component.translatable("gui.forja.libros.combate.dificultad.resumen")));
-		for (dev.forja.difficulty.ForjaDifficulty level : dev.forja.difficulty.ForjaDifficulty.values()) {
-			body.add(new Text(Component.translatable("gui.forja.libros.combate.dificultad_linea",
-				Component.translatable("dificultad.forja." + level.name().toLowerCase(java.util.Locale.ROOT)),
-				times(level.health), times(level.damage), times(level.threat), times(level.loot)), INK));
+		for (dev.forja.difficulty.Ladder level : dev.forja.difficulty.Ladder.values()) {
+			dev.forja.difficulty.ForjaDifficulty preset = level.ownPreset();
+			body.add(new Text(Component.translatable("gui.forja.libros.combate.dificultad.nivel." + level.name().toLowerCase(java.util.Locale.ROOT),
+				Component.translatable(level.key()), times(preset.health), times(preset.damage), times(preset.threat), times(preset.loot),
+				String.format(java.util.Locale.ROOT, "%.1f", dev.forja.difficulty.Ladder.SPRINT_BONUS * level.sprint * 100.0).replace(".0", "").replace('.', ','),
+				pct(1.0 - level.stamina)), INK));
 		}
+		body.add(new Text(Component.translatable("gui.forja.libros.combate.dificultad.boton"), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libros.combate.dificultad_actual",
-			Component.translatable("dificultad.forja." + dev.forja.difficulty.ForjaDifficulty.current().name().toLowerCase(java.util.Locale.ROOT))), INK_SOFT));
+			Component.translatable(dev.forja.difficulty.Ladder.current().key())), INK_SOFT));
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.adaptativa.titulo")));
 		body.add(new Text(Component.translatable("gui.forja.libros.combate.adaptativa"), INK));
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.combate.noches.titulo")));

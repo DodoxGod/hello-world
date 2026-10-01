@@ -479,14 +479,48 @@ BOOKS.update({
         "At night, in the dark and more than 12 blocks away, they cannot follow you by sight; in the rain their arrows fly "
         "worse."),
     "gui.forja.libros.combate.dificultad.resumen": (
-        "Forja tiene su propia **dificultad**, además de la de Minecraft: Aprendiz, Herrero, Maestro y Leyenda. Se cambia "
-        "con **/forja dificultad**. Además se **adapta** a cómo te va, y cada noche que sobrevives el mundo se endurece un "
-        "poco.",
-        "Forja has its own **difficulty**, besides Minecraft's: Apprentice, Smith, Master and Legend. It is changed with "
-        "**/forja dificultad**. It also **adapts** to how you are doing, and every night you survive the world gets a "
-        "little harder."),
-    "gui.forja.libros.combate.dificultad_linea": ("**%s**: vida %s · daño %s · rangos %s · botín %s",
-                                                   "**%s**: health %s · damage %s · ranks %s · loot %s"),
+        "La **dificultad** de Forja es la de Minecraft, con un escalón más por encima de Difícil: **Extremo**. Cada "
+        "escalón suma sistemas al anterior. Este mod es duro y no es para todos: si te sobra, baja un escalón. Además se "
+        "**adapta** a cómo te va, y cada noche que sobrevives el mundo se endurece un poco.",
+        "Forja's **difficulty** is Minecraft's, with one more step above Hard: **Extreme**. Each step adds systems to the "
+        "one before. This mod is tough and not for everyone: if it is too much, go down a step. It also **adapts** to how "
+        "you are doing, and every night you survive the world gets a little harder."),
+    "gui.forja.libros.combate.dificultad.nivel.pacifico": (
+        "**%1$s**: el de Minecraft, sin monstruos.",
+        "**%1$s**: Minecraft's, with no monsters."),
+    "gui.forja.libros.combate.dificultad.nivel.facil": (
+        "**%1$s** (vida %2$s · daño %3$s · rangos %4$s · botín %5$s): los monstruos de Minecraft pelean como en Minecraft. "
+        "Sí hay veteranos y élites, pero ellos y los monstruos de Forja tienen un %7$s%% menos de aguante, y las cifras "
+        "de arriba solo valen para ellos. Las armaduras aguantan como en Minecraft: no hay penetración.",
+        "**%1$s** (health %2$s · damage %3$s · ranks %4$s · loot %5$s): Minecraft's monsters fight as in Minecraft. "
+        "There are veterans and elites, but they and Forja's monsters have %7$s%% less stamina, and the figures above "
+        "only count for them. Armor holds as in Minecraft: there is no penetration."),
+    "gui.forja.libros.combate.dificultad.nivel.normal": (
+        "**%1$s** (vida %2$s · daño %3$s · rangos %4$s · botín %5$s): las **reglas** de combate de Forja: avisos, turnos, "
+        "el anillo y el capitán de reglas; y la **penetración** de armadura: la presión y el mordisco de armas y rangos. "
+        "Sin redes entrenadas. Al correr van un +%6$s%% más rápido.",
+        "**%1$s** (health %2$s · damage %3$s · ranks %4$s · loot %5$s): Forja's combat **rules**: warnings, turns, the "
+        "ring and the rules captain; and armor **penetration**: pressure and the bite of weapons and ranks. No trained "
+        "networks. Running, they go %6$s%% faster."),
+    "gui.forja.libros.combate.dificultad.nivel.dificil": (
+        "**%1$s** (vida %2$s · daño %3$s · rangos %4$s · botín %5$s): todo lo de Normal, y los monstruos piensan con sus "
+        "**redes entrenadas**. Al correr van un +%6$s%% más rápido.",
+        "**%1$s** (health %2$s · damage %3$s · ranks %4$s · loot %5$s): all of Normal, and the monsters think with their "
+        "**trained networks**. Running, they go %6$s%% faster."),
+    "gui.forja.libros.combate.dificultad.nivel.extremo": (
+        "**%1$s** (vida %2$s · daño %3$s · rangos %4$s · botín %5$s): el máximo. Todo lo de Difícil, con las redes más "
+        "nuevas donde las haya, la red del capitán, el capitán entero (visión compartida, sucesión, escolta y órdenes "
+        "nuevas), más veteranos y élites y más daño. Al correr van un +%6$s%% más rápido.",
+        "**%1$s** (health %2$s · damage %3$s · ranks %4$s · loot %5$s): the most there is. All of Hard, with the newest "
+        "networks where there are any, the captain's network, the whole captain (shared vision, succession, escort and "
+        "new orders), more veterans and elites and more damage. Running, they go %6$s%% faster."),
+    "gui.forja.libros.combate.dificultad.boton": (
+        "Se cambia con el botón de dificultad de Minecraft (Opciones, y al crear el mundo), que tras Difícil pasa a "
+        "Extremo, o con **/forja dificultad extremo** (dificil, normal…). Un mundo extremo (hardcore) es Difícil o "
+        "Extremo: se elige al crearlo.",
+        "It is changed with Minecraft's difficulty button (Options, and when creating the world), which goes on from Hard "
+        "to Extreme, or with **/forja dificultad extremo** (dificil, normal…). A hardcore world is Hard or Extreme: you "
+        "choose when you create it."),
     "gui.forja.libros.combate.dificultad_actual": ("La de este mundo: %s.", "This world's: %s."),
     "gui.forja.libros.combate.adaptativa.titulo": ("Se adapta a ti", "It adapts to you"),
     "gui.forja.libros.combate.adaptativa": (

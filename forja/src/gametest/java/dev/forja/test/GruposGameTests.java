@@ -253,7 +253,9 @@ public class GruposGameTests {
 			mind.wantsRun = true;
 			dev.forja.ai.MobSprint.tick(mind, now);
 			double run = zombie.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
-			helper.assertTrue(mind.running && Math.abs(run / walk - 1.35) < 0.01, "corre un 35 % más rápido: " + walk + " -> " + run);
+			// the level's share of the +35 % (difficulty/Ladder): +31,5 % at the tests' Extremo
+			double share = dev.forja.difficulty.Ladder.current().sprintMultiplier();
+			helper.assertTrue(mind.running && Math.abs(run / walk - share) < 0.01, "corre x" + share + ": " + walk + " -> " + run);
 			helper.assertTrue(Math.abs(mind.stamina - (dev.forja.ai.MobSprint.MAX - dev.forja.ai.MobSprint.COST)) < 0.01F, "y gasta 2: " + mind.stamina);
 			for (int t = 1; t < 60; t++) {
 				dev.forja.ai.MobSprint.tick(mind, now + t);

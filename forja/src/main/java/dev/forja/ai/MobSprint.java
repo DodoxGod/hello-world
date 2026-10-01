@@ -15,8 +15,11 @@ import net.minecraft.world.phys.Vec3;
  * stamina of their own, so a run is a burst and not a way of life. Every monster with a mind runs except the
  * bosses, which have their own ways of closing a distance.
  *
- * <p>The run is vanilla's sprint (+30 %, the flag every client already sees and throws dust for) and a little
- * on top to make 35. By the rules a monster runs to close on a player getting away from it, to go round to
+ * <p>Since the difficulty ladder (Andy, 2026-09-30) a level gets only a share of that bonus (Ladder.sprint):
+ * +14 % in Fácil and Normal, +21 % in Difícil, +31,5 % in Extremo; walking is never touched.
+ *
+ * <p>The run is vanilla's sprint (+30 %, the flag every client already sees and throws dust for) and a modifier
+ * on top (or under it, when the level's share is less than 30 %) to make the level's figure. By the rules a monster runs to close on a player getting away from it, to go round to
  * its slot of the ring when it is far round from it, and to get away when it is badly hurt; a network with
  * the {@code correr} output decides for itself. Never while stunned, never during the warning of a blow
  * (it stands still for that anyway), and not again until its breath is partly back.
@@ -57,8 +60,28 @@ public final class MobSprint {
 	private static final Identifier EXTRA = Forja.id("carrera");
 	/** Where each player was the last time anyone asked, and the speed worked out from it: tick, x, z, vx, vz. */
 	private static final java.util.Map<Player, double[]> MOTION = new java.util.WeakHashMap<>();
-	/** On top of vanilla's sprint (×1.3) to make ×1.35. */
-	private static final double EXTRA_AMOUNT = (1.0 + BOOST) / 1.3 - 1.0;
+	/** Vanilla's own sprint modifier, which {@code setSprinting} puts on any living entity: +30 %, multiplied on the total. */
+	public static final double VANILLA_SPRINT = 1.3;
+
+	/**
+	 * The run's speed over walking at the current level (Ladder, Andy 2026-09-30): only the bonus is cut, walking
+	 * stays as it is. {@code velocidad = base × (1 + 0,35 × f)}, f = 0,4 Fácil/Normal, 0,6 Difícil, 0,9 Extremo; the
+	 * surround run likewise, {@code base × (1 + (rodeoSpeed − 1) × f)}.
+	 */
+	public static double runMultiplier(boolean rodeo) {
+		dev.forja.difficulty.Ladder level = dev.forja.difficulty.Ladder.current();
+		return rodeo ? level.rodeoMultiplier() : level.sprintMultiplier();
+	}
+
+	/** The modifier on top of vanilla's sprint (×1.3) that makes {@link #runMultiplier}: it may be negative. */
+	public static double extraAmount(boolean rodeo) {
+		return runMultiplier(rodeo) / VANILLA_SPRINT - 1.0;
+	}
+
+	/** Its full breath at the current level: 100, × 0,7 for the strong ones in Fácil (Ladder.stamina). */
+	public static float max(Mob mob) {
+		return (float) (MAX * dev.forja.difficulty.Ladder.stamina(mob));
+	}
 
 	private MobSprint() {
 	}
@@ -211,8 +234,11 @@ public final class MobSprint {
 				run = false;
 				rodeo = false;
 			}
-		} else if (now - mind.lastRun >= REST_TICKS && mind.stamina < MAX) {
-			mind.stamina = Math.min(MAX, mind.stamina + REGEN);
+		} else if (now - mind.lastRun >= REST_TICKS && mind.stamina < max(mob)) {
+			mind.stamina = Math.min(max(mob), mind.stamina + REGEN);
+		}
+		if (mind.stamina > max(mob)) {
+			mind.stamina = max(mob);
 		}
 		if (mind.winded && mind.stamina >= RESUME) {
 			mind.winded = false;
@@ -225,9 +251,11 @@ public final class MobSprint {
 			if (speed != null) {
 				speed.removeModifier(EXTRA);
 				if (run) {
-					// on top of vanilla's sprint (x1.3), to make x1.35, or the surround mode's x2.3
-					double amount = rodeo ? dev.forja.combat.CombatConfig.get().rodeoSpeed / 1.3 - 1.0 : EXTRA_AMOUNT;
-					speed.addTransientModifier(new AttributeModifier(EXTRA, amount, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+					// on top of vanilla's sprint (x1.3), to make the level's run (x1.35 at full) or its surround run (x2.3 at full)
+					double amount = extraAmount(rodeo);
+					if (Math.abs(amount) > 1.0E-9) {
+						speed.addTransientModifier(new AttributeModifier(EXTRA, amount, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+					}
 				}
 			}
 		}

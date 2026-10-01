@@ -42,8 +42,13 @@ public final class MobAi {
 	public static final String BLAZE_FORMAT = ObsBlaze.FORMAT;
 
 	private static final Map<Mob, MobMind> MINDS = new WeakHashMap<>();
-	/** Networks by family file name ("cuerpo", "forja_tanque"...), and why the ones that were refused were. */
+	/**
+	 * Networks by family file name ("cuerpo", "forja_tanque"...): the v1..v3.1 ones of redes and the blaze's (Difícil and
+	 * up), and the v4 ones of redes_v4 (Extremo only, Ladder). Both are kept, so a change of level needs no reload.
+	 * And why the ones that were refused were.
+	 */
 	private static final Map<String, NetBrain> NETS = new java.util.LinkedHashMap<>();
+	private static final Map<String, NetBrain> NETS_V4 = new java.util.LinkedHashMap<>();
 	private static final Map<String, String> NET_PROBLEMS = new java.util.LinkedHashMap<>();
 	private static boolean loaded;
 	/**
@@ -172,6 +177,7 @@ public final class MobAi {
 	/** (Re)reads every family's network, checking each against the observation it will be fed. */
 	public static synchronized void reload() {
 		NETS.clear();
+		NETS_V4.clear();
 		NET_PROBLEMS.clear();
 		V4_WAITING.clear();
 		captain = null;
@@ -184,13 +190,13 @@ public final class MobAi {
 				loadBlaze();
 				continue;
 			}
-			// v4 first (docs/red_mob_v4_diseno.md §1.6): with "auto" or "v4", a v4 file that fits takes the family over.
-			// One that does not fit is logged and the family carries on with its v3 file below, or the rules.
+			// v4 (docs/red_mob_v4_diseno.md §1.6): with "auto" or "v4", a v4 file that fits takes the family over at the
+			// levels that run v4 (Extremo). One that does not fit is logged; the family carries on with its v3 file below,
+			// which the levels without v4 (Difícil) run anyway, or the rules.
 			if (contract() != Contract.V3) {
 				NetBrain four = loadV4(family);
 				if (four != null) {
-					NETS.put(family, four);
-					continue;
+					NETS_V4.put(family, four);
 				}
 			}
 			Path file = netFolder().resolve("red_" + family + ".json");
@@ -271,10 +277,13 @@ public final class MobAi {
 		}
 	}
 
-	/** The v4 captain's network, or null for the rules captain. */
+	/** The v4 captain's network, or null for the rules captain: only at a level that runs it (Extremo, Ladder.captainNet). */
 	public static NetBrain captainNet() {
 		if (!loaded) {
 			reload();
+		}
+		if (!dev.forja.difficulty.Ladder.current().captainNet) {
+			return null;
 		}
 		return captain != null && captain.disabled() ? null : captain;
 	}
@@ -444,12 +453,31 @@ public final class MobAi {
 		return net != null ? net : MobFamily.OTRO.file;
 	}
 
+	/**
+	 * The network this family runs at the current level (Ladder): its v4 one at a level with v4 nets (Extremo), else its
+	 * v1..v3.1 one (or the blaze's) at a level with nets (Difícil and up), else none: the rules.
+	 */
 	public static NetBrain net(String family) {
 		if (!loaded) {
 			reload();
 		}
+		dev.forja.difficulty.Ladder level = dev.forja.difficulty.Ladder.current();
+		if (level.netsV4) {
+			NetBrain four = NETS_V4.get(family);
+			if (four != null && !four.disabled()) {
+				return four;
+			}
+		}
+		if (!level.nets) {
+			return null;
+		}
 		NetBrain net = NETS.get(family);
 		return net != null && net.disabled() ? null : net;
+	}
+
+	/** Whether Forja's brain drives this monster at the current level (Ladder.thinks): vanilla's own AI otherwise. */
+	public static boolean thinks(Mob mob) {
+		return dev.forja.difficulty.Ladder.thinks(mob);
 	}
 
 	/** Counts a tick of non-finite logits for this network; on the 20th it is switched off and logged once. */
@@ -476,6 +504,13 @@ public final class MobAi {
 		List<MobMind> minds = new ArrayList<>();
 		for (MobMind mind : MINDS.values()) {
 			if (mind.mob.level() == level && mind.mob.isAlive()) {
+				if (!thinks(mind.mob)) {
+					// A level without Forja's rules (Fácil): vanilla's AI alone. A mind that was thinking lets go once.
+					if (mind.target != null || mind.running) {
+						idle(mind);
+					}
+					continue;
+				}
 				minds.add(mind);
 			}
 		}
@@ -498,6 +533,22 @@ public final class MobAi {
 		}
 		Captain.tick(level, now);
 		AiDebug.tick(level, now);
+	}
+
+	/** A mind that stops thinking (the level went below Normal): no target, no tactic, no run, nothing in hand. */
+	private static void idle(MobMind mind) {
+		mind.target = null;
+		mind.networked = false;
+		mind.blaze = null;
+		mind.decision = Decision.APPROACH;
+		mind.wantsRun = false;
+		mind.lastSeen = null;
+		MobSprint.tick(mind, mind.mob.level().getGameTime());
+		if (mind.itemTicks > 0 || mind.bashWindup > 0) {
+			MobItems.stop(mind.mob, mind);
+			mind.bashWindup = 0;
+			mind.bashTarget = null;
+		}
 	}
 
 	private static void think(MobMind mind, long now) {

@@ -39,6 +39,8 @@
 		"CreeperAiAccess",
 		"BlazeAccess",
 		"BlazeMixin",
+		"DifficultyCommandMixin",
+		"DifficultyLadderMixin",
 		"EnderManAccess",
 		"PiglinAiMixin",
 		"PlayerAdvancementsMixin",

@@ -31,7 +31,7 @@ abstract class TargetGoalMixin {
 
 	@Inject(method = "canContinueToUse", at = @At("HEAD"), cancellable = true)
 	private void forja$keepHunting(CallbackInfoReturnable<Boolean> cir) {
-		if (!CombatConfig.get().enabled || !CombatConfig.get().iaPercepcionHonesta) {
+		if (!CombatConfig.get().enabled || !CombatConfig.get().iaPercepcionHonesta || !dev.forja.difficulty.Ladder.thinks(this.mob)) {
 			return;
 		}
 		LivingEntity target = this.mob.getTarget();

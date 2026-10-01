@@ -84,7 +84,7 @@ public final class HopBack {
 	}
 
 	private static void plan(Mob mob, LivingEntity target, boolean small) {
-		if (!CombatConfig.get().enabled || !(mob.level() instanceof ServerLevel level) || target == null) {
+		if (!CombatConfig.get().enabled || !(mob.level() instanceof ServerLevel level) || target == null || !dev.forja.difficulty.Ladder.thinks(mob)) {
 			return;
 		}
 		long now = level.getGameTime();

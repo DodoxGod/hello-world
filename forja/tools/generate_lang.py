@@ -2218,9 +2218,29 @@ GUI.update({
     "gui.forja.duelo.trampa": ("¡Trampa! El duelo se rompe", "Foul play! The duel is off"),
     "gui.forja.duelo.huida": ("Huiste del duelo: te recordará", "You fled the duel: it will remember"),
     "gui.forja.duelo.victoria": ("¡Duelo ganado!", "Duel won!"),
-    "commands.forja.dificultad": ("Dificultad de Forja: %s · noches sobrevividas: %s · adaptativa: %s · tu equipo: %s (tramo %s)", "Forja difficulty: %s · nights survived: %s · adaptive: %s · your gear: %s (tier %s)"),
-    "commands.forja.dificultad.cambiada": ("La dificultad de Forja ahora es %s", "Forja difficulty is now %s"),
-    "commands.forja.dificultad.no_existe": ("No existe la dificultad %s (aprendiz, herrero, maestro, leyenda)", "There is no difficulty called %s (aprendiz, herrero, maestro, leyenda)"),
+    "commands.forja.dificultad": ("Dificultad: %s (cifras de %s) · noches sobrevividas: %s · adaptativa: %s · tu equipo: %s (tramo %s)", "Difficulty: %s (%s figures) · nights survived: %s · adaptive: %s · your gear: %s (tier %s)"),
+    "commands.forja.dificultad.cambiada": ("La dificultad ahora es %s", "The difficulty is now %s"),
+    "commands.forja.dificultad.forzada": ("Ojo: config/forja.json fuerza el nivel %s (\"nivel\"), y es el que manda", "Note: config/forja.json forces the %s level (\"nivel\"), and that one rules"),
+    "commands.forja.dificultad.no_existe": ("No existe la dificultad %s (pacifico, facil, normal, dificil, extremo)", "There is no difficulty called %s (pacifico, facil, normal, dificil, extremo)"),
+    # ---- the difficulty ladder (difficulty/Ladder): Minecraft's button, one step past Hard
+    "dificultad.forja.nivel.pacifico": ("Pacífico", "Peaceful"),
+    "dificultad.forja.nivel.facil": ("Fácil", "Easy"),
+    "dificultad.forja.nivel.normal": ("Normal", "Normal"),
+    "dificultad.forja.nivel.dificil": ("Difícil", "Hard"),
+    "dificultad.forja.nivel.extremo": ("Extremo", "Extreme"),
+    "options.difficulty.forja_extremo": ("Extremo", "Extreme"),
+    "options.difficulty.forja_extremo.info": (
+        "Lo más duro de Forja: todo lo de Difícil, más las redes nuevas, la red del capitán y el capitán entero, y más "
+        "veteranos y élites.",
+        "Forja at its hardest: all of Hard, plus the new networks, the captain's network and the whole captain, and more "
+        "veterans and elites."),
+    "options.difficulty.forja_extremo.hardcore": (
+        "Un mundo extremo (hardcore) es Difícil o Extremo: pulsa para cambiar.",
+        "A hardcore world is Hard or Extreme: press to switch."),
+    "gamerule.forja.extremo": ("Dificultad Extremo de Forja", "Forja's Extreme difficulty"),
+    "gamerule.forja.extremo.description": (
+        "Con la dificultad en Difícil, el mundo está en Extremo. Lo cambian el botón de dificultad y /forja dificultad.",
+        "With the difficulty on Hard, the world is on Extreme. The difficulty button and /forja dificultad change it."),
     "dificultad.forja.aprendiz": ("Aprendiz", "Apprentice"),
     "dificultad.forja.herrero": ("Herrero", "Smith"),
     "dificultad.forja.maestro": ("Maestro", "Master"),

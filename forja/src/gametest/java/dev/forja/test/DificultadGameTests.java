@@ -163,11 +163,11 @@ public class DificultadGameTests {
 				+ MobSprint.motion(player) + ")");
 			MobSprint.tick(mind, helper.getLevel().getGameTime());
 			helper.assertTrue(mind.rodeo && mind.running && zombie.isSprinting(), "corre en modo rodeo");
-			// vanilla's sprint (x1.3) and the mod's modifier on top of it make x2.3
+			// vanilla's sprint (x1.3) and the mod's modifier on top of it make the level's share of x2.3 (Ladder.sprint)
 			var extra = zombie.getAttribute(Attributes.MOVEMENT_SPEED).getModifier(Forja.id("carrera"));
 			double total = 1.3 * (1.0 + (extra == null ? 0.0 : extra.amount()));
-			helper.assertTrue(Math.abs(total - CombatConfig.get().rodeoSpeed) < 0.01,
-				"a x" + CombatConfig.get().rodeoSpeed + " de su paso: x" + total);
+			double expected = dev.forja.difficulty.Ladder.current().rodeoMultiplier();
+			helper.assertTrue(Math.abs(total - expected) < 0.01, "a x" + expected + " de su paso: x" + total);
 			helper.assertTrue(Math.abs(mind.stamina - (MobSprint.MAX - CombatConfig.get().rodeoCostPerTick)) < 1.0E-4,
 				"paga " + CombatConfig.get().rodeoCostPerTick + " por tick: le queda " + mind.stamina);
 			zombie.discard();

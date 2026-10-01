@@ -65,7 +65,8 @@ abstract class SwellGoalMixin {
 	@Inject(method = "tick", at = @At("RETURN"))
 	private void forja$feint(CallbackInfo ci) {
 		CombatConfig cfg = CombatConfig.get();
-		if (!cfg.enabled) return;
+		// the feint and the commitment are Forja's rules: below Normal a creeper is vanilla's (Ladder)
+		if (!cfg.enabled || !dev.forja.difficulty.Ladder.thinks(creeper)) return;
 		if (forja$pause > 0) {
 			forja$pause--;
 			creeper.setSwellDir(-1);

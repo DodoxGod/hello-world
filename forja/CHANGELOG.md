@@ -1,5 +1,48 @@
 # Novedades
 
+## 2026-09-30 — La escalera de dificultad: el botón de Minecraft, con Extremo
+
+Andy: «el mod es difícil y no es para todos los jugadores». La dificultad de Forja ya no es aparte: es la de Minecraft,
+con un escalón más. Todo se decide en `difficulty/Ladder.java`, con la tabla de lo que enciende cada nivel.
+
+| | Pacífico | Fácil | Normal | Difícil | Extremo |
+|---|---|---|---|---|---|
+| IA de los mobs vanilla | vanilla | vanilla | reglas de Forja | + redes v3 | + redes v4 |
+| Avisos, turnos, anillo, capitán de reglas | no | no | sí | sí | sí |
+| Penetración de armadura y presión | no | no | sí | sí | sí |
+| Red del capitán y capitán 2 entero | no | no | no | no | sí |
+| Carrera (+35 % × f) | +14 % | +14 % | +14 % | +21 % | +31,5 % |
+| Veteranos, élites y mobs de Forja: daño / aguante | ×0,7 / ×0,7 | ×0,7 / ×0,7 | ×1 / ×1 | ×1 / ×1 | ×1,25 / ×1 |
+| Cifras | Aprendiz | Aprendiz | Herrero | Herrero | Maestro |
+| Escalado por equipo | no | no | sí | sí | sí |
+
+- **El mismo botón.** El de dificultad de Minecraft (Opciones → Opciones del mundo, y crear mundo) pasa de Difícil a
+  **Extremo**, y de ahí a Pacífico. Extremo es Difícil más una regla del mundo, `forja:extremo`, que se guarda con el
+  mundo y llega a los clientes. Al crear un mundo extremo (hardcore), donde Minecraft bloquea el botón, el botón sigue
+  abierto y alterna Difícil y Extremo.
+- **Comandos.** `/difficulty` sigue igual (`/difficulty hard` es Difícil). `/forja dificultad extremo` (o pacifico,
+  facil, normal, dificil) pone la dificultad y la bandera a la vez; sin nada, dice el nivel y sus cifras.
+- **Fácil:** IA de Minecraft. Siguen saliendo veteranos y élites, pero ellos y los monstruos de Forja pegan ×0,7 y
+  tienen ×0,7 de aguante (barra de postura y aliento de carrera); un mob vanilla corriente es vanilla del todo. Sin
+  penetración ni presión, sin escalado por equipo. Los monstruos de Forja conservan sus reglas.
+- **Normal:** las reglas de combate de Forja y la penetración, sin redes; corren menos (+14 %, por debajo de Difícil).
+- **Difícil:** más las redes v3 de `config/forja/redes`; la carrera, +21 % (el bono recortado un 40 %).
+- **Extremo:** el máximo. Más las redes v4 de `redes_v4` donde las haya, la red del capitán si está, todas las piezas
+  del capitán 2, las entradas de puntería v4.1 cuando existan, y las cifras de Maestro (más veteranos y élites, más
+  daño). La carrera, +31,5 %. Solo se recorta el bono: andar no cambia. El simulador copia Extremo; la fórmula está en
+  `docs/red_mob_v4_mod_estado.md`.
+- **Configuración.** `dificultad` (Aprendiz, Herrero...) ya no es la dificultad: ahora es "auto" y solo fuerza las
+  cifras, para administradores; `nivel` fuerza el nivel de todo el servidor. Un `config/forja.json` de antes se migra
+  una vez: su HERRERO, el valor por defecto, pasa a "auto"; otra elección se queda como forzado y se avisa en el log.
+- Libro II, capítulo «La dificultad»: la escalera con sus números.
+- Pruebas: `DificultadEscaleraGameTests` (cada nivel enciende justo lo suyo, la carrera por nivel, Fácil y los
+  fuertes, la bandera guardada y leída, `/forja dificultad`); las del servidor corren en Extremo con las cifras de
+  Herrero (`TestDefaults`). Cliente: `FORJA_SOLO=dificultad ./gradlew runClientGameTest` hace clic en el botón al
+  crear el mundo y en las opciones, crea un mundo extremo en Extremo, lo cierra y lo abre otra vez. Capturas en
+  `Forja_capturas_mejoras/dificultad`.
+- De paso: `BlazeGameTests.blazeObservationHas324FiniteInputs` fallaba a veces porque veía la bola de otra prueba de
+  blazes a menos de 48 bloques; ahora solo mira las bolas cuando la suya es la única.
+
 ## 2026-09-30 — El tridente lanzado: sin duplicarse y de punta
 
 Andy: al lanzar el tridente, chocaba con el suelo, «se rompía» y quedaba tirado, y además volvía al inventario.

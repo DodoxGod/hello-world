@@ -61,7 +61,9 @@ public final class Scaling {
 		RandomSource random = mob.getRandom();
 		ForjaDifficulty difficulty = ForjaDifficulty.current();
 		Player near = level.getNearestPlayer(mob, GEAR_RANGE);
-		double gear = GearScore.of(near);
+		// The gear of the nearest player counts only where the level scales by it (Ladder.gear: not in Fácil).
+		boolean geared = Ladder.current().gear;
+		double gear = geared ? GearScore.of(near) : 0.0;
 		int tier = GearScore.tier(gear);
 
 		Threat threat = Threat.of(mob);
@@ -73,7 +75,8 @@ public final class Scaling {
 			Names.give(mob, threat);
 		}
 
-		double health = difficulty.health * threat.health * (1.0 + CombatConfig.get().gearHealthPerTier * tier);
+		// A plain vanilla monster on a level without Forja's rules (Fácil) keeps vanilla's health.
+		double health = (Ladder.plainVanilla(mob) ? 1.0 : difficulty.health) * threat.health * (1.0 + CombatConfig.get().gearHealthPerTier * tier);
 		raise(mob, Attributes.MAX_HEALTH, health - 1.0, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
 		double armor = threat.armor + CombatConfig.get().gearArmorPerTier * tier;
 		if (armor > 0.0) {

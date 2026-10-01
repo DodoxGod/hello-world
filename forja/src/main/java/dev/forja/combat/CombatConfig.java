@@ -181,8 +181,21 @@ public final class CombatConfig {
 	public double iaAlcance = 32.0;
 
 	// --- Difficulty (dev.forja.difficulty) -------------------------------------------------------
-	/** APRENDIZ, HERRERO, MAESTRO or LEYENDA; also /forja dificultad. */
-	public String dificultad = "HERRERO";
+	/**
+	 * Admin override of the difficulty ladder (difficulty/Ladder): "auto" (the default) follows the world, its vanilla
+	 * difficulty and the Extremo flag the difficulty button and /forja dificultad set; PACIFICO, FACIL, NORMAL,
+	 * DIFICIL or EXTREMO forces that level's systems on the whole server whatever the world says.
+	 */
+	public String nivel = "auto";
+	/**
+	 * Admin override of the multipliers only (ForjaDifficulty): "auto" (the default) takes the level's preset (Fácil
+	 * APRENDIZ, Normal and Difícil HERRERO, Extremo MAESTRO); APRENDIZ, HERRERO, MAESTRO or LEYENDA forces that one.
+	 * Before the ladder this was the difficulty itself; a file from then is migrated once (ForjaConfig.load,
+	 * {@link #dificultadRevision}): its HERRERO, the old default, becomes "auto", any other choice stays as an override.
+	 */
+	public String dificultad = "auto";
+	/** 0: a file from before the ladder, migrated once on load; 1: migrated. */
+	public int dificultadRevision = 0;
 	/** Most of a mob's max health one ordinary blow can take (finishers and blows on the staggered go past). */
 	public double hitCapNormal = 0.45;
 	public double hitCapVeteran = 0.35;

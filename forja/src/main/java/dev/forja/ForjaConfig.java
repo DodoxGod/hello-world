@@ -100,6 +100,29 @@ public final class ForjaConfig {
 		}
 	}
 
+	/**
+	 * The difficulty ladder (Andy, 2026-09-30): "dificultad" was the difficulty itself, HERRERO by default; now the
+	 * world's difficulty button decides and the field only forces the multipliers. Once, here: the old default becomes
+	 * "auto" (the ladder's own), any other preset an admin chose stays as the override it now is, and is logged.
+	 */
+	static void migrateDifficulty(ForjaConfig config) {
+		dev.forja.combat.CombatConfig combat = config.combate;
+		if (combat == null || combat.dificultadRevision >= 1) {
+			return;
+		}
+		String old = combat.dificultad;
+		if (old == null || old.isBlank() || "HERRERO".equalsIgnoreCase(old.trim())) {
+			combat.dificultad = "auto";
+		} else if (!"auto".equalsIgnoreCase(old.trim())) {
+			Forja.LOGGER.info("config/forja.json: dificultad = {} se queda como forzado de las cifras sobre la escalera de dificultad; "
+				+ "\"auto\" la deja en manos del botón de dificultad", old);
+		}
+		if (combat.nivel == null || combat.nivel.isBlank()) {
+			combat.nivel = "auto";
+		}
+		combat.dificultadRevision = 1;
+	}
+
 	/** Reads config/forja.json, writing it with the defaults if it is not there yet. */
 	public static void load() {
 		Path path = FabricLoader.getInstance().getConfigDir().resolve("forja.json");
@@ -150,11 +173,13 @@ public final class ForjaConfig {
 					current.combate.manaBoltCost = 10.0F;
 				}
 				migrateActions(current);
+				migrateDifficulty(current);
 				// Written back so keys added in a newer version show up in an older file.
 				Files.writeString(path, GSON.toJson(current));
 				return;
 			}
 			migrateActions(current);
+			migrateDifficulty(current);
 			Files.createDirectories(path.getParent());
 			Files.writeString(path, GSON.toJson(current));
 		} catch (IOException | JsonSyntaxException failure) {

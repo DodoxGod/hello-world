@@ -79,9 +79,9 @@ public final class CaptainBrain {
 	private CaptainBrain() {
 	}
 
-	/** Whether groups get captains at all (CombatConfig.iaCapitan). */
+	/** Whether groups get captains at all (CombatConfig.iaCapitan), at a level with Forja's rules (Ladder: Normal and up). */
 	public static boolean enabled() {
-		return CombatConfig.get().enabled && CombatConfig.get().iaCapitan;
+		return CombatConfig.get().enabled && CombatConfig.get().iaCapitan && dev.forja.difficulty.Ladder.current().rules;
 	}
 
 	/**
@@ -121,11 +121,17 @@ public final class CaptainBrain {
 		}
 	}
 
-	/** Whether a piece of captain 2 is on for the group fighting this player: its override, else the config. */
+	/**
+	 * Whether a piece of captain 2 is on for the group fighting this player: its override, else the config, and only at
+	 * a level that has captain 2 (Ladder.captain2: Extremo).
+	 */
 	public static boolean piece(Player player, Piece piece) {
 		EnumSet<Piece> forced = player == null ? null : PIECES.get(Perception.real(player));
 		if (forced != null) {
 			return forced.contains(piece);
+		}
+		if (!dev.forja.difficulty.Ladder.current().captain2) {
+			return false;
 		}
 		CombatConfig cfg = CombatConfig.get();
 		return switch (piece) {

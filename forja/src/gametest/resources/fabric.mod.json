@@ -35,6 +35,7 @@
 			"dev.forja.test.SitioGameTests",
 			"dev.forja.test.BastionCercaGameTests",
 			"dev.forja.test.DificultadGameTests",
+			"dev.forja.test.DificultadEscaleraGameTests",
 			"dev.forja.test.PresionGameTests",
 			"dev.forja.test.AlcanceGameTests",
 			"dev.forja.test.EndermanGameTests",

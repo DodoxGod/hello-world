@@ -63,6 +63,10 @@ public final class Pressure {
 	}
 
 	private static void add(Player player, double amount) {
+		// Pressure is part of armor penetration, which a level below Normal leaves out (Ladder.penetration).
+		if (!Ladder.current().penetration) {
+			return;
+		}
 		CombatConfig cfg = CombatConfig.get();
 		double now = of(player);
 		State state = STATES.computeIfAbsent(player, p -> new State());

@@ -83,10 +83,11 @@ public final class AttackTokens {
 	 * <p>Forja's used to be left out, on the idea that their Windup specials were telegraph enough. But
 	 * their ordinary blow landed with no warning at all, while a network-driven mob of the same family
 	 * always warned — so the rules were being measured against the network with a head start. Andy's
-	 * call: everybody warns. Other mods' mobs are left as they come.
+	 * call: everybody warns. Other mods' mobs are left as they come. Vanilla's warn only at a level with Forja's
+	 * rules (Ladder: Normal and up); Forja's own always.
 	 */
 	public static boolean warns(Mob mob) {
 		String namespace = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getNamespace();
-		return "minecraft".equals(namespace) || dev.forja.Forja.MOD_ID.equals(namespace);
+		return "minecraft".equals(namespace) && dev.forja.difficulty.Ladder.current().rules || dev.forja.Forja.MOD_ID.equals(namespace);
 	}
 }

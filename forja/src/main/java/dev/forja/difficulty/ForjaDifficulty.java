@@ -2,13 +2,15 @@ package dev.forja.difficulty;
 
 import java.util.Locale;
 
-import dev.forja.combat.CombatConfig;
-
 /**
- * The four difficulties of Forja, on top of Minecraft's own. Each one scales everything else in this
- * package: how tough and how dangerous monsters are, how often they come stronger, how hard one blow can
- * hit them, how sure their decisions are (the sampling temperature of a trained brain), and how much
- * beating them pays.
+ * The four sets of multipliers ("presets") of Forja. Each one scales everything else in this package: how tough
+ * and how dangerous monsters are, how often they come stronger, how hard one blow can hit them, how sure their
+ * decisions are (the sampling temperature of a trained brain), and how much beating them pays.
+ *
+ * <p>Since the difficulty ladder (Andy, 2026-09-30) the preset is no longer chosen on its own: each level of
+ * {@link Ladder} names one (Fácil Aprendiz, Normal and Difícil Herrero, Extremo Maestro). The config's
+ * {@code dificultad} still forces one for the whole server, as an admin override; "auto" (the default) leaves it to
+ * the ladder. Leyenda is only reached that way. The four stay as they are: the networks see them one-hot (dif_*).
  */
 public enum ForjaDifficulty {
 	//          health damage posture threat  cap   temperature loot  feint
@@ -45,9 +47,22 @@ public enum ForjaDifficulty {
 		this.feint = feint;
 	}
 
-	/** The one in the config; HERRERO if the config names none that exists. */
+	/** The preset in force: the config's override when it names one, else the current level's (Ladder). */
 	public static ForjaDifficulty current() {
-		return parse(CombatConfig.get().dificultad);
+		return Ladder.current().preset();
+	}
+
+	/** The preset the config's {@code dificultad} forces, or null for "auto" (or anything that names none). */
+	public static ForjaDifficulty forced(String name) {
+		if (name == null || name.isBlank() || "auto".equalsIgnoreCase(name.trim())) {
+			return null;
+		}
+		for (ForjaDifficulty difficulty : values()) {
+			if (difficulty.name().equalsIgnoreCase(name.trim())) {
+				return difficulty;
+			}
+		}
+		return null;
 	}
 
 	public static ForjaDifficulty parse(String name) {

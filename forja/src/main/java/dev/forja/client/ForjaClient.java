@@ -95,6 +95,8 @@ public final class ForjaClient implements ClientModInitializer {
 		// The mod's own three. A particle needs its behaviour registered on the client and its sprites
 		// listed in assets/forja/particles; the registry hands over the loaded sprite set here.
 		SkyMood.register();
+		// the difficulty button past Difícil, to Extremo, and the world's flag from the server
+		LadderClient.register();
 
 		var particles = net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry.getInstance();
 		particles.register(dev.forja.registry.ModParticles.CHISPA,

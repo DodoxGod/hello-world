@@ -35,8 +35,9 @@ public final class Posture {
 	public static double max(LivingEntity entity) {
 		CombatConfig cfg = CombatConfig.get();
 		double base = entity.getMaxHealth() * cfg.postureHealthFactor + cfg.postureBase;
+		// Ladder.stamina: in Fácil the strong ones (veterans, elites, Forja's monsters) have 70 % of their bar.
 		double scale = dev.forja.difficulty.Threat.of(entity).posture * dev.forja.difficulty.ForjaDifficulty.current().posture
-			* dev.forja.ai.ForjaTraits.postureMax(entity);
+			* dev.forja.ai.ForjaTraits.postureMax(entity) * dev.forja.difficulty.Ladder.stamina(entity);
 		State state = STATES.get(entity);
 		int staggers = state == null ? 0 : recentStaggers(state, entity.level().getGameTime());
 		return base * scale * (1.0 + cfg.staggerRepeatPosture * staggers);

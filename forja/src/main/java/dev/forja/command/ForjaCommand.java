@@ -70,30 +70,38 @@ public final class ForjaCommand {
 				.then(Commands.literal("dificultad")
 					.executes(c -> {
 						ServerPlayer player = c.getSource().getPlayer();
+						dev.forja.difficulty.Ladder level = dev.forja.difficulty.Ladder.current();
 						dev.forja.difficulty.ForjaDifficulty difficulty = dev.forja.difficulty.ForjaDifficulty.current();
 						int nights = dev.forja.difficulty.Nights.count(c.getSource().getLevel());
 						float adaptive = dev.forja.difficulty.Adaptive.value(player);
 						double gear = dev.forja.difficulty.GearScore.of(player);
 						c.getSource().sendSuccess(() -> Component.translatable("commands.forja.dificultad",
-							Component.translatable(difficulty.key()), nights,
+							Component.translatable(level.key()), Component.translatable(difficulty.key()), nights,
 							String.format(java.util.Locale.ROOT, "%+.2f", adaptive),
 							String.format(java.util.Locale.ROOT, "%.2f", gear), dev.forja.difficulty.GearScore.tier(gear)), false);
 						return 1;
 					})
+					// Sets the world's level (Ladder): its vanilla difficulty and the Extremo flag, as the button does,
+					// but past a locked difficulty, as /difficulty does.
 					.then(Commands.argument("nivel", StringArgumentType.word())
-						.suggests((c, builder) -> SharedSuggestionProvider.suggest(java.util.Arrays.stream(dev.forja.difficulty.ForjaDifficulty.values())
+						.suggests((c, builder) -> SharedSuggestionProvider.suggest(java.util.Arrays.stream(dev.forja.difficulty.Ladder.values())
 							.map(d -> d.name().toLowerCase(java.util.Locale.ROOT)), builder))
 						.executes(c -> {
 							String name = StringArgumentType.getString(c, "nivel");
-							dev.forja.difficulty.ForjaDifficulty chosen = dev.forja.difficulty.ForjaDifficulty.parse(name);
-							if (!chosen.name().equalsIgnoreCase(name)) {
+							dev.forja.difficulty.Ladder chosen = dev.forja.difficulty.Ladder.parse(name);
+							if (chosen == null) {
 								c.getSource().sendFailure(Component.translatable("commands.forja.dificultad.no_existe", name));
 								return 0;
 							}
-							dev.forja.combat.CombatConfig.get().dificultad = chosen.name();
-							dev.forja.ForjaConfig.save();
-							c.getSource().sendSuccess(() -> Component.translatable("commands.forja.dificultad.cambiada", Component.translatable(chosen.key())), true);
-							return 1;
+							net.minecraft.server.MinecraftServer server = c.getSource().getServer();
+							dev.forja.difficulty.Ladder.apply(server, chosen, true);
+							dev.forja.difficulty.Ladder now = dev.forja.difficulty.Ladder.world(server);
+							c.getSource().sendSuccess(() -> Component.translatable("commands.forja.dificultad.cambiada", Component.translatable(now.key())), true);
+							dev.forja.difficulty.Ladder forced = dev.forja.difficulty.Ladder.forced();
+							if (forced != null && forced != now) {
+								c.getSource().sendSuccess(() -> Component.translatable("commands.forja.dificultad.forzada", Component.translatable(forced.key())), false);
+							}
+							return now == chosen ? 1 : 0;
 						})))
 				.then(Commands.literal("kit").executes(c -> {
 					ServerPlayer player = c.getSource().getPlayerOrException();

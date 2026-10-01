@@ -926,6 +926,10 @@ public class AiGameTests {
 		run.addProperty("descanso_ticks", dev.forja.ai.MobSprint.REST_TICKS);
 		run.addProperty("vuelve_a_correr_desde", dev.forja.ai.MobSprint.RESUME);
 		run.addProperty("velocidad_extra", dev.forja.ai.MobSprint.BOOST);
+		// the difficulty ladder (difficulty/Ladder): each level gets a share of the bonus; the simulator copies Extremo
+		run.addProperty("velocidad_extra_por_nivel", "velocidad = base × (1 + " + dev.forja.ai.MobSprint.BOOST + " × f); f = "
+			+ dev.forja.difficulty.Ladder.NORMAL.sprint + " Fácil y Normal, " + dev.forja.difficulty.Ladder.DIFICIL.sprint + " Difícil, "
+			+ dev.forja.difficulty.Ladder.EXTREMO.sprint + " Extremo (el simulador copia Extremo)");
 		run.addProperty("reglas", "corre si: RETIRARSE con vida < 30 %; RODEAR/ESPERAR a más de 50° de su hueco; o el jugador está a 4..12 y se "
 			+ "aleja a más de 0,05 bloques/tick por la línea entre ambos. Nunca aturdido, avisando, en agua, ni los jefes.");
 		json.add("correr", run);
