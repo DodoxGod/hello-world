@@ -223,6 +223,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// Every bar of the mod over the hotbar at once, at GUI scales 2 to 4 (VisualGuiFootage, client/HudLayout).
+			if ("hud_carriles".equals(solo)) {
+				VisualGuiFootage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("hud".equals(solo)) {
 				shotHudAndPools(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");

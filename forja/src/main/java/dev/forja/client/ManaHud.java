@@ -10,15 +10,14 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 
 /**
  * The mana bar (magic/Mana): over the hearts side of the hotbar, the stamina bar's twin across the screen,
  * the same brass-capped well filled from deep blue to violet.
  *
- * <p>It sits above the armour row, or above the hearts when there is no armour, and climbs with them when
- * absorption or a big health pool stack the hearts up — the vanilla bars are never covered. It is not there
+ * <p>It sits in lane 2 of client/HudLayout, over the armour row, level with the stamina bar, and climbs with
+ * vanilla's stack when absorption or a big health pool stack the hearts up — the vanilla bars are never covered. It is not there
  * at all for a player who has never had a use for mana, nor in creative, nor with the interface hidden (F1).
  * Otherwise it shows while a staff, a tome or anything that spends mana is in the hand, and while the bar is
  * short of full, and lingers a moment after it fills.
@@ -85,7 +84,7 @@ public final class ManaHud implements HudElement {
 		}
 
 		int x = graphics.guiWidth() / 2 - 91;
-		int y = top(graphics, player);
+		int y = HudLayout.sideY(graphics.guiHeight(), player, HEIGHT);
 		float time = (now % 60000L) / 1000.0F;
 		HudBars.well(graphics, x, y, WIDTH, HEIGHT);
 		int filled = Math.round(WIDTH * Mth.clamp(this.shown / max, 0.0F, 1.0F));
@@ -168,21 +167,6 @@ public final class ManaHud implements HudElement {
 			return Spellcasting.tapCost(held, forged.forgeType());
 		}
 		return 0.0F;
-	}
-
-	/**
-	 * Where the bar goes: seven pixels above the armour row, or above the top row of hearts when no armour is
-	 * worn, worked out the way vanilla lays those out, and never lower than the stamina bar across from it.
-	 */
-	static int top(GuiGraphicsExtractor graphics, LocalPlayer player) {
-		int base = graphics.guiHeight() - 39;
-		float maxHealth = Math.max((float) player.getAttributeValue(Attributes.MAX_HEALTH), player.getHealth());
-		int absorption = Mth.ceil(player.getAbsorptionAmount());
-		int rows = Mth.ceil((maxHealth + absorption) / 2.0F / 10.0F);
-		int rowHeight = Math.max(10 - (rows - 2), 3);
-		int hearts = base - (rows - 1) * rowHeight;
-		int highest = player.getArmorValue() > 0 ? hearts - 10 : hearts;
-		return Math.min(graphics.guiHeight() - 64, highest - 7);
 	}
 
 	private static int mix(int from, int to, float share) {

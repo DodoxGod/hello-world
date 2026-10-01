@@ -86,11 +86,23 @@ public final class EventBannerHud implements HudElement {
 		// along the top that runs down with the time the card has left.
 		graphics.fill(x, y, x + width, y + height, alpha * 3 / 4 << 24 | 0x0B0A10);
 		graphics.fillGradient(x, y + height / 2, x + width, y + height, colour, Math.min(90, alpha / 3) << 24 | colour);
+		// A frame like the mod's other plates (visual pass, 2026-10-01): a near-black rim outside the coloured
+		// edge so it holds against a bright sky, and a stud of the event's colour at each corner.
+		graphics.outline(x - 2, y - 2, width + 4, height + 4, alpha * 3 / 4 << 24 | 0x050408);
 		graphics.outline(x - 1, y - 1, width + 2, height + 2, alpha << 24 | darker(colour));
+		for (int corner = 0; corner < 4; corner++) {
+			int cx = corner % 2 == 0 ? x - 2 : x + width;
+			int cy = corner < 2 ? y - 2 : y + height;
+			graphics.fill(cx, cy, cx + 2, cy + 2, alpha << 24 | lighter(colour));
+		}
 		int left = Math.round(width * Mth.clamp((life - time) / life, 0.0F, 1.0F));
 		graphics.fill(x, y, x + left, y + 1, alpha << 24 | colour);
 
 		if (starting) {
+			// The jar sits in a well of its own, and a hairline of the event's colour sets the title off.
+			graphics.fill(x + 6, y + 11, x + 28, y + 33, alpha * 2 / 3 << 24 | 0x000000);
+			graphics.outline(x + 6, y + 11, 22, 22, alpha / 2 << 24 | colour);
+			graphics.fill(x + 32, y + 18, x + width - 8, y + 19, alpha / 3 << 24 | colour);
 			graphics.item(jar, x + 9, y + 14);
 			graphics.pose().pushMatrix();
 			graphics.pose().translate(x + 32, y + 6);
@@ -102,6 +114,11 @@ public final class EventBannerHud implements HudElement {
 		} else {
 			graphics.text(font, title, x + 8, y + 5, alpha << 24 | colour, true);
 		}
+	}
+
+	private static int lighter(int colour) {
+		return Math.min(255, (colour >> 16 & 255) * 5 / 4 + 30) << 16 | Math.min(255, (colour >> 8 & 255) * 5 / 4 + 30) << 8
+			| Math.min(255, (colour & 255) * 5 / 4 + 30);
 	}
 
 	private static int darker(int colour) {

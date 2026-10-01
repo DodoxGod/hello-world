@@ -38,7 +38,8 @@ public final class FlightHud implements HudElement {
 		}
 		float fill = max <= 0 ? 0.0F : Math.clamp(left / (float) max, 0.0F, 1.0F);
 		int x = (graphics.guiWidth() - WIDTH) / 2;
-		int y = graphics.guiHeight() - 49;
+		// Lane 3, over the mana and stamina pair (client/HudLayout): at a fixed 49 up it was the armour row.
+		int y = HudLayout.flightY(graphics.guiHeight(), player, HEIGHT);
 		float time = (net.minecraft.util.Util.getMillis() % 60000L) / 1000.0F;
 		HudBars.well(graphics, x, y, WIDTH, HEIGHT);
 		boolean low = fill <= 0.25F;

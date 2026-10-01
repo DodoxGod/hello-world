@@ -9,7 +9,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 
 /**
- * The stamina bar, over the hunger side of the hotbar and above the frenzy bar. It only shows while
+ * The stamina bar, over the hunger side of the hotbar, level with the mana bar. It only shows while
  * stamina is being spent or coming back, and goes from green through amber to red as it runs out.
  *
  * <p>Its max is the player's own (Aguante raises it), and what kills have left waiting to flow in
@@ -42,7 +42,8 @@ public final class StaminaHud implements HudElement {
 		}
 		float ratio = Math.max(0F, Math.min(1F, value / max));
 		int x = graphics.guiWidth() / 2 + 10;
-		int y = graphics.guiHeight() - 64;
+		// Lane 2, over the hunger side, level with the mana bar across from it (client/HudLayout).
+		int y = HudLayout.sideY(graphics.guiHeight(), player, HEIGHT);
 		if (ratio >= 1F && now - changedAt > LINGER) {
 			return;
 		}

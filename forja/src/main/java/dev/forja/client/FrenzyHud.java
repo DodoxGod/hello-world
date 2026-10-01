@@ -28,7 +28,8 @@ public final class FrenzyHud implements HudElement {
 			return;
 		}
 		int x = (graphics.guiWidth() - WIDTH) / 2;
-		int y = graphics.guiHeight() - 56;
+		// Lane 4, over the wings' lane (client/HudLayout).
+		int y = HudLayout.frenzyY(graphics.guiHeight(), player, HEIGHT);
 		float time = (net.minecraft.util.Util.getMillis() % 60000L) / 1000.0F;
 		HudBars.well(graphics, x, y, WIDTH, HEIGHT);
 		int notch = WIDTH / Frenzy.MAX_HITS;

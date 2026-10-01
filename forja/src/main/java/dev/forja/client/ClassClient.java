@@ -126,25 +126,8 @@ public final class ClassClient {
 			if (player == null || player.isSpectator() || ClassProgress.clazz(player) == null) {
 				return;
 			}
-			int x = g.guiWidth() / 2 - 91 - 29 - 3 * (ClassGui.HUD_SIZE + 2) - 4;
-			int y = g.guiHeight() - ClassGui.HUD_SIZE - 1;
-			for (int slot = 1; slot <= 3; slot++) {
-				ActiveSkill skill = ClassSkills.skill(player, slot);
-				int at = x + (slot - 1) * (ClassGui.HUD_SIZE + 2);
-				if (skill == null) {
-					continue;
-				}
-				int waiting = ClassSkills.waiting(player, slot);
-				ClassGui.hudSlot(g, at, y, waiting == 0);
-				g.item(skill.icon(), at + 3, y + 3);
-				if (waiting > 0) {
-					float share = Math.min(1.0F, waiting / (float) Math.max(1, skill.cooldownTicks(player)));
-					int cover = Math.round(16 * share);
-					g.fill(at + 3, y + 3 + 16 - cover, at + 19, y + 19, 0xA0101010);
-					String seconds = Integer.toString((waiting + 19) / 20);
-					g.text(client.font, seconds, at + 11 - client.font.width(seconds) / 2, y + 7, 0xFFFFFFFF, true);
-				}
-			}
+			// Drawn by SkillBar: the key on each, the wait as a shutter, a flash when one comes back.
+			SkillBar.draw(g, client, player);
 		}
 	}
 }
