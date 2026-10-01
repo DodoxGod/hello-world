@@ -1,5 +1,26 @@
 # Novedades
 
+## 2026-10-01 — Repaso visual de pantallas, HUD y partículas
+
+Andy: «mejora todo lo visual del mod que puedas». Hojas de antes y después en
+`Forja_capturas_mejoras/visual_gui/`.
+
+- **Hechizos con luz propia:** partícula nueva `forja:destello` (color y tamaño), que nace casi blanca, se asienta en
+  su color y se apaga. Sustituye al polvo de vanilla del báculo, el grimorio, la runa, el farol, el maná, las
+  sinergias, el golpe arcano, el parry, el frenesí, las habilidades de clase y la cabeza del meteorito: de noche ese
+  polvo eran motas marrones y un borrón violeta oscuro. Las chispas y las almas brillan solas.
+- **Meteorito:** la cola es fuego y humo fino; ya no deja una columna de cuadros violeta en el cielo.
+- **Pantallas:** botón, canal de metal, brillo de casilla y canaleta compartidos (`client/ForjaUi`). La estrella
+  encendida ya no tapa el marco de sus puntas, el medidor de calor cierra el panel de datos, el metal corre igual en
+  el crisol, la caja de moldeo y la montadora, y la montadora ya no escribe encima del inventario.
+- **Elegir/cambiar clase:** el botón baja bajo la lista; el coste del cambio ya no se escribe encima de la tercera
+  habilidad (va en el botón, con el medallón, y en su tooltip).
+- **HUD por carriles** (`client/HudLayout`): maná y estamina sobre la armadura, luego alas, luego frenesí. Las alas
+  cruzaban la fila de armadura, el escudo de integridad y los corazones de absorción.
+- **Habilidades V/B/N:** su tecla encima del marco, la espera como persiana y un destello cuando vuelven.
+- **Cartel de evento** enmarcado; **guía** con botones de cuero.
+- Prueba nueva: `FORJA_SOLO=hud_carriles`.
+
 ## 2026-10-01 — Repaso visual de los monstruos
 
 Andy: «mejora todo lo visual del mod que puedas». Esta parte es la de los monstruos. Hojas de antes y después en
