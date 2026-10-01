@@ -12025,6 +12025,10 @@ if __name__ == "__main__":
     # The Cementerio entre Estrellas' blocks, sounds and particle (tools/dimension_assets.py).
     import dimension_assets
     dimension_assets.generate(_sys.modules[__name__])
+    # The monsters' skins, glowmasks, extra cubes and idle/walk loops (tools/visual_mobs.py), over what the
+    # generate_*_assets() above wrote.
+    import visual_mobs
+    visual_mobs.generate(_sys.modules[__name__])
     generate_painting_data()
     generate_trades()
     problems = check_enums()

@@ -304,6 +304,13 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// How each monster looks (VisualMobsFootage): three sides, a blow, noon and midnight, and the apprentices.
+			if ("visual_mobs".equals(solo)) {
+				checkAttackTimings();
+				VisualMobsFootage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("cielo".equals(solo)) {
 				filmSkyFlicker(context, server, connection, x, y, z);
 				shotSkies(context, server, connection, x, y, z);
