@@ -101,6 +101,7 @@ public final class CombatClient {
 	private static void tryDodge(LocalPlayer player) {
 		CombatRules rules = CombatAnims.rules();
 		if (!rules.enabled() || !rules.dodge() || dodgeCooldown > 0 || !player.onGround() || player.isSpectator()) return;
+		if (!dev.forja.clase.ClassEffects.canDodge(player)) return;
 		// The class (clase/ClassEffects), read from the synced copy: the server judges the same numbers.
 		float cost = Stamina.cost(player, rules.dodgeCost()) * dev.forja.clase.ClassEffects.dodgeCostMultiplier(player);
 		if (!player.isCreative() && rules.stamina() && player.getAttachedOrElse(Stamina.VALUE, Stamina.max(player)) < cost) return;

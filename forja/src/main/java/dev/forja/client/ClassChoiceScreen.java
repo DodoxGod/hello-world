@@ -139,12 +139,14 @@ public class ClassChoiceScreen extends Screen {
 		lineY += 5;
 		ClassGui.small(g, this.font, Component.translatable("gui.forja.clase.habilidades"), x + PAGE_X, lineY, ClassGui.GOLD);
 		lineY += 9;
-		for (int slot = 1; slot <= 2; slot++) {
-			ActiveSkill skill = slot == 1 ? clazz.firstSkill : clazz.secondSkill();
+		for (int slot = 1; slot <= 3; slot++) {
+			ActiveSkill skill = clazz.skill(slot);
 			ClassGui.item(g, skill.icon(), x + PAGE_X, lineY, 0.75F);
-			ClassGui.small(g, this.font, Component.translatable(slot == 1 ? "gui.forja.clase.habilidad_1" : "gui.forja.clase.habilidad_2",
+			ClassGui.small(g, this.font, Component.translatable(slot == 1 ? "gui.forja.clase.habilidad_1" : slot == 2 ? "gui.forja.clase.habilidad_2" : "gui.forja.clase.habilidad_3",
 				skill.displayName(), ClassClient.keyName(slot)), x + PAGE_X + 15, lineY + 1, 0xFFFFFFFF);
-			lineY = ClassGui.smallWrapped(g, this.font, skill.lines().get(0), x + PAGE_X + 15, lineY + 9, width - 15, ClassGui.INK_SOFT) + 3;
+			// The last one runs down beside the button: it wraps short of it.
+			int textWidth = slot == 3 ? CONFIRM_X - PAGE_X - 21 : width - 15;
+			lineY = ClassGui.smallWrapped(g, this.font, skill.def().effect(false), x + PAGE_X + 15, lineY + 7, textWidth, ClassGui.INK_SOFT) + 1;
 		}
 
 		// What it costs, and the button.

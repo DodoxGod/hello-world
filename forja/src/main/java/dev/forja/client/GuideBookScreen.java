@@ -3023,24 +3023,31 @@ public class GuideBookScreen extends Screen {
 	}
 
 	/**
-	 * The classes (docs/CLASES.md): how to take one, each of the seven with its numbers and its two skills,
+	 * The classes (docs/CLASES.md, docs/ARBOLES.md): how to take one, each of the six with its numbers and its three skills,
 	 * what changing costs, and the healing lantern. Every number is read from the enums the game plays by.
 	 */
 	private List<Element> classesChapter() {
 		List<Element> body = new ArrayList<>();
 		body.add(new Text(Component.translatable("gui.forja.libro.clases.intro", dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_TREE),
 			dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_1),
-			dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_2)), INK));
+			dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_2),
+			dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_3)), INK));
 		body.add(new ClassButton());
-		body.add(new Text(Component.translatable("gui.forja.libro.clases.niveles", dev.forja.clase.ClassProgress.MAX_LEVEL,
-			dev.forja.clase.ClassProgress.POINTS_PER_LEVEL, dev.forja.clase.Talent.COST[1], dev.forja.clase.Talent.COST[2],
-			dev.forja.clase.Talent.COST[3], dev.forja.clase.Talent.SKILL_COST, dev.forja.clase.ClassProgress.FIRST_STEP,
-			dev.forja.clase.ClassProgress.STEP_GROWTH), INK_SOFT));
+		// Every number from the tree's file (clase/ClassTree): the cap, the points, the milestones, the curve.
+		int levelPoints = dev.forja.clase.ClassTree.levelPoints(dev.forja.clase.ClassTree.maxLevel());
+		int milestonePoints = dev.forja.clase.ClassTree.allMilestonePoints();
+		int treeCost = dev.forja.clase.PlayerClass.GUERRERO.tree().totalCost();
+		body.add(new Text(Component.translatable("gui.forja.libro.clases.niveles", dev.forja.clase.ClassTree.maxLevel(), levelPoints,
+			milestonePoints, dev.forja.clase.ClassTree.milestoneCapPerLevel(), levelPoints + milestonePoints, treeCost,
+			Math.round(100.0F * (levelPoints + milestonePoints) / treeCost), dev.forja.clase.ClassTree.firstStep(),
+			dev.forja.clase.ClassTree.stepGrowth()), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.clases.arbol", dev.forja.clase.ClassTree.cost("menor"),
+			dev.forja.clase.ClassTree.cost("clave"), dev.forja.clase.ClassTree.cost("puente")), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.clases.experiencia"), INK_SOFT));
 		for (dev.forja.clase.PlayerClass clazz : dev.forja.clase.PlayerClass.values()) {
 			body.add(new Divider());
 			body.add(new SubHeader(clazz.displayName()));
-			body.add(new IconRow(List.of(clazz.icon(), clazz.firstSkill.icon(), clazz.secondSkill().icon())));
+			body.add(new IconRow(List.of(clazz.icon(), clazz.firstSkill.icon(), clazz.secondSkill().icon(), clazz.thirdSkill().icon())));
 			body.add(new Text(clazz.description(), INK));
 			net.minecraft.network.chat.MutableComponent numbers = Component.empty();
 			for (int i = 0; i < clazz.base.size(); i++) {
@@ -3057,7 +3064,8 @@ public class GuideBookScreen extends Screen {
 				dev.forja.clase.ClassDamage.format(clazz.damageFactor(dev.forja.clase.ClassDamage.Blow.MAGIC))), INK_SOFT));
 			body.add(new Text(Component.translatable("gui.forja.libro.clases.habilidades", clazz.firstSkill.displayName(),
 				dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_1), clazz.secondSkill().displayName(),
-				dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_2)), INK_SOFT));
+				dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_2), clazz.thirdSkill().displayName(),
+				dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_3)), INK_SOFT));
 		}
 		body.add(new Divider());
 		// The Medallón del olvido is forged, not crafted (forge/Relic): its three parts, then the medallion.
@@ -3071,6 +3079,12 @@ public class GuideBookScreen extends Screen {
 		body.add(new IconRow(medallionRow));
 		body.add(new Text(Component.translatable("gui.forja.libro.clases.medallon", medallion.core.displayName()), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.clases.cambio"), INK));
+		// The cheap way back from a node or two (docs/ARBOLES.md, "Reiniciar").
+		body.add(new Divider());
+		body.add(new SubHeader(Component.translatable("item.forja.vela_del_olvido")));
+		body.add(new Crafting(new Item[] {Items.CANDLE, Items.AMETHYST_SHARD, Items.AMETHYST_SHARD, Items.GHAST_TEAR, null, null, null, null, null},
+			new ItemStack(ModItems.VELA_DEL_OLVIDO)));
+		body.add(new Text(Component.translatable("gui.forja.libro.clases.vela", dev.forja.item.OblivionCandleItem.POINTS), INK_SOFT));
 		body.add(new Divider());
 		body.add(new SubHeader(Component.translatable("item.forja.farol")));
 		body.add(new IconRow(List.of(

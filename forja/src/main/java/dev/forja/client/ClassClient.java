@@ -22,15 +22,16 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The client half of the classes: the three keys (by default K the tree, or the choice with no class yet; V and
- * B the two skills; all rebindable in Controls under "Forja: clases"), what the server says (a toast, the
- * medallion's change screen), and the two skills beside the hotbar with their waits.
+ * The client half of the classes: the four keys (by default K the tree, or the choice with no class yet; V, B
+ * and N the three skills; all rebindable in Controls under "Forja: clases"), what the server says (a toast, the
+ * medallion's change screen, the candle's forget screen), and the skills beside the hotbar with their waits.
  */
 public final class ClassClient {
 	public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(Forja.id("clases"));
 	public static @Nullable KeyMapping TREE;
 	public static @Nullable KeyMapping SKILL_1;
 	public static @Nullable KeyMapping SKILL_2;
+	public static @Nullable KeyMapping SKILL_3;
 
 	private ClassClient() {
 	}
@@ -45,6 +46,9 @@ public final class ClassClient {
 			org.lwjgl.glfw.GLFW.GLFW_KEY_V, CATEGORY));
 		SKILL_2 = KeyMappingHelper.registerKeyMapping(new KeyMapping(ClassProgress.KEY_SKILL_2, InputConstants.Type.KEYSYM,
 			org.lwjgl.glfw.GLFW.GLFW_KEY_B, CATEGORY));
+		// The third skill (Andy, 2026-09-30): N, next to the other two, and rebindable like them.
+		SKILL_3 = KeyMappingHelper.registerKeyMapping(new KeyMapping(ClassProgress.KEY_SKILL_3, InputConstants.Type.KEYSYM,
+			org.lwjgl.glfw.GLFW.GLFW_KEY_N, CATEGORY));
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (TREE.consumeClick()) {
 				if (client.player != null && client.gui.screen() == null) {
@@ -62,11 +66,15 @@ public final class ClassClient {
 			while (SKILL_2.consumeClick()) {
 				useSkill(client, 2);
 			}
+			while (SKILL_3.consumeClick()) {
+				useSkill(client, 3);
+			}
 		});
 		ClientPlayNetworking.registerGlobalReceiver(ClassNetwork.Notice.TYPE, (notice, context) -> {
 			Minecraft client = context.client();
 			switch (notice.toast()) {
 				case OPEN_CHANGE -> client.gui.setScreen(new ClassChoiceScreen(true));
+				case OPEN_FORGET -> client.gui.setScreen(new TalentTreeScreen(true));
 				case LEVEL, CHOSEN -> {
 					PlayerClass clazz = PlayerClass.byId(notice.clazz());
 					if (clazz != null) {
@@ -102,13 +110,13 @@ public final class ClassClient {
 
 	/** The key a skill is on, as the controls screen names it. */
 	public static Component keyName(int slot) {
-		KeyMapping key = slot == 1 ? SKILL_1 : SKILL_2;
+		KeyMapping key = slot == 1 ? SKILL_1 : slot == 2 ? SKILL_2 : SKILL_3;
 		return key == null ? Component.empty() : Component.translatable("gui.forja.clase.tecla", key.getTranslatedKeyMessage());
 	}
 
 	/**
-	 * The two skills, left of the off-hand slot: the icon, the wait running down over it like a cooldown, and
-	 * the key under it. Only with a class; the second only once learned.
+	 * The three skills, left of the off-hand slot: the icon, the wait running down over it like a cooldown. Only
+	 * with a class; the second and the third only once learned.
 	 */
 	private static final class SkillHud implements HudElement {
 		@Override
@@ -118,9 +126,9 @@ public final class ClassClient {
 			if (player == null || player.isSpectator() || ClassProgress.clazz(player) == null) {
 				return;
 			}
-			int x = g.guiWidth() / 2 - 91 - 29 - 2 * (ClassGui.HUD_SIZE + 2) - 4;
+			int x = g.guiWidth() / 2 - 91 - 29 - 3 * (ClassGui.HUD_SIZE + 2) - 4;
 			int y = g.guiHeight() - ClassGui.HUD_SIZE - 1;
-			for (int slot = 1; slot <= 2; slot++) {
+			for (int slot = 1; slot <= 3; slot++) {
 				ActiveSkill skill = ClassSkills.skill(player, slot);
 				int at = x + (slot - 1) * (ClassGui.HUD_SIZE + 2);
 				if (skill == null) {
@@ -130,7 +138,7 @@ public final class ClassClient {
 				ClassGui.hudSlot(g, at, y, waiting == 0);
 				g.item(skill.icon(), at + 3, y + 3);
 				if (waiting > 0) {
-					float share = Math.min(1.0F, waiting / (float) skill.cooldownTicks());
+					float share = Math.min(1.0F, waiting / (float) Math.max(1, skill.cooldownTicks(player)));
 					int cover = Math.round(16 * share);
 					g.fill(at + 3, y + 3 + 16 - cover, at + 19, y + 19, 0xA0101010);
 					String seconds = Integer.toString((waiting + 19) / 20);
