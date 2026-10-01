@@ -32,6 +32,7 @@ public final class FrenzyHud implements HudElement {
 		int y = HudLayout.frenzyY(graphics.guiHeight(), player, HEIGHT);
 		float time = (net.minecraft.util.Util.getMillis() % 60000L) / 1000.0F;
 		HudBars.well(graphics, x, y, WIDTH, HEIGHT);
+		HudLayout.drawn(HudLayout.Lane.FRENZY);
 		int notch = WIDTH / Frenzy.MAX_HITS;
 		boolean full = hits >= Frenzy.MAX_HITS;
 		for (int i = 0; i < hits; i++) {

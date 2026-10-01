@@ -42,6 +42,7 @@ public final class FlightHud implements HudElement {
 		int y = HudLayout.flightY(graphics.guiHeight(), player, HEIGHT);
 		float time = (net.minecraft.util.Util.getMillis() % 60000L) / 1000.0F;
 		HudBars.well(graphics, x, y, WIDTH, HEIGHT);
+		HudLayout.drawn(HudLayout.Lane.FLIGHT);
 		boolean low = fill <= 0.25F;
 		// Sky blue while there is air under you to spare; red, and beating, once there is not.
 		int colour = low ? 0xFF5A40 : 0x7FD8FF;

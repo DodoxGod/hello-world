@@ -23,7 +23,7 @@ import net.minecraft.world.item.Items;
  * on each other and on vanilla's.
  *
  * <p>It checks, from the client, that no two of the mod's bars share a row and none is on vanilla's stack
- * (client/HudLayout's lanes), at the heights of GUI scales 2 to 4.
+ * (client/HudLayout's lanes), nor vanilla's held-item name and action-bar message, at the heights of GUI scales 2 to 4.
  */
 final class VisualGuiFootage {
 	private VisualGuiFootage() {
@@ -77,14 +77,20 @@ final class VisualGuiFootage {
 		context.runOnClient(mc -> {
 			mc.gui.hud.getChat().clearMessages(false);
 			mc.gui.toastManager().clear();
+			// Vanilla's two lines over the hotbar, both up: the action-bar message, and the held item's name.
+			mc.gui.hud.setOverlayMessage(net.minecraft.network.chat.Component.literal("Grito de guerra II"), false);
+			mc.player.getInventory().setSelectedSlot(1);
 		});
+		context.waitTicks(2);
+		context.runOnClient(mc -> mc.player.getInventory().setSelectedSlot(0));
+		context.waitTicks(3);
 		// The lanes, checked at the heights a 1080p screen has at GUI scales 2, 3 and 4 and at the test window's own.
 		// (The window itself is not resized: under Vulkan a resize in the test loses the device.)
 		for (int height : new int[] {540, 360, 270, 240}) {
-			String lanes = context.computeOnClient(mc -> laneProblems(height, mc.player));
+			String lanes = context.computeOnClient(mc -> laneProblems(height, mc.player, mc.gameMode.canHurtPlayer()));
 			ClientLog.log("hud_carriles alto " + height + ": " + lanes);
 			if (!lanes.startsWith("ok")) {
-				throw new AssertionError("the HUD lanes should clear each other and vanilla's stack at a GUI height of " + height + ": " + lanes);
+				throw new AssertionError("the HUD lanes should clear each other, vanilla's stack and vanilla's text at a GUI height of " + height + ": " + lanes);
 			}
 		}
 		context.takeScreenshot(TestScreenshotOptions.of("vgui_hud_todo").disableCounterPrefix());
@@ -112,9 +118,11 @@ final class VisualGuiFootage {
 	/**
 	 * "ok" and the lanes, or what is wrong with them: each bar's reach (its caps two pixels over its top and two
 	 * under its foot) has to end above the next lane's, and the lowest above vanilla's stack — the armour row,
-	 * ten pixels over the highest row of hearts, counted the way vanilla counts it.
+	 * ten pixels over the highest row of hearts, counted the way vanilla counts it. And vanilla's two lines of text
+	 * over the hotbar, where vanilla writes them (the held item's name 59 up on a two-pixel backdrop, the action-bar
+	 * message centred 68 up) and lifted by HudLayout.textLift, have to end above the top of the bars showing.
 	 */
-	private static String laneProblems(int height, net.minecraft.client.player.LocalPlayer player) {
+	private static String laneProblems(int height, net.minecraft.client.player.LocalPlayer player, boolean canBeHurt) {
 		float maxHealth = Math.max((float) player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH), player.getHealth());
 		int rows = net.minecraft.util.Mth.ceil((maxHealth + net.minecraft.util.Mth.ceil(player.getAbsorptionAmount())) / 20.0F);
 		int armourRow = height - 39 - (rows - 1) * Math.max(10 - (rows - 2), 3) - 10;
@@ -135,6 +143,26 @@ final class VisualGuiFootage {
 		}
 		if (frenzy - 2 < 0) {
 			wrong.append("frenesi fuera de la pantalla; ");
+		}
+		int top = dev.forja.client.HudLayout.lanesTop(height, player);
+		int lift = dev.forja.client.HudLayout.textLift(height, player, canBeHurt);
+		int itemTop = height - 59 + (canBeHurt ? 0 : 14) - lift - 2;
+		int itemFoot = itemTop + 13;
+		int messageTop = height - 68 - lift - 6;
+		int messageFoot = messageTop + 13;
+		lanes += String.format(Locale.ROOT, ", barras desde %d, texto subido %d: nombre %d-%d, mensaje %d-%d", top, lift, itemTop, itemFoot, messageTop, messageFoot);
+		if (top < 0) {
+			wrong.append("no se ve ninguna barra; ");
+		} else {
+			if (itemFoot > top - 1) {
+				wrong.append("nombre del objeto sobre las barras; ");
+			}
+			if (messageFoot > top - 1) {
+				wrong.append("mensaje de la barra de accion sobre las barras; ");
+			}
+		}
+		if (messageTop < 0) {
+			wrong.append("mensaje fuera de la pantalla; ");
 		}
 		return (wrong.length() == 0 ? "ok, " : "MAL: " + wrong) + lanes;
 	}

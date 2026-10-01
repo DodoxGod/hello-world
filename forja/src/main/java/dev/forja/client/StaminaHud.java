@@ -49,6 +49,7 @@ public final class StaminaHud implements HudElement {
 		}
 		float time = (now % 60000L) / 1000.0F;
 		HudBars.well(graphics, x, y, WIDTH, HEIGHT);
+		HudLayout.drawn(HudLayout.Lane.SIDE);
 		int filled = Math.round(WIDTH * ratio);
 		int colour = ratio > 0.6F ? 0x7FD34E : ratio > 0.3F ? 0xE8C547 : 0xE0533D;
 		HudBars.fill(graphics, x + WIDTH - filled, x + WIDTH, y, HEIGHT, colour, time, x, WIDTH);

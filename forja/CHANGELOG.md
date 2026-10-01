@@ -56,6 +56,8 @@ Andy: «mejora todo lo visual del mod que puedas». Hojas de antes y después en
   habilidad (va en el botón, con el medallón, y en su tooltip).
 - **HUD por carriles** (`client/HudLayout`): maná y estamina sobre la armadura, luego alas, luego frenesí. Las alas
   cruzaban la fila de armadura, el escudo de integridad y los corazones de absorción.
+  Mientras se ve alguna barra, el nombre del objeto en la mano y el mensaje de acción de vanilla suben por encima
+  de ellas en vez de cruzarlas.
 - **Habilidades V/B/N:** su tecla encima del marco, la espera como persiana y un destello cuando vuelven.
 - **Cartel de evento** enmarcado; **guía** con botones de cuero.
 - Prueba nueva: `FORJA_SOLO=hud_carriles`.

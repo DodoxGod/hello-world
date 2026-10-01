@@ -87,6 +87,7 @@ public final class ManaHud implements HudElement {
 		int y = HudLayout.sideY(graphics.guiHeight(), player, HEIGHT);
 		float time = (now % 60000L) / 1000.0F;
 		HudBars.well(graphics, x, y, WIDTH, HEIGHT);
+		HudLayout.drawn(HudLayout.Lane.SIDE);
 		int filled = Math.round(WIDTH * Mth.clamp(this.shown / max, 0.0F, 1.0F));
 		int trailed = Math.round(WIDTH * Mth.clamp(this.trail / max, 0.0F, 1.0F));
 		// What was just spent, dim, from the end of the mana to where the bar was a moment ago.
