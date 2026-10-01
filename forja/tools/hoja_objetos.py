@@ -157,6 +157,8 @@ BATCHES = {
                   "item/molde/punta_cincel.png", "item/marco/farol.png"],
     "2_bloques": ["block/mesa_de_forja_top.png", "block/mesa_de_forja_side.png", "block/mesa_de_forja_front.png",
                   "block/yunque_del_herrero_top.png", "block/montadora_side.png", "block/montadora_side_lit.png"],
+    "3_lobo": ["forjado:armadura_de_lobo", "item/parte/placa_lobo.png", "item/molde/placa_lobo.png",
+               "item/plantilla/placa_lobo.png"],
 }
 
 

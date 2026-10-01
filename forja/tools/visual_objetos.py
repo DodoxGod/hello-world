@@ -134,6 +134,47 @@ wire, and a lantern big enough to see its cap, its cage and the light inside (G 
 chain, S the crook). The old one hung a three-pixel lantern off a one-pixel line."""
 
 
+# ---------------------------------------------------------------------------------------------- the wolf armour
+WOLF_ARMOR = [
+    "................",
+    "................",
+    "............oo..",
+    "......oooooHHo..",
+    "....ooHHsHHsLHo.",
+    "...oHHLLsLLsLLMo",
+    "..oHLLLLsLLsLLMo",
+    ".oHLLLLLsLLsLLDo",
+    ".oLMMMMMsMMsMMDo",
+    ".oRMMRMMsMRsMRDo",
+    ".oDDDDDDDDDDDDo.",
+    "..ooFFoooooFFo..",
+    "....Ff.....Ff...",
+    "....Ff.....Ff...",
+    "....oo.....oo...",
+    "................",
+]
+
+
+def wolf_armor():
+    """The wolf armour, seen from the side: an arched shell of three riveted plates over the back, rising into
+    a guard at the neck on the right, and two leather straps that go under the belly. Plate is 0, lining (the straps) is 1.
+
+    It used to be vanilla's armadillo-scute harness re-tinted, whose pale scales and loose strap pixels came
+    out as a washed-out smudge in every metal."""
+    pixels = {}
+    plate = {"H": 236, "L": 200, "M": 160, "D": 112, "s": 118, "R": 250, "o": 40}
+    lining = {"F": 200, "f": 120, "o": 40}
+    for y, row in enumerate(WOLF_ARMOR):
+        for x, letter in enumerate(row):
+            if letter == ".":
+                continue
+            if letter in "Ff" or (letter == "o" and y >= 14):
+                pixels[(x, y)] = (1, lining[letter])
+            else:
+                pixels[(x, y)] = (0, plate[letter])
+    return pixels
+
+
 # ---------------------------------------------------------------------------------------------- the tool belt
 BELT = [
     "................",
@@ -433,6 +474,9 @@ def apply(ga):
     ga.TOOL_LAYERS["cincel"] = chisel
     ga.LANTERN_STAFF[:] = LANTERN_STAFF
     ga.generate_belt_texture = generate_belt_texture
+    ga.split_wolf_armor = lambda state: wolf_armor()
+    ga.TOOL_LAYERS["armadura_de_lobo"] = wolf_armor
+    ga.PART_LAYERS["placa_lobo"] = lambda: ga.centered(wolf_armor(), 0)
     ga.generate_block_textures = _after(ga.generate_block_textures, forge_table_textures)
     ga.generate_smith_anvil_assets = _after(ga.generate_smith_anvil_assets,
                                             lambda: smith_anvil_top().save(GA.ASSETS / "textures/block/yunque_del_herrero_top.png"))
