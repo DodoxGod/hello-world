@@ -351,6 +351,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// The visual pass on film (VideoVisualFootage): frame sequences for tools/video_visual.py; FORJA_VIDEO=a,b picks sections.
+			if ("video_visual".equals(solo)) {
+				VideoVisualFootage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("cielo".equals(solo)) {
 				filmSkyFlicker(context, server, connection, x, y, z);
 				shotSkies(context, server, connection, x, y, z);
