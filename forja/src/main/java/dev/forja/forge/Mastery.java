@@ -84,7 +84,7 @@ public final class Mastery {
 		level.playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.5F, 1.6F);
 		// In the colour of the thing that levelled, not the green of a villager trading. A piece
 		// getting better is the mod's own idea and it should not borrow somebody else's flourish.
-		level.sendParticles(new net.minecraft.core.particles.DustParticleOptions(parts.primary().color, 1.0F),
+		level.sendParticles(new dev.forja.registry.GlintOptions(parts.primary().color, 1.0F),
 			owner.getX(), owner.getY(1.0) + 0.2, owner.getZ(), 14, 0.4, 0.35, 0.4, 0.0);
 		level.sendParticles(dev.forja.registry.ModParticles.CHISPA,
 			owner.getX(), owner.getY(1.0), owner.getZ(), 8, 0.3, 0.3, 0.3, 0.2);

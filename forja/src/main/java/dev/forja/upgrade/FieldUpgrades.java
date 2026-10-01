@@ -303,7 +303,7 @@ public final class FieldUpgrades {
 			return;
 		}
 		double angle = time * 0.09;
-		level.sendParticles(new net.minecraft.core.particles.DustParticleOptions(set.color, 0.9F),
+		level.sendParticles(new dev.forja.registry.GlintOptions(set.color, 0.9F),
 			player.getX() + Math.cos(angle) * 0.55, player.getY() + 0.12, player.getZ() + Math.sin(angle) * 0.55,
 			1, 0.02, 0.01, 0.02, 0.0);
 	}

@@ -11,7 +11,6 @@ import dev.forja.clase.Hooks;
 import dev.forja.material.ForgeMaterial;
 import dev.forja.part.ForgedParts;
 import dev.forja.registry.ModComponents;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -249,7 +248,7 @@ public final class Healing {
 		int steps = (int) Math.max(4, from.distanceTo(to) * 3.0);
 		for (int i = 1; i <= steps; i++) {
 			Vec3 at = from.lerp(to, i / (double) steps);
-			level.sendParticles(new DustParticleOptions(core.color, 0.9F), at.x, at.y, at.z, 1, 0.02, 0.02, 0.02, 0.0);
+			level.sendParticles(new dev.forja.registry.GlintOptions(core.color, 0.9F), at.x, at.y, at.z, 1, 0.02, 0.02, 0.02, 0.0);
 		}
 		level.playSound(null, caster.getX(), caster.getY(), caster.getZ(), SoundEvents.AMETHYST_BLOCK_CHIME, caster.getSoundSource(), 1.0F, 1.9F);
 		if (target != null) {
@@ -265,7 +264,7 @@ public final class Healing {
 		dev.forja.entity.Shockwave.burst(level, caster.position(), reach, 12, core.color, 0.35F);
 		for (int step = 0; step < 32; step++) {
 			double angle = step * Math.PI / 16.0;
-			level.sendParticles(new DustParticleOptions(core.color, 1.4F), caster.getX() + Math.cos(angle) * reach, caster.getY() + 0.2,
+			level.sendParticles(new dev.forja.registry.GlintOptions(core.color, 1.4F), caster.getX() + Math.cos(angle) * reach, caster.getY() + 0.2,
 				caster.getZ() + Math.sin(angle) * reach, 1, 0.0, 0.05, 0.0, 0.0);
 		}
 		level.playSound(null, caster.getX(), caster.getY(), caster.getZ(), SoundEvents.BEACON_ACTIVATE, caster.getSoundSource(), 0.8F, 1.6F);
@@ -303,7 +302,7 @@ public final class Healing {
 			double dz = other.getZ() - at.z;
 			if (dx * dx + dz * dz <= reach * reach) {
 				spellHeal(level, caster, other, damage);
-				level.sendParticles(new DustParticleOptions(colour, 0.8F), other.getX(), other.getY() + 0.5, other.getZ(), 3, 0.2, 0.3, 0.2, 0.0);
+				level.sendParticles(new dev.forja.registry.GlintOptions(colour, 0.8F), other.getX(), other.getY() + 0.5, other.getZ(), 3, 0.2, 0.3, 0.2, 0.0);
 			}
 		}
 	}

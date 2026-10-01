@@ -111,6 +111,7 @@ public final class ForjaClient implements ClientModInitializer {
 			sprites -> new ForjaParticles.Maker(sprites, ForjaParticles.Maker.Kind.DRIP));
 		particles.register(dev.forja.registry.ModParticles.BRASA,
 			sprites -> new ForjaParticles.Maker(sprites, ForjaParticles.Maker.Kind.EMBER));
+		particles.register(dev.forja.registry.ModParticles.DESTELLO, ForjaParticles.GlintMaker::new);
 		// El Cementerio entre Estrellas: its sky, its fog and its ash (docs/HERRERO_DIMENSION.md, 2.7 and 2.8).
 		StarYardSky.register();
 

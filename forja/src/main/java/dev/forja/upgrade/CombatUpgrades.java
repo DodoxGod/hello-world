@@ -405,8 +405,8 @@ public final class CombatUpgrades {
 	}
 
 	/** The pale ring a caught blow leaves in the face of the shield. */
-	private static final net.minecraft.core.particles.DustParticleOptions PARRY =
-		new net.minecraft.core.particles.DustParticleOptions(0xE8ECF5, 1.0F);
+	private static final dev.forja.registry.GlintOptions PARRY =
+		new dev.forja.registry.GlintOptions(0xE8ECF5, 1.0F);
 
 	/** The narrowest parry window any shield has, in ticks. */
 	public static final int PARRY_WINDOW_TICKS = 3;
@@ -770,7 +770,7 @@ public final class CombatUpgrades {
 		float arcane = Upgrade.arcaneShare(Upgrades.fraction(weapon, Upgrade.FILO_ARCANO));
 		if (arcane > 0.0F && victim.isAlive() && attacker instanceof Player caster && dev.forja.magic.Mana.trySpend(caster, Upgrade.ARCANE_EDGE_COST)) {
 			extraDamage(level, victim, level.damageSources().indirectMagic(attacker, attacker), damage * arcane);
-			level.sendParticles(new net.minecraft.core.particles.DustParticleOptions(Upgrade.FILO_ARCANO.color, 0.9F),
+			level.sendParticles(new dev.forja.registry.GlintOptions(Upgrade.FILO_ARCANO.color, 0.9F),
 				victim.getX(), victim.getY(0.6), victim.getZ(), 8, 0.3, 0.4, 0.3, 0.0);
 			level.sendParticles(ParticleTypes.ENCHANTED_HIT, victim.getX(), victim.getY(0.6), victim.getZ(), 6, 0.3, 0.3, 0.3, 0.1);
 		}

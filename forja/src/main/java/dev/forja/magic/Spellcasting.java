@@ -17,7 +17,6 @@ import dev.forja.upgrade.Synergy;
 import dev.forja.upgrade.Upgrade;
 import dev.forja.upgrade.Upgrades;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -332,7 +331,7 @@ public final class Spellcasting {
 			level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.PLAYERS, 0.6F, 1.7F);
 			for (int step = 0; step < 16; step++) {
 				double angle = step * Math.PI / 8.0;
-				level.sendParticles(new DustParticleOptions(colour, 1.2F), player.getX() + Math.cos(angle) * 0.8, player.getY() + 0.1, player.getZ() + Math.sin(angle) * 0.8,
+				level.sendParticles(new dev.forja.registry.GlintOptions(colour, 1.2F), player.getX() + Math.cos(angle) * 0.8, player.getY() + 0.1, player.getZ() + Math.sin(angle) * 0.8,
 					1, 0.0, 0.0, 0.0, 0.0);
 			}
 		}
@@ -396,13 +395,13 @@ public final class Spellcasting {
 			Vec3 dir = new Vec3(random.nextGaussian(), random.nextGaussian(), random.nextGaussian()).normalize();
 			Vec3 from = hand.add(dir.scale(radius));
 			Vec3 in = dir.scale(-0.06);
-			server.sendParticles(new DustParticleOptions(colour, 0.4F + 0.3F * share), from.x, from.y, from.z, 0, in.x, in.y, in.z, 1.0);
+			server.sendParticles(new dev.forja.registry.GlintOptions(colour, 0.4F + 0.3F * share), from.x, from.y, from.z, 0, in.x, in.y, in.z, 1.0);
 		}
 		if (held >= full && !CHIMED.contains(caster)) {
 			CHIMED.add(caster);
 			for (int step = 0; step < 10; step++) {
 				double angle = step * Math.PI / 5.0;
-				server.sendParticles(new DustParticleOptions(colour, 0.7F), hand.x + Math.cos(angle) * 0.35, hand.y, hand.z + Math.sin(angle) * 0.35,
+				server.sendParticles(new dev.forja.registry.GlintOptions(colour, 0.7F), hand.x + Math.cos(angle) * 0.35, hand.y, hand.z + Math.sin(angle) * 0.35,
 					1, 0.0, 0.0, 0.0, 0.0);
 			}
 			server.playSound(null, caster.getX(), caster.getY(), caster.getZ(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.8F, 1.4F);
@@ -531,7 +530,7 @@ public final class Spellcasting {
 			// The bar going out of the hand at once: a deep chime and a ring of the núcleo's colour.
 			server.playSound(null, caster.getX(), caster.getY(), caster.getZ(), SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), SoundSource.PLAYERS, 0.8F, 1.3F);
 			Shockwave.burst(server, caster.position(), 1.6, 8, Upgrade.DESCARGA.color, 0.4F);
-			server.sendParticles(new DustParticleOptions(Upgrade.DESCARGA.color, 1.4F), caster.getX(), caster.getY(1.0), caster.getZ(), 24, 0.5, 0.6, 0.5, 0.02);
+			server.sendParticles(new dev.forja.registry.GlintOptions(Upgrade.DESCARGA.color, 1.4F), caster.getX(), caster.getY(1.0), caster.getZ(), 24, 0.5, 0.6, 0.5, 0.02);
 		}
 		float echo = Upgrade.echoShare(Upgrades.fraction(stack, Upgrade.RESONANCIA));
 		if (type == ForgeType.BACULO) {
@@ -649,7 +648,7 @@ public final class Spellcasting {
 		rune.biteShare = player instanceof Player ? BITE_SHARE : MONSTER_BITE_SHARE;
 		RUNES.add(rune);
 		strike(rune, damage, player, true);
-		level.sendParticles(new DustParticleOptions(core.color, 1.6F), at.x, at.y + 0.4, at.z, big ? 70 : 40, reach * 0.5, 0.3, reach * 0.5, 0.0);
+		level.sendParticles(new dev.forja.registry.GlintOptions(core.color, 1.4F), at.x, at.y + 0.3, at.z, big ? 48 : 28, reach * 0.5, 0.2, reach * 0.5, 0.02);
 		level.playSound(null, at.x, at.y, at.z, SoundEvents.ENCHANTMENT_TABLE_USE, player.getSoundSource(), 1.2F, big ? 0.55F : 0.8F);
 		level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_BLOCK_RESONATE, player.getSoundSource(), 1.0F, 0.6F);
 		return rune;
@@ -714,7 +713,7 @@ public final class Spellcasting {
 		if (Upgrades.fraction(rune.weapon, Upgrade.SANTUARIO) >= 0.5F) {
 			caster.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 30, 0, true, false));
 		}
-		rune.level.sendParticles(new DustParticleOptions(Upgrade.SANTUARIO.color, 0.9F), caster.getX(), caster.getY() + 0.9, caster.getZ(), 4, 0.3, 0.5, 0.3, 0.0);
+		rune.level.sendParticles(new dev.forja.registry.GlintOptions(Upgrade.SANTUARIO.color, 0.9F), caster.getX(), caster.getY() + 0.9, caster.getZ(), 4, 0.3, 0.5, 0.3, 0.0);
 	}
 
 	/** How many runes are lying about, which is what the test asks. */
@@ -783,7 +782,7 @@ public final class Spellcasting {
 				if (rune.age % RUNE_EVERY == 0) {
 					strike(rune, rune.bite(), caster, false);
 					shelter(rune, caster);
-					level.sendParticles(new DustParticleOptions(rune.colour, 1.0F), rune.at.x, rune.at.y + 0.15, rune.at.z, 6,
+					level.sendParticles(new dev.forja.registry.GlintOptions(rune.colour, 1.0F), rune.at.x, rune.at.y + 0.15, rune.at.z, 6,
 						rune.reach * 0.45, 0.05, rune.reach * 0.45, 0.0);
 				}
 			}

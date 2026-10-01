@@ -23,8 +23,8 @@ import net.minecraft.world.entity.player.Player;
 public final class Frenzy {
 	/** Hits to reach the top of the bar. */
 	/** The colour of a full combo: the same hot orange the forge burns with. */
-	private static final net.minecraft.core.particles.DustParticleOptions FRENZY =
-		new net.minecraft.core.particles.DustParticleOptions(0xFF7A1E, 1.2F);
+	private static final dev.forja.registry.GlintOptions FRENZY =
+		new dev.forja.registry.GlintOptions(0xFF7A1E, 1.2F);
 
 	public static final int MAX_HITS = 5;
 

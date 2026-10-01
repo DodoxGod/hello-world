@@ -104,7 +104,7 @@ public enum Perk {
 	 * equipped", which the tooltip already said.
 	 */
 	public void spark(net.minecraft.server.level.ServerLevel level, net.minecraft.world.phys.Vec3 at, int count) {
-		level.sendParticles(new net.minecraft.core.particles.DustParticleOptions(this.color, 1.1F),
+		level.sendParticles(new dev.forja.registry.GlintOptions(this.color, 1.1F),
 			at.x, at.y, at.z, count, 0.3, 0.3, 0.3, 0.02);
 	}
 

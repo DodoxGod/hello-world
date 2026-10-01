@@ -5,7 +5,6 @@ import dev.forja.registry.ModParticles;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -84,9 +83,18 @@ public final class ShockwaveFx {
 			if (burns) {
 				level.addParticle(random.nextInt(4) == 0 ? ParticleTypes.SMOKE : ParticleTypes.SMALL_FLAME, x, y, z, 0.0, 0.015 + random.nextDouble() * 0.02, 0.0);
 			} else {
-				level.addParticle(new DustParticleOptions(colour, 0.7F), x, y, z, 0.0, 0.01, 0.0);
+				level.addParticle(mote(colour, 0.7F), x, y, z, 0.0, 0.01, 0.0);
 			}
 		}
+	}
+
+	/**
+	 * A mote of a ring's colour: a glint, lit by itself, for a ring of light (an arcane wave, a soul's call, steam),
+	 * and plain dust for a dark one — oil and soot are not lights, and a glint would lift them into one.
+	 */
+	private static net.minecraft.core.particles.ParticleOptions mote(int colour, float scale) {
+		int high = Math.max((colour >> 16) & 0xFF, Math.max((colour >> 8) & 0xFF, colour & 0xFF));
+		return high < 120 ? new net.minecraft.core.particles.DustParticleOptions(colour, scale) : new dev.forja.registry.GlintOptions(colour, scale);
 	}
 
 	/** An angle somewhere inside the wave's shape: anywhere at all for a circle, inside the wedge for a wedge. */
@@ -107,7 +115,7 @@ public final class ShockwaveFx {
 		// Less of everything off a ring with little force in it: a horn call does not tear the floor up.
 		float force = Mth.clamp(wave.flame(), 0.0F, 1.0F);
 		int count = Math.min(DEBRIS_CAP, Mth.ceil(radius * Math.min(wave.arc(), Shockwave.WHOLE) * 2.0F * DEBRIS_DENSITY * force));
-		DustParticleOptions glow = new DustParticleOptions(wave.colour(), 1.1F);
+		net.minecraft.core.particles.ParticleOptions glow = mote(wave.colour(), 1.1F);
 		// Sparks come off the rings that burn. Steam, a soul's call and oil are told apart by colour —
 		// more green than red, or barely any colour at all — and throw motes of their own colour instead.
 		int red = (wave.colour() >> 16) & 0xFF;

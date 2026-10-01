@@ -257,7 +257,7 @@ public final class Mana {
 		data.siphonOpen = false;
 		give(player, data.lastCost * share);
 		if (player.level() instanceof net.minecraft.server.level.ServerLevel level) {
-			level.sendParticles(new net.minecraft.core.particles.DustParticleOptions(Upgrade.SIFON.color, 0.8F),
+			level.sendParticles(new dev.forja.registry.GlintOptions(Upgrade.SIFON.color, 0.8F),
 				player.getX(), player.getY(1.0), player.getZ(), 6, 0.3, 0.4, 0.3, 0.0);
 		}
 	}

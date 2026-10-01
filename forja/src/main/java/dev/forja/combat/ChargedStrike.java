@@ -148,7 +148,7 @@ public final class ChargedStrike {
 			level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANTED_HIT, near.getX(), near.getY(0.6), near.getZ(), 8, 0.3, 0.4, 0.3, 0.1);
 		}
 		dev.forja.entity.Shockwave.burst(level, target.position(), radius, 8, dev.forja.upgrade.Upgrade.ESTALLIDO_ARCANO.color, 0.5F);
-		level.sendParticles(new net.minecraft.core.particles.DustParticleOptions(dev.forja.upgrade.Upgrade.ESTALLIDO_ARCANO.color, 1.3F),
+		level.sendParticles(new dev.forja.registry.GlintOptions(dev.forja.upgrade.Upgrade.ESTALLIDO_ARCANO.color, 1.3F),
 			target.getX(), target.getY(0.5), target.getZ(), 30, radius * 0.4, 0.3, radius * 0.4, 0.0);
 		level.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 1.2F, 0.7F);
 		level.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 0.6F, 1.3F);

@@ -6,7 +6,6 @@ import java.util.Locale;
 
 import dev.forja.registry.ModComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
@@ -153,7 +152,7 @@ public enum Synergy {
 	 * works is a handful of motes in a recognisable colour rather than anything that fills the screen.
 	 */
 	public void spark(ServerLevel level, Vec3 at, int count) {
-		level.sendParticles(new DustParticleOptions(this.color, 1.0F),
+		level.sendParticles(new dev.forja.registry.GlintOptions(this.color, 1.0F),
 			at.x, at.y, at.z, count, 0.35, 0.35, 0.35, 0.02);
 	}
 

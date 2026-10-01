@@ -53,8 +53,8 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 
 	/** How long an event lasts, in ticks. */
 	/** The white-hot head of a falling meteorite. */
-	private static final net.minecraft.core.particles.DustParticleOptions HEAD =
-		new net.minecraft.core.particles.DustParticleOptions(0xFFF4E0, 2.4F);
+	private static final dev.forja.registry.GlintOptions HEAD =
+		new dev.forja.registry.GlintOptions(0xFFF4E0, 2.4F);
 
 	public static final int DURATION = 6000;
 

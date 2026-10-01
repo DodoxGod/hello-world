@@ -289,7 +289,7 @@ public final class Stamina {
 			data.dodgeUntil += BLINK_IFRAMES;
 			ServerLevel level = player.level();
 			level.sendParticles(net.minecraft.core.particles.ParticleTypes.REVERSE_PORTAL, player.getX(), player.getY(0.5), player.getZ(), 24, 0.3, 0.5, 0.3, 0.05);
-			level.sendParticles(new net.minecraft.core.particles.DustParticleOptions(Upgrade.PASO_ARCANO.color, 1.0F),
+			level.sendParticles(new dev.forja.registry.GlintOptions(Upgrade.PASO_ARCANO.color, 1.0F),
 				player.getX(), player.getY(0.5), player.getZ(), 10, 0.3, 0.5, 0.3, 0.0);
 			level.playSound(null, player.getX(), player.getY(), player.getZ(), net.minecraft.sounds.SoundEvents.PLAYER_TELEPORT,
 				net.minecraft.sounds.SoundSource.PLAYERS, 0.5F, 1.6F);

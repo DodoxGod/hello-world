@@ -184,7 +184,7 @@ public final class Flight {
 		Vec3 side = new Vec3(-back.z, 0.0, back.x).normalize().scale(0.55);
 		for (int wing = -1; wing <= 1; wing += 2) {
 			Vec3 at = player.position().add(0.0, player.getBbHeight() * 0.7, 0.0).add(back).add(side.scale(wing));
-			level.sendParticles(new net.minecraft.core.particles.DustParticleOptions(colour, 0.9F),
+			level.sendParticles(new dev.forja.registry.GlintOptions(colour, 0.9F),
 				at.x, at.y, at.z, 1, 0.04, 0.04, 0.04, 0.0);
 		}
 	}

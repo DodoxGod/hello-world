@@ -15,7 +15,6 @@ import dev.forja.magic.Healing;
 import dev.forja.magic.Mana;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.particles.BlockParticleOption;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -217,7 +216,7 @@ public final class ClassSkills {
 				}
 				ClassEffects.mark(player, target, ActiveSkill.ticks(n[1]));
 				target.addEffect(new MobEffectInstance(MobEffects.GLOWING, ActiveSkill.ticks(n[1]), 0), player);
-				level.sendParticles(new DustParticleOptions(0x8A6BC8, 1.5F), target.getX(), target.getY() + target.getBbHeight() + 0.4, target.getZ(),
+				level.sendParticles(new dev.forja.registry.GlintOptions(0x8A6BC8, 1.5F), target.getX(), target.getY() + target.getBbHeight() + 0.4, target.getZ(),
 					16, 0.3, 0.2, 0.3, 0.0);
 				level.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.WITHER_AMBIENT, SoundSource.PLAYERS, 0.4F, 1.8F);
 			}
@@ -937,7 +936,7 @@ public final class ClassSkills {
 				}
 				for (int step = 0; step < 24; step++) {
 					double angle = step * Math.PI / 12.0;
-					level.sendParticles(new DustParticleOptions(0xF4E6A0, 1.0F), at.x + Math.cos(angle) * n[1], at.y + 0.15, at.z + Math.sin(angle) * n[1],
+					level.sendParticles(new dev.forja.registry.GlintOptions(0xF4E6A0, 1.0F), at.x + Math.cos(angle) * n[1], at.y + 0.15, at.z + Math.sin(angle) * n[1],
 						1, 0.0, 0.0, 0.0, 0.0);
 				}
 				for (LivingEntity ally : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(n[1], 2.0, n[1]),
@@ -965,7 +964,7 @@ public final class ClassSkills {
 	private static void ring(ServerLevel level, Player player, double reach, int colour) {
 		for (int step = 0; step < 36; step++) {
 			double angle = step * Math.PI / 18.0;
-			level.sendParticles(new DustParticleOptions(colour, 1.2F), player.getX() + Math.cos(angle) * reach, player.getY() + 0.2,
+			level.sendParticles(new dev.forja.registry.GlintOptions(colour, 1.2F), player.getX() + Math.cos(angle) * reach, player.getY() + 0.2,
 				player.getZ() + Math.sin(angle) * reach, 1, 0.0, 0.0, 0.0, 0.0);
 		}
 	}

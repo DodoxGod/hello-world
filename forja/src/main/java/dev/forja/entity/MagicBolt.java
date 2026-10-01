@@ -3,7 +3,6 @@ package dev.forja.entity;
 import dev.forja.magic.Spellcasting;
 import dev.forja.registry.ModEntities;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
@@ -136,7 +135,7 @@ public class MagicBolt extends Projectile {
 		Vec3 end = start.add(this.getDeltaMovement());
 		for (int step = 1; step <= 6; step++) {
 			Vec3 at = start.lerp(end, step / 6.0);
-			level.sendParticles(new DustParticleOptions(this.colour, this.big ? 2.2F : 1.1F), at.x, at.y, at.z, this.big ? 3 : 1, this.big ? 0.08 : 0.02, this.big ? 0.08 : 0.02, this.big ? 0.08 : 0.02, 0.0);
+			level.sendParticles(new dev.forja.registry.GlintOptions(this.colour, this.big ? 2.2F : 1.1F), at.x, at.y, at.z, this.big ? 3 : 1, this.big ? 0.08 : 0.02, this.big ? 0.08 : 0.02, this.big ? 0.08 : 0.02, 0.0);
 			BlockPos pos = BlockPos.containing(at);
 			BlockState state = level.getBlockState(pos);
 			if (!state.isAir() && !state.getCollisionShape(level, pos).isEmpty()) {
@@ -224,7 +223,10 @@ public class MagicBolt extends Projectile {
 	}
 
 	private void burst(ServerLevel level, Vec3 at) {
-		level.sendParticles(new DustParticleOptions(this.colour, this.big ? 2.4F : 1.6F), at.x, at.y, at.z, this.big ? 40 : 18, this.big ? 0.5 : 0.25, this.big ? 0.5 : 0.25, this.big ? 0.5 : 0.25, 0.0);
+		// A flash where it lands and a shell of light thrown off it: fewer than the dust it used to be, since each
+		// of these is a light and not a speck.
+		level.sendParticles(new dev.forja.registry.GlintOptions(this.colour, this.big ? 5.0F : 3.4F), at.x, at.y, at.z, 1, 0.0, 0.0, 0.0, 0.0);
+		level.sendParticles(new dev.forja.registry.GlintOptions(this.colour, this.big ? 1.8F : 1.2F), at.x, at.y, at.z, this.big ? 28 : 14, this.big ? 0.3 : 0.12, this.big ? 0.3 : 0.12, this.big ? 0.3 : 0.12, this.big ? 0.12 : 0.08);
 		level.sendParticles(ParticleTypes.END_ROD, at.x, at.y, at.z, 6, 0.1, 0.1, 0.1, 0.08);
 		level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.PLAYERS, 0.9F, 1.5F);
 		this.discard();

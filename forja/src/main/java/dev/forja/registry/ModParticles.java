@@ -46,6 +46,15 @@ public final class ModParticles {
 	 */
 	public static final SimpleParticleType BRASA = register("brasa");
 
+	/**
+	 * Destello: a point of light in a colour (GlintOptions), lit by itself. What every spell throws: the staff's
+	 * bolt and its burst, the tome's area and its rune, the lantern's beam, and the arcane bursts of the
+	 * upgrades — where they used to throw vanilla's dust, which is a speck lit by the world and read as brown
+	 * flecks at night.
+	 */
+	public static final net.minecraft.core.particles.ParticleType<GlintOptions> DESTELLO = Registry.register(BuiltInRegistries.PARTICLE_TYPE,
+		Forja.id("destello"), FabricParticleTypes.complex(GlintOptions.CODEC, GlintOptions.STREAM_CODEC));
+
 	private ModParticles() {
 	}
 

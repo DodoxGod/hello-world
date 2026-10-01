@@ -12029,6 +12029,9 @@ if __name__ == "__main__":
     # generate_*_assets() above wrote.
     import visual_mobs
     visual_mobs.generate(_sys.modules[__name__])
+    # The visual pass on screens, HUD and particles (tools/visual_gui.py): last, so what it redraws wins.
+    import visual_gui
+    visual_gui.generate(_sys.modules[__name__])
     generate_painting_data()
     generate_trades()
     problems = check_enums()
