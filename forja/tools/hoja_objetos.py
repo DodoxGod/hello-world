@@ -159,6 +159,9 @@ BATCHES = {
                   "block/yunque_del_herrero_top.png", "block/montadora_side.png", "block/montadora_side_lit.png"],
     "3_lobo": ["forjado:armadura_de_lobo", "item/parte/placa_lobo.png", "item/molde/placa_lobo.png",
                "item/plantilla/placa_lobo.png"],
+    "4_cajas": ["block/caja_de_moldeo_top.png", "block/caja_de_moldeo_top_lit.png", "block/caja_de_moldeo_de_acero_top.png",
+                "block/caja_de_moldeo_de_acero_top_lit.png", "block/caja_de_moldeo_de_damasco_top.png",
+                "block/caja_de_moldeo_de_damasco_top_lit.png"],
 }
 
 

@@ -457,6 +457,70 @@ def assembler_sides():
         side.save(folder / f"montadora_side{'_lit' if lit else ''}.png")
 
 
+CASTING_BOXES = {
+    # (light, dark, sand), as generate_melt_tank_assets draws the boxes' frames.
+    "caja_de_moldeo": ((196, 152, 106), (96, 64, 40), (198, 178, 140)),
+    "caja_de_moldeo_de_acero": ((188, 190, 200), (70, 72, 80), (206, 194, 168)),
+    "caja_de_moldeo_de_damasco": ((168, 170, 186), (52, 54, 64), (192, 186, 176)),
+}
+
+
+def casting_box_tops():
+    """The casting boxes' tops: sand in the flask, a round pouring cup, a runner and two bar cavities.
+
+    The old top put a square cup in the corner, a diagonal runner and a flat bar under it, and at a glance the
+    three made the outline of a hammer drawn on the sand. Here every cut into the sand has its upper and left
+    wall in shadow and its lower and right lip lit, the cup is round, and the cavity is the shape of what comes
+    out, two bars fed from the cup by a runner down the side. Lit, the cup, the runner and the bars glow.
+    """
+    import random
+    rng = random.Random(771221)
+    glow, glow_hot = (255, 170, 70), (255, 226, 150)
+    cold = (44, 36, 30)
+    for name, (light, dark, sand) in CASTING_BOXES.items():
+        for lit in (False, True):
+            top = Image.new("RGBA", (16, 16))
+            for y in range(16):
+                for x in range(16):
+                    top.putpixel((x, y), grained(sand, rng, 9))
+            for i in range(16):
+                top.putpixel((i, 0), rgba(light))
+                top.putpixel((0, i), rgba(light))
+                top.putpixel((i, 15), rgba(dark))
+                top.putpixel((15, i), rgba(dark))
+            # The cup, at the left end, where you pour.
+            cx, cy = 3.5, 3.5
+            for y in range(1, 7):
+                for x in range(1, 7):
+                    d = math.hypot(x + 0.5 - cx, y + 0.5 - cy)
+                    if d < 1.5:
+                        top.putpixel((x, y), rgba(glow_hot if lit and d < 0.8 else glow if lit else cold))
+                    elif d < 2.5:
+                        upper_left = (x + 0.5 - cx) + (y + 0.5 - cy) < 0
+                        top.putpixel((x, y), scaled(sand, 0.50 if upper_left else 1.12))
+            # Two bars lying across the box, fed from the cup by a runner down the left side.
+            cavity = {(x, y) for y in (7, 8, 11, 12) for x in range(6, 14)}
+            gate = {(3, y) for y in range(5, 12)} | {(4, 8), (5, 8), (4, 12), (5, 12)}
+            for (x, y) in cavity | gate:
+                if lit:
+                    heat = 1.0 - abs(y - (7.5 if y < 10 else 11.5)) / 1.6
+                    top.putpixel((x, y), (255, int(140 + 90 * heat), int(40 + 60 * heat), 255))
+                else:
+                    top.putpixel((x, y), rgba(cold))
+            for (x, y) in cavity | gate:
+                for (ox, oy, factor) in ((-1, 0, 0.48), (0, -1, 0.48), (1, 0, 1.14), (0, 1, 1.14)):
+                    q = (x + ox, y + oy)
+                    if q not in cavity and q not in gate and 0 < q[0] < 15 and 0 < q[1] < 15                             and math.hypot(q[0] + 0.5 - cx, q[1] + 0.5 - cy) >= 2.5:
+                        top.putpixel(q, scaled(sand, factor))
+            # The riser at the far corner, so the air has somewhere to go.
+            top.putpixel((13, 3), rgba(glow if lit else cold))
+            top.putpixel((12, 3), scaled(sand, 0.48))
+            top.putpixel((13, 2), scaled(sand, 0.48))
+            top.putpixel((14, 3), scaled(sand, 1.14))
+            top.putpixel((13, 4), scaled(sand, 1.14))
+            top.save(GA.ASSETS / f"textures/block/{name}_top{'_lit' if lit else ''}.png")
+
+
 def _after(original, extra):
     def run(*args, **kwargs):
         result = original(*args, **kwargs)
@@ -481,3 +545,4 @@ def apply(ga):
     ga.generate_smith_anvil_assets = _after(ga.generate_smith_anvil_assets,
                                             lambda: smith_anvil_top().save(GA.ASSETS / "textures/block/yunque_del_herrero_top.png"))
     ga.generate_assembler_assets = _after(ga.generate_assembler_assets, assembler_sides)
+    ga.generate_melt_tank_assets = _after(ga.generate_melt_tank_assets, casting_box_tops)
