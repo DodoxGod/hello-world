@@ -69,7 +69,8 @@ sale una **perla de oricalco** (`forja:perla_de_oricalco`, épica, de 16 en 16).
 **cualquier mesa**: es un baño, no una pieza, y no sale basta ni limpia. Una perla solo acepta oricalco, y el
 oricalco solo se cuela sobre perlas.
 
-Texturas: el lingote de oro y la perla de ender vanilla, recoloreados al dorado verdoso del oricalco
+Texturas: el lingote es el de toda la familia de lingotes de Forja (`tools/lingotes.py`, variante A, con la
+rampa del oricalco y su estrella); la perla, la de ender vanilla recoloreada al dorado verdoso del oricalco
 (`tools/dimension_assets.py`).
 
 ### 1.3 El **marco del portal** en el Bastión (hecho)

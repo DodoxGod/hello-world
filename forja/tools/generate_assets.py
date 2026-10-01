@@ -3719,173 +3719,17 @@ ALLOY_RAMPS = {
     "lunacero": (0x2A1B4A, 0x6E86D6),
 }
 
-# What each metal's surface says it is. Bronze and brass wear nothing on purpose: they are the first
-# two you ever make and they read fine by colour alone, so a mark on them would mean nothing.
-ALLOY_MARKS = {
-    "peltre": "pits",
-    "acero": "fold",
-    "electro": "patches",
-    "damasco": "damask",
-    "acero_estelar": "stars",
-    "obsidiacero": "facets",
-    "acero_refractario": "grain",
-    "cinerio": "crack",
-    "voltaico": "bolt",
-    "vidriacero": "pane",
-    "solacero": "sun",
-    "lunacero": "craters",
-    "acero_vivo": "vein",
-}
-
-
 def generate_alloy_textures():
-    """One ingot per alloy: Minecraft's own ingot, in that metal's colour, with that metal's surface.
+    """One ingot per alloy, drawn by tools/lingotes.py (variant A, Andy 2026-10-01).
 
-    The shape is the vanilla iron ingot re-tinted, which is why these sit comfortably in a chest next
-    to a real one. What tells them apart is the **mark** on the lit top face — sixteen grey bars would
-    otherwise be sixteen grey bars, and steel in particular used to be indistinguishable from iron.
-
-    Two of them do not take a single colour at all: soul steel and star steel run one colour into
-    another **across** the bar, left to right, which is its own kind of mark.
-
-    Every mark obeys one rule, and it is the rule that made them read at all: a dark pixel always has
-    a light one beside it. Without that the mark sinks into the face of the bar and disappears.
+    Every bar in the mod is one family now: vanilla's diagonal ingot drawn by hand instead of re-tinting
+    the iron ingot, one light from the top left, one five-tone ramp per metal, and each alloy's mark on the
+    lit top face. Soul steel and star steel still run one colour into another across the bar, and moon
+    steel's ramp still travels from purple to blue (ALLOY_SIDEWAYS, ALLOY_RAMPS).
     """
-    ingot = vanilla("item/iron_ingot.png")
-    values = [luminance(ingot.getpixel((x, y))) for y in range(16) for x in range(16)
-              if ingot.getpixel((x, y))[3]]
-    low = min(values)
-    span = max(1, max(values) - low)
-    # Which of the five tones each pixel of the bar sits on, and where the bar is at all.
-    grid = {(x, y): (luminance(ingot.getpixel((x, y))) - low) * 4 // span
-            for y in range(16) for x in range(16) if ingot.getpixel((x, y))[3]}
-    # The lit top face: the only place a mark is allowed, so the silhouette is never touched.
-    face = {point for point, step in grid.items() if step >= 3}
-    factors = (0.30, 0.52, 0.76, 1.0, 1.30)
-
-    def ramp_of(colour):
-        base = ((colour >> 16) & 0xFF, (colour >> 8) & 0xFF, colour & 0xFF)
-        return [tuple(min(255, int(c * f)) for c in base) for f in factors]
-
-    def ramp_between(dark, light):
-        """A ramp that travels between two colours instead of dimming one, for moon steel."""
-        a = ((dark >> 16) & 0xFF, (dark >> 8) & 0xFF, dark & 0xFF)
-        b = ((light >> 16) & 0xFF, (light >> 8) & 0xFF, light & 0xFF)
-        return [tuple(int(a[c] + (b[c] - a[c]) * (i / 4)) for c in range(3)) for i in range(5)]
-
-    xs = [x for (x, _) in grid]
-    x0, x1 = min(xs), max(xs)
-
+    import lingotes
     for name in ALLOY_COLORS:
-        sideways = ALLOY_SIDEWAYS.get(name)
-        if sideways:
-            left, right = sideways
-            a = ((left >> 16) & 0xFF, (left >> 8) & 0xFF, left & 0xFF)
-            b = ((right >> 16) & 0xFF, (right >> 8) & 0xFF, right & 0xFF)
-            bar = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-            for (x, y), step in grid.items():
-                t = (x - x0) / max(1, x1 - x0)
-                mix = tuple(a[c] + (b[c] - a[c]) * t for c in range(3))
-                bar.putpixel((x, y), tuple(min(255, int(v * factors[step])) for v in mix) + (255,))
-            ramp = ramp_of(ALLOY_COLORS[name])
-        else:
-            ramp = ramp_between(*ALLOY_RAMPS[name]) if name in ALLOY_RAMPS else ramp_of(ALLOY_COLORS[name])
-            bar = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-            for (x, y), step in grid.items():
-                bar.putpixel((x, y), ramp[step] + (255,))
-
-        def paint(x, y, step, tint=None):
-            if (x, y) in face:
-                bar.putpixel((x, y), (tint or ramp[max(0, min(4, step))]) + (255,))
-
-        mark = ALLOY_MARKS.get(name)
-        if mark == "fold":
-            # Steel: one seam along the worked bar, and the dimples the hammer left above it.
-            for x in range(4, 13):
-                paint(x, 8, 0)
-                paint(x, 7, 4)
-            for x in (5, 8, 11):
-                paint(x, 6, 1)
-                paint(x + 1, 6, 4)
-        elif mark == "pits":
-            # Pewter: soft and dull, a few pits from the casting. Three, each a dark pixel with its lit lower lip:
-            # five pits of three pixels each covered half the face and read as dirt.
-            for (x, y) in ((7, 5), (11, 6), (5, 7)):
-                paint(x, y, 0)
-                paint(x, y + 1, 4)
-        elif mark == "patches":
-            # Electrum: two metals that never quite mixed.
-            for (x, y) in face:
-                if (x // 2 + y // 2) % 2 == 0:
-                    paint(x, y, 4)
-                elif (x + y) % 3 == 0:
-                    paint(x, y, 1)
-        elif mark == "damask":
-            # Damascus: the folded layers as two waves running the same way along the bar, in the mid tone with
-            # a lit edge over each. Three waves out of step, in black, made a checkerboard of the face.
-            for row in (5, 7):
-                for x in range(2, 15):
-                    y = row + (1 if (x + 1) % 8 in (3, 4, 5, 6) else 0)
-                    paint(x, y, 1)
-                    paint(x, y - 1, 4)
-        elif mark == "stars":
-            for (cx, cy) in ((5, 7), (9, 6), (12, 8)):
-                paint(cx, cy, 4, (255, 255, 255))
-                for (dx, dy) in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-                    paint(cx + dx, cy + dy, 4)
-                paint(cx + 1, cy + 1, 0)
-        elif mark == "facets":
-            for (x, y) in ((4, 7), (6, 9), (9, 6), (11, 8)):
-                for i in range(3):
-                    paint(x + i, y - i, 0)
-                    paint(x + i, y - i - 1, 4)
-        elif mark == "grain":
-            for (x, y) in face:
-                if (x * 7 + y * 3) % 4 == 0:
-                    paint(x, y, 1)
-                elif (x * 5 + y * 11) % 7 == 0:
-                    paint(x, y, 4)
-        elif mark == "crack":
-            # Cinereous: a crack across the bar with the fire still in it.
-            for (x, y) in ((3, 8), (4, 8), (5, 7), (6, 7), (7, 8), (8, 8), (9, 7), (10, 7), (11, 8), (12, 8)):
-                paint(x, y, 4, (255, 170, 60))
-                paint(x, y - 1, 4, (255, 226, 150))
-                paint(x, y + 1, 0)
-            for (x, y) in ((5, 9), (9, 9)):
-                paint(x, y, 4, (255, 120, 30))
-        elif mark == "bolt":
-            for (x, y) in ((4, 8), (5, 7), (6, 8), (7, 6), (8, 7), (9, 6), (10, 7), (11, 6), (12, 7)):
-                paint(x, y, 4, (250, 255, 255))
-                paint(x, y + 1, 0)
-            for (x, y) in ((3, 7), (13, 8)):
-                paint(x, y, 4, (190, 240, 255))
-        elif mark == "pane":
-            # Glass steel: a band you can see through.
-            for x in range(3, 14):
-                paint(x, 7, 4, (232, 250, 255))
-                paint(x, 8, 4, (232, 250, 255))
-                paint(x, 9, 2)
-            for x in range(4, 13, 3):
-                paint(x, 7, 4, (255, 255, 255))
-        elif mark == "sun":
-            for (x, y) in ((8, 7), (7, 7), (9, 7), (8, 6), (8, 8), (6, 6), (10, 8), (6, 8), (10, 6)):
-                paint(x, y, 4, (255, 250, 210))
-            for (x, y) in ((7, 8), (9, 6)):
-                paint(x, y, 0)
-        elif mark == "craters":
-            for (cx, cy) in ((5, 7), (9, 6), (11, 9)):
-                for (dx, dy) in ((0, 0), (1, 0), (0, 1), (1, 1)):
-                    paint(cx + dx, cy + dy, 0)
-                paint(cx, cy - 1, 4)
-                paint(cx + 1, cy - 1, 4)
-                paint(cx + 2, cy + 1, 1)
-        elif mark == "vein":
-            for x in range(3, 14):
-                y = 7 + (1 if x % 4 in (1, 2) else 0)
-                paint(x, y, 4, (255, 90, 70))
-                paint(x, y - 1, 4, (255, 180, 150))
-                paint(x, y + 1, 0)
-        bar.save(ASSETS / f"textures/item/{name}.png")
+        lingotes.variant_a(name).save(ASSETS / f"textures/item/{name}.png")
 
 
 def generate_star_iron_texture():
@@ -4141,40 +3985,12 @@ def generate_belt_texture():
 def generate_temper_ingot_texture():
     """The tempering bar: a bar that has not decided what metal it is, and is still hot at one end.
 
-    It is the vanilla ingot again, which is what every other bar in the mod is, but drained of colour
-    and left glowing at the right-hand end. That is the whole item in one picture: it is not any metal
-    yet, and it is going back in the fire the moment it touches yours.
+    The same ingot as every alloy (tools/lingotes.py, variant A), drained of colour and left glowing at the
+    right-hand end, with one hammer mark on the cold end. That is the whole item in one picture: it is not
+    any metal yet, and it is going back in the fire the moment it touches yours.
     """
-    rng = __import__("random").Random(880114)
-    ingot = vanilla("item/iron_ingot.png")
-    values = [luminance(ingot.getpixel((x, y))) for y in range(16) for x in range(16)
-              if ingot.getpixel((x, y))[3]]
-    low = min(values)
-    span = max(1, max(values) - low)
-    bar = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-    # The five tones of a pale, unassayed metal: grey with the warmth only just showing in it.
-    ramp = [(58, 54, 52), (104, 98, 94), (148, 142, 136), (192, 186, 178), (228, 222, 212)]
-    # And the fire it came out of, running back up the bar from the right.
-    heat = [(150, 52, 22), (208, 86, 24), (244, 140, 34), (255, 196, 96), (255, 244, 208)]
-    for y in range(16):
-        for x in range(16):
-            if not ingot.getpixel((x, y))[3]:
-                continue
-            step = (luminance(ingot.getpixel((x, y))) - low) * 4 // span
-            # How hot this column is: nothing on the left, white on the right, with a ragged front.
-            edge = (x - 8.5) / 5.0 + (rng.random() - 0.5) * 0.22
-            if edge <= 0.0:
-                bar.putpixel((x, y), ramp[step] + (255,))
-            else:
-                glow = min(1.0, edge)
-                cold = ramp[step]
-                hot = heat[step]
-                bar.putpixel((x, y), tuple(int(c + (h - c) * glow) for c, h in zip(cold, hot)) + (255,))
-    # One hammer mark on the lit face, so it reads as something worked rather than something cast.
-    for (x, y) in ((5, 6), (6, 6), (5, 7)):
-        bar.putpixel((x, y), (36, 34, 32, 255))
-    bar.putpixel((6, 7), (236, 230, 220, 255))
-    bar.save(ASSETS / "textures/item/lingote_de_temple.png")
+    import lingotes
+    lingotes.variant_a("lingote_de_temple").save(ASSETS / "textures/item/lingote_de_temple.png")
 
 
 def generate_villager_textures():

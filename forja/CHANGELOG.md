@@ -1,5 +1,14 @@
 # Novedades
 
+## 2026-10-01 — Lingotes nuevos: una sola familia (variante A)
+
+- Todos los lingotes del mod (las 16 aleaciones, el oricalco y el lingote de temple) se dibujan ahora a mano con la
+  **variante A** que eligió Andy en `hoja_lingotes.jpg`: la silueta diagonal del lingote vanilla, una sola luz desde
+  arriba a la izquierda, una rampa de cinco tonos por metal y la marca de cada aleación en la cara de arriba.
+- El dibujo vive en `tools/lingotes.py`; lo llaman `generate_alloy_textures()`, `generate_temper_ingot_texture()` y
+  `dimension_assets.portal()`. `tools/lingotes_propuesta.py` queda como la hoja de antes y después.
+- Una pasada limpia de `generate_assets.py` solo cambia esas 18 texturas.
+
 ## 2026-10-01 — "Extremo" pasa a llamarse "Implacable" (Relentless)
 
 - El escalón de dificultad por encima de Difícil se llama ahora **Implacable** (en inglés **Relentless**): «Extremo» chocaba

@@ -288,7 +288,9 @@ def portal(gen):
     items = gen.ASSETS / "textures/item"
     blocks = gen.ASSETS / "textures/block"
     items.mkdir(parents=True, exist_ok=True)
-    recolour(gen.vanilla("item/gold_ingot.png"), ORICALCO).save(items / "oricalco.png")
+    # The bar is drawn like every other ingot in the mod (tools/lingotes.py, variant A), off oricalco's ramp.
+    import lingotes
+    lingotes.variant_a("oricalco").save(items / "oricalco.png")
     pearl = recolour(gen.vanilla("item/ender_pearl.png"), ORICALCO)
     # A star caught in it: one white-gold pixel and its four neighbours, where the pearl's own glint is.
     glint = ((6, 5, (255, 252, 214)), (5, 5, (236, 226, 150)), (7, 5, (236, 226, 150)), (6, 4, (236, 226, 150)), (6, 6, (236, 226, 150)))
