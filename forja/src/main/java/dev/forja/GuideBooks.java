@@ -38,7 +38,10 @@ public final class GuideBooks {
 
 	public enum Book {
 		CUADERNO("guia_de_forja", 0xC9A465, null, () -> Items.IRON_INGOT, true, true,
-			List.of(new Section("cuaderno", 0, List.of("bienvenida", "primeras_mesas", "teclas")),
+			// Andy, 2026-10-01: "el libro no se entiende bien del cómo funciona la forja y cómo hacer una". So the
+			// notebook walks a new player from nothing to a first pickaxe on its own (primer_objeto), and then says
+			// in one short chapter how it works (como_funciona); book I keeps the why and the rest of the workshop.
+			List.of(new Section("cuaderno", 0, List.of("bienvenida", "primeras_mesas", "primer_objeto", "como_funciona", "teclas")),
 				new Section("camino", 3, List.of("siguiente_paso", "estanteria")))),
 		YUNQUE("libro_yunque", 0xC8641E, "plantilla", () -> ModItems.PLANTILLA, true, true,
 			List.of(new Section("yunque_taller", 0, List.of("yunque_sabes", "mesas", "cortar", "estrella", "temple")),

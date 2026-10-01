@@ -755,7 +755,11 @@ public class GuideBookScreen extends Screen {
 		return switch (key) {
 			case "primeros_pasos" -> this.firstStepsChapter();
 			case "siguiente_paso" -> this.nextStepChapter();
+			// Book I does not print the recipes again (the notebook has them): it says what each table is for.
 			case "mesas" -> {
+				if (this.book == GuideBooks.Book.YUNQUE) {
+					yield this.workshopChapter();
+				}
 				List<Element> tables = new ArrayList<>(this.tablesChapter());
 				tables.add(new Divider());
 				tables.addAll(this.cabinetEntry());
@@ -791,6 +795,8 @@ public class GuideBookScreen extends Screen {
 			// The notebook, book I and the library (docs/LIBROS_GUIA.md): further down, under "the books".
 			case "bienvenida" -> this.welcomeChapter();
 			case "primeras_mesas" -> this.firstTablesChapter();
+			case "primer_objeto" -> this.firstPieceChapter();
+			case "como_funciona" -> this.howItWorksChapter();
 			case "teclas" -> this.keysChapter();
 			case "estanteria" -> this.shelfChapter();
 			case "yunque_sabes" -> this.anvilRecapChapter();
@@ -919,6 +925,8 @@ public class GuideBookScreen extends Screen {
 			case "mesa_mayor" -> new ItemStack(ModItems.MESA_DE_FORJA_MAYOR);
 			case "bienvenida" -> new ItemStack(ModItems.GUIA_DE_FORJA);
 			case "primeras_mesas" -> new ItemStack(ModItems.MESA_DE_PIEZAS);
+			case "primer_objeto" -> Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.PIEDRA, ForgeMaterial.MADERA, ForgeMaterial.MADERA));
+			case "como_funciona" -> new ItemStack(Items.CLOCK);
 			case "teclas" -> new ItemStack(Items.LEVER);
 			case "estanteria" -> new ItemStack(Items.BOOKSHELF);
 			case "yunque_sabes" -> new ItemStack(Items.WRITABLE_BOOK);
@@ -1142,36 +1150,152 @@ public class GuideBookScreen extends Screen {
 		return Math.max(1, (pages * 25 + 59) / 60);
 	}
 
-	/** The notebook's first page: what Forja is, in a few lines, and why this book is short. */
+	/** The stone pickaxe of the notebook's worked example: stone head, wooden handle, wooden binding. */
+	private static ItemStack firstPickaxe() {
+		return Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.PIEDRA, ForgeMaterial.MADERA, ForgeMaterial.MADERA));
+	}
+
+	/**
+	 * The notebook's first page: what Forja is, and the five words the rest of the book is written in, each said once
+	 * before it is used. Andy (2026-10-01) found the notebook did not explain how forging works; half of that was
+	 * "plantilla", "pieza" and "estrella" turning up in the text before anything said what they were.
+	 */
 	private List<Element> welcomeChapter() {
 		List<Element> body = new ArrayList<>();
 		body.add(new Text(Component.translatable("gui.forja.libros.bienvenida"), INK));
-		body.add(new IconRow(List.of(
-			Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.PIEDRA), Assembler.createPart(PartType.MANGO, ForgeMaterial.MADERA),
-			Assembler.createPart(PartType.ATADURA, ForgeMaterial.CUERO),
-			Assembler.create(ForgeType.PICO, List.of(ForgeMaterial.PIEDRA, ForgeMaterial.MADERA, ForgeMaterial.CUERO)))));
-		body.add(new Text(Component.translatable("gui.forja.libros.bienvenida.crece"), INK_SOFT));
+		body.add(new Formula(List.of(Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.PIEDRA), PLUS,
+			Assembler.createPart(PartType.MANGO, ForgeMaterial.MADERA), PLUS, Assembler.createPart(PartType.ATADURA, ForgeMaterial.MADERA), EQUALS,
+			firstPickaxe())));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.palabras.titulo")));
+		for (String word : List.of("mesa_piezas", "plantilla", "pieza", "mesa_forja", "objeto")) {
+			body.add(new Text(Component.translatable("gui.forja.libros.palabras." + word), INK));
+		}
 		body.add(new Divider());
-		body.add(new Text(Component.translatable("gui.forja.libros.bienvenida.libros"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.bienvenida.libros"), INK_SOFT));
 		return body;
 	}
 
-	/** The two tables and the template, with their recipes, and the first step of the path. */
+	/**
+	 * Steps 1 to 5 of the first minute, in the order they are done: what to gather, the three recipes, setting the
+	 * tables down, and the first template engraved, on a drawing of the parts table's own screen.
+	 */
 	private List<Element> firstTablesChapter() {
 		Item planks = Items.OAK_PLANKS;
 		Item iron = Items.IRON_INGOT;
 		List<Element> body = new ArrayList<>();
-		body.add(new Text(Component.translatable("gui.forja.libro.mesa_piezas"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.primeras_mesas.necesitas"), INK));
+		body.add(new Formula(List.of(new ItemStack(Items.IRON_INGOT, 6), new ItemStack(Items.GRINDSTONE), new ItemStack(Items.CRAFTING_TABLE),
+			new ItemStack(Items.OAK_PLANKS, 12), new ItemStack(Items.STICK, 4))));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.primeras_mesas.paso1")));
 		body.add(new Crafting(new Item[] {iron, iron, iron, planks, Items.GRINDSTONE, planks, planks, null, planks}, new ItemStack(ModItems.MESA_DE_PIEZAS)));
-		body.add(new Text(Component.translatable("gui.forja.libro.plantilla"), INK));
-		body.add(new Crafting(new Item[] {Items.STICK, planks, null, planks, Items.STICK, null, null, null, null}, new ItemStack(ModItems.PLANTILLA, 2)));
-		body.add(new IconRow(List.of(new ItemStack(ModItems.PLANTILLA), engravedTemplate(PartType.CABEZA_PICO),
-			Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.PIEDRA))));
-		body.add(new Text(Component.translatable("gui.forja.libro.mesa_forja"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.primeras_mesas.paso1.desc"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.primeras_mesas.paso2")));
 		body.add(new Crafting(new Item[] {iron, iron, iron, planks, Items.CRAFTING_TABLE, planks, planks, null, planks}, new ItemStack(ModItems.MESA_DE_FORJA)));
+		body.add(new Text(Component.translatable("gui.forja.libros.primeras_mesas.paso2.desc"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.primeras_mesas.paso3")));
+		body.add(new Crafting(new Item[] {Items.STICK, planks, null, planks, Items.STICK, null, null, null, null}, new ItemStack(ModItems.PLANTILLA, 2)));
+		body.add(new Text(Component.translatable("gui.forja.libros.primeras_mesas.paso3.desc"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.primeras_mesas.paso4")));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.MESA_DE_PIEZAS), new ItemStack(ModItems.MESA_DE_FORJA))));
+		body.add(new Text(Component.translatable("gui.forja.libros.primeras_mesas.paso4.desc"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.primeras_mesas.paso5")));
+		body.add(TablePanel.engraving());
+		body.add(new Text(Component.translatable("gui.forja.libros.primeras_mesas.paso5.desc"), INK));
+		body.add(new Formula(List.of(new ItemStack(ModItems.PLANTILLA), ARROW, engravedTemplate(PartType.CABEZA_PICO))));
+		body.add(new Text(Component.translatable("gui.forja.libros.primeras_mesas.paso5.fin"), INK_SOFT));
+		return body;
+	}
+
+	/**
+	 * The worked example, start to finish: a stone pickaxe, which is the first thing anybody can forge (the bench cuts
+	 * only what is worked cold; metal is poured, and the foundry comes later). Every step says which table, which slot
+	 * and what to click, on drawings of the two screens.
+	 */
+	private List<Element> firstPieceChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.primer_objeto.intro"), INK));
+		body.add(new Formula(List.of(new ItemStack(Items.COBBLESTONE, 3), new ItemStack(Items.OAK_PLANKS, 2), PLUS,
+			engravedTemplate(PartType.CABEZA_PICO), engravedTemplate(PartType.MANGO), engravedTemplate(PartType.ATADURA))));
+		body.add(new Text(Component.translatable("gui.forja.libros.primer_objeto.metal"), INK_SOFT));
+
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.primer_objeto.paso1")));
+		body.add(new IconRow(List.of(engravedTemplate(PartType.CABEZA_PICO), engravedTemplate(PartType.MANGO), engravedTemplate(PartType.ATADURA))));
+		body.add(new Text(Component.translatable("gui.forja.libros.primer_objeto.paso1.desc"), INK));
+
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.primer_objeto.paso2")));
+		body.add(TablePanel.cutting(engravedTemplate(PartType.CABEZA_PICO), new ItemStack(Items.COBBLESTONE, 3),
+			Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.PIEDRA)));
+		body.add(new Text(Component.translatable("gui.forja.libros.primer_objeto.paso2.desc", PartType.CABEZA_PICO.cost), INK));
+
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.primer_objeto.paso3")));
+		body.add(TablePanel.cutting(engravedTemplate(PartType.MANGO), new ItemStack(Items.OAK_PLANKS, 1),
+			Assembler.createPart(PartType.MANGO, ForgeMaterial.MADERA)));
+		body.add(new Text(Component.translatable("gui.forja.libros.primer_objeto.paso3.desc"), INK));
+		body.add(new Formula(List.of(Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.PIEDRA),
+			Assembler.createPart(PartType.MANGO, ForgeMaterial.MADERA), Assembler.createPart(PartType.ATADURA, ForgeMaterial.MADERA))));
+
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.primer_objeto.paso4")));
+		body.add(TablePanel.star(List.of(Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.PIEDRA),
+			Assembler.createPart(PartType.MANGO, ForgeMaterial.MADERA), Assembler.createPart(PartType.ATADURA, ForgeMaterial.MADERA)), ItemStack.EMPTY));
+		body.add(new Text(Component.translatable("gui.forja.libros.primer_objeto.paso4.desc"), INK));
+
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.primer_objeto.paso5")));
+		body.add(TablePanel.star(List.of(), firstPickaxe()));
+		body.add(new Text(Component.translatable("gui.forja.libros.primer_objeto.paso5.desc"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.primer_objeto.paso5.martillo"), INK_SOFT));
+
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.primer_objeto.paso6")));
+		body.add(new IconRow(List.of(firstPickaxe(), new ItemStack(Items.WATER_BUCKET))));
+		body.add(new Text(Component.translatable("gui.forja.libros.primer_objeto.paso6.desc", dev.forja.forge.Temple.HOT_TICKS / 20), INK));
+
 		body.add(new Divider());
-		body.add(new SubHeader(ForjaPath.Step.PLANTILLA.title()));
-		body.add(new Text(ForjaPath.Step.PLANTILLA.description(), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.primer_objeto.otros"), INK));
+		// The same three cold materials, so that every one of them can be made today with what is on this page.
+		for (ForgeType type : List.of(ForgeType.HACHA, ForgeType.PALA, ForgeType.ESPADA)) {
+			List<ForgeMaterial> materials = List.of(ForgeMaterial.PIEDRA, ForgeMaterial.MADERA, ForgeMaterial.MADERA);
+			List<Object> row = new ArrayList<>();
+			for (int i = 0; i < type.slots.size(); i++) {
+				if (i > 0) {
+					row.add(PLUS);
+				}
+				row.add(Assembler.createPart(type.slots.get(i), materials.get(i)));
+			}
+			row.add(EQUALS);
+			row.add(Assembler.create(type, materials));
+			body.add(new Formula(row));
+		}
+		body.add(new Text(Component.translatable("gui.forja.libros.primer_objeto.otros.mas"), INK_SOFT));
+		return body;
+	}
+
+	/**
+	 * How it works, short: what the material of each part changes, what the hammer's press leaves on the piece, the
+	 * potential, the quench, and where the long version is (book I).
+	 */
+	private List<Element> howItWorksChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.como_funciona.material.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.como_funciona.material"), INK));
+		List<Bar> picks = new ArrayList<>();
+		for (ForgeMaterial head : List.of(ForgeMaterial.MADERA, ForgeMaterial.PIEDRA, ForgeMaterial.HUESO, ForgeMaterial.HIERRO, ForgeMaterial.DIAMANTE)) {
+			ItemStack pick = Assembler.create(ForgeType.PICO, List.of(head, ForgeMaterial.MADERA, ForgeMaterial.MADERA));
+			picks.add(new Bar(head.displayName(), pick.getMaxDamage(), head.color, Component.literal(String.valueOf(pick.getMaxDamage()))));
+		}
+		// A heading rather than a line of text: the flow keeps a heading on the same page as what follows it.
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.como_funciona.barras")));
+		body.add(new Bars(picks));
+		body.add(new Text(Component.translatable("gui.forja.libros.como_funciona.mango"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.como_funciona.martillo.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.como_funciona.martillo",
+			Math.round(dev.forja.forge.Quality.PERFECT_BONUS * 100)), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.como_funciona.potencial.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.como_funciona.potencial", dev.forja.forge.Potential.FLOOR,
+			dev.forja.forge.Potential.PER_QUALITY, dev.forja.forge.Potential.PER_QUALITY * 2, dev.forja.menu.Station.FORJA.capacity()), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.como_funciona.temple.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.como_funciona.temple"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.como_funciona.roto.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.como_funciona.roto"), INK));
+		body.add(new Divider());
 		body.add(new Text(Component.translatable("gui.forja.libros.primeras_mesas.yunque"), INK_SOFT));
 		body.add(new BookCard(GuideBooks.Book.YUNQUE));
 		return body;
@@ -1219,17 +1343,52 @@ public class GuideBookScreen extends Screen {
 	private List<Element> anvilRecapChapter() {
 		List<Element> body = new ArrayList<>();
 		body.add(new Text(Component.translatable("gui.forja.libros.yunque_sabes"), INK));
-		body.add(new IconRow(List.of(new ItemStack(ModItems.MESA_DE_PIEZAS), new ItemStack(ModItems.MESA_DE_FORJA), engravedTemplate(PartType.CABEZA_PICO))));
-		body.add(new ChapterLink("primeras_mesas"));
+		body.add(new Formula(List.of(new ItemStack(ModItems.MESA_DE_PIEZAS), new ItemStack(ModItems.MESA_DE_FORJA), engravedTemplate(PartType.CABEZA_PICO),
+			ARROW, firstPickaxe())));
+		body.add(new ChapterLink("primer_objeto"));
 		body.add(new Text(Component.translatable("gui.forja.libros.yunque_sabes.ruta"), INK_SOFT));
 		return body;
 	}
 
-	/** Cutting parts: what the bench cuts, what a part costs and says, and where the rest of them are listed. */
+	/**
+	 * Book I's chapter on the tables: what each one is for and what its tabs do, rather than their recipes again (those
+	 * are in the notebook); the workshop and its bonus, the saddlery that completes it, and the cabinet.
+	 */
+	private List<Element> workshopChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new SubHeader(Component.translatable("block.forja.mesa_de_piezas")));
+		body.add(new Text(Component.translatable("gui.forja.libros.mesas.piezas"), INK));
+		body.add(new SubHeader(Component.translatable("block.forja.mesa_de_forja")));
+		body.add(new Text(Component.translatable("gui.forja.libros.mesas.forja"), INK));
+		body.add(new Text(Component.translatable("gui.forja.libros.mesas.estrella"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.mesas.taller.titulo")));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.MESA_DE_PIEZAS), new ItemStack(ModItems.MESA_DE_FORJA), new ItemStack(ModItems.MESA_DE_TALABARTERIA))));
+		body.add(new Text(Component.translatable("gui.forja.libros.mesas.taller", dev.forja.forge.Potential.WHOLE_WORKSHOP,
+			dev.forja.menu.ForgeMenu.WORKSHOP_RANGE), INK));
+		Item planks = Items.OAK_PLANKS;
+		Item leather = Items.LEATHER;
+		body.add(new Crafting(new Item[] {leather, leather, leather, planks, Items.SADDLE, planks, planks, null, planks},
+			new ItemStack(ModItems.MESA_DE_TALABARTERIA)));
+		body.add(new SubHeader(Component.translatable("block.forja.mesa_de_forja_mayor")));
+		body.add(new Text(Component.translatable("gui.forja.libros.mesas.mayor", dev.forja.menu.Station.BENCH.size(),
+			dev.forja.forge.Potential.GREATER_TABLE), INK));
+		body.add(new Divider());
+		body.addAll(this.cabinetEntry());
+		return body;
+	}
+
+	/** Cutting parts: what the bench cuts and what has to be poured, what a part costs and says, and the handle variants. */
 	private List<Element> cuttingChapter() {
 		List<Element> body = new ArrayList<>();
-		body.add(new Text(Component.translatable("gui.forja.libro.paso2"), INK));
-		body.add(new Text(Component.translatable("gui.forja.libro.piezas_intro"), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libros.cortar.intro"), INK));
+		// The things themselves, six to a row, each naming itself under the mouse: read off the bench's own list.
+		List<ItemStack> cut = ForgeMaterial.BASIC.stream().map(ForgeMaterial::displayStack).toList();
+		for (int from = 0; from < cut.size(); from += 6) {
+			body.add(new IconRow(cut.subList(from, Math.min(from + 6, cut.size()))));
+		}
+		body.add(new Text(Component.translatable("gui.forja.libros.cortar.colar"), INK_SOFT));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.cortar.coste.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libro.piezas_intro"), INK));
 		for (PartType part : List.of(PartType.CABEZA_PICO, PartType.HOJA, PartType.MANGO, PartType.ATADURA)) {
 			body.add(new Part(part));
 		}
@@ -1247,13 +1406,22 @@ public class GuideBookScreen extends Screen {
 	/** The star: forging, the hammer's centre, and the name every piece carries. */
 	private List<Element> starChapter() {
 		List<Element> body = new ArrayList<>();
-		body.add(new Text(Component.translatable("gui.forja.libro.paso3"), INK));
+		body.add(TablePanel.star(List.of(Assembler.createPart(PartType.CABEZA_PICO, ForgeMaterial.PIEDRA),
+			Assembler.createPart(PartType.MANGO, ForgeMaterial.MADERA), Assembler.createPart(PartType.ATADURA, ForgeMaterial.MADERA)), ItemStack.EMPTY));
+		body.add(new Text(Component.translatable("gui.forja.libros.estrella.intro"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libro.perfecta.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.estrella.martillo", Math.round(dev.forja.forge.Quality.PERFECT_BONUS * 100),
+			dev.forja.forge.Potential.PER_QUALITY * 2, dev.forja.forge.Potential.PER_QUALITY), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.estrella.potencial.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.estrella.potencial", dev.forja.forge.Potential.FLOOR,
+			dev.forja.forge.Potential.PER_QUALITY * 2, dev.forja.forge.Potential.PER_SMITH_LEVEL, dev.forja.forge.Potential.WHOLE_WORKSHOP,
+			dev.forja.forge.Potential.GREATER_TABLE, dev.forja.forge.Potential.CAST_PARTS), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.estrella.banco.titulo")));
+		body.add(new Text(Component.translatable("gui.forja.libros.estrella.banco", dev.forja.menu.Station.BENCH.size()), INK));
 		for (ForgeType type : List.of(ForgeType.PICO, ForgeType.HACHA, ForgeType.ESPADA)) {
 			body.add(new Recipe(type));
 		}
 		body.add(new ChapterLink("objetos"));
-		body.add(new SubHeader(Component.translatable("gui.forja.libro.perfecta.titulo")));
-		body.add(new Text(Component.translatable("gui.forja.libro.perfecta"), INK));
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.firma.titulo")));
 		body.add(new Text(Component.translatable("gui.forja.libro.firma", Math.round(dev.forja.forge.Quality.AFFINITY_BONUS * 100)), INK));
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.historia.titulo")));
@@ -1264,8 +1432,8 @@ public class GuideBookScreen extends Screen {
 	/** Upgrading at the first table: what goes on the points, how far this table takes it, books and orbs. */
 	private List<Element> improvingChapter() {
 		List<Element> body = new ArrayList<>();
-		body.add(new Text(Component.translatable("gui.forja.libro.paso4"), INK));
-		body.add(new Text(Component.translatable("gui.forja.libro.mejoras_intro"), INK_SOFT));
+		body.add(TablePanel.star(List.of(new ItemStack(Items.SUGAR, 16)), firstPickaxe()));
+		body.add(new Text(Component.translatable("gui.forja.libros.mejorar.pasos"), INK));
 		for (Upgrade upgrade : List.of(Upgrade.FILO, Upgrade.EFICIENCIA, Upgrade.FORTUNA, Upgrade.PROTECCION)) {
 			body.add(new UpgradeEntry(upgrade));
 		}
@@ -5197,6 +5365,306 @@ public class GuideBookScreen extends Screen {
 	 * "En una página": the whole of a part of the book in a few lines, on a shaded card, first thing in it. For the
 	 * reader who wants the gist and nothing more (Andy: a long book, well sectioned, that does not scare).
 	 */
+	/** The signs a {@link Formula} writes between its items. */
+	private static final String PLUS = "+";
+	private static final String EQUALS = "=";
+	private static final String ARROW = "→";
+
+	/** An item drawn at any size, with its count when it has more than one. */
+	private static void itemAt(GuiGraphicsExtractor g, Font font, ItemStack stack, float x, float y, float scale) {
+		if (stack.isEmpty()) {
+			return;
+		}
+		g.pose().pushMatrix();
+		g.pose().translate(x, y);
+		g.pose().scale(scale, scale);
+		g.item(stack, 0, 0);
+		g.itemDecorations(font, stack, 0, 0);
+		g.pose().popMatrix();
+	}
+
+	/**
+	 * A line of items with signs between them, read left to right: "3 roca + plantilla = cabeza". A recipe of the
+	 * forge is not a crafting grid, and a row of icons with nothing between them does not say which way it goes.
+	 * Items show their count, and each answers the mouse with its own tooltip.
+	 */
+	private final class Formula extends Element {
+		private static final int ITEM = 18;
+		private static final int SIGN = 9;
+		private final List<?> parts;
+
+		Formula(List<?> parts) {
+			this.parts = parts;
+		}
+
+		private int span() {
+			int total = 0;
+			for (Object part : this.parts) {
+				total += part instanceof ItemStack ? ITEM : SIGN;
+			}
+			return total - 2;
+		}
+
+		@Override
+		int height() {
+			return 22;
+		}
+
+		@Override
+		int widest(Font font) {
+			return this.span();
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			int at = x + (CONTENT_W - this.span()) / 2;
+			for (Object part : this.parts) {
+				if (part instanceof ItemStack stack) {
+					itemAt(g, screen.font, stack, at, y + 3, 1.0F);
+					at += ITEM;
+				} else {
+					String sign = String.valueOf(part);
+					g.text(screen.font, sign, at + (SIGN - 2 - screen.font.width(sign)) / 2, y + 7, INK_SOFT, false);
+					at += SIGN;
+				}
+			}
+		}
+
+		@Override
+		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
+			int at = x + (CONTENT_W - this.span()) / 2;
+			for (Object part : this.parts) {
+				if (part instanceof ItemStack stack) {
+					if (!stack.isEmpty() && over(mouseX, mouseY, at, y + 3, 16, 16)) {
+						return stack;
+					}
+					at += ITEM;
+				} else {
+					at += SIGN;
+				}
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * One of the tables' own screens, drawn small from its real texture with things laid in its slots and numbered
+	 * marks on what to fill or click, so that a step can say "(1)" and the reader can see where 1 is. Everything is
+	 * placed in the texture's own coordinates (ForgeMenu's slot positions), so the picture is the screen the player
+	 * will open, not a sketch of it.
+	 */
+	private static final class TablePanel extends Element {
+		private static final net.minecraft.resources.Identifier PARTS = dev.forja.Forja.id("textures/gui/mesa_de_piezas.png");
+		private static final net.minecraft.resources.Identifier FORGE = dev.forja.Forja.id("textures/gui/mesa_de_forja.png");
+		/** The mark's colour: the rubric red the text uses for the words it wants seen. */
+		private static final int MARK = 0xFF000000 | GuideText.RUBRIC;
+
+		/** Something laid on the screen, at the slot's own corner in texture pixels. */
+		private record Shown(int u, int v, ItemStack stack) {
+		}
+
+		/** A numbered mark, its centre in texture pixels. */
+		private record Mark(int u, int v, int number) {
+		}
+
+		private final net.minecraft.resources.Identifier texture;
+		private final int u0;
+		private final int v0;
+		private final int w;
+		private final int h;
+		private final List<Shown> shown = new ArrayList<>();
+		private final List<Mark> marks = new ArrayList<>();
+		/** The parts table's pattern grid, which the screen draws in code and the texture leaves blank. */
+		private boolean patterns;
+		/** The forge button and the hammer's rail under it, likewise drawn in code. */
+		private boolean button;
+		/** What the button says: the star's Forjar, or Mejorar with a piece in the centre and an ingredient on a point. */
+		private String buttonKey = "forjar";
+		/** What the forge table's panel on the right says it would make. */
+		private ItemStack preview = ItemStack.EMPTY;
+
+		private TablePanel(net.minecraft.resources.Identifier texture, int u0, int v0, int w, int h) {
+			this.texture = texture;
+			this.u0 = u0;
+			this.v0 = v0;
+			this.w = w;
+			this.h = h;
+		}
+
+		/** The parts table with a blank template in its slot and the pattern grid lit: (1) the template, (2) the shape. */
+		static TablePanel engraving() {
+			TablePanel panel = new TablePanel(PARTS, 4, 17, 200, 92);
+			panel.patterns = true;
+			panel.shown.add(new Shown(TEMPLATE_U, ROW_V, new ItemStack(ModItems.PLANTILLA)));
+			panel.marks.add(new Mark(TEMPLATE_U - 2, ROW_V - 2, 1));
+			// Beside the cell rather than on it, so the shape to click stays in sight.
+			panel.marks.add(new Mark(GRID_X + GRID_CELL + 4, GRID_Y + 3, 2));
+			return panel;
+		}
+
+		/** The parts table's row of slots: (1) the engraved template, (2) the material, (3) the part to take. */
+		static TablePanel cutting(ItemStack template, ItemStack material, ItemStack part) {
+			TablePanel panel = new TablePanel(PARTS, 12, 78, 154, 32);
+			panel.shown.add(new Shown(TEMPLATE_U, ROW_V, template));
+			panel.shown.add(new Shown(MATERIAL_U, ROW_V, material));
+			panel.shown.add(new Shown(RESULT_U, ROW_V, part));
+			panel.marks.add(new Mark(TEMPLATE_U - 2, ROW_V - 2, 1));
+			panel.marks.add(new Mark(MATERIAL_U - 2, ROW_V - 2, 2));
+			panel.marks.add(new Mark(RESULT_U - 4, ROW_V - 4, 3));
+			return panel;
+		}
+
+		/**
+		 * The forge table's star. Its marks follow the order the work is done in: with things on the points and the
+		 * centre empty, (1) the points, (2) the panel that says what comes out, (3) Forjar; with nothing on the points,
+		 * (1) Forjar and (2) the piece to take from the centre; with both, (1) the piece, (2) the points, (3) Forjar.
+		 */
+		static TablePanel star(List<ItemStack> points, ItemStack centre) {
+			TablePanel panel = new TablePanel(FORGE, 4, 12, 200, 100);
+			panel.button = true;
+			for (int i = 0; i < points.size() && i < dev.forja.menu.ForgeMenu.STAR_POINTS.length; i++) {
+				panel.shown.add(new Shown(dev.forja.menu.ForgeMenu.STAR_POINTS[i][0], dev.forja.menu.ForgeMenu.STAR_POINTS[i][1], points.get(i)));
+			}
+			panel.shown.add(new Shown(dev.forja.menu.ForgeMenu.CENTER_X, dev.forja.menu.ForgeMenu.CENTER_Y, centre));
+			int[] point = dev.forja.menu.ForgeMenu.STAR_POINTS[0];
+			int buttonU = FORGE_BUTTON_U + 4;
+			int buttonV = FORGE_BUTTON_V + 2;
+			if (!points.isEmpty() && centre.isEmpty()) {
+				var level = net.minecraft.client.Minecraft.getInstance().level;
+				if (level != null && points.stream().allMatch(stack -> stack.getItem() instanceof dev.forja.item.PartItem)) {
+					List<ItemStack> parts = points.stream().map(stack -> stack.copyWithCount(1)).toList();
+					panel.preview = Assembler.evaluate(parts, level.registryAccess()).stack();
+				}
+				panel.marks.add(new Mark(point[0] - 2, point[1] - 2, 1));
+				panel.marks.add(new Mark(INFO_U + 4, INFO_V + 4, 2));
+				panel.marks.add(new Mark(buttonU, buttonV, 3));
+			} else if (points.isEmpty()) {
+				panel.marks.add(new Mark(buttonU, buttonV, 1));
+				panel.marks.add(new Mark(dev.forja.menu.ForgeMenu.CENTER_X - 2, dev.forja.menu.ForgeMenu.CENTER_Y - 2, 2));
+			} else {
+				panel.buttonKey = "mejorar";
+				panel.marks.add(new Mark(dev.forja.menu.ForgeMenu.CENTER_X - 2, dev.forja.menu.ForgeMenu.CENTER_Y - 2, 1));
+				panel.marks.add(new Mark(point[0] - 2, point[1] - 2, 2));
+				panel.marks.add(new Mark(buttonU, buttonV, 3));
+			}
+			return panel;
+		}
+
+		/** The parts table's row of slots (ForgeMenu's template, material and result slots). */
+		private static final int TEMPLATE_U = 22;
+		private static final int MATERIAL_U = 64;
+		private static final int RESULT_U = 136;
+		private static final int ROW_V = 85;
+		/** Where ForgeScreen puts its pattern grid, the panel on the right and the forge button (its constants). */
+		private static final int GRID_X = 7;
+		private static final int GRID_Y = 21;
+		private static final int GRID_CELL = 16;
+		private static final int GRID_ROW = 15;
+		private static final int GRID_COLUMNS = 12;
+		private static final int INFO_U = 111;
+		private static final int INFO_V = 19;
+		private static final int FORGE_BUTTON_U = 110;
+		private static final int FORGE_BUTTON_V = 88;
+		private static final int FORGE_BUTTON_W = 91;
+		private static final int FORGE_BUTTON_H = 15;
+
+		private float scale() {
+			return CONTENT_W / (float) this.w;
+		}
+
+		@Override
+		int height() {
+			return Math.round(this.h * this.scale()) + 4;
+		}
+
+		@Override
+		int widest(Font font) {
+			return CONTENT_W;
+		}
+
+		@Override
+		void draw(GuideBookScreen screen, GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+			float scale = this.scale();
+			g.pose().pushMatrix();
+			g.pose().translate(x, y + 2);
+			g.pose().scale(scale, scale);
+			g.pose().translate(-this.u0, -this.v0);
+			// The texture, cut to the part of the screen this step is about.
+			g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, this.texture, this.u0, this.v0, this.u0, this.v0, this.w, this.h, 256, 256);
+			if (this.patterns) {
+				PartType[] parts = PartType.values();
+				for (int i = 0; i < parts.length; i++) {
+					int bx = GRID_X + i % GRID_COLUMNS * GRID_CELL;
+					int by = GRID_Y + i / GRID_COLUMNS * GRID_ROW;
+					g.fill(bx, by, bx + GRID_CELL, by + GRID_CELL, i == 0 ? 0xFFD9A15A : 0xFF9C8E78);
+					g.fill(bx, by + GRID_CELL - 1, bx + GRID_CELL, by + GRID_CELL, 0xFF5E5244);
+					g.item(Assembler.createPart(parts[i], parts[i].showcase()), bx, by);
+				}
+				// The shape the step is about, ringed in the marks' red.
+				g.outline(GRID_X - 1, GRID_Y - 1, GRID_CELL + 2, GRID_CELL + 2, MARK);
+			}
+			if (this.button) {
+				int bx = FORGE_BUTTON_U;
+				int by = FORGE_BUTTON_V;
+				g.fill(bx, by, bx + FORGE_BUTTON_W, by + FORGE_BUTTON_H, 0xFF5A3A18);
+				g.fill(bx + 1, by + 1, bx + FORGE_BUTTON_W - 1, by + FORGE_BUTTON_H - 1, 0xFFB8733A);
+				Component label = Component.translatable("gui.forja.boton." + this.buttonKey);
+				g.text(screen.font, label, bx + (FORGE_BUTTON_W - screen.font.width(label)) / 2, by + 4, 0xFFFFF4E0, false);
+			}
+			if (this.button && this.buttonKey.equals("forjar")) {
+				// The rail and its lit middle, with the hammer on its way across: only a piece being born takes a press.
+				int bx = FORGE_BUTTON_U;
+				int railY = FORGE_BUTTON_V + FORGE_BUTTON_H + 2;
+				g.fill(bx, railY, bx + FORGE_BUTTON_W, railY + 5, 0xFF2B2216);
+				int centre = bx + FORGE_BUTTON_W / 2;
+				g.fill(centre - 10, railY, centre + 10, railY + 5, 0xFF7A4A1C);
+				g.fill(centre - 4, railY, centre + 4, railY + 5, 0xFFE8A33C);
+				int hammer = bx + FORGE_BUTTON_W / 4;
+				g.fill(hammer + 2, railY - 4, hammer + 3, railY + 1, 0xFF8A5A2C);
+				g.fill(hammer, railY - 1, hammer + 5, railY + 3, 0xFFE8E0D0);
+			}
+			if (!this.preview.isEmpty()) {
+				g.item(this.preview, INFO_U + 4, INFO_V + 12);
+				g.pose().pushMatrix();
+				g.pose().translate(INFO_U + 23, INFO_V + 16);
+				g.pose().scale(0.8F, 0.8F);
+				g.text(screen.font, screen.font.plainSubstrByWidth(this.preview.getHoverName().getString(), 80), 0, 0, 0xFFE8E0D0, false);
+				g.pose().popMatrix();
+			}
+			for (Shown thing : this.shown) {
+				itemAt(g, screen.font, thing.stack(), thing.u(), thing.v(), 1.0F);
+			}
+			g.pose().popMatrix();
+			// The marks last, at the page's own size: a number shrunk with the screen would be unreadable.
+			for (Mark mark : this.marks) {
+				int mx = Math.round(x + (mark.u() - this.u0) * scale);
+				int my = Math.round(y + 2 + (mark.v() - this.v0) * scale);
+				g.fill(mx - 4, my - 4, mx + 5, my + 5, 0xFFF4E9CC);
+				g.fill(mx - 3, my - 3, mx + 4, my + 4, MARK);
+				String number = String.valueOf(mark.number());
+				g.pose().pushMatrix();
+				g.pose().translate(mx - screen.font.width(number) * 0.35F + 0.5F, my - 2.5F);
+				g.pose().scale(0.75F, 0.75F);
+				g.text(screen.font, number, 0, 0, 0xFFFFFFFF, false);
+				g.pose().popMatrix();
+			}
+		}
+
+		@Override
+		@Nullable Object tooltip(int x, int y, int mouseX, int mouseY) {
+			float scale = this.scale();
+			for (Shown thing : this.shown) {
+				int sx = Math.round(x + (thing.u() - this.u0) * scale);
+				int sy = Math.round(y + 2 + (thing.v() - this.v0) * scale);
+				int size = Math.round(16 * scale);
+				if (!thing.stack().isEmpty() && over(mouseX, mouseY, sx, sy, size, size)) {
+					return thing.stack();
+				}
+			}
+			return null;
+		}
+	}
+
 	private final class Summary extends Element {
 		private final List<FormattedCharSequence> lines;
 		private final Component label = Component.translatable("gui.forja.libros.en_una_pagina");

@@ -624,11 +624,11 @@ GUI = {
     "gui.forja.camino.plantilla": ("Graba una plantilla", "Engrave a template"),
     "gui.forja.camino.plantilla.desc": (
         "En la **mesa de piezas** (hierro, una piedra de afilar y tablones) pon una **plantilla** en blanco "
-        "en su ranura y elige una forma: cabeza de pico, hoja, mango... Queda grabada para siempre, y la "
-        "plantilla no se gasta.",
-        "At the **parts table** (iron, a grindstone and planks) set a blank **template** in its slot and "
-        "pick a shape: pickaxe head, blade, handle... It stays engraved for good, and the template is never "
-        "used up.",
+        "en la casilla de la izquierda y haz clic en una de las formas de arriba: cabeza de pico, hoja, "
+        "mango... Queda grabada para siempre, y la plantilla no se gasta.",
+        "At the **parts table** (iron, a grindstone and planks) set a blank **template** in the left-hand "
+        "slot and click one of the shapes above it: pickaxe head, blade, handle... It stays engraved for "
+        "good, and the template is never used up.",
     ),
     "gui.forja.camino.pieza": ("Corta tu primera pieza", "Cut your first part"),
     "gui.forja.camino.pieza.desc": (
@@ -1063,8 +1063,8 @@ GUI = {
         "No hay bloque que dé este calor: sólo el crisol de obsidiana o el aliento de forja por un tubo, y sólo así se hacen estas tres",
         "No block gives this heat: only the obsidian crucible or forge breath down a pipe, and only so are these three made"),
 
-    "gui.forja.libro.temple_intro": ("Una pieza recién forjada sale caliente y lo sigue estando %s segundos. Si en ese rato la apagas en algo, ese algo se queda en el acero para siempre: un temple por pieza y no hay manera de cambiarlo. Métete al agua, a la lava, a la nieve polvo o ponte sobre un bloque de miel llevándola encima.",
-                                      "A freshly forged piece comes out hot and stays that way for %s seconds. Put that heat out in something in that time and it stays in the steel for good: one quench per piece, and there is no changing it. Step into water, into lava, into powder snow, or stand on a honey block while carrying it."),
+    "gui.forja.libro.temple_intro": ("Una pieza recién forjada sale caliente y lo sigue estando %s segundos. Si en ese rato la apagas en algo, ese algo se queda en el acero para siempre: un temple por pieza y no hay manera de cambiarlo. Con ella en la mano o puesta, métete al agua, a la lava, a la nieve polvo o ponte sobre un bloque de miel; lo que llevas en la mochila no se templa.",
+                                      "A freshly forged piece comes out hot and stays that way for %s seconds. Put that heat out in something in that time and it stays in the steel for good: one quench per piece, and there is no changing it. Holding it or wearing it, step into water, into lava, into powder snow, or stand on a honey block; what is in your bag is not quenched."),
 
     "gui.forja.libro.herrero_intro": ("Aparte de la maestría de cada objeto, tú también aprendes. Forjar, cambiar piezas, mejorar y grabar dones suben tu maestría de herrero hasta el nivel %s, y eso te sigue a todas las mesas: la ventana del martillo es más ancha, cada ingrediente da un poco más de porcentaje, y lo que sale de tu estrella nace ya rodado. Míralo con /forja herrero.",
                                        "Beyond the Maestria of each piece, you learn too. Forging, swapping parts, upgrading and engraving gifts raise your smith Maestria up to level %s, and it follows you to every table: the hammer window is wider, every ingredient gives a little more percent, and what leaves your star is already broken in. Check it with /forja herrero."),

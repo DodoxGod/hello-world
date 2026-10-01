@@ -264,27 +264,43 @@ vez, y el más largo que se abre en las primeras horas tiene 52.
 
 ### 2.3 Qué lleva cada libro
 
-**0 · Cuaderno del aprendiz (~12 págs.).** El centro de todo, corto y amable.
+**0 · Cuaderno del aprendiz (~12 págs.; 33 desde la reescritura del 2026-10-01, ver 6).** El centro de todo. Lleva
+a un jugador nuevo, sin otro libro, desde cero hasta su primer objeto forjado.
 
-1. **Bienvenido a la forja** (1 pág.): de qué va Forja en cinco líneas. Las piezas hacen el objeto, el material
-   cambia lo que da, y el objeto crece contigo.
-2. **Tus dos primeras mesas** (3 págs.): recetas de la mesa de piezas, la mesa de forja y la plantilla. Graba tu
-   primera plantilla (paso 1 del camino).
-3. **Tus teclas** (1 pág.): G, la biblioteca; Alt, esquivar; K, V y B, las clases. Todas se cambian en Controles.
+1. **Bienvenido a la forja** (3 págs.): un pico son tres piezas y el material decide cómo sale. Después, **cinco
+   palabras** (mesa de piezas, plantilla, pieza, mesa de forja con su estrella, objeto forjado), cada una definida
+   antes de que el texto la use.
+2. **Prepara tu taller** (clave `primeras_mesas`, 5 págs.): qué reunir (6 hierros, piedra de afilar, mesa de
+   crafteo, tablones, palos) y los pasos 1 a 5 numerados. Las recetas de las dos mesas y de la plantilla, poner las
+   mesas, y grabar la primera plantilla sobre un dibujo de la pantalla real de la mesa de piezas con marcas
+   numeradas. Es el paso 1 del camino.
+3. **Tu primer pico** (`primer_objeto`, 8 págs.): el ejemplo completo, un pico de piedra. Graba tres plantillas,
+   corta la cabeza (3 de roca) y luego el mango y la atadura (un tablón cada uno). Pon las piezas en la estrella,
+   forja y para el martillo, y témplalo si quieres. Cada paso lleva el dibujo de la pantalla con sus marcas (1), (2),
+   (3). Explica por qué es de piedra: el metal no se corta, se cuela. Acaba con el hacha, la pala y la espada.
+4. **Cómo funciona** (`como_funciona`, 5 págs.): qué cambia el material, con la durabilidad del mismo pico según la
+   cabeza; el martillo y la pieza perfecta; el potencial; el temple; lo roto no se pierde. Al final, la tarjeta de
+   El yunque.
+5. **Tus teclas** (1 pág.): G, la biblioteca; Alt, esquivar; K, V y B, las clases. Todas se cambian en Controles.
 4. **El camino del herrero** (2 págs.): los 10 pasos en cuatro tramos, cada uno con el libro que lo explica, y tu
    marca en cada uno.
 5. **La estantería** (4 págs.): cada libro con su portada en pequeño, qué cuenta, **cuándo se aprende** y **su receta**
    dibujada. Los que ya tienes salen en color; los que no, en sombra, con la condición.
 6. **Siguiente** (1 pág.): "Graba tu primera plantilla y aprenderás la receta de *El yunque*."
 
-**I · El yunque (~26 págs.).** El taller de las primeras horas.
+**I · El yunque (~26 págs.).** El taller de las primeras horas: el porqué de lo que el Cuaderno hace hacer.
 
-- Lo que ya sabes (1).
-- Las mesas y el armario (4).
-- Piezas: qué se corta, cuánto cuesta y el rasgo del material (4). Paso 2.
-- La estrella: forjar y el martillo perfecto (3). Paso 3.
+- Lo que ya sabes (1): enlaza con «Tu primer pico».
+- Las mesas (4): para qué es cada una y sus pestañas, qué hace la estrella según lo que le pongas, el taller completo
+  con la talabartería (+5 de potencial), qué deja para la mesa mayor, y el armario. Las recetas ya no se repiten:
+  están en el Cuaderno.
+- Qué se corta (4): los materiales que acepta la mesa de piezas, sacados de `ForgeMaterial.BASIC`; qué se cuela; lo
+  que cuesta cada pieza; mangos y ataduras pesados o ligeros. Paso 2.
+- La estrella (5): el dibujo de la pantalla, el martillo con sus números (perfecta +5 % y +10 de potencial; buena,
+  +5), el potencial y de dónde sale, qué monta la primera mesa, firma e historia. Paso 3.
 - El temple (2). Paso 4.
-- Mejorar: ingredientes, porcentajes, el tope de esta mesa, libros encantados y orbes (5). Paso 5.
+- Mejorar: los tres pasos sobre el dibujo de la estrella, ingredientes, porcentajes, el tope de esta mesa, libros
+  encantados y orbes (5). Paso 5.
 - Desarmar, orbes y reparar; lo roto no se pierde (3).
 - Tu firma y la historia del objeto (1).
 - Cómo leer los colores, y el catálogo (2).
@@ -572,3 +588,47 @@ cliente:
 - **Hojas de contactos**, cada una con copia .jpg de menos de 3 MB, en
   `E:\IA\Claude\Forja_capturas_mejoras\libros\`: `portadas`, `cuaderno`, `yunque`, `combate`, `fundicion`,
   `mesa_mayor`, `clases`, `bastion`, `cementerio`, `biblioteca`, `probador` y `estanteria`.
+
+### Cuarta entrega (2026-10-01): el Cuaderno enseña a forjar
+
+Andy: "el libro no se entiende bien del cómo funciona la forja y cómo hacer una". Leídos como un jugador nuevo, el
+Cuaderno y El yunque fallaban en esto:
+
+- **El Cuaderno no llegaba a forjar nada.** Se paraba en grabar la plantilla. Cortar y forjar estaban en El yunque,
+  que pide un libro de vanilla, y ese libro pide cuero.
+- **Palabras antes de explicarlas.** Plantilla, pieza, objeto, estrella, orbes, porcentaje, maestría y sinergia
+  salían antes de decir qué eran. El párrafo de la mesa de piezas empezaba por *desarmar* y los orbes.
+- **Ejemplos que no se pueden hacer.** "Una cabeza de diamante sobre un mango de hueso" y la cabeza de pico de hierro
+  del dibujo: el diamante y el hierro no se cortan, se cuelan, y la fundición llega mucho después.
+- **Faltaban datos.** Hacen falta tres plantillas para un pico, porque cada una lleva una sola forma. No se decía en
+  qué casilla va la plantilla ni dónde se hace clic para grabarla.
+- **El martillo, mal contado.** "Suéltalo en el centro", cuando en realidad se hace clic para lanzarlo y otro clic
+  para pararlo. Tampoco decía que fallar no estropea nada, ni que el martillo da potencial.
+- **El temple, contra el código.** "Llevándola encima" no vale: `Temple.register` solo templa lo que llevas en la
+  mano o puesto. Corregido también en el tomo (`gui.forja.libro.temple_intro`).
+- **El yunque repetía las recetas del Cuaderno.** Además ponía la receta de la mesa mayor, que lleva damasco. En
+  «Corta las piezas» hablaba de la caja de moldeo antes de explicar el corte en frío.
+- **Páginas que describen en vez de guiar.** No había ningún paso numerado ni ningún dibujo de las pantallas.
+
+**Cómo queda.** El Cuaderno lleva al jugador de cero a su primer pico, y El yunque explica el porqué (ver 2.3).
+Elementos nuevos de la página en `GuideBookScreen`:
+
+- `Formula`: objetos con +, = y →, con su cantidad.
+- `TablePanel`: la textura real de la mesa de piezas o de la de forja, recortada, con objetos en sus casillas y
+  marcas numeradas. En la mesa de piezas, la rejilla de formas o la fila de casillas; en la de forja, la estrella, el
+  panel con lo que va a salir y el botón con la barra del martillo.
+
+Los números salen del código: coste de la cabeza, segundos de calor, +5 % de la perfecta, potencial de base y del
+martillo, tope de la primera mesa, alcance y bonus del taller, cuántos objetos monta la primera mesa, y la lista de
+materiales que se cortan.
+
+**Páginas medidas en la prueba del cliente:**
+
+| Libro | Páginas | Capítulos (página donde empiezan) |
+|---|---:|---|
+| Cuaderno del aprendiz | 33 | bienvenida 4, prepara tu taller 7, tu primer pico 12, cómo funciona 20, teclas 25, siguiente paso 27, los libros 29 |
+| I · El yunque | 37 | lo que ya sabes 5, mesas 7, qué se corta 12, la estrella 20, temple 25, mejorar 27, probador 31, desarmar 32, estadísticas 35, siguiente 36 |
+
+El Cuaderno pasa de 19 a 33 páginas (unos 14 minutos de lectura). Es más largo, pero de esas páginas, 13 son el
+ejemplo paso a paso con sus dibujos. La hoja de antes y después está en
+`E:\IA\Claude\Forja_capturas_mejoras\libro_forjar\libro_forjar_antes_despues.jpg`.

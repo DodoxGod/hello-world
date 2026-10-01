@@ -9,15 +9,15 @@ BOOKS = {
     "item.forja.libro_yunque": ("El yunque", "The Anvil"),
     "item.forja.tomo_de_forja": ("Tomo completo de la forja", "Complete Forge Tome"),
     "gui.forja.libros.cuaderno.titulo": ("Cuaderno del aprendiz", "Apprentice's Notebook"),
-    "gui.forja.libros.cuaderno.lema": ("Empezar y los libros", "Starting, and the books"),
+    "gui.forja.libros.cuaderno.lema": ("De cero a tu primer pico", "From nothing to your first pickaxe"),
     "gui.forja.libros.cuaderno.cuando": ("siempre: si lo pierdes, se vuelve a hacer", "always: lose it and make another"),
     "gui.forja.libros.cuaderno.portada": (
         "Forja es un mod de herrería: haces tus herramientas, armas y armaduras pieza a pieza, y cada material cambia lo "
-        "que dan. Este cuaderno es corto a propósito. Te enseña a empezar, te dice qué hacer después y cómo se hacen los "
-        "demás libros, que irás fabricando cuando te hagan falta.",
+        "que dan. Este cuaderno te lleva paso a paso, desde cero, hasta tu primer pico forjado. Luego te dice qué hacer "
+        "después y cómo se hacen los demás libros, que irás fabricando cuando te hagan falta.",
         "Forja is a smithing mod: you make your tools, weapons and armour part by part, and every material changes what "
-        "they give. This notebook is short on purpose. It shows you how to start, tells you what to do next and how the "
-        "other books are made, which you will craft as you need them."),
+        "they give. This notebook takes you step by step, from nothing, to your first forged pickaxe. Then it tells you "
+        "what to do next and how the other books are made, which you will craft as you need them."),
     "gui.forja.libros.yunque.titulo": ("El yunque", "The Anvil"),
     "gui.forja.libros.yunque.lema": ("Piezas, temple y mejoras", "Parts, quench and upgrades"),
     "gui.forja.libros.yunque.cuando": ("al grabar tu primera plantilla", "when you engrave your first template"),
@@ -76,11 +76,13 @@ BOOKS = {
 
     # ---- chapters and sections
     "gui.forja.libro.cap.bienvenida": ("Bienvenido a la forja", "Welcome to the Forge"),
-    "gui.forja.libro.cap.primeras_mesas": ("Tus dos primeras mesas", "Your First Two Tables"),
+    "gui.forja.libro.cap.primeras_mesas": ("Prepara tu taller", "Set Up Your Workshop"),
+    "gui.forja.libro.cap.primer_objeto": ("Tu primer pico", "Your First Pickaxe"),
+    "gui.forja.libro.cap.como_funciona": ("Cómo funciona", "How It Works"),
     "gui.forja.libro.cap.teclas": ("Tus teclas", "Your Keys"),
     "gui.forja.libro.cap.estanteria": ("Los libros", "The Books"),
     "gui.forja.libro.cap.yunque_sabes": ("Lo que ya sabes", "What You Know"),
-    "gui.forja.libro.cap.cortar": ("Corta las piezas", "Cutting Parts"),
+    "gui.forja.libro.cap.cortar": ("Qué se corta", "What Gets Cut"),
     "gui.forja.libro.cap.estrella": ("La estrella", "The Star"),
     "gui.forja.libro.cap.mejorar": ("Mejorar", "Upgrading"),
     "gui.forja.libro.cap.desarmar": ("Desarmar y reparar", "Salvage and Repair"),
@@ -98,29 +100,176 @@ BOOKS = {
 
     # ---- the notebook
     "gui.forja.libros.bienvenida": (
-        "Aquí nada sale de la mesa de crafteo hecho y derecho. Una **plantilla** te da una **pieza**, tres piezas te dan un "
-        "**objeto**, y el objeto es de los materiales que pusiste: una cabeza de diamante sobre un mango de hueso es otra "
-        "herramienta que una de hierro sobre madera.",
-        "Nothing here comes off the crafting table ready-made. A **template** gives you a **part**, three parts give you an "
-        "**item**, and the item is made of the materials you put in: a diamond head on a bone handle is a different tool "
-        "from an iron one on wood."),
-    "gui.forja.libros.bienvenida.crece": (
-        "Y lo que forjas crece contigo: se mejora, se templa, gana maestría al usarlo y, si se gasta, se queda roto "
-        "esperando a que lo repares, no desaparece.",
-        "And what you forge grows with you: it is upgraded, quenched, gains mastery as you use it and, when it wears out, "
-        "it stays broken waiting to be mended; it does not vanish."),
+        "En Forja no sacas un pico hecho de la mesa de crafteo: lo **montas con piezas**. Un pico son tres: la **cabeza**, "
+        "el **mango** y la **atadura** que las une. Cada pieza puede ser de un material distinto, y el material decide cómo "
+        "sale: cuánto dura, lo rápido que pica y lo que pega.",
+        "In Forja you do not take a finished pickaxe off the crafting table: you **build it from parts**. A pickaxe is "
+        "three: the **head**, the **handle** and the **binding** that holds them together. Each part can be a different "
+        "material, and the material decides how it turns out: how long it lasts, how fast it digs and how hard it hits."),
+    "gui.forja.libros.palabras.titulo": ("Cinco palabras", "Five words"),
+    "gui.forja.libros.palabras.mesa_piezas": (
+        "**Mesa de piezas**: el bloque donde cortas las piezas.",
+        "**Parts table**: the block where you cut parts."),
+    "gui.forja.libros.palabras.plantilla": (
+        "**Plantilla**: una tablilla con la forma de una pieza grabada. Le dice a la mesa de piezas qué cortar, y no se "
+        "gasta nunca.",
+        "**Template**: a board with the shape of one part engraved on it. It tells the parts table what to cut, and it is "
+        "never used up."),
+    "gui.forja.libros.palabras.pieza": (
+        "**Pieza**: una parte de un objeto: cabeza, hoja, mango, atadura, placa...",
+        "**Part**: one piece of an item: a head, a blade, a handle, a binding, a plate..."),
+    "gui.forja.libros.palabras.mesa_forja": (
+        "**Mesa de forja**: el bloque donde juntas las piezas. Su pantalla es una **estrella** de cinco puntas.",
+        "**Forge table**: the block where you put the parts together. Its screen is a five-pointed **star**."),
+    "gui.forja.libros.palabras.objeto": (
+        "**Objeto forjado**: lo que sale de la estrella, sea herramienta, arma o armadura. Crece contigo: se templa, se "
+        "mejora y, si se rompe, se repara.",
+        "**Forged item**: what comes out of the star, be it a tool, a weapon or armour. It grows with you: it is quenched, "
+        "upgraded and, when it breaks, mended."),
     "gui.forja.libros.bienvenida.libros": (
-        "No hace falta saberlo todo al principio. Cada parte del mod tiene su **libro**, y cada libro se fabrica con un "
-        "libro y algo de lo que explica. Su receta la aprendes sola cuando llegas ahí. Las encontrarás todas en «Los "
-        "libros», al final de este cuaderno.",
-        "You do not need to know it all at the start. Each part of the mod has its **book**, and each book is crafted from a "
-        "book and something out of what it explains. You learn its recipe on your own when you get there. You will find "
-        "them all under \"The Books\", at the end of this notebook."),
+        "Este cuaderno te lleva hasta tu primer pico. Lo demás viene en otros **libros**, que fabricas cuando llegas ahí: "
+        "los tienes todos en «Los libros», al final.",
+        "This notebook takes you as far as your first pickaxe. The rest comes in other **books**, which you craft when you "
+        "get there: they are all under \"The Books\", at the end."),
+
+    # Prepara tu taller: steps 1 to 5.
+    "gui.forja.libros.primeras_mesas.necesitas": (
+        "Todo se hace en la mesa de crafteo de siempre. Reúne primero **6 lingotes de hierro**, una **piedra de afilar**, "
+        "una **mesa de crafteo**, unos **12 tablones** y **4 palos**:",
+        "It is all made at the usual crafting table. First gather **6 iron ingots**, a **grindstone**, a **crafting "
+        "table**, about **12 planks** and **4 sticks**:"),
+    "gui.forja.libros.primeras_mesas.paso1": ("1. La mesa de piezas", "1. The parts table"),
+    "gui.forja.libros.primeras_mesas.paso1.desc": (
+        "Tres de hierro arriba, la piedra de afilar en el centro y tablones a los lados y abajo.",
+        "Three iron along the top, the grindstone in the middle and planks at the sides and below."),
+    "gui.forja.libros.primeras_mesas.paso2": ("2. La mesa de forja", "2. The forge table"),
+    "gui.forja.libros.primeras_mesas.paso2.desc": (
+        "Igual que la anterior, con una mesa de crafteo en el centro.",
+        "The same as the one before, with a crafting table in the middle."),
+    "gui.forja.libros.primeras_mesas.paso3": ("3. Plantillas en blanco", "3. Blank templates"),
+    "gui.forja.libros.primeras_mesas.paso3.desc": (
+        "Dos palos y dos tablones dan **dos plantillas**. Cada plantilla lleva una sola forma y un pico necesita tres, así "
+        "que haz al menos **cuatro**.",
+        "Two sticks and two planks make **two templates**. Each template takes a single shape and a pickaxe needs three, "
+        "so make at least **four**."),
+    "gui.forja.libros.primeras_mesas.paso4": ("4. Pon las dos mesas", "4. Place both tables"),
+    "gui.forja.libros.primeras_mesas.paso4.desc": (
+        "Colócalas en el suelo, cerca la una de la otra, y ábrelas con **clic derecho**.",
+        "Set them on the ground near each other, and open them with **right click**."),
+    "gui.forja.libros.primeras_mesas.paso5": ("5. Graba tu primera plantilla", "5. Engrave your first template"),
+    "gui.forja.libros.primeras_mesas.paso5.desc": (
+        "Abre la mesa de piezas. Pon una plantilla en blanco en la casilla de la izquierda **(1)**. Arriba se iluminan "
+        "todas las formas: haz clic en la **cabeza de pico (2)**, la primera. La plantilla queda grabada:",
+        "Open the parts table. Put a blank template in the left-hand slot **(1)**. All the shapes light up above it: click "
+        "the **pickaxe head (2)**, the first one. The template is now engraved:"),
+    "gui.forja.libros.primeras_mesas.paso5.fin": (
+        "Lo grabado no se cambia: para otra forma, usa otra plantilla. Sigue en «Tu primer pico».",
+        "An engraving never changes: for another shape, use another template. Carry on in \"Your First Pickaxe\"."),
+
+    # Tu primer pico: the worked example.
+    "gui.forja.libros.primer_objeto.intro": (
+        "De principio a fin: un **pico de piedra**. Necesitas **3 de roca**, **2 tablones** y tres plantillas grabadas.",
+        "From start to finish: a **stone pickaxe**. You need **3 cobblestone**, **2 planks** and three engraved templates."),
+    "gui.forja.libros.primer_objeto.metal": (
+        "¿Por qué no de hierro? La mesa de piezas solo corta lo que se trabaja en frío: madera, piedra, hueso, cuero, "
+        "amatista, cuarzo... Los metales **no se cortan**: se funden y se cuelan, y eso llega después, con la fundición.",
+        "Why not iron? The parts table only cuts what is worked cold: wood, stone, bone, leather, amethyst, quartz... "
+        "Metals **are not cut**: they are melted and cast, and that comes later, with the foundry."),
+    "gui.forja.libros.primer_objeto.paso1": ("1. Graba tres plantillas", "1. Engrave three templates"),
+    "gui.forja.libros.primer_objeto.paso1.desc": (
+        "Como en «Prepara tu taller»: una con la **cabeza de pico**, otra con el **mango** y otra con la **atadura**.",
+        "As in \"Set Up Your Workshop\": one with the **pickaxe head**, one with the **handle** and one with the "
+        "**binding**."),
+    "gui.forja.libros.primer_objeto.paso2": ("2. Corta la cabeza", "2. Cut the head"),
+    "gui.forja.libros.primer_objeto.paso2.desc": (
+        "En la mesa de piezas, la plantilla de cabeza de pico a la izquierda **(1)** y **%s de roca** en el centro "
+        "**(2)**. La cabeza aparece a la derecha **(3)**: cógela. La roca se gasta y la plantilla se queda.",
+        "At the parts table, the pickaxe head template on the left **(1)** and **%s cobblestone** in the middle **(2)**. "
+        "The head appears on the right **(3)**: take it. The cobblestone is used up and the template stays."),
+    "gui.forja.libros.primer_objeto.paso3": ("3. Corta el mango y la atadura", "3. Cut the handle and the binding"),
+    "gui.forja.libros.primer_objeto.paso3.desc": (
+        "Cambia la plantilla por la del **mango** y pon **1 tablón**. Luego la de la **atadura**, con otro tablón (o con "
+        "1 cuero). Ya tienes las tres piezas:",
+        "Swap the template for the **handle** one and put in **1 plank**. Then the **binding** one, with another plank (or "
+        "1 leather). You now have all three parts:"),
+    "gui.forja.libros.primer_objeto.paso4": ("4. Ponlas en la estrella", "4. Put them on the star"),
+    "gui.forja.libros.primer_objeto.paso4.desc": (
+        "Abre la mesa de forja. Pon cada pieza en una **punta** de la estrella **(1)**, en el orden que quieras. El panel "
+        "oscuro **(2)** te dice qué va a salir y con qué números; si falta una pieza, te dice cuál.",
+        "Open the forge table. Put each part on a **point** of the star **(1)**, in any order. The dark panel **(2)** "
+        "tells you what will come out and with what numbers; if a part is missing, it says which."),
+    "gui.forja.libros.primer_objeto.paso5": ("5. Forja y para el martillo", "5. Forge, and stop the hammer"),
+    "gui.forja.libros.primer_objeto.paso5.desc": (
+        "Haz clic en **Forjar (1)**: un martillo empieza a correr por la barra de debajo. Vuelve a hacer clic cuando pase "
+        "por el **centro iluminado**. El pico aparece en el centro de la estrella **(2)**: cógelo.",
+        "Click **Forge (1)**: a hammer starts running along the bar under it. Click again as it crosses the **lit "
+        "middle**. The pickaxe appears in the centre of the star **(2)**: take it."),
+    "gui.forja.libros.primer_objeto.paso5.martillo": (
+        "No hace falta acertar: si fallas, el pico sale igual. Acertar lo hace mejor, y «Cómo funciona» te dice por qué.",
+        "You do not have to hit it: miss, and the pickaxe still comes out. Hitting it makes it better, and \"How It "
+        "Works\" says why."),
+    "gui.forja.libros.primer_objeto.paso6": ("6. Témplalo, si quieres", "6. Quench it, if you like"),
+    "gui.forja.libros.primer_objeto.paso6.desc": (
+        "Sale **caliente %s segundos**. Con él **en la mano**, métete en **agua**: queda templado y se desgasta menos "
+        "para siempre. Si no, se enfría y sirve igual.",
+        "It comes out **hot for %s seconds**. With it **in your hand**, step into **water**: it is quenched and wears "
+        "more slowly for good. If not, it cools down and works just the same."),
+    "gui.forja.libros.primer_objeto.otros": (
+        "Ya tienes tu primer pico forjado. Lo demás se hace igual, cambiando las piezas: el hacha, la pala y la espada, "
+        "también de piedra y madera.",
+        "That is your first forged pickaxe. Everything else is made the same way with other parts: the axe, the shovel "
+        "and the sword, also in stone and wood."),
+    "gui.forja.libros.primer_objeto.otros.mas": (
+        "La armadura y las demás armas se montan igual. Pasa el ratón por una pieza o un objeto para ver sus números.",
+        "Armour and the other weapons are put together the same way. Hover over a part or an item to see its numbers."),
+
+    # Cómo funciona: the short version, before book I's long one.
+    "gui.forja.libros.como_funciona.material.titulo": ("El material", "The material"),
+    "gui.forja.libros.como_funciona.material": (
+        "Cada pieza hace su parte. La **cabeza** (o la hoja, o la placa) decide casi todo: cuánto dura, qué minerales "
+        "rompe y lo que pega. El **mango** y la **atadura** suman un poco y cambian la velocidad.",
+        "Every part does its share. The **head** (or the blade, or the plate) decides almost everything: how long it "
+        "lasts, which ores it breaks and how hard it hits. The **handle** and the **binding** add a little and change the "
+        "speed."),
+    "gui.forja.libros.como_funciona.barras": (
+        "Durabilidad según la cabeza",
+        "Durability by head"),
+    "gui.forja.libros.como_funciona.mango": (
+        "Algunos materiales llevan además un **rasgo**, un efecto extra que pasa al objeto. El hierro y el diamante de la "
+        "lista se cuelan en la fundición.",
+        "Some materials also carry a **trait**, an extra effect that passes to the item. The iron and the diamond in the "
+        "list are cast at the foundry."),
+    "gui.forja.libros.como_funciona.martillo.titulo": ("El martillo", "The hammer"),
+    "gui.forja.libros.como_funciona.martillo": (
+        "Donde paras el martillo queda en la pieza. En el **centro** sale **perfecta**: un %s%% más en todos sus números, "
+        "para siempre. Cerca del centro sale buena y lejos, normal. Con práctica el centro se ensancha.",
+        "Where you stop the hammer stays in the piece. In the **middle** it comes out **perfect**: %s%% more on every "
+        "number, for good. Near the middle it comes out good, and far off, plain. With practice the middle gets wider."),
+    "gui.forja.libros.como_funciona.potencial.titulo": ("El potencial", "Potential"),
+    "gui.forja.libros.como_funciona.potencial": (
+        "Cada objeto nace con un **potencial**: hasta dónde podrán subir sus **mejoras** y cuántas le caben. Empieza en "
+        "un %s%%, un martillo bueno le suma %s y uno perfecto %s. La primera mesa sube cada mejora como mucho al %s%%.",
+        "Every item is born with a **potential**: how far its **upgrades** can go and how many fit on it. It starts at "
+        "%s%%, a good press adds %s and a perfect one %s. The first table takes each upgrade to %s%% at most."),
+    "gui.forja.libros.como_funciona.temple.titulo": ("El temple", "The quench"),
+    "gui.forja.libros.como_funciona.temple": (
+        "Lo recién forjado está caliente un minuto. Si en ese rato te metes con él en agua, lava, nieve polvo o sobre un "
+        "bloque de miel, se queda con ese temple para siempre: el agua lo hace más duradero, la lava quema lo que golpeas, "
+        "la nieve lo frena y la miel lo deja pegado.",
+        "What you have just forged stays hot for a minute. Step into water, lava or powder snow with it, or onto a honey "
+        "block, and it keeps that quench for good: water makes it last longer, lava burns what you hit, snow slows it "
+        "and honey leaves it stuck."),
+    "gui.forja.libros.como_funciona.roto.titulo": ("Si se rompe", "When it breaks"),
+    "gui.forja.libros.como_funciona.roto": (
+        "Lo forjado no desaparece: se queda **roto** y sin efectos hasta que lo reparas. Ponlo en el centro de la estrella, "
+        "con su material en una punta.",
+        "Forged gear never vanishes: it stays **broken** and powerless until you mend it. Put it in the centre of the "
+        "star, with its material on a point."),
     "gui.forja.libros.primeras_mesas.yunque": (
-        "En cuanto grabes tu primera plantilla aprenderás la receta de **El yunque**, el libro de todo lo que viene "
-        "después: cortar, forjar, templar y mejorar.",
-        "As soon as you engrave your first template you will learn the recipe for **The Anvil**, the book of everything "
-        "that comes next: cutting, forging, quenching and upgrading."),
+        "¿Y luego? Al grabar tu primera plantilla aprendiste la receta de **El yunque**, un libro y una plantilla. Cuenta "
+        "todo esto con calma y cómo mejorar lo que forjas.",
+        "What next? Engraving your first template taught you the recipe for **The Anvil**, a book and a template. It goes "
+        "over all of this slowly, and how to upgrade what you forge."),
     "gui.forja.libros.teclas.intro": ("Las teclas de Forja, tal como las tienes ahora:", "Forja's keys, as you have them bound now:"),
     "gui.forja.libros.teclas.g": (
         "Con este cuaderno encima abre la **biblioteca**: todos tus libros, el camino y el catálogo. Sin él, abre el libro "
@@ -152,10 +301,93 @@ BOOKS = {
 
     # ---- book I
     "gui.forja.libros.yunque_sabes": (
-        "Ya tienes la mesa de piezas, la mesa de forja y una plantilla grabada: lo contó el Cuaderno del aprendiz. Este "
-        "libro sigue desde ahí.",
-        "You already have the parts table, the forge table and an engraved template: the Apprentice's Notebook told you "
-        "how. This book carries on from there."),
+        "Si has seguido el Cuaderno del aprendiz, ya tienes las dos mesas y tu primer pico. Este libro explica qué pasó en "
+        "cada paso, y lo que viene después: mejorar, desarmar y reparar.",
+        "If you followed the Apprentice's Notebook, you already have both tables and your first pickaxe. This book "
+        "explains what happened at each step, and what comes next: upgrading, salvaging and mending."),
+    "gui.forja.libros.mesas.piezas": (
+        "Tiene dos pestañas. En **Piezas** grabas plantillas y cortas: la plantilla a la izquierda, el material en el "
+        "centro y la pieza sale a la derecha. En **Desarmar** deshaces un objeto en sus piezas (está en «Desarmar y "
+        "reparar»).",
+        "It has two tabs. In **Parts** you engrave templates and cut: the template on the left, the material in the "
+        "middle, and the part comes out on the right. In **Salvage** you break an item back into its parts (see "
+        "\"Salvage and Repair\")."),
+    "gui.forja.libros.mesas.forja": (
+        "También tiene dos. **Forja** es la estrella: cinco puntas alrededor de un centro. **Técnicas** se abre más "
+        "adelante, al subir de nivel de herrero.",
+        "It has two as well. **Forge** is the star: five points round a centre. **Techniques** opens later on, as your "
+        "smith level rises."),
+    "gui.forja.libros.mesas.estrella": (
+        "Lo que hace la estrella depende de lo que pongas. Solo piezas en las puntas: **forja** un objeto nuevo. Un objeto "
+        "en el centro y piezas: **cambia** esas piezas. Un objeto y un ingrediente: lo **mejora**. Un objeto y su "
+        "material: lo **repara**. El botón cambia de nombre para decirte cuál va a hacer.",
+        "What the star does depends on what you put on it. Parts alone on the points: it **forges** a new item. An item "
+        "in the centre and parts: it **swaps** those parts. An item and an ingredient: it **upgrades** it. An item and "
+        "its material: it **mends** it. The button changes its name to tell you which it will do."),
+    "gui.forja.libros.mesas.taller.titulo": ("El taller completo", "The whole workshop"),
+    "gui.forja.libros.mesas.taller": (
+        "Con la mesa de piezas y una **mesa de talabartería** a %2$s bloques o menos de la mesa de forja, tienes un taller "
+        "completo: lo que forjas ahí nace con **%1$s de potencial** más. La talabartería es además la única mesa que hace "
+        "bardas para caballos y lobos.",
+        "With the parts table and a **saddlery** within %2$s blocks of the forge table, you have a whole workshop: what "
+        "you forge there is born with **%1$s more potential**. The saddlery is also the only table that makes barding for "
+        "horses and wolves."),
+    "gui.forja.libros.mesas.mayor": (
+        "La mesa de forja monta los %s objetos básicos: herramientas, espada, daga, arco, flechas, caña y armadura. Las "
+        "armas de dos manos y de alcance, el escudo y las alas piden la **mesa de forja mayor**, que además da %s de "
+        "potencial. Su receta llega con la fundición.",
+        "The forge table builds the %s basic items: tools, sword, dagger, bow, arrows, rod and armour. The two-handed "
+        "and reach weapons, the shield and the wings call for the **greater forge table**, which also gives %s potential. "
+        "Its recipe comes with the foundry."),
+    "gui.forja.libros.cortar.intro": (
+        "La mesa de piezas solo corta lo que se trabaja **en frío**. Estos son los materiales que acepta; cualquier otro "
+        "no entra en la casilla:",
+        "The parts table only cuts what is worked **cold**. These are the materials it takes; anything else will not go "
+        "into the slot:"),
+    "gui.forja.libros.cortar.colar": (
+        "Los metales (cobre, hierro, oro y las aleaciones), el diamante, la obsidiana y la netherita **no se cortan: se "
+        "cuelan**. Se funden en un crisol y se vierten en un molde, como cuenta «La fundición». Las piezas coladas dan "
+        "además más potencial.",
+        "Metals (copper, iron, gold and the alloys), diamond, obsidian and netherite **are not cut: they are cast**. They "
+        "are melted in a crucible and poured into a mould, as \"The Foundry\" tells. Cast parts also give more potential."),
+    "gui.forja.libros.cortar.coste.titulo": ("Lo que cuesta cada pieza", "What each part costs"),
+    "gui.forja.libros.estrella.intro": (
+        "Las piezas van en las **puntas (1)**, en cualquier orden. El panel de la derecha **(2)** enseña lo que va a salir "
+        "y sus números antes de gastar nada; si faltan piezas, dice cuáles. **Forjar (3)** lo hace, y el objeto aparece "
+        "en el centro.",
+        "The parts go on the **points (1)**, in any order. The panel on the right **(2)** shows what will come out and its "
+        "numbers before anything is spent; if parts are missing, it says which. **Forge (3)** does it, and the item "
+        "appears in the centre."),
+    "gui.forja.libros.estrella.martillo": (
+        "Al forjar un objeto nuevo, el botón no forja a la primera: pone a correr un martillo por la barra de debajo. Haz "
+        "clic otra vez para pararlo. En el **centro iluminado** sale **perfecto**: un %s%% más en todos sus números y "
+        "%s de potencial. En la zona de alrededor sale bueno, con %s de potencial. Más lejos, normal. El centro se "
+        "ensancha con tu nivel de herrero. Cambiar piezas, mejorar o reparar no llevan martillo.",
+        "When you forge a new item the button does not forge straight away: it sets a hammer running along the bar "
+        "under it. Click again to stop it. In the **lit middle** the item comes out **perfect**: %s%% more on every "
+        "number and %s potential. In the band around it, it comes out good, with %s potential. Further off, plain. The "
+        "middle gets wider with your smith level. Swapping parts, upgrading and mending take no hammer."),
+    "gui.forja.libros.estrella.potencial.titulo": ("El potencial", "Potential"),
+    "gui.forja.libros.estrella.potencial": (
+        "El potencial es el techo de las mejoras de un objeto y lo que caben en él. Sale de cómo se hizo: %s%% de base, "
+        "hasta %s por el martillo, %s por cada nivel de herrero, %s por el taller completo, %s en la mesa mayor y hasta %s "
+        "si sus piezas son coladas. Lo ves en su tooltip, y después aún sube con la maestría del objeto.",
+        "Potential is the ceiling on an item's upgrades and how many fit on it. It comes from how the item was made: %s%% "
+        "to start, up to %s from the hammer, %s per smith level, %s for the whole workshop, %s at the greater table and "
+        "up to %s if its parts were cast. Its tooltip shows it, and it still grows afterwards with the item's mastery."),
+    "gui.forja.libros.estrella.banco.titulo": ("Qué monta esta mesa", "What this table builds"),
+    "gui.forja.libros.estrella.banco": (
+        "La mesa de forja monta %s objetos: las herramientas, la espada, la daga, el arco, las flechas, la caña y las cuatro "
+        "piezas de armadura. Así se juntan tres de ellos:",
+        "The forge table builds %s items: the tools, the sword, the dagger, the bow, arrows, the rod and the four pieces "
+        "of armour. This is how three of them go together:"),
+    "gui.forja.libros.mejorar.pasos": (
+        "Para mejorar, el objeto en el **centro (1)**, un ingrediente en una **punta (2)** y **Mejorar (3)**, sin "
+        "martillo. Cada ingrediente sube el porcentaje de su mejora: el **azúcar** da Eficiencia a un pico, la "
+        "**amatista** da Filo a un arma. Pon un montón y la mesa gasta lo que haga falta.",
+        "To upgrade: the item in the **centre (1)**, an ingredient on a **point (2)** and **Upgrade (3)**, no hammer. "
+        "Every ingredient raises its upgrade's percentage: **sugar** gives a pickaxe Efficiency, **amethyst** gives a "
+        "weapon Filo. Put down a pile and the table uses what it needs."),
     "gui.forja.libros.yunque_sabes.ruta": (
         "Cuatro pasos del camino se aprenden aquí: cortar una pieza, forjarla, templarla y mejorarla. Cada uno está en su "
         "capítulo, y la portada los va marcando.",
