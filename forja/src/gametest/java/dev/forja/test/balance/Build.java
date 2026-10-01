@@ -41,6 +41,8 @@ public final class Build {
 	public final List<ForgeMaterial> materials;
 	public final Map<Upgrade, Integer> upgrades;
 	public final ItemStack stack;
+	/** Whether the Estrella forjada is set in it. */
+	public final boolean starred;
 	/** The player's attack damage with this in hand (base 1 plus the stack's modifiers). */
 	public final double attackDamage;
 	/** Swings a second (base 4 plus the stack's modifiers). */
@@ -67,6 +69,14 @@ public final class Build {
 
 	/** Like the plain one, with a heavy or light handle or binding where the parts say. */
 	public Build(ForgedParts forged, Map<Upgrade, Integer> upgrades, HolderLookup.Provider registries) {
+		this(forged, upgrades, registries, false, 0);
+	}
+
+	/**
+	 * And as a long life leaves it: its Maestría (0 to 10, forge/Mastery) and, with {@code starred}, the Estrella forjada
+	 * set in it (forge/ForgedStar: damage ×1.12). Read back off the stack like the rest.
+	 */
+	public Build(ForgedParts forged, Map<Upgrade, Integer> upgrades, HolderLookup.Provider registries, boolean starred, int mastery) {
 		ForgeType type = forged.type();
 		List<ForgeMaterial> materials = forged.materials();
 		this.type = type;
@@ -84,6 +94,14 @@ public final class Build {
 			Assembler.rewrite(made, BuiltInRegistries.BLOCK, BuiltInRegistries.ITEM);
 			HiddenEnchantments.write(made, registries);
 		}
+		if (mastery > 0) {
+			dev.forja.forge.Mastery.setLevel(made, mastery, registries);
+		}
+		if (starred) {
+			made = dev.forja.forge.ForgedStar.star(made);
+			HiddenEnchantments.write(made, registries);
+		}
+		this.starred = starred;
 		this.stack = made;
 		double[] damage = {1.0};
 		double[] speed = {4.0};

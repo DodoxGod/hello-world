@@ -90,6 +90,16 @@ public final class Fight {
 		public double spellDamage = 1.0;
 		public double spellCooldown = 1.0;
 		public double spellCost = 1.0;
+		/**
+		 * A melee class on the blow (clase/ClassStat.MELEE_DAMAGE, an attribute multiplier on the attack damage) and on the
+		 * stamina bar: its size, how fast it fills and what a swing costs, as multipliers. 1 without a class.
+		 */
+		public double meleeDamage = 1.0;
+		public double staminaMax = 1.0;
+		public double staminaRegen = 1.0;
+		public double staminaCost = 1.0;
+		/** Off, no finisher lands whatever the foe's health (a boss above Bosses.finishable's share). */
+		public boolean finishers = true;
 		public boolean iframes = true;
 		public boolean cap = true;
 		public boolean posture = true;
@@ -114,6 +124,11 @@ public final class Fight {
 			copy.spellDamage = this.spellDamage;
 			copy.spellCooldown = this.spellCooldown;
 			copy.spellCost = this.spellCost;
+			copy.meleeDamage = this.meleeDamage;
+			copy.staminaMax = this.staminaMax;
+			copy.staminaRegen = this.staminaRegen;
+			copy.staminaCost = this.staminaCost;
+			copy.finishers = this.finishers;
 			copy.iframes = this.iframes;
 			copy.cap = this.cap;
 			copy.posture = this.posture;
@@ -339,7 +354,7 @@ public final class Fight {
 		this.witherTicks = 0;
 		this.bleedTicks = 0;
 		this.bleedStacks = 0;
-		this.stamina = this.cfg.staminaMax;
+		this.stamina = this.staminaMax();
 		this.lastSpend = -100000;
 		this.comboStep = 0;
 		this.comboLast = -100000;
@@ -425,18 +440,18 @@ public final class Fight {
 		return switch (policy.breath()) {
 			case SPAM -> false;
 			case WAIT -> this.stamina < this.swingCost();
-			case REST -> resting ? this.stamina < this.cfg.staminaMax : this.stamina < this.swingCost();
+			case REST -> resting ? this.stamina < this.staminaMax() : this.stamina < this.swingCost();
 		};
 	}
 
 	/** Stamina a plain swing costs with this weapon: the config's, moved by its handle (combat/Grip). */
 	private double swingCost() {
-		return this.cfg.attackCost * this.build.swingCost;
+		return this.cfg.attackCost * this.build.swingCost * this.options.staminaCost;
 	}
 
 	/** And a charged blow at full charge. */
 	private double chargeCost() {
-		return (this.cfg.chargeStaminaCost + this.cfg.chargeStaminaPerShare) * this.build.chargeCost;
+		return (this.cfg.chargeStaminaCost + this.cfg.chargeStaminaPerShare) * this.build.chargeCost * this.options.staminaCost;
 	}
 
 	/** Vanilla's per-tick work on the target: invulnerability running down, and whatever keeps hurting it. */
@@ -481,13 +496,18 @@ public final class Fight {
 
 	private void tickStamina() {
 		if (!this.options.stamina) {
-			this.stamina = this.cfg.staminaMax;
+			this.stamina = this.staminaMax();
 			return;
 		}
-		if (this.t - this.lastSpend >= this.cfg.staminaRegenDelayTicks && this.stamina < this.cfg.staminaMax) {
+		if (this.t - this.lastSpend >= this.cfg.staminaRegenDelayTicks && this.stamina < this.staminaMax()) {
 			double penalty = Math.min(0.9, Math.max(0.0, this.options.armorWeight) * this.cfg.regenPenaltyPerWeight);
-			this.stamina = Math.min(this.cfg.staminaMax, this.stamina + this.cfg.staminaRegenPerTick * (1.0 - penalty));
+			this.stamina = Math.min(this.staminaMax(), this.stamina + this.cfg.staminaRegenPerTick * this.options.staminaRegen * (1.0 - penalty));
 		}
+	}
+
+	/** The stamina bar's size: the config's, times a class's. */
+	private double staminaMax() {
+		return this.cfg.staminaMax * this.options.staminaMax;
 	}
 
 	/** What a tap of this build's staff or tome costs (magic/Spellcasting.tapCost), with the class's price. */
@@ -553,7 +573,7 @@ public final class Fight {
 	/** Player#attack's damage: the attribute scaled by 0.2 + 0.8 s², enchantments by s. */
 	private double raw(int ticker, double delay) {
 		double strength = Math.min(1.0, (ticker + 0.5) / delay);
-		double base = this.build.attackDamage * (0.2 + 0.8 * strength * strength);
+		double base = this.build.attackDamage * this.options.meleeDamage * (0.2 + 0.8 * strength * strength);
 		double enchant = this.build.enchantBonus(this.target, this.level, this.probeSource, this.build.attackDamage) * strength;
 		double raw = base + enchant;
 		if (this.options.jumpCrits && strength > 0.9) {
@@ -907,7 +927,7 @@ public final class Fight {
 	}
 
 	private boolean finisherReady() {
-		return this.t - this.lastFinisher >= this.cfg.finisherCooldownTicks
+		return this.options.finishers && this.t - this.lastFinisher >= this.cfg.finisherCooldownTicks
 			&& (this.endless || this.health <= this.target.maxHealth * this.target.finishableBelow);
 	}
 

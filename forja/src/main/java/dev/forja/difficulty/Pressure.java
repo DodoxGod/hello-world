@@ -45,6 +45,11 @@ public final class Pressure {
 		return idle <= 0 ? state.value : Math.max(0.0, state.value - idle * cfg.pressureDrainPerTick);
 	}
 
+	/** Takes all pressure off a player at once: for the balance probe, which hits the same player fresh again and again. */
+	public static void forget(Player player) {
+		STATES.remove(player);
+	}
+
 	/** When a blow last reached this player, in game time; far in the past if never. */
 	public static long lastHit(Player player) {
 		State state = STATES.get(player);

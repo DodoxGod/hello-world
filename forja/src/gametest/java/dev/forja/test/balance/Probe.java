@@ -88,6 +88,10 @@ public final class Probe {
 		}
 	}
 
+	public GameTestHelper helper() {
+		return this.helper;
+	}
+
 	public CombatGameTests.TestPlayer player() {
 		return this.player;
 	}
@@ -140,8 +144,18 @@ public final class Probe {
 		LivingEntity mob = this.helper.spawn(type, new BlockPos(1 + index % 6, 2, 1 + (index / 6) % 6));
 		this.spawned.add(mob);
 		strip(mob);
-		String id = BuiltInRegistries.ENTITY_TYPE.getKey(type).toString();
-		Target target = new Target(id, type.getDescription().getString(), forja);
+		return this.measureEntity(mob, BuiltInRegistries.ENTITY_TYPE.getKey(type).toString(), type.getDescription().getString(), forja);
+	}
+
+	/**
+	 * One mob as it stands, measured the same way but not stripped: a boss sized and staged for a fight, an apprentice
+	 * in its kit. It is only frozen while it is hit, and healed after every blow, so its health is full afterwards.
+	 */
+	public Target measureEntity(LivingEntity mob, String id, String name, boolean forja) {
+		if (mob instanceof Mob brain) {
+			brain.setNoAi(true);
+		}
+		Target target = new Target(id, name, forja);
 		target.entity = mob;
 		target.maxHealth = mob.getMaxHealth();
 		target.boss = Bosses.isBoss(mob);

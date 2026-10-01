@@ -61,8 +61,72 @@ import net.minecraft.world.phys.Vec3;
  * <p>What he leaves behind is his heart, and one piece of what he was carrying.
  */
 public class FallenSmith extends Monster implements GeoEntity {
-	/** How much health he has: this is not a mob you meet by accident. */
+	/** How much health he has: this is not a mob you meet by accident. Before the level, the players and their gear. */
 	public static final double HEALTH = 320.0;
+
+	// ------------------------------------------------------------------ how strong he is
+	// docs/EQUILIBRIO.md, "Herrero Caído": every number here is measured there, and BalanceGameTests.herreroEnSuSitio
+	// holds the fight to its window on each level.
+
+	/**
+	 * What each level of the ladder makes of him: his health (on top of the per-player and gear factors), the damage
+	 * of his telegraphed moves and how soon they come back, the embers of the Reforjado, the apprentices that come up
+	 * to keep them, and how many apprentices more each wave brings. Pacífico has no fight: a peaceful world keeps no
+	 * monster, him included.
+	 */
+	public record Grade(double health, double moveDamage, double cooldown, int embers, int keepers, int extraApprentices) {
+	}
+
+	public static Grade grade(dev.forja.difficulty.Ladder level) {
+		return switch (level) {
+			case PACIFICO, FACIL -> new Grade(0.8, 1.0, 1.0, 3, 0, 0);
+			case NORMAL, DIFICIL -> new Grade(1.0, 1.0, 1.0, 3, 0, 0);
+			case EXTREMO -> new Grade(1.3, 1.0, 1.0, 3, 0, 0);
+		};
+	}
+
+	/** The level he fights at now. */
+	public static Grade grade() {
+		return grade(dev.forja.difficulty.Ladder.current());
+	}
+
+	/** Health for each player past the first who has been in the fight: a share of his own. */
+	public static final double HEALTH_PER_PLAYER = 0.0;
+	/** Health and armour for the gear of whoever fights him (difficulty/GearScore), by its tier (0 to 3). */
+	public static final double GEAR_HEALTH_PER_TIER = 0.2;
+	public static final double GEAR_ARMOR_PER_TIER = 1.5;
+
+	/**
+	 * What his health is multiplied by: the level's own (moved by the config's preset when an admin forces one), one
+	 * share more for each player past the first, and the gear of the ones fighting him where the level scales by gear.
+	 */
+	public static double healthFactor(dev.forja.difficulty.Ladder level, int fighters, double gear) {
+		double preset = level.preset().health / level.ownPreset().health;
+		int tier = level.gear ? dev.forja.difficulty.GearScore.tier(gear) : 0;
+		return grade(level).health * preset * (1.0 + HEALTH_PER_PLAYER * Math.max(0, fighters - 1)) * (1.0 + GEAR_HEALTH_PER_TIER * tier);
+	}
+
+	/** The armour the gear of the ones fighting him adds. */
+	public static double gearArmor(dev.forja.difficulty.Ladder level, double gear) {
+		return level.gear ? GEAR_ARMOR_PER_TIER * dev.forja.difficulty.GearScore.tier(gear) : 0.0;
+	}
+
+	/** Armour and toughness he takes on in each stage (1 to 3), on top of his own. */
+	public static final double[] STAGE_ARMOR = {0.0, 0.0, 0.0};
+	public static final double[] STAGE_TOUGHNESS = {0.0, 0.0, 0.0};
+	/** What his telegraphed moves (backhand, shockwave, hook, the stars) hit for in each stage, times the level's. */
+	public static final float[] STAGE_DAMAGE = {1.0F, 1.0F, 1.0F};
+	/** How long his moves take to come back in each stage, times the level's. */
+	public static final double[] STAGE_COOLDOWN = {1.0, 1.0, 1.0};
+	/** His fury in the last stage: this much faster, and his plain blow this much heavier. */
+	public static final double ENRAGE_SPEED = 0.0;
+	public static final double ENRAGE_DAMAGE = 0.0;
+	/** How much more health the apprentices of each wave come up with (first, second). */
+	public static final double[] WAVE_HEALTH = {0.0, 0.0};
+	/** How often he calls the stars down in his last stage, before the stage's cooldown. */
+	public static final int STARFALL_EVERY = 60;
+	/** What the stars do to whoever is under them, before the stage's damage. */
+	public static final float STARFALL_DAMAGE = 9.0F;
 
 	/** Ticks the reforge stage keeps him out of reach. */
 	public static final int REFORGE_TICKS = 160;
@@ -275,6 +339,19 @@ public class FallenSmith extends Monster implements GeoEntity {
 
 	private final java.util.ArrayDeque<Blow> blows = new java.util.ArrayDeque<>();
 
+	/** The most players who have been in the fight, and the best gear among the times it was looked at; 0: not yet sized. */
+	private int peakFighters;
+	private double peakGear;
+	/** The stage whose armour and fury he wears now (0: none yet). Not saved: it is put on again after a load. */
+	private int wornStage;
+	/** Ticks until he may call the stars again. */
+	private int starCooldown;
+	/** Set by the balance probe, which sizes him itself: the fight then leaves his size alone. */
+	public boolean sizedByHand;
+
+	private static final net.minecraft.resources.Identifier SIZE = dev.forja.Forja.id("jefe_tamano");
+	private static final net.minecraft.resources.Identifier STAGE = dev.forja.Forja.id("jefe_fase");
+
 	public FallenSmith(EntityType<? extends FallenSmith> type, Level level) {
 		super(type, level);
 		this.setPersistenceRequired();
@@ -435,8 +512,8 @@ public class FallenSmith extends Monster implements GeoEntity {
 
 	private static final net.minecraft.resources.Identifier AEGIS = dev.forja.Forja.id("egida");
 
-	/** His own work: a damascus flail and obsidian steel plate, all of it at full Maestria. */
-	private void dress(ServerLevel level) {
+	/** His own work: a damascus flail and obsidian steel plate, all of it at full Maestria. Public for the balance probe. */
+	public void dress(ServerLevel level) {
 		ItemStack flail = Assembler.create(ForgeType.MANGUAL, List.of(ForgeMaterial.DAMASCO, ForgeMaterial.DAMASCO, ForgeMaterial.OBSIDIACERO), level.registryAccess());
 		Mastery.setLevel(flail, Mastery.MAX_LEVEL, level.registryAccess());
 		this.setItemSlot(EquipmentSlot.MAINHAND, flail);
@@ -612,6 +689,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 			return;
 		}
 		this.bar.setProgress(this.getHealth() / this.getMaxHealth());
+		this.wearStage();
 		if (this.raging > 0) {
 			this.raging--;
 		}
@@ -626,6 +704,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 		this.forgeBreathes(level, hot);
 		if (this.tickCount % 20 == 0) {
 			this.watchers(level);
+			this.sizeUp(level);
 		}
 		if (this.tickCount % 10 == 0) {
 			this.reconsider(level);
@@ -720,7 +799,10 @@ public class FallenSmith extends Monster implements GeoEntity {
 			}
 		}
 		// Not over one of his own blows: a special under way finishes first, and the shower waits for the next time.
-		if (this.broughtSky && this.starfall == 0 && this.tickCount % 60 == 0 && this.getTarget() != null && !this.windup.charging()) {
+		if (this.starCooldown > 0) {
+			this.starCooldown--;
+		}
+		if (this.broughtSky && this.starfall == 0 && this.starCooldown == 0 && this.getTarget() != null && !this.windup.charging()) {
 			this.callStars(level, this.getTarget());
 		}
 		if (this.starfall > 0) {
@@ -789,7 +871,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 	 * you could stand in his face and take nothing but ordinary melee.
 	 */
 	public void backhand(ServerLevel level) {
-		this.strikeCooldown = STRIKE_COOLDOWN;
+		this.strikeCooldown = this.cooldown(STRIKE_COOLDOWN);
 		this.triggerAnim("boss", "strike");
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 2.0F, 0.6F);
 		this.windup.start(STRIKE_WINDUP, (world, left, total) -> {
@@ -807,7 +889,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 				if (victim.distanceToSqr(reach) > STRIKE_REACH * STRIKE_REACH * 0.36) {
 					continue;
 				}
-				victim.hurtServer(world, this.damageSources().mobAttack(this), STRIKE_DAMAGE);
+				victim.hurtServer(world, this.damageSources().mobAttack(this), this.moveDamage(STRIKE_DAMAGE));
 				Vec3 away = victim.position().subtract(this.position()).normalize();
 				double hold = 1.0 - dev.forja.upgrade.Upgrades.anchor(victim);
 				victim.push(away.x * 0.8 * hold, 0.32 * hold, away.z * 0.8 * hold);
@@ -873,7 +955,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 	 * coming, and it is meant to be: this is the move you are supposed to get off the ground for.
 	 */
 	public void anvilWave(ServerLevel level) {
-		this.waveCooldown = WAVE_COOLDOWN;
+		this.waveCooldown = this.cooldown(WAVE_COOLDOWN);
 		this.triggerAnim("boss", "slam");
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ANVIL_PLACE, SoundSource.HOSTILE, 2.5F, 0.7F);
 		// The floor lights up under the whole ring before any of it moves, so the reach is not
@@ -945,7 +1027,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 				continue;
 			}
 			victim.invulnerableTime = 0;
-			victim.hurtServer(level, this.damageSources().mobAttack(this), WAVE_DAMAGE);
+			victim.hurtServer(level, this.damageSources().mobAttack(this), this.moveDamage(WAVE_DAMAGE));
 			// Away from where the hammer landed, which is the way the ring is travelling when it gets there.
 			Vec3 away = victim.position().subtract(origin).multiply(1.0, 0.0, 1.0).normalize();
 			double hold = 1.0 - dev.forja.upgrade.Upgrades.anchor(victim);
@@ -957,7 +1039,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 
 	/** Garfio: the claw on the ruined arm goes out on its chain and drags what it catches back to him. */
 	public void hookIn(ServerLevel level, LivingEntity target) {
-		this.hookCooldown = HOOK_COOLDOWN;
+		this.hookCooldown = this.cooldown(HOOK_COOLDOWN);
 		this.triggerAnim("boss", "hook");
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.CHAIN_PLACE, SoundSource.HOSTILE, 2.2F, 0.5F);
 		// Eight ticks with the chain gathered on the dead arm: short, because the answer to this one is
@@ -986,7 +1068,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 				1, 0.02, 0.02, 0.02, 0.0);
 		}
 		target.invulnerableTime = 0;
-		target.hurtServer(level, this.damageSources().mobAttack(this), HOOK_DAMAGE);
+		target.hurtServer(level, this.damageSources().mobAttack(this), this.moveDamage(HOOK_DAMAGE));
 		// Hauled in to just short of arm's reach, which is where the hammer is waiting.
 		Vec3 pull = this.position().subtract(target.position());
 		double reach = Math.max(1.0, pull.horizontalDistance());
@@ -1054,7 +1136,8 @@ public class FallenSmith extends Monster implements GeoEntity {
 		this.getNavigation().stop();
 		this.windup.cancel();
 		Shockwave.burst(level, this.position(), PHASE_RING_REACH, PHASE_RING_TICKS, Shockwave.VIOLET);
-		this.callApprentices(level);
+		int players = Math.max(1, dev.forja.world.StarFight.fightersNear(level, this).size());
+		this.callApprentices(level, apprenticesFor(players), WAVE_HEALTH[Math.max(0, Math.min(WAVE_HEALTH.length, this.wavesCalled) - 1)]);
 	}
 
 	/**
@@ -1063,13 +1146,11 @@ public class FallenSmith extends Monster implements GeoEntity {
 	 * rising through it with the floor breaking round them and the sound of digging, and nothing touches
 	 * them until they are out.
 	 */
-	private void callApprentices(ServerLevel level) {
+	private void callApprentices(ServerLevel level, int count, double sturdier) {
 		// Not the roar of his last quarter: the hammer goes down on the floor and they come up out of it.
 		this.triggerAnim("boss", "call");
 		this.lightForge(RAGE_TICKS * 2);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 4.0F, 0.7F);
-		int players = Math.max(1, dev.forja.world.StarFight.fightersNear(level, this).size());
-		int count = dev.forja.world.Formation.count(players);
 		List<Vec3> offsets = dev.forja.world.Formation.offsets(count);
 		List<Integer> rings = dev.forja.world.Formation.ringOf(count);
 		double floor = this.getY();
@@ -1086,6 +1167,13 @@ public class FallenSmith extends Monster implements GeoEntity {
 			apprentice.snapTo(at.x, floor - RISE_DEPTH, at.z, (float) Math.toDegrees(Math.atan2(-offsets.get(i).x, offsets.get(i).z)) + 180.0F, 0.0F);
 			dev.forja.world.Elites.makeElite(apprentice, level.getRandom());
 			dev.forja.world.ApprenticeKits.equip(apprentice, roles.get(i), i, salt, level.getRandom());
+			// The later waves come up harder: more health, on top of the elite's.
+			var health = apprentice.getAttribute(Attributes.MAX_HEALTH);
+			if (sturdier > 0.0 && health != null) {
+				health.addPermanentModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(WAVE, sturdier,
+					net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
+				apprentice.setHealth(apprentice.getMaxHealth());
+			}
 			apprentice.setCustomName(Component.translatable("entity.forja.aprendiz"));
 			// His, not just more elites: they go for whatever goes for him.
 			dev.forja.world.Apprentices.enlist(apprentice);
@@ -1095,6 +1183,8 @@ public class FallenSmith extends Monster implements GeoEntity {
 			this.risers.add(new Riser(apprentice.getUUID(), floor, rings.get(i) * RISE_STAGGER));
 		}
 	}
+
+	private static final net.minecraft.resources.Identifier WAVE = dev.forja.Forja.id("oleada");
 
 	/** One tick of every apprentice still coming up. */
 	private void rise(ServerLevel level) {
@@ -1164,7 +1254,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 		this.triggerAnim("boss", "slam");
 		this.bar.setColor(BossEvent.BossBarColor.YELLOW);
 		int players = Math.max(1, dev.forja.world.StarFight.fightersNear(level, this).size());
-		int count = Math.min(EMBERS_MOST, EMBERS_BASE + players - 1);
+		int count = embersFor(players);
 		this.embersAt.clear();
 		for (int i = 0; i < count; i++) {
 			double angle = Math.PI / 4.0 + (i % 4) * Math.PI / 2.0;
@@ -1176,6 +1266,10 @@ public class FallenSmith extends Monster implements GeoEntity {
 		}
 		for (int i = 0; i < 4; i++) {
 			dev.forja.world.StarFight.refill(level, i);
+		}
+		// On the harder levels some of his apprentices come up to keep the fires.
+		if (grade().keepers() > 0) {
+			this.callApprentices(level, grade().keepers(), WAVE_HEALTH[0]);
 		}
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.BLAZE_SHOOT, SoundSource.HOSTILE, 4.0F, 0.4F);
 		for (ServerPlayer player : level.players()) {
@@ -1277,6 +1371,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 	 */
 	public void callStars(ServerLevel level, LivingEntity target) {
 		this.starfall = STARFALL_WINDUP;
+		this.starCooldown = this.cooldown(STARFALL_EVERY);
 		this.starfallAt = target.position();
 		this.triggerAnim("boss", "starcall");
 		this.lightForge(RAGE_TICKS);
@@ -1445,7 +1540,7 @@ public class FallenSmith extends Monster implements GeoEntity {
 		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, area,
 			other -> other != this && other.isAlive() && !dev.forja.world.Truce.ours(other))) {
 			victim.invulnerableTime = 0;
-			victim.hurtServer(level, level.damageSources().magic(), 9.0F);
+			victim.hurtServer(level, level.damageSources().magic(), this.moveDamage(STARFALL_DAMAGE));
 		}
 	}
 
@@ -1566,6 +1661,154 @@ public class FallenSmith extends Monster implements GeoEntity {
 		return share <= 2.0F / 3.0F ? 2 : 1;
 	}
 
+	/**
+	 * The stage he fights in by what has happened rather than by his health: 1 until the first apprentices, 2 until
+	 * the second, 3 after. His armour, his fury and his moves follow this, so the anvils mending him back over a third
+	 * do not take his last stage away again.
+	 */
+	public int stage() {
+		return Math.min(PHASES, this.wavesCalled + 1);
+	}
+
+	/** His fury: the last stage, under a third of his health. */
+	public boolean enraged() {
+		return this.stage() >= PHASES;
+	}
+
+	/** What one of his telegraphed moves hits for now: its own number, times the stage's and the level's. */
+	public float moveDamage(float base) {
+		return (float) (base * STAGE_DAMAGE[this.stage() - 1] * grade().moveDamage());
+	}
+
+	/** How long one of his moves takes to come back now: its own wait, times the stage's and the level's. */
+	public int cooldown(int base) {
+		return Math.max(1, (int) Math.round(base * STAGE_COOLDOWN[this.stage() - 1] * grade().cooldown()));
+	}
+
+	/** The Reforjado's embers for this many players: the level's, one more a player after the first, EMBERS_MOST at most. */
+	public static int embersFor(int players) {
+		return Math.min(EMBERS_MOST, grade().embers() + Math.max(1, players) - 1);
+	}
+
+	/** How many apprentices a wave brings for this many players: the formation's (docs 3.5), and the level's extra. */
+	public static int apprenticesFor(int players) {
+		return dev.forja.world.Formation.count(Math.max(1, players)) + grade().extraApprentices();
+	}
+
+	/**
+	 * Sizes him to the fight (docs/EQUILIBRIO.md, "Herrero Caído"): the level, the most players who have been in it
+	 * and their gear. Only ever up while the fight lasts: a player leaving does not make him smaller. He keeps the
+	 * share of his health he had, so a second player arriving at half finds him at half of more.
+	 */
+	public void scaleFor(int fighters, double gear) {
+		this.peakFighters = Math.max(1, fighters);
+		this.peakGear = Math.max(0.0, gear);
+		this.resize();
+	}
+
+	/** The most players who have been in his fight, and their gear as he was sized for it. */
+	public int peakFighters() {
+		return this.peakFighters;
+	}
+
+	public double peakGear() {
+		return this.peakGear;
+	}
+
+	/** Once a second: the players in his fight and their gear, and his size if either went up or the level changed. */
+	private void sizeUp(ServerLevel level) {
+		if (this.sizedByHand) {
+			return;
+		}
+		List<? extends Player> fighters = dev.forja.world.StarFight.fightersNear(level, this);
+		double gear = 0.0;
+		if (!fighters.isEmpty() && dev.forja.difficulty.Ladder.current().gear) {
+			for (Player fighter : fighters) {
+				gear += dev.forja.difficulty.GearScore.of(fighter);
+			}
+			gear /= fighters.size();
+		}
+		this.peakFighters = Math.max(Math.max(1, this.peakFighters), fighters.size());
+		this.peakGear = Math.max(this.peakGear, gear);
+		this.resize();
+	}
+
+	/** Puts his size on: the health and armour of healthFactor and gearArmor, keeping the share of health he had. */
+	private void resize() {
+		dev.forja.difficulty.Ladder ladder = dev.forja.difficulty.Ladder.current();
+		double factor = healthFactor(ladder, Math.max(1, this.peakFighters), this.peakGear);
+		double armor = gearArmor(ladder, this.peakGear);
+		var health = this.getAttribute(Attributes.MAX_HEALTH);
+		var plates = this.getAttribute(Attributes.ARMOR);
+		if (health == null || plates == null) {
+			return;
+		}
+		var now = health.getModifier(SIZE);
+		var nowArmor = plates.getModifier(SIZE);
+		boolean same = Math.abs((now == null ? 0.0 : now.amount()) - (factor - 1.0)) < 1.0E-6
+			&& Math.abs((nowArmor == null ? 0.0 : nowArmor.amount()) - armor) < 1.0E-6;
+		if (same) {
+			return;
+		}
+		float share = this.getHealth() / this.getMaxHealth();
+		health.removeModifier(SIZE);
+		if (Math.abs(factor - 1.0) > 1.0E-9) {
+			health.addPermanentModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(SIZE, factor - 1.0,
+				net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
+		}
+		plates.removeModifier(SIZE);
+		if (armor > 0.0) {
+			plates.addPermanentModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(SIZE, armor,
+				net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE));
+		}
+		if (this.isAlive()) {
+			this.setHealth(Math.max(1.0F, share * this.getMaxHealth()));
+		}
+	}
+
+	/** Puts on the armour, toughness and fury of the stage he is in, when it changed. */
+	private void wearStage() {
+		int stage = this.stage();
+		if (stage == this.wornStage) {
+			return;
+		}
+		this.wornStage = stage;
+		boolean fury = stage >= PHASES;
+		stageModifier(Attributes.ARMOR, STAGE_ARMOR[stage - 1], net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE);
+		stageModifier(Attributes.ARMOR_TOUGHNESS, STAGE_TOUGHNESS[stage - 1], net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE);
+		stageModifier(Attributes.MOVEMENT_SPEED, fury ? ENRAGE_SPEED : 0.0, net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+		stageModifier(Attributes.ATTACK_DAMAGE, fury ? ENRAGE_DAMAGE : 0.0, net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+	}
+
+	private void stageModifier(net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> attribute, double amount,
+		net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation operation) {
+		var instance = this.getAttribute(attribute);
+		if (instance == null) {
+			return;
+		}
+		instance.removeModifier(STAGE);
+		if (Math.abs(amount) > 1.0E-9) {
+			instance.addTransientModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(STAGE, amount, operation));
+		}
+	}
+
+	/**
+	 * For the balance probe: puts him in a stage as if the fight had got there (the waves called, the Reforjado done
+	 * from the second stage on) without calling anybody up, and wears it.
+	 */
+	public void stageForProbe(int stage) {
+		this.wavesCalled = Math.max(0, Math.min(PHASES, stage) - 1);
+		this.calledHelp = this.wavesCalled >= 1;
+		this.broughtSky = this.wavesCalled >= 2;
+		this.starReforge = this.wavesCalled >= 1 ? 2 : 0;
+		this.wearStage();
+	}
+
+	/** Stuns him, as the last ember going out does: for the balance probe. */
+	public void stunForProbe(boolean on) {
+		this.stunned = on ? STUN_TICKS : 0;
+	}
+
 	/** Whether he is in the stage where nothing can touch him, for the tests and the tooltip. */
 	public boolean isReforging() {
 		return this.reforging > 0 || this.starReforge == 1;
@@ -1582,6 +1825,8 @@ public class FallenSmith extends Monster implements GeoEntity {
 		output.putInt("forja_oleadas", this.wavesCalled);
 		output.putInt("forja_reforjado", this.starReforge);
 		output.putInt("forja_aturdido", this.stunned);
+		output.putInt("forja_jugadores", this.peakFighters);
+		output.putDouble("forja_equipo", this.peakGear);
 		int[] embers = new int[this.embersAt.size() * 3];
 		for (int i = 0; i < this.embersAt.size(); i++) {
 			embers[i * 3] = this.embersAt.get(i).getX();
@@ -1600,6 +1845,8 @@ public class FallenSmith extends Monster implements GeoEntity {
 		this.wavesCalled = input.getIntOr("forja_oleadas", 0);
 		this.starReforge = input.getIntOr("forja_reforjado", 0);
 		this.stunned = input.getIntOr("forja_aturdido", 0);
+		this.peakFighters = input.getIntOr("forja_jugadores", 0);
+		this.peakGear = input.getDoubleOr("forja_equipo", 0.0);
 		this.calledHelp = this.wavesCalled >= 1;
 		this.broughtSky = this.wavesCalled >= 2;
 		this.embersAt.clear();

@@ -75,10 +75,13 @@ public final class Scaling {
 			Names.give(mob, threat);
 		}
 
-		// A plain vanilla monster on a level without Forja's rules (Fácil) keeps vanilla's health.
-		double health = (Ladder.plainVanilla(mob) ? 1.0 : difficulty.health) * threat.health * (1.0 + CombatConfig.get().gearHealthPerTier * tier);
+		// A plain vanilla monster on a level without Forja's rules (Fácil) keeps vanilla's health. A boss sizes himself to
+		// the whole fight instead (FallenSmith.healthFactor: the level, every player in it and their gear).
+		boolean boss = Bosses.isBoss(mob);
+		double health = boss ? 1.0
+			: (Ladder.plainVanilla(mob) ? 1.0 : difficulty.health) * threat.health * (1.0 + CombatConfig.get().gearHealthPerTier * tier);
 		raise(mob, Attributes.MAX_HEALTH, health - 1.0, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
-		double armor = threat.armor + CombatConfig.get().gearArmorPerTier * tier;
+		double armor = boss ? 0.0 : threat.armor + CombatConfig.get().gearArmorPerTier * tier;
 		if (armor > 0.0) {
 			raise(mob, Attributes.ARMOR, armor, AttributeModifier.Operation.ADD_VALUE);
 		}

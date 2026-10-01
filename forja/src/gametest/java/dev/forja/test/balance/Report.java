@@ -44,7 +44,14 @@ public final class Report {
 		this.findings.measure();
 		this.variants.measure(this.analysis);
 		this.measureMagic();
+		this.smith = new SmithFight(this.analysis, this.probe);
+		this.smith.measure(this.smithMelee, this.smithStaff);
 	}
+
+	/** The Herrero Caído's fight (SmithFight), and the weapons it is fought with: the quickest melee and the staff with Enjambre. */
+	public SmithFight smith;
+	private Build smithMelee;
+	private Build smithStaff;
 
 	// ---------------------------------------------------------------- magic against melee (2026-09-30)
 
@@ -136,6 +143,8 @@ public final class Report {
 		java.util.function.BiFunction<Build, Fight.Options, double[]> fight = (build, options) -> new double[] {
 			warden == null ? Double.NaN : seconds(an.ttk(build, warden, Analysis.SEARCH_RUNS, 8, null, options)),
 			smith == null ? Double.NaN : seconds(an.ttk(build, smith, Analysis.SEARCH_RUNS, 8, null, options))};
+		this.smithMelee = melee;
+		this.smithStaff = swarmStaff;
 		this.bigFoes.put("báculo con Enjambre, sin clase", fight.apply(swarmStaff, plain));
 		this.bigFoes.put("báculo con Enjambre, Mago", fight.apply(swarmStaff, mago));
 		this.bigFoes.put("grimorio, sin clase", fight.apply(tome, plain));
@@ -179,6 +188,138 @@ public final class Report {
 			Double.isNaN(ttk[1]) ? "> 120" : f(ttk[1], 1)));
 		this.line("");
 	}
+
+	// ---------------------------------------------------------------- the Herrero Caído (2026-09-30)
+
+	private void smithSection() {
+		SmithFight fight = this.smith;
+		if (fight == null || fight.rows.isEmpty()) {
+			return;
+		}
+		CombatConfig cfg = CombatConfig.get();
+		this.line("## Herrero Caído");
+		this.line("");
+		this.line("Andy, 2026-09-30: «parece que puedes llegar a estar muy fuerte, o el Herrero Caído es muy débil, hazlo más fuerte». "
+			+ "Objetivo: un jugador bien equipado de final de juego, solo, tarda de 3 a 5 minutos de pelea de verdad en Difícil (más en "
+			+ "Extremo, menos en Normal y Fácil), y el jefe puede matar a un jugador equipado que se descuida. En Pacífico no hay pelea: "
+			+ "un mundo pacífico no guarda ningún monstruo, tampoco a él. Lo mide `SmithFight` y lo exige `BalanceGameTests.herreroEnSuSitio`.");
+		this.line("");
+		this.line("**Qué se mide en el jefe de verdad** (vestido con su mangual y su placa, del tamaño que le da la pelea por nivel, "
+			+ "jugadores y equipo, en cada una de sus tres fases y aturdido), por el mismo camino de daño del juego: lo que le quita un golpe de "
+			+ "cada arma, lo que les quitan a sus aprendices y a los yunques andantes, y lo que quita cada golpe suyo (el normal, el revés, la "
+			+ "onda, el garfio y las estrellas) a un jugador con la armadura de referencia (placa de obsidiacero sobre cuero, Protección al "
+			+ "100 % en las cuatro piezas y Vitalidad en la pechera), recién llegado y con la presión de una pelea larga.");
+		this.line("");
+		this.line("**Qué es modelo** (los números están en `SmithFight`): el daño por segundo de un jugador contra cada fase es la pelea "
+			+ "tick a tick de este informe durante " + (SmithFight.SIM_TICKS / 20) + " s; el tiempo que pasa pegándole es lo que queda tras "
+			+ "esquivar cada movimiento suyo cada vez que vuelve (onda " + f(SmithFight.WAVE_DODGE, 1) + " s, revés " + f(SmithFight.STRIKE_DODGE, 1)
+			+ " s, estrellas " + f(SmithFight.STAR_DODGE, 1) + " s, garfio desde lejos " + f(SmithFight.HOOK_DODGE, 1) + " s; un "
+			+ pct(SmithFight.MELEE_LOSS) + " de moverse y seguirle cuerpo a cuerpo y un " + pct(SmithFight.RANGED_LOSS) + " desde lejos; los "
+			+ "eventos del cielo de su lado); las pausas son las de la pelea (levantarse, las dos llamadas de aprendices, el aturdido); el "
+			+ "Reforjado cuesta " + f(SmithFight.EMBER_SECONDS, 0) + " s por brasa más la última colada; los aprendices de las dos oleadas "
+			+ "(y los guardianes de las brasas) y los seis yunques se matan uno tras otro con la misma arma, pegándoles el "
+			+ pct(SmithFight.ADD_UPTIME) + " del tiempo. Con dos jugadores se reparten el daño, los aprendices y las brasas; el que no "
+			+ "persigue solo esquiva la onda y el cielo. No cuenta la regeneración, las pociones ni las constelaciones que le hacen daño.");
+		this.line("");
+		List<String> kits = new ArrayList<>();
+		for (SmithFight.Kit kit : SmithFight.Kit.values()) {
+			SmithFight.Gear gear = fight.gear.get(kit);
+			kits.add("**" + kit.name().toLowerCase(Locale.ROOT) + "**: " + kit.label + " (" + gear.weapon.type.id() + ", equipo "
+				+ f(gear.score, 2) + ", vida " + f(gear.maxHealth, 0) + ")");
+		}
+		this.line("Los equipos: " + String.join("; ", kits) + ".");
+		this.line("");
+		this.line("### La referencia, sola: antes y ahora");
+		this.line("");
+		this.table("Nivel", "Objetivo", "Antes", "Ahora", "Vida del jefe antes → ahora", "Descuidado aguanta (fase 1 / 3), antes → ahora",
+			"Atento aguanta (fase 1 / 3)", "Golpe más grande: recién llegado / con presión");
+		for (dev.forja.difficulty.Ladder level : SmithFight.LEVELS) {
+			SmithFight.Row now = fight.row(level, 1, SmithFight.Kit.ESTRELLA);
+			double[] window = SmithFight.WINDOW.get(level);
+			double[] before = SmithFight.before(level, 1, SmithFight.Kit.ESTRELLA);
+			this.row(level.name().toLowerCase(Locale.ROOT), minutes(window[0]) + " – " + minutes(window[1]),
+				before == null ? "—" : minutes(before[0]), "**" + minutes(now.seconds) + "**",
+				(before == null ? "—" : f(before[1], 0)) + " → " + f(now.health, 0),
+				(before == null ? "—" : f(before[2], 0) + " / " + f(before[3], 0)) + " s → " + f(now.careless[0], 0) + " / "
+					+ f(now.careless[2], 0) + " s",
+				life(now.attentive[0]) + " / " + life(now.attentive[2]),
+				pct(now.worst) + " (" + now.worstMove + ") / " + pct(now.worstPressed) + " (" + now.worstPressedMove + ")");
+		}
+		this.line("");
+		this.line("### Tiempo de pelea por equipo (minutos: solo / dos jugadores; entre paréntesis, antes)");
+		this.line("");
+		List<String> headers = new ArrayList<>(List.of("Equipo"));
+		for (dev.forja.difficulty.Ladder level : SmithFight.LEVELS) {
+			headers.add(level.name().toLowerCase(Locale.ROOT));
+		}
+		this.table(headers.toArray(String[]::new));
+		for (SmithFight.Kit kit : SmithFight.Kit.values()) {
+			List<String> cells = new ArrayList<>(List.of(kit.name().toLowerCase(Locale.ROOT)));
+			for (dev.forja.difficulty.Ladder level : SmithFight.LEVELS) {
+				SmithFight.Row solo = fight.row(level, 1, kit);
+				SmithFight.Row duo = fight.row(level, 2, kit);
+				double[] soloBefore = SmithFight.before(level, 1, kit);
+				double[] duoBefore = SmithFight.before(level, 2, kit);
+				cells.add(minutes(solo.seconds) + " / " + minutes(duo.seconds)
+					+ (soloBefore == null || duoBefore == null ? "" : " (" + minutes(soloBefore[0]) + " / " + minutes(duoBefore[0]) + ")"));
+			}
+			this.row(cells.toArray(String[]::new));
+		}
+		this.line("");
+		this.line("### De qué está hecha la pelea de la referencia, sola");
+		this.line("");
+		this.line("*Sin parar*: lo que tardaría pegándole sin esquivar nada, sin pausas ni aprendices (la cuenta de antes, contra un "
+			+ "maniquí). *Tope*: golpes del jugador que el tope por golpe recorta en la fase 1.");
+		this.line("");
+		this.table("Nivel", "Vida", "Daño/s por fase (1 / 2 / 3 / aturdido)", "Tiempo pegándole por fase", "Sin parar", "Pegándole", "Pausas",
+			"Reforjado", "Aprendices y yunques", "Total", "Tope");
+		for (dev.forja.difficulty.Ladder level : SmithFight.LEVELS) {
+			SmithFight.Row row = fight.row(level, 1, SmithFight.Kit.ESTRELLA);
+			this.row(level.name().toLowerCase(Locale.ROOT), f(row.health, 0),
+				f(row.dps[0], 1) + " / " + f(row.dps[1], 1) + " / " + f(row.dps[2], 1) + " / " + f(row.dps[3], 1),
+				pct(row.uptime[0]) + " / " + pct(row.uptime[1]) + " / " + pct(row.uptime[2]),
+				f(row.raw, 0) + " s", f(row.hitting, 0) + " s", f(row.pauses, 0) + " s", f(row.reforge, 0) + " s", f(row.adds, 0) + " s",
+				"**" + f(row.seconds, 0) + " s**", pct(row.capped));
+		}
+		this.line("");
+		this.line("### Lo que aguanta un jugador delante de él, solo");
+		this.line("");
+		this.line("Segundos hasta morir con su vida entera. *Descuidado*: se queda delante y se lo come todo (su golpe cada "
+			+ f(SmithFight.PLAIN_EVERY, 1) + " s, el revés, la onda, el garfio y las estrellas cada vez que vuelven, y "
+			+ SmithFight.APPRENTICES_ON_YOU + " aprendices pegándole desde la fase 2), con la presión de una pelea larga. *Atento*: "
+			+ "esquiva lo avisado y se come la mitad de sus golpes normales y el garfio (el mago, solo los golpes); ∞ si nada le alcanza. "
+			+ "Golpe más grande: lo más que quita un solo golpe suyo, en cualquier fase, a ese jugador de su vida, recién llegado y con "
+			+ "la armadura gastada por la presión de una pelea larga (la prueba exige menos del " + pct(SmithFight.MOST_OF_ONE_HIT)
+			+ " y del " + pct(SmithFight.MOST_UNDER_PRESSURE) + ").");
+		this.line("");
+		this.table("Equipo", "Nivel", "Vida del jugador", "Descuidado (fase 1 / 2 / 3)", "Atento (fase 1 / 2 / 3)", "Golpe más grande: recién llegado / con presión");
+		for (SmithFight.Kit kit : SmithFight.Kit.values()) {
+			for (dev.forja.difficulty.Ladder level : SmithFight.LEVELS) {
+				SmithFight.Row row = fight.row(level, 1, kit);
+				this.row(kit.name().toLowerCase(Locale.ROOT), level.name().toLowerCase(Locale.ROOT), f(row.playerHealth, 0),
+					f(row.careless[0], 0) + " / " + f(row.careless[1], 0) + " / " + f(row.careless[2], 0) + " s",
+					life(row.attentive[0]) + " / " + life(row.attentive[1]) + " / " + life(row.attentive[2]),
+					pct(row.worst) + " (" + row.worstMove + ") / " + pct(row.worstPressed) + " (" + row.worstPressedMove + ")");
+			}
+		}
+		this.line("");
+		this.line("El tope por golpe del jefe (`hitCapBoss`) es el " + pct(cfg.hitCapBoss) + " de su vida por golpe normal de un jugador "
+			+ "(los remates y los golpes al aturdido lo pasan).");
+		this.line("");
+	}
+
+	private static String minutes(double seconds) {
+		if (Double.isNaN(seconds)) {
+			return "—";
+		}
+		long whole = Math.round(seconds);
+		return String.format(Locale.ROOT, "%d:%02d", whole / 60, whole % 60);
+	}
+
+	private static String life(double seconds) {
+		return Double.isInfinite(seconds) || seconds > 9999 ? "∞" : f(seconds, 0) + " s";
+	}
+
 
 	// ---------------------------------------------------------------- small helpers
 
@@ -297,6 +438,7 @@ public final class Report {
 		this.method();
 		this.summary();
 		this.magicSection();
+		this.smithSection();
 		this.suspicions();
 		this.newFindings();
 		this.bestBuilds();
