@@ -1,5 +1,52 @@
 # Novedades
 
+## 2026-09-30 — Árboles de clase grandes, tres habilidades y sin Herrero
+
+Andy aprobó el diseño de `docs/ARBOLES.md` y pidió construirlo. Todos los números están en `tools/arboles_datos.py`:
+`tools/arboles.py` los vuelca a `src/main/resources/forja_arboles.json`, y el juego los lee de ahí (`clase/ClassTree`).
+
+- **Un árbol de 97 nodos por clase:**
+  - núcleo de 6 puertas;
+  - 3 ramas con 2 claves cada una (las dos de una rama se excluyen);
+  - 3 sendas con las habilidades y un puente a otra clase;
+  - 13 nodos de forja, iguales en todos los árboles.
+- **Costes:** menores y notables 1, claves 2, lo de otra clase 2. El árbol entero cuesta 117.
+- **Nivel y puntos:**
+  - el tope pasa de 15 a **50**;
+  - los niveles dan 1 o 2 puntos (70 en el 50) y los **hitos**, 33 más;
+  - los hitos se conservan al cambiar de clase, se dan con efecto retroactivo y solo se gastan 1 por nivel;
+  - en el tope son 103 puntos: se compra el 88 % del árbol;
+  - la curva de experiencia es `30 + 5·(N−1)`: 7350 hasta el 50.
+- **Hitos:** jefes (Herrero Caído, Guardián de Cuño, Warden, Wither, dragón...), el primer élite y el primer campeón,
+  el Nether, el End, una ciudad antigua, el portal de la Forja Profunda, la forja perfecta, la maestría 5 y 10, la
+  obra maestra y el maestro forjador. La lista, en el botón «Hitos» del árbol y en `/forja clase hitos`.
+- **Tres habilidades:** V, B y **N** (cambiable en Controles), cada una con su mejora II en el árbol. Las seis nuevas:
+  Torbellino, Abanico de dagas, Embestida de escudo, Meteoro, Escudo de luz y Flecha de red.
+- **Nodos con efecto propio:** unos 70 (Inquebrantable, Duelista, Frenesí, Golpe de gracia, Muralla viva, Lazo vital,
+  Hechizo encadenado, Florecer, Francotirador, Halcón...), cada uno con sus números en los datos y su código en
+  `clase/ClassEffects`, `ClassEvents`, `ClassSkills` y donde actúan (curación, hechizos, esquiva, arcos, la forja).
+- **Sin Herrero:** la forja está en todos los árboles (ventana, potencial, reparación, montadoras más rápidas, potencial
+  de la montadora, carga de mejoras, Forja al rojo). **Temple de campaña** ya no es tecla: repara poco a poco la pieza
+  forjada de la mano (la II también la armadura). Un guardado de Herrero se queda sin clase y elige otra.
+- **La pantalla del árbol:**
+  - se mueve arrastrando y se acerca con la rueda;
+  - lo aprendido sale en dorado;
+  - tooltips con números y el total de antes y después;
+  - «Probar» planea sin gastar, y «Aplicar» y «Descartar»;
+  - buscador y lista de hitos.
+- **Vela del olvido** (vela, 2 amatistas y una lágrima de ghast): quita hasta 4 puntos de nodos del borde. El
+  Medallón sigue igual.
+- **Equilibrio:**
+  - ningún nodo toca los factores de daño;
+  - la clase nunca quita más del 60 % de un golpe;
+  - los nodos pequeños del Mago cambiaron maná por defensa, para que el Mago del nivel 50 siga a la altura de la
+    mejor arma cuerpo a cuerpo (`magiaEnSuSitio`);
+  - `GearScore` cuenta los puntos gastados.
+- **Guardados:** los nodos se guardan por id; un guardado del árbol pequeño carga, pierde sus talentos viejos (los
+  puntos vuelven) y avisa.
+- **Pruebas:** `ArbolGameTests` (datos, reglas, puntos, hitos, efectos, reinicio, migración, habilidades, GearScore)
+  y `FORJA_SOLO=arbol` (la pantalla con el ratón y la tecla N).
+
 ## 2026-09-30 — La escalera de dificultad: el botón de Minecraft, con Extremo
 
 Andy: «el mod es difícil y no es para todos los jugadores». La dificultad de Forja ya no es aparte: es la de Minecraft,

@@ -1,5 +1,12 @@
 # Clases — diseño
 
+> **2026-09-30: los árboles grandes.** Los árboles de esta página (3 ramas × 3 niveles) se sustituyeron por un árbol
+> de 97 nodos por clase, con tres habilidades (V, B y N), hitos y la forja dentro: todo está en **`docs/ARBOLES.md`**.
+> La clase **Herrero ya no existe** (Andy, 2026-09-30): la forja está en todos los árboles. La decisión **C** cambió:
+> el tope es el **nivel 50**, los niveles dan 1 o 2 puntos (70 en total) y los hitos 33 más. Lo que sigue de esta
+> página vale para la base de cada clase, sus factores de daño, el Farol, el Medallón y el maná; las tablas de ramas
+> y talentos son historia.
+
 Lo que pidió Andy (2026-09-28), lo que decidí donde había hueco y todos los números. **Los números viven en
 el código** (`clase/PlayerClass.java`, `clase/Talent.java`, `clase/ActiveSkill.java`, `clase/ClassProgress.java`,
 `clase/ClassDamage.java`, `forge/Relic.java` y `magic/Healing.java`); las pantallas y la guía los leen de ahí,
@@ -118,7 +125,6 @@ armas arrojadas).
 | Mago | ×0,7 | ×1 | ×1 |
 | Curandero | ×0,5 | ×1 | ×1/3 |
 | Arquero | ×0,7 | ×1 | ×1 |
-| Herrero | ×1 | ×1 | ×1 |
 
 **Cómo se combinan con los números de clase.** Los porcentajes de la clase y de sus talentos (daño cuerpo a
 cuerpo, de proyectiles, de hechizos, por la espalda, a la cabeza…) **se suman entre sí** y se aplican una vez,
@@ -146,7 +152,6 @@ Vida: 20 de base (10 corazones). Estamina: 100 de base (`CombatConfig.staminaMax
 | Mago | 18 (−10 %) | 90 (−10 %) | ×0,7 | ×1 | ×1 (+10 % de hechizos) | espera de hechizos −10 %, maná +25 %, regeneración de maná ×6 (+500 %) |
 | Curandero | 20 | 100 | ×0,5 | ×1 | ×1/3 (y cura 1/10 del daño entero a aliados) | curación +50 %, maná +15 %, regeneración de maná ×4 (+300 %), regeneración de estamina +10 % |
 | Arquero | 18 (−10 %) | 100 | ×0,7 | ×1 (+15 % de proyectiles) | ×1 | velocidad +8 %, tensado +10 %, esquiva +20 %, espera de esquiva −15 %, caída −25 % |
-| Herrero | 21 (+5 %) | 100 | ×1 | ×1 | ×1 | minado +15 %, ventana del golpe perfecto +0,01, potencial +5, reparación +25 % |
 
 ### Guerrero — cuerpo a cuerpo y aguante
 
@@ -384,7 +389,8 @@ Integración con el maná (hecha al unir la rama, 2026-09-29):
 - **B. El Curandero sí hace daño mágico, a un tercio, y cuerpo a cuerpo a la mitad.** Su proyectil, su área y su
   runa dañan a los enemigos ×1/3 y siguen curando a los aliados como antes (1/10 del daño entero, y al Curandero
   un tercio de eso). Cuerpo a cuerpo ×0,5 en lugar del −15 %.
-- **C. El tope sigue en el nivel 15** (árbol de 21 puntos: nunca se tiene todo).
+- **C. El tope sigue en el nivel 15** (árbol de 21 puntos: nunca se tiene todo). *Cambiada el 2026-09-30:* tope
+  50, puntos de nivel y de hitos, ~87 % del árbol grande en el tope (`docs/ARBOLES.md`).
 - **D. El objeto de cambiar de clase se forja con el sistema de forja** (piezas y mesa de forja), no con una
   receta. Es el **Medallón del olvido**: núcleo de eco + engaste + cadena en la estrella, un golpe de martillo.
   *Por qué una «reliquia» (`forge/Relic`) y no un `ForgeType` nuevo:* todo `ForgeType` es una pieza de equipo y el

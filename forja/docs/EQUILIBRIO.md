@@ -26,30 +26,30 @@
 
 ## Magia frente al cuerpo a cuerpo
 
-Andy, 2026-09-30: la magia estaba rota. Sin clase mágica debe ser un recurso para un momento, no la mejor arma; un Mago con sus talentos, a la altura del cuerpo a cuerpo pero no por encima. *Sin clase*: el maná vuelve a 0,4/s lanzando y 0,8/s en calma. *Mago*: la clase y todos los talentos que tocan los hechizos o la barra (Núcleo afinado, Catalizador, Mente clara, Canalización, Economía arcana). El báculo y el grimorio son los mejores de cada escenario sin clase. Las pruebas (`magiaEnSuSitio`) exigen que, sin clase, la magia no mate antes que la mediana cuerpo a cuerpo ni sostenga más de la mitad de su daño, y que el Mago quede entre la más rápida cuerpo a cuerpo y 1,3 veces la mediana (1,5 el grimorio, cuyo área muerde a todo lo que pisa la runa y aquí pelea contra un solo mob). Contra los grandes, nada mágico puede matar claramente (un 10 %) antes que la más rápida cuerpo a cuerpo.
+Andy, 2026-09-30: la magia estaba rota. Sin clase mágica debe ser un recurso para un momento, no la mejor arma; un Mago con sus talentos, a la altura del cuerpo a cuerpo pero no por encima. *Sin clase*: el maná vuelve a 0,4/s lanzando y 0,8/s en calma. *Mago*: la clase y todos los nodos de su árbol grande menos las claves (docs/ARBOLES.md: lo que tiene un Mago en el nivel 50). El báculo y el grimorio son los mejores de cada escenario sin clase. Las pruebas (`magiaEnSuSitio`) exigen que, sin clase, la magia no mate antes que la mediana cuerpo a cuerpo ni sostenga más de la mitad de su daño, y que el Mago quede entre la más rápida cuerpo a cuerpo y 1,3 veces la mediana (1,5 el grimorio, cuyo área muerde a todo lo que pisa la runa y aquí pelea contra un solo mob). Contra los grandes, nada mágico puede matar claramente (un 10 %) antes que la más rápida cuerpo a cuerpo.
 
 | Escenario | C/c más rápida | Mediana c/c | Báculo sin clase | Báculo Mago | Grimorio sin clase | Grimorio Mago |
 |---|---|---|---|---|---|---|
 | 0 % | guanteletes 1,09 | 1,56 | 2,35 (×1,51) | 1,28 (×0,82) | 2,40 (×1,54) | 1,74 (×1,11) |
 | 50 % | guanteletes 0,73 | 1,20 | 1,25 (×1,04) | 0,92 (×0,77) | 1,80 (×1,50) | 1,54 (×1,28) |
-| 100 % | guanteletes 0,26 | 0,70 | 0,71 (×1,02) | 0,60 (×0,86) | 1,24 (×1,76) | 0,97 (×1,38) |
+| 100 % | guanteletes 0,26 | 0,70 | 0,71 (×1,02) | 0,60 (×0,86) | 1,24 (×1,76) | 0,92 (×1,30) |
 
 TTK medio en segundos (entre paréntesis, frente a la mediana cuerpo a cuerpo). Daño por segundo sostenido en 60 s:
 
 | Escenario | Mediana c/c | Báculo sin clase | Báculo Mago | Grimorio sin clase | Grimorio Mago |
 |---|---|---|---|---|---|
-| 0 % | 15,2 | 1,9 | 8,1 | 2,3 | 8,8 |
-| 50 % | 21,7 | 2,7 | 11,4 | 2,9 | 10,6 |
-| 100 % | 32,5 | 4,0 | 16,5 | 3,3 | 13,2 |
+| 0 % | 15,2 | 1,9 | 7,7 | 2,3 | 8,9 |
+| 50 % | 21,7 | 2,7 | 10,9 | 2,9 | 10,7 |
+| 100 % | 32,5 | 4,0 | 16,5 | 3,3 | 13,5 |
 
 Los grandes, al 100 % (segundos para matar; «> 120» si no cae en dos minutos):
 
 | Arma | Warden | Herrero Caído |
 |---|---|---|
 | báculo con Enjambre, sin clase | > 120 | > 120 |
-| báculo con Enjambre, Mago | 5,9 | 21,5 |
+| báculo con Enjambre, Mago | 5,9 | 21,9 |
 | grimorio, sin clase | > 120 | > 120 |
-| grimorio, Mago | 18,6 | 39,9 |
+| grimorio, Mago | 17,7 | 39,4 |
 | guanteletes (la más rápida cuerpo a cuerpo) | 5,9 | 19,9 |
 
 ## Las siete sospechas, medidas
