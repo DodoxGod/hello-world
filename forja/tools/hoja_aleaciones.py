@@ -26,7 +26,8 @@ SETS = {
         "out": Path("E:/IA/Claude/Forja_capturas_mejoras/aleacion_nether"),
         "sheet": "hoja_aleacion_nether.jpg",
         "title": "Forja: la fragua de almas de la Fragua caída y las aleaciones del Nether",
-        "textures": ["item/fatuo", "item/magmacero", "block/fragua_de_almas_side", "block/fragua_de_almas_top",
+        "textures": ["item/fatuo", "item/magmacero", "item/kit_de_reparacion_fatuo", "item/kit_de_reparacion_magmacero",
+                     "block/fragua_de_almas_side", "block/fragua_de_almas_top",
                      "block/fragua_de_almas_encendida_side", "block/fragua_de_almas_encendida_top",
                      "block/costra_de_magma", "mob_effect/llama_fatua"],
     },
@@ -35,7 +36,7 @@ SETS = {
         "out": Path("E:/IA/Claude/Forja_capturas_mejoras/aleacion_end"),
         "sheet": "hoja_aleacion_end.jpg",
         "title": "Forja: la fragua del vacío del End y el eterio",
-        "textures": ["item/eterio", "block/fragua_del_vacio_side", "block/fragua_del_vacio_top",
+        "textures": ["item/eterio", "item/kit_de_reparacion_eterio", "block/fragua_del_vacio_side", "block/fragua_del_vacio_top",
                      "block/fragua_del_vacio_encendida_side", "block/fragua_del_vacio_encendida_top"],
     },
 }
@@ -58,10 +59,14 @@ def main():
     out = spec["out"]
     out.mkdir(parents=True, exist_ok=True)
     shots = sorted(SHOTS.glob(spec["prefix"] + "*.png"))
+    if shots:
+        for shot in shots:
+            shutil.copy2(shot, out / shot.name)
+    else:
+        # Another section ran since (each run empties the folder): lay out the copies made last time.
+        shots = sorted(out.glob(spec["prefix"] + "*.png"))
     if not shots:
-        raise SystemExit(f"no shots {spec['prefix']}* in {SHOTS}")
-    for shot in shots:
-        shutil.copy2(shot, out / shot.name)
+        raise SystemExit(f"no shots {spec['prefix']}* in {SHOTS} or {out}")
 
     columns = 3
     cell_w = 640
@@ -86,7 +91,8 @@ def main():
         backdrop = Image.new("RGBA", big.size, (139, 139, 139, 255))
         backdrop.alpha_composite(big)
         sheet.paste(backdrop.convert("RGB"), (x, y))
-        label = name.split("/")[-1].replace("fragua_de_almas", "almas").replace("fragua_del_vacio", "vacio")
+        label = (name.split("/")[-1].replace("fragua_de_almas", "almas").replace("fragua_del_vacio", "vacio")
+                 .replace("kit_de_reparacion", "kit"))
         draw.text((x, y + big.height + 4), label.replace("_", " "), fill=(220, 214, 200), font=font(12))
         x += big.width + 14
     y += strip_h

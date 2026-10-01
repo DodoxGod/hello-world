@@ -173,11 +173,13 @@ comprobar las dos cosas.
 
 ## 5. Arte
 
+- Lingotes y kits de reparación: de la familia de `tools/lingotes.py` como todos (variante A el lingote, B el kit),
+  cada uno con su marca: fatuo, dos lenguas de fuego de almas sobre acero ahumado; magmacero, magma encendido en las
+  juntas del basalto; eterio, dos motas que se levantan de la barra. El tinte de piezas y armaduras es el color de la
+  tabla (`ALLOY_COLORS`), y por estar ahí cada una tiene su kit sin tocar nada más.
+
 En `tools/aleacion_nether.py`, llamado desde `generate_assets.py`:
 
-- Lingotes propios: fatuo (acero ahumado con llamas azules que suben por la cara iluminada), magmacero (basalto con
-  grietas de magma encendidas), eterio (violeta de coro con motas que flotan). El tinte de piezas y armaduras es el
-  color de la tabla.
 - Fragua de almas apagada y encendida (piedra negra con boca de fuego de almas; encendida, el hogar azul y luz 13),
   fragua del vacío apagada y encendida (piedra del End y púrpura, encendida con el hogar violeta), costra de magma.
 - Partículas: la de almas echa llamas de alma y almas (`forja:alma`); la del vacío, partículas de portal y de vara
