@@ -12053,8 +12053,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 			int tome = dev.forja.magic.Spellcasting.cooldown(quickTome, ForgeType.GRIMORIO);
 			log("mejoras magicas: Conjuro veloz deja la espera del baculo en " + fast + " de " + slow + " tics y la del grimorio en " + tome
 				+ " de " + dev.forja.magic.Spellcasting.TOME_COOLDOWN + "; Tinta indeleble, la runa en " + dev.forja.magic.Spellcasting.runeTicks(quickTome) + " tics");
-			// The mana bar cut the waits (a bolt 6 ticks, an area 20); Conjuro veloz still takes two fifths off them.
-			check(slow == 6 && fast == 4 && tome == 12, "Conjuro veloz should take two fifths off the wait: " + slow + " -> " + fast + ", tome " + tome);
+			// The magic reined in (Andy, 2026-09-30): a bolt waits 10 ticks, an area 20, and Conjuro veloz at a
+			// hundred takes a fifth off them (it was two fifths): 8 and 16.
+			int quickBolt = Math.round(dev.forja.magic.Spellcasting.BOLT_COOLDOWN * (1.0F - Upgrade.castHaste(1.0F)));
+			int quickArea = Math.round(dev.forja.magic.Spellcasting.TOME_COOLDOWN * (1.0F - Upgrade.castHaste(1.0F)));
+			check(slow == dev.forja.magic.Spellcasting.BOLT_COOLDOWN && fast == quickBolt && tome == quickArea && fast == 8 && tome == 16,
+				"Conjuro veloz should take a fifth off the wait: " + slow + " -> " + fast + ", tome " + tome);
 			check(dev.forja.magic.Spellcasting.runeTicks(quickTome) == 240, "Tinta indeleble at a hundred should double the rune's six seconds");
 			for (Upgrade upgrade : List.of(Upgrade.CONJURO_VELOZ, Upgrade.SOBRECARGA, Upgrade.RESONANCIA)) {
 				check(upgrade.appliesTo(ForgeType.BACULO) && upgrade.appliesTo(ForgeType.GRIMORIO) && !upgrade.appliesTo(ForgeType.ESPADA), upgrade + " is for the staff and the tome alone");
@@ -12088,7 +12092,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 		check(bolts[0] == 1 && bolts[1] == 3 && bolts[2] == 5, "one bolt, three with Prisma, five with Enjambre: " + bolts[0] + ", " + bolts[1] + ", " + bolts[2]);
 		context.waitTicks(5);
 
-		// ---- Sobrecarga: the fourth spell hits twice as hard. Resonancia: a bolt and its echo, half as much again.
+		// ---- Sobrecarga: the fourth spell hits half as hard again. Resonancia: a bolt and its echo, a fifth more.
 		server.runCommand(String.format(Locale.ROOT, "summon minecraft:iron_golem %d %d %d {NoAI:1b,Tags:[\"forja_diana\"]}", px, y, pz - 5));
 		context.waitTicks(10);
 		float[] taken = new float[4];
@@ -12110,7 +12114,10 @@ public class ForjaClientTest implements FabricClientGameTest {
 		}
 		log("mejoras magicas: Sobrecarga - los cuatro hechizos quitan " + taken[0] + ", " + taken[1] + ", " + taken[2] + " y " + taken[3]);
 		check(Math.abs(taken[0] - taken[2]) < 0.01F && taken[0] > 0.0F, "the first three spells are ordinary ones: " + taken[0] + ", " + taken[1] + ", " + taken[2]);
-		check(Math.abs(taken[3] - taken[0] * 2.0F) < 0.05F, "and the fourth, overcharged at a hundred, should hit twice as hard: " + taken[3] + " against " + taken[0]);
+		// Half as hard again at a hundred since 2026-09-30 (it was twice): Upgrade.overchargeBonus.
+		float overcharged = 1.0F + Upgrade.overchargeBonus(1.0F);
+		check(Math.abs(taken[3] - taken[0] * overcharged) < 0.05F,
+			"and the fourth, overcharged at a hundred, should hit " + overcharged + " times as hard: " + taken[3] + " against " + taken[0]);
 
 		float echoBefore = server.computeOnServer(s -> {
 			ServerPlayer player = connection.getServerPlayer();
@@ -12124,7 +12131,10 @@ public class ForjaClientTest implements FabricClientGameTest {
 		float echoAfter = server.computeOnServer(s -> connection.getServerLevel().getEntitiesOfClass(net.minecraft.world.entity.animal.golem.IronGolem.class,
 			connection.getServerPlayer().getBoundingBox().inflate(12.0)).getFirst().getHealth());
 		log("mejoras magicas: Resonancia - el proyectil y su eco quitan " + (echoBefore - echoAfter) + " (uno solo, " + taken[0] + ")");
-		check(Math.abs((echoBefore - echoAfter) - taken[0] * 1.5F) < 0.05F, "a bolt and its echo at a half should come to one and a half bolts: " + (echoBefore - echoAfter));
+		// The echo is worth a fifth of the spell at a hundred since 2026-09-30 (it was a half): Upgrade.echoShare.
+		float echoed = 1.0F + Upgrade.echoShare(1.0F);
+		check(Math.abs((echoBefore - echoAfter) - taken[0] * echoed) < 0.05F,
+			"a bolt and its echo should come to " + echoed + " bolts: " + (echoBefore - echoAfter) + " against " + taken[0]);
 		server.runCommand("kill @e[tag=forja_diana]");
 		context.waitTicks(5);
 
