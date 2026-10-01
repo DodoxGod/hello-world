@@ -132,6 +132,9 @@ public class GuideBookScreen extends Screen {
 		return this.bookLeft() + 4 + side * (PAGE_W + SPINE);
 	}
 
+	/** The leather of the guide's buttons: the cover's brown. */
+	private static final int BOOK_LEATHER = 0xFF8A5530;
+
 	@Override
 	protected void init() {
 		if (this.pages.isEmpty()) {
@@ -140,10 +143,11 @@ public class GuideBookScreen extends Screen {
 		int top = this.bookTop();
 		this.backButton = this.addRenderableWidget(new PageButton(this.pageX(0) + 8, top + BOOK_H - 22, false, button -> this.turn(-1), true));
 		this.forwardButton = this.addRenderableWidget(new PageButton(this.pageX(1) + PAGE_W - 31, top + BOOK_H - 22, true, button -> this.turn(1), true));
-		this.addRenderableWidget(Button.builder(Component.translatable("gui.forja.libro.indice"), button -> this.jumpTo(this.indexPage))
-			.bounds(this.width / 2 - 104, top + BOOK_H + 3, 100, 20).build());
-		this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> this.onClose())
-			.bounds(this.width / 2 + 4, top + BOOK_H + 3, 100, 20).build());
+		// In the book's own leather, not vanilla's grey stone (client/ForjaButton).
+		this.addRenderableWidget(new ForjaButton(this.width / 2 - 104, top + BOOK_H + 3, 100, 20,
+			Component.translatable("gui.forja.libro.indice"), button -> this.jumpTo(this.indexPage), BOOK_LEATHER));
+		this.addRenderableWidget(new ForjaButton(this.width / 2 + 4, top + BOOK_H + 3, 100, 20,
+			CommonComponents.GUI_DONE, button -> this.onClose(), BOOK_LEATHER));
 		if (this.openAt != null) {
 			this.goToPage(this.chapterPage(this.openAt));
 			this.openAt = null;

@@ -55,6 +55,9 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 	/** The white-hot head of a falling meteorite. */
 	private static final dev.forja.registry.GlintOptions HEAD =
 		new dev.forja.registry.GlintOptions(0xFFF4E0, 2.4F);
+	/** The burning just behind the head. */
+	private static final dev.forja.registry.GlintOptions TAIL =
+		new dev.forja.registry.GlintOptions(0xFF8A3A, 1.6F);
 
 	public static final int DURATION = 6000;
 
@@ -283,11 +286,14 @@ public enum WorldEvents implements net.minecraft.util.StringRepresentable {
 			double z = falling.ground().getZ() + 0.5;
 			// The head has to be the brightest thing in the sky or the tail reads as a line of soot
 			// falling by itself, which is what the first cut of this looked like.
-			level.sendParticles(HEAD, x, height, z, 10, 0.3, 0.3, 0.3, 0.0);
+			level.sendParticles(HEAD, x, height, z, 6, 0.25, 0.25, 0.25, 0.0);
 			level.sendParticles(ParticleTypes.FLAME, x, height, z, 12, 0.3, 0.45, 0.3, 0.03);
 			level.sendParticles(dev.forja.registry.ModParticles.CHISPA, x, height, z, 10, 0.25, 0.35, 0.25, 0.2);
-			// The tail it leaves behind it, which is what makes it read as falling rather than hanging.
-			level.sendParticles(ParticleTypes.LARGE_SMOKE, x, height + 1.5, z, 3, 0.3, 0.6, 0.3, 0.01);
+			// The tail it leaves behind it, which is what makes it read as falling rather than hanging: burning
+			// orange just behind the head, then a thin smoke. It was three of vanilla's large smoke a tick, which
+			// at night is dark blue and hung in the sky as a column of violet squares for seconds after the crash.
+			level.sendParticles(TAIL, x, height + 1.0, z, 4, 0.2, 0.5, 0.2, 0.0);
+			level.sendParticles(ParticleTypes.SMOKE, x, height + 2.0, z, 2, 0.2, 0.6, 0.2, 0.01);
 			if (left % 6 == 0) {
 				level.playSound(null, x, height, z, SoundEvents.FIREWORK_ROCKET_LARGE_BLAST,
 					SoundSource.AMBIENT, 2.0F, 0.5F);
