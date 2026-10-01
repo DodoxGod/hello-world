@@ -6,7 +6,6 @@ import dev.forja.clase.ClassDamage;
 import dev.forja.clase.ClassEffects;
 import dev.forja.clase.ClassProgress;
 import dev.forja.clase.PlayerClass;
-import dev.forja.clase.Talent;
 import dev.forja.combat.CombatConfig;
 import dev.forja.combat.Stamina;
 import dev.forja.forge.Assembler;
@@ -60,11 +59,11 @@ public class ClasesGameTests {
 		ClassProgress.award(player, ClassProgress.totalFor(3) - ClassProgress.data(player).xp());
 		helper.assertTrue(ClassProgress.data(player).level() == 3, "debería ser nivel 3, es " + ClassProgress.data(player).level());
 		helper.assertTrue(ClassProgress.data(player).points() > before, "subir de nivel da puntos");
-		helper.assertTrue(ClassProgress.check(player, Talent.ASESINO_PIES_LIGEROS) == ClassProgress.Refusal.OTHER_CLASS,
-			"un talento de otra clase no se aprende");
-		helper.assertTrue(ClassProgress.unlock(player, Talent.GUERRERO_SEGUNDO_ALIENTO), "el primer talento del guerrero se aprende");
-		helper.assertTrue(ClassProgress.has(player, Talent.GUERRERO_SEGUNDO_ALIENTO), "y queda aprendido");
-		helper.assertTrue(ClassProgress.check(player, Talent.GUERRERO_SEGUNDO_ALIENTO) == ClassProgress.Refusal.ALREADY, "no dos veces");
+		helper.assertTrue(ClassProgress.check(player, "asesino.nucleo_1") == ClassProgress.Refusal.OTHER_CLASS,
+			"un nodo de otra clase no se aprende");
+		helper.assertTrue(ClassProgress.unlock(player, "guerrero.nucleo_1"), "la primera puerta del guerrero se aprende");
+		helper.assertTrue(ClassProgress.has(player, "guerrero.nucleo_1"), "y queda aprendida");
+		helper.assertTrue(ClassProgress.check(player, "guerrero.nucleo_1") == ClassProgress.Refusal.ALREADY, "no dos veces");
 		// Andy (2026-09-29): a change of class starts again at level 1 (aClassChangeStartsAtLevelOne).
 		ClassProgress.choose(player, PlayerClass.TANQUE);
 		helper.assertTrue(ClassProgress.data(player).level() == 1, "cambiar de clase vuelve al nivel 1");
@@ -79,7 +78,7 @@ public class ClasesGameTests {
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
 		ClassProgress.choose(player, PlayerClass.GUERRERO);
 		ClassProgress.award(player, ClassProgress.totalFor(5));
-		ClassProgress.unlock(player, Talent.GUERRERO_SEGUNDO_ALIENTO);
+		ClassProgress.unlock(player, "guerrero.nucleo_1");
 		helper.assertTrue(ClassProgress.data(player).level() == 5, "debería ser nivel 5, es " + ClassProgress.data(player).level());
 		helper.assertTrue(ClassProgress.data(player).changes() == 0, "elegir la primera vez no es un cambio");
 
@@ -92,13 +91,13 @@ public class ClasesGameTests {
 		helper.assertTrue(ClassProgress.data(player).changes() == 0, "y no cuenta como cambio");
 
 		// Another class: level 1, no experience, no talents, one change more.
-		ClassProgress.unlock(player, Talent.GUERRERO_SEGUNDO_ALIENTO);
+		ClassProgress.unlock(player, "guerrero.nucleo_1");
 		ClassProgress.choose(player, PlayerClass.MAGO);
 		helper.assertTrue(ClassProgress.clazz(player) == PlayerClass.MAGO, "ahora es mago");
 		helper.assertTrue(ClassProgress.data(player).level() == 1, "cambiar de clase vuelve al nivel 1, es " + ClassProgress.data(player).level());
 		helper.assertTrue(ClassProgress.data(player).xp() == 0, "sin experiencia: " + ClassProgress.data(player).xp());
 		helper.assertTrue(ClassProgress.data(player).spent() == 0, "sin talentos");
-		helper.assertTrue(ClassProgress.data(player).points() == ClassProgress.pointsAt(1), "con los puntos del nivel 1");
+		helper.assertTrue(ClassProgress.data(player).points() == dev.forja.clase.ClassTree.levelPoints(1), "con los puntos del nivel 1");
 		helper.assertTrue(ClassProgress.data(player).changes() == 1, "y un cambio contado: " + ClassProgress.data(player).changes());
 		ClassProgress.clear(player);
 		helper.succeed();

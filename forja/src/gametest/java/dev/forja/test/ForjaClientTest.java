@@ -162,6 +162,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// The big class trees (docs/ARBOLES.md): the screen played with the mouse, a contact sheet for Andy.
+			if ("arbol".equals(solo)) {
+				ArbolFootage.film(context, server, connection);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			// The classes and the healing lantern (docs/CLASES.md): the choice, the tree, the lantern in hand.
 			if ("clases".equals(solo)) {
 				showClasses(context, server, connection);
@@ -10641,8 +10647,9 @@ public class ForjaClientTest implements FabricClientGameTest {
 		// category, listed in Controls (options.keyMappings is what that screen lists), with those defaults.
 		String keys = context.computeOnClient(mc -> {
 			StringBuilder wrong = new StringBuilder();
-			String[] names = {dev.forja.clase.ClassProgress.KEY_TREE, dev.forja.clase.ClassProgress.KEY_SKILL_1, dev.forja.clase.ClassProgress.KEY_SKILL_2};
-			int[] defaults = {org.lwjgl.glfw.GLFW.GLFW_KEY_K, org.lwjgl.glfw.GLFW.GLFW_KEY_V, org.lwjgl.glfw.GLFW.GLFW_KEY_B};
+			String[] names = {dev.forja.clase.ClassProgress.KEY_TREE, dev.forja.clase.ClassProgress.KEY_SKILL_1, dev.forja.clase.ClassProgress.KEY_SKILL_2,
+				dev.forja.clase.ClassProgress.KEY_SKILL_3};
+			int[] defaults = {org.lwjgl.glfw.GLFW.GLFW_KEY_K, org.lwjgl.glfw.GLFW.GLFW_KEY_V, org.lwjgl.glfw.GLFW.GLFW_KEY_B, org.lwjgl.glfw.GLFW.GLFW_KEY_N};
 			for (int i = 0; i < names.length; i++) {
 				net.minecraft.client.KeyMapping found = null;
 				for (net.minecraft.client.KeyMapping mapping : mc.options.keyMappings) {
@@ -10661,7 +10668,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 			return wrong.toString();
 		});
 		check(keys.isEmpty(), "the class keys should be rebindable KeyMappings in the Forja category: " + keys);
-		log("class keys: K, V and B are KeyMappings in the Forja category");
+		log("class keys: K, V, B and N are KeyMappings in the Forja category");
 		context.runOnClient(mc -> mc.gui.setScreen(new dev.forja.client.ClassChoiceScreen(false)));
 		context.waitTicks(10);
 		context.takeScreenshot("clases_01_elegir");
@@ -10669,8 +10676,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 			net.minecraft.server.level.ServerPlayer player = connection.getServerPlayer();
 			dev.forja.clase.ClassProgress.choose(player, dev.forja.clase.PlayerClass.GUERRERO);
 			dev.forja.clase.ClassProgress.setLevel(player, 8);
-			dev.forja.clase.ClassProgress.unlock(player, dev.forja.clase.Talent.GUERRERO_SEGUNDO_ALIENTO);
-			dev.forja.clase.ClassProgress.unlock(player, dev.forja.clase.Talent.GUERRERO_GUARDIA_ALTA);
+			ArbolGameTests.learnTo(player, "guerrero.b.tronco_4");
+			ArbolGameTests.learnTo(player, "guerrero.s1.2");
 		});
 		context.waitTicks(10);
 		context.runOnClient(mc -> mc.gui.setScreen(new dev.forja.client.TalentTreeScreen()));

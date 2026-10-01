@@ -10,7 +10,6 @@ import dev.forja.combat.KillFlow;
 import dev.forja.combat.Stamina;
 import dev.forja.clase.ClassProgress;
 import dev.forja.clase.PlayerClass;
-import dev.forja.clase.Talent;
 import dev.forja.forge.Assembler;
 import dev.forja.forge.ForgeType;
 import dev.forja.forge.Potential;
@@ -184,11 +183,13 @@ public class ManaGameTests {
 		float mageFill = secondsToFill(mage, now);
 		helper.assertTrue(mageFill <= 30.0F && mageFill < plainFill / 4.0F, "el Mago llena su barra (más grande) en menos de 30 s: " + mageFill + " s");
 		ClassProgress.award(mage, ClassProgress.totalFor(5));
-		helper.assertTrue(ClassProgress.unlock(mage, Talent.MAGO_MENTE_CLARA), "Mente clara se aprende");
-		helper.assertTrue(Math.abs(Mana.regenFactor(mage) - 7.0F) < EPS, "con Mente clara, ×7: " + Mana.regenFactor(mage));
+		// Mente clara, at the end of the Flujo trunk (docs/ARBOLES.md): +1, on top of the small nodes on the way.
+		helper.assertTrue(ArbolGameTests.learnTo(mage, "mago.b.tronco_4"), "Mente clara se aprende");
+		float mind = 1.0F + dev.forja.clase.ClassEffects.manaRegenBonus(mage);
+		helper.assertTrue(mind >= 7.0F && Math.abs(Mana.regenFactor(mage) - mind) < EPS, "con Mente clara, ×7 o más: " + Mana.regenFactor(mage));
 		// The upgrades add to the base, and the class multiplies the sum.
 		mage.setItemInHand(InteractionHand.MAIN_HAND, staff(helper, Upgrade.MEDITACION, 100));
-		helper.assertTrue(Math.abs(Mana.regenFactor(mage) - 7.0F * 1.4F) < EPS, "Meditación suma a la base y la clase la multiplica: " + Mana.regenFactor(mage));
+		helper.assertTrue(Math.abs(Mana.regenFactor(mage) - mind * 1.4F) < EPS, "Meditación suma a la base y la clase la multiplica: " + Mana.regenFactor(mage));
 		plain.setItemInHand(InteractionHand.MAIN_HAND, staff(helper, Upgrade.MEDITACION, 100));
 		helper.assertTrue(Mana.regenFactor(plain) < 2.0F, "sin clase, Meditación sola no llega ni a ×2: " + Mana.regenFactor(plain));
 		ClassProgress.clear(mage);
@@ -199,8 +200,9 @@ public class ManaGameTests {
 		float healerFill = secondsToFill(healer, now);
 		helper.assertTrue(healerFill > mageFill && healerFill <= 40.0F, "el Curandero, entre el Mago y los demás: " + healerFill + " s");
 		ClassProgress.award(healer, ClassProgress.totalFor(5));
-		helper.assertTrue(ClassProgress.unlock(healer, Talent.CURANDERO_SERENIDAD), "Serenidad se aprende");
-		helper.assertTrue(Math.abs(Mana.regenFactor(healer) - 5.0F) < EPS, "con Serenidad, ×5: " + Mana.regenFactor(healer));
+		helper.assertTrue(ArbolGameTests.learnTo(healer, "curandero.c.tronco_4"), "Serenidad se aprende");
+		float serene = 1.0F + dev.forja.clase.ClassEffects.manaRegenBonus(healer);
+		helper.assertTrue(serene >= 5.0F && Math.abs(Mana.regenFactor(healer) - serene) < EPS, "con Serenidad, ×5 o más: " + Mana.regenFactor(healer));
 		ClassProgress.clear(healer);
 		helper.succeed();
 	}

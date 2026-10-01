@@ -187,8 +187,9 @@ public final class Analysis {
 
 	/**
 	 * The fight as a Mago fights it (clase/PlayerClass.MAGO): the class's base numbers on the spells and the bar,
-	 * and with {@code talents} every talent of its tree that moves them (Núcleo afinado, Catalizador, Mente clara,
-	 * Canalización, Economía arcana), added up the way ClassEffects.stat adds them.
+	 * and with {@code talents} every node of its big tree that moves them (docs/ARBOLES.md) except the keystones,
+	 * whose prices are not numbers a fight can add up: about what a Mago at the top has bought, added up the way
+	 * ClassEffects.stat adds them.
 	 */
 	public static Fight.Options mago(Fight.Options base, boolean talents) {
 		java.util.Map<dev.forja.clase.ClassStat, Double> sum = new java.util.EnumMap<>(dev.forja.clase.ClassStat.class);
@@ -196,8 +197,11 @@ public final class Analysis {
 			sum.merge(mod.stat(), (double) mod.value(), Double::sum);
 		}
 		if (talents) {
-			for (dev.forja.clase.Talent talent : dev.forja.clase.PlayerClass.MAGO.talents()) {
-				for (dev.forja.clase.ClassStat.Mod mod : talent.mods) {
+			for (dev.forja.clase.ClassTree.Node node : dev.forja.clase.PlayerClass.MAGO.tree().nodes) {
+				if (node.kind == dev.forja.clase.ClassTree.Kind.CLAVE) {
+					continue;
+				}
+				for (dev.forja.clase.ClassStat.Mod mod : node.mods) {
 					sum.merge(mod.stat(), (double) mod.value(), Double::sum);
 				}
 			}
