@@ -3808,10 +3808,11 @@ def generate_alloy_textures():
                 paint(x, 6, 1)
                 paint(x + 1, 6, 4)
         elif mark == "pits":
-            for (x, y) in ((5, 6), (9, 7), (12, 6), (7, 9), (11, 9)):
+            # Pewter: soft and dull, a few pits from the casting. Three, each a dark pixel with its lit lower lip:
+            # five pits of three pixels each covered half the face and read as dirt.
+            for (x, y) in ((7, 5), (11, 6), (5, 7)):
                 paint(x, y, 0)
-                paint(x + 1, y, 1)
-                paint(x, y - 1, 4)
+                paint(x, y + 1, 4)
         elif mark == "patches":
             # Electrum: two metals that never quite mixed.
             for (x, y) in face:
@@ -3820,10 +3821,12 @@ def generate_alloy_textures():
                 elif (x + y) % 3 == 0:
                     paint(x, y, 1)
         elif mark == "damask":
-            for layer, row in enumerate((6, 8, 10)):
+            # Damascus: the folded layers as two waves running the same way along the bar, in the mid tone with
+            # a lit edge over each. Three waves out of step, in black, made a checkerboard of the face.
+            for row in (5, 7):
                 for x in range(2, 15):
-                    y = row + (1 if ((x + layer * 2) // 2) % 2 else 0)
-                    paint(x, y, 0)
+                    y = row + (1 if (x + 1) % 8 in (3, 4, 5, 6) else 0)
+                    paint(x, y, 1)
                     paint(x, y - 1, 4)
         elif mark == "stars":
             for (cx, cy) in ((5, 7), (9, 6), (12, 8)):
