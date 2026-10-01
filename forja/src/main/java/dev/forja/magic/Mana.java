@@ -86,6 +86,9 @@ public final class Mana {
 	 */
 	public static final float ORICHALCUM_REGEN = 0.10F;
 	public static final float ORICHALCUM_SET_MANA = 25.0F;
+	/** The deeper bars of the middle tier's sets (docs/ALEACIONES_CUMBRE.md, 2.7): eclipse and astralite. */
+	public static final float ECLIPSE_SET_MANA = 20.0F;
+	public static final float ASTRALITE_SET_MANA = 30.0F;
 	/** A refused cast says so no oftener than this, in ticks: holding the button on an empty bar is not a drum roll. */
 	private static final int DENY_SOUND_EVERY = 8;
 
@@ -172,6 +175,12 @@ public final class Mana {
 		}
 		if (ArmorSets.fullSet(entity) == ForgeMaterial.ORICALCO) {
 			max += ORICHALCUM_SET_MANA;
+		}
+		if (ArmorSets.fullSet(entity) == ForgeMaterial.ECLIPSE) {
+			max += ECLIPSE_SET_MANA;
+		}
+		if (ArmorSets.fullSet(entity) == ForgeMaterial.ASTRALITA) {
+			max += ASTRALITE_SET_MANA;
 		}
 		// The class (clase/ClassEffects): a Mago's bar is deeper.
 		return entity instanceof Player player ? max * (1.0F + dev.forja.clase.ClassEffects.manaMaxBonus(player)) : max;
@@ -341,7 +350,7 @@ public final class Mana {
 		if (parts == null) {
 			return false;
 		}
-		if (parts.hasTrait(ForgeMaterial.Trait.ASTRAL)) {
+		if (parts.hasTrait(ForgeMaterial.Trait.ASTRAL) || parts.hasTrait(ForgeMaterial.Trait.PENUMBRA) || parts.hasTrait(ForgeMaterial.Trait.SIDERAL)) {
 			return true;
 		}
 		if (parts.type() == ForgeType.BACULO || parts.type() == ForgeType.GRIMORIO || parts.type() == ForgeType.FAROL) {
@@ -373,7 +382,8 @@ public final class Mana {
 			}
 		}
 		ForgeMaterial set = ArmorSets.fullSet(player);
-		return set == ForgeMaterial.AMATISTA || set == ForgeMaterial.ECO || set == ForgeMaterial.ORICALCO;
+		return set == ForgeMaterial.AMATISTA || set == ForgeMaterial.ECO || set == ForgeMaterial.ORICALCO
+			|| set == ForgeMaterial.ECLIPSE || set == ForgeMaterial.ASTRALITA;
 	}
 
 	/** Whether the bar has ever had a reason to be on this player's screen. */

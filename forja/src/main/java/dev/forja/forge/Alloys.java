@@ -124,8 +124,9 @@ public final class Alloys {
 		new Recipe("vidriacero", Heat.FUNDIDA, List.of(new Part(() -> ModItems.alloy("obsidiacero"), 1), new Part(() -> Items.QUARTZ, 4)), 1),
 
 		// ---- the three only white heat makes, and therefore only the obsidian crucible.
-		// These three have two ingredients apiece on purpose: the crucible has two input slots, and a
-		// table can never reach them, so a third ingredient would mean a recipe nothing can actually pour.
+		// Sun steel, moon steel and living steel have two ingredients apiece on purpose: the crucible has two input
+		// slots, and a table can never reach them. A recipe with more than two (astralite, the peak alloys) is a
+		// FOUNDRY_ONLY one: two in the pot and the rest from the tanks on its line.
 		/** Sun steel: damascus taken past molten with the fire still in it. It is brightest at noon. */
 		new Recipe("solacero", Heat.FORJA_BLANCA, List.of(new Part(() -> ModItems.alloy("damasco"), 1), new Part(() -> Items.BLAZE_ROD, 3)), 1),
 		/** Moon steel: the same trick the other way round. It wakes up when the sun goes down. */
@@ -143,7 +144,21 @@ public final class Alloys {
 			new Part(() -> Items.BLACKSTONE, 4), new Part(() -> Items.MAGMA_CREAM, 2)), 2),
 		/** Aetherium: steel with a shulker's shell, popped chorus and end stone in it, at the void forge. It does not want to fall. */
 		new Recipe("eterio", Heat.FUNDIDA, List.of(new Part(() -> ModItems.alloy("acero"), 2), new Part(() -> Items.SHULKER_SHELL, 1),
-			new Part(() -> Items.POPPED_CHORUS_FRUIT, 4), new Part(() -> Items.END_STONE, 4)), 2)
+			new Part(() -> Items.POPPED_CHORUS_FRUIT, 4), new Part(() -> Items.END_STONE, 4)), 2),
+
+		// ---- the middle tier (docs/ALEACIONES_CUMBRE.md, 2.7): two alloys and one more thing.
+		/** Spectresteel: wispfire and soul steel with a ghast's tear, at the soul forge. Hard to put down. */
+		new Recipe("espectracero", Heat.FUNDIDA, List.of(new Part(() -> ModItems.alloy("fatuo"), 2), new Part(() -> ModItems.alloy("almacero"), 1),
+			new Part(() -> Items.GHAST_TEAR, 1)), 2),
+		/** Volcano heart: magmasteel and sun steel with magma blocks, at the soul forge. It burns hotter the worse things go. */
+		new Recipe("corazon_de_volcan", Heat.FORJA_BLANCA, List.of(new Part(() -> ModItems.alloy("magmacero"), 2), new Part(() -> ModItems.alloy("solacero"), 1),
+			new Part(() -> Items.MAGMA_BLOCK, 4)), 2),
+		/** Eclipse: aetherium and moon steel with crying obsidian, at the void forge. */
+		new Recipe("eclipse", Heat.FORJA_BLANCA, List.of(new Part(() -> ModItems.alloy("eterio"), 2), new Part(() -> ModItems.alloy("lunacero"), 1),
+			new Part(() -> Items.CRYING_OBSIDIAN, 2)), 2),
+		/** Astralite: orichalcum, aetherium and star iron in the obsidian crucible; the Guild's metal has no quarry in it. */
+		new Recipe("astralita", Heat.FORJA_BLANCA, List.of(new Part(() -> ModItems.ORICALCO, 2), new Part(() -> ModItems.alloy("eterio"), 1),
+			new Part(() -> ModItems.HIERRO_ESTELAR, 2)), 2)
 	);
 
 	/**
@@ -166,7 +181,10 @@ public final class Alloys {
 	private static final java.util.Map<String, Place> PLACES = java.util.Map.of(
 		"fatuo", Place.ALMAS,
 		"magmacero", Place.ALMAS,
-		"eterio", Place.VACIO
+		"eterio", Place.VACIO,
+		"espectracero", Place.ALMAS,
+		"corazon_de_volcan", Place.ALMAS,
+		"eclipse", Place.VACIO
 	);
 
 	/** Where this alloy is made. */
@@ -216,7 +234,11 @@ public final class Alloys {
 		java.util.stream.Stream.concat(ALL.stream(), EXTRA.stream()).toList();
 
 	/** The alloys no table can reach: white heat, and therefore the obsidian crucible or nothing. */
-	public static final java.util.Set<String> WHITE_HEAT_ONLY = java.util.Set.of("solacero", "lunacero", "acero_vivo");
+	public static final java.util.Set<String> WHITE_HEAT_ONLY = java.util.Set.of("solacero", "lunacero", "acero_vivo",
+		"astralita");
+
+	/** The four between the far forges and the forge heart (docs/ALEACIONES_CUMBRE.md, 2.7): two alloys and one more thing each. */
+	public static final java.util.Set<String> MIDDLE = java.util.Set.of("espectracero", "corazon_de_volcan", "eclipse", "astralita");
 
 	/**
 	 * Alloys that are not gear metal.
@@ -231,7 +253,7 @@ public final class Alloys {
 	 * Alloys of more ingredients than the forge table's star has points: only a crucible on a foundry line
 	 * makes them, two bars in the pot and the rest drawn from the tanks. Oricalco is fourteen metals.
 	 */
-	public static final java.util.Set<String> FOUNDRY_ONLY = java.util.Set.of("oricalco");
+	public static final java.util.Set<String> FOUNDRY_ONLY = java.util.Set.of("oricalco", "astralita");
 
 	private Alloys() {
 	}

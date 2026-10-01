@@ -94,6 +94,8 @@ MATERIAL_COLORS = {
     "oricalco": 0xCFD45A,
     # Only at their own far forge (docs/ALEACIONES_NETHER_END.md, tools/aleacion_nether.py).
     "fatuo": 0x3A5466, "magmacero": 0x6E3A2C, "eterio": 0x7A5FB0,
+    # The middle tier and the peak alloys (docs/ALEACIONES_CUMBRE.md).
+    "espectracero": 0x4C8C9E, "corazon_de_volcan": 0xA8401C, "eclipse": 0x2B2350, "astralita": 0x5C7CFA,
 }
 SPECIAL = {"arco", "escudo", "lanza", "ballesta", "cana"}
 DEFAULT_COLORS = {"HEAD": 0xE4E4E4, "PLATE": 0xE4E4E4, "HANDLE": 0xB8894F, "EXTRA": 0xB8894F, "LINING": 0xA86B3C}
@@ -3714,17 +3716,24 @@ ALLOY_COLORS = {
     "fatuo": 0x3A5466,
     "magmacero": 0x6E3A2C,
     "eterio": 0x7A5FB0,
+    # The middle tier and the peak alloys (docs/ALEACIONES_CUMBRE.md).
+    "espectracero": 0x4C8C9E,
+    "corazon_de_volcan": 0xA8401C,
+    "eclipse": 0x2B2350,
+    "astralita": 0x5C7CFA,
 }
 
-# Two alloys are not one colour at all: they run one into another across the bar, left to right.
+# Some alloys are not one colour at all: they run one into another across the bar, left to right.
 ALLOY_SIDEWAYS = {
     "almacero": (0x8FB3C4, 0x5FE5E2),        # the steel it is, running into soul blue
     "acero_estelar": (0xDCEAFF, 0xA894C8),   # the pale sky it is, running into silvered purple
+    "corazon_de_volcan": (0x3A1E18, 0xFF9A2E),  # basalt running into lava
 }
 
-# And one runs with the light instead: dark end purple, lit end blue.
+# And some run with the light instead: dark end purple, lit end blue.
 ALLOY_RAMPS = {
     "lunacero": (0x2A1B4A, 0x6E86D6),
+    "eclipse": (0x120E24, 0x8C7FE0),
 }
 
 def generate_alloy_textures():

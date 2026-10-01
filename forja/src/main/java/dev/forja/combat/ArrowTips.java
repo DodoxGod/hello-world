@@ -89,6 +89,14 @@ public final class ArrowTips {
 	public static final float MAGMA_SECONDS = 2.0F;
 	/** Hechizo: mana it gives back to whoever loosed it. */
 	public static final float SPELL_MANA = 3.0F;
+	/** Velo (Amparo): how long the archer is covered. Ardor: base damage per step of health the archer is missing. */
+	public static final int VEIL_ARROW_TICKS = 30;
+	public static final float ARDOR_ARROW_STEP = 0.25F;
+	/** Sombra (Penumbra): how long it blinds what stands in the dark. */
+	public static final int SHADOW_ARROW_TICKS = 40;
+	/** Astro (Sideral): mana for the archer, and how long the target glows. */
+	public static final float ASTRO_ARROW_MANA = 1.5F;
+	public static final int ASTRO_GLOW_TICKS = 60;
 
 	/** The one thing a tip does beyond its weight and hardness. */
 	public enum Special {
@@ -138,7 +146,15 @@ public final class ArrowTips {
 		/** Magmacero (Volcánico): a gob of magma that sticks, burning and weighing the target down. */
 		MAGMA,
 		/** Eterio (Flotante): lifts what it hits, as a shulker's bullet does. */
-		LEVITA;
+		LEVITA,
+		/** Espectracero (Amparo): covers whoever loosed it for a moment. */
+		VELO,
+		/** Corazón de volcán (Ardor): harder the worse the archer is doing, and alight once they are doing badly. */
+		ARDOR,
+		/** Eclipse (Penumbra): blinds what stands in the dark. */
+		SOMBRA,
+		/** Astralita (Sideral): mana for the archer, and the target glows. */
+		ASTRO;
 
 		public String id() {
 			return this.name().toLowerCase(Locale.ROOT);
@@ -155,6 +171,10 @@ public final class ArrowTips {
 				case FATUA -> Component.translatable("flecha.forja.especial.fatua.desc", dev.forja.upgrade.TraitEffects.SOUL_FLAME_TICKS / 20);
 				case MAGMA -> Component.translatable("flecha.forja.especial.magma.desc", MAGMA_SECONDS);
 				case LEVITA -> Component.translatable("flecha.forja.especial.levita.desc", dev.forja.upgrade.TraitEffects.LIFT_TICKS / 20);
+				case VELO -> Component.translatable("flecha.forja.especial.velo.desc", String.format(Locale.ROOT, "%.1f", VEIL_ARROW_TICKS / 20.0F));
+				case ARDOR -> Component.translatable("flecha.forja.especial.ardor.desc", String.format(Locale.ROOT, "%.2f", ARDOR_ARROW_STEP));
+				case SOMBRA -> Component.translatable("flecha.forja.especial.sombra.desc", SHADOW_ARROW_TICKS / 20);
+				case ASTRO -> Component.translatable("flecha.forja.especial.astro.desc", String.format(Locale.ROOT, "%.1f", ASTRO_ARROW_MANA));
 				case SANGRADO -> Component.translatable("flecha.forja.especial.sangrado.desc", BLEED_TICKS / 20);
 				case RESINA -> Component.translatable("flecha.forja.especial.resina.desc", RESIN_TICKS / 20);
 				case LLANTO -> Component.translatable("flecha.forja.especial.llanto.desc", WEAKNESS_TICKS / 20);
@@ -218,6 +238,10 @@ public final class ArrowTips {
 			case ESPECTRAL -> Special.FATUA;
 			case VOLCANICO -> Special.MAGMA;
 			case FLOTANTE -> Special.LEVITA;
+			case AMPARO -> Special.VELO;
+			case ARDOR -> Special.ARDOR;
+			case PENUMBRA -> Special.SOMBRA;
+			case SIDERAL -> Special.ASTRO;
 			default -> Special.NONE;
 		};
 	}
@@ -264,6 +288,20 @@ public final class ArrowTips {
 		};
 	}
 
+	/**
+	 * Ardor: base damage the tip adds (before the arrow's speed multiplies it) for each step of health the one who loosed
+	 * it is missing (docs/ALEACIONES_CUMBRE.md, 2.7), or 0 for any other tip.
+	 */
+	public static float wrathBonus(Special special, net.minecraft.world.entity.@Nullable Entity owner) {
+		if (!(owner instanceof LivingEntity archer)) {
+			return 0.0F;
+		}
+		return switch (special) {
+			case ARDOR -> ARDOR_ARROW_STEP * dev.forja.upgrade.TraitEffects.wrathSteps(archer);
+			default -> 0.0F;
+		};
+	}
+
 	/** What the tip does to what it has just hurt (entity/ForgedArrow.doPostHurtEffects). */
 	public static void onHit(ServerLevel level, AbstractArrow arrow, @Nullable LivingEntity shooter, LivingEntity target, Special special) {
 		switch (special) {
@@ -290,6 +328,28 @@ public final class ArrowTips {
 			case FATUA -> dev.forja.upgrade.TraitEffects.soulFlame(level, target, shooter != null ? shooter : target,
 				dev.forja.upgrade.TraitEffects.SOUL_FLAME_TICKS);
 			case LEVITA -> dev.forja.upgrade.TraitEffects.lift(level, target, shooter);
+			case VELO -> {
+				if (shooter != null && shooter.isAlive()) {
+					shooter.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, VEIL_ARROW_TICKS, 0), shooter);
+				}
+			}
+			case ARDOR -> {
+				if (shooter != null && dev.forja.upgrade.TraitEffects.wrathSteps(shooter) >= dev.forja.upgrade.TraitEffects.ARDOR_IGNITE_STEPS) {
+					target.igniteForSeconds(2.0F);
+				}
+			}
+			case SOMBRA -> {
+				if (dev.forja.upgrade.TraitEffects.inDark(level, target)) {
+					target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, SHADOW_ARROW_TICKS, 0), shooter);
+					level.sendParticles(ParticleTypes.SQUID_INK, target.getX(), target.getY(1.0), target.getZ(), 6, 0.3, 0.3, 0.3, 0.02);
+				}
+			}
+			case ASTRO -> {
+				if (shooter instanceof Player player && !dev.forja.magic.Mana.exempt(player)) {
+					dev.forja.magic.Mana.give(player, ASTRO_ARROW_MANA);
+				}
+				target.addEffect(new MobEffectInstance(MobEffects.GLOWING, ASTRO_GLOW_TICKS, 0), shooter);
+			}
 			case MAGMA -> {
 				target.igniteForSeconds(MAGMA_SECONDS);
 				target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, Math.round(MAGMA_SECONDS * 20.0F), 0), shooter);

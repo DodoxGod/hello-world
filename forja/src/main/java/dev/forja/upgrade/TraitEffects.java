@@ -27,6 +27,7 @@ import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
@@ -178,6 +179,12 @@ public final class TraitEffects {
 				lift(level, victim, attacker);
 			}
 		}
+		// Penumbra: a blow on something that stands in the dark gives the player a little mana.
+		if (parts != null && !weapon.isBroken() && parts.hasTrait(ForgeMaterial.Trait.PENUMBRA) && attacker instanceof Player player
+			&& parts.type().kind == ForgeType.Kind.WEAPON && (melee || dev.forja.magic.Spellcasting.blow())
+			&& !dev.forja.magic.Mana.exempt(player) && inDark(level, victim)) {
+			dev.forja.magic.Mana.give(player, PENUMBRA_HIT_MANA);
+		}
 	}
 
 	/** How long a blow of aetherium lifts what it hits, and how hard. */
@@ -327,12 +334,12 @@ public final class TraitEffects {
 	}
 
 	/** Open sky and daylight overhead: what sun steel wants and moon steel does not. */
-	public static boolean inSun(ServerLevel level, LivingEntity entity) {
+	public static boolean inSun(net.minecraft.world.level.Level level, LivingEntity entity) {
 		return level.isBrightOutside() && level.canSeeSky(entity.blockPosition()) && !level.isRaining();
 	}
 
 	/** Dark enough for moon steel, which does not care whether it is night so much as whether it is black. */
-	public static boolean inDark(ServerLevel level, LivingEntity entity) {
+	public static boolean inDark(net.minecraft.world.level.Level level, LivingEntity entity) {
 		// With the sky's own darkening folded in: under open sky at midnight this is dark, at noon it is not.
 		return level.getMaxLocalRawBrightness(entity.blockPosition(), level.getSkyDarken()) <= MOON_DARK;
 	}
@@ -364,6 +371,18 @@ public final class TraitEffects {
 		if (has(weapon, ForgeMaterial.Trait.NOCTURNO) && inDark(level, victim)) {
 			bonus += MOON_DAMAGE;
 			level.sendParticles(ParticleTypes.SCULK_SOUL, victim.getX(), victim.getY(1.0), victim.getZ(), 6, 0.3, 0.3, 0.3, 0.01);
+		}
+		// Ardor (docs/ALEACIONES_CUMBRE.md, 2.7): the worse its bearer is doing, the harder it hits, and past two steps
+		// the blow sets the target alight.
+		if (has(weapon, ForgeMaterial.Trait.ARDOR)) {
+			int steps = wrathSteps(attacker);
+			if (steps > 0) {
+				bonus += ARDOR_DAMAGE * steps;
+				if (steps >= ARDOR_IGNITE_STEPS) {
+					victim.igniteForSeconds(2.0F);
+				}
+				level.sendParticles(ParticleTypes.FLAME, victim.getX(), victim.getY(0.9), victim.getZ(), 2 * steps, 0.25, 0.25, 0.25, 0.01);
+			}
 		}
 		return bonus;
 	}
@@ -497,5 +516,183 @@ public final class TraitEffects {
 			dev.forja.ForjaAdvancements.award(player, "eco");
 		}
 		return found;
+	}
+
+	// ------------------------------------------------------------------ the middle tier (docs/ALEACIONES_CUMBRE.md, 2.7)
+	/** Ardor: damage per step of health missing, from which step the blow sets the target alight. */
+	public static final float ARDOR_DAMAGE = 0.5F;
+	public static final int ARDOR_IGNITE_STEPS = 2;
+	/** Ardor on armour: how long Fire Resistance lasts, and how often it can be asked for. */
+	public static final int ARDOR_FIRE_TICKS = 120;
+	public static final int ARDOR_COOLDOWN = 600;
+	/** One step of health a bearer is missing, how many count, and below which share of health armour answers a wound. */
+	public static final float WRATH_STEP = 0.20F;
+	public static final int WRATH_MAX_STEPS = 4;
+	public static final float WRATH_ARMOR_THRESHOLD = 0.40F;
+	/** Amparo: the share of its max health no blow takes more than, and how long it waits between two (shorter with the full set). */
+	public static final float SHELTER_SHARE = 0.40F;
+	public static final int SHELTER_COOLDOWN = 400;
+	public static final int SHELTER_SET_COOLDOWN = 300;
+	/** Penumbra: the price of a spell in the dark, and the mana a blow or a wound in the dark gives. */
+	public static final float PENUMBRA_COST = 0.85F;
+	public static final float PENUMBRA_HIT_MANA = 0.5F;
+	public static final float PENUMBRA_HURT_MANA = 0.25F;
+	public static final float PENUMBRA_HURT_CAP = 3.0F;
+	/** Sideral: the price of a spell, at night under open sky, and the mana a block of work gives. */
+	public static final float SIDEREAL_COST = 0.90F;
+	public static final float SIDEREAL_NIGHT_COST = 0.80F;
+	public static final float SIDEREAL_BLOCK_MANA = 0.10F;
+	/** When each bearer of Ardor armour may be answered again, and each bearer of Amparo sheltered again. */
+	private static final Map<UUID, Long> ARDOR_GUARDS = new HashMap<>();
+	private static final Map<UUID, Long> SHELTERS = new HashMap<>();
+
+	/**
+	 * How far down an entity's health has gone, in steps of {@link #WRATH_STEP}: 0 at full health, 1 under 80 %, 2 under
+	 * 60 %, 3 under 40 % and 4 at 20 % or less. What Iracundo and Ardor read.
+	 */
+	public static int wrathSteps(LivingEntity entity) {
+		float max = entity.getMaxHealth();
+		if (max <= 0.0F) {
+			return 0;
+		}
+		float missing = 1.0F - entity.getHealth() / max;
+		return Math.max(0, Math.min(WRATH_MAX_STEPS, (int) Math.floor(missing / WRATH_STEP + 1.0E-4F)));
+	}
+
+	/** How many things a bearer holds or wears, whole, with this trait: every armour piece, and each hand once. */
+	public static int carried(LivingEntity entity, ForgeMaterial.Trait trait) {
+		return armorPieces(entity, trait) + (has(entity.getMainHandItem(), trait) ? 1 : 0) + (has(entity.getOffhandItem(), trait) ? 1 : 0);
+	}
+
+	/** Whether something whole with this trait is in a hand. */
+	private static boolean inHand(LivingEntity entity, ForgeMaterial.Trait trait) {
+		return has(entity.getMainHandItem(), trait) || has(entity.getOffhandItem(), trait);
+	}
+
+	/** Amparo: whether the bearer wears or holds something of it, whole. */
+	public static boolean shelters(LivingEntity entity) {
+		return carried(entity, ForgeMaterial.Trait.AMPARO) > 0;
+	}
+
+	/** The game time at which Amparo will shelter this bearer again, or 0 if it already can. */
+	public static long shelterReadyAt(LivingEntity entity) {
+		return SHELTERS.getOrDefault(entity.getUUID(), 0L);
+	}
+
+	/** Forgets the wait, for the game tests to drive without letting four hundred ticks go by. */
+	public static void forgetShelter(LivingEntity entity) {
+		SHELTERS.remove(entity.getUUID());
+	}
+
+	/**
+	 * What the traits that cap a blow make of one that reached a bearer past their armour: Amparo, once in a while, cuts it to
+	 * a share of their max health and sets whoever struck alight with wispfire. Only blows armour reads (nothing that bypasses
+	 * armour or invulnerability: falls, the void, starvation, /kill). Called from CombatHooks.capped.
+	 *
+	 * @return the damage that goes through
+	 */
+	public static float bearerCap(LivingEntity target, DamageSource source, float damage) {
+		if (damage <= 0.0F || source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_ARMOR)
+			|| source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY) || !(target.level() instanceof ServerLevel level)) {
+			return damage;
+		}
+		float max = target.getMaxHealth();
+		long now = level.getGameTime();
+		float cap = Float.MAX_VALUE;
+		boolean shelter = false;
+		if (shelters(target) && now >= shelterReadyAt(target)) {
+			cap = max * SHELTER_SHARE;
+			shelter = true;
+		}
+		if (damage <= cap) {
+			return damage;
+		}
+		if (shelter) {
+			if (SHELTERS.size() > 256) {
+				SHELTERS.values().removeIf(expiry -> expiry < now);
+			}
+			boolean suit = ArmorSets.fullSet(target) == ForgeMaterial.ESPECTRACERO;
+			SHELTERS.put(target.getUUID(), now + (suit ? SHELTER_SET_COOLDOWN : SHELTER_COOLDOWN));
+			if (source.getEntity() instanceof LivingEntity struck) {
+				soulFlame(level, struck, target, SOUL_FLAME_ARMOR_TICKS);
+			}
+			level.sendParticles(ParticleTypes.SOUL, target.getX(), target.getY(1.0), target.getZ(), 12, 0.35, 0.5, 0.35, 0.02);
+			level.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.SOUL_ESCAPE.value(), SoundSource.PLAYERS, 0.8F, 1.0F);
+		}
+		return cap;
+	}
+
+	/**
+	 * The multiplier on a spell's mana cost that the gear in a player's hands gives: the cheapest of Místico, Sideral and
+	 * Penumbra, each 1 when it does not apply. The minimum and not the product, so a staff of one and a tome of another
+	 * are not cheaper than the better of them.
+	 */
+	public static float gearSpellCost(Player player) {
+		return Math.min(siderealCost(player), penumbraCost(player));
+	}
+
+	/** Sideral: spells cost a tenth less with it in a hand, a fifth at night under open sky without rain. */
+	public static float siderealCost(Player player) {
+		if (!inHand(player, ForgeMaterial.Trait.SIDERAL)) {
+			return 1.0F;
+		}
+		net.minecraft.world.level.Level level = player.level();
+		boolean night = !level.isBrightOutside() && level.canSeeSky(player.blockPosition()) && !level.isRaining();
+		return night ? SIDEREAL_NIGHT_COST : SIDEREAL_COST;
+	}
+
+	/** Penumbra: spells cost 15 % less with it in a hand when the caster stands in the dark. */
+	public static float penumbraCost(Player player) {
+		return inHand(player, ForgeMaterial.Trait.PENUMBRA) && inDark(player.level(), player) ? PENUMBRA_COST : 1.0F;
+	}
+
+	/**
+	 * Sideral: a tool in the main hand gives a little mana for every block of some hardness it breaks. Called from
+	 * MiningUpgrades with the tool that did it.
+	 */
+	public static void workMana(ServerLevel level, Player player, BlockPos pos, BlockState state, ItemStack tool) {
+		ForgedParts parts = tool.get(ModComponents.PARTS);
+		if (parts == null || tool.isBroken() || parts.type().kind != ForgeType.Kind.TOOL || dev.forja.magic.Mana.exempt(player)
+			|| state.getDestroySpeed(level, pos) <= 0.0F) {
+			return;
+		}
+		float mana = parts.hasTrait(ForgeMaterial.Trait.SIDERAL) ? SIDEREAL_BLOCK_MANA : 0.0F;
+		if (mana > 0.0F) {
+			dev.forja.magic.Mana.give(player, mana);
+		}
+	}
+
+	/**
+	 * What armour answers a blow with, once it has landed (CombatUpgrades, AFTER_DAMAGE): Ardor's fire resistance, which a full
+	 * suit makes a fire put out, once in a while and only when the wound leaves the bearer badly hurt, and Penumbra's mana for
+	 * a wound taken in the dark.
+	 */
+	public static void onHurt(ServerLevel level, LivingEntity victim, DamageSource source, float damageTaken) {
+		if (damageTaken <= 0.0F) {
+			return;
+		}
+		long now = level.getGameTime();
+		boolean badly = victim.getHealth() < victim.getMaxHealth() * WRATH_ARMOR_THRESHOLD;
+		int ardor = armorPieces(victim, ForgeMaterial.Trait.ARDOR);
+		if (ardor > 0 && badly) {
+			Long ready = ARDOR_GUARDS.get(victim.getUUID());
+			if (ready == null || now >= ready) {
+				if (ARDOR_GUARDS.size() > 256) {
+					ARDOR_GUARDS.values().removeIf(expiry -> expiry < now);
+				}
+				ARDOR_GUARDS.put(victim.getUUID(), now + ARDOR_COOLDOWN);
+				victim.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, ARDOR_FIRE_TICKS, 0), victim);
+				if (ardor >= 4) {
+					victim.extinguishFire();
+				}
+				level.sendParticles(ParticleTypes.FLAME, victim.getX(), victim.getY(1.0), victim.getZ(), 10, 0.3, 0.5, 0.3, 0.02);
+			}
+		}
+		if (victim instanceof Player player && !dev.forja.magic.Mana.exempt(player)) {
+			int penumbra = armorPieces(victim, ForgeMaterial.Trait.PENUMBRA);
+			if (penumbra > 0 && inDark(level, victim)) {
+				dev.forja.magic.Mana.give(player, Math.min(PENUMBRA_HURT_CAP, damageTaken * PENUMBRA_HURT_MANA * penumbra));
+			}
+		}
 	}
 }

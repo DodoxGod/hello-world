@@ -177,7 +177,13 @@ public final class ModItems {
 		HIERRO_ESTELAR = register("hierro_estelar", Item::new, new Item.Properties());
 		// The alloys are materials too, so their ingots come before anything is built out of them.
 		for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.ALL) {
-			ALLOYS.put(recipe.id(), register(recipe.id(), Item::new, new Item.Properties()));
+			// The middle tier and the peak alloys are rare or epic and fireproof, like the forge heart they are poured with
+			// (docs/ALEACIONES_CUMBRE.md, 2.2).
+			Item.Properties alloyProperties = new Item.Properties();
+			if (dev.forja.forge.Alloys.MIDDLE.contains(recipe.id())) {
+				alloyProperties.rarity(net.minecraft.world.item.Rarity.RARE).fireResistant();
+			}
+			ALLOYS.put(recipe.id(), register(recipe.id(), Item::new, alloyProperties));
 		}
 		// A repair kit for every metal a main part can be (forge/RepairKits), read off the material list, so a new
 		// alloy gets its kit with its ingot.

@@ -2720,6 +2720,9 @@ GUI.update(BOOKS)
 # The far forges and their alloys (docs/ALEACIONES_NETHER_END.md) keep theirs in their own file too.
 from lang_aleaciones import ALEACIONES  # noqa: E402
 GUI.update(ALEACIONES)
+# The middle tier and the peak alloys (docs/ALEACIONES_CUMBRE.md) too.
+from lang_cumbre import CUMBRE  # noqa: E402
+GUI.update(CUMBRE)
 # Every text of the big class trees comes from their data (tools/arboles_datos.py).
 import sys as _sys  # noqa: E402
 _sys.path.insert(0, str(Path(__file__).resolve().parent))

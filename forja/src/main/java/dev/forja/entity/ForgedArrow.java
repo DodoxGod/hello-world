@@ -238,7 +238,8 @@ public class ForgedArrow extends Arrow {
 		double before = this.base;
 		if (hit.getEntity() instanceof LivingEntity target && this.level() instanceof ServerLevel level) {
 			this.setBaseDamage(before + ArrowTips.conditionalBonus(this.special(), target.isOnFire(),
-				dev.forja.upgrade.TraitEffects.inSun(level, target), dev.forja.upgrade.TraitEffects.inDark(level, target), target.isInWaterOrRain()));
+				dev.forja.upgrade.TraitEffects.inSun(level, target), dev.forja.upgrade.TraitEffects.inDark(level, target), target.isInWaterOrRain())
+				+ ArrowTips.wrathBonus(this.special(), this.getOwner()));
 		}
 		super.onHitEntity(hit);
 		this.setBaseDamage(before);

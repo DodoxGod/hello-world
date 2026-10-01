@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "forja:astralita",
+    "forja:astralita",
+    "minecraft:leather",
+    "minecraft:string"
+  ],
+  "result": {
+    "id": "forja:kit_de_reparacion_astralita"
+  }
+}

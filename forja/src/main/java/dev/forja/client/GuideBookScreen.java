@@ -824,6 +824,7 @@ public class GuideBookScreen extends Screen {
 			case "catalogo_aleaciones" -> this.alloyListChapter();
 			case "fundicion_siguiente" -> this.foundryNextChapter();
 			case "aleaciones_lejanas" -> this.farAlloysChapter();
+			case "aleaciones_cumbre" -> this.peakAlloysChapter();
 			// Book IV.
 			case "mayor_sabes" -> this.greaterRecapChapter();
 			case "mayor_siguiente" -> this.greaterNextChapter();
@@ -954,6 +955,7 @@ public class GuideBookScreen extends Screen {
 			case "catalogo_aleaciones" -> new ItemStack(ModItems.alloy("acero"));
 			case "fundicion_siguiente" -> new ItemStack(Items.COMPASS);
 			case "aleaciones_lejanas" -> new ItemStack(ModItems.alloy("fatuo"));
+			case "aleaciones_cumbre" -> new ItemStack(ModItems.alloy("astralita"));
 			case "fraguas_lejanas" -> new ItemStack(ModItems.FRAGUA_DE_ALMAS);
 			case "mayor_sabes" -> new ItemStack(Items.WRITABLE_BOOK);
 			case "mayor_siguiente" -> new ItemStack(Items.COMPASS);
@@ -2153,6 +2155,48 @@ public class GuideBookScreen extends Screen {
 		}
 		body.add(new ChapterLink("fraguas_lejanas"));
 		return body;
+	}
+
+	/**
+	 * Book III: the middle tier and the peak alloys (docs/ALEACIONES_CUMBRE.md): the four poured from two alloys and one more
+	 * thing, and what each one's trait does. The far forges' three are also in {@link #farAlloysChapter()}.
+	 */
+	private List<Element> peakAlloysChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.aleaciones_cumbre"), INK));
+		body.add(new SubHeader(Component.translatable("gui.forja.libros.aleaciones_cumbre.intermedias")));
+		this.alloyRows(body, dev.forja.forge.Alloys.MIDDLE);
+		body.add(new Text(Component.translatable("gui.forja.libros.aleaciones_cumbre.donde"), INK_SOFT));
+		this.alloyTraits(body, dev.forja.forge.Alloys.MIDDLE);
+		body.add(new ChapterLink("aleaciones_lejanas"));
+		return body;
+	}
+
+	/** One icon row and one line per alloy of this set: what goes in, how many come out. */
+	private void alloyRows(List<Element> body, java.util.Set<String> ids) {
+		for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.ALL) {
+			if (!ids.contains(recipe.id())) {
+				continue;
+			}
+			List<ItemStack> row = new ArrayList<>();
+			for (dev.forja.forge.Alloys.Part part : recipe.inputs()) {
+				row.add(new ItemStack(part.item().get(), part.count()));
+			}
+			row.add(recipe.result());
+			body.add(new IconRow(row));
+			body.add(new Text(Component.translatable("gui.forja.libro.aleacion_linea", recipe.displayName(), recipe.output()), INK));
+		}
+	}
+
+	/** What the trait of each alloy of this set does, in the same words as the catalogue. */
+	private void alloyTraits(List<Element> body, java.util.Set<String> ids) {
+		for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.ALL) {
+			ForgeMaterial material = ids.contains(recipe.id()) ? ForgeMaterial.fromInput(recipe.result()) : null;
+			if (material != null) {
+				body.add(new Text(Component.translatable("gui.forja.libros.aleaciones_cumbre.rasgo", material.trait.displayName(),
+					Component.translatable("trait.forja." + material.trait.id() + ".largo")), INK_SOFT));
+			}
+		}
 	}
 
 	/** Who the Fallen Smith was: the story, with no mechanics in it. */

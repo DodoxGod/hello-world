@@ -45,8 +45,8 @@ ALEACIONES = {
         "La fragua del vacío arde violeta... y lo que la guardaba se levanta.",
         "The void forge burns violet... and what guarded it stands up."),
     "gui.forja.fragua_lejana.no_va.vacio": (
-        "%s no va en la fragua del vacío: solo funde eterio.",
-        "%s does not go in the void forge: it only makes aetherium."),
+        "%s no va en la fragua del vacío: solo funde eterio y eclipse.",
+        "%s does not go in the void forge: it only makes aetherium and eclipse."),
     "gui.forja.fragua_lejana.fuera.vacio": (
         "Lejos del End, la fragua del vacío no prende: aquí no funde nada.",
         "Away from the End the void forge will not take: it makes nothing here."),
@@ -61,11 +61,11 @@ ALEACIONES = {
         "En las islas altas del End, más allá del dragón, quedan ruinas pequeñas de piedra del End y púrpura con una "
         "fragua del vacío fría sobre un altar de obsidiana. Un ojo de ender la enciende y despierta a sus guardianes: se "
         "levantan dos corazas vacías más. Funciona como la de almas, con perlas de ender de combustible (una por tanda), "
-        "y solo funde eterio, y solo en el End. Su cofre guarda la receta.",
+        "y solo funde eterio y eclipse, y solo en el End. Su cofre guarda la receta.",
         "On the End's high islands, past the dragon, stand small ruins of end stone and purpur with a cold void forge on "
         "an obsidian altar. An eye of ender lights it and wakes its guards: two more empty suits stand up. It works like "
-        "the soul forge, with ender pearls as fuel (one per batch), makes only aetherium and only in the End. Its chest "
-        "keeps the recipe."),
+        "the soul forge, with ender pearls as fuel (one per batch), makes only aetherium and eclipse, and only in the End. "
+        "Its chest keeps the recipe."),
     "trait.forja.volcanico": ("Volcánico", "Volcanic"),
     "trait.forja.volcanico.desc": (
         "La lava que pisas se enfría en costra; sus picos cortan la piedra del Nether más deprisa",
@@ -111,8 +111,8 @@ ALEACIONES = {
         "La fragua de almas arde azul... y lo que la guardaba despierta.",
         "The soul forge burns blue... and what guarded it wakes."),
     "gui.forja.fragua_lejana.no_va.almas": (
-        "%s no va en la fragua de almas: solo funde fatuo y magmacero.",
-        "%s does not go in the soul forge: it only makes wispfire and magmasteel."),
+        "%s no va en la fragua de almas: solo funde fatuo, magmacero, espectracero y corazón de volcán.",
+        "%s does not go in the soul forge: it only makes wispfire, magmasteel, spectresteel and volcano heart."),
 
     "gui.forja.fragua_lejana.fuera.almas": (
         "Lejos del Nether, el fuego de almas no prende: aquí no funde nada.",
@@ -161,12 +161,14 @@ ALEACIONES = {
         "al encenderla despierta todo lo que la guarda: los monstruos de alrededor van a por ti y del altar se levantan "
         "dos pavesas más. Encendida, echa los ingredientes con clic derecho y polvo de blaze de combustible (uno por "
         "tanda); cada tanda tarda 10 s y sale encima, o a la tolva que tenga debajo. Clic con la mano vacía para ver qué "
-        "le falta; agachado, para sacar lo del hogar. No se rompe y solo arde en el Nether.",
+        "le falta; agachado, para sacar lo del hogar. Funde fatuo, magmacero, espectracero y corazón de volcán. No se rompe "
+        "y solo arde en el Nether.",
         "In the Nether's Fallen Forge, on the altar, stands a cold soul forge. A blaze rod lights it, and lighting it "
         "wakes everything that guards it: the monsters around come for you and two more wisps rise from the altar. Lit, "
         "put the ingredients in with a right click and blaze powder as fuel (one per batch); each batch takes 10 s and "
         "comes out on top, or into a hopper under it. Click with an empty hand to see what it is missing; crouch to "
-        "take the hearth back. It cannot be broken and only burns in the Nether."),
+        "take the hearth back. It makes wispfire, magmasteel, spectresteel and volcano heart. It cannot be broken and only "
+        "burns in the Nether."),
     "gui.forja.libros.ruinas.nether_almas": (
         "Una fortaleza de piedra negra con canales de lava, dos autómatas, dos corazas vacías, tres pavesas y, en el "
         "centro, la fragua de almas fría del Herrero. Encendida, es la única que funde las aleaciones del Nether. Uno de "

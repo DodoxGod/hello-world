@@ -285,6 +285,8 @@ public class ForjaJeiPlugin implements IModPlugin {
 			// alloys, which no table and no crucible make at all (docs/ALEACIONES_NETHER_END.md).
 			Component where = !Alloys.anywhere(recipe)
 				? Component.translatable("gui.forja.jei.fragua_lejana." + Alloys.place(recipe).id())
+				: Alloys.FOUNDRY_ONLY.contains(recipe.id()) && recipe.heat() == Alloys.Heat.FORJA_BLANCA
+				? Component.translatable("gui.forja.jei.cumbre")
 				: recipe.heat() == Alloys.Heat.FORJA_BLANCA
 				? Component.translatable("gui.forja.calor.crisol")
 				: Component.translatable("gui.forja.calor", recipe.heat().displayName());

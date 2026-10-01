@@ -181,6 +181,11 @@ GLYPHS = {
     "fatuo": (".#..", "##.#", ".##."),
     "magmacero": ("#.#.", "#.#.", "####"),
     "eterio": ("....", "#..#", ".##."),
+    # The middle tier (docs/ALEACIONES_CUMBRE.md, 2.7).
+    "espectracero": ("#..#", ".##.", ".##."),
+    "corazon_de_volcan": ("..#.", ".###", "####"),
+    "eclipse": (".##.", "##..", ".##."),
+    "astralita": ("#.#.", ".#..", "#.#."),
     # The vanilla metals, which have a repair kit but no Forja ingot.
     "cobre": ("#.##", "#...", "####"),
     "hierro": ("####", "#..#", "####"),
@@ -370,6 +375,32 @@ def mark_a(bar, name):
         put(8, 6, dark)
         put(7, 6, 2)
         put(9, 6, 2)
+    elif name == "espectracero":
+        # Spectresteel: a seam of soul blue along the bar and one pale wisp rising off it.
+        for (x, y) in axis(7.6):
+            if x % 3 != 0:
+                put(x, y, colour=(120, 230, 240))
+                put(x, y + 1, dark)
+        put(10, 4, colour=(220, 252, 255))
+        put(10, 5, colour=(95, 211, 224))
+    elif name == "corazon_de_volcan":
+        # Volcano heart: a white-hot point in the middle of the top, magma round it and a dark crust under it.
+        put(8, 5, colour=(255, 244, 200))
+        for (x, y) in ((7, 5), (9, 5), (8, 4)):
+            put(x, y, colour=(255, 138, 40))
+        for (x, y) in ((7, 6), (8, 6), (9, 6)):
+            put(x, y, 0)
+    elif name == "eclipse":
+        # Eclipse: a dark disc in the middle of the top with a thin lit ring on its right.
+        for (x, y) in ((7, 5), (8, 5), (7, 6), (8, 6)):
+            put(x, y, 0)
+        for (x, y) in ((9, 5), (9, 6), (8, 4)):
+            put(x, y, colour=(214, 206, 255))
+    elif name == "astralita":
+        # Astralite: three small stars scattered on the top, white points with a blue shadow under each.
+        for (x, y) in ((5, 7), (8, 5), (11, 4)):
+            put(x, y, colour=(255, 255, 255))
+            put(x, y + 1, colour=(60, 90, 200))
     elif name == "lingote_de_temple":
         # The tempering bar: one hammer mark on the cold end.
         pit(5, 6, 2)

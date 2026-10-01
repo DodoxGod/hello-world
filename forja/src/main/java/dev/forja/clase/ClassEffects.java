@@ -578,7 +578,8 @@ public final class ClassEffects {
 		if (concentrating(player)) {
 			return 0.0F;
 		}
-		return multiplier(player, ClassStat.SPELL_COST, 0.0F);
+		// The gear in the hands (upgrade/TraitEffects.gearSpellCost): the cheapest of Místico, Sideral and Penumbra.
+		return multiplier(player, ClassStat.SPELL_COST, 0.0F) * dev.forja.upgrade.TraitEffects.gearSpellCost(player);
 	}
 
 	// ------------------------------------------------------------------ bows

@@ -163,7 +163,20 @@ public enum ForgeMaterial implements StringRepresentable {
 	 * else. Light and quick in the hand, thin as armour; what it is for is getting there and getting back.
 	 */
 	ETERIO(0x7A5FB0, alloyTag("eterio"), null, true, 1200, 8.5F, 3.0F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
-		22, 1.05F, 0.20F, 1.10F, new int[]{2, 6, 7, 3}, 30, 1.5F, 0F, SoundEvents.ARMOR_EQUIP_CHAIN, Trait.FLOTANTE);
+		22, 1.05F, 0.20F, 1.10F, new int[]{2, 6, 7, 3}, 30, 1.5F, 0F, SoundEvents.ARMOR_EQUIP_CHAIN, Trait.FLOTANTE),
+	// ------------------------------------------- the middle tier (docs/ALEACIONES_CUMBRE.md, 2.7)
+	/** Spectresteel: wispfire and soul steel at the soul forge. Hard to put down, and once in a while it will not let a blow through whole. */
+	ESPECTRACERO(0x4C8C9E, alloyTag("espectracero"), null, true, 2000, 7.5F, 3.5F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
+		18, 1.55F, -0.10F, 0.95F, new int[]{3, 6, 8, 3}, 44, 3.0F, 0.10F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.AMPARO),
+	/** Volcano heart: magmasteel and sun steel at the soul forge. It burns hotter the worse things go. */
+	CORAZON_DE_VOLCAN(0xA8401C, alloyTag("corazon_de_volcan"), null, true, 1800, 8.5F, 4.0F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
+		16, 1.40F, 0.05F, 1.05F, new int[]{3, 6, 8, 3}, 40, 2.5F, 0.05F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.ARDOR),
+	/** Eclipse: aetherium and moon steel at the void forge. Magic comes cheaper to it where the light does not reach. */
+	ECLIPSE(0x2B2350, alloyTag("eclipse"), null, true, 1500, 9.0F, 3.0F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
+		24, 1.15F, 0.20F, 1.10F, new int[]{3, 6, 7, 3}, 34, 2.0F, 0.0F, SoundEvents.ARMOR_EQUIP_CHAIN, Trait.PENUMBRA),
+	/** Astralite: orichalcum, aetherium and star iron in the obsidian crucible. Magic comes cheaper to it, cheapest under the night sky. */
+	ASTRALITA(0x5C7CFA, alloyTag("astralita"), null, true, 1700, 9.5F, 3.5F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
+		25, 1.25F, 0.20F, 1.15F, new int[]{3, 6, 8, 3}, 38, 2.5F, 0.05F, SoundEvents.ARMOR_EQUIP_GOLD, Trait.SIDERAL);
 
 	/** A material's special effect, active when any part of the item uses it. */
 	public enum Trait {
@@ -211,7 +224,15 @@ public enum ForgeMaterial implements StringRepresentable {
 		/** Lava cools into a crust under the feet of whoever wears it; its tools cut Nether stone half again as fast. */
 		VOLCANICO,
 		/** What it strikes rises for a moment; whoever wears it, the void hands back. */
-		FLOTANTE;
+		FLOTANTE,
+		/** Once in a while no blow takes more than a share of its bearer's health; the attacker catches wispfire. */
+		AMPARO,
+		/** It hits harder the worse its bearer is doing, and sets the target alight; armour answers a bad wound with fire resistance. */
+		ARDOR,
+		/** Spells cost less with it in hand in the dark; armour and weapons turn the dark into mana. */
+		PENUMBRA,
+		/** Spells cost less with it in hand, less still at night under open sky; tools turn work into mana. */
+		SIDERAL;
 
 		public String id() {
 			return this.name().toLowerCase(Locale.ROOT);

@@ -202,7 +202,8 @@ public class MaterialesGameTests {
 				}
 			} else if (recipe.heat() == Alloys.Heat.FORJA_BLANCA) {
 				int total = recipe.inputs().stream().mapToInt(Alloys.Part::count).sum();
-				if (recipe.inputs().size() > 2 || total > dev.forja.block.CrucibleBlock.Tier.OBSIDIANA.capacity) {
+				// More than two ingredients is a foundry-line recipe (two in the pot, the rest from the tanks).
+				if ((recipe.inputs().size() > 2 && !Alloys.FOUNDRY_ONLY.contains(recipe.id())) || total > dev.forja.block.CrucibleBlock.Tier.OBSIDIANA.capacity) {
 					wrong.add(recipe.id() + ": does not fit the obsidian crucible");
 				}
 			} else if (recipe.inputs().size() > ForgeMenu.STAR_COUNT && !Alloys.FOUNDRY_ONLY.contains(recipe.id())) {

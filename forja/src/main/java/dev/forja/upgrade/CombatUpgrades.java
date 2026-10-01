@@ -252,6 +252,8 @@ public final class CombatUpgrades {
 					dev.forja.magic.Mana.onSpellLanded(caster, weapon);
 				}
 				TraitEffects.onHit(level, attacker, victim, source, weapon);
+				// What the victim's armour answers with (Ardor, Penumbra, and Iracundo and Místico of the peak alloys).
+				TraitEffects.onHurt(level, victim, source, damageTaken);
 				if ((melee || spell) && weapon.has(ModComponents.PARTS) && !weapon.isBroken()) {
 					// A spell never tires, never glances off armour and never waits out a mob's invulnerability, so
 					// what the upgrades add to it is worked out on a share of it (Andy, 2026-09-30: magic was broken).

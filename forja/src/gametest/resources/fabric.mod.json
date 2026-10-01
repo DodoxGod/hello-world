@@ -26,6 +26,7 @@
 			"dev.forja.test.BalanceGameTests",
 			"dev.forja.test.MaterialesGameTests",
 			"dev.forja.test.FraguasLejanasGameTests",
+			"dev.forja.test.CumbreGameTests",
 			"dev.forja.test.MesaGameTests",
 			"dev.forja.test.FundicionGameTests",
 			"dev.forja.test.MontadoraGameTests",

@@ -73,6 +73,8 @@ public final class MiningUpgrades {
 				oreExperience(serverLevel, pos, state, tool);
 				placeTorch(serverLevel, serverPlayer, pos, tool);
 				TraitEffects.echoOres(serverLevel, serverPlayer, pos, state, tool);
+				// Místico and Sideral: work turns into a little mana.
+				TraitEffects.workMana(serverLevel, serverPlayer, pos, state, tool);
 				// Maestria: a tool learns from every block it breaks that takes some effort.
 				if (forged.forgeType().kind == ForgeType.Kind.TOOL && state.getDestroySpeed(serverLevel, pos) > 0.0F) {
 					Mastery.addExperience(serverPlayer, tool, 1);

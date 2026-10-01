@@ -104,6 +104,15 @@ public final class ArmorSets {
 			case MAGMACERO -> List.of(Bonus.add(Attributes.ARMOR, 1.0), Bonus.add(Attributes.KNOCKBACK_RESISTANCE, 0.2));
 			// Aetherium: lighter on its feet, and the void gives it back twice as often (TraitEffects.voidRescue).
 			case ETERIO -> List.of(Bonus.add(Attributes.JUMP_STRENGTH, 0.1), Bonus.add(Attributes.ARMOR_TOUGHNESS, 1.0));
+			// ---- the middle tier (docs/ALEACIONES_CUMBRE.md, 2.7); none of them gives flat armour.
+			// Spectresteel: hard to put down, and the shelter comes back sooner (TraitEffects.SHELTER_SET_COOLDOWN).
+			case ESPECTRACERO -> List.of(Bonus.add(Attributes.ARMOR_TOUGHNESS, 2.0), Bonus.add(Attributes.MAX_HEALTH, 4.0), Bonus.add(Attributes.BURNING_TIME, -0.5));
+			// Volcano heart: fire hardly takes hold of it, and a bad wound puts it out (TraitEffects.onHurt).
+			case CORAZON_DE_VOLCAN -> List.of(Bonus.add(Attributes.ATTACK_DAMAGE, 2.0), Bonus.add(Attributes.BURNING_TIME, -1.0));
+			// Eclipse: it walks quietly; the deeper mana bar is in magic/Mana (ECLIPSE_SET_MANA).
+			case ECLIPSE -> List.of(Bonus.add(Attributes.SNEAKING_SPEED, 0.3));
+			// Astralite: a little harder, and a deeper mana bar (ASTRALITE_SET_MANA).
+			case ASTRALITA -> List.of(Bonus.add(Attributes.ARMOR_TOUGHNESS, 1.0));
 		};
 	}
 

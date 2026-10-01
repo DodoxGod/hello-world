@@ -261,7 +261,10 @@ public final class CombatHooks {
 	 * it (by its threat, lower for bosses, scaled by the difficulty). A finisher, or any blow on a staggered
 	 * foe, goes past the cap, so killing fast means breaking the guard first.
 	 */
-	static float capped(LivingEntity target, DamageSource source, float damage, boolean breaks) {
+	public static float capped(LivingEntity target, DamageSource source, float damage, boolean breaks) {
+		// The other way round: what armour lets through to a bearer of Amparo or Inquebrantable is capped by their health
+		// (docs/ALEACIONES_CUMBRE.md), before the rule for the blows of a player on a mob.
+		damage = dev.forja.upgrade.TraitEffects.bearerCap(target, source, damage);
 		if (breaks || target instanceof Player || !(target instanceof net.minecraft.world.entity.Mob)
 			|| !(source.getEntity() instanceof Player)) {
 			return damage;
