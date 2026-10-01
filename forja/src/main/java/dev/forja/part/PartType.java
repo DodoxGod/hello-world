@@ -70,12 +70,12 @@ public enum PartType implements StringRepresentable {
 	/** The boards of a forged tome. They are to it what a handle is to a tool: how long it lasts. */
 	TAPAS(Role.HANDLE, 4),
 	/**
-	 * A handle with a counterweight in its butt, poured in a dense metal: the blow lands later and harder
-	 * (combat/Grip). It goes wherever a handle goes. The four variants come last: parts go over the wire by
-	 * their place in this list.
+	 * A handle with a counterweight in its butt: the blow lands later and harder (combat/Grip). It goes
+	 * wherever a handle goes, in anything a handle is made of. The four variants come last: parts go over the
+	 * wire by their place in this list.
 	 */
 	MANGO_PESADO(Role.HANDLE, 2, MANGO, PartVariant.PESADO),
-	/** A slim handle cut from a light material: the blow comes sooner and costs less breath, and hits softer. */
+	/** A slim, hollowed handle: the blow comes sooner and costs less breath, and hits softer. */
 	MANGO_LIGERO(Role.HANDLE, 1, MANGO, PartVariant.LIGERO),
 	/** Rivets and iron bands instead of a wrap: it lasts, and it holds the head when something tries to knock it loose. */
 	ATADURA_PESADA(Role.EXTRA, 2, ATADURA, PartVariant.PESADO),
@@ -138,8 +138,9 @@ public enum PartType implements StringRepresentable {
 	}
 
 	/**
-	 * Whether a bench can cut this part out of anything at all. A heavy handle or binding is only ever
-	 * metal, and metal is poured: its mould is cut from the engraved template instead (CastingBoxBlockEntity).
+	 * Whether a bench can cut this part out of anything at all. Every part can now (a heavy or a light handle
+	 * or binding takes whatever the plain one takes, wood included); what cannot be cut is the material,
+	 * metal, which is poured through a mould (CastingBoxBlockEntity).
 	 */
 	public boolean cuttable() {
 		for (ForgeMaterial material : ForgeMaterial.BASIC) {
@@ -150,7 +151,7 @@ public enum PartType implements StringRepresentable {
 		return false;
 	}
 
-	/** The material the part is drawn in when none is chosen: iron, or wood for a light part that cannot be iron. */
+	/** The material the part is drawn in when none is chosen: iron, or wood for a part that cannot be iron. */
 	public ForgeMaterial showcase() {
 		return this.accepts(ForgeMaterial.HIERRO) ? ForgeMaterial.HIERRO : ForgeMaterial.MADERA;
 	}
@@ -168,11 +169,15 @@ public enum PartType implements StringRepresentable {
 		return Component.translatable("part.forja." + this.id());
 	}
 
+	/**
+	 * Whether this part can be made of that material. A heavy or a light handle or binding takes exactly what
+	 * the plain one takes (Andy, 2026-09-30): the variant is its shape, and a light handle of netherite or a
+	 * heavy one of oak is the player's call.
+	 */
 	public boolean accepts(ForgeMaterial material) {
-		return switch (this.variant) {
-			case PESADO -> PartVariant.HEAVY.contains(material);
-			case LIGERO -> PartVariant.LIGHT.contains(material);
-			case NORMAL -> this.role != Role.HEAD || material.canBeHead;
-		};
+		if (this.base != null) {
+			return this.base.accepts(material);
+		}
+		return this.role != Role.HEAD || material.canBeHead;
 	}
 }

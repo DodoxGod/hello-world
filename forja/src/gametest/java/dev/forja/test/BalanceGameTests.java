@@ -106,9 +106,13 @@ public class BalanceGameTests {
 				problems.add("nivel invertido " + key);
 			}
 		}
-		// Heavy and light handles and bindings are a choice (Andy, 2026-09-29): none may beat the plain one at everything.
+		// Heavy and light handles and bindings are a choice (Andy, 2026-09-29), in any material (2026-09-30): none may
+		// beat the plain one of its material at everything, and no mix of material and shape may beat all the others.
 		for (String variant : written.variants.dominant) {
 			problems.add("variante dominante " + variant);
+		}
+		for (String combination : written.variants.overall) {
+			problems.add("combinación que gana a todas " + combination);
 		}
 		for (ForgeType type : Analysis.TYPES) {
 			var bare = written.analysis.reports.get(type).best.get(Analysis.Scenario.BASE);

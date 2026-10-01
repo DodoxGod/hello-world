@@ -1,15 +1,21 @@
 package dev.forja.combat;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
+import dev.forja.forge.Assembler;
 import dev.forja.forge.ForgeStats;
+import dev.forja.forge.ForgeType;
+import dev.forja.material.ForgeMaterial;
 import dev.forja.part.ForgedParts;
 import dev.forja.part.PartType;
 import dev.forja.part.PartVariant;
 import dev.forja.registry.ModComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Agarre: what a heavy or a light handle, and a riveted or a thin binding, change in a fight (Andy,
@@ -29,14 +35,24 @@ import net.minecraft.world.item.ItemStack;
  *   longer to come back.</li>
  * </ul>
  *
- * The numbers were set against the balance probes (docs/EQUILIBRIO.md, "Mangos y ataduras").
+ * Every variant comes in every material a plain handle or binding takes (Andy, 2026-09-30): the variant is the
+ * shape and these trades ride on top of whatever the material gives. The weight is the one thing the two share:
+ * a part weighs its material's density times its shape ({@link #shape}, read by combat/Weight), so a heavy oak
+ * handle is a modest counterweight and a light netherite one is still no feather.
+ *
+ * <p>The numbers were set against the balance probes (docs/EQUILIBRIO.md, "Mangos y ataduras").
  */
 public final class Grip {
-	/** Share of the weapon's weight a variant adds or takes off (combat/Weight reads it). */
-	public static final float HEAVY_HANDLE_KG = 0.18F;
-	public static final float LIGHT_HANDLE_KG = -0.15F;
-	public static final float HEAVY_BINDING_KG = 0.08F;
-	public static final float LIGHT_BINDING_KG = -0.08F;
+	/**
+	 * What a variant part weighs next to the plain part of the same material: its shape. A counterweighted
+	 * handle carries a pommel more than its own mass again; a slim, hollowed one keeps about a third of it.
+	 * Multiplied by the material's density in combat/Weight, so on an iron sword the heavy handle adds about
+	 * 18 % and the light one takes off about 9 %; in oak, about 11 % and 5 %; in netherite, 28 % and 14 %.
+	 */
+	public static final float HEAVY_HANDLE_SHAPE = 2.3F;
+	public static final float LIGHT_HANDLE_SHAPE = 0.35F;
+	public static final float HEAVY_BINDING_SHAPE = 1.6F;
+	public static final float LIGHT_BINDING_SHAPE = 0.4F;
 
 	/** The charged blow's damage, on top of its own multiplier. */
 	public static final float HEAVY_CHARGE = 1.20F;
@@ -106,13 +122,20 @@ public final class Grip {
 
 	// ---------------------------------------------------------------- what it does
 
-	/** What the variants make the piece weigh, next to the same piece with plain parts. */
-	public static float kgFactor(ForgedParts parts) {
-		if (!parts.hasVariants()) {
-			return 1.0F;
-		}
-		return pick(handle(parts), 1.0F + HEAVY_HANDLE_KG, 1.0F + LIGHT_HANDLE_KG)
-			+ pick(binding(parts), 1.0F + HEAVY_BINDING_KG, 1.0F + LIGHT_BINDING_KG) - 1.0F;
+	/** What this part weighs next to the plain part it stands in for, made of the same material: 1 for a plain part. */
+	public static float shape(PartType part) {
+		return switch (part) {
+			case MANGO_PESADO -> HEAVY_HANDLE_SHAPE;
+			case MANGO_LIGERO -> LIGHT_HANDLE_SHAPE;
+			case ATADURA_PESADA -> HEAVY_BINDING_SHAPE;
+			case ATADURA_LIGERA -> LIGHT_BINDING_SHAPE;
+			default -> 1.0F;
+		};
+	}
+
+	/** What a loose part of this material weighs next to a plain iron one of its kind: density times shape. */
+	public static float partWeight(PartType part, ForgeMaterial material) {
+		return Weight.density(material) * shape(part);
 	}
 
 	public static float durability(ForgedParts parts) {
@@ -165,25 +188,54 @@ public final class Grip {
 		return (delta >= 0 ? "+" : "−") + Math.abs(delta) + " %";
 	}
 
-	/** The swing a variant alone buys or costs a weapon of plain iron and wood, for a loose part. */
-	private static float swing(float kgShare) {
-		return Weight.swingFactor(1.0F + kgShare);
+	/**
+	 * The swing a loose variant part of this material buys or costs, next to the plain part of the same
+	 * material: on an iron sword for a handle, an iron axe for a binding (kinds the balance report measures).
+	 */
+	public static float looseSwing(PartType part, ForgeMaterial material) {
+		ForgeType type = part.base() == PartType.ATADURA ? ForgeType.HACHA : ForgeType.ESPADA;
+		int slot = type.slots.indexOf(part.base());
+		if (slot < 0 || part.variant == PartVariant.NORMAL) {
+			return 1.0F;
+		}
+		List<ForgeMaterial> materials = new ArrayList<>(Assembler.defaultMaterials(type));
+		materials.set(slot, material);
+		List<PartVariant> variants = new ArrayList<>(Collections.nCopies(type.slots.size(), PartVariant.NORMAL));
+		variants.set(slot, part.variant);
+		ForgedParts plain = new ForgedParts(type, materials);
+		ForgedParts made = new ForgedParts(type, materials, variants);
+		return Weight.swingFactor(Weight.relative(made)) / Weight.swingFactor(Weight.relative(plain));
 	}
 
 	/**
-	 * The trade a loose variant part makes, in one line: "Pesado: +18 % golpe cargado · …". Empty for a plain
-	 * part. The speed is what the counterweight alone does to an iron weapon; on a finished piece
-	 * {@link #tradeoff(ItemStack)} says what it really does.
+	 * The trade a loose variant part makes, in two lines: "Pesado: +18 % golpe cargado · …". Empty for a plain
+	 * part. The speed is what the part alone does to an iron sword or axe, in the material it is made of (iron
+	 * for a template, which has none yet); on a finished piece {@link #tradeoff(ItemStack)} says what it really
+	 * does.
 	 */
 	public static List<Component> tradeoff(PartType part) {
-		float speed = switch (part) {
-			case MANGO_PESADO -> swing(HEAVY_HANDLE_KG);
-			case MANGO_LIGERO -> swing(LIGHT_HANDLE_KG);
-			case ATADURA_PESADA -> swing(HEAVY_BINDING_KG);
-			case ATADURA_LIGERA -> swing(LIGHT_BINDING_KG);
-			default -> 1.0F;
-		};
-		return lines(part, speed);
+		return tradeoff(part, ForgeMaterial.HIERRO);
+	}
+
+	public static List<Component> tradeoff(PartType part, ForgeMaterial material) {
+		return lines(part, looseSwing(part, material));
+	}
+
+	/**
+	 * What a loose variant part of this material weighs, in a line: next to a plain iron part of its kind, the
+	 * material's density times the shape. Null for a plain part.
+	 */
+	public static @Nullable Component weightLine(PartType part, ForgeMaterial material) {
+		if (part.variant == PartVariant.NORMAL) {
+			return null;
+		}
+		return Component.translatable("tooltip.forja.variante.peso." + part.base().id(), decimal(partWeight(part, material)),
+			decimal(Weight.density(material)), decimal(shape(part))).withColor(0xFF9A9A9A);
+	}
+
+	/** "1,52": two decimals with the comma the Spanish texts use (the English ones read it as well as a dot). */
+	private static String decimal(float value) {
+		return String.format(Locale.ROOT, "%.2f", value).replace('.', ',');
 	}
 
 	/** The trade each variant part of a finished piece makes, with the speed it really costs or gives it. */
@@ -266,9 +318,9 @@ public final class Grip {
 	/** What a variant costs is written a shade duller than what it gives. */
 	public static final int COST_COLOR = 0xFFB08A50;
 
-	/** Which materials a variant part is made of, for the part's and the template's tooltip. */
+	/** How a variant part is made, for the template's tooltip: of anything, poured if metal and cut if not. */
 	public static Component materials(PartType part) {
-		return Component.translatable("tooltip.forja.variante.materiales." + part.variant.id()).withColor(0xFF9A9A9A);
+		return Component.translatable("tooltip.forja.variante.materiales").withColor(0xFF9A9A9A);
 	}
 
 	/** The colour the trade lines are written in: brass, the colour of the balance on a scale. */

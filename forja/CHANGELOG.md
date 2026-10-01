@@ -1,5 +1,34 @@
 # Novedades
 
+## 2026-09-30 — Mangos y ataduras de cualquier material
+
+Andy: «todos los materiales para todas las piezas; al final el jugador decide si quiere un mango ligero usando
+material pesado, hay que permitirle experimentar».
+
+- **Cualquier material, cualquier forma.** El mango y la atadura pesados y ligeros aceptan todo lo que acepta el normal:
+  maderas, hueso, cuero, cristales, metales y los míticos. La variante es la forma (contrapeso o remaches; fino o hueco).
+- **Cada material se trabaja como siempre.** Lo que se talla (madera, hueso, cuero, cristales...) se corta en la mesa de
+  piezas en cualquier forma. El metal se cuela: la plantilla de cualquier variante va a la caja de colada con acero
+  refractario y sale su molde (también sirve una pieza tallada de esa forma, como con las normales).
+- **El peso es material × forma.** Cada pieza pesa la densidad de su material (MaterialCombat) por su forma: mango ×2,3
+  pesado y ×0,35 ligero, atadura ×1,6 y ×0,4. En una espada de hierro el mango pesado de hierro suma un 18 % y el ligero
+  quita un 9 %; de roble, un 11 % y un 5 %; de netherita, un 28 % y un 14 %. Un mango pesado de roble es un contrapeso
+  modesto y uno ligero de netherita sigue pesando más que uno ligero de roble.
+- Lo demás del material pasa igual que en una pieza normal (durabilidad, rasgo y su encantamiento, potencial de las
+  piezas coladas), y el trato de la forma (combat/Grip) va encima, sin cambios.
+- **Tooltips:** la pieza suelta dice cuánto pesa en su material («Pesa 0,54 veces un mango normal de hierro (material
+  1,55 × forma 0,35)») y su trato con la velocidad que ese peso da o quita; la plantilla, que vale cualquier material.
+- **El yunque**, «Mangos y ataduras: pesados o ligeros»: cualquier material sirve y qué cambia.
+- Lo guardado sigue cargando: las piezas y herramientas con variantes de antes se leen igual.
+- **EQUILIBRIO.md:** tabla compacta de cinco materiales (madera, hueso, hierro, netherita, vidriacero) × tres formas para
+  espada, hacha y mazo. La guardia mide 120 combinaciones (también la lanza) y falla si una variante gana a la normal de
+  su material en todo, o si una combinación gana a todas las demás de su tipo. La lanza de mango ligero de vidriacero
+  ganaba a la normal en daño contando sólo los aturdidos (números enteros); ahora la guardia mira también el equilibrio
+  quitado por segundo, que es lo que paga el mango ligero.
+- Pruebas: `MangosGameTests` (tres nuevas y dos rehechas: cada variante en cada material, mango ligero de netherita colado y pesado de roble
+  tallado montados y desmontados, peso material × forma, rasgos y números que pasan, lo guardado de antes) y
+  `FORJA_SOLO=mangos_todos` (mesa, estrella, en mano y una pared de materiales).
+
 ## 2026-09-30 — Presión de armadura con balance e indicador en el HUD
 
 - **La presión empieza en 0** y crece con cada golpe que te llevas hasta un **máximo del 60 %** (antes 70 %). Cada golpe

@@ -150,6 +150,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// Every material in every handle and binding shape (Andy, 2026-09-30): the bench, the star, the hand, a wall.
+			if ("mangos_todos".equals(solo)) {
+				MangosTodosFootage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			// The classes and the healing lantern (docs/CLASES.md): the choice, the tree, the lantern in hand.
 			if ("clases".equals(solo)) {
 				showClasses(context, server, connection);

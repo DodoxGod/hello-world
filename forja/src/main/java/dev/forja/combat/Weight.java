@@ -9,6 +9,7 @@ import dev.forja.forge.ForgeType;
 import dev.forja.material.ForgeMaterial;
 import dev.forja.part.ForgedParts;
 import dev.forja.part.PartType;
+import dev.forja.part.PartVariant;
 import dev.forja.registry.ModComponents;
 import dev.forja.upgrade.ArmorSets;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -104,6 +105,14 @@ public final class Weight {
 
 	/** Kilograms of a forged thing of this kind in these materials (0 for what is not swung: armour, arrows, wings). */
 	public static float kg(ForgeType type, List<ForgeMaterial> materials) {
+		return kg(type, materials, List.of());
+	}
+
+	/**
+	 * The same, with a heavy or a light handle or binding where the variants say: each part weighs its
+	 * material's density times its shape (combat/Grip#shape), so the variant and the material move it together.
+	 */
+	private static float kg(ForgeType type, List<ForgeMaterial> materials, List<PartVariant> variants) {
 		Float base = BASE_KG.get(type);
 		if (base == null || materials.isEmpty()) {
 			return 0.0F;
@@ -113,11 +122,13 @@ public final class Weight {
 		float rest = 0.0F;
 		int others = 0;
 		for (int slot = 0; slot < type.slots.size() && slot < materials.size(); slot++) {
+			PartVariant variant = slot < variants.size() ? variants.get(slot) : PartVariant.NORMAL;
+			float mass = density(materials.get(slot)) * Grip.shape(PartType.of(type.slots.get(slot), variant));
 			if (slot == 0 || type.slots.get(slot).role == PartType.Role.HEAD) {
-				head += density(materials.get(slot));
+				head += mass;
 				heads++;
 			} else {
-				rest += density(materials.get(slot));
+				rest += mass;
 				others++;
 			}
 		}
@@ -127,12 +138,12 @@ public final class Weight {
 	}
 
 	/**
-	 * Kilograms of an assembled piece: its kind and materials, and then what a heavy or a light handle or
-	 * binding adds or takes off (combat/Grip). Everything that reads a weapon's weight comes through here, so a
-	 * monster holding a counterweighted mace warns as long as that mace weighs.
+	 * Kilograms of an assembled piece: its kind and materials, a heavy or a light handle or binding weighing
+	 * its material times its shape (combat/Grip). Everything that reads a weapon's weight comes through here, so
+	 * a monster holding a counterweighted mace warns as long as that mace weighs.
 	 */
 	public static float kg(ForgedParts parts) {
-		return kg(parts.type(), parts.materials()) * Grip.kgFactor(parts);
+		return kg(parts.type(), parts.materials(), parts.variants());
 	}
 
 	/** What the default materials of a kind weigh with an iron head, next to the same with all-iron: so that one is the base. */

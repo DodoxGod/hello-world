@@ -1169,9 +1169,14 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 								tooltip.add(ForgeStats.colored(parts[i], line));
 							}
 						}
-						// A heavy or light handle or binding: the trade it makes, and what it can be made of.
+						// A heavy or light handle or binding: what it weighs in the material shown, the trade it makes,
+						// and how it is made.
 						if (parts[i].variant != dev.forja.part.PartVariant.NORMAL) {
-							tooltip.addAll(dev.forja.combat.Grip.tradeoff(parts[i]));
+							Component weighs = dev.forja.combat.Grip.weightLine(parts[i], shown);
+							if (weighs != null) {
+								tooltip.add(weighs);
+							}
+							tooltip.addAll(dev.forja.combat.Grip.tradeoff(parts[i], shown));
 							tooltip.add(dev.forja.combat.Grip.materials(parts[i]));
 						}
 						String hint = this.menu.canEngrave() ? "gui.forja.plantilla.clic" : this.menu.hasTemplate() ? "gui.forja.plantilla.fija" : "gui.forja.plantilla.falta";

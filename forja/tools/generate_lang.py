@@ -2680,15 +2680,19 @@ GUI.update({
     "tooltip.forja.variante.atadura_ligera.cuesta": (
         "  a cambio: %2$s durabilidad · guardia rota %3$s",
         "  in exchange: %2$s durability · broken guard %3$s"),
-    "tooltip.forja.variante.materiales.pesado": (
-        "Se cuela en metal pesado: cobre, hierro, bronce, acero, escoria, cinerio, obsidiacero o netherita",
-        "Poured in a dense metal: copper, iron, bronze, steel, slag, cinereous steel, obsidian steel or netherite"),
-    "tooltip.forja.variante.materiales.ligero": (
-        "Se talla en madera (también la de bambú), hueso o cuero",
-        "Cut from wood (bamboo planks too), bone or leather"),
+    # Any material makes any variant (Andy, 2026-09-30): the variant is the shape, the material the rest.
+    "tooltip.forja.variante.materiales": (
+        "De cualquier material: el metal se cuela y lo demás se talla en la mesa de piezas",
+        "In any material: metal is poured, everything else is cut at the parts table"),
+    "tooltip.forja.variante.peso.mango": (
+        "Pesa %1$s veces un mango normal de hierro (material %2$s × forma %3$s)",
+        "Weighs %1$s times a plain iron handle (material %2$s × shape %3$s)"),
+    "tooltip.forja.variante.peso.atadura": (
+        "Pesa %1$s veces una atadura normal de hierro (material %2$s × forma %3$s)",
+        "Weighs %1$s times a plain iron binding (material %2$s × shape %3$s)"),
     "tooltip.forja.plantilla.a_la_caja": (
-        "Ninguna mesa la corta: en la caja de colada, con acero refractario, sale su molde",
-        "No bench can cut it: in the casting box, with refractory steel, it becomes its mould"),
+        "Para hacerla de metal: en la caja de colada, con acero refractario, la plantilla se vuelve su molde",
+        "To make it in metal: in the casting box, with refractory steel, the template becomes its mould"),
     # The same trades, short, for the forge's stat panel: one line a variant part.
     "gui.forja.variante.corto.mango_pesado": ("Pesado: carga %1$s", "Heavy: charge %1$s"),
     "gui.forja.variante.corto.mango_ligero": ("Ligero: estam. %1$s", "Light: stamina %1$s"),
@@ -2698,23 +2702,32 @@ GUI.update({
     "gui.forja.libros.variantes.titulo": ("Mangos y ataduras: pesados o ligeros", "Handles and bindings: heavy or light"),
     "gui.forja.libros.variantes": (
         "El mango y la atadura tienen tres formas: la normal, una pesada y una ligera. No son mejoras, son una "
-        "elección. El **mango pesado** lleva contrapeso: el golpe cargado pega un 18 % más y el golpe tumba más la "
+        "elección. El **mango pesado** lleva contrapeso: el golpe cargado pega un 20 % más y el golpe tumba más la "
         "guardia y empuja más, pero el arma pesa más, tarda más en llegar al golpe a plena fuerza y cada golpe "
-        "cuesta más estamina. El **mango ligero** es al revés: rápido y barato, más flojo. La **atadura pesada** "
-        "(remaches y bandas) dura más, abarata los bloqueos, te devuelve antes la guardia rota y no deja que un "
-        "golpe de escudo te quite la carga; la **ligera** aligera un poco y dura menos.",
-        "The handle and the binding come in three kinds: the plain one, a heavy one and a light one. They are not "
-        "upgrades, they are a choice. A **heavy handle** has a counterweight: the charged blow hits 18 % harder and "
+        "cuesta más estamina. El **mango ligero**, fino o hueco, es al revés: rápido y barato, más flojo. La "
+        "**atadura pesada** (remaches y bandas) dura más, abarata los bloqueos, te devuelve antes la guardia rota y "
+        "no deja que un golpe de escudo te quite la carga; la **ligera** aligera un poco y dura menos. Cualquier "
+        "material sirve para cualquier forma: la forma pone el trato y el material pone lo suyo, como en una pieza "
+        "normal (durabilidad, rasgo, potencial) y además el peso. Una pieza pesa lo que su material por su forma: un "
+        "mango pesado de roble es un contrapeso modesto y uno ligero de netherita sigue pesando. Prueba.",
+        "The handle and the binding come in three shapes: the plain one, a heavy one and a light one. They are not "
+        "upgrades, they are a choice. A **heavy handle** has a counterweight: the charged blow hits 20 % harder and "
         "every blow shakes the guard more and throws further, but the weapon weighs more, reaches a full-strength "
-        "blow later and every swing costs more stamina. A **light handle** is the other way round: quick and cheap, "
-        "softer. A **heavy binding** (rivets and bands) lasts longer, makes blocks cheaper, gives a broken guard back "
-        "sooner and keeps a shield bash from knocking your charge loose; a **light** one is a little lighter and "
-        "wears sooner."),
+        "blow later and every swing costs more stamina. A **light handle**, slim or hollow, is the other way round: "
+        "quick and cheap, softer. A **heavy binding** (rivets and bands) lasts longer, makes blocks cheaper, gives a "
+        "broken guard back sooner and keeps a shield bash from knocking your charge loose; a **light** one is a "
+        "little lighter and wears sooner. Any material makes any shape: the shape sets the trade and the material "
+        "brings what it brings to a plain part (durability, trait, potential) and the weight too. A part weighs its "
+        "material times its shape: a heavy oak handle is a modest counterweight, and a light netherite one still "
+        "weighs. Try them."),
     "gui.forja.libros.variantes.hacer": (
-        "Los ligeros se cortan en la mesa de piezas, de madera, hueso o cuero. Los pesados son de metal, y el metal "
-        "se cuela: graba la plantilla, llévala a la caja de colada con acero refractario y sale el molde.",
-        "Light ones are cut at the parts table, from wood, bone or leather. Heavy ones are metal, and metal is "
-        "poured: engrave the template, take it to the casting box with refractory steel and out comes the mould."),
+        "Cada material se trabaja como siempre. La madera, el hueso, el cuero, los cristales y lo demás que se talla "
+        "se cortan en la mesa de piezas con la plantilla grabada en la forma que quieras. El metal se cuela: lleva "
+        "esa plantilla a la caja de colada con acero refractario, sale el molde y lo llenas en la mesa de colada.",
+        "Every material is worked as always. Wood, bone, leather, the crystals and everything else that is cut are "
+        "cut at the parts table with the template engraved in the shape you want. Metal is poured: take that "
+        "template to the casting box with refractory steel, out comes the mould, and you fill it on the casting "
+        "table."),
 })
 
 

@@ -1,6 +1,6 @@
 # Equilibrio de Forja, medido
 
-> Esta página la escribe `./gradlew runGametest` (prueba `BalanceGameTests.equilibrio`, código en `src/gametest/java/dev/forja/test/balance`). No se edita a mano: se regenera sola cada vez que se pasan las pruebas, así que siempre dice lo que hace el código de hoy. Dificultad medida: **HERRERO**. Esta vez: 33 mobs, 12 tipos de arma, 6315014 peleas simuladas.
+> Esta página la escribe `./gradlew runGametest` (prueba `BalanceGameTests.equilibrio`, código en `src/gametest/java/dev/forja/test/balance`). No se edita a mano: se regenera sola cada vez que se pasan las pruebas, así que siempre dice lo que hace el código de hoy. Dificultad medida: **HERRERO**. Esta vez: 33 mobs, 12 tipos de arma, 6324310 peleas simuladas.
 
 ## Cómo se mide
 
@@ -170,38 +170,33 @@ Ráfaga: daño en los 3 primeros segundos con la estamina llena. Sostenido: dañ
 - **baculo**: nucleo corazon · engaste prismarina · mango cuarzo; tormenta, matagigantes, filo, conjuro_veloz, sobrecarga, resonancia — TTK medio 0,71 s, 4,0 daño/s sostenido. *No se mide aquí:* el abanico de Prisma y los proyectiles que buscan (Buscador).
 - **grimorio**: nucleo corazon · tapas cuarzo · remache eco; tormenta, matagigantes, filo, conjuro_veloz, resonancia — TTK medio 1,24 s, 3,3 daño/s sostenido. *No se mide aquí:* el área entera de la runa (todo lo que pisa), Vórtice y Santuario.
 
-## Mangos y ataduras: normal, pesado y ligero
+## Mangos y ataduras: normal, pesado y ligero, en cualquier material
 
-Cabeza de hierro y nada más, sin mejoras; el mango normal y el ligero de madera, el pesado de hierro; la atadura normal de madera, la pesada de hierro, la ligera de cuero. Ráfaga, sostenido, TTK medio y cansados como arriba. Aturdidos/min: veces que la barra de postura del maniquí (un mob de 20 de vida) se llena en la pelea larga. Estamina por golpe: la de un golpe normal (12 de base); el cargado cuesta 35 de base, movido igual. Lo que el maniquí no mide y también cuenta: la atadura pesada abarata los bloqueos y no suelta la carga con un golpe de escudo, y con la ligera la guardia rota tarda más en volver.
+Cabeza de hierro y nada más, sin mejoras; el mango y la atadura del material de la fila, en las tres formas: normal, pesada (mango con contrapeso y atadura remachada) y ligera (mango fino y atadura delgada); la espada no lleva atadura, sólo cambia su mango. Cada pieza pesa la densidad de su material por su forma (mango ×2,30 pesado, ×0,35 ligero; atadura ×1,60 y ×0,40), y el trato de la forma va encima. Cada celda: normal / pesado / ligero. Ráfaga, sostenido y TTK medio como arriba (el TTK, sobre los mobs de la búsqueda). Aturdidos/min: veces que la barra de postura del maniquí (un mob de 20 de vida) se llena en la pelea larga. Estamina por golpe: la de un golpe normal (12 de base). Lo que el maniquí no mide y también cuenta: la atadura pesada abarata los bloqueos y no suelta la carga con un golpe de escudo, y con la ligera la guardia rota tarda más en volver.
 
-| Tipo | Mango / atadura | Peso (kg) | Golpes/s | Durabilidad | Ráfaga (daño/s) | Sostenido (daño/s) | TTK medio (s) | Estamina por golpe | Cansados | Aturdidos/min |
-|---|---|---|---|---|---|---|---|---|---|---|
-| espada | normal | 1,30 | 1,60 | 262 | 19,1 | 6,9 | 4,06 | 12,0 | 93 % | 10,0 |
-| espada | mango pesado | 1,62 | 1,47 | 314 | 20,2 | 6,2 | 4,32 | 13,8 | 95 % | 10,0 |
-| espada | mango ligero | 1,11 | 1,69 | 262 | 18,1 | 7,5 | 4,06 | 10,8 | 92 % | 9,0 |
-| hacha | normal | 1,60 | 1,00 | 262 | 24,3 | 6,3 | 3,93 | 12,0 | 0 % | 10,0 |
-| hacha | mango pesado | 2,00 | 0,92 | 314 | 19,9 | 6,2 | 4,38 | 13,8 | 0 % | 12,0 |
-| hacha | mango ligero | 1,36 | 1,06 | 262 | 22,8 | 6,8 | 3,82 | 10,8 | 0 % | 9,0 |
-| hacha | atadura pesada | 1,83 | 0,95 | 360 | 23,6 | 6,5 | 4,54 | 12,0 | 0 % | 10,0 |
-| hacha | atadura ligera | 1,47 | 1,03 | 223 | 24,7 | 6,4 | 3,88 | 12,0 | 91 % | 9,0 |
-| hacha | todo pesado | 2,25 | 0,88 | 432 | 18,8 | 6,3 | 4,46 | 13,8 | 0 % | 12,0 |
-| hacha | todo ligero | 1,23 | 1,09 | 223 | 22,8 | 7,2 | 3,78 | 10,8 | 0 % | 10,0 |
-| mazo | normal | 3,20 | 0,60 | 524 | 9,0 | 4,0 | 6,76 | 12,0 | 0 % | 9,0 |
-| mazo | mango pesado | 3,99 | 0,55 | 628 | 9,5 | 3,8 | 6,35 | 13,8 | 0 % | 10,0 |
-| mazo | mango ligero | 2,72 | 0,63 | 524 | 6,4 | 4,3 | 6,59 | 10,8 | 0 % | 8,0 |
-| mazo | atadura pesada | 3,66 | 0,57 | 720 | 8,7 | 3,8 | 6,96 | 12,0 | 0 % | 9,0 |
-| mazo | atadura ligera | 2,94 | 0,62 | 445 | 9,2 | 4,1 | 6,62 | 12,0 | 0 % | 9,0 |
-| mazo | todo pesado | 4,50 | 0,53 | 864 | 9,2 | 3,7 | 6,73 | 13,8 | 0 % | 10,0 |
-| mazo | todo ligero | 2,46 | 0,65 | 445 | 6,5 | 4,5 | 6,39 | 10,8 | 0 % | 9,0 |
-| lanza | normal | 1,80 | 1,11 | 262 | 6,0 | 2,6 | 13,68 | 12,0 | 87 % | 5,0 |
-| lanza | mango pesado | 2,25 | 1,04 | 314 | 5,9 | 2,4 | 15,08 | 13,8 | 89 % | 6,0 |
-| lanza | mango ligero | 1,53 | 1,17 | 262 | 5,6 | 2,7 | 13,21 | 10,8 | 86 % | 5,0 |
-| lanza | atadura pesada | 2,06 | 1,08 | 360 | 6,0 | 2,5 | 14,06 | 12,0 | 88 % | 5,0 |
-| lanza | atadura ligera | 1,66 | 1,14 | 223 | 6,0 | 2,7 | 13,21 | 12,0 | 88 % | 6,0 |
-| lanza | todo pesado | 2,53 | 1,01 | 432 | 5,8 | 2,4 | 15,69 | 13,8 | 89 % | 6,0 |
-| lanza | todo ligero | 1,39 | 1,21 | 223 | 5,6 | 2,8 | 13,10 | 10,8 | 88 % | 5,0 |
+| Tipo | Material | Peso (kg) | Golpes/s | Durabilidad | Ráfaga (daño/s) | Sostenido (daño/s) | TTK medio (s) | Estamina por golpe | Aturdidos/min |
+|---|---|---|---|---|---|---|---|---|---|
+| espada | madera | 1,30 / 1,44 / 1,23 | 1,60 / 1,54 / 1,63 | 262 / 262 / 262 | 19,1 / 21,1 / 18,1 | 6,9 / 6,7 / 7,1 | 4,06 / 4,12 / 4,15 | 12,0 / 13,8 / 10,8 | 10,0 / 11,0 / 9,0 |
+| espada | hueso | 1,33 / 1,50 / 1,24 | 1,69 / 1,61 / 1,73 | 301 / 301 / 301 | 19,1 / 21,1 / 18,1 | 7,5 / 7,0 / 7,3 | 3,91 / 3,98 / 4,12 | 12,0 / 13,8 / 10,8 | 10,0 / 11,0 / 9,0 |
+| espada | hierro | 1,37 / 1,61 / 1,26 | 1,57 / 1,48 / 1,62 | 314 / 314 / 314 | 19,1 / 20,3 / 18,1 | 6,7 / 6,3 / 7,1 | 4,07 / 4,30 / 4,15 | 12,0 / 13,8 / 10,8 | 9,0 / 10,0 / 9,0 |
+| espada | netherita | 1,47 / 1,84 / 1,29 | 1,53 / 1,40 / 1,60 | 393 / 393 / 393 | 19,1 / 20,5 / 18,1 | 6,6 / 6,1 / 7,1 | 4,08 / 4,40 / 4,15 | 12,0 / 13,8 / 10,8 | 10,0 / 10,0 / 9,0 |
+| espada | vidriacero | 1,32 / 1,49 / 1,24 | 2,19 / 2,11 / 2,23 | 196 / 196 / 196 | 19,1 / 21,1 / 18,1 | 8,5 / 8,5 / 8,5 | 3,65 / 3,60 / 3,79 | 12,0 / 13,8 / 10,8 | 11,0 / 12,0 / 10,0 |
+| hacha | madera | 1,60 / 1,85 / 1,44 | 1,00 / 0,95 / 1,04 | 262 / 314 / 223 | 24,3 / 23,3 / 22,8 | 6,3 / 6,3 / 6,8 | 3,93 / 4,18 / 3,83 | 12,0 / 13,8 / 10,8 | 10,0 / 12,0 / 9,0 |
+| hacha | hueso | 1,67 / 1,98 / 1,46 | 1,08 / 1,01 / 1,13 | 329 / 395 / 280 | 24,7 / 24,1 / 22,8 | 6,6 / 6,2 / 7,2 | 3,81 / 4,01 / 3,76 | 12,0 / 13,8 / 10,8 | 9,0 / 11,0 / 10,0 |
+| hacha | hierro | 1,78 / 2,21 / 1,51 | 0,96 / 0,88 / 1,02 | 360 / 432 / 306 | 23,9 / 19,0 / 22,5 | 6,5 / 5,9 / 6,8 | 4,53 / 4,42 / 3,85 | 12,0 / 13,8 / 10,8 | 10,0 / 11,0 / 9,0 |
+| hacha | netherita | 2,03 / 2,68 / 1,60 | 0,91 / 0,81 / 1,00 | 984 / 1181 / 836 | 10,8 / 17,3 / 22,4 | 6,4 / 5,8 / 6,8 | 4,85 / 4,48 / 3,85 | 12,0 / 13,8 / 10,8 | 10,0 / 11,0 / 9,0 |
+| hacha | vidriacero | 1,66 / 1,96 / 1,46 | 1,58 / 1,51 / 1,64 | 323 / 388 / 275 | 25,5 / 28,0 / 24,1 | 9,1 / 8,8 / 9,6 | 3,03 / 2,81 / 2,92 | 12,0 / 13,8 / 10,8 | 11,0 / 13,0 / 10,0 |
+| mazo | madera | 3,20 / 3,70 / 2,87 | 0,60 / 0,57 / 0,62 | 524 / 629 / 445 | 9,0 / 9,7 / 6,4 | 4,0 / 3,8 / 4,2 | 6,76 / 6,24 / 6,75 | 12,0 / 13,8 / 10,8 | 9,0 / 10,0 / 9,0 |
+| mazo | hueso | 3,34 / 3,97 / 2,92 | 0,69 / 0,65 / 0,72 | 658 / 790 / 559 | 10,0 / 10,6 / 6,8 | 4,7 / 4,1 / 4,8 | 5,79 / 5,40 / 5,68 | 12,0 / 13,8 / 10,8 | 10,0 / 10,0 / 9,0 |
+| mazo | hierro | 3,57 / 4,42 / 3,01 | 0,58 / 0,53 / 0,61 | 720 / 864 / 612 | 8,8 / 9,2 / 6,4 | 3,8 / 3,7 / 4,1 | 6,96 / 6,73 / 6,85 | 12,0 / 13,8 / 10,8 | 9,0 / 10,0 / 8,0 |
+| mazo | netherita | 4,06 / 5,37 / 3,19 | 0,55 / 0,49 / 0,60 | 1969 / 2363 / 1674 | 8,5 / 8,5 / 6,3 | 3,7 / 3,4 / 4,0 | 7,50 / 7,41 / 7,14 | 12,0 / 13,8 / 10,8 | 9,0 / 10,0 / 8,0 |
+| mazo | vidriacero | 3,31 / 3,91 / 2,91 | 1,19 / 1,13 / 1,23 | 645 / 774 / 548 | 18,5 / 18,5 / 17,1 | 5,2 / 5,0 / 5,5 | 3,31 / 3,43 / 3,53 | 12,0 / 13,8 / 10,8 | 11,0 / 11,0 / 10,0 |
 
-**Ninguna variante domina:** ninguna gana a la normal de su tipo en ráfaga, sostenido y TTK a la vez sin pagarlo en estamina, postura o durabilidad.
+La prueba mide 120 combinaciones: 4 tipos (también la lanza), 5 materiales y las 7 formas de mango y atadura (mango pesado o ligero solo, atadura pesada o ligera sola, todo pesado y todo ligero).
+
+**Ninguna variante domina:** ninguna gana a la normal de su tipo y su material en ráfaga, sostenido y TTK a la vez sin pagarlo en estamina, postura (aturdidos o equilibrio quitado por segundo) o durabilidad.
+
+**Ninguna combinación gana a todas:** ninguna mezcla de material y forma es mejor que todas las demás de su tipo en todo a la vez.
 
 ## Tiempo para matar (s), mejores armas al 100 %
 

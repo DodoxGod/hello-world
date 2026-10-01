@@ -364,7 +364,19 @@ public final class ForjaClient implements ClientModInitializer {
 		}
 		// A loose part that was poured cleanly carries an upgrade, and it has to say so: an upgrade you
 		// cannot see is an upgrade nobody will pour for.
-		if (stack.getItem() instanceof dev.forja.item.PartItem) {
+		if (stack.getItem() instanceof dev.forja.item.PartItem loose) {
+			// A heavy or light handle or binding (its name says the material): what it weighs in that material, and
+			// the trade its shape makes, with the speed that weight buys.
+			ForgeMaterial made = stack.get(ModComponents.MATERIAL);
+			if (made != null && loose.type.variant != dev.forja.part.PartVariant.NORMAL) {
+				List<Component> trade = new ArrayList<>();
+				Component weighs = dev.forja.combat.Grip.weightLine(loose.type, made);
+				if (weighs != null) {
+					trade.add(weighs);
+				}
+				trade.addAll(dev.forja.combat.Grip.tradeoff(loose.type, made));
+				lines.addAll(insertAt, trade);
+			}
 			Upgrades cast = stack.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY);
 			if (!cast.isEmpty()) {
 				lines.add(insertAt, Component.translatable("tooltip.forja.colada").withStyle(ChatFormatting.GRAY));
@@ -422,10 +434,8 @@ public final class ForjaClient implements ClientModInitializer {
 				: Component.translatable("tooltip.forja.plantilla.molde", pattern.cost).withStyle(ChatFormatting.GRAY));
 			if (pattern != null && pattern.variant != dev.forja.part.PartVariant.NORMAL) {
 				lines.addAll(insertAt + 1, dev.forja.combat.Grip.tradeoff(pattern));
-				lines.add(insertAt + 2, dev.forja.combat.Grip.materials(pattern));
-				if (!pattern.cuttable()) {
-					lines.add(insertAt + 3, Component.translatable("tooltip.forja.plantilla.a_la_caja").withStyle(ChatFormatting.GRAY));
-				}
+				lines.add(insertAt + 3, dev.forja.combat.Grip.materials(pattern));
+				lines.add(insertAt + 4, Component.translatable("tooltip.forja.plantilla.a_la_caja").withStyle(ChatFormatting.GRAY));
 			}
 			return;
 		}

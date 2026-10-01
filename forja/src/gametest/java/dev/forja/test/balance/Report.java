@@ -713,29 +713,58 @@ public final class Report {
 
 	private void variantsSection() {
 		CombatConfig cfg = CombatConfig.get();
-		this.line("## Mangos y ataduras: normal, pesado y ligero");
+		this.line("## Mangos y ataduras: normal, pesado y ligero, en cualquier material");
 		this.line("");
-		this.line("Cabeza de hierro y nada más, sin mejoras; el mango normal y el ligero de madera, el pesado de hierro; la atadura "
-			+ "normal de madera, la pesada de hierro, la ligera de cuero. Ráfaga, sostenido, TTK medio y cansados como arriba. "
-			+ "Aturdidos/min: veces que la barra de postura del maniquí (un mob de 20 de vida) se llena en la pelea larga. Estamina por golpe: "
-			+ "la de un golpe normal (" + f(cfg.attackCost, 0) + " de base); el cargado cuesta "
-			+ f(cfg.chargeStaminaCost + cfg.chargeStaminaPerShare, 0) + " de base, movido igual. Lo que el maniquí no mide y también "
-			+ "cuenta: la atadura pesada abarata los bloqueos y no suelta la carga con un golpe de escudo, y con la ligera la guardia rota "
-			+ "tarda más en volver.");
+		this.line("Cabeza de hierro y nada más, sin mejoras; el mango y la atadura del material de la fila, en las tres formas: normal, "
+			+ "pesada (mango con contrapeso y atadura remachada) y ligera (mango fino y atadura delgada); la espada no lleva atadura, "
+			+ "sólo cambia su mango. Cada pieza pesa la densidad de su material por su forma (mango ×"
+			+ f(dev.forja.combat.Grip.HEAVY_HANDLE_SHAPE, 2) + " pesado, ×" + f(dev.forja.combat.Grip.LIGHT_HANDLE_SHAPE, 2)
+			+ " ligero; atadura ×" + f(dev.forja.combat.Grip.HEAVY_BINDING_SHAPE, 2) + " y ×" + f(dev.forja.combat.Grip.LIGHT_BINDING_SHAPE, 2)
+			+ "), y el trato de la forma va encima. Cada celda: normal / pesado / ligero. Ráfaga, sostenido y TTK medio como arriba "
+			+ "(el TTK, sobre los mobs de la búsqueda). Aturdidos/min: veces que la barra de postura del maniquí (un mob de 20 de vida) "
+			+ "se llena en la pelea larga. Estamina por golpe: la de un golpe normal (" + f(cfg.attackCost, 0) + " de base). Lo que el "
+			+ "maniquí no mide y también cuenta: la atadura pesada abarata los bloqueos y no suelta la carga con un golpe de escudo, y con "
+			+ "la ligera la guardia rota tarda más en volver.");
 		this.line("");
-		this.table("Tipo", "Mango / atadura", "Peso (kg)", "Golpes/s", "Durabilidad", "Ráfaga (daño/s)", "Sostenido (daño/s)", "TTK medio (s)",
-			"Estamina por golpe", "Cansados", "Aturdidos/min");
-		for (Variants.Row row : this.variants.rows) {
-			this.row(row.type().id(), row.setup().name(), f(dev.forja.combat.Weight.kg(row.build().parts()), 2), f(row.build().attackSpeed, 2),
-				String.valueOf(row.build().durability), f(row.burst(), 1), f(row.sustained(), 1), f(row.ttk(), 2), f(row.staminaPerSwing(), 1),
-				pct(row.tiredShare()), f(row.staggersPerMinute(), 1));
+		this.table("Tipo", "Material", "Peso (kg)", "Golpes/s", "Durabilidad", "Ráfaga (daño/s)", "Sostenido (daño/s)", "TTK medio (s)",
+			"Estamina por golpe", "Aturdidos/min");
+		for (ForgeType type : Variants.TABLE_TYPES) {
+			for (dev.forja.material.ForgeMaterial material : Variants.MATERIALS) {
+				List<Variants.Row> three = new ArrayList<>();
+				for (Variants.Setup setup : Variants.threeShapes(type)) {
+					three.add(this.variants.row(type, material, setup));
+				}
+				this.row(type.id(), material.getSerializedName(),
+					triple(three, r -> f(r.kg(), 2)), triple(three, r -> f(r.build().attackSpeed, 2)),
+					triple(three, r -> String.valueOf(r.build().durability)), triple(three, r -> f(r.burst(), 1)),
+					triple(three, r -> f(r.sustained(), 1)), triple(three, r -> f(r.ttk(), 2)),
+					triple(three, r -> f(r.staminaPerSwing(), 1)), triple(three, r -> f(r.staggersPerMinute(), 1)));
+			}
 		}
 		this.line("");
-		this.line(this.variants.dominant.isEmpty()
-			? "**Ninguna variante domina:** ninguna gana a la normal de su tipo en ráfaga, sostenido y TTK a la vez sin pagarlo en "
-				+ "estamina, postura o durabilidad."
-			: "**Dominan** (ganan en todo a la normal): " + String.join(", ", this.variants.dominant) + ".");
+		int measured = this.variants.rows.size();
+		this.line("La prueba mide " + measured + " combinaciones: " + Variants.TYPES.size() + " tipos (también la lanza), "
+			+ Variants.MATERIALS.size() + " materiales y las " + Variants.SETUPS.size() + " formas de mango y atadura (mango pesado o ligero "
+			+ "solo, atadura pesada o ligera sola, todo pesado y todo ligero).");
 		this.line("");
+		this.line(this.variants.dominant.isEmpty()
+			? "**Ninguna variante domina:** ninguna gana a la normal de su tipo y su material en ráfaga, sostenido y TTK a la vez sin "
+				+ "pagarlo en estamina, postura (aturdidos o equilibrio quitado por segundo) o durabilidad."
+			: "**Dominan** (ganan en todo a la normal del mismo material): " + String.join(", ", this.variants.dominant) + ".");
+		this.line("");
+		this.line(this.variants.overall.isEmpty()
+			? "**Ninguna combinación gana a todas:** ninguna mezcla de material y forma es mejor que todas las demás de su tipo en todo a la vez."
+			: "**Gana a todas** las demás de su tipo: " + String.join(", ", this.variants.overall) + ".");
+		this.line("");
+	}
+
+	/** "a / b / c": one number for each of the three shapes. */
+	private static String triple(List<Variants.Row> rows, java.util.function.Function<Variants.Row, String> cell) {
+		List<String> cells = new ArrayList<>();
+		for (Variants.Row row : rows) {
+			cells.add(row == null ? "—" : cell.apply(row));
+		}
+		return String.join(" / ", cells);
 	}
 
 	private void buildRow(ForgeType type, String scenario, Analysis.Evaluated e) {

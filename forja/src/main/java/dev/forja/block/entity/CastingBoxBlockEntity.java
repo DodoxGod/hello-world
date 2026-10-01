@@ -154,9 +154,9 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 				? new Job(frame, assembled.type().displayName(), FRAME_COST, null)
 				: null;
 		}
-		// A shape no bench can cut (a heavy handle or binding: only ever metal, and metal is poured) has no
-		// part to pour the steel over, so it is poured over the engraving itself, and the template goes instead.
-		PartType engraved = uncuttable(pattern);
+		// A heavy or a light handle or binding goes to metal straight from its engraving: there is no need to
+		// cut one in wood first just to have something to pour the steel over, so the template goes instead.
+		PartType engraved = mouldTemplate(pattern);
 		if (engraved != null) {
 			if (!this.hasSteel(MOULD_COST)) {
 				return null;
@@ -171,10 +171,14 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 		return this.fits(result) ? new Job(result, made.type.displayName(), MOULD_COST, null) : null;
 	}
 
-	/** The shape engraved on a template when no bench could cut that part out of anything, else null. */
-	public static @Nullable PartType uncuttable(ItemStack stack) {
+	/**
+	 * The shape engraved on a template when the template itself becomes its mould here, else null: a heavy or
+	 * a light handle or binding (the way a metal one is made, Andy 2026-09-29), or a shape no bench could cut
+	 * out of anything. A plain template stays at the bench, where the part it cuts becomes the mould.
+	 */
+	public static @Nullable PartType mouldTemplate(ItemStack stack) {
 		PartType part = dev.forja.item.TemplateItem.pattern(stack);
-		return part != null && !part.cuttable() ? part : null;
+		return part != null && (part.variant != dev.forja.part.PartVariant.NORMAL || !part.cuttable()) ? part : null;
 	}
 
 	/** Whether the side slot holds at least this much refractory steel. */
@@ -415,7 +419,7 @@ public class CastingBoxBlockEntity extends BlockEntity implements WorldlyContain
 			case SLOT_PATTERN -> CastingMouldItem.partOf(stack) != null
 				|| stack.getItem() instanceof dev.forja.item.PartItem
 				|| stack.getItem() instanceof dev.forja.item.StrainerItem
-				|| uncuttable(stack) != null
+				|| mouldTemplate(stack) != null
 				// A finished tool, to be cut into a frame. A frame itself has no business in here.
 				|| (stack.has(ModComponents.PARTS) && dev.forja.item.CastingFrameItem.typeOf(stack) == null);
 			case SLOT_STEEL -> stack.is(ModItems.alloy("acero_refractario"));
