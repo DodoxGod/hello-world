@@ -1,5 +1,25 @@
 # Novedades
 
+## 2026-10-01 — Las pruebas de los blazes, sin carreras contra el reloj
+
+Las nueve pruebas de vuelo del blaze fallaban a veces todas a la vez en la batería completa («el suelo del vuelo
+todavía no actualiza entidades on tick 462» o «No sequences finished»), siempre en el mismo segundo.
+
+- **La causa:** el servidor de pruebas no lleva el ritmo de 20 tics por segundo, encadena un tic tras otro
+  (`GameTestServer.waitUntilNextTick`), cientos por segundo cuando hay poco que hacer. Los trozos del mundo, en cambio,
+  se generan y cargan en otros hilos y al ritmo del reloj. El suelo de vuelo (de −10 a 18) se salía de la caja de 8 × 8
+  de la prueba, y sus trozos se esperaban como mucho 400 tics: con la máquina cargada eso era menos de medio segundo.
+  Además, una prueba que terminaba soltaba trozos que su vecina seguía usando.
+- **El arreglo:** la caja de las pruebas de vuelo es ahora de 29 × 8 × 29 (`gametest/structure/vuelo_blaze.snbt`) y el
+  suelo cabe dentro. El marco de pruebas fuerza los trozos de la caja, los guarda hasta el final de la tanda y no
+  empieza la prueba hasta que todos actualizan entidades, tarde lo que tarde. Sin espera ni margen de 400 tics.
+- `TestChunks` (las otras pruebas que construyen fuera de su caja) suelta un trozo solo cuando ya no lo usa ninguna
+  prueba que lo pidió.
+- `blazeLeadsAMovingTarget`: el jugador anda por el eje x de la prueba aunque la prueba esté girada, y cada bola del
+  blaze mandado se juzga con el adelanto con el que salió (de vez en cuando la red elige otro).
+- `zombieLungesAtMidRange`: el zombi sale a 7 bloques, con Lentitud, sobre el suelo del jugador y sin escudo; antes
+  pasaba por la franja de la embestida en unos 15 tics y 1 de cada 25 no llegaba a saltar.
+
 ## 2026-10-01 — Pase visual de objetos y bloques
 
 Andy: «mejora todo lo visual del mod que puedas». Se revisaron todos los objetos y bloques (iconos e instalados en el

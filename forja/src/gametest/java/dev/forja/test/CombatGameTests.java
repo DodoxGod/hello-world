@@ -830,14 +830,48 @@ public class CombatGameTests {
 		});
 	}
 
+	/**
+	 * A zombie that comes at the player from the far end of the lunge's range (7 blocks) leaps at them before it is
+	 * too close (3.5). It failed now and then (once in a full run on 2026-10-01; 15 of 400 side by side): it started
+	 * five blocks off, and walking in it was in range for some 15 ticks, where the rules start the lunge with a chance of
+	 * 0.3 on the ticks its goal is looked at (every other tick), and about one zombie in 25 walked through without it.
+	 * From 7 blocks it was in range 34 ticks and 2 of 400 still walked through; slowed (Slowness III) it is in range
+	 * nearly twice as long again, and 400 of 400 leapt. It is also the plain zombie the lunge is for: on the ground the
+	 * player stands on, not dropped below the box onto the world's floor; with the chances of a veteran, an elite (who
+	 * never lunges) or a shield at nothing, whatever another test left them at; and with its hands emptied, for a shield
+	 * given as it came into the world (MobDefense.arm, from Scaling.sizeUp on ENTITY_LOAD) fights another way.
+	 */
 	@GameTest(maxTicks = 200)
 	public void zombieLungesAtMidRange(GameTestHelper helper) {
-		TestPlayer player = player(helper, new BlockPos(1, 1, 1));
-		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(6, 1, 1));
+		floor(helper);
+		TestPlayer player = player(helper, new BlockPos(0, 1, 1));
+		noRandomThreat();
+		Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(7, 1, 1));
+		emptyHands(zombie);
+		zombie.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.SLOWNESS, 200, 2));
 		zombie.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
 		zombie.setTarget(player);
+		// What it saw tick by tick, for the message: in range, on the ground, seeing, could start, the mind's target.
+		int[] seen = new int[6];
+		StringBuilder trace = new StringBuilder();
+		helper.onEachTick(() -> {
+			dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(zombie);
+			double d = zombie.distanceTo(player);
+			boolean range = d >= CombatConfig.get().lungeMinDistance && d <= CombatConfig.get().lungeMaxDistance;
+			seen[0] += range ? 1 : 0;
+			seen[1] += zombie.onGround() ? 1 : 0;
+			seen[2] += zombie.getSensing().hasLineOfSight(player) ? 1 : 0;
+			seen[3] += mind != null && mind.specials != null && mind.specials.available(0, player) ? 1 : 0;
+			seen[4] += mind != null && mind.target == player ? 1 : 0;
+			seen[5] += mind != null && mind.networked ? 1 : 0;
+			if (helper.getTick() % 10 == 0) {
+				trace.append(String.format(java.util.Locale.ROOT, " t%d d%.1f%s%s", helper.getTick(), d, zombie.onGround() ? "s" : "a",
+					mind != null && mind.specials != null && mind.specials.active() ? "!" : ""));
+			}
+		});
 		helper.runAfterDelay(80, () -> {
-			helper.assertTrue(CombatStats.count(zombie, CombatStats.LUNGE) > 0, "el zombi no embistió");
+			helper.assertTrue(CombatStats.count(zombie, CombatStats.LUNGE) > 0, "el zombi no embistió: a distancia " + seen[0] + ", en el suelo " + seen[1]
+				+ ", lo ve " + seen[2] + ", podía empezar " + seen[3] + ", objetivo de la mente " + seen[4] + ", con red " + seen[5] + ";" + trace);
 			helper.succeed();
 		});
 	}

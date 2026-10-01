@@ -43,8 +43,8 @@ import net.minecraft.world.phys.Vec3;
  */
 public class BlazeGameTests {
 	/**
-	 * The flight tests run in a batch of their own: they open their box and lay 29 × 29 of ground round it, and a blaze
-	 * flies well outside the box, which the other tests' layout does not expect.
+	 * The flight tests run in a batch of their own: they open their box (29 × 29, FLIGHT_AREA) and a blaze may fly
+	 * past its edge, which the other tests' layout does not expect.
 	 */
 	private static final String ARENA = "forja-test:blaze";
 
@@ -158,12 +158,10 @@ public class BlazeGameTests {
 	private static CombatGameTests.TestPlayer player(GameTestHelper helper, BlockPos relative) {
 		CombatConfig.get().veteranChance = 0.0;
 		CombatConfig.get().eliteChance = 0.0;
-		floor(helper, net.minecraft.world.level.block.Blocks.STONE);
-		openBox(helper);
 		return CombatGameTests.player(helper, relative);
 	}
 
-	/** Takes down the barrier walls and ceiling round the test's box: a blaze keeps its distance, outside the box. */
+	/** Takes down the barrier walls and ceiling round the test's box: a blaze keeps its distance, at the box's edge or past it. */
 	private static void openBox(GameTestHelper helper) {
 		AABB box = helper.getBounds().inflate(1.0);
 		for (BlockPos pos : BlockPos.betweenClosed(BlockPos.containing(box.minX, box.minY, box.minZ), BlockPos.containing(box.maxX, box.maxY, box.maxZ))) {
@@ -174,44 +172,46 @@ public class BlazeGameTests {
 	}
 
 	/**
-	 * Level ground for the flight: y 0 from −10 to 18 (the test's padding keeps its neighbours further off), its
-	 * chunks kept ticking while it lasts (outside the test's own box they are not, and a blaze there stands still).
-	 * Taking it up lets go of the chunks this test forced and only those (TestChunks): it let go of every chunk under
-	 * the ground, and one of them could be a chunk the framework keeps for the test next door.
+	 * The flight's box (data/forja-test/gametest/structure/vuelo_blaze.snbt): 29 × 8 × 29 of air, the whole ground of
+	 * a flight, with the player in the middle (14, 1, 14) and the blazes starting about ten blocks off.
+	 *
+	 * <p>It used to be the 8 × 8 box with the ground laid ten blocks round it, its chunks forced by the test and waited
+	 * for (at most 400 ticks) before the flight began. The framework waits for the chunks under a test's own box to tick
+	 * entities before it starts the test, however long that takes; but the game test server does not keep time: it
+	 * runs the next tick as soon as the last is done (GameTestServer.waitUntilNextTick), hundreds a second when little
+	 * else runs, while chunks come up on worker threads by the clock. With the machine loaded, the chunks round the box
+	 * (a new spot of the world each run, generated there and then) took longer than 400 of those ticks, and the nine
+	 * flights failed together within one second: "el suelo del vuelo todavía no actualiza entidades on tick 462", or
+	 * "No sequences finished" for those whose wait counted against a longer limit (2026-10-01). A test that ended also
+	 * let go of chunks a neighbour still flew over: TestChunks hands back the chunks a test forced, and the neighbour
+	 * that found them forced already had not forced them itself. With the ground inside the box, the framework forces
+	 * its chunks, keeps them to the end of the batch and starts the flight only once every one of them ticks entities.
 	 */
-	private static void floor(GameTestHelper helper, net.minecraft.world.level.block.Block block) {
-		boolean laying = block != net.minecraft.world.level.block.Blocks.AIR;
-		if (laying) {
-			TestChunks.force(helper, FLOOR_FROM, FLOOR_TO);
-		} else {
-			TestChunks.release(helper);
-		}
-		for (int x = FLOOR_FROM; x <= FLOOR_TO; x++) {
-			for (int z = FLOOR_FROM; z <= FLOOR_TO; z++) {
-				helper.setBlock(new BlockPos(x, 0, z), block);
+	private static final String FLIGHT_AREA = "forja-test:vuelo_blaze";
+
+	/** The side of the flight's box, all of it ground. */
+	private static final int FLOOR = 29;
+
+	/** Level ground for the flight: stone at y 0 over the whole box. */
+	private static void floor(GameTestHelper helper) {
+		for (int x = 0; x < FLOOR; x++) {
+			for (int z = 0; z < FLOOR; z++) {
+				helper.setBlock(new BlockPos(x, 0, z), net.minecraft.world.level.block.Blocks.STONE);
 			}
 		}
 	}
 
 	/**
-	 * Starts a flight once its ground ticks entities. The framework waits for the chunks under a test's own box before
-	 * it starts it, not for the ground laid round it; a blaze spawned on ground still loading stood frozen where it was
-	 * put until the chunk came up (a vanilla blaze that never fired, a trained one that never rose into its band), and
-	 * under load that took long enough (90 ticks and more) to fail the test. The body gets the tick it started on.
+	 * Starts a flight: lays its ground and opens its box. A blaze over a chunk that does not tick entities stands frozen
+	 * where it was put (a vanilla blaze that never fired, a trained one that never rose into its band), so the test
+	 * checks that the whole box ticks, which the framework saw to before starting it. The body gets the tick it started on.
 	 */
 	private static void flight(GameTestHelper helper, java.util.function.LongConsumer body) {
-		floor(helper, net.minecraft.world.level.block.Blocks.STONE);
+		helper.assertTrue(TestChunks.ticking(helper, 0, FLOOR - 1), "el suelo del vuelo todavía no actualiza entidades");
+		floor(helper);
 		openBox(helper);
-		helper.startSequence()
-			.thenWaitUntil(() -> helper.assertTrue(TestChunks.ticking(helper, FLOOR_FROM, FLOOR_TO), "el suelo del vuelo todavía no actualiza entidades"))
-			.thenExecute(() -> body.accept(helper.getTick()));
+		body.accept(helper.getTick());
 	}
-
-	/** What a flight may wait for its ground, on top of its own length. */
-	private static final int FLIGHT_WAIT = 400;
-
-	private static final int FLOOR_FROM = -10;
-	private static final int FLOOR_TO = 18;
 
 	/** Keeps a still test player standing: full health, no fire, no knockback, hits count again each tick. */
 	private static float[] keepAlive(GameTestHelper helper, CombatGameTests.TestPlayer player) {
@@ -250,20 +250,19 @@ public class BlazeGameTests {
 			fireballsOf(helper, mob).forEach(SmallFireball::discard);
 			mob.discard();
 		}
-		floor(helper, net.minecraft.world.level.block.Blocks.AIR);
 	}
 
 	/**
 	 * Two blazes, a zombie beside the player and a fireball in the air: each blaze's observation is 324 finite numbers
 	 * within the contract's scales, and the blaze's own inputs read what is there.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 60 + FLIGHT_WAIT)
+	@GameTest(environment = ARENA, structure = FLIGHT_AREA, padding = 16, maxTicks = 60)
 	public void blazeObservationHas324FiniteInputs(GameTestHelper helper) {
 		flight(helper, began -> {
-			CombatGameTests.TestPlayer player = player(helper, new BlockPos(6, 1, 3));
-			Blaze blaze = helper.spawn(EntityTypes.BLAZE, new BlockPos(1, 4, 3));
-			Blaze other = helper.spawn(EntityTypes.BLAZE, new BlockPos(1, 4, 6));
-			Mob zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(7, 1, 3));
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(16, 1, 13));
+			Blaze blaze = helper.spawn(EntityTypes.BLAZE, new BlockPos(11, 4, 13));
+			Blaze other = helper.spawn(EntityTypes.BLAZE, new BlockPos(11, 4, 16));
+			Mob zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(17, 1, 13));
 			for (Mob mob : new Mob[] {blaze, other, zombie}) {
 				mob.setNoAi(true);
 			}
@@ -397,12 +396,12 @@ public class BlazeGameTests {
 	 * The trained network flies a blaze that starts a block off the ground: it rises into its band (2 to 5 over the
 	 * ground) and stays there.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 320 + FLIGHT_WAIT)
+	@GameTest(environment = ARENA, structure = FLIGHT_AREA, padding = 16, maxTicks = 320)
 	public void trainedBlazeHoversInItsBand(GameTestHelper helper) {
 		flight(helper, began -> {
-			CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(14, 1, 14));
 			keepAlive(helper, player);
-			Blaze blaze = blaze(helper, new BlockPos(4, 1, 14), player, trainedNet(helper));
+			Blaze blaze = blaze(helper, new BlockPos(14, 1, 24), player, trainedNet(helper));
 			MobMind mind = MobAi.mind(blaze);
 			int[] counted = {0, 0, 0};
 			double[] extremes = {Double.MAX_VALUE, -Double.MAX_VALUE};
@@ -438,12 +437,12 @@ public class BlazeGameTests {
 	 * The trained network fires bursts of three: each starts with 20 ticks of warning (the blaze visibly charged, as
 	 * vanilla's is), then three fireballs six ticks apart, then its rest.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 420 + FLIGHT_WAIT)
+	@GameTest(environment = ARENA, structure = FLIGHT_AREA, padding = 16, maxTicks = 420)
 	public void trainedBlazeFiresTelegraphedBursts(GameTestHelper helper) {
 		flight(helper, began -> {
-			CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(14, 1, 14));
 			keepAlive(helper, player);
-			Blaze blaze = blaze(helper, new BlockPos(4, 3, 14), player, trainedNet(helper));
+			Blaze blaze = blaze(helper, new BlockPos(14, 3, 24), player, trainedNet(helper));
 			Bursts bursts = watchBursts(helper, blaze);
 			helper.runAfterDelay(400, () -> {
 				Forja.LOGGER.info("[blaze] ráfagas: cargas en {}, bolas en {}", bursts.charges, bursts.shots);
@@ -497,10 +496,10 @@ public class BlazeGameTests {
 	 * A blaze told to fire with a lead of 1.5 at a player walking to and fro across its line aims ahead of them every
 	 * time; the trained network, against the same player, aims ahead on average.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 420 + FLIGHT_WAIT)
+	@GameTest(environment = ARENA, structure = FLIGHT_AREA, padding = 16, maxTicks = 420)
 	public void blazeLeadsAMovingTarget(GameTestHelper helper) {
 		flight(helper, began -> {
-			CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(14, 1, 14));
 			keepAlive(helper, player);
 			float[] bias = new float[BlazeBrain.OUTPUTS];
 			bias[BlazeBrain.MOVE_AT] = 8.0F;
@@ -508,9 +507,11 @@ public class BlazeGameTests {
 			bias[BlazeBrain.USE_AT] = 8.0F;
 			bias[BlazeBrain.LEAD_AT + 3] = 8.0F;
 			bias[BlazeBrain.RETREAT_AT] = -8.0F;
-			Blaze told = blaze(helper, new BlockPos(4, 3, 14), player, NetBrain.fromJson(fakeBlaze(21L, bias)));
-			Blaze own = blaze(helper, new BlockPos(4, 3, -6), player, trainedNet(helper));
+			Blaze told = blaze(helper, new BlockPos(14, 3, 24), player, NetBrain.fromJson(fakeBlaze(21L, bias)));
+			Blaze own = blaze(helper, new BlockPos(14, 3, 4), player, trainedNet(helper));
 			Vec3 start = player.position();
+			// The test's own x, whichever way the test is turned (verify turns it): across the blazes' line, not along it.
+			Vec3 across = helper.absoluteVec(new Vec3(1.0, 0.0, 0.0)).subtract(helper.absoluteVec(Vec3.ZERO));
 			double speed = 0.2;
 			Vec3[] velocity = {Vec3.ZERO};
 			Map<Blaze, List<Double>> ahead = new HashMap<>();
@@ -518,14 +519,21 @@ public class BlazeGameTests {
 			Set<Integer> seen = new HashSet<>();
 			// Which way the player was walking, tick by tick: a ball is judged against the way they went when it was thrown.
 			Map<Long, Double> phases = new HashMap<>();
+			// The told blaze's lead as each tick ends (MobAi decides at the end of the level's tick, so a ball goes out
+			// with the lead of a tick or two before the one it is first seen on), and whether each of its balls surely
+			// went out at 1.5: the leads of the ticks it may have been fired with all were.
+			Map<Long, Double> toldLeadAt = new HashMap<>();
+			List<Boolean> toldAtFull = new ArrayList<>();
 			helper.onEachTick(() -> {
 				long t = helper.getTick();
+				MobMind toldMind = MobAi.mind(told);
+				toldLeadAt.put(t, toldMind == null || toldMind.blaze == null ? -1.0 : toldMind.blaze.leadFactor());
 				// to and fro along x, 12 blocks each way: across the told blaze's line (it is to the south, +z)
 				double phase = (t % 120) < 60 ? 1.0 : -1.0;
 				phases.put(t, phase);
 				double offset = (t % 120) < 60 ? (t % 60) * speed : (60 - t % 60) * speed;
-				Vec3 at = start.add(offset - 6.0, 0.0, 0.0);
-				velocity[0] = new Vec3(phase * speed, 0.0, 0.0);
+				Vec3 at = start.add(across.scale(offset - 6.0));
+				velocity[0] = across.scale(phase * speed);
 				player.setPos(at.x, at.y, at.z);
 				player.setKnownMovement(velocity[0]);
 				for (Blaze blaze : new Blaze[] {told, own}) {
@@ -539,6 +547,10 @@ public class BlazeGameTests {
 						if (seen.add(ball.getId()) && sameWay) {
 							ahead.computeIfAbsent(blaze, b -> new ArrayList<>()).add(aheadOf(ball, new Vec3(at.x, player.getY(0.5), at.z), velocity[0]));
 							leads.computeIfAbsent(blaze, b -> new ArrayList<>()).add(mind.blaze == null ? -1.0 : mind.blaze.leadFactor());
+							if (blaze == told) {
+								toldAtFull.add(toldLeadAt.getOrDefault(thrown - 2, -1.0) == 1.5 && toldLeadAt.getOrDefault(thrown - 1, -1.0) == 1.5
+									&& toldLeadAt.getOrDefault(thrown, -1.0) == 1.5);
+							}
 						}
 					}
 				}
@@ -546,11 +558,22 @@ public class BlazeGameTests {
 			helper.runAfterDelay(400, () -> {
 				List<Double> toldAhead = ahead.getOrDefault(told, List.of());
 				List<Double> ownAhead = ahead.getOrDefault(own, List.of());
-				Forja.LOGGER.info("[blaze] adelanto: mandado a 1,5 {} ; la red {} con factores {}", fmt(toldAhead), fmt(ownAhead), leads.get(own));
-				helper.assertTrue(toldAhead.size() >= 3, "el blaze mandado debería disparar al menos una ráfaga: " + toldAhead);
-				for (double a : toldAhead) {
-					helper.assertTrue(a > 0.3, "con adelanto 1,5 cada bola debería ir por delante del jugador: " + fmt(toldAhead));
+				Forja.LOGGER.info("[blaze] adelanto: mandado a 1,5 {} (seguro a 1,5: {}) ; la red {} con factores {}", fmt(toldAhead), toldAtFull,
+					fmt(ownAhead), leads.get(own));
+				// The told blaze's lead is sampled like any network's (BlazeBrain.sample never takes the maximum): its bias
+				// makes 1.5 all but certain, not certain, and about one flight in 200 a ball went out with another lead and
+				// landed at the player (-0.2 among 2.6 to 4.6, FORJA_VERIFICAR, 2026-10-01). So every ball that surely went
+				// out at 1.5 must go ahead of the player, and nearly all of them must be such balls.
+				int atFull = 0;
+				for (int k = 0; k < toldAhead.size(); k++) {
+					if (toldAtFull.get(k)) {
+						atFull++;
+						helper.assertTrue(toldAhead.get(k) > 0.3, "con adelanto 1,5 cada bola debería ir por delante del jugador: " + fmt(toldAhead)
+							+ " (seguro a 1,5: " + toldAtFull + ")");
+					}
 				}
+				helper.assertTrue(atFull >= 3 && atFull >= toldAhead.size() - 2, "el blaze mandado debería disparar al menos una ráfaga, con adelanto 1,5: "
+					+ fmt(toldAhead) + " (seguro a 1,5: " + toldAtFull + ")");
 				helper.assertTrue(ownAhead.size() >= 3, "la red debería disparar al jugador que se mueve: " + ownAhead);
 				double mean = ownAhead.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
 				helper.assertTrue(mean > 0.0, "la red debería apuntar por delante del jugador, de media: " + fmt(ownAhead));
@@ -572,12 +595,12 @@ public class BlazeGameTests {
 	 * The trained network keeps a blaze in its fight: within the 16 blocks its burst needs most of the time, and out of
 	 * the player's reach almost always.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 420 + FLIGHT_WAIT)
+	@GameTest(environment = ARENA, structure = FLIGHT_AREA, padding = 16, maxTicks = 420)
 	public void trainedBlazeKeepsItsEngagementRange(GameTestHelper helper) {
 		flight(helper, began -> {
-			CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(14, 1, 14));
 			keepAlive(helper, player);
-			Blaze blaze = blaze(helper, new BlockPos(4, 3, 13), player, trainedNet(helper));
+			Blaze blaze = blaze(helper, new BlockPos(14, 3, 23), player, trainedNet(helper));
 			int[] counted = {0, 0, 0};
 			double[] sum = {0.0};
 			helper.onEachTick(() -> {
@@ -609,13 +632,13 @@ public class BlazeGameTests {
 	}
 
 	/** Without a network the blaze is vanilla's: no executor, vanilla's own fireballs. */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 200 + FLIGHT_WAIT)
+	@GameTest(environment = ARENA, structure = FLIGHT_AREA, padding = 16, maxTicks = 200)
 	public void blazeWithoutNetworkStaysVanilla(GameTestHelper helper) {
 		flight(helper, began -> {
 			helper.assertTrue(MobAi.net("blaze") == null, "las pruebas no llevan red del blaze en la carpeta: " + MobAi.net("blaze"));
-			CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(14, 1, 14));
 			keepAlive(helper, player);
-			Blaze blaze = blaze(helper, new BlockPos(4, 3, 12), player, null);
+			Blaze blaze = blaze(helper, new BlockPos(14, 3, 22), player, null);
 			MobMind mind = MobAi.mind(blaze);
 			Set<Integer> balls = new HashSet<>();
 			helper.onEachTick(() -> {
@@ -635,14 +658,14 @@ public class BlazeGameTests {
 	 * What it costs: a decision (ObsBlaze, mask, forward, sample) every 2 ticks plus the executor every tick, per
 	 * blaze, at most 0.1 ms a tick.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 60 + FLIGHT_WAIT)
+	@GameTest(environment = ARENA, structure = FLIGHT_AREA, padding = 16, maxTicks = 60)
 	public void blazeNetworkCostsLittle(GameTestHelper helper) {
 		flight(helper, began -> {
-			CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+			CombatGameTests.TestPlayer player = player(helper, new BlockPos(14, 1, 14));
 			keepAlive(helper, player);
 			NetBrain net = trainedNet(helper);
-			Blaze blaze = blaze(helper, new BlockPos(4, 3, 13), player, net);
-			Mob zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(5, 1, 4));
+			Blaze blaze = blaze(helper, new BlockPos(14, 3, 23), player, net);
+			Mob zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(15, 1, 14));
 			zombie.setNoAi(true);
 			helper.runAfterDelay(20, () -> {
 				MobMind mind = MobAi.mind(blaze);
@@ -700,14 +723,14 @@ public class BlazeGameTests {
 	 * lists (a fake player), so a ball flies through it: the hit is worked out from the ball's path each tick, and the
 	 * ball is taken out there. The network must land some.
 	 */
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 620 + FLIGHT_WAIT)
+	@GameTest(environment = ARENA, structure = FLIGHT_AREA, padding = 16, maxTicks = 620)
 	public void blazeDamageWithTheNetwork(GameTestHelper helper) {
 		flight(helper, began -> {
 			hitsOverTime(helper, trainedNet(helper), "red");
 		});
 	}
 
-	@GameTest(environment = ARENA, padding = 16, maxTicks = 620 + FLIGHT_WAIT)
+	@GameTest(environment = ARENA, structure = FLIGHT_AREA, padding = 16, maxTicks = 620)
 	public void blazeDamageVanilla(GameTestHelper helper) {
 		flight(helper, began -> {
 			hitsOverTime(helper, null, "vanilla");
@@ -715,9 +738,9 @@ public class BlazeGameTests {
 	}
 
 	private static void hitsOverTime(GameTestHelper helper, NetBrain net, String label) {
-		CombatGameTests.TestPlayer player = player(helper, new BlockPos(4, 1, 4));
+		CombatGameTests.TestPlayer player = player(helper, new BlockPos(14, 1, 14));
 		keepAlive(helper, player);
-		Blaze blaze = blaze(helper, new BlockPos(4, 3, 14), player, net);
+		Blaze blaze = blaze(helper, new BlockPos(14, 3, 24), player, net);
 		Map<Integer, Vec3> last = new HashMap<>();
 		int[] counted = {0, 0};
 		helper.onEachTick(() -> {
