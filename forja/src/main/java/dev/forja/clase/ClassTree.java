@@ -90,6 +90,8 @@ public final class ClassTree {
 		public final @Nullable String excludes;
 		/** The path of a branch it is on ("a1", "c2"...). */
 		public final @Nullable String path;
+		/** What the tree screen draws in the node (see {@link TreeIcon}); chosen in tools/arboles_datos.py. */
+		public final String icon;
 		final boolean hasText;
 		final String nameEs;
 
@@ -118,6 +120,7 @@ public final class ClassTree {
 			this.target = json.has("destino") ? json.get("destino").getAsString() : null;
 			this.excludes = json.has("excluye") ? json.get("excluye").getAsString() : null;
 			this.path = json.has("camino") ? json.get("camino").getAsString() : null;
+			this.icon = json.get("icono").getAsString();
 			this.hasText = json.has("plantilla") && !json.get("plantilla").isJsonNull();
 			this.nameEs = json.getAsJsonObject("nombre").get("es").getAsString();
 		}
@@ -139,6 +142,7 @@ public final class ClassTree {
 			this.target = other.target;
 			this.excludes = other.excludes;
 			this.path = other.path;
+			this.icon = other.icon;
 			this.hasText = other.hasText;
 			this.nameEs = other.nameEs;
 		}

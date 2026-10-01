@@ -1,5 +1,25 @@
 # Novedades
 
+## 2026-09-30 — Iconos en los nodos de los árboles de clase
+
+Andy: «se ve bastante bien el árbol, pero le faltan iconos». Cada nodo de los seis árboles lleva ahora su icono, elegido
+en los datos (`icono` en `tools/arboles_datos.py`, que sale en `forja_arboles.json`); cambiar uno es editar esa tabla.
+
+- **Menores**: un icono por estadística (`STAT_ICONS`): corazón propio para la vida, pluma para la velocidad, espada
+  para el daño, escudo, arco, reloj, lapislázuli...
+- **Notables**: un objeto que le pega (`NOTABLE_ICONS`), con las gemelas «menor» de los puentes iguales a las grandes.
+- **Claves**: un medallón de 16×16 propio, dorado y del color de su clase, con un dibujo distinto por clave
+  (`KEYSTONE_GLYPHS`; los dibuja `tools/arbol_iconos.py` en `textures/gui/arbol/`).
+- **Habilidades**: el icono de la habilidad; las mejoras (II) llevan el mismo con una «II» dorada.
+- **Origen y puentes**: el emblema de la clase (el arma forjada que la representa); el puente, el de la clase destino.
+- **Forja**: objetos del mod (ascua, corazón de forja, sello, orbe de mejora, martillo del maestro...).
+- La pantalla (`TalentTreeScreen`) dibuja el icono dentro del nodo a escala (nodos pequeños, iconos pequeños; las claves,
+  grandes), atenuado si no se puede aprender aún y oscuro si está bloqueado; con el árbol muy alejado vuelven los
+  colores de antes. La cabecera del tooltip lleva el icono junto al nombre.
+- `tools/arboles.py --imagenes` compone los iconos en los dibujos de los árboles.
+- Pruebas: `ArbolGameTests.everyNodeHasAnIcon` (todos resuelven a un objeto, emblema o textura que existe; claves y
+  habilidades sin repetir) y la sección `iconos_*` de `FORJA_SOLO=arbol`.
+
 ## 2026-09-30 — Contrato 4.1: el jugador me apunta (bloque J)
 
 Responde a `docs/mod_spec_mira.md`. Las redes v4 con `"revision": "4.1"` reciben 472 entradas: las 468 de siempre y,

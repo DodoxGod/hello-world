@@ -74,6 +74,95 @@ STATS = OrderedDict([
 ])
 NEW_STATS = ["foundry_speed", "capacity", "assembler_potential"]
 
+# ------------------------------------------------------------------ icons (all of them are chosen here)
+# An icon is one of: "minecraft:x" / "forja:x" (an item), "sprite:name" (textures/gui/arbol/name.png, made by
+# tools/arbol_iconos.py), "clase:id" (that class's emblem: the forged weapon that stands for it). A skill's
+# upgrade (II) shows its skill's icon with a gold "II"; a bridge shows its destination class's emblem.
+# A small node: one icon per stat.
+STAT_ICONS = {
+    "max_health": "sprite:corazon", "move_speed": "minecraft:feather", "melee_damage": "minecraft:iron_sword",
+    "armor": "minecraft:iron_chestplate", "toughness": "minecraft:netherite_scrap", "knockback": "minecraft:piston",
+    "jump": "minecraft:rabbit_foot", "sneak_speed": "minecraft:leather_boots", "fall_damage": "minecraft:slime_ball",
+    "stamina_max": "minecraft:bread", "stamina_regen": "minecraft:cooked_beef", "stamina_cost": "minecraft:rotten_flesh",
+    "dodge_distance": "minecraft:ender_pearl", "dodge_cooldown": "minecraft:clock", "dodge_cost": "minecraft:gunpowder",
+    "dodge_iframes": "minecraft:phantom_membrane", "parry_window": "minecraft:iron_nugget", "block_cost": "minecraft:shield",
+    "posture": "minecraft:mace", "damage_taken": "minecraft:leather_chestplate", "magic_taken": "minecraft:amethyst_shard",
+    "fire_taken": "minecraft:magma_cream", "backstab": "minecraft:stone_sword", "counter": "minecraft:flint",
+    "staggered_bonus": "minecraft:fermented_spider_eye", "finisher": "minecraft:skeleton_skull",
+    "execute": "minecraft:wither_skeleton_skull", "projectile_damage": "minecraft:arrow", "headshot": "minecraft:target",
+    "draw_speed": "minecraft:bow", "arrow_speed": "minecraft:firework_rocket", "spell_damage": "minecraft:fire_charge",
+    "spell_cooldown": "minecraft:glowstone_dust", "spell_charge": "minecraft:blaze_powder",
+    "charge_bonus": "minecraft:nether_star", "healing": "minecraft:glistering_melon_slice", "mana_max": "minecraft:lapis_lazuli",
+    "mana_regen": "minecraft:experience_bottle", "spell_cost": "minecraft:redstone",
+}
+
+# A notable, by its Spanish name (the lesser twins in the bridge packages are at the end).
+NOTABLE_ICONS = {
+    "Segundo aliento": "minecraft:wind_charge", "Inquebrantable": "minecraft:obsidian", "Sin resuello": "minecraft:sugar",
+    "Réplica": "minecraft:flint_and_steel", "Parada firme": "minecraft:iron_trapdoor", "Filo de vuelta": "minecraft:stone_sword",
+    "Golpe pesado": "minecraft:anvil", "Rompeguardias": "minecraft:iron_pickaxe", "Verdugo": "minecraft:netherite_axe",
+    "Carga brutal": "minecraft:piston",
+    "Danza": "minecraft:golden_boots", "Contraataque": "minecraft:golden_sword", "Espejismo": "minecraft:glass",
+    "Puñalada": "minecraft:iron_sword", "Ejecutor": "minecraft:netherite_sword", "Golpe letal": "minecraft:blaze_powder",
+    "Paso quedo": "minecraft:rabbit_hide", "Acróbata": "minecraft:chorus_fruit", "Evasión": "minecraft:snowball",
+    "Veneno en la hoja": "minecraft:spider_eye",
+    "Escudo pesado": "minecraft:iron_door", "Represalia": "minecraft:cactus", "Bastión": "minecraft:stone_bricks",
+    "Piel de hierro": "minecraft:iron_helmet", "Dureza": "minecraft:diamond", "Coloso": "minecraft:cooked_porkchop",
+    "Recuperación": "minecraft:golden_carrot", "Raíces": "minecraft:hanging_roots", "Desafío": "minecraft:red_banner",
+    "Pisotón": "minecraft:iron_boots",
+    "Sobrecarga arcana": "minecraft:end_crystal", "Catalizador": "minecraft:brewing_stand", "Carga profunda": "minecraft:experience_bottle",
+    "Mente clara": "minecraft:echo_shard", "Canalización": "minecraft:lapis_block", "Economía arcana": "minecraft:emerald",
+    "Barrera": "minecraft:amethyst_cluster", "Paso etéreo": "minecraft:ender_pearl", "Égida": "minecraft:turtle_helmet",
+    "Runa de escarcha": "minecraft:blue_ice",
+    "Manos cálidas": "minecraft:sweet_berries", "Milagro": "minecraft:enchanted_golden_apple", "Renuevo": "minecraft:oak_sapling",
+    "Bendición": "minecraft:honey_bottle", "Purificar": "minecraft:milk_bucket", "Vínculo": "minecraft:lead",
+    "Serenidad": "minecraft:blue_orchid", "Aura": "minecraft:beacon", "Voluntad": "minecraft:netherite_ingot",
+    "Rocío": "minecraft:glass_bottle",
+    "Ojo de halcón": "minecraft:spyglass", "Tiro a la cabeza": "minecraft:target", "Tiro lejano": "minecraft:compass",
+    "Mano rápida": "minecraft:string", "Flecha veloz": "minecraft:spectral_arrow", "Tiro certero": "minecraft:crossbow",
+    "Zancada": "minecraft:leather_boots", "Rodar": "minecraft:hay_block", "Pluma": "minecraft:feather",
+    "Marca del cazador": "minecraft:name_tag",
+    "Réplica menor": "minecraft:flint_and_steel", "Puñalada menor": "minecraft:iron_sword", "Represalia menor": "minecraft:cactus",
+    "Barrera menor": "minecraft:amethyst_shard", "Vendaje": "minecraft:paper", "Ojo de halcón menor": "minecraft:spyglass",
+}
+
+# A keystone, by its Spanish name: the glyph tools/arbol_iconos.py draws on a medallion in its class's colour
+# (the sprite is "clave_<slug>"). Six glyphs a class, none repeated inside one.
+KEYSTONE_GLYPHS = {
+    "Muro de carne": "muro", "Adrenalina": "rayo", "Fortaleza": "torre", "Duelista": "espadas", "Martillo de guerra": "martillo",
+    "Sed de sangre": "gota",
+    "Filo del viento": "viento", "Sin sombra": "fantasma", "Golpe de gracia": "calavera", "Frenesí": "garra",
+    "Funámbulo": "cuerda", "Fantasma": "mascara",
+    "Espinas de acero": "pincho", "Muralla viva": "almena", "Yunque viviente": "yunque", "Gigante": "puno",
+    "Último bastión": "bandera", "Imán de golpes": "iman",
+    "Hechizo encadenado": "cadena", "Todo o nada": "mitad", "Pozo sin fondo": "espiral", "Sangre por maná": "gota_estrella",
+    "Parpadeo": "destello", "Escudo de maná": "escudo",
+    "Mártir": "cruz", "Florecer": "flor", "Tierra sagrada": "runa", "Lazo vital": "anillos", "Peregrino": "sol",
+    "Martillo de la fe": "martillo_luz",
+    "Francotirador": "mira", "Ojo de águila": "ojo", "Ráfaga": "rafaga", "Flecha perforante": "perforante",
+    "Disparo en carrera": "bota", "Halcón": "ala",
+}
+
+# The forging region, by node id: forge items.
+FORGE_ICONS = {
+    "forja.ojo_del_martillo": "minecraft:clock", "forja.metal_docil": "forja:fundente_maestro", "forja.remiendo": "minecraft:iron_ingot",
+    "forja.fuelle": "forja:ascua", "forja.mano_firme": "forja:orbe_de_mejora", "forja.brazo_de_herrero": "forja:martillo_del_maestro",
+    "forja.golpe_de_maestro": "forja:sello", "forja.alma_del_metal": "forja:corazon_de_forja",
+    "forja.temple_de_campana": "forja:lingote_de_temple", "forja.ajuste_fino": "forja:plantilla", "forja.carga_honda": "minecraft:barrel",
+    "forja.forja_al_rojo": "minecraft:lava_bucket", "forja.temple_de_campana_ii": "forja:lingote_de_temple",
+}
+
+# The sprites drawn by tools/arbol_iconos.py that are not keystones.
+EXTRA_SPRITES = ["corazon"]
+
+
+def key_sprite(name):
+    import re
+    import unicodedata
+    text = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    return "sprite:clave_" + re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+
+
 # A small node: "+3 % of a stat" (Andy), and the equivalent for the stats that are not a percentage.
 SMALL = {"armor": 1, "toughness": 0.5, "parry_window": 1, "knockback": 0.05, "mana_regen": 0.20}
 
@@ -85,17 +174,17 @@ def small_value(stat):
 
 
 def S(stat, v=None):
-    return {"tipo": "menor", "mods": [[stat, small_value(stat) if v is None else v]]}
+    return {"tipo": "menor", "mods": [[stat, small_value(stat) if v is None else v]], "icono": STAT_ICONS[stat]}
 
 
 def N(nombre, texto=None, nums=(), mods=()):
     """A notable: (es, en) name, an optional (es, en) text for what its mods cannot say, its numbers and mods."""
-    return {"tipo": "notable", "nombre": nombre, "texto": texto, "numeros": list(nums), "mods": [list(m) for m in mods]}
+    return {"tipo": "notable", "icono": NOTABLE_ICONS[nombre[0]], "nombre": nombre, "texto": texto, "numeros": list(nums), "mods": [list(m) for m in mods]}
 
 
 def K(nombre, texto=None, nums=(), mods=(), gana="", precio=""):
     """A keystone: like a notable, plus what it gains and what it costs, in words, for the docs."""
-    return {"tipo": "clave", "nombre": nombre, "texto": texto, "numeros": list(nums), "mods": [list(m) for m in mods],
+    return {"tipo": "clave", "icono": key_sprite(nombre[0]), "nombre": nombre, "texto": texto, "numeros": list(nums), "mods": [list(m) for m in mods],
             "gana": gana, "precio": precio}
 
 

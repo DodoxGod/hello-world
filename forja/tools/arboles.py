@@ -20,7 +20,7 @@ from collections import OrderedDict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from arboles_datos import (BRIDGE_PACKAGES, BRIDGES, CLASSES, COST, FIRST_STEP, FORGE_INNER, FORGE_OUTER, FORGE_TEMPLE_II,  # noqa: E402
+from arboles_datos import (FORGE_ICONS, KEYSTONE_GLYPHS, BRIDGE_PACKAGES, BRIDGES, CLASSES, COST, FIRST_STEP, FORGE_INNER, FORGE_OUTER, FORGE_TEMPLE_II,  # noqa: E402
                            LEVEL_POINTS_DEN, LEVEL_POINTS_NUM, MAX_LEVEL, MILESTONE_CAP_PER_LEVEL, MILESTONES, NEW_STATS, SKILL_COST,
                            SMALL, STATS, STEP_GROWTH)
 
@@ -110,7 +110,7 @@ def polar(r, deg):
 HOOKS = {}
 
 
-def new_node(nid, tipo, nombre, mods, plantilla, nums, x, y, region, gancho=None):
+def new_node(nid, tipo, nombre, mods, plantilla, nums, x, y, region, gancho=None, icono=None):
     n = OrderedDict()
     n["id"] = nid
     n["tipo"] = tipo
@@ -122,6 +122,7 @@ def new_node(nid, tipo, nombre, mods, plantilla, nums, x, y, region, gancho=None
     n["formatos"] = formats(plantilla[0], len(nums)) if plantilla else ["num"] * len(nums)
     n["plantilla"] = {"es": plantilla[0], "en": plantilla[1]} if plantilla else None
     n["gancho"] = gancho
+    n["icono"] = icono
     if gancho is not None:
         seen = HOOKS.get(gancho)
         here = (nombre, plantilla, tuple(nums))
@@ -149,15 +150,15 @@ def make(cid, region, spec, nid, x, y, skills):
         upgrade = slot.endswith("2")
         part = sk["mejora"] if upgrade else sk
         name = (sk["nombre"][0] + (" II" if upgrade else ""), sk["nombre"][1] + (" II" if upgrade else ""))
-        n = new_node(nid, "habilidad", name, [], part["plantilla"], part["numeros"], x, y, region)
+        n = new_node(nid, "habilidad", name, [], part["plantilla"], part["numeros"], x, y, region, icono=sk["icono"])
         n["coste"] = SKILL_COST[slot]
         n["habilidad"] = slot
         n["efecto"] += "; espera %d s" % part["espera"]
         return n
     if t == "menor":
         stat = spec["mods"][0][0]
-        return new_node(nid, "menor", small_name(stat), spec["mods"], None, [], x, y, region)
-    n = new_node(nid, t, spec["nombre"], spec["mods"], spec.get("texto"), spec.get("numeros", []), x, y, region, slug(spec["nombre"][0]))
+        return new_node(nid, "menor", small_name(stat), spec["mods"], None, [], x, y, region, icono=spec["icono"])
+    n = new_node(nid, t, spec["nombre"], spec["mods"], spec.get("texto"), spec.get("numeros", []), x, y, region, slug(spec["nombre"][0]), spec["icono"])
     if t == "clave":
         n["gana"], n["precio"] = spec["gana"], spec["precio"]
     return n
@@ -167,15 +168,15 @@ def build_forge():
     forge = []
     for i, (fid, name, mods, tpl, nums) in enumerate(FORGE_INNER):
         x, y = polar(R_FORGE_IN, GAPS[i])
-        forge.append(new_node(fid, "forja", name, mods, tpl, nums, x, y, "forja", fid.split(".", 1)[1]))
+        forge.append(new_node(fid, "forja", name, mods, tpl, nums, x, y, "forja", fid.split(".", 1)[1], FORGE_ICONS[fid]))
     for i, (fid, name, mods, tpl, nums) in enumerate(FORGE_OUTER):
         x, y = polar(R_FORGE_OUT, GAPS[i])
-        n = new_node(fid, "forja", name, mods, tpl, nums, x, y, "forja", fid.split(".", 1)[1])
+        n = new_node(fid, "forja", name, mods, tpl, nums, x, y, "forja", fid.split(".", 1)[1], FORGE_ICONS[fid])
         n["conexiones"].append(FORGE_INNER[i][0])
         forge.append(n)
     fid, name, mods, tpl, nums = FORGE_TEMPLE_II
     x, y = polar(R_FORGE_SKILL2, GAPS[2] + 9)
-    n = new_node(fid, "forja", name, mods, tpl, nums, x, y, "forja", fid.split(".", 1)[1])
+    n = new_node(fid, "forja", name, mods, tpl, nums, x, y, "forja", fid.split(".", 1)[1], FORGE_ICONS[fid])
     n["conexiones"].append("forja.temple_de_campana")
     forge.append(n)
     return forge
@@ -184,7 +185,7 @@ def build_forge():
 def build_class(cid, cdef, forge):
     nodes = []
     skills = cdef["habilidades"]
-    origin = new_node(cid + ".origen", "origen", CLASS_NAMES[cid], [], None, [], 0.0, 0.0, "origen")
+    origin = new_node(cid + ".origen", "origen", CLASS_NAMES[cid], [], None, [], 0.0, 0.0, "origen", icono="clase:" + cid)
     origin["efecto"] = "la clase: " + cdef["base"][0] + "; habilidad I (V): " + skills["V"]["nombre"][0]
     nodes.append(origin)
     doors = []
@@ -266,6 +267,7 @@ def build_class(cid, cdef, forge):
                 n["coste"] = COST[n["tipo"]]
                 n["destino"] = target
                 if b == 0:
+                    n["icono"] = "clase:" + target
                     n["nombre"] = {"es": package[0][0], "en": package[0][1]}
                     n["gancho"] = slug(package[0][0])
                 n["conexiones"].append(prev)
@@ -388,6 +390,10 @@ def check(out):
         for n in g.values():
             if n["tipo"] == "clave" and dist[n["id"]] != 11:
                 errors.append("%s: la clave %s está a %d puntos" % (cid, n["id"], dist[n["id"]]))
+            if not n.get("icono"):
+                errors.append("%s: sin icono" % n["id"])
+            if n["tipo"] == "clave" and n["nombre"]["es"] not in KEYSTONE_GLYPHS:
+                errors.append("%s: la clave %s no tiene dibujo" % (cid, n["nombre"]["es"]))
             for s, _ in n["mods"]:
                 if s not in STATS:
                     errors.append("%s: estadística desconocida %s" % (n["id"], s))
@@ -592,6 +598,44 @@ def write_md(out, res):
 
 
 # --------------------------------------------------------------------------------------------- drawing
+_ICONS = {}
+CLIENT_JAR = os.path.join(os.path.expanduser("~"), ".gradle", "caches", "fabric-loom", "26.2", "minecraft-client.jar")
+
+
+def load_icon(icono):
+    """A node's icon as a 16x16 RGBA image, from the mod's textures or vanilla's jar; None for a class emblem (a forged
+    weapon the game assembles) or a texture that is not there."""
+    if icono in _ICONS:
+        return _ICONS[icono]
+    import io
+    import zipfile
+    from PIL import Image
+    ns, _, name = icono.partition(":")
+    found = None
+    assets = os.path.join(ROOT, "src", "main", "resources", "assets", "forja", "textures")
+    if ns == "sprite":
+        paths = [os.path.join(assets, "gui", "arbol", name + ".png")]
+    elif ns == "forja":
+        paths = [os.path.join(assets, "item", name + ".png")]
+    else:
+        paths = []
+    for path in paths:
+        if os.path.exists(path):
+            found = Image.open(path).convert("RGBA").crop((0, 0, 16, 16))
+    if found is None and ns == "minecraft" and os.path.exists(CLIENT_JAR):
+        with zipfile.ZipFile(CLIENT_JAR) as jar:
+            for sub in ("item", "block"):
+                for suffix in ("", "_top", "_side", "_front"):
+                    entry = "assets/minecraft/textures/%s/%s%s.png" % (sub, name, suffix)
+                    if entry in jar.namelist():
+                        found = Image.open(io.BytesIO(jar.read(entry))).convert("RGBA").crop((0, 0, 16, 16))
+                        break
+                if found is not None:
+                    break
+    _ICONS[icono] = found
+    return found
+
+
 def draw(out, cid, path, lit, caption, res):
     from PIL import Image, ImageDraw, ImageFont
     W = H = 3000
@@ -653,13 +697,20 @@ def draw(out, cid, path, lit, caption, res):
             d.polygon([(x, y - r), (x + r, y), (x, y + r), (x - r, y)], fill=col, outline=outline, width=5)
         elif t == "habilidad":
             d.rounded_rectangle([x - r, y - r, x + r, y + r], radius=12, fill=col, outline=outline, width=6)
+        else:
+            fill = col if t != "menor" else tuple(int(v * 0.65) for v in col)
+            d.ellipse([x - r, y - r, x + r, y + r], fill=fill, outline=gold if on else (230, 230, 230), width=6 if on else (4 if t == "notable" else 2))
+        icon = load_icon(n["icono"])
+        if icon is not None:
+            size = int(r * (1.7 if t in ("clave", "habilidad") else 1.5))
+            img.paste(icon.resize((size, size), Image.NEAREST), (int(x - size / 2), int(y - size / 2)), icon.resize((size, size), Image.NEAREST))
+            if t == "habilidad" and n["habilidad"].endswith("2"):
+                d.text((x + r * 0.2, y + r * 0.25), "II", font=f_name, fill=(255, 215, 90), stroke_width=3, stroke_fill=(20, 16, 8))
+        elif t == "habilidad":
             slot = n["habilidad"]
             label = slot[0] + ("II" if slot.endswith("2") else "")
             tw = d.textlength(label, font=f_name)
             d.text((x - tw / 2, y - 13), label, font=f_name, fill=(20, 20, 20))
-        else:
-            fill = col if t != "menor" else tuple(int(v * 0.65) for v in col)
-            d.ellipse([x - r, y - r, x + r, y + r], fill=fill, outline=gold if on else (230, 230, 230), width=6 if on else (4 if t == "notable" else 2))
         if t == "origen":
             tw = d.textlength(c["nombre"]["es"], font=f_name)
             d.text((x - tw / 2, y - 12), c["nombre"]["es"], font=f_name, fill=(15, 15, 15))

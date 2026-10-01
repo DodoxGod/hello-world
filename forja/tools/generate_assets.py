@@ -12019,6 +12019,9 @@ if __name__ == "__main__":
     # The class screens' texture and the Emblema del olvido (tools/clases_assets.py), likewise.
     import clases_assets
     clases_assets.generate(_sys.modules[__name__])
+    # The class trees' keystone medallions and heart (tools/arbol_iconos.py).
+    import arbol_iconos
+    arbol_iconos.generate()
     # The Cementerio entre Estrellas' blocks, sounds and particle (tools/dimension_assets.py).
     import dimension_assets
     dimension_assets.generate(_sys.modules[__name__])

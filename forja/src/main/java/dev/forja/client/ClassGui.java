@@ -3,6 +3,7 @@ package dev.forja.client;
 import java.util.List;
 
 import dev.forja.Forja;
+import dev.forja.clase.TreeIcon;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -110,6 +111,33 @@ final class ClassGui {
 		g.pose().scale(scale, scale);
 		g.item(stack, 0, 0);
 		g.pose().popMatrix();
+	}
+
+	/**
+	 * A tree node's icon (clase/TreeIcon), centred on a point and {@code size} pixels wide: an item, a sprite from
+	 * textures/gui/arbol, or a class's emblem. A skill's upgrade carries a small gold "II" in its corner.
+	 */
+	static void treeIcon(GuiGraphicsExtractor g, Font font, String icon, float cx, float cy, float size, boolean upgrade) {
+		ItemStack stack = TreeIcon.stack(icon);
+		Identifier sprite = TreeIcon.sprite(icon);
+		if (stack != null) {
+			item(g, stack, Math.round(cx - size / 2.0F), Math.round(cy - size / 2.0F), size / 16.0F);
+		} else if (sprite != null) {
+			g.pose().pushMatrix();
+			g.pose().translate(Math.round(cx - size / 2.0F), Math.round(cy - size / 2.0F));
+			g.pose().scale(size / 16.0F, size / 16.0F);
+			g.blit(RenderPipelines.GUI_TEXTURED, sprite, 0, 0, 0.0F, 0.0F, 16, 16, 16, 16);
+			g.pose().popMatrix();
+		}
+		if (upgrade && size >= 9.0F) {
+			float k = Math.max(0.5F, size / 22.0F);
+			g.pose().pushMatrix();
+			g.pose().translate(cx + size * 0.5F - 9.0F * k, cy + size * 0.5F - 8.0F * k);
+			g.pose().scale(k, k);
+			g.text(font, "II", 1, 1, 0xFF201808, false);
+			g.text(font, "II", 0, 0, GOLD, false);
+			g.pose().popMatrix();
+		}
 	}
 
 	static boolean over(double mouseX, double mouseY, int x, int y, int w, int h) {

@@ -208,5 +208,89 @@ final class ArbolFootage {
 			"N should cast the Meteoro and start its wait");
 		shot(context, "12_hud_tres_habilidades");
 		server.runOnServer(s -> ClassProgress.clear(connection.getServerPlayer()));
+		icons(context, server, connection);
+	}
+
+	/** Brings a node to the middle of the canvas, then zooms {@code factor} times in on it. */
+	private static void zoomOn(ClientGameTestContext context, String id, float factor) {
+		context.runOnClient(mc -> {
+			TalentTreeScreen screen = screen(mc);
+			float x = mc.getWindow().getGuiScaledWidth() * 0.35F;
+			float y = mc.getWindow().getGuiScaledHeight() * 0.52F;
+			int[] at = screen.nodeCentre(id);
+			screen.pan(x - at[0], y - at[1]);
+			screen.zoomAt(x, y, factor);
+		});
+		context.waitTicks(2);
+	}
+
+	/** The icons (docs/ARBOLES.md, "Iconos"): far, near, and the tooltip of each sort of node; shots "iconos_*". */
+	private static void icons(ClientGameTestContext context, TestServerContext server, TestServerConnection connection) {
+		server.runOnServer(s -> {
+			ServerPlayer player = connection.getServerPlayer();
+			ClassProgress.choose(player, PlayerClass.GUERRERO);
+			ClassProgress.setLevel(player, ClassProgress.MAX_LEVEL);
+			for (ClassTree.Milestone milestone : ClassTree.milestones()) {
+				ClassProgress.reach(player, milestone.id());
+			}
+			for (String id : List.of("guerrero.a1.5", "guerrero.b2.4", "guerrero.s1.2", "guerrero.s3.lado", "guerrero.c.tronco_4", "forja.mano_firme",
+				"forja.alma_del_metal", "forja.temple_de_campana")) {
+				ArbolGameTests.learnTo(player, id);
+			}
+		});
+		context.waitTicks(5);
+		context.runOnClient(mc -> mc.gui.setScreen(new TalentTreeScreen()));
+		context.waitForScreen(TalentTreeScreen.class);
+		context.getInput().setCursorPos(0, 0);
+		shot(context, "iconos_01_inicio");
+		// Zoomed out: the icons shrink with the nodes and give way to colour when they are too small to read.
+		context.runOnClient(mc -> screen(mc).zoomAt(mc.getWindow().getGuiScaledWidth() * 0.4F, mc.getWindow().getGuiScaledHeight() * 0.5F, 0.55F));
+		shot(context, "iconos_02_lejos");
+		context.runOnClient(mc -> screen(mc).home());
+		// Zoomed in on the core, the Guardia branch's learned keystone and a path.
+		zoomOn(context, "guerrero.origen", 1.9F);
+		shot(context, "iconos_03_cerca_nucleo");
+		context.runOnClient(mc -> screen(mc).home());
+		zoomOn(context, "guerrero.a1.4", 2.0F);
+		shot(context, "iconos_04_cerca_clave");
+		context.runOnClient(mc -> screen(mc).home());
+		zoomOn(context, "guerrero.s1.3", 2.0F);
+		shot(context, "iconos_05_cerca_senda_puente");
+		onNode(context, "guerrero.s1.puente_1");
+		shot(context, "iconos_06_tooltip_puente");
+		onNode(context, "guerrero.s1.2");
+		shot(context, "iconos_07_tooltip_habilidad_ii");
+		context.runOnClient(mc -> screen(mc).home());
+		zoomOn(context, "guerrero.nucleo_4", 2.0F);
+		shot(context, "iconos_08_cerca_forja");
+		onNode(context, "forja.alma_del_metal");
+		shot(context, "iconos_09_tooltip_forja");
+		context.runOnClient(mc -> screen(mc).home());
+		zoomOn(context, "guerrero.a1.5", 1.8F);
+		onNode(context, "guerrero.a1.5");
+		shot(context, "iconos_10_tooltip_clave");
+		onNode(context, "guerrero.a2.1");
+		shot(context, "iconos_11_tooltip_menor");
+		onNode(context, "guerrero.a2.3");
+		shot(context, "iconos_12_tooltip_notable");
+		// The other five classes, as they open: their keystones and bridges.
+		for (PlayerClass clazz : PlayerClass.values()) {
+			if (clazz == PlayerClass.GUERRERO) {
+				continue;
+			}
+			server.runOnServer(s -> {
+				ServerPlayer player = connection.getServerPlayer();
+				ClassProgress.choose(player, clazz);
+				ClassProgress.setLevel(player, 20);
+			});
+			context.waitTicks(3);
+			context.runOnClient(mc -> mc.gui.setScreen(new TalentTreeScreen()));
+			context.waitForScreen(TalentTreeScreen.class);
+			context.getInput().setCursorPos(0, 0);
+			context.runOnClient(mc -> screen(mc).zoomAt(mc.getWindow().getGuiScaledWidth() * 0.4F, mc.getWindow().getGuiScaledHeight() * 0.5F, 0.8F));
+			shot(context, "iconos_clase_" + clazz.id());
+		}
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+		server.runOnServer(s -> ClassProgress.clear(connection.getServerPlayer()));
 	}
 }

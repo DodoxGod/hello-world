@@ -297,6 +297,14 @@ no partidas reales.
 - **Vela del olvido**: abierta desde la vela, la pantalla marca en rojo los nodos que se quitarán y «Quitar» gasta la
   vela.
 
+## Iconos
+
+Cada nodo lleva un icono (`icono` en los datos; `clase/TreeIcon` lo resuelve): `minecraft:x` o `forja:x` es un objeto,
+`sprite:x` es `textures/gui/arbol/x.png` (los medallones de las claves y el corazón, de `tools/arbol_iconos.py`) y
+`clase:x` es el emblema de la clase. Las tablas están en `tools/arboles_datos.py`: `STAT_ICONS` (menores),
+`NOTABLE_ICONS`, `KEYSTONE_GLYPHS` (el dibujo de cada clave), `FORGE_ICONS` y, en cada habilidad, `icono`.
+Capturas: `E:\IA\Claude\Forja_capturas_mejoras\arbol\iconos\`.
+
 ## Reiniciar
 
 - **Medallón del olvido** (sin cambios): cambia de clase (nivel 1, los hitos se quedan) o, en tu misma clase, vacía el

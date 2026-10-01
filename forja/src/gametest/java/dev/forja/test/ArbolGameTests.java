@@ -169,6 +169,40 @@ public class ArbolGameTests {
 	}
 
 	/** Only what touches something learned, only with points, never another class's, and one keystone a branch. */
+	/** Every node has an icon that resolves to a real item, class emblem or texture (tools/arboles_datos.py). */
+	@GameTest
+	public void everyNodeHasAnIcon(GameTestHelper helper) {
+		for (PlayerClass clazz : PlayerClass.values()) {
+			Set<String> keystones = new HashSet<>();
+			Set<String> skills = new HashSet<>();
+			for (ClassTree.Node node : clazz.tree().nodes) {
+				helper.assertTrue(dev.forja.clase.TreeIcon.valid(node.icon), clazz + " " + node.id + ": el icono '" + node.icon + "' no existe");
+				if (node.kind == ClassTree.Kind.CLAVE) {
+					helper.assertTrue(node.icon.startsWith("sprite:"), node.id + ": una clave lleva su medallón");
+					helper.assertTrue(keystones.add(node.icon), clazz + " " + node.id + ": clave con el icono repetido " + node.icon);
+				}
+				if (node.kind == ClassTree.Kind.PUENTE) {
+					helper.assertTrue(node.icon.equals("clase:" + node.target), node.id + ": el puente lleva el emblema de su clase, " + node.icon);
+				}
+				if (node.slot != null && !node.slot.upgrade) {
+					helper.assertTrue(skills.add(node.icon), clazz + " " + node.id + ": habilidad con el icono repetido " + node.icon);
+				}
+				if (node.slot != null && node.slot.upgrade) {
+					ClassTree.Node base = null;
+					for (ClassTree.Node other : clazz.tree().nodes) {
+						if (other.slot != null && other.slot.key == node.slot.key && !other.slot.upgrade) {
+							base = other;
+						}
+					}
+					helper.assertTrue(node.slot.key == 1 || base != null && base.icon.equals(node.icon), node.id + ": la mejora lleva el icono de su habilidad");
+				}
+			}
+			helper.assertTrue(skills.size() == 2, clazz + ": la B y la N con icono propio, " + skills.size());
+			helper.assertTrue(keystones.size() == 6, clazz + ": seis claves con icono propio, " + keystones.size());
+		}
+		helper.succeed();
+	}
+
 	@GameTest
 	public void theTreeRules(GameTestHelper helper) {
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 1));

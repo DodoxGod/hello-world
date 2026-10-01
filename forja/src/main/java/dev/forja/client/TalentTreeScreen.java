@@ -18,7 +18,10 @@ import dev.forja.clase.ClassStat;
 import dev.forja.clase.ClassTree;
 import dev.forja.clase.PlayerClass;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -26,6 +29,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -361,7 +365,40 @@ public class TalentTreeScreen extends Screen {
 		}
 		super.extractRenderState(g, mouseX, mouseY, a);
 		if (pointed != null) {
-			g.setTooltipForNextFrame(GuideText.wrap(this.font, this.tooltip(clazz, data, planned, pointed)), mouseX, mouseY);
+			this.drawTooltip(g, pointed, GuideText.wrap(this.font, this.tooltip(clazz, data, planned, pointed)), mouseX, mouseY);
+		}
+	}
+
+	/** The tooltip of a node: its icon beside its name, then the rest of the lines. */
+	private void drawTooltip(GuiGraphicsExtractor g, ClassTree.Node node, List<FormattedCharSequence> lines, int mouseX, int mouseY) {
+		List<ClientTooltipComponent> parts = new ArrayList<>();
+		parts.add(new IconHeader(node.icon, node.slot != null && node.slot.upgrade, lines.get(0)));
+		for (int i = 1; i < lines.size(); i++) {
+			parts.add(ClientTooltipComponent.create(lines.get(i)));
+		}
+		g.tooltip(this.font, parts, mouseX, mouseY, DefaultTooltipPositioner.INSTANCE, null);
+	}
+
+	/** The first line of a node's tooltip: the icon, 16 pixels, and the name. */
+	private record IconHeader(String icon, boolean upgrade, FormattedCharSequence name) implements ClientTooltipComponent {
+		@Override
+		public int getHeight(Font font) {
+			return 18;
+		}
+
+		@Override
+		public int getWidth(Font font) {
+			return 20 + font.width(this.name);
+		}
+
+		@Override
+		public void extractText(GuiGraphicsExtractor g, Font font, int x, int y) {
+			g.text(font, this.name, x + 20, y + 4, 0xFFFFFFFF, true);
+		}
+
+		@Override
+		public void extractImage(Font font, int x, int y, int w, int h, GuiGraphicsExtractor g) {
+			ClassGui.treeIcon(g, font, this.icon, x + 8, y + 8, 16.0F, this.upgrade);
 		}
 	}
 
@@ -395,10 +432,15 @@ public class TalentTreeScreen extends Screen {
 		ClassGui.node(g, 0, 0, state, octagon);
 		g.pose().popMatrix();
 		int inner = Math.max(2, Math.round(r * 0.45F));
-		// What sort of node it is, in the middle: a skill's or the class's icon, a colour otherwise.
-		if (node.kind == ClassTree.Kind.ORIGEN || node.kind == ClassTree.Kind.HABILIDAD) {
-			ItemStack icon = node.kind == ClassTree.Kind.ORIGEN ? clazz.icon() : clazz.skill(node.slot.key).icon();
-			ClassGui.item(g, icon, Math.round(x - r * 0.62F), Math.round(y - r * 0.62F), r * 1.24F / 16.0F);
+		// What it is, in the middle: its icon (clase/TreeIcon), scaled to the node, dimmed while it is out of reach.
+		boolean big = node.kind == ClassTree.Kind.ORIGEN || node.kind == ClassTree.Kind.HABILIDAD;
+		float size = r * (big ? 1.3F : 1.5F);
+		if (size >= 6.0F) {
+			ClassGui.treeIcon(g, this.font, node.icon, x, y, size, node.slot != null && node.slot.upgrade);
+			if (state != ClassGui.NodeState.LEARNED) {
+				int half = Math.round(size / 2.0F);
+				g.fill(x - half, y - half, x + half, y + half, state == ClassGui.NodeState.LOCKED ? 0xA0262226 : 0x40262226);
+			}
 		} else {
 			int colour = switch (node.kind) {
 				case CLAVE -> 0xFFE0533D;
