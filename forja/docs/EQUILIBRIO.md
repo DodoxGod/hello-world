@@ -77,10 +77,10 @@ Vida de base 400 (antes 320), por el nivel, +100 % por cada jugador de más que 
 
 | Nivel | Objetivo | Antes | Ahora | Vida del jefe antes → ahora | Descuidado aguanta (fase 1 / 3), antes → ahora | Atento aguanta (fase 1 / 3) | Golpe más grande: recién llegado / con presión |
 |---|---|---|---|---|---|---|---|
-| facil | 1:30 – 3:00 | 1:31 | **1:52** | 256 → 360 | 23 / 13 s → 23 / 10 s | 48 s / 42 s | 11 % (estrellas, fase 3) / 11 % (estrellas, fase 3) |
-| normal | 2:00 – 4:00 | 2:29 | **3:17** | 512 → 700 | 10 / 7 s → 9 / 5 s | 24 s / 19 s | 14 % (golpe, fase 3) / 15 % (golpe, fase 3) |
+| facil | 1:30 – 3:00 | 1:31 | **1:52** | 256 → 360 | 23 / 13 s → 24 / 10 s | 51 s / 44 s | 11 % (estrellas, fase 3) / 11 % (estrellas, fase 3) |
+| normal | 2:00 – 4:00 | 2:29 | **3:17** | 512 → 700 | 10 / 7 s → 10 / 5 s | 25 s / 20 s | 13 % (golpe, fase 3) / 15 % (golpe, fase 3) |
 | dificil | 3:00 – 5:00 | 2:29 | **4:25** | 512 → 910 | 10 / 7 s → 9 / 4 s | 24 s / 18 s | 15 % (estrellas, fase 3) / 15 % (golpe, fase 3) |
-| extremo | 4:00 – 7:00 | 3:07 | **5:41** | 666 → 1120 | 8 / 5 s → 7 / 3 s | 20 s / 15 s | 17 % (estrellas, fase 3) / 18 % (golpe, fase 3) |
+| extremo | 4:00 – 7:00 | 3:07 | **5:41** | 666 → 1120 | 8 / 5 s → 7 / 3 s | 20 s / 14 s | 17 % (golpe, fase 3) / 19 % (golpe, fase 3) |
 
 ### Tiempo de pelea por equipo (minutos: solo / dos jugadores; entre paréntesis, antes)
 
@@ -110,20 +110,20 @@ Segundos hasta morir con su vida entera. *Descuidado*: se queda delante y se lo 
 |---|---|---|---|---|---|
 | cc | facil | 26 | 13 / 10 / 6 s | 27 s / 28 s / 24 s | 16 % (estrellas, fase 3) / 16 % (estrellas, fase 3) |
 | cc | normal | 26 | 6 / 4 / 3 s | 14 s / 13 s / 11 s | 23 % (golpe, fase 3) / 26 % (golpe, fase 3) |
-| cc | dificil | 26 | 5 / 4 / 3 s | 15 s / 13 s / 11 s | 23 % (golpe, fase 3) / 26 % (golpe, fase 3) |
+| cc | dificil | 26 | 5 / 4 / 3 s | 14 s / 13 s / 10 s | 24 % (golpe, fase 3) / 27 % (golpe, fase 3) |
 | cc | extremo | 26 | 4 / 3 / 2 s | 12 s / 10 s / 8 s | 29 % (golpe, fase 3) / 32 % (golpe, fase 3) |
 | guerrero | facil | 36 | 21 / 16 / 9 s | 45 s / 46 s / 39 s | 11 % (estrellas, fase 3) / 11 % (estrellas, fase 3) |
 | guerrero | normal | 36 | 9 / 6 / 4 s | 23 s / 21 s / 17 s | 15 % (golpe, fase 3) / 16 % (golpe, fase 3) |
-| guerrero | dificil | 36 | 8 / 6 / 4 s | 22 s / 20 s / 16 s | 16 % (golpe, fase 3) / 17 % (golpe, fase 3) |
+| guerrero | dificil | 36 | 8 / 6 / 4 s | 23 s / 21 s / 17 s | 15 % (estrellas, fase 3) / 16 % (golpe, fase 3) |
 | guerrero | extremo | 36 | 7 / 5 / 3 s | 18 s / 16 s / 13 s | 18 % (golpe, fase 3) / 20 % (golpe, fase 3) |
-| estrella | facil | 36 | 23 / 17 / 10 s | 48 s / 49 s / 42 s | 11 % (estrellas, fase 3) / 11 % (estrellas, fase 3) |
-| estrella | normal | 36 | 9 / 7 / 5 s | 24 s / 23 s / 19 s | 14 % (golpe, fase 3) / 15 % (golpe, fase 3) |
+| estrella | facil | 36 | 24 / 18 / 10 s | 51 s / 52 s / 44 s | 11 % (estrellas, fase 3) / 11 % (estrellas, fase 3) |
+| estrella | normal | 36 | 10 / 7 / 5 s | 25 s / 24 s / 20 s | 13 % (golpe, fase 3) / 15 % (golpe, fase 3) |
 | estrella | dificil | 36 | 9 / 7 / 4 s | 24 s / 22 s / 18 s | 15 % (estrellas, fase 3) / 15 % (golpe, fase 3) |
-| estrella | extremo | 36 | 7 / 5 / 3 s | 20 s / 18 s / 15 s | 17 % (estrellas, fase 3) / 18 % (golpe, fase 3) |
+| estrella | extremo | 36 | 7 / 5 / 3 s | 20 s / 17 s / 14 s | 17 % (golpe, fase 3) / 19 % (golpe, fase 3) |
 | mago | facil | 32 | 20 / 15 / 10 s | 42 s / 46 s / 39 s | 7 % (golpe, fase 3) / 7 % (estrellas, fase 3) |
-| mago | normal | 32 | 8 / 6 / 4 s | 21 s / 21 s / 18 s | 16 % (golpe, fase 3) / 17 % (golpe, fase 3) |
-| mago | dificil | 32 | 8 / 6 / 4 s | 20 s / 20 s / 17 s | 16 % (golpe, fase 3) / 18 % (golpe, fase 3) |
-| mago | extremo | 32 | 6 / 4 / 3 s | 16 s / 16 s / 14 s | 21 % (golpe, fase 3) / 23 % (golpe, fase 3) |
+| mago | normal | 32 | 8 / 6 / 4 s | 20 s / 20 s / 17 s | 17 % (golpe, fase 3) / 18 % (golpe, fase 3) |
+| mago | dificil | 32 | 8 / 6 / 4 s | 21 s / 21 s / 18 s | 16 % (golpe, fase 3) / 17 % (golpe, fase 3) |
+| mago | extremo | 32 | 6 / 4 / 3 s | 17 s / 17 s / 14 s | 20 % (golpe, fase 3) / 22 % (golpe, fase 3) |
 
 El tope por golpe del jefe (`hitCapBoss`) es el 8 % de su vida por golpe normal de un jugador (los remates y los golpes al aturdido lo pasan). Con su vida de ahora recorta el 0 % de los golpes de la referencia en Difícil: no es lo que marca el ritmo de la pelea, sino la red contra un golpe suelto enorme, y se queda como estaba. Un golpe de algo que no es un jugador le sigue haciendo un 33 %, y La forja reclama sigue saltando con 32 de vida intentada por los grandes (lo que era una décima parte de sus 320).
 

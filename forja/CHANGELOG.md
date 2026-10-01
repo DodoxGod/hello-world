@@ -1,5 +1,56 @@
 # Novedades
 
+## 2026-10-01 — Repaso visual de los monstruos
+
+Andy: «mejora todo lo visual del mod que puedas». Esta parte es la de los monstruos. Hojas de antes y después en
+`Forja_capturas_mejoras/visual_mobs/`.
+
+- **Pintor nuevo** (`tools/visual_mobs.py`, que `generate_assets.py` llama al final) para los 14 monstruos del generador.
+  El Molde Roto se queda como está. Cada material tiene su superficie:
+  - metal con bisel, luz de arriba, remaches y hollín;
+  - piedra en hiladas;
+  - carbón en trozos con brillos;
+  - escoria con grietas de lava que brillan de noche;
+  - brasa en celdas;
+  - llama blanca en la raíz y roja en la punta;
+  - cristal en facetas, cuero con costuras y tela con pliegues.
+  Se acabó el ruido de sal y pimienta encima de todo.
+- **Cada uno con su material.** Seis monstruos estaban pintados con los mismos tres grises. Ahora:
+  - el autómata es de ladrillo refractario;
+  - el guardián del cuño, de piedra negra y oro;
+  - el yunque andante, de acero pavonado;
+  - el percutor, de hierro colado y latón;
+  - el cargador, de hierro tiznado;
+  - la jaula de la ascua mayor, de hierro ennegrecido.
+- **Formas:**
+  - el templador lleva un cristal ámbar en la cara, brasas en la chimenea y un manómetro de latón (antes no tenía nada
+    que brillara y de noche desaparecía);
+  - el cargador lleva carbón amontonado, con un trozo encendido;
+  - la herrumbre tiene antenas, una cresta y un aguijón;
+  - el yunque andante tiene garras y el agujero cuadrado del yunque;
+  - el guardián del cuño lleva hombreras y puños de oro.
+  No se ha cambiado ningún nombre de hueso.
+- **Andares y reposo con curvas suaves** en siete monstruos:
+  - el yunque cambia el peso de pata y la cara va con retraso;
+  - el autómata cae con cada pisada;
+  - el percutor balancea el ariete;
+  - las mandíbulas de la tenaza oscilan;
+  - la herrumbre mueve la cabeza a tirones;
+  - el cargador escarba;
+  - el guardián mueve los brazos.
+  Los golpes y especiales no se tocan: siguen cayendo en el tick del código.
+- **Parpadeo arreglado:** la tapa del guardián del cuño salía a rayas oro y piedra, y al lomo del cargador le pasaba
+  igual. Ahora, cuando dos piezas comparten plano, la grande cede 0,04 px.
+- **Armadura forjada** (la que llevan los aprendices del Herrero): la placa gris bajo el tinte del material era casi
+  plana y teñida parecía tela. Ahora tiene luz de arriba, bordes oscuros y un canto iluminado.
+- Los `.geo.json` y `.animation.json` de estos monstruos son compactos: un hueso, cubo o canal por línea.
+- Prueba de cliente `FORJA_SOLO=visual_mobs` (`VisualMobsFootage`):
+  - cada monstruo de frente, de lado y a tres cuartos;
+  - quieto, andando, avisando y golpeando;
+  - de día y de noche;
+  - además, los aprendices.
+  `FORJA_MOBS=` elige cuáles. La hoja se hace con `python tools/visual_mobs.py hoja SALIDA.jpg --antes CARPETA`.
+
 ## 2026-10-01 — Árboles de clase: una habilidad final por senda, y se elige una
 
 Andy: «1 habilidad por cada senda, y solo puedes escoger una habilidad final, pero sí puedes mejorar las otras sendas».

@@ -94,7 +94,7 @@ STYLE = {
     "leather": "leather", "cloth": "cloth", "gold": "gold", "brass": "gold", "oil": "oil",
     "ember": "lava", "molten": "lava", "ember_hot": "lava",
     "flame": "flame", "white_hot": "flame",
-    "star": "crystal", "shard": "crystal", "lens": "glass", "soul": "glass",
+    "star": "crystal", "shard": "crystal", "lens": "glass", "soul": "glass", "amber": "glass",
 }
 
 
@@ -508,6 +508,8 @@ PALETTES = {
     "templador": {
         # His face behind the smoked glass of a quench mask: a dull amber, the only warm thing on him.
         "dark": ((70, 74, 82), (98, 102, 112), (40, 42, 48)),
+        "amber": ((70, 40, 16), (110, 66, 26), (34, 20, 8), (255, 176, 72)),
+        "ember": ((70, 32, 14), (94, 44, 18), (34, 16, 6), (255, 152, 56)),
     },
 }
 
@@ -608,6 +610,51 @@ def _settle_coplanar(cubes, bones):
         cubes[name] = (origin, size, material)
 
 
+def shade_armor(ga):
+    """The forged plate on any body (the smith's apprentices wear four pieces of it): the grey design under the
+    material tint was almost flat, 150 to 250, so tinted it read as painted cloth. It is redrawn from the
+    generator's design each time (never from the png, or it would darken run after run) with the light from
+    above, darker plate edges and a lit edge down one side, the way vanilla's iron reads as metal."""
+    from PIL import Image
+
+    for layer in ("humanoid", "humanoid_leggings"):
+        plate, _ = ga.paint_armor(layer)
+        spans = {}
+        where = {}
+        for y in range(plate.height):
+            for x in range(plate.width):
+                if plate.getpixel((x, y))[3] == 0:
+                    continue
+                found = ga.locate(x, y)
+                if not found:
+                    continue
+                box, face, fx, fy = found
+                where[(x, y)] = found
+                lo_x, hi_x, lo_y, hi_y = spans.get((box, face), (fx, fx, fy, fy))
+                spans[(box, face)] = (min(lo_x, fx), max(hi_x, fx), min(lo_y, fy), max(hi_y, fy))
+        out = Image.new("RGBA", plate.size, (0, 0, 0, 0))
+        for (x, y), (box, face, fx, fy) in where.items():
+            value = plate.getpixel((x, y))[0]
+            lo_x, hi_x, lo_y, hi_y = spans[(box, face)]
+            side = face in ga.SIDES
+            # Spread the design's values (a tint only darkens, so contrast has to be in the grey).
+            value = 146 + (value - 190) * 1.35
+            if side:
+                t = (fy - lo_y) / max(1, hi_y - lo_y)
+                value *= 1.1 - 0.28 * t
+                if fx in (lo_x, hi_x) and hi_x - lo_x >= 3:
+                    value *= 0.74
+                elif fx == lo_x + 1 and hi_x - lo_x >= 4:
+                    value = value * 0.8 + 255 * 0.2
+            elif face == "bottom":
+                value *= 0.7
+            else:
+                value *= 1.08
+            g = max(40, min(255, int(round(value))))
+            out.putpixel((x, y), (g, g, g, 255))
+        out.save(ga.ASSETS / "textures/entity/equipment" / layer / "placa.png")
+
+
 def generate(ga):
     """Writes every mob in MOBS again through the new painter, compact, with its extra cubes and loops."""
     original_paint, original_write = ga.paint_model, ga.write_json
@@ -634,24 +681,135 @@ def generate(ga):
             if loops:
                 path = ga.ASSETS / f"geckolib/animations/entity/{mob}.animation.json"
                 value = json.loads(path.read_text(encoding="utf-8"))
-                value["animations"].update(loops())
+                loops(value["animations"])
+                geo = json.loads((ga.ASSETS / f"geckolib/models/entity/{mob}.geo.json").read_text(encoding="utf-8"))
+                known = {bone["name"] for bone in geo["minecraft:geometry"][0]["bones"]}
+                for clip in value["animations"].values():
+                    missing = set(clip.get("bones", {})) - known
+                    if missing:
+                        raise ValueError(f"{mob}: animation bones not in the model: {sorted(missing)}")
                 write_compact(path, value)
     finally:
         ga.paint_model, ga.write_json = original_paint, original_write
+    shade_armor(ga)
     print("visual_mobs:", len(MOBS), "mobs written")
 
 
 # Extra cubes: {mob: {cube: (bone, origin, size, material)}}, hung on bones that already exist.
 EXTRA_CUBES = {
+    # The quencher was the one monster with nothing lit on him: dark leather, dark oil, gone at night. Now
+    # an amber quench glass over his face, the coals at the mouth of his stack and a brass gauge on the tank.
+    "templador": {
+        "face": ("head", [-2.5, 26, -5], [5, 2, 1], "amber"),
+        "stack_coals": ("stack", [-1.5, 34, 5], [3, 1, 3], "ember"),
+        "gauge": ("body", [-1, 20, 8.5], [2, 2, 1], "brass"),
+    },
+    # The coal hauler carried no coal you could see: lumps heaped on its plates, one of them still burning.
+    "cargador_de_carbon": {
+        "lump_a": ("body", [-6, 20, -10.5], [4, 2, 3], "coal"),
+        "lump_b": ("body", [2, 20, -10], [3, 1.5, 3], "coal"),
+        "lump_c": ("body", [-5, 20, 1], [5, 2, 4], "coal"),
+        "lump_d": ("body", [1, 20, 3], [4, 1.5, 4], "coal"),
+        "lump_lit": ("body", [-1.5, 20, -1], [3, 1, 2], "molten"),
+    },
+    # The rust swarm: feelers, a ridge of flakes down its back and a sting, so it reads as a beetle and not
+    # as a crumb.
+    "herrumbre": {
+        "feeler_right": ("head", [-2, 3, -8], [1, 2, 1], "iron"),
+        "feeler_left": ("head", [1, 3, -8], [1, 2, 1], "iron"),
+        "ridge_a": ("body", [-1, 4.5, -2], [2, 1, 1], "scale"),
+        "ridge_b": ("body", [-1, 4.5, 0], [2, 1, 1], "scale"),
+        "sting": ("tail", [-0.5, 2, 10], [1, 1, 2], "iron"),
+    },
+    # The walking anvil stood on four pegs: they get claws, and its face the square hardy hole of an anvil.
+    "yunque_andante": {
+        "claw_fr": ("leg_fr", [-5.5, 0, -4], [3, 1, 3], "dark"),
+        "claw_fl": ("leg_fl", [2.5, 0, -4], [3, 1, 3], "dark"),
+        "claw_br": ("leg_br", [-5.5, 0, 0.5], [3, 1, 3], "dark"),
+        "claw_bl": ("leg_bl", [2.5, 0, 0.5], [3, 1, 3], "dark"),
+        "hardy": ("head", [4, 12.5, -1], [2, 0.6, 2], "dark"),
+    },
     "guardian_de_cuno": {
+        # Gold caps on the shoulders and gold bands at the fists: the die's gold carried down the body.
+        "cap_right": ("body", [-13, 24, -7.5], [6, 2.5, 15], "gold"),
+        "cap_left": ("body", [7, 24, -7.5], [6, 2.5, 15], "gold"),
+        "cuff_right": ("arm_right", [-15.5, 10, -5.5], [6, 2, 11], "gold"),
+        "cuff_left": ("arm_left", [9.5, 10, -5.5], [6, 2, 11], "gold"),
         # The upper band's top sat in the die's top plane and the two fought over every pixel (a striped lid).
         # Half a pixel down, it is a band again.
         "band_high": ("head", [-10.5, 36.5, -8.5], [21, 2, 17], "gold"),
     },
 }
 
-# Replacement idle and walk loops: {mob: function returning {name: clip}}.
-LOOPS = {}
+def _eased(frames, easing="easeinoutsine"):
+    """Keyframes that ease in and out instead of moving at one speed and stopping dead at each key."""
+    return {str(float(t)): {"vector": list(v), "easing": easing} for t, v in frames}
+
+
+def _add(animations, clip, bone, channel, frames):
+    """Adds (or replaces) one channel of one bone in a loop the generator wrote. Only idle and walk loops are
+    touched here: the fight clips land on the code's ticks and are left as they are."""
+    assert clip in ("idle", "walk", "fly", "run"), clip
+    animations[clip]["bones"].setdefault(bone, {})[channel] = _eased(frames)
+
+
+def _anvil_loops(animations):
+    # Standing, it shifts its weight off one foot and back, like heavy furniture on an uneven floor, and the
+    # face creaks forward a fraction.
+    _add(animations, "idle", "leg_fr", "rotation", [(0, [0, 0, 0]), (2.4, [0, 0, 0]), (2.8, [-7, 0, 0]), (3.3, [0, 0, 0]), (4.0, [0, 0, 0])])
+    _add(animations, "idle", "head", "rotation", [(0, [0, 0, -1]), (1.0, [-1.5, 0, 0]), (2.0, [0, 0, 1]), (3.0, [-1, 0, 0]), (4.0, [0, 0, -1])])
+    # Walking, the face lags the body: it dips after each step lands and swings against the roll.
+    _add(animations, "walk", "head", "rotation", [(0, [-1, 2, 0]), (0.35, [2.5, 0, 0]), (0.7, [-1, -2, 0]), (1.05, [2.5, 0, 0]), (1.4, [-1, 2, 0])])
+
+
+def _guardian_loops(animations):
+    # Its arms tick with its head, a mechanism wound up by somebody else.
+    _add(animations, "idle", "arm_right", "rotation", [(0, [0, 0, 0]), (2.0, [-3, 0, 1]), (4.0, [0, 0, 0])])
+    _add(animations, "idle", "arm_left", "rotation", [(0, [0, 0, 0]), (2.0, [-3, 0, -1]), (4.0, [0, 0, 0])])
+
+
+def _automaton_loops(animations):
+    # Each foot lands with the whole weight of it: the body drops on the strike and rises over the stride,
+    # and the head turns against the hips so the lens stays on you.
+    _add(animations, "walk", "body", "position", [(0, [0, -0.5, 0]), (0.65, [0, 0.5, 0]), (1.3, [0, -0.5, 0]), (1.95, [0, 0.5, 0]), (2.6, [0, -0.5, 0])])
+    _add(animations, "walk", "head", "rotation", [(0, [0, 3, 0]), (1.3, [0, -3, 0]), (2.6, [0, 3, 0])])
+    _add(animations, "idle", "body", "position", [(0, [0, 0, 0]), (3.5, [0, -0.3, 0]), (7.0, [0, 0, 0])])
+
+
+def _striker_loops(animations):
+    # The ram hangs behind the stride and the head nods with it.
+    _add(animations, "walk", "ram", "position", [(0, [0, 0.4, 0]), (0.3, [0, -0.5, 0]), (0.6, [0, 0.4, 0]), (0.9, [0, -0.5, 0]), (1.2, [0, 0.4, 0])])
+    _add(animations, "walk", "head", "rotation", [(0, [2, 0, 0]), (0.3, [-1.5, 0, 0]), (0.6, [2, 0, 0]), (0.9, [-1.5, 0, 0]), (1.2, [2, 0, 0])])
+
+
+def _tongs_loops(animations):
+    # The jaws swing from the elbows as it walks, and the head looks against the shoulders.
+    _add(animations, "walk", "fore_right", "rotation", [(0, [8, 0, 0]), (0.45, [-6, 0, 0]), (0.9, [8, 0, 0])])
+    _add(animations, "walk", "fore_left", "rotation", [(0, [-6, 0, 0]), (0.45, [8, 0, 0]), (0.9, [-6, 0, 0])])
+    _add(animations, "walk", "head", "rotation", [(0, [0, -3, 0]), (0.45, [0, 3, 0]), (0.9, [0, -3, 0])])
+
+
+def _rustbug_loops(animations):
+    # A beetle's head never stops: it twitches from side to side as it scuttles.
+    _add(animations, "walk", "head", "rotation", [(0, [0, 5, 0]), (0.12, [-3, 0, 0]), (0.25, [0, -5, 0]), (0.37, [-3, 0, 0]), (0.5, [0, 5, 0])])
+
+
+def _hauler_loops(animations):
+    # Standing, it paws: one front leg lifts and scrapes back, the head dips to follow it.
+    _add(animations, "idle", "leg_fr", "rotation", [(0, [0, 0, 0]), (1.9, [0, 0, 0]), (2.2, [-16, 0, 0]), (2.5, [8, 0, 0]), (2.8, [0, 0, 0]), (3.2, [0, 0, 0])])
+    _add(animations, "idle", "head", "rotation", [(0, [0, -4, 0]), (1.6, [0, 4, 0]), (2.3, [6, 2, 0]), (2.8, [0, 0, 0]), (3.2, [0, -4, 0])])
+
+
+# Polished idle and walk loops: {mob: function that adds channels to the generator's loops}.
+LOOPS = {
+    "yunque_andante": _anvil_loops,
+    "guardian_de_cuno": _guardian_loops,
+    "automata_de_forja": _automaton_loops,
+    "percutor": _striker_loops,
+    "tenaza": _tongs_loops,
+    "herrumbre": _rustbug_loops,
+    "cargador_de_carbon": _hauler_loops,
+}
 
 
 # ---------------------------------------------------------------------------- contact sheets
