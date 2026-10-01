@@ -2827,6 +2827,7 @@ public class GuideBookScreen extends Screen {
 		dev.forja.forge.HeatFluid.LAVA, List.of(Items.LAVA_BUCKET, Items.MAGMA_BLOCK),
 		dev.forja.forge.HeatFluid.SANGRE_DE_BLAZE, List.of(Items.BLAZE_ROD, Items.BLAZE_POWDER),
 		dev.forja.forge.HeatFluid.ALIENTO_DE_FORJA, List.of(),
+		dev.forja.forge.HeatFluid.ALIENTO_DE_DRAGON, List.of(Items.DRAGON_BREATH),
 		dev.forja.forge.HeatFluid.SALMUERA_HELADA, List.of(Items.PACKED_ICE, Items.BLUE_ICE));
 
 	private List<ItemStack> fluidInputs(dev.forja.forge.HeatFluid fluid) {
@@ -2864,6 +2865,7 @@ public class GuideBookScreen extends Screen {
 				fluid.meltPercent, fluid.tableWarms);
 			case ALIENTO_DE_FORJA -> Component.translatable(key, yieldOf(ModItems.ESCORIA), yieldOf(ModItems.CORAZON_DE_FORJA),
 				fluid.draw, Math.round(fluid.steadyBonus * 100));
+			case ALIENTO_DE_DRAGON -> Component.translatable(key, yieldOf(Items.DRAGON_BREATH), fluid.draw);
 			case SALMUERA_HELADA -> Component.translatable(key, yieldOf(Items.PACKED_ICE), yieldOf(Items.BLUE_ICE),
 				dev.forja.forge.HeatFluid.QUENCH_COST);
 		};

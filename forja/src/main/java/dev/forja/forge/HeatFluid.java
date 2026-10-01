@@ -10,7 +10,7 @@ import net.minecraft.world.item.Items;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The five heat fluids a heat pipe carries (docs/FUNDICION_V2.md, part B). Andy, 2026-09-28: "formas para
+ * The six heat fluids a heat pipe carries (docs/FUNDICION_V2.md, part B). Andy, 2026-09-28: "formas para
  * calentar la forja, como tubos de calor que transportan diferentes tipos de fluidos (...) estos fluidos se
  * pueden usar también para fundir materiales y todas las funciones que necesiten de calor en general, solo
  * que algunos serán mejores que otros".
@@ -47,6 +47,12 @@ public enum HeatFluid implements StringRepresentable {
 	 * and a casting table fed by it pours a perfect tool more often. The dearest to run by far.
 	 */
 	ALIENTO_DE_FORJA(Alloys.Heat.FORJA_BLANCA, 0xFFF2B8, 4, 100, 25, 200, 0.20F, Integer.MAX_VALUE),
+	/**
+	 * Dragon's breath: the bottles of it boiled in the boiler (and the glass comes back). As hot as lava, at twice
+	 * the cost, and its one special use is the only one that matters: it is what lets a void forge burn outside
+	 * the End (docs/ALEACIONES_NETHER_END.md). Everywhere else it is a dearer lava.
+	 */
+	ALIENTO_DE_DRAGON(Alloys.Heat.FUNDIDA, 0xC040E8, 2, 100, 25, 200, 0.0F, Integer.MAX_VALUE),
 	/**
 	 * Ice brine: packed or blue ice in the boiler. It carries no heat at all, it takes it away: a casting
 	 * table it touches quenches every tool it pours in water (the {@link Temple#AGUA} quench, for good), a
@@ -170,6 +176,10 @@ public enum HeatFluid implements StringRepresentable {
 		if (item == Items.BLAZE_POWDER) {
 			return new Yield(SANGRE_DE_BLAZE, BUCKET / 5, ItemStack.EMPTY, Alloys.Heat.FRIA);
 		}
+		if (item == Items.DRAGON_BREATH) {
+			// The same as a blaze rod: half a bucket a bottle, and no fire under the boiler. The bottle comes back.
+			return new Yield(ALIENTO_DE_DRAGON, BUCKET / 2, new ItemStack(Items.GLASS_BOTTLE), Alloys.Heat.FRIA);
+		}
 		if (item == dev.forja.registry.ModItems.ESCORIA) {
 			// Slag is melted again, and that wants a hot fire: magma, soul fire, lava or a wisp lantern.
 			return new Yield(ALIENTO_DE_FORJA, BUCKET / 4, ItemStack.EMPTY, Alloys.Heat.CALIENTE);
@@ -195,6 +205,7 @@ public enum HeatFluid implements StringRepresentable {
 		LAVA(HeatFluid.LAVA),
 		SANGRE_DE_BLAZE(HeatFluid.SANGRE_DE_BLAZE),
 		ALIENTO_DE_FORJA(HeatFluid.ALIENTO_DE_FORJA),
+		ALIENTO_DE_DRAGON(HeatFluid.ALIENTO_DE_DRAGON),
 		SALMUERA_HELADA(HeatFluid.SALMUERA_HELADA);
 
 		public final @Nullable HeatFluid fluid;

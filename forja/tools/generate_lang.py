@@ -1034,6 +1034,9 @@ GUI = {
     "gui.forja.libro.fundicion.fluido.aliento_de_forja": (
         "Escoria (%s mB) o un corazón de forja (%s mB) en la caldera, sobre un fuego fuerte (magma, fuego de almas, lava o un farol). Gasta %s mB por tick. Forja blanca sin crisol de obsidiana, y en la mesa de colada una herramienta tiene un %s%% más de salir perfecta.",
         "Slag (%s mB) or a forge heart (%s mB) in the boiler, over a hot fire (magma, soul fire, lava or a lantern). Spends %s mB a tick. White heat without the obsidian crucible, and a tool on a casting table has %s%% more chance of coming out perfect."),
+    "gui.forja.libro.fundicion.fluido.aliento_de_dragon": (
+        "Botellas de aliento de dragón (%s mB) en la caldera, sin fuego; la botella de cristal vuelve. Gasta %s mB por tick. Calor de lava, al doble de coste, y su uso especial es único: es lo que hace arder la fragua del vacío lejos del End, sin gastar perlas.",
+        "Dragon's breath bottles (%s mB) in the boiler, no fire needed; the glass bottle comes back. Spends %s mB a tick. Lava's heat at twice the cost, and its special use is unique: it is what makes the void forge burn away from the End, no pearls spent."),
     "gui.forja.libro.fundicion.fluido.salmuera_helada": (
         "Hielo compacto (%s mB) o hielo azul (%s mB) en la caldera. No calienta, enfría: la mesa de colada templa en agua cada herramienta que cuela y la mesa de forja lo recién forjado (gasta %s mB por temple), una mesa sin fuego se enfría el doble de rápido, y un crisol que la toca se apaga.",
         "Packed ice (%s mB) or blue ice (%s mB) in the boiler. It does not heat, it cools: a casting table quenches every tool it pours in water, and a forge table what it has just forged (%s mB a quench); a table with no fire cools twice as fast, and a crucible it touches goes out."),
@@ -1815,6 +1818,7 @@ GUI = {
     "fluido.forja.lava": ("Lava", "Lava"),
     "fluido.forja.sangre_de_blaze": ("Sangre de blaze", "Blaze Blood"),
     "fluido.forja.aliento_de_forja": ("Aliento de forja", "Forge Breath"),
+    "fluido.forja.aliento_de_dragon": ("Aliento de dragón", "Dragon's Breath"),
     "fluido.forja.salmuera_helada": ("Salmuera helada", "Ice Brine"),
     "gui.forja.caldera.vacia": ("%s vacía · caben %s mB", "%s empty · holds %s mB"),
     "gui.forja.caldera.tiene": ("%s · %s: %s / %s mB", "%s · %s: %s / %s mB"),

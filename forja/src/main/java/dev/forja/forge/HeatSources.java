@@ -141,6 +141,44 @@ public final class HeatSources {
 		return got;
 	}
 
+	/**
+	 * The vessels that hand this exact fluid to a consumer at this position: through a pipe that carries it, or
+	 * right against it. Server side only (a client has no amounts); empty when none does. Unlike {@link #piped}
+	 * it does not pick the best fluid on offer, it answers for the one asked, which is what a far forge needs.
+	 */
+	public static List<BlockPos> sourcesTouching(Level level, BlockPos pos, HeatFluid wanted) {
+		List<BlockPos> found = new ArrayList<>();
+		if (level.isClientSide()) {
+			return found;
+		}
+		for (Direction side : Direction.values()) {
+			BlockPos at = pos.relative(side);
+			if (!level.isLoaded(at)) {
+				continue;
+			}
+			Block block = level.getBlockState(at).getBlock();
+			if (block instanceof HeatPipeBlock) {
+				Network network = network(level, at);
+				if (network.fluid(level) == wanted) {
+					for (BlockPos source : network.sourcesOf(level, wanted)) {
+						if (!found.contains(source)) {
+							found.add(source);
+						}
+					}
+				}
+			} else if (block instanceof BoilerBlock && level.getBlockEntity(at) instanceof BoilerBlockEntity vessel
+				&& vessel.fluid() == wanted && vessel.amount() > 0 && !found.contains(at)) {
+				found.add(at.immutable());
+			}
+		}
+		return found;
+	}
+
+	/** Takes up to {@code amount} mB of this fluid out of those vessels; how much it got. */
+	public static int drawFrom(Level level, List<BlockPos> sources, HeatFluid fluid, int amount) {
+		return level.isClientSide() ? 0 : drain(level, sources, fluid, amount);
+	}
+
 	/** Hooks the heat line into {@link Alloys#heatAt}, the one place plain heat is read. Called once, at startup. */
 	public static void register() {
 		Alloys.addHeatSource((level, pos) -> piped(level, pos).heat());

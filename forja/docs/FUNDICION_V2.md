@@ -48,6 +48,7 @@ que tenga debajo; se usa el mejor de los dos.
 | Lava | Cubos de lava en un depósito de calor | FUNDIDA | Lo normal de la lava, pero llevado por tubos |
 | Sangre de blaze | Varas de blaze en la caldera | FUNDIDA, más rápida | Funde un 50 % más deprisa y la mesa se calienta el doble de rápido |
 | Aliento de forja | Corazón de forja o escoria en la caldera | FORJA_BLANCA | Alcanza la forja blanca sin crisol de obsidiana; las coladas salen "perfectas" más a menudo |
+| Aliento de dragón | Botellas de aliento de dragón en la caldera (devuelve la botella de cristal) | FUNDIDA | Como la lava a doble coste; su uso especial es hacer arder la fragua del vacío fuera del End |
 | Salmuera helada (extra) | Hielo compacto y sal/agua en la caldera | FRÍA (enfría) | Enfría: templa lo colado (más dureza/durabilidad) y apaga la forja; sirve de "agua de temple" automática |
 
 Los números concretos (velocidades, gasto por tick, capacidades) los fija el agente, coherentes con lo que ya hay, y

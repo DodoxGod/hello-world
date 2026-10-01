@@ -150,6 +150,7 @@ public class BoilerBlock extends BaseEntityBlock {
 			case LAVA -> level.addParticle(ParticleTypes.LAVA, x, pos.getY() + 1.0, z, 0.0, 0.0, 0.0);
 			case SANGRE_DE_BLAZE -> level.addParticle(ParticleTypes.SMALL_FLAME, x, pos.getY() + 1.02, z, 0.0, 0.02, 0.0);
 			case ALIENTO_DE_FORJA -> level.addParticle(ParticleTypes.END_ROD, x, pos.getY() + 1.02, z, 0.0, 0.03, 0.0);
+			case ALIENTO_DE_DRAGON -> level.addParticle(net.minecraft.core.particles.PowerParticleOption.create(ParticleTypes.DRAGON_BREATH, 1.0F), x, pos.getY() + 1.02, z, 0.0, 0.02, 0.0);
 		}
 	}
 }

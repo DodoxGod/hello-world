@@ -1,5 +1,22 @@
 # Novedades
 
+## 2026-10-01 — Fraguas lejanas portátiles y aliento de dragón
+
+- **Se rompen y se llevan a casa**: la fragua de almas y la del vacío se rompen como la obsidiana (dureza 50, resistencia
+  1200, pico de diamante o mejor) y se sueltan siempre **frías**, con lo del hogar y el combustible que les quedaba
+  (polvo de blaze / perlas de ender) como objetos. Una fragua puesta a mano se enciende con su encendedor (vara de blaze /
+  ojo de ender) pero **no despierta guardianes**: solo la de su ruina los tiene (marca `Placed` en la entidad).
+- **Dónde arden**: en su dimensión, como siempre (combustible en objetos). Fuera de ella, solo con un **tubo de calor que
+  lleve su fluido** pegado: sangre de blaze para la de almas, aliento de dragón para la del vacío. Con fluido no gastan
+  combustible (cuesta lo que gasta la caldera: 2 mB por tick, 400 mB por tanda). Sin el fluido, el clic derecho dice cuál
+  les falta. También aceptan el tubo en su dimensión.
+- **Fluido nuevo: aliento de dragón** (`HeatFluid.ALIENTO_DE_DRAGON`, FUNDIDA, 2 mB por tick, violeta): botellas de aliento
+  de dragón en la caldera, 500 mB cada una (como una vara de blaze), sin fuego debajo, y devuelven la botella de cristal.
+  Su único uso especial es la fragua del vacío; en lo demás es una lava al doble de coste.
+- Texto: libros III (fluidos) y VI (fraguas lejanas), JEI, `docs/ALEACIONES_NETHER_END.md`, `docs/FUNDICION_V2.md`.
+- Pruebas: `FraguasLejanasGameTests` cubre romperlas, el hogar y el combustible soltados, las dos fraguas fuera de su
+  dimensión con y sin fluido, la caldera con aliento de dragón y que relanzar una fragua puesta no levanta guardias.
+
 ## 2026-10-01 — Aleaciones cumbre: iracero, égida y arcanio, y su escalón intermedio
 
 - **Coste de la cumbre:** el crisol de obsidiana ya no suma su lingote extra a iracero, égida y arcanio: cada lingote cuesta

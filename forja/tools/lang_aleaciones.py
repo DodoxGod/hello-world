@@ -35,9 +35,9 @@ ALEACIONES = {
     "block.forja.fragua_del_vacio": ("Fragua del vacío", "Void Forge"),
     "gui.forja.fragua_lejana.vacio": ("La fragua del vacío", "The void forge"),
     "gui.forja.fragua_lejana.donde.vacio": (
-        "solo en la fragua del vacío de su ruina, en las islas del End",
-        "only at the void forge of its ruin, on the End's islands"),
-    "gui.forja.jei.fragua_lejana.vacio": ("Fragua del vacío (End)", "Void forge (End)"),
+        "solo en la fragua del vacío (la de su ruina, en las islas del End, o una llevada a casa con aliento de dragón)",
+        "only at the void forge (the one in its ruin, on the End's islands, or one carried home on dragon's breath)"),
+    "gui.forja.jei.fragua_lejana.vacio": ("Fragua del vacío (End, o con aliento de dragón)", "Void forge (End, or on dragon's breath)"),
     "gui.forja.fragua_lejana.fria.vacio": (
         "La fragua del vacío está fría. Un %s la encendería.",
         "The void forge is cold. An %s would light it."),
@@ -48,8 +48,8 @@ ALEACIONES = {
         "%s no va en la fragua del vacío: solo funde eterio y eclipse.",
         "%s does not go in the void forge: it only makes aetherium and eclipse."),
     "gui.forja.fragua_lejana.fuera.vacio": (
-        "Lejos del End, la fragua del vacío no prende: aquí no funde nada.",
-        "Away from the End the void forge will not take: it makes nothing here."),
+        "Lejos del End, la fragua del vacío no prende sin un tubo de calor con %s pegado: aquí no funde nada.",
+        "Away from the End the void forge will not take without a heat pipe of %s against it: it makes nothing here."),
     "item.forja.nota_fragua_del_vacio": ("Nota de la fragua del vacío", "Void Forge Note"),
     "item.forja.nota_fragua_del_vacio.eterio": (
         "Eterio: 2 acero, 1 caparazón de shulker, 4 coro reventado, 4 piedra del End",
@@ -61,11 +61,15 @@ ALEACIONES = {
         "En las islas altas del End, más allá del dragón, quedan ruinas pequeñas de piedra del End y púrpura con una "
         "fragua del vacío fría sobre un altar de obsidiana. Un ojo de ender la enciende y despierta a sus guardianes: se "
         "levantan dos corazas vacías más. Funciona como la de almas, con perlas de ender de combustible (una por tanda), "
-        "y solo funde eterio y eclipse, y solo en el End. Su cofre guarda la receta.",
+        "y solo funde eterio y eclipse. Se rompe como la obsidiana (pico de diamante) y se suelta fría, con su hogar y sus perlas, "
+        "así que se puede llevar a casa: puesta a mano se enciende con un ojo de ender sin despertar a nadie, y fuera del End "
+        "arde solo con un tubo de calor de aliento de dragón pegado (sin gastar perlas). Su cofre guarda la receta.",
         "On the End's high islands, past the dragon, stand small ruins of end stone and purpur with a cold void forge on "
         "an obsidian altar. An eye of ender lights it and wakes its guards: two more empty suits stand up. It works like "
-        "the soul forge, with ender pearls as fuel (one per batch), makes only aetherium and eclipse, and only in the End. "
-        "Its chest keeps the recipe."),
+        "the soul forge, with ender pearls as fuel (one per batch), makes only aetherium and eclipse. It breaks like "
+        "obsidian (diamond pickaxe) and comes loose cold, with its hearth and its pearls, so it can be carried home: set down by "
+        "hand it lights with an eye of ender and wakes nobody, and away from the End it burns only with a heat pipe of dragon's "
+        "breath against it (no pearls spent). Its chest keeps the recipe."),
     "trait.forja.volcanico": ("Volcánico", "Volcanic"),
     "trait.forja.volcanico.desc": (
         "La lava que pisas se enfría en costra; sus picos cortan la piedra del Nether más deprisa",
@@ -100,9 +104,9 @@ ALEACIONES = {
     "block.forja.fragua_de_almas": ("Fragua de almas", "Soul Forge"),
     "gui.forja.fragua_lejana.almas": ("La fragua de almas", "The soul forge"),
     "gui.forja.fragua_lejana.donde.almas": (
-        "solo en la fragua de almas de la Fragua caída, en el Nether",
-        "only at the soul forge of the Fallen Forge, in the Nether"),
-    "gui.forja.jei.fragua_lejana.almas": ("Fragua de almas (Nether)", "Soul forge (Nether)"),
+        "solo en la fragua de almas (la de la Fragua caída, en el Nether, o una llevada a casa con sangre de blaze)",
+        "only at the soul forge (the Fallen Forge's, in the Nether, or one carried home on blaze blood)"),
+    "gui.forja.jei.fragua_lejana.almas": ("Fragua de almas (Nether, o con sangre de blaze)", "Soul forge (Nether, or on blaze blood)"),
     "gui.forja.guia.origen.aleacion_fragua": ("Aleación: %s, %s", "Alloy: %s, %s"),
     "gui.forja.fragua_lejana.fria.almas": (
         "La fragua de almas está fría. Una %s la encendería.",
@@ -115,8 +119,8 @@ ALEACIONES = {
         "%s does not go in the soul forge: it only makes wispfire, magmasteel, spectresteel and volcano heart."),
 
     "gui.forja.fragua_lejana.fuera.almas": (
-        "Lejos del Nether, el fuego de almas no prende: aquí no funde nada.",
-        "Away from the Nether the soul fire will not take: it makes nothing here."),
+        "Lejos del Nether, la fragua de almas no prende sin un tubo de calor con %s pegado: aquí no funde nada.",
+        "Away from the Nether the soul forge will not take without a heat pipe of %s against it: it makes nothing here."),
     "gui.forja.fragua_lejana.vieja": (
         "La fragua apagada de esta ruina era una fragua de almas: ahora está fría, y una vara de blaze la encendería.",
         "This ruin's dead forge was a soul forge: it is cold now, and a blaze rod would light it."),
@@ -161,14 +165,18 @@ ALEACIONES = {
         "al encenderla despierta todo lo que la guarda: los monstruos de alrededor van a por ti y del altar se levantan "
         "dos pavesas más. Encendida, echa los ingredientes con clic derecho y polvo de blaze de combustible (uno por "
         "tanda); cada tanda tarda 10 s y sale encima, o a la tolva que tenga debajo. Clic con la mano vacía para ver qué "
-        "le falta; agachado, para sacar lo del hogar. Funde fatuo, magmacero, espectracero y corazón de volcán. No se rompe "
-        "y solo arde en el Nether.",
+        "le falta; agachado, para sacar lo del hogar. Funde fatuo, magmacero, espectracero y corazón de volcán. Se rompe como la obsidiana "
+        "(pico de diamante) y se suelta fría, con su hogar y su polvo de blaze, así que se puede llevar a casa: puesta a mano "
+        "se enciende con una vara de blaze sin despertar a nadie, y fuera del Nether arde solo con un tubo de calor de sangre de "
+        "blaze pegado (sin gastar polvo).",
         "In the Nether's Fallen Forge, on the altar, stands a cold soul forge. A blaze rod lights it, and lighting it "
         "wakes everything that guards it: the monsters around come for you and two more wisps rise from the altar. Lit, "
         "put the ingredients in with a right click and blaze powder as fuel (one per batch); each batch takes 10 s and "
         "comes out on top, or into a hopper under it. Click with an empty hand to see what it is missing; crouch to "
-        "take the hearth back. It makes wispfire, magmasteel, spectresteel and volcano heart. It cannot be broken and only "
-        "burns in the Nether."),
+        "take the hearth back. It makes wispfire, magmasteel, spectresteel and volcano heart. It breaks like obsidian "
+        "(diamond pickaxe) and comes loose cold, with its hearth and its blaze powder, so it can be carried home: set down by "
+        "hand it lights with a blaze rod and wakes nobody, and away from the Nether it burns only with a heat pipe of blaze "
+        "blood against it (no powder spent)."),
     "gui.forja.libros.ruinas.nether_almas": (
         "Una fortaleza de piedra negra con canales de lava, dos autómatas, dos corazas vacías, tres pavesas y, en el "
         "centro, la fragua de almas fría del Herrero. Encendida, es la única que funde las aleaciones del Nether. Uno de "

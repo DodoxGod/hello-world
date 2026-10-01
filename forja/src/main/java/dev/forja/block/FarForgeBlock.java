@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 import com.mojang.serialization.MapCodec;
 import dev.forja.block.entity.FarForgeBlockEntity;
 import dev.forja.forge.Alloys;
+import dev.forja.forge.HeatFluid;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -20,6 +21,7 @@ import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -44,19 +46,25 @@ import org.jspecify.annotations.Nullable;
  * forge of the End ruin. Each one makes its own alloys and nothing else does.
  *
  * <p>They are found cold. The right thing in the hand lights one (a blaze rod, an eye of ender), and lighting it
- * wakes everything that guards it. Lit, it is a furnace for one thing: the ingredients go into its hearth with a
- * right click, its own fuel goes in the same way, and a batch comes out every {@link FarForgeBlockEntity#BATCH_TICKS}
- * while there is enough of both. It only burns in its own dimension, and nothing breaks it: the forge is the ruin's.
+ * in its ruin wakes everything that guards it. Lit, it is a furnace for one thing: the ingredients go into its hearth
+ * with a right click, its own fuel goes in the same way, and a batch comes out every
+ * {@link FarForgeBlockEntity#BATCH_TICKS} while there is enough of both.
+ *
+ * <p>They can be carried home. A far forge breaks like obsidian (diamond pickaxe) and drops itself, always cold, with
+ * its hearth and its fuel beside it; set down by hand it is a placed forge, which relights with the same lighter and
+ * wakes nobody (only the one in its ruin has guards). In its own dimension it burns its item fuel; anywhere else it
+ * burns only while a heat pipe carrying its {@link Kind#fluid} touches it, and that fluid, not the item fuel, is what
+ * it costs (it works that way in its own dimension too, when the pipe is there).
  */
 public class FarForgeBlock extends BaseEntityBlock {
 	public static final BooleanProperty LIT = BlockStateProperties.LIT;
 
 	/** Which far forge: what lights it, what feeds it, where it burns and who it wakes. */
 	public enum Kind {
-		ALMAS(Level.NETHER, () -> Items.BLAZE_ROD, () -> Items.BLAZE_POWDER, Alloys.Place.ALMAS, 2),
-		VACIO(Level.END, () -> Items.ENDER_EYE, () -> Items.ENDER_PEARL, Alloys.Place.VACIO, 2);
+		ALMAS(Level.NETHER, () -> Items.BLAZE_ROD, () -> Items.BLAZE_POWDER, Alloys.Place.ALMAS, 2, HeatFluid.SANGRE_DE_BLAZE),
+		VACIO(Level.END, () -> Items.ENDER_EYE, () -> Items.ENDER_PEARL, Alloys.Place.VACIO, 2, HeatFluid.ALIENTO_DE_DRAGON);
 
-		/** The only dimension it burns in. */
+		/** The dimension it burns item fuel in; anywhere else it needs {@link #fluid}. */
 		public final ResourceKey<Level> dimension;
 		/** What lights it, spent on lighting. */
 		public final Supplier<Item> lighter;
@@ -66,13 +74,17 @@ public class FarForgeBlock extends BaseEntityBlock {
 		public final Alloys.Place place;
 		/** How many guards rise when it is lit. */
 		public final int risen;
+		/** The heat fluid that makes it burn outside its own dimension. */
+		public final HeatFluid fluid;
 
-		Kind(ResourceKey<Level> dimension, Supplier<Item> lighter, Supplier<Item> fuel, Alloys.Place place, int risen) {
+		Kind(ResourceKey<Level> dimension, Supplier<Item> lighter, Supplier<Item> fuel, Alloys.Place place, int risen,
+			HeatFluid fluid) {
 			this.dimension = dimension;
 			this.lighter = lighter;
 			this.fuel = fuel;
 			this.place = place;
 			this.risen = risen;
+			this.fluid = fluid;
 		}
 
 		public String id() {
@@ -129,9 +141,18 @@ public class FarForgeBlock extends BaseEntityBlock {
 			: createTickerHelper(type, dev.forja.block.entity.ModBlockEntities.FRAGUA_LEJANA, FarForgeBlockEntity::serverTick);
 	}
 
-	/** Whether it burns here: lit, and in its own dimension. */
+	/** Whether it burns its item fuel here: lit, and in its own dimension. (The heat fluid works anywhere.) */
 	public boolean burns(Level level, BlockState state) {
 		return state.getValue(LIT) && level.dimension() == this.kind.dimension;
+	}
+
+	/** Set down by hand it is a placed forge: it remembers it, so lighting it wakes no guards. */
+	@Override
+	public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity by, ItemStack stack) {
+		super.setPlacedBy(level, pos, state, by, stack);
+		if (level.getBlockEntity(pos) instanceof FarForgeBlockEntity forge) {
+			forge.markPlaced();
+		}
 	}
 
 	@Override
@@ -181,8 +202,9 @@ public class FarForgeBlock extends BaseEntityBlock {
 	}
 
 	/**
-	 * Lights the forge and wakes its guards: every monster within {@link #WAKE_RADIUS} turns on whoever lit it, and
-	 * {@link Kind#risen} more rise beside the altar. Public so a test or a command can light one without a player.
+	 * Lights the forge and, if it is the ruin's, wakes its guards: every monster within {@link #WAKE_RADIUS} turns on
+	 * whoever lit it, and {@link Kind#risen} more rise beside the altar. A placed forge (see {@link #setPlacedBy}) wakes
+	 * nobody. Public so a test or a command can light one without a player.
 	 */
 	public static void light(ServerLevel level, BlockPos pos, @Nullable Player who) {
 		BlockState state = level.getBlockState(pos);
@@ -206,14 +228,15 @@ public class FarForgeBlock extends BaseEntityBlock {
 			level.sendParticles(ParticleTypes.END_ROD, x, y + 0.5, z, 20, 1.5, 1.0, 1.5, 0.02);
 		}
 		// A creative builder is not left out: the monsters' own targeting lets go of anyone they cannot attack.
-		Player target = who != null && !who.isSpectator() ? who : null;
+		boolean ruin = !(level.getBlockEntity(pos) instanceof FarForgeBlockEntity here) || !here.placed();
+		Player target = ruin && who != null && !who.isSpectator() ? who : null;
 		if (target != null) {
 			for (Monster monster : level.getEntitiesOfClass(Monster.class, new AABB(pos).inflate(WAKE_RADIUS), Monster::isAlive)) {
 				monster.setTarget(target);
 			}
 		}
 		RandomSource random = level.getRandom();
-		for (int i = 0; i < kind.risen; i++) {
+		for (int i = 0; ruin && i < kind.risen; i++) {
 			Mob guard = kind.guard().create(level, EntitySpawnReason.EVENT);
 			if (guard == null) {
 				continue;

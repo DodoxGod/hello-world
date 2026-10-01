@@ -4,6 +4,8 @@ import java.util.List;
 
 import dev.forja.block.FarForgeBlock;
 import dev.forja.forge.Alloys;
+import dev.forja.forge.HeatFluid;
+import dev.forja.forge.HeatSources;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
@@ -29,7 +31,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The hearth of a far forge (block/FarForgeBlock): up to {@link #HEARTH} different ingredients, a store of its own
- * fuel, and a batch every {@link #BATCH_TICKS} while there is a whole recipe in the hearth and fuel to burn.
+ * fuel, and a batch every {@link #BATCH_TICKS} while there is a whole recipe in the hearth and something to burn: its
+ * item fuel in its own dimension, or its {@link FarForgeBlock.Kind#fluid heat fluid} off a pipe anywhere.
  */
 public class FarForgeBlockEntity extends BlockEntity {
 	/** How many different things the hearth holds. Every far forge recipe has four ingredients or fewer. */
@@ -44,6 +47,10 @@ public class FarForgeBlockEntity extends BlockEntity {
 	private NonNullList<ItemStack> hearth = NonNullList.withSize(HEARTH, ItemStack.EMPTY);
 	private int fuel;
 	private int progress;
+	/** Set down by hand rather than found in a ruin: lighting it wakes no guards. */
+	private boolean placed;
+	/** Whether the tick that last advanced the batch burnt item fuel (not fluid): that tick's batch costs one. */
+	private boolean byItem;
 
 	public FarForgeBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.FRAGUA_LEJANA, pos, state);
@@ -117,6 +124,22 @@ public class FarForgeBlockEntity extends BlockEntity {
 		return stack.getCount() - left;
 	}
 
+	/** Marks it as a placed forge (see {@link FarForgeBlock#setPlacedBy}). */
+	public void markPlaced() {
+		this.placed = true;
+		this.changed();
+	}
+
+	/** Whether a hand set it down, as opposed to a ruin. */
+	public boolean placed() {
+		return this.placed;
+	}
+
+	/** The vessels handing this forge its heat fluid right now (none on a client). */
+	public List<net.minecraft.core.BlockPos> fluidSources() {
+		return this.level == null ? List.of() : HeatSources.sourcesTouching(this.level, this.worldPosition, this.kind().fluid);
+	}
+
 	/** Adds fuel without a player, for a test or a command. */
 	public void addFuel(int batches) {
 		this.fuel = Math.max(0, Math.min(MAX_FUEL, this.fuel + batches));
@@ -171,13 +194,15 @@ public class FarForgeBlockEntity extends BlockEntity {
 		}
 		player.sendSystemMessage(Component.translatable("gui.forja.fragua_lejana.hogar",
 			first ? Component.translatable("gui.forja.fragua_lejana.nada") : held, this.fuel, new ItemStack(kind.fuel.get()).getHoverName()));
-		if (this.level != null && this.level.dimension() != kind.dimension) {
-			player.sendSystemMessage(Component.translatable("gui.forja.fragua_lejana.fuera." + kind.id()));
+		boolean fed = !this.fluidSources().isEmpty();
+		boolean home = this.level == null || this.level.dimension() == kind.dimension;
+		if (!home && !fed) {
+			player.sendSystemMessage(Component.translatable("gui.forja.fragua_lejana.fuera." + kind.id(), kind.fluid.displayName()));
 			return;
 		}
 		Alloys.Recipe ready = this.ready();
 		if (ready != null) {
-			player.sendSystemMessage(this.fuel > 0
+			player.sendSystemMessage(fed || (home && this.fuel > 0)
 				? Component.translatable("gui.forja.fragua_lejana.funde", ready.displayName(), Math.max(0, (BATCH_TICKS - this.progress) / 20))
 				: Component.translatable("gui.forja.fragua_lejana.sin_combustible", new ItemStack(kind.fuel.get()).getHoverName()));
 			return;
@@ -241,18 +266,27 @@ public class FarForgeBlockEntity extends BlockEntity {
 	}
 
 	public static void serverTick(Level level, BlockPos pos, BlockState state, FarForgeBlockEntity forge) {
-		if (!(state.getBlock() instanceof FarForgeBlock block) || !block.burns(level, state)) {
+		if (!(state.getBlock() instanceof FarForgeBlock block) || !state.getValue(FarForgeBlock.LIT)) {
 			forge.progress = 0;
 			return;
 		}
-		Alloys.Recipe recipe = forge.fuel > 0 ? forge.ready() : null;
-		if (recipe == null) {
+		Alloys.Recipe recipe = forge.ready();
+		// Its heat fluid first (anywhere, and it spares the item fuel), then its item fuel in its own dimension.
+		boolean fluid = false;
+		boolean item = false;
+		if (recipe != null) {
+			HeatFluid wanted = block.kind.fluid;
+			fluid = HeatSources.drawFrom(level, HeatSources.sourcesTouching(level, pos, wanted), wanted, wanted.draw) >= wanted.draw;
+			item = !fluid && forge.fuel > 0 && block.burns(level, state);
+		}
+		if (recipe == null || (!fluid && !item)) {
 			if (forge.progress != 0) {
 				forge.progress = 0;
 				forge.changed();
 			}
 			return;
 		}
+		forge.byItem = item;
 		forge.progress++;
 		if (level instanceof ServerLevel server && forge.progress % 10 == 0) {
 			server.sendParticles(block.kind == FarForgeBlock.Kind.ALMAS ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.REVERSE_PORTAL,
@@ -262,7 +296,9 @@ public class FarForgeBlockEntity extends BlockEntity {
 			return;
 		}
 		forge.progress = 0;
-		forge.fuel--;
+		if (forge.byItem && forge.fuel > 0) {
+			forge.fuel--;
+		}
 		for (Alloys.Part part : recipe.inputs()) {
 			forge.take(part.item().get(), part.count());
 		}
@@ -305,7 +341,7 @@ public class FarForgeBlockEntity extends BlockEntity {
 		this.setChanged();
 	}
 
-	/** Breaking it (in creative; nothing else can) spills the hearth. */
+	/** Breaking it spills the hearth and the fuel it still held, as the fuel's own items. */
 	@Override
 	public void preRemoveSideEffects(BlockPos pos, BlockState state) {
 		if (this.level != null) {
@@ -313,6 +349,10 @@ public class FarForgeBlockEntity extends BlockEntity {
 				if (!stack.isEmpty()) {
 					net.minecraft.world.Containers.dropItemStack(this.level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
 				}
+			}
+			if (this.fuel > 0) {
+				net.minecraft.world.Containers.dropItemStack(this.level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+					new ItemStack(this.kind().fuel.get(), this.fuel));
 			}
 		}
 	}
@@ -324,6 +364,7 @@ public class FarForgeBlockEntity extends BlockEntity {
 		ContainerHelper.loadAllItems(input, this.hearth);
 		this.fuel = Math.max(0, Math.min(MAX_FUEL, input.getIntOr("Fuel", 0)));
 		this.progress = Math.max(0, input.getIntOr("Progress", 0));
+		this.placed = input.getBooleanOr("Placed", false);
 	}
 
 	@Override
@@ -332,5 +373,6 @@ public class FarForgeBlockEntity extends BlockEntity {
 		ContainerHelper.saveAllItems(output, this.hearth);
 		output.putInt("Fuel", this.fuel);
 		output.putInt("Progress", this.progress);
+		output.putBoolean("Placed", this.placed);
 	}
 }

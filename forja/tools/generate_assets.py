@@ -6567,7 +6567,16 @@ def generate_dead_forge_assets():
     })
     # The pickaxe tag is not written here any more. It was, and then written again further down with a
     # different list, and the second write won: see PICKAXE_BLOCKS.
-    write_json(RES / "data/minecraft/tags/block/needs_diamond_tool.json", {"replace": False, "values": ["forja:fragua_apagada", "forja:yunque_del_herrero"]})
+    # The far forges drop themselves (cold: the item carries no state) and break like obsidian, with a diamond pickaxe.
+    for far in ("fragua_de_almas", "fragua_del_vacio"):
+        write_json(DATA / ("loot_table/blocks/%s.json" % far), {
+            "type": "minecraft:block",
+            "pools": [{"rolls": 1.0, "bonus_rolls": 0.0, "entries": [{"type": "minecraft:item", "name": "forja:" + far}],
+                       "conditions": [{"condition": "minecraft:survives_explosion"}]}],
+            "random_sequence": "forja:blocks/" + far,
+        })
+    write_json(RES / "data/minecraft/tags/block/needs_diamond_tool.json", {"replace": False, "values": [
+        "forja:fragua_apagada", "forja:yunque_del_herrero", "forja:fragua_de_almas", "forja:fragua_del_vacio"]})
 
 
 def write_fallen_forge():

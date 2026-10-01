@@ -33,6 +33,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -47,7 +48,8 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * The far forges and their alloys (docs/ALEACIONES_NETHER_END.md): each forge lights with its own item and wakes
- * its guards, makes its alloys with fuel and only in its own dimension, nothing else makes them, every part takes
+ * its guards, makes its alloys with fuel in its own dimension (or its heat fluid anywhere), breaks and is carried
+ * home, nothing else makes them, every part takes
  * them, their traits do what they say, and the ruins carry the forge, the guards and the note.
  */
 public class FraguasLejanasGameTests {
@@ -138,7 +140,7 @@ public class FraguasLejanasGameTests {
 
 	/**
 	 * Lit and in the Nether, a whole recipe and one blaze powder make one batch of wispfire in ten seconds, into the
-	 * chest under it. Without fuel it waits. The same forge lit in the Overworld makes nothing.
+	 * chest under it. Without fuel it waits. The same forge lit in the Overworld, without its heat fluid, makes nothing.
 	 */
 	@GameTest(maxTicks = 40)
 	public void theSoulForgeMakesWispfireInTheNetherOnly(GameTestHelper helper) {
@@ -172,7 +174,7 @@ public class FraguasLejanasGameTests {
 		fill(away, wispfire, 1);
 		away.addFuel(1);
 		tick(overworld, here, FarForgeBlockEntity.BATCH_TICKS + 5);
-		helper.assertTrue(away.fuel() == 1 && away.progress() == 0, "fuera del Nether no funde: combustible " + away.fuel());
+		helper.assertTrue(away.fuel() == 1 && away.progress() == 0, "fuera del Nether, sin sangre de blaze, no funde: combustible " + away.fuel());
 		helper.assertTrue(overworld.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new AABB(here).inflate(2)).isEmpty(),
 			"ni suelta nada");
 		helper.succeed();
@@ -557,6 +559,205 @@ public class FraguasLejanasGameTests {
 				|| paper.getHoverName().getString().contains("Forge"), "con su nombre: " + paper.getHoverName().getString());
 			helper.assertTrue(drops.stream().anyMatch(stack -> stack.is(Items.BLAZE_ROD)), "y una vara de blaze para encenderla: " + drops);
 		}
+		helper.succeed();
+	}
+
+	// ------------------------------------------------------------------ portable far forges
+
+	private static int dropped(ServerLevel level, BlockPos around, net.minecraft.world.item.Item item) {
+		int found = 0;
+		for (net.minecraft.world.entity.item.ItemEntity entity : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+			new AABB(around).inflate(3))) {
+			if (entity.getItem().is(item)) {
+				found += entity.getItem().getCount();
+			}
+		}
+		return found;
+	}
+
+	private static void clearDrops(ServerLevel level, BlockPos around) {
+		for (net.minecraft.world.entity.item.ItemEntity entity : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+			new AABB(around).inflate(3))) {
+			entity.discard();
+		}
+	}
+
+	/**
+	 * A far forge breaks like obsidian and only a diamond pickaxe gets anything out of it: then it drops itself (cold),
+	 * its hearth and the fuel it still held, as the fuel's own items.
+	 */
+	@GameTest(maxTicks = 40)
+	public void breakingAFarForgeDropsItColdWithItsHearthAndFuel(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		BlockPos pos = helper.absolutePos(new BlockPos(4, 2, 4));
+		clear(level, pos, 4);
+		for (FarForgeBlock.Kind kind : FarForgeBlock.Kind.values()) {
+			Block block = kind == FarForgeBlock.Kind.ALMAS ? ModBlocks.FRAGUA_DE_ALMAS : ModBlocks.FRAGUA_DEL_VACIO;
+			net.minecraft.world.item.Item item = kind == FarForgeBlock.Kind.ALMAS ? ModItems.FRAGUA_DE_ALMAS : ModItems.FRAGUA_DEL_VACIO;
+			BlockState lit = block.defaultBlockState().setValue(FarForgeBlock.LIT, true);
+			helper.assertTrue(lit.getDestroySpeed(level, pos) == Blocks.OBSIDIAN.defaultBlockState().getDestroySpeed(level, pos)
+				&& block.getExplosionResistance() == Blocks.OBSIDIAN.getExplosionResistance(),
+				kind + ": dureza y resistencia de obsidiana: " + lit.getDestroySpeed(level, pos) + ", " + block.getExplosionResistance());
+			helper.assertTrue(lit.requiresCorrectToolForDrops() && lit.is(net.minecraft.tags.BlockTags.NEEDS_DIAMOND_TOOL)
+				&& lit.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE), kind + ": pide pico de diamante");
+			level.setBlockAndUpdate(pos, lit);
+			FarForgeBlockEntity forge = (FarForgeBlockEntity) level.getBlockEntity(pos);
+			Alloys.Recipe recipe = kind == FarForgeBlock.Kind.ALMAS ? recipe("fatuo") : recipe("eterio");
+			fill(forge, recipe, 2);
+			forge.addFuel(5);
+			ServerPlayer player = CombatGameTests.player(helper, new BlockPos(4, 2, 1));
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_PICKAXE));
+			player.gameMode.destroyBlock(pos);
+			helper.assertTrue(dropped(level, pos, item) == 0, kind + ": con pico de hierro no suelta la fragua");
+			// Whatever the pickaxe, the hearth and the fuel are not lost.
+			helper.assertTrue(dropped(level, pos, kind.fuel.get()) == 5, kind + ": suelta el combustible que le quedaba: " + dropped(level, pos, kind.fuel.get()));
+			clearDrops(level, pos);
+
+			level.setBlockAndUpdate(pos, lit);
+			forge = (FarForgeBlockEntity) level.getBlockEntity(pos);
+			fill(forge, recipe, 2);
+			forge.addFuel(5);
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+			player.gameMode.destroyBlock(pos);
+			helper.assertTrue(level.getBlockState(pos).isAir(), kind + ": se rompe");
+			helper.assertTrue(dropped(level, pos, item) == 1, kind + ": suelta la fragua: " + dropped(level, pos, item));
+			for (Alloys.Part part : recipe.inputs()) {
+				helper.assertTrue(dropped(level, pos, part.item().get()) == part.count() * 2,
+					kind + ": suelta lo del hogar (" + part.item().get() + "): " + dropped(level, pos, part.item().get()));
+			}
+			helper.assertTrue(dropped(level, pos, kind.fuel.get()) == 5, kind + ": y el combustible, como objetos: " + dropped(level, pos, kind.fuel.get()));
+			// Set down again it is cold.
+			helper.assertFalse(block.defaultBlockState().getValue(FarForgeBlock.LIT), kind + ": el objeto se pone apagado");
+			clearDrops(level, pos);
+		}
+		helper.succeed();
+	}
+
+	/** A pipe of the right fluid against the forge (and a boiler with it) makes it burn away from home, with no item fuel spent. */
+	private static void feed(ServerLevel level, BlockPos forge, FarForgeBlock.Kind kind, int mB) {
+		level.setBlockAndUpdate(forge.east(), ModBlocks.TUBO_DE_CALOR.defaultBlockState());
+		level.setBlockAndUpdate(forge.east(2), ModBlocks.CALDERA.defaultBlockState());
+		dev.forja.forge.HeatSources.invalidate(level);
+		((dev.forja.block.entity.BoilerBlockEntity) level.getBlockEntity(forge.east(2))).fill(kind.fluid, mB);
+		dev.forja.forge.HeatSources.invalidate(level);
+	}
+
+	private static void awayFromHome(GameTestHelper helper, FarForgeBlock.Kind kind, Block block, Alloys.Recipe recipe,
+		net.minecraft.world.item.Item made) {
+		ServerLevel level = helper.getLevel();
+		BlockPos pos = helper.absolutePos(new BlockPos(2, 2, 4));
+		clear(level, pos, 3);
+		level.setBlockAndUpdate(pos.below(), Blocks.CHEST.defaultBlockState());
+		level.setBlockAndUpdate(pos, block.defaultBlockState().setValue(FarForgeBlock.LIT, true));
+		FarForgeBlockEntity forge = (FarForgeBlockEntity) level.getBlockEntity(pos);
+		fill(forge, recipe, 1);
+		forge.addFuel(2);
+		Container chest = (Container) level.getBlockEntity(pos.below());
+		// No fluid: it is lit, has the recipe and its item fuel, and does not burn in the Overworld.
+		tick(level, pos, FarForgeBlockEntity.BATCH_TICKS + 5);
+		helper.assertTrue(count(chest, made) == 0 && forge.fuel() == 2, kind + ": sin su fluido, fuera de su dimensión no funde");
+		// A pipe of another fluid does not do it either.
+		feed(level, pos, kind, 0);
+		dev.forja.block.entity.BoilerBlockEntity wrong = (dev.forja.block.entity.BoilerBlockEntity) level.getBlockEntity(pos.east(2));
+		wrong.fill(dev.forja.forge.HeatFluid.LAVA, 4000);
+		dev.forja.forge.HeatSources.invalidate(level);
+		tick(level, pos, FarForgeBlockEntity.BATCH_TICKS + 5);
+		helper.assertTrue(count(chest, made) == 0, kind + ": un tubo de lava no la enciende");
+		wrong.drain(dev.forja.forge.HeatFluid.LAVA, 4000);
+
+		// With its own fluid in the pipe: a batch, no item fuel spent, and the boiler pays the draw.
+		feed(level, pos, kind, 2000);
+		dev.forja.block.entity.BoilerBlockEntity boiler = (dev.forja.block.entity.BoilerBlockEntity) level.getBlockEntity(pos.east(2));
+		int before = boiler.amount();
+		tick(level, pos, FarForgeBlockEntity.BATCH_TICKS);
+		helper.assertTrue(count(chest, made) == recipe.output(), kind + ": con " + kind.fluid + " funde una tanda: " + count(chest, made));
+		helper.assertTrue(forge.fuel() == 2, kind + ": y no gasta combustible en objetos: " + forge.fuel());
+		int paid = before - boiler.amount();
+		helper.assertTrue(paid == kind.fluid.draw * FarForgeBlockEntity.BATCH_TICKS,
+			kind + ": la caldera paga " + (kind.fluid.draw * FarForgeBlockEntity.BATCH_TICKS) + " mB: " + paid);
+		// The report says which fluid it needs once it runs dry.
+		boiler.drain(kind.fluid, boiler.amount());
+		dev.forja.forge.HeatSources.invalidate(level);
+		fill(forge, recipe, 1);
+		tick(level, pos, 10);
+		helper.assertTrue(forge.progress() == 0, kind + ": sin fluido se para");
+		level.setBlockAndUpdate(pos.east(), Blocks.AIR.defaultBlockState());
+		level.setBlockAndUpdate(pos.east(2), Blocks.AIR.defaultBlockState());
+		dev.forja.forge.HeatSources.invalidate(level);
+	}
+
+	/** The soul forge in the Overworld only smelts with a blaze-blood heat pipe against it, and spends no powder. */
+	@GameTest(maxTicks = 40)
+	public void aSoulForgeInTheOverworldBurnsOnBlazeBlood(GameTestHelper helper) {
+		awayFromHome(helper, FarForgeBlock.Kind.ALMAS, ModBlocks.FRAGUA_DE_ALMAS, recipe("fatuo"), ModItems.alloy("fatuo"));
+		helper.succeed();
+	}
+
+	/** The void forge in the Overworld only smelts with a dragon's-breath heat pipe against it, and spends no pearls. */
+	@GameTest(maxTicks = 40)
+	public void aVoidForgeInTheOverworldBurnsOnDragonsBreath(GameTestHelper helper) {
+		awayFromHome(helper, FarForgeBlock.Kind.VACIO, ModBlocks.FRAGUA_DEL_VACIO, recipe("eterio"), ModItems.alloy("eterio"));
+		helper.succeed();
+	}
+
+	/** Dragon's breath bottles boil into the fluid in a boiler, and the glass bottles come back. */
+	@GameTest(maxTicks = 20)
+	public void theBoilerTurnsDragonsBreathIntoItsFluid(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		BlockPos at = helper.absolutePos(new BlockPos(2, 2, 2));
+		level.setBlockAndUpdate(at.below(), Blocks.STONE.defaultBlockState());
+		level.setBlockAndUpdate(at, ModBlocks.CALDERA.defaultBlockState());
+		dev.forja.block.entity.BoilerBlockEntity boiler = (dev.forja.block.entity.BoilerBlockEntity) level.getBlockEntity(at);
+		boiler.setItem(dev.forja.block.entity.BoilerBlockEntity.SLOT_INPUT, new ItemStack(Items.DRAGON_BREATH, 2));
+		dev.forja.forge.HeatFluid.Yield yield = dev.forja.forge.HeatFluid.yield(new ItemStack(Items.DRAGON_BREATH), dev.forja.forge.HeatFluid.Vessel.CALDERA);
+		helper.assertTrue(yield != null && yield.fluid() == dev.forja.forge.HeatFluid.ALIENTO_DE_DRAGON, "la botella da aliento de dragón");
+		for (int i = 0; i < dev.forja.block.entity.BoilerBlockEntity.BOIL_TICKS * 2 + 2; i++) {
+			dev.forja.block.entity.BoilerBlockEntity.serverTick(level, at, level.getBlockState(at), boiler);
+		}
+		helper.assertTrue(boiler.fluid() == dev.forja.forge.HeatFluid.ALIENTO_DE_DRAGON && boiler.amount() == 2 * yield.amount(),
+			"dos botellas dan " + 2 * yield.amount() + " mB: " + boiler.amount() + " de " + boiler.fluid());
+		ItemStack out = boiler.getItem(dev.forja.block.entity.BoilerBlockEntity.SLOT_OUTPUT);
+		helper.assertTrue(out.is(Items.GLASS_BOTTLE) && out.getCount() == 2, "y devuelve las botellas de cristal: " + out);
+		helper.assertTrue(boiler.getItem(dev.forja.block.entity.BoilerBlockEntity.SLOT_INPUT).isEmpty(), "y se gastan las dos");
+		helper.assertTrue(dev.forja.forge.HeatFluid.Shown.of(dev.forja.forge.HeatFluid.ALIENTO_DE_DRAGON).fluid
+			== dev.forja.forge.HeatFluid.ALIENTO_DE_DRAGON, "el tubo lo dibuja");
+		helper.succeed();
+	}
+
+	/** Lighting a forge that was set down by hand wakes nobody: no monster turns, no guard rises. The ruin's forge still does. */
+	@GameTest(maxTicks = 40)
+	public void relightingAPlacedForgeWakesNoGuards(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		BlockPos forge = helper.absolutePos(new BlockPos(4, 2, 4));
+		clear(level, forge, 4);
+		ServerPlayer player = CombatGameTests.player(helper, new BlockPos(4, 2, 1));
+		Mob zombie = helper.spawn(net.minecraft.world.entity.EntityTypes.ZOMBIE, new BlockPos(7, 2, 4));
+		zombie.setNoAi(true);
+		int wisps = level.getEntitiesOfClass(dev.forja.entity.EmberWisp.class, new AABB(forge).inflate(8)).size();
+		int suits = level.getEntitiesOfClass(dev.forja.entity.HollowArmor.class, new AABB(forge).inflate(8)).size();
+
+		level.setBlockAndUpdate(forge, ModBlocks.FRAGUA_DE_ALMAS.defaultBlockState());
+		ItemStack item = new ItemStack(ModItems.FRAGUA_DE_ALMAS);
+		level.getBlockState(forge).getBlock().setPlacedBy(level, forge, level.getBlockState(forge), player, item);
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.BLAZE_ROD, 2));
+		level.getBlockState(forge).useItemOn(player.getMainHandItem(), level, player, net.minecraft.world.InteractionHand.MAIN_HAND, hit(forge));
+		helper.assertTrue(level.getBlockState(forge).getValue(FarForgeBlock.LIT) && player.getMainHandItem().getCount() == 1,
+			"una fragua puesta se enciende con la vara y la gasta");
+		helper.assertTrue(zombie.getTarget() == null, "pero los monstruos no van a por quien la enciende: " + zombie.getTarget());
+		helper.assertTrue(level.getEntitiesOfClass(dev.forja.entity.EmberWisp.class, new AABB(forge).inflate(8)).size() == wisps,
+			"y no se levanta ninguna pavesa");
+
+		// The same for the void forge, and it survives a save (the mark is in the block entity).
+		BlockPos void_ = forge.east(2);
+		level.setBlockAndUpdate(void_, ModBlocks.FRAGUA_DEL_VACIO.defaultBlockState());
+		level.getBlockState(void_).getBlock().setPlacedBy(level, void_, level.getBlockState(void_), player, new ItemStack(ModItems.FRAGUA_DEL_VACIO));
+		helper.assertTrue(((FarForgeBlockEntity) level.getBlockEntity(void_)).placed(), "la fragua del vacío puesta lo recuerda");
+		player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.ENDER_EYE, 2));
+		level.getBlockState(void_).useItemOn(player.getMainHandItem(), level, player, net.minecraft.world.InteractionHand.MAIN_HAND, hit(void_));
+		helper.assertTrue(level.getBlockState(void_).getValue(FarForgeBlock.LIT), "se enciende con el ojo de ender");
+		helper.assertTrue(level.getEntitiesOfClass(dev.forja.entity.HollowArmor.class, new AABB(forge).inflate(8)).size() == suits
+			&& zombie.getTarget() == null, "sin corazas ni monstruos despiertos");
+		zombie.discard();
 		helper.succeed();
 	}
 }

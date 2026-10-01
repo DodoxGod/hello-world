@@ -126,11 +126,19 @@ un caparazón de shulker por dos lingotes, que es lo caro del End.
   dice qué tiene, qué está fundiendo o qué le falta; agachado y sin nada en la mano devuelve lo del hogar.
 - **Cada tanda**: 10 s (200 ticks) y 1 polvo de blaze. Mientras haya ingredientes y combustible, sigue. Lo que
   sale cae encima de la fragua, o a una tolva o cofre que tenga justo debajo.
-- **Solo funde fatuo y magmacero, y solo en el Nether.** Fuera del Nether (si alguien la pone en creativo) está
-  encendida pero no funde, y lo dice.
-- **No se rompe** (como las ménsulas del portal), así que la fragua es la de la ruina.
-- **Calor**: no usa la escala de la mesa (`Alloys.Heat`) ni tubos de calor; su fuego es suyo. Es la única regla
-  nueva y es a propósito: si un tubo de lava pudiera encenderla, se podría construir en casa.
+- **Solo funde sus aleaciones** (fatuo, magmacero, espectracero, corazón de volcán). En el Nether quema polvo de blaze;
+  fuera del Nether solo arde mientras un **tubo de calor con sangre de blaze** la toque (o una caldera pegada), y
+  entonces no gasta polvo: el coste es el de la caldera (`HeatFluid.SANGRE_DE_BLAZE.draw`, 2 mB por tick, 400 mB por
+  tanda). Sin esa sangre, fuera del Nether, está encendida pero no funde, y el clic derecho dice qué fluido le falta.
+  En el Nether también acepta el tubo, y entonces ahorra el polvo.
+- **Se rompe como la obsidiana** (dureza 50, resistencia 1200, pico de diamante o mejor) y **se suelta siempre fría**:
+  suelta la fragua como objeto, lo del hogar y el combustible que le quedaba (polvo de blaze). Es lo que permite
+  llevarla a la base del Overworld.
+- **Fragua puesta vs. fragua de la ruina**: una fragua colocada a mano (`setPlacedBy`, marca `Placed` en su
+  entidad) se enciende con la vara de blaze como siempre, pero **no despierta ni invoca guardianes**; solo la que
+  generó la estructura (sin la marca) los tiene.
+- **Calor**: no usa la escala de la mesa (`Alloys.Heat`): su fuego es suyo. La única entrada de calor de tubo que
+  acepta es el fluido de su clase (`HeatSources.sourcesTouching`), no «el mejor fluido»: un tubo de lava no la enciende.
 
 ### 3.2 La fragua del vacío (End) y su ruina
 
@@ -140,14 +148,17 @@ un caparazón de shulker por dos lingotes, que es lo caro del End.
   con `forja:chests/fragua_del_vacio` y **guardias**: dos corazas vacías y un shulker sobre un pilar.
 - **Encenderla**: con un **ojo de ender** (se gasta). Despierta igual: todo monstruo a 24 bloques va a por ti y se
   levantan **dos corazas vacías** más.
-- Funciona como la de almas, con **perlas de ender** de combustible, y **solo funde eterio y solo en el End**.
+- Funciona como la de almas, con **perlas de ender** de combustible, y **solo funde eterio y eclipse**. En el End
+  quema perlas; fuera del End solo arde con un tubo de calor de **aliento de dragón** pegado (fluido nuevo, ver
+  `docs/FUNDICION_V2.md`: botellas de aliento de dragón en la caldera, 500 mB cada una, devuelve la botella, 2 mB por
+  tick). Se rompe y se puede llevar a casa igual que la de almas; se vuelve a encender con el ojo de ender.
 
 ### 3.3 Nadie más las hace
 
 `Alloys.match` (la estrella de la mesa de forja y la montadora) y el crisol saltan las recetas de fragua; las cubas
 no aceptan sus ingredientes como metal. Las tres siguen en `Alloys.ALL` (son materiales y tienen lingote), pero
 `Alloys.place(recipe)` dice dónde se hacen. JEI las enseña en su categoría de aleaciones con «Solo en la fragua de
-almas, en el Nether» o «Solo en la fragua del vacío, en el End».
+almas (Nether, o con sangre de blaze)» o «Solo en la fragua del vacío (End, o con aliento de dragón)».
 
 ### 3.4 El marco de portal se va de la Fragua caída
 

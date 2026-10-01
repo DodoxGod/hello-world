@@ -35,16 +35,17 @@ public final class ModBlocks {
 
 	/**
 	 * The soul forge of the Fragua caída (docs/ALEACIONES_NETHER_END.md): found cold, lit with a blaze rod, and the
-	 * only thing that makes wispfire and magmasteel. Nothing breaks it, so it stays the ruin's. See block/FarForgeBlock.
+	 * only thing that makes wispfire and magmasteel. Breaks like obsidian (diamond pickaxe) and drops itself cold, so it can
+	 * be carried home. See block/FarForgeBlock.
 	 */
 	public static final Block FRAGUA_DE_ALMAS = register(
 		"fragua_de_almas",
 		new dev.forja.block.FarForgeBlock(
 			BlockBehaviour.Properties.of()
 				.mapColor(MapColor.COLOR_BLACK)
-				.strength(-1.0F, 3600000.0F)
+				.strength(50.0F, 1200.0F)
 				.sound(SoundType.ANCIENT_DEBRIS)
-				.noLootTable()
+				.requiresCorrectToolForDrops()
 				.lightLevel(state -> state.getValue(dev.forja.block.FarForgeBlock.LIT) ? 13 : 4)
 				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("fragua_de_almas"))),
 			dev.forja.block.FarForgeBlock.Kind.ALMAS
@@ -53,16 +54,17 @@ public final class ModBlocks {
 
 	/**
 	 * The void forge of the End ruin (docs/ALEACIONES_NETHER_END.md): lit with an eye of ender, fed ender pearls, and
-	 * the only thing that makes aetherium, only in the End. Nothing breaks it. See block/FarForgeBlock.
+	 * the only thing that makes aetherium. Breaks like obsidian (diamond pickaxe) and drops itself cold, so it can be carried
+	 * home. See block/FarForgeBlock.
 	 */
 	public static final Block FRAGUA_DEL_VACIO = register(
 		"fragua_del_vacio",
 		new dev.forja.block.FarForgeBlock(
 			BlockBehaviour.Properties.of()
 				.mapColor(MapColor.SAND)
-				.strength(-1.0F, 3600000.0F)
+				.strength(50.0F, 1200.0F)
 				.sound(SoundType.STONE)
-				.noLootTable()
+				.requiresCorrectToolForDrops()
 				.lightLevel(state -> state.getValue(dev.forja.block.FarForgeBlock.LIT) ? 13 : 4)
 				.setId(ResourceKey.create(Registries.BLOCK, Forja.id("fragua_del_vacio"))),
 			dev.forja.block.FarForgeBlock.Kind.VACIO
