@@ -5207,6 +5207,19 @@ def generate_trades():
         for level, values in levels.items():
             namespace = "forja" if profession == "forjador" else "minecraft"
             write_json(RES / f"data/{namespace}/tags/villager_trade/{profession}/level_{level}.json", {"replace": False, "values": values})
+    # Book VI is always on sale from level 3: a trade set of its own that VillagerMixin adds when the
+    # Forjador reaches it, outside the level tags so it never takes one of the two random slots.
+    write_json(DATA / "villager_trade/forjador/3/libro_bastion.json", {
+        "gives": {"id": "forja:libro_bastion"},
+        "max_uses": 3.0,
+        "reputation_discount": 0.05,
+        "wants": {"count": 12.0, "id": "minecraft:emerald"},
+        "xp": 15.0,
+    })
+    write_json(DATA / "trade_set/forjador/libro_bastion.json", {
+        "amount": 1.0,
+        "trades": ["forja:forjador/3/libro_bastion"],
+    })
 
 
 class NbtByte:
@@ -11939,6 +11952,10 @@ def check_enums():
 
 
 if __name__ == "__main__":
+    # Before anything writes: a file whose content did not change keeps its committed bytes (line endings,
+    # gzip header, PNG encoding), so a clean run leaves `git diff` empty (tools/escritura_estable.py).
+    import escritura_estable
+    escritura_estable.install(ROOT)
     # First, not in the middle: this used to live inside generate_models(), which runs near the end,
     # so every model written before it — the moulds, the frames, the strainer's grate — was deleted
     # minutes after being made and the items rendered as missing models in game.

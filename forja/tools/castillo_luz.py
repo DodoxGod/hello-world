@@ -239,6 +239,14 @@ def light(world):
         if solid[i - sy] and free(i) and not solid[i + sy] and roofed(x, y, z) and not ridge:
             floors.append((y, x, z))
     floors = _rooms_only(floors)
+    # The star portal's 3 x 3 hole in the Deep Forge (castillo_sotanos.rotunda) is where the portal lights, not a
+    # floor: a chain lantern hung over it came down into the portal. The committed castle never had that lantern
+    # (it was taken out of the piece by hand), so only a regenerated one grew it back.
+    hole = set()
+    for (mx, my, mz), (name, props, _) in list(world.blocks.items()):
+        if name == "forja:mensula_estelar" and props.get("facing") == "west":
+            hole.update((mx - 2 + dx, my, mz + dz) for dx in (-1, 0, 1) for dz in (-1, 0, 1))
+    floors = [(y, x, z) for y, x, z in floors if (x, y, z) not in hole]
     floors.sort()
 
     standing = {(x, y, z) for y, x, z in floors}
