@@ -1910,6 +1910,8 @@
   "gui.forja.libros.estanteria_bloque": "Clic con un libro de la forja y va a su sitio; clic en un libro de la estantería y vuelve a tu mano. Un comparador cuenta cuántos tiene.",
   "gui.forja.libros.kit_de_reparacion.titulo": "Kits de reparación",
   "gui.forja.libros.kit_de_reparacion": "Para el camino: dos lingotes de un metal, un cuero y una cuerda hacen su **kit de reparación**. Ponlo con una pieza en la mesa de crafteo y la pieza sale con **+%s de uso**, con todo lo demás igual. Solo vale si su parte principal (la cabeza, la hoja o la placa, la que le da nombre) es de ese metal. En la estrella sale más barato reparar lo bueno; el kit es para cuando la estrella queda lejos.",
+  "gui.forja.libros.oricalco_forja.titulo": "El oricalco en la forja",
+  "gui.forja.libros.oricalco_forja": "No solo abre el portal: el oricalco es un metal de forja, y vale para **cualquier pieza**. Se cuela, no se corta, y solo lo aguanta una **mesa de almas**. Pega algo menos que el damasco y dura algo menos que el solacero, pero es el metal por el que corre la magia: con su rasgo, **Astral**, el maná vuelve un %s%% más rápido por cada pieza puesta o empuñada, y el doble si esa pieza lleva también **hierro o acero estelar**. Un conjunto entero da %s de maná máximo más.",
   "item.forja.fatuo": "Fatuo",
   "material.forja.fatuo": "fatuo",
   "conjunto.forja.fatuo": "+1 de daño y el fuego te dura la mitad",
@@ -2448,6 +2450,7 @@
   "item.forja.kit_de_reparacion_solacero": "Kit de reparación de solacero",
   "item.forja.kit_de_reparacion_lunacero": "Kit de reparación de lunacero",
   "item.forja.kit_de_reparacion_acero_vivo": "Kit de reparación de acero vivo",
+  "item.forja.kit_de_reparacion_oricalco": "Kit de reparación de oricalco",
   "item.forja.kit_de_reparacion_fatuo": "Kit de reparación de fatuo",
   "item.forja.kit_de_reparacion_magmacero": "Kit de reparación de magmacero",
   "item.forja.kit_de_reparacion_eterio": "Kit de reparación de eterio",
@@ -3017,5 +3020,6 @@
   "tag.item.forja.escoria": "Escoria",
   "tag.item.forja.eterio": "Eterio",
   "tag.item.forja.fatuo": "Fatuo",
-  "tag.item.forja.magmacero": "Magmacero"
+  "tag.item.forja.magmacero": "Magmacero",
+  "tag.item.forja.oricalco": "Lingote de oricalco"
 }

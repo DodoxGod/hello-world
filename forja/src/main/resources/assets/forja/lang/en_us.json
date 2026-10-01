@@ -1910,6 +1910,8 @@
   "gui.forja.libros.estanteria_bloque": "Click with a forge book and it goes to its place; click on a book in the shelf and it comes back to your hand. A comparator counts how many it holds.",
   "gui.forja.libros.kit_de_reparacion.titulo": "Repair kits",
   "gui.forja.libros.kit_de_reparacion": "For the road: two ingots of a metal, a leather and a string make its **repair kit**. Put it with a piece in a crafting grid and the piece comes out with **+%s durability**, everything else the same. It only works if its main part (the head, blade or plate, the one it is named after) is of that metal. Mending good gear is cheaper at the star; the kit is for when the star is far away.",
+  "gui.forja.libros.oricalco_forja.titulo": "Orichalcum at the forge",
+  "gui.forja.libros.oricalco_forja": "It does not only open the portal: orichalcum is a forge metal, and it works for **any part**. It is cast, not cut, and only a **soul table** takes it. It hits a little softer than damascus and lasts a little less than sun steel, but it is the metal magic runs through: with its trait, **Astral**, mana comes back %s%% faster for each piece worn or held, twice as fast if that piece also carries **star iron or star steel**. A full suit adds %s max mana.",
   "item.forja.fatuo": "Wispfire",
   "material.forja.fatuo": "wispfire",
   "conjunto.forja.fatuo": "+1 damage and fire lasts half as long on you",
@@ -2448,6 +2450,7 @@
   "item.forja.kit_de_reparacion_solacero": "Sun Steel Repair Kit",
   "item.forja.kit_de_reparacion_lunacero": "Moon Steel Repair Kit",
   "item.forja.kit_de_reparacion_acero_vivo": "Living Steel Repair Kit",
+  "item.forja.kit_de_reparacion_oricalco": "Orichalcum Repair Kit",
   "item.forja.kit_de_reparacion_fatuo": "Wispfire Repair Kit",
   "item.forja.kit_de_reparacion_magmacero": "Magmasteel Repair Kit",
   "item.forja.kit_de_reparacion_eterio": "Aetherium Repair Kit",
@@ -3017,5 +3020,6 @@
   "tag.item.forja.escoria": "Slag",
   "tag.item.forja.eterio": "Aetherium",
   "tag.item.forja.fatuo": "Wispfire",
-  "tag.item.forja.magmacero": "Magmasteel"
+  "tag.item.forja.magmacero": "Magmasteel",
+  "tag.item.forja.oricalco": "Orichalcum Ingot"
 }
