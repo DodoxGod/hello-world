@@ -1099,6 +1099,31 @@ public class FallenSmith extends Monster implements GeoEntity {
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.CHAIN_BREAK, SoundSource.HOSTILE, 3.0F, 0.6F);
 		Vec3 from = this.getEyePosition().add(this.getLookAngle().scale(0.8));
 		Vec3 to = target.position().add(0.0, target.getBbHeight() * 0.5, 0.0);
+		// The line is what the move is answered with: broken during the windup, out of range, or a roll
+		// through it, and the claw goes out on its chain and comes back empty.
+		boolean rolling = target instanceof net.minecraft.world.entity.player.Player player
+			&& dev.forja.combat.Stamina.isDodging(player, level.getGameTime());
+		double flat = target.position().subtract(this.position()).horizontalDistance();
+		if (rolling || flat > HOOK_MAX + 2.0 || !this.hasLineOfSight(target)) {
+			Vec3 end = to;
+			if (!rolling) {
+				var clip = level.clip(new net.minecraft.world.level.ClipContext(from, to,
+					net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, this));
+				if (clip.getType() != net.minecraft.world.phys.HitResult.Type.MISS) {
+					end = clip.getLocation();
+				}
+			}
+			for (int step = 0; step <= 24; step++) {
+				double fraction = step / 24.0;
+				level.sendParticles(ParticleTypes.CRIT,
+					net.minecraft.util.Mth.lerp(fraction, from.x, end.x),
+					net.minecraft.util.Mth.lerp(fraction, from.y, end.y),
+					net.minecraft.util.Mth.lerp(fraction, from.z, end.z),
+					1, 0.02, 0.02, 0.02, 0.0);
+			}
+			level.playSound(null, end.x, end.y, end.z, SoundEvents.CHAIN_HIT, SoundSource.HOSTILE, 1.2F, 0.7F);
+			return;
+		}
 		for (int step = 0; step <= 24; step++) {
 			double fraction = step / 24.0;
 			level.sendParticles(ParticleTypes.CRIT,

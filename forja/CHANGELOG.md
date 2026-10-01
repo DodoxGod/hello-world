@@ -1,5 +1,15 @@
 # Novedades
 
+## 2026-10-01 — El garfio del herrero se puede esquivar
+
+Antes la garra del Herrero Caído siempre alcanzaba a su objetivo al soltarla, aunque se hubiera puesto un muro delante,
+estuviera lejos o rodara justo en ese tick, y el aviso de 8 ticks (hecho para romper su línea) no servía de nada.
+
+- **Línea rota o fuera de alcance:** sin línea de visión al soltarla, o a más de `HOOK_MAX` + 2 bloques en horizontal, la
+  garra falla: la cadena se dibuja hasta el primer bloque que toca, suena un golpe de cadena y no hay daño ni arrastre.
+- **Esquiva:** un jugador en los ticks de invulnerabilidad de su esquiva también es fallado.
+- Pruebas nuevas en `GarfioGameTests` (línea limpia, muro durante el aviso y esquiva).
+
 ## 2026-10-01 — Las pruebas de los blazes, sin carreras contra el reloj
 
 Las nueve pruebas de vuelo del blaze fallaban a veces todas a la vez en la batería completa («el suelo del vuelo

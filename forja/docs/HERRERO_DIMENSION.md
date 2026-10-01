@@ -324,6 +324,12 @@ reclama", el daño de un tercio de lo que no es un jugador (`jefeDanoAjeno` = 0,
 romper a menos de 32 bloques del jefe vivo. La vida era 320 hasta el 2026-09-30; desde entonces crece con el nivel,
 los jugadores y su equipo (3.11).
 
+**El garfio se esquiva.** Tras sus 8 ticks de aviso, la garra solo agarra si en el momento de salir hay línea de
+visión entre él y su objetivo, éste está a no más de 18 bloques en horizontal (`HOOK_MAX` + 2) y no está en los ticks
+de invulnerabilidad de una esquiva (`Stamina.isDodging`). Si no, la cadena sale igual pero se corta en el primer
+bloque que toca (o llega hasta donde estaba el objetivo si rueda), suena un golpe de cadena y no hay daño ni arrastre.
+Quien se pone tras un muro durante el aviso, o rueda justo al soltarla, no recibe nada.
+
 ### 3.2 La llegada: cae del cielo
 
 Cuando un jugador entra en la dimensión y no hay pelea en curso:

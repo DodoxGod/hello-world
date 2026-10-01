@@ -1189,6 +1189,12 @@ observación, máscara y red ≈ 1,2–1,6; las metas que ejecutan ≈ 0,35–0,
 sigue siendo lo más caro de la observación (≈ 0,5–0,6 ms); la red ≈ 0,2 ms. Las mismas 30 por reglas: 0,2–0,5 ms/tick.
 Con redes entrenadas (que no cambian de táctica cada 2 ticks como las de pesos al azar) el ejecutor pedirá menos rutas.
 
+## Garfio del herrero (2026-10-01)
+
+Para el simulador: la garra del Herrero Caído (`FallenSmith.throwClaw`) ya no siempre acierta. Falla, sin daño ni arrastre, si
+al soltarla (8 ticks tras el aviso) no hay línea de visión, si la distancia horizontal es mayor que `HOOK_MAX` + 2 = 18, o si el
+objetivo está en los ticks de invulnerabilidad de su esquiva.
+
 ## Pendiente
 
 - **M7** del diseño: grabación JSONL v4 (con la línea del capitán) y `RENDIMIENTO.md` medido con `tools/rendimiento.sh`.
