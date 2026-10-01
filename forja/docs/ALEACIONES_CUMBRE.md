@@ -495,8 +495,10 @@ Lo que el código obligó a decidir distinto de lo escrito arriba, sin cambiar e
   `magiaEnSuSitio` fallaba). Es la bajada de 0,5 que prescribe 4.2. El resto de sus números no cambia.
 - **Con la cabeza de iracero** la mediana baja a 0,68 s y el grimorio de Mago queda a ×1,51: `MAGIC_TOME_CEILING` pasa a 1,6 y
   `MAGIC_MAGE_CEILING` a 1,4, como dice 4.2 (el texto de `Report.java` que los cita, igual). Los demás umbrales no se mueven.
-- **El crisol de obsidiana saca un lingote más que la receta** (`Tier.OBSIDIANA.bonus`, que ya cuenta para todas): iracero
-  3, égida 2, arcanio 2 y astralita 3 por tanda. Las pruebas miden `salida + bonus`.
+- **El crisol de obsidiana no suma su lingote extra a la cumbre** (resuelto, decisión de Andy): el bono de nivel
+  (`Tier.OBSIDIANA.bonus`) sigue valiendo para el resto de aleaciones y para los intermedios (astralita 3 por tanda), pero
+  iracero, égida y arcanio quedan exentos (`Alloys.NO_TIER_BONUS`) y cuestan exactamente un corazón de forja por lingote:
+  2, 1 y 1 por tanda. Las pruebas miden la salida de la receta, sin bono.
 - **Textos:** el conjunto de la égida acaba «ningún golpe pasa del 25 % de tu vida» (un `%` al final del texto no pasa
   `check_formats`). Los rasgos sin argumentos escriben `%` y las flechas con argumentos `%%`.
 - **`shelterCapsOnceThenWaits`** comprueba la espera con `TraitEffects.shelterReadyAt` y `forgetShelter`, sin dejar pasar 400

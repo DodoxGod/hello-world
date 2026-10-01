@@ -2,6 +2,9 @@
 
 ## 2026-10-01 — Aleaciones cumbre: iracero, égida y arcanio, y su escalón intermedio
 
+- **Coste de la cumbre:** el crisol de obsidiana ya no suma su lingote extra a iracero, égida y arcanio: cada lingote cuesta
+  exactamente un corazón de forja (tandas de 2, 1 y 1). Los intermedios, como la astralita, conservan el bono.
+
 - **Iracero** (Wrathsteel, ataque): 1 corazón de forja + 2 corazón de volcán + 1 acero vivo → 2 lingotes. Cabeza **+5,5**
   (la más alta del mod), 2000 de durabilidad, armadura 20. Rasgo **Iracundo**: las armas pegan +1 por cada 20 % de vida que
   te falta (hasta +4); la armadura da Fuerza I (II con el conjunto) si un golpe te deja bajo el 40 %, una vez cada 30 s;

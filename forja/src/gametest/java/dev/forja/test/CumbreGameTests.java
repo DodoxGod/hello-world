@@ -288,7 +288,7 @@ public class CumbreGameTests {
 		pot.setItem(CrucibleBlockEntity.SLOT_SECOND, new ItemStack(ModItems.alloy("eterio"), 1));
 		pot.setItem(CrucibleBlockEntity.SLOT_FUEL, new ItemStack(ModItems.ASCUA, 2));
 		run(helper, POT, pot, CrucibleBlock.Tier.OBSIDIANA.cook + 10);
-		// The obsidian pot gives one more than the recipe says, as it does for every alloy it pours.
+		// The obsidian pot gives one more than the recipe says for an intermediate like this one (not for the three cumbre alloys).
 		int made = astralite.output() + CrucibleBlock.Tier.OBSIDIANA.bonus;
 		helper.assertTrue(empty.bankMetal() == ModItems.alloy("astralita") && empty.bankAmount() == made,
 			"la cuba vacía tiene " + made + " de astralita: " + empty.bankAmount() + " de " + empty.bankMetal());
@@ -697,7 +697,7 @@ public class CumbreGameTests {
 			pot.setItem(CrucibleBlockEntity.SLOT_SECOND, new ItemStack(ModItems.alloy((String) loads[i][1]), (Integer) loads[i][2]));
 			pot.setItem(CrucibleBlockEntity.SLOT_FUEL, new ItemStack(ModItems.ASCUA, 2));
 			run(helper, at, pot, CrucibleBlock.Tier.OBSIDIANA.cook + 10);
-			int made = recipe.output() + CrucibleBlock.Tier.OBSIDIANA.bonus;
+			int made = recipe.output(); // exempt from the tier bonus: exactly 2/1/1
 			helper.assertTrue(empty.bankMetal() == ModItems.alloy(id) && empty.bankAmount() == made,
 				id + ": la cuba vacía tiene " + made + " de " + id + ", hay " + empty.bankAmount() + " de " + empty.bankMetal());
 			helper.assertTrue(pot.getItem(CrucibleBlockEntity.SLOT_FIRST).isEmpty() && pot.getItem(CrucibleBlockEntity.SLOT_SECOND).isEmpty(),

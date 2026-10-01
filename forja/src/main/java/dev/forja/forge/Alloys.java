@@ -24,6 +24,9 @@ import org.jspecify.annotations.Nullable;
  * the best alloys only come off a table built over lava.
  */
 public final class Alloys {
+
+	/** The cumbre alloys: one forge heart per ingot, so the obsidian crucible adds no tier bonus to them. */
+	public static final java.util.Set<String> NO_TIER_BONUS = java.util.Set.of("iracero", "egida", "arcanio");
 	/** How hot a table is, from the block under it. */
 	public enum Heat {
 		/** Bare ground: the star forges and upgrades, but melts nothing. */

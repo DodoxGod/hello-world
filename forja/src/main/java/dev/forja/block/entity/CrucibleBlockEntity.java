@@ -535,7 +535,10 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 				continue;
 			}
 			ItemStack result = recipe.result();
-			result.setCount(result.getCount() + this.tier().bonus);
+			// The three cumbre alloys cost exactly one forge heart per ingot: the pot's tier bonus does not apply to them.
+			if (!Alloys.NO_TIER_BONUS.contains(recipe.id())) {
+				result.setCount(result.getCount() + this.tier().bonus);
+			}
 			if (this.room(banks, result.getItem(), true) < result.getCount()) {
 				this.waitFor(ForgeMaterial.fromInput(result));
 				continue;
