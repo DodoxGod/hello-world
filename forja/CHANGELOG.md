@@ -1,5 +1,24 @@
 # Novedades
 
+## 2026-10-01 — Pase visual de objetos y bloques
+
+Andy: «mejora todo lo visual del mod que puedas». Se revisaron todos los objetos y bloques (iconos e instalados en el
+mundo) y se rehicieron los que peor se veían. Hojas del antes y el después en
+`E:\IA\Claude\Forja_capturas_mejorasisual_objetos\`.
+
+- **Molde de fundición y marco vacíos:** salían con la textura de "modelo que falta" en el inventario creativo y en JEI.
+- **Cincel:** hoja que se abre hasta el filo, virola y mango redondo (antes parecía un palo).
+- **Farol de curación:** cayado de dos píxeles y un farol con su tapa, su jaula y la luz.
+- **Cinturón de herramientas:** un cinturón cerrado con hebilla, no una placa con cuadros.
+- **Armadura de lobo:** caparazón de tres placas remachadas con guarda al cuello y correas (antes, el arnés de
+  armadillo de vanilla teñido, que salía desvaído).
+- **Mesa de forja:** el mismo estilo con contraste: yunque arriba, martillo y tenazas al costado, cajón al frente.
+- **Yunque del Herrero Caído:** su cara de arriba ya no parece una cara.
+- **Montadora:** la prensa y el yunque de la ventana se leen en el inventario.
+- **Cajas de moldeo:** la tapa dibujaba un martillo; ahora copa, bebedero y dos barras.
+- Herramientas: los dibujos van en `tools/visual_objetos.py` (los llama `generate_assets.py`), las hojas se hacen con
+  `tools/hoja_objetos.py` y `FORJA_SOLO=objetos_visual` saca en el cliente todos los objetos y bloques del mod.
+
 ## 2026-10-01 — Repaso visual de pantallas, HUD y partículas
 
 Andy: «mejora todo lo visual del mod que puedas». Hojas de antes y después en
