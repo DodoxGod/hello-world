@@ -48,7 +48,7 @@ public class AssemblerMachineScreen extends AbstractContainerScreen<AssemblerMac
 	private static final int INFO_X = 104;
 	private static final int INFO_W = 96;
 	private static final int MAKES_Y = 19;
-	private static final int STATE_Y = 74;
+	private static final int STATE_Y = 71;
 
 	/** The colour of the panel's stone, for the veil over a ghost. */
 	private static final int PANEL = 0xC4BAA6;
@@ -91,12 +91,7 @@ public class AssemblerMachineScreen extends AbstractContainerScreen<AssemblerMac
 			g.blit(RenderPipelines.GUI_TEXTURED, STAR_LIT, x, y, 0.0F, 0.0F, this.imageWidth, this.imageHeight, 256, 256, glow);
 		}
 		float progress = this.menu.progress();
-		if (progress > 0.0F) {
-			int width = Math.round(CHANNEL_W * progress);
-			g.fill(x + CHANNEL_X, y + CHANNEL_Y, x + CHANNEL_X + width, y + CHANNEL_Y + 5, 0xFFE0762A);
-			g.fill(x + CHANNEL_X, y + CHANNEL_Y, x + CHANNEL_X + width, y + CHANNEL_Y + 1, 0xFFFFC46A);
-			g.fill(x + CHANNEL_X + Math.max(0, width - 2), y + CHANNEL_Y, x + CHANNEL_X + width, y + CHANNEL_Y + 5, 0xFFFFE2A0);
-		}
+		ForjaUi.channel(g, x + CHANNEL_X, y + CHANNEL_Y, CHANNEL_W, 5, progress, 0xE0762A);
 		// What will come out, as a ghost in the empty output slot: the piece itself, faded.
 		AssemblerMachineBlockEntity.Plan plan = this.plan();
 		if (plan.ready() && this.menu.output().isEmpty()) {
@@ -138,10 +133,14 @@ public class AssemblerMachineScreen extends AbstractContainerScreen<AssemblerMac
 			? Component.translatable("gui.forja.montadora.calor", this.menu.heat().displayName(), String.format(java.util.Locale.ROOT, "%.1f", work / 20.0F))
 			: Component.translatable("gui.forja.montadora.calor_frio", this.menu.heat().displayName());
 		CrucibleScreen.lines(g, this.font, heat, INFO_X, STATE_Y, INFO_W, 2, work > 0 ? MUTED : BAD);
+		// What it is doing goes right under the heat, however many lines that took: at a fixed seventeen pixels
+		// down, a three-line answer ("it has everything but heat: a campfire under it or beside it") ran into
+		// the top of the inventory.
+		int heatLines = Math.min(2, this.font.split(heat, Math.round(INFO_W / 0.75F)).size());
 		int job = this.menu.job();
 		int colour = job == AssemblerMachineBlockEntity.JOB_WORKING ? GOOD
 			: job == AssemblerMachineBlockEntity.JOB_EMPTY || job == AssemblerMachineBlockEntity.JOB_MISSING ? MUTED : BAD;
-		CrucibleScreen.lines(g, this.font, this.doing(plan), INFO_X, STATE_Y + 17, INFO_W, 3, colour);
+		CrucibleScreen.lines(g, this.font, this.doing(plan), INFO_X, STATE_Y + heatLines * 8 + 2, INFO_W, 3, colour);
 	}
 
 	/** What it is doing, in words: the server's state, the client's plan for the names in it. */

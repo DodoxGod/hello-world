@@ -229,18 +229,15 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 			}
 			int px = x + ForgeMenu.STAR_POINTS[i][0];
 			int py = y + ForgeMenu.STAR_POINTS[i][1];
-			int colour = alpha << 24 | (ready ? warm : 0xB0A890);
-			// A plus-shaped halo rather than a square: the corners would look like a box around the slot.
-			g.fill(px - 3, py + 1, px + 19, py + 15, colour);
-			g.fill(px + 1, py - 3, px + 15, py + 19, colour);
-			g.fill(px - 1, py - 1, px + 17, py + 17, (Math.min(255, alpha + 40)) << 24 | (ready ? bright : 0xC8C0AC));
+			// Light round the slot, outside its frame: the old halo was a pale block laid over the slot, which
+			// washed the frame out and left a lit point looking like an empty square of orange.
+			ForjaUi.slotGlow(g, px, py, ready ? bright : 0xA89C84, (alpha + (ready ? 60 : 30)) / 255.0F);
 		}
 		if (ready) {
-			int centre = (int) (40 + 40 * pulse) << 24 | warm;
+			// And round the bronze rim of the middle, where the piece will lie.
 			int cx = x + ForgeMenu.CENTER_X;
 			int cy = y + ForgeMenu.CENTER_Y;
-			g.fill(cx - 4, cy, cx + 20, cy + 16, centre);
-			g.fill(cx, cy - 4, cx + 16, cy + 20, centre);
+			ForjaUi.frameGlow(g, cx - 5, cy - 5, cx + 21, cy + 21, warm, 0.35F + 0.35F * pulse);
 		}
 	}
 
@@ -712,9 +709,21 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 
 		boolean enabled = action != ForgeMenu.Action.NONE;
 		boolean hovered = enabled && inside(mouseX, mouseY, x + FORGE_BUTTON_X, y + FORGE_BUTTON_Y, FORGE_BUTTON_W, FORGE_BUTTON_H);
-		int fill = !enabled ? this.tone(0xFF8E8472) : this.accent(hovered ? 0xFFC98B45 : 0xFFA86F34);
-		bevel(g, x + FORGE_BUTTON_X, y + FORGE_BUTTON_Y, FORGE_BUTTON_W, FORGE_BUTTON_H, fill,
-			enabled ? this.accent(0xFFE6B57A) : this.tone(0xFFB0A690), enabled ? this.accent(0xFF5A3A18) : this.tone(0xFF5E5648));
+		String key = switch (action) {
+			case SWAP -> "cambiar";
+			case UPGRADE, BOOK -> "mejorar";
+			case REPAIR -> "reparar";
+			case MERGE -> "fusionar";
+			case DON -> "grabar";
+			case ALEACION -> "fundir";
+			case FUNDIR -> "derretir";
+			case HERENCIA -> "heredar";
+			case RECALENTAR -> "recalentar";
+			default -> "forjar";
+		};
+		// The one button of the panel, drawn the way every Forja button is now (client/ForjaUi).
+		ForjaUi.button(g, this.font, Component.translatable("gui.forja.boton." + key), x + FORGE_BUTTON_X, y + FORGE_BUTTON_Y,
+			FORGE_BUTTON_W, FORGE_BUTTON_H, this.accent(0xFFA86F34), !enabled ? ForjaUi.Look.OFF : hovered ? ForjaUi.Look.HOVERED : ForjaUi.Look.READY);
 		if (enabled && this.swingStart == 0L) {
 			// A light that crosses the button now and then, the way it crosses a blade: the button is the
 			// one thing on the panel to press, and when it can be pressed it should say so.
@@ -730,19 +739,6 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 				}
 			}
 		}
-		String key = switch (action) {
-			case SWAP -> "cambiar";
-			case UPGRADE, BOOK -> "mejorar";
-			case REPAIR -> "reparar";
-			case MERGE -> "fusionar";
-			case DON -> "grabar";
-			case ALEACION -> "fundir";
-			case FUNDIR -> "derretir";
-			case HERENCIA -> "heredar";
-			case RECALENTAR -> "recalentar";
-			default -> "forjar";
-		};
-		g.centeredText(this.font, Component.translatable("gui.forja.boton." + key), x + FORGE_BUTTON_X + FORGE_BUTTON_W / 2, y + FORGE_BUTTON_Y + 4, enabled ? 0xFFFFFFFF : 0xFFCFC7B6);
 		this.drawSwing(g, x, y);
 		this.drawHeat(g, x, y, mouseX, mouseY);
 		this.drawBurst(g, x, y);
@@ -779,16 +775,24 @@ public class ForgeScreen extends AbstractContainerScreen<ForgeMenu> {
 		int steps = dev.forja.forge.Alloys.Heat.values().length - 1;
 		int cell = FORGE_BUTTON_W / steps;
 		int[] colors = {0xFF6E6E7E, 0xFFE8A33C, 0xFFE2622B, 0xFFFFE45C};
+		// The gauge is the foot of the info panel: a sunken strip across its whole width that closes the panel's
+		// bottom edge, so its cells read as the panel's own gauge. They used to hang over that edge as loose dark
+		// blocks, which on a cold table looked like the panel had come apart at the bottom.
+		ForjaUi.trough(g, barX, barY - 2, FORGE_BUTTON_W, 9, this.tone(0xFF221C17), this.tone(0xFF5A4C3E), this.tone(0xFFF0E6D4));
 		for (int i = 1; i <= steps; i++) {
 			boolean reached = heat.ordinal() >= i;
-			int left = barX + (i - 1) * cell;
-			g.fill(left, barY, left + cell - 2, barY + 5, reached ? colors[i] : 0xFF4A4034);
-			if (reached) {
-				// A lick of light along the top of each cell that is lit, never two cells in step.
-				int lick = (int) ((System.currentTimeMillis() / 140 + i * 3) % 4);
-				g.fill(left + 1 + lick * (cell - 6) / 3, barY, left + 4 + lick * (cell - 6) / 3, barY + 1, 0xA0FFF4D6);
-				g.fill(left, barY + 4, left + cell - 2, barY + 5, 0x40000000);
+			int left = barX + 1 + (i - 1) * cell;
+			int right = left + cell - 2;
+			if (!reached) {
+				// A cold cell: an empty socket, its rim just visible.
+				g.fill(left, barY, right, barY + 5, this.tone(0xFF332A22));
+				g.fill(left, barY, right, barY + 1, this.tone(0xFF2A221B));
+				continue;
 			}
+			g.fillGradient(left, barY, right, barY + 5, ForjaUi.lighter(colors[i], 1.15F), ForjaUi.darker(colors[i], 0.72F));
+			// A lick of light along the top of each cell that is lit, never two cells in step.
+			int lick = (int) ((System.currentTimeMillis() / 140 + i * 3) % 4);
+			g.fill(left + 1 + lick * (cell - 6) / 3, barY, left + 4 + lick * (cell - 6) / 3, barY + 1, 0xA0FFF4D6);
 		}
 		if (inside(mouseX, mouseY, barX, barY, FORGE_BUTTON_W, 5)) {
 			List<Component> lines = new java.util.ArrayList<>();

@@ -232,16 +232,11 @@ public class ExtractionScreen extends AbstractContainerScreen<ExtractionMenu> {
 		boolean ready = this.menu.blocked() == null;
 		boolean keeps = this.menu.hasOrb();
 		boolean hovered = ready && inside(mouseX, mouseY, x + BUTTON_X, y + BUTTON_Y, BUTTON_W, BUTTON_H);
-		int fill = !ready ? 0xFF3A3A46 : keeps ? (hovered ? 0xFFD2A24A : 0xFFB0822E) : (hovered ? 0xFFC04A3A : 0xFF9A3428);
-		int light = !ready ? 0xFF5A5A6C : keeps ? 0xFFF4DC9A : 0xFFE8907E;
-		int dark = !ready ? 0xFF1C1C24 : keeps ? 0xFF5E4210 : 0xFF4A1810;
-		g.fill(x + BUTTON_X, y + BUTTON_Y, x + BUTTON_X + BUTTON_W, y + BUTTON_Y + BUTTON_H, fill);
-		g.fill(x + BUTTON_X, y + BUTTON_Y, x + BUTTON_X + BUTTON_W - 1, y + BUTTON_Y + 1, light);
-		g.fill(x + BUTTON_X, y + BUTTON_Y, x + BUTTON_X + 1, y + BUTTON_Y + BUTTON_H - 1, light);
-		g.fill(x + BUTTON_X + 1, y + BUTTON_Y + BUTTON_H - 1, x + BUTTON_X + BUTTON_W, y + BUTTON_Y + BUTTON_H, dark);
-		g.fill(x + BUTTON_X + BUTTON_W - 1, y + BUTTON_Y + 1, x + BUTTON_X + BUTTON_W, y + BUTTON_Y + BUTTON_H, dark);
-		g.centeredText(this.font, Component.translatable(keeps ? "gui.forja.extraccion.extraer" : "gui.forja.extraccion.borrar"),
-			x + BUTTON_X + BUTTON_W / 2, y + BUTTON_Y + 4, ready ? 0xFFFFFFFF : 0xFF8C8C9C);
+		// Brass to keep the stone, red to break it: the same button as every bench's (client/ForjaUi), in the
+		// colour of what pressing it does.
+		ForjaUi.button(g, this.font, Component.translatable(keeps ? "gui.forja.extraccion.extraer" : "gui.forja.extraccion.borrar"),
+			x + BUTTON_X, y + BUTTON_Y, BUTTON_W, BUTTON_H, keeps ? 0xFFB0822E : 0xFF9A3428,
+			!ready ? ForjaUi.Look.OFF : hovered ? ForjaUi.Look.HOVERED : ForjaUi.Look.READY);
 	}
 
 	/** The gem on its way from the socket it came out of to the cradle, along an arc, with a tail. */

@@ -27,8 +27,13 @@ public class ClassChoiceScreen extends Screen {
 	static final int LIST_Y = 28;
 	static final int LIST_STEP = 25;
 	static final int PAGE_X = 122;
-	static final int CONFIRM_X = 290;
-	static final int CONFIRM_Y = 184;
+	/**
+	 * The button sits under the list of classes, in the left column's free foot. It used to sit in the page's
+	 * bottom right corner, where the third skill had to wrap short of it and a change's cost was written over
+	 * that skill's last lines and out through the frame.
+	 */
+	static final int CONFIRM_X = LIST_X + (ClassGui.CARD_W - ClassGui.BUTTON_W) / 2;
+	static final int CONFIRM_Y = LIST_Y + 6 * LIST_STEP + 5;
 
 	private final boolean change;
 	private PlayerClass selected;
@@ -155,15 +160,26 @@ public class ClassChoiceScreen extends Screen {
 		ClassGui.smallWrapped(g, this.font, Component.translatable("gui.forja.clase.habilidad_3_cuales", ultimates.get(0).displayName(),
 			ultimates.get(1).displayName(), ultimates.get(2).displayName()), x + PAGE_X + 15, lineY + 7, CONFIRM_X - PAGE_X - 21, ClassGui.INK_SOFT);
 
-		// What it costs, and the button.
-		if (this.change) {
-			ClassGui.smallWrapped(g, this.font, Component.translatable("gui.forja.clase.coste_cambio"), x + PAGE_X, y + CONFIRM_Y + 1,
-				CONFIRM_X - PAGE_X - 6, ClassGui.INK_SOFT);
-		}
+		// The button, under the list. A change carries its price on its face — the Medallón del olvido it spends —
+		// and says the whole of what it costs under the mouse, before anything is spent; and, when the page has
+		// room left under the skills, on the page as well.
 		boolean pointed = ClassGui.over(mouseX, mouseY, x + CONFIRM_X, y + CONFIRM_Y, ClassGui.BUTTON_W, ClassGui.BUTTON_H);
 		ClassGui.button(g, x + CONFIRM_X, y + CONFIRM_Y, pointed ? 1 : 0);
 		Component label = Component.translatable(this.change ? "gui.forja.clase.boton_cambiar" : "gui.forja.clase.boton_elegir");
-		g.text(this.font, label, x + CONFIRM_X + (ClassGui.BUTTON_W - this.font.width(label)) / 2, y + CONFIRM_Y + 6, 0xFFFFFFFF, true);
+		int labelX = x + CONFIRM_X + (ClassGui.BUTTON_W - this.font.width(label)) / 2;
+		if (this.change) {
+			labelX += 6;
+			ClassGui.item(g, new net.minecraft.world.item.ItemStack(dev.forja.registry.ModItems.MEDALLON_DEL_OLVIDO), labelX - 15, y + CONFIRM_Y + 4, 0.75F);
+			Component cost = Component.translatable("gui.forja.clase.coste_cambio");
+			int room = y + ClassGui.PANEL_H - 9 - (lineY + 3);
+			if (this.font.split(cost, Math.round(width / 0.75F)).size() * 7 <= room) {
+				ClassGui.smallWrapped(g, this.font, cost, x + PAGE_X, lineY + 3, width, ClassGui.GOLD);
+			}
+			if (pointed) {
+				g.setTooltipForNextFrame(this.font, this.font.split(cost, 220), mouseX, mouseY);
+			}
+		}
+		g.text(this.font, label, labelX, y + CONFIRM_Y + 6, 0xFFFFFFFF, true);
 	}
 
 	@Override

@@ -184,12 +184,8 @@ public class CrucibleScreen extends AbstractContainerScreen<CrucibleMenu> {
 		if (progress <= 0.0F) {
 			return;
 		}
-		int width = Math.round(ARROW_W * progress);
-		int colour = this.meltColour();
-		g.fill(x + ARROW_X, y + ARROW_Y, x + ARROW_X + width, y + ARROW_Y + 4, shade(colour, 1.0F));
-		g.fill(x + ARROW_X, y + ARROW_Y, x + ARROW_X + width, y + ARROW_Y + 1, shade(colour, 1.3F));
-		// The head of the pour, brighter than what follows it.
-		g.fill(x + ARROW_X + Math.max(0, width - 2), y + ARROW_Y, x + ARROW_X + width, y + ARROW_Y + 4, shade(colour, 1.5F));
+		// The melt's own colour, flowing, with a white-hot head (client/ForjaUi: the same channel as every bench's).
+		ForjaUi.channel(g, x + ARROW_X, y + ARROW_Y, ARROW_W, 4, progress, this.meltColour() & 0xFFFFFF);
 	}
 
 	@Override

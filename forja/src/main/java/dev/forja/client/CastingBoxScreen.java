@@ -54,12 +54,8 @@ public class CastingBoxScreen extends AbstractContainerScreen<CastingBoxMenu> {
 		g.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0.0F, 0.0F, this.imageWidth, this.imageHeight, 256, 256);
 
 		float progress = this.menu.progress();
-		if (progress > 0.0F) {
-			int width = Math.round(ARROW_W * progress);
-			g.fill(x + ARROW_X, y + ARROW_Y, x + ARROW_X + width, y + ARROW_Y + 5, 0xFFE0762A);
-			g.fill(x + ARROW_X, y + ARROW_Y, x + ARROW_X + width, y + ARROW_Y + 1, 0xFFFFC46A);
-			g.fill(x + ARROW_X + Math.max(0, width - 2), y + ARROW_Y, x + ARROW_X + width, y + ARROW_Y + 5, 0xFFFFE2A0);
-		}
+		// Hot metal running down the channel as the work goes, as it runs in the crucible's (client/ForjaUi).
+		ForjaUi.channel(g, x + ARROW_X, y + ARROW_Y, ARROW_W, 5, progress, 0xE0762A);
 		this.drawPrint(g, x, y, progress);
 	}
 
