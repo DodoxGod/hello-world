@@ -124,11 +124,51 @@ public class PortalGameTests {
 	}
 
 	/**
-	 * The old dead forge wakes nobody any more, even with the whole old offering in the bag: it opens into
-	 * an empty frame, and the offering stays where it was.
+	 * The Fragua caída's forge wakes nobody and opens no portal frame any more (docs/ALEACIONES_NETHER_END.md): its
+	 * template carries the cold soul forge and no dead forge, no brackets; and that forge, clicked with the whole old
+	 * offering in the bag, takes nothing, summons nobody and stays a soul forge.
 	 */
 	@GameTest(maxTicks = 40)
 	public void theOldForgeNoLongerSummons(GameTestHelper helper) {
+		var template = helper.getLevel().getServer().getStructureManager().get(Forja.id("fragua_caida/fragua")).orElseThrow();
+		helper.assertTrue(template.filterBlocks(BlockPos.ZERO, new StructurePlaceSettings(), ModBlocks.FRAGUA_APAGADA).isEmpty(),
+			"la Fragua caída ya no trae la fragua apagada");
+		helper.assertTrue(template.filterBlocks(BlockPos.ZERO, new StructurePlaceSettings(), ModBlocks.MENSULA_ESTELAR).isEmpty(),
+			"ni ménsulas de portal");
+		helper.assertTrue(template.filterBlocks(BlockPos.ZERO, new StructurePlaceSettings(), ModBlocks.FRAGUA_DE_ALMAS).size() == 1,
+			"trae su fragua de almas");
+		ServerLevel level = helper.getLevel();
+		BlockPos forge = helper.absolutePos(new BlockPos(3, 2, 3));
+		for (int dx = -2; dx <= 2; dx++) {
+			for (int dz = -2; dz <= 2; dz++) {
+				level.setBlockAndUpdate(forge.offset(dx, -2, dz), Blocks.STONE.defaultBlockState());
+				level.setBlockAndUpdate(forge.offset(dx, -1, dz), Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
+			}
+		}
+		level.setBlockAndUpdate(forge, ModBlocks.FRAGUA_DE_ALMAS.defaultBlockState());
+		ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayerInLevel();
+		int slot = 0;
+		for (DeadForgeBlock.Offering offering : DeadForgeBlock.OFFERING) {
+			player.getInventory().setItem(slot++, new ItemStack(offering.item().get(), offering.count()));
+		}
+		level.getBlockState(forge).useWithoutItem(level, player, new BlockHitResult(Vec3.atCenterOf(forge), Direction.UP, forge, false));
+		helper.assertTrue(player.getInventory().countItem(ModItems.HIERRO_ESTELAR) == 8, "la ofrenda sigue en la bolsa");
+		helper.runAfterDelay(20, () -> {
+			helper.assertTrue(level.getEntitiesOfClass(FallenSmith.class, new AABB(forge).inflate(8.0)).isEmpty(), "no aparece el Herrero Caído");
+			helper.assertTrue(level.getBlockState(forge).is(ModBlocks.FRAGUA_DE_ALMAS), "la fragua sigue siendo de almas: " + level.getBlockState(forge));
+			for (Direction side : Direction.Plane.HORIZONTAL) {
+				helper.assertFalse(level.getBlockState(forge.below().relative(side, 2)).is(ModBlocks.MENSULA_ESTELAR), "y no abre marco al " + side);
+			}
+			helper.succeed();
+		});
+	}
+
+	/**
+	 * The dead forge of a castle from before the Deep Forge held a frame still opens into one, and wakes nobody
+	 * even with the whole old offering in the bag: the offering stays where it was.
+	 */
+	@GameTest(maxTicks = 40)
+	public void anOldCastleForgeOpensIntoAFrame(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		BlockPos forge = helper.absolutePos(new BlockPos(3, 2, 3));
 		for (int dx = -2; dx <= 2; dx++) {

@@ -40,7 +40,7 @@ prueba de equilibrio (`./gradlew runGametest`) los mide igual que a los demás m
 | Rasgo | **Espectral** | **Volcánico** | **Flotante** |
 | Durabilidad | 1000 | 1600 | 1200 |
 | Velocidad de minado | 8,0 | 7,0 | 8,5 |
-| Daño de cabeza | +3,5 | +3,0 | +3,0 |
+| Daño de cabeza | +3,0 | +3,0 | +3,0 |
 | Nivel | netherita (4) | diamante (3) | netherita (4) |
 | Encantabilidad | 18 | 10 | 22 |
 | Mango: durabilidad / ataque / minado | ×1,25 / +0,10 / ×1,05 | ×1,55 / −0,20 / ×0,90 | ×1,05 / +0,20 / ×1,10 |
@@ -55,15 +55,20 @@ Hierro, chatarra de netherita y tierra de almas fundidos al fuego azul. Su ident
 Nether**. Todo lo que el mod tiene de fuego (ígneo, ascua, Aspecto ígneo, Represalia) no hace nada a un blaze, un
 esqueleto wither, un ghast o un cubo de magma, que no arden. La llama fatua sí.
 
-- **Armas, herramientas y flechas**: el golpe deja al objetivo con **llama fatua 4 s**: 1 de daño mágico por
-  segundo, también a lo que es inmune al fuego, y el agua no la apaga. No se acumula: un golpe nuevo la renueva.
+- **Armas, herramientas y flechas**: el golpe deja al objetivo con **llama fatua 4 s**: 1 de daño mágico cada 2
+  segundos, también a lo que es inmune al fuego, y el agua no la apaga. No se acumula: un golpe nuevo la renueva.
 - **Armadura**: el que te pega cuerpo a cuerpo se lleva **1 s de llama fatua por pieza**.
 - **Conjunto**: +1 de daño y el fuego normal te dura la mitad.
 
-Por qué no es «netherita mejor»: cabeza de +3,5 y 1000 de durabilidad, por debajo del damasco (+4,0 / 1400) y de la
+Por qué no es «netherita mejor»: cabeza de +3,0 y 1000 de durabilidad, por debajo del damasco (+4,0 / 1400) y de la
 netherita (+4,0 / 2031); armadura 19 con dureza 2 (netherita 20 / 3). Lo que gana es un daño pequeño y constante
-(1 por segundo) que no para nada ni nadie. En la tabla de equilibrio entra como un daño que dura, igual que el
-fuego, el veneno o el sangrado.
+(medio punto por segundo) que no para nada ni nadie. En la tabla de equilibrio entra como un daño que dura, igual que
+el fuego, el veneno o el sangrado.
+
+*Medido (2026-10-01):* con la primera versión (cabeza +3,5 y 1 de daño por segundo) el informe de equilibrio ponía
+el fatuo en 26 de las 60 mejores armas, por delante del corazón de forja: la llama pasa por encima del tope por golpe
+y de la invulnerabilidad, así que a ritmo alto valía más que cualquier cabeza. Con +3,0 y un mordisco cada 2 s no
+entra en ninguna: es el arma para el Nether, no la mejor arma.
 
 ### 2.2 Magmacero y su rasgo **Volcánico** — «la lava se vuelve suelo»
 

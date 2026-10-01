@@ -60,7 +60,7 @@ public final class GuideBooks {
 		FUNDICION("libro_fundicion", 0x7A4A2A, "mejora", () -> Items.COPPER_INGOT, true, true,
 			List.of(new Section("fundicion_calor", 0, List.of("fundicion_sabes", "primeras_aleaciones")),
 				new Section("fundicion_linea", 4, List.of("fundicion")),
-				new Section("fundicion_mayor", 1, List.of("mesa_mayor", "fundicion_siguiente")))),
+				new Section("fundicion_mayor", 1, List.of("mesa_mayor", "aleaciones_lejanas", "fundicion_siguiente")))),
 		// Book IV: what a piece can become, and what the smith becomes.
 		MESA_MAYOR("libro_mesa_mayor", 0x7850BE, "mesa_mayor", () -> ModItems.alloy("damasco"), true, true,
 			List.of(new Section("mayor_mejoras", 1, List.of("mayor_sabes", "potencial", "sinergias", "pactos")),
@@ -72,7 +72,7 @@ public final class GuideBooks {
 		// Book VI: going out into the world, the Smith's story and his castle. The Forjador sells it at level 3.
 		BASTION("libro_bastion", 0x28827F, "ruina", () -> Items.MAP, true, true,
 			List.of(new Section("bastion_mundo", 3, List.of("bastion_sabes", "mundo", "encargos")),
-				new Section("bastion_ruinas", 4, List.of("ruinas", "herrero_historia")),
+				new Section("bastion_ruinas", 4, List.of("ruinas", "fraguas_lejanas", "herrero_historia")),
 				new Section("bastion_castillo", 2, List.of("bastion", "portal_estelar", "bastion_siguiente")))),
 		// Book VII: the Smith's world and the fight. On a lectern beside the portal when it is lit, and crafted as any.
 		CEMENTERIO("libro_cementerio", 0x342658, "portal", () -> ModItems.HIERRO_ESTELAR, true, true,
@@ -87,10 +87,10 @@ public final class GuideBooks {
 		/** The whole guide in one volume, as it was: creative only (Andy's answer 6). */
 		TOMO("tomo_de_forja", 0x7A2A20, null, () -> Items.AIR, true, false,
 			List.of(new Section("taller", 0, List.of("primeros_pasos", "siguiente_paso", "mesas", "mesa_mayor", "objetos", "piezas", "materiales", "rasgos",
-					"aleaciones", "fundicion", "temple", "herrero", "tecnicas")),
+					"aleaciones", "aleaciones_lejanas", "fundicion", "temple", "herrero", "tecnicas")),
 				new Section("mejoras", 1, List.of("mejoras", "potencial", "maestria", "sinergias", "pactos")),
 				new Section("pelear", 2, List.of("combate", "mana", "accesorios", "clases")),
-				new Section("mundo", 3, List.of("eventos", "encargos", "amenazas", "bestiario", "mundo", "cementerio")),
+				new Section("mundo", 3, List.of("eventos", "encargos", "amenazas", "bestiario", "mundo", "fraguas_lejanas", "cementerio")),
 				new Section("referencia", 4, List.of("mi_taller", "estadisticas"))));
 
 		/** The item's id under forja:, which is also its recipe's; null for the library, which is not an item. */

@@ -310,6 +310,9 @@ public class ForgeMenu extends AbstractContainerMenu {
 			}
 		}
 		for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.POURABLE) {
+			if (!dev.forja.forge.Alloys.anywhere(recipe)) {
+				continue;
+			}
 			for (dev.forja.forge.Alloys.Part part : recipe.inputs()) {
 				if (stack.is(part.item().get())) {
 					return true;

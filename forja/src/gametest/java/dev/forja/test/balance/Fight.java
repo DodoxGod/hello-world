@@ -208,6 +208,7 @@ public final class Fight {
 	private int witherTicks;
 	private int bleedTicks;
 	private int bleedStacks;
+	private int soulTicks;
 	private double stamina;
 	private int lastSpend;
 	private int comboStep;
@@ -354,6 +355,7 @@ public final class Fight {
 		this.witherTicks = 0;
 		this.bleedTicks = 0;
 		this.bleedStacks = 0;
+		this.soulTicks = 0;
 		this.stamina = this.staminaMax();
 		this.lastSpend = -100000;
 		this.comboStep = 0;
@@ -491,6 +493,13 @@ public final class Fight {
 			if (this.bleedTicks == 0) {
 				this.bleedStacks = 0;
 			}
+		}
+		if (this.soulTicks > 0) {
+			// Llama fatua (ModEffects.SoulFlame, wispfire's Espectral): magic, through any cooldown, fire immune or not.
+			if (this.soulTicks % TraitEffects.SOUL_FLAME_PERIOD == 0) {
+				this.hurt(TraitEffects.SOUL_FLAME_DAMAGE, Source.MAGIC, Blow.NONE, true);
+			}
+			this.soulTicks--;
 		}
 	}
 
@@ -639,6 +648,10 @@ public final class Fight {
 		// Fire Aspect (the upgrade and Igneo): vanilla sets the target alight for four seconds a level.
 		if (this.build.fireAspect > 0 && !this.target.fireImmune) {
 			this.fireTicks = Math.max(this.fireTicks, 80 * this.build.fireAspect);
+		}
+		// Espectral: the blue fire, renewed by every blow (TraitEffects.soulFlame).
+		if (this.build.hasTrait(ForgeMaterial.Trait.ESPECTRAL)) {
+			this.soulTicks = Math.max(this.soulTicks, TraitEffects.SOUL_FLAME_TICKS);
 		}
 		this.onWeaponHit(taken, charged ? chargeDamage : 1.0, charged ? chargePosture : 1.0);
 	}

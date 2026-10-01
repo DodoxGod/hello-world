@@ -97,6 +97,9 @@ public final class ArmorSets {
 			case ACERO_VIVO -> List.of(Bonus.add(Attributes.MAX_HEALTH, 8.0), Bonus.add(Attributes.ARMOR_TOUGHNESS, 3.0));
 			// Orichalcum: the Guild's suit. The deeper mana bar is in magic/Mana (ORICHALCUM_SET_MANA).
 			case ORICALCO -> List.of(Bonus.add(Attributes.ARMOR_TOUGHNESS, 1.0));
+			// ---- the far forge alloys (docs/ALEACIONES_NETHER_END.md)
+			// Wispfire: the blue fire is yours to give, and the plain one does not hold on to you for long.
+			case FATUO -> List.of(Bonus.add(Attributes.ATTACK_DAMAGE, 1.0), Bonus.add(Attributes.BURNING_TIME, -0.5));
 		};
 	}
 

@@ -92,6 +92,8 @@ MATERIAL_COLORS = {
     "escoria": 0x7A6A5E,
     # The Guild's metal, poured from fourteen (docs/HERRERO_DIMENSION.md, 1.4): the green gold of its ingot.
     "oricalco": 0xCFD45A,
+    # Only at their own far forge (docs/ALEACIONES_NETHER_END.md, tools/aleacion_nether.py).
+    "fatuo": 0x3A5466,
 }
 SPECIAL = {"arco", "escudo", "lanza", "ballesta", "cana"}
 DEFAULT_COLORS = {"HEAD": 0xE4E4E4, "PLATE": 0xE4E4E4, "HANDLE": 0xB8894F, "EXTRA": 0xB8894F, "LINING": 0xA86B3C}
@@ -3544,7 +3546,7 @@ def generate_master_hammer_texture():
 # One list, here, and check_tool_tags() makes sure no block is left out of every list again.
 PICKAXE_BLOCKS = [
     "forja:mesa_de_forja", "forja:mesa_de_forja_mayor", "forja:mesa_de_piezas", "forja:mesa_de_extraccion",
-    "forja:fragua_apagada", "forja:yunque_del_herrero", "forja:farol_de_pavesa",
+    "forja:fragua_apagada", "forja:fragua_de_almas", "forja:yunque_del_herrero", "forja:farol_de_pavesa",
     "forja:crisol_de_barro", "forja:crisol_de_hierro", "forja:crisol_de_obsidiana",
     "forja:cuba_de_colada", "forja:cano_de_colada", "forja:llave_de_paso",
     "forja:conducto_de_colada", "forja:conducto_de_acero", "forja:conducto_de_damasco",
@@ -3708,6 +3710,8 @@ ALLOY_COLORS = {
     "solacero": 0xFFC341,
     "lunacero": 0x5A6CC0,
     "acero_vivo": 0xE8231A,
+    # The far forges (docs/ALEACIONES_NETHER_END.md): only their own forge makes them, but their bars are the family's.
+    "fatuo": 0x3A5466,
 }
 
 # Two alloys are not one colour at all: they run one into another across the bar, left to right.
@@ -6589,7 +6593,8 @@ def write_fallen_forge():
     for x in range(5, 10):
         for z in range(5, 10):
             put(x, 1, z, "minecraft:obsidian" if (x + z) % 2 == 0 else "minecraft:crying_obsidian")
-    put(7, 2, 7, "forja:fragua_apagada")
+    # The soul forge, cold (docs/ALEACIONES_NETHER_END.md): a blaze rod lights it and wakes the place.
+    put(7, 2, 7, "forja:fragua_de_almas", {"lit": "false"})
     for x in (5, 9):
         for z in (5, 9):
             for y in range(2, 5):
@@ -6600,10 +6605,10 @@ def write_fallen_forge():
     put(8, 2, 5, "forja:mesa_de_forja")
     put(6, 2, 9, "forja:mesa_de_piezas")
     put(8, 2, 9, "minecraft:smithing_table")
-    # Two chests, with what he was keeping.
-    for pos, facing in (((3, 1, 7), "east"), ((11, 1, 7), "west")):
+    # Two chests, with what he was keeping: the workshop's, and the forge's own, which says what it is for.
+    for pos, facing, table in (((3, 1, 7), "east", "forja_abandonada"), ((11, 1, 7), "west", "fragua_caida")):
         put(*pos, "minecraft:chest", {"facing": facing, "type": "single"},
-            {"LootTable": "forja:chests/forja_abandonada"})
+            {"LootTable": f"forja:chests/{table}"})
     # Braziers of soul fire around the altar, for the light and for the warning.
     for x, z in ((4, 4), (10, 4), (4, 10), (10, 10)):
         put(x, 1, z, "minecraft:soul_campfire", {"lit": "true", "facing": "north", "signal_fire": "false", "waterlogged": "false"})
@@ -12045,6 +12050,9 @@ if __name__ == "__main__":
     # The visual pass on screens, HUD and particles (tools/visual_gui.py): last, so what it redraws wins.
     import visual_gui
     visual_gui.generate(_sys.modules[__name__])
+    # The far forges and their alloys (tools/aleacion_nether.py): after the tags and structures it adds to.
+    import aleacion_nether
+    aleacion_nether.generate(_sys.modules[__name__])
     generate_painting_data()
     generate_trades()
     problems = check_enums()

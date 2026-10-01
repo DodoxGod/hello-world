@@ -194,7 +194,13 @@ public class MaterialesGameTests {
 					wrong.add(recipe.id() + ": needs " + key + ", which takes more heat than it has");
 				}
 			}
-			if (recipe.heat() == Alloys.Heat.FORJA_BLANCA) {
+			if (!Alloys.anywhere(recipe)) {
+				// A far forge alloy: its hearth has to hold the whole batch at once.
+				if (recipe.inputs().size() > dev.forja.block.entity.FarForgeBlockEntity.HEARTH
+					|| recipe.inputs().stream().anyMatch(part -> part.count() > dev.forja.block.entity.FarForgeBlockEntity.STACK)) {
+					wrong.add(recipe.id() + ": does not fit its far forge's hearth");
+				}
+			} else if (recipe.heat() == Alloys.Heat.FORJA_BLANCA) {
 				int total = recipe.inputs().stream().mapToInt(Alloys.Part::count).sum();
 				if (recipe.inputs().size() > 2 || total > dev.forja.block.CrucibleBlock.Tier.OBSIDIANA.capacity) {
 					wrong.add(recipe.id() + ": does not fit the obsidian crucible");
@@ -237,7 +243,9 @@ public class MaterialesGameTests {
 			// broken, and a grave's weapon is rust (docs/HERRERO_DIMENSION.md, 2.5 and 2.6).
 			if (id.getPath().equals("metal_fundido") || id.getPath().equals("arma_clavada")
 				|| id.getPath().equals("mensula_estelar") || id.getPath().equals("portal_estelar")
-				|| id.getPath().equals("brasa_estelar") || id.getPath().equals("estrella_de_vuelta") || id.getPath().equals("fragua_fria_estelar")) {
+				|| id.getPath().equals("brasa_estelar") || id.getPath().equals("estrella_de_vuelta") || id.getPath().equals("fragua_fria_estelar")
+				// The far forges cannot be broken either: each is its ruin's (docs/ALEACIONES_NETHER_END.md).
+				|| id.getPath().equals("fragua_de_almas")) {
 				continue;
 			}
 			checked++;

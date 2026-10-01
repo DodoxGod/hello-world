@@ -93,7 +93,9 @@ rampa del oricalco y su estrella); la perla, la de ender vanilla recoloreada al 
   punto de reaparición. En la entrega 3 la estrella que cae al morir el jefe será otra forma de volver.
 - **Mundos existentes:** la fragua apagada sigue registrada. Ya **no invoca a nadie**: con clic derecho se abre en el
   marco vacío (el anillo en el estrado, un bloque por debajo de ella) y avisa de que cuatro perlas lo encenderán.
-  Vale para los castillos ya generados y para la estructura vieja `fragua_caida`.
+  Vale para los castillos ya generados. La `fragua_caida` del Nether ya no abre marco (2026-10-01,
+  `docs/ALEACIONES_NETHER_END.md`): su fragua es una fragua de almas fría, y la fragua apagada de una Fragua caída de un
+  mundo viejo se convierte en ella al tocarla.
 - **Se quitó:** la invocación en el mundo normal y la ofrenda (8 hierros estelares, 4 damascos, estrella del Nether
   y fragmento de eco). La prueba `theOldForgeNoLongerSummons` lo comprueba.
 

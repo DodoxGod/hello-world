@@ -150,6 +150,8 @@ public final class ModItems {
 	public static Item JARRA;
 	public static Item CORAZON_DE_FORJA;
 	public static Item FRAGUA_APAGADA;
+	/** The far forges (docs/ALEACIONES_NETHER_END.md), as items for the creative tab, the guide and the kit. */
+	public static Item FRAGUA_DE_ALMAS;
 	public static Item CINTURON;
 	/**
 	 * What changing class used to cost, from a crafting table. Kept only so the ones already made still work;
@@ -220,6 +222,8 @@ public final class ModItems {
 		}
 
 		FRAGUA_APAGADA = register("fragua_apagada", p -> new BlockItem(ModBlocks.FRAGUA_APAGADA, p),
+			new Item.Properties().useBlockDescriptionPrefix().rarity(net.minecraft.world.item.Rarity.EPIC));
+		FRAGUA_DE_ALMAS = register("fragua_de_almas", p -> new BlockItem(ModBlocks.FRAGUA_DE_ALMAS, p),
 			new Item.Properties().useBlockDescriptionPrefix().rarity(net.minecraft.world.item.Rarity.EPIC));
 		MESA_DE_PIEZAS = register("mesa_de_piezas", p -> new BlockItem(ModBlocks.MESA_DE_PIEZAS, p), new Item.Properties().useBlockDescriptionPrefix());
 		MESA_DE_FORJA_MAYOR = register("mesa_de_forja_mayor", p -> new BlockItem(ModBlocks.MESA_DE_FORJA_MAYOR, p),
@@ -496,6 +500,7 @@ public final class ModItems {
 		stacks.add(new ItemStack(JARRA));
 		stacks.add(new ItemStack(CORAZON_DE_FORJA));
 		stacks.add(new ItemStack(FRAGUA_APAGADA));
+		stacks.add(new ItemStack(FRAGUA_DE_ALMAS));
 		stacks.add(new ItemStack(YUNQUE_DEL_HERRERO));
 		stacks.add(new ItemStack(FAROL_DE_PAVESA));
 		stacks.add(new ItemStack(ASCUA));

@@ -119,6 +119,11 @@ public final class GuideText {
 				}
 				inputs.append(part.count() + " ").append(new net.minecraft.world.item.ItemStack(part.item().get()).getHoverName());
 			}
+			// The far forge alloys are their forge's and nobody else's, whatever heat they would read as.
+			if (!dev.forja.forge.Alloys.anywhere(recipe)) {
+				return Component.translatable("gui.forja.guia.origen.aleacion_fragua", inputs,
+					Component.translatable("gui.forja.fragua_lejana.donde." + dev.forja.forge.Alloys.place(recipe).id()));
+			}
 			// No table ever reaches white heat, so those three are the obsidian crucible's and nobody else's.
 			return recipe.heat() == dev.forja.forge.Alloys.Heat.FORJA_BLANCA
 				? Component.translatable("gui.forja.guia.origen.aleacion_blanca", inputs)

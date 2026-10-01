@@ -130,7 +130,9 @@ public final class ArrowTips {
 		/** Amatista: gives back a little mana. */
 		HECHIZO,
 		/** Cobre: on something wet (in water or rain) the hit carries a shock. */
-		CONDUCTORA;
+		CONDUCTORA,
+		/** Fatuo (Espectral): the blue fire, which burns what does not burn. */
+		FATUA;
 
 		public String id() {
 			return this.name().toLowerCase(Locale.ROOT);
@@ -144,6 +146,7 @@ public final class ArrowTips {
 			return switch (this) {
 				case FUEGO -> Component.translatable("flecha.forja.especial.fuego.desc", FIRE_SECONDS);
 				case BRASA -> Component.translatable("flecha.forja.especial.brasa.desc", EMBER_SECONDS);
+				case FATUA -> Component.translatable("flecha.forja.especial.fatua.desc", dev.forja.upgrade.TraitEffects.SOUL_FLAME_TICKS / 20);
 				case SANGRADO -> Component.translatable("flecha.forja.especial.sangrado.desc", BLEED_TICKS / 20);
 				case RESINA -> Component.translatable("flecha.forja.especial.resina.desc", RESIN_TICKS / 20);
 				case LLANTO -> Component.translatable("flecha.forja.especial.llanto.desc", WEAKNESS_TICKS / 20);
@@ -204,6 +207,7 @@ public final class ArrowTips {
 			case AFORTUNADO -> Special.FORTUNA;
 			// Orichalcum carries magic as amethyst does: its tip hands the archer mana.
 			case ASTRAL -> Special.HECHIZO;
+			case ESPECTRAL -> Special.FATUA;
 			default -> Special.NONE;
 		};
 	}
@@ -273,6 +277,8 @@ public final class ArrowTips {
 				}
 			}
 			case SALTO -> blink(level, target);
+			case FATUA -> dev.forja.upgrade.TraitEffects.soulFlame(level, target, shooter != null ? shooter : target,
+				dev.forja.upgrade.TraitEffects.SOUL_FLAME_TICKS);
 			case CHISPA -> spark(level, arrow, shooter, target);
 			case SOL -> {
 				if (target.isInvertedHealAndHarm() && dev.forja.upgrade.TraitEffects.inSun(level, target)) {

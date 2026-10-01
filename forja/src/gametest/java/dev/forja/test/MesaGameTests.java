@@ -103,6 +103,10 @@ public class MesaGameTests {
 			}
 		}
 		for (Alloys.Recipe recipe : Alloys.POURABLE) {
+			// The far forge alloys are their forge's (docs/ALEACIONES_NETHER_END.md): the star has no business with them.
+			if (!Alloys.anywhere(recipe)) {
+				continue;
+			}
 			for (Alloys.Part part : recipe.inputs()) {
 				helper.assertTrue(point.mayPlace(new ItemStack(part.item().get())), "la estrella debería aceptar " + part.item().get() + " de " + recipe.id());
 			}

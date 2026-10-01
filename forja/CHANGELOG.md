@@ -1,5 +1,35 @@
 # Novedades
 
+## 2026-10-01 — La Fragua caída enciende una fragua de almas: el fatuo, primera aleación del Nether
+
+- **La ruina del Nether ya no abre un marco de portal** (eso lo hace la Forja Profunda del Bastión). Sobre su altar hay
+  una **fragua de almas** fría. Una **vara de blaze** la enciende, y al encenderla despierta lo que la guarda: los
+  monstruos de alrededor van a por ti y se levantan dos pavesas más.
+- **Encendida, funde lo que ninguna otra fragua funde.** Clic derecho con los ingredientes y con **polvo de blaze** de
+  combustible (uno por tanda); cada tanda tarda 10 s y sale encima, o a la tolva o cofre de debajo. Clic con la mano
+  vacía para ver qué tiene y qué le falta; agachado, para sacarlo. Solo arde en el Nether y no se rompe.
+- **Fatuo** (Wispfire): 2 lingotes de hierro + 1 chatarra de netherita + 4 tierra de almas → 2 lingotes. Rasgo nuevo
+  **Espectral**: el golpe deja **llama fatua** 4 s (1 de daño mágico cada 2 s) que **quema a lo que no arde** (blazes,
+  esqueletos wither, ghasts, cubos de magma) y que el agua no apaga; la armadura se la pasa a quien te pega; la punta de
+  flecha también. Cabeza +3,0, 1000 de durabilidad, armadura 19: por debajo de la netherita en todo lo que la netherita
+  mide. Vale para cualquier pieza. Conjunto: +1 de daño y el fuego te dura la mitad.
+- Ni la estrella de la mesa, ni la montadora, ni el crisol, ni las cubas hacen fatuo ni aceptan su tierra de almas.
+- Uno de los dos cofres de la ruina trae siempre una **nota con la receta** y una vara de blaze para encenderla.
+- Su lingote y su **kit de reparación** son de la familia de `tools/lingotes.py` (dos lenguas de fuego de almas en la
+  cara de arriba; en el kit, su glifo).
+- Mundos viejos: la fragua apagada de una Fragua caída ya generada se convierte en la fragua de almas al tocarla; la de
+  los castillos viejos sigue abriéndose en un marco.
+- Guía: libro III, capítulo «Aleaciones de fragua»; libro VI, «Las fraguas lejanas» y el texto nuevo de la ruina. JEI
+  dice «Fragua de almas (Nether)» en vez de un calor.
+- Equilibrio: `docs/EQUILIBRIO.md` tiene una sección «Aleaciones de fragua frente a la netherita» y la prueba
+  `aleacionesDeFraguaEnSuSitio` exige que no sean netherita mejor ni estén en más de la mitad de las mejores armas. La
+  primera versión (+3,5 y 1 de daño por segundo) salía en 26 de 60 mejores armas; con los números de ahora, en ninguna.
+- Diseño completo (las tres aleaciones de fragua): `docs/ALEACIONES_NETHER_END.md`.
+- Pruebas: `FraguasLejanasGameTests` (encender y despertar, fundir solo en el Nether y con combustible, nadie más la
+  hace, todas las piezas, la llama fatua a un blaze, la plantilla, la nota), `theOldForgeNoLongerSummons` (la ruina ya
+  no trae fragua apagada ni abre marco) y `FORJA_SOLO=fragua_caida`, que ahora filma la fragua encendida y el equipo
+  de fatuo (hoja en `Forja_capturas_mejoras/aleacion_nether`, `tools/hoja_aleaciones.py`).
+
 ## 2026-10-01 — El oricalco, material de forja
 
 - **El oricalco es ahora un material de forja** (`ForgeMaterial.ORICALCO`) y vale para **todas las piezas**: cabezas,

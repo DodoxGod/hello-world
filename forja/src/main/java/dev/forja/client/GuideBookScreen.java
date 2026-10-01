@@ -823,6 +823,7 @@ public class GuideBookScreen extends Screen {
 			case "primeras_aleaciones" -> this.firstAlloysChapter();
 			case "catalogo_aleaciones" -> this.alloyListChapter();
 			case "fundicion_siguiente" -> this.foundryNextChapter();
+			case "aleaciones_lejanas" -> this.farAlloysChapter();
 			// Book IV.
 			case "mayor_sabes" -> this.greaterRecapChapter();
 			case "mayor_siguiente" -> this.greaterNextChapter();
@@ -833,6 +834,7 @@ public class GuideBookScreen extends Screen {
 			case "bastion_sabes" -> this.bastionRecapChapter();
 			case "ruinas" -> this.ruinsChapter();
 			case "herrero_historia" -> this.smithStoryChapter();
+			case "fraguas_lejanas" -> this.farForgesChapter();
 			case "bastion" -> this.bastionChapter();
 			case "portal_estelar" -> this.starPortalChapter();
 			case "bastion_siguiente" -> this.bastionNextChapter();
@@ -951,6 +953,8 @@ public class GuideBookScreen extends Screen {
 			case "primeras_aleaciones" -> new ItemStack(ModItems.alloy("bronce"));
 			case "catalogo_aleaciones" -> new ItemStack(ModItems.alloy("acero"));
 			case "fundicion_siguiente" -> new ItemStack(Items.COMPASS);
+			case "aleaciones_lejanas" -> new ItemStack(ModItems.alloy("fatuo"));
+			case "fraguas_lejanas" -> new ItemStack(ModItems.FRAGUA_DE_ALMAS);
 			case "mayor_sabes" -> new ItemStack(Items.WRITABLE_BOOK);
 			case "mayor_siguiente" -> new ItemStack(Items.COMPASS);
 			case "clases_sabes" -> new ItemStack(Items.WRITABLE_BOOK);
@@ -1957,7 +1961,7 @@ public class GuideBookScreen extends Screen {
 	/** Every alloy at one heat: what goes in, what comes out and how much. */
 	private void alloyRecipes(List<Element> body, dev.forja.forge.Alloys.Heat heat) {
 		for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.ALL) {
-			if (recipe.heat() != heat) {
+			if (recipe.heat() != heat || !dev.forja.forge.Alloys.anywhere(recipe)) {
 				continue;
 			}
 			List<ItemStack> row = new ArrayList<>();
@@ -1967,6 +1971,31 @@ public class GuideBookScreen extends Screen {
 			row.add(recipe.result());
 			body.add(new IconRow(row));
 			body.add(new Text(Component.translatable("gui.forja.libro.aleacion_linea", recipe.displayName(), recipe.output()), INK));
+		}
+	}
+
+	/**
+	 * The alloys only a far forge makes (docs/ALEACIONES_NETHER_END.md), each under the forge that makes it: no
+	 * heat under a table reaches them, so they are not listed by heat.
+	 */
+	private void farAlloyRecipes(List<Element> body) {
+		for (dev.forja.forge.Alloys.Place place : dev.forja.forge.Alloys.Place.values()) {
+			List<dev.forja.forge.Alloys.Recipe> made = dev.forja.forge.Alloys.at(place);
+			if (place == dev.forja.forge.Alloys.Place.ANY || made.isEmpty()) {
+				continue;
+			}
+			body.add(new SubHeader(Component.translatable("gui.forja.fragua_lejana." + place.id())));
+			body.add(new Text(Component.translatable("gui.forja.fragua_lejana.donde." + place.id()), INK_SOFT));
+			for (dev.forja.forge.Alloys.Recipe recipe : made) {
+				List<ItemStack> row = new ArrayList<>();
+				for (dev.forja.forge.Alloys.Part part : recipe.inputs()) {
+					row.add(new ItemStack(part.item().get(), part.count()));
+				}
+				row.add(recipe.result());
+				body.add(new IconRow(row));
+				body.add(new Text(Component.translatable("gui.forja.libro.aleacion_linea", recipe.displayName(), recipe.output()), INK));
+			}
+			body.add(new Spacer(3));
 		}
 	}
 
@@ -1983,6 +2012,7 @@ public class GuideBookScreen extends Screen {
 			this.alloyRecipes(body, heat);
 			body.add(new Spacer(3));
 		}
+		this.farAlloyRecipes(body);
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.aleaciones_comparar")));
 		List<Bar> durability = new ArrayList<>();
 		for (ForgeMaterial material : List.of(ForgeMaterial.HIERRO, ForgeMaterial.BRONCE, ForgeMaterial.ACERO,
@@ -2087,9 +2117,37 @@ public class GuideBookScreen extends Screen {
 			new Text(Component.translatable("gui.forja.libro.bestiario.guardian_de_cuno", Math.round(dev.forja.entity.CuneGuardian.HEALTH)), INK));
 		body.add(new Divider());
 		body.add(new SubHeader(Component.translatable("gui.forja.libros.ruinas.nether.titulo")));
-		body.add(new IconRow(List.of(new ItemStack(Items.POLISHED_BLACKSTONE_BRICKS), new ItemStack(ModItems.FRAGUA_APAGADA),
-			new ItemStack(ModItems.MENSULA_ESTELAR))));
-		body.add(new Text(Component.translatable("gui.forja.libros.ruinas.nether"), INK));
+		body.add(new IconRow(List.of(new ItemStack(Items.POLISHED_BLACKSTONE_BRICKS), new ItemStack(ModItems.FRAGUA_DE_ALMAS),
+			new ItemStack(ModItems.alloy("fatuo")))));
+		body.add(new Text(Component.translatable("gui.forja.libros.ruinas.nether_almas"), INK));
+		body.add(new ChapterLink("fraguas_lejanas"));
+		return body;
+	}
+
+	/** The far forges (docs/ALEACIONES_NETHER_END.md): where each one is, what lights it and what it wakes. */
+	private List<Element> farForgesChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new SubHeader(Component.translatable("gui.forja.fragua_lejana.almas")));
+		body.add(new IconRow(List.of(new ItemStack(ModItems.FRAGUA_DE_ALMAS), new ItemStack(Items.BLAZE_ROD),
+			new ItemStack(Items.BLAZE_POWDER), new ItemStack(ModItems.alloy("fatuo")))));
+		body.add(new Text(Component.translatable("gui.forja.libros.fraguas_lejanas.almas"), INK));
+		body.add(new ChapterLink("aleaciones_lejanas"));
+		return body;
+	}
+
+	/** Book III: the alloys only a far forge makes, their recipes and what their metal does. */
+	private List<Element> farAlloysChapter() {
+		List<Element> body = new ArrayList<>();
+		body.add(new Text(Component.translatable("gui.forja.libros.aleaciones_lejanas"), INK));
+		this.farAlloyRecipes(body);
+		for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.ALL) {
+			ForgeMaterial material = dev.forja.forge.Alloys.anywhere(recipe) ? null : ForgeMaterial.fromInput(recipe.result());
+			if (material != null) {
+				body.add(new Text(Component.translatable("gui.forja.libros.aleaciones_lejanas.rasgo", material.trait.displayName(),
+					Component.translatable("trait.forja." + material.trait.id() + ".largo")), INK_SOFT));
+			}
+		}
+		body.add(new ChapterLink("fraguas_lejanas"));
 		return body;
 	}
 
@@ -2452,7 +2510,7 @@ public class GuideBookScreen extends Screen {
 			body.add(new SubHeader(Component.translatable("gui.forja.libro.calor." + heat.id())));
 			body.add(new Text(Component.translatable("gui.forja.libro.calor." + heat.id() + ".desc"), INK_SOFT));
 			for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.ALL) {
-				if (recipe.heat() != heat) {
+				if (recipe.heat() != heat || !dev.forja.forge.Alloys.anywhere(recipe)) {
 					continue;
 				}
 				List<ItemStack> row = new ArrayList<>();
@@ -2465,6 +2523,7 @@ public class GuideBookScreen extends Screen {
 			}
 			body.add(new Spacer(3));
 		}
+		this.farAlloyRecipes(body);
 		body.add(new Divider());
 		body.add(new SubHeader(Component.translatable("gui.forja.fundir.titulo")));
 		body.add(new IconRow(List.of(

@@ -18,6 +18,13 @@ public final class ModEffects {
 	 */
 	public static final Holder<MobEffect> SANGRADO = register("sangrado", new Bleeding());
 
+	/**
+	 * Llama fatua: the blue fire of wispfire (docs/ALEACIONES_NETHER_END.md). Magic damage, so it burns the
+	 * things fire cannot (blazes, wither skeletons, ghasts, magma cubes), and an effect rather than fire, so
+	 * water does not put it out.
+	 */
+	public static final Holder<MobEffect> LLAMA_FATUA = register("llama_fatua", new SoulFlame());
+
 	private ModEffects() {
 	}
 
@@ -26,6 +33,24 @@ public final class ModEffects {
 
 	private static Holder<MobEffect> register(String name, MobEffect effect) {
 		return Registry.registerForHolder(BuiltInRegistries.MOB_EFFECT, Forja.id(name), effect);
+	}
+
+	private static final class SoulFlame extends MobEffect {
+		private SoulFlame() {
+			super(MobEffectCategory.HARMFUL, 0x5FD3E0, ParticleTypes.SOUL_FIRE_FLAME);
+		}
+
+		@Override
+		public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
+			return duration % dev.forja.upgrade.TraitEffects.SOUL_FLAME_PERIOD == 0;
+		}
+
+		@Override
+		public boolean applyEffectTick(ServerLevel level, LivingEntity entity, int amplifier) {
+			entity.invulnerableTime = 0;
+			entity.hurtServer(level, level.damageSources().magic(), dev.forja.upgrade.TraitEffects.SOUL_FLAME_DAMAGE);
+			return true;
+		}
 	}
 
 	private static final class Bleeding extends MobEffect {

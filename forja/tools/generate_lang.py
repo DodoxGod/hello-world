@@ -2717,6 +2717,9 @@ GUI.update({
 # The guide's books (docs/LIBROS_GUIA.md) keep their texts in their own file.
 from lang_libros import BOOKS  # noqa: E402
 GUI.update(BOOKS)
+# The far forges and their alloys (docs/ALEACIONES_NETHER_END.md) keep theirs in their own file too.
+from lang_aleaciones import ALEACIONES  # noqa: E402
+GUI.update(ALEACIONES)
 # Every text of the big class trees comes from their data (tools/arboles_datos.py).
 import sys as _sys  # noqa: E402
 _sys.path.insert(0, str(Path(__file__).resolve().parent))

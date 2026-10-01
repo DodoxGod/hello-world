@@ -79,6 +79,27 @@ public class BalanceGameTests {
 		helper.succeed();
 	}
 
+	/**
+	 * Andy, 2026-10-01: the far forge alloys (docs/ALEACIONES_NETHER_END.md) must not be "better netherite", and none
+	 * may sit in more than half of the best weapons. Reads the "Aleaciones de fragua" section of the report.
+	 */
+	@GameTest(environment = ENVIRONMENT, maxTicks = 40)
+	public void aleacionesDeFraguaEnSuSitio(GameTestHelper helper) {
+		Report written = report(helper);
+		List<String> problems = new java.util.ArrayList<>();
+		for (Report.FarAlloy far : written.farAlloys) {
+			if (far.betterNetherite()) {
+				problems.add(far.material().getSerializedName() + " es netherita mejor");
+			}
+			if (far.usedIn() * 2 > far.builds()) {
+				problems.add(far.material().getSerializedName() + " está en " + far.usedIn() + " de " + far.builds() + " mejores armas");
+			}
+		}
+		helper.assertTrue(!written.farAlloys.isEmpty(), "el informe no mide ninguna aleación de fragua");
+		helper.assertTrue(problems.isEmpty(), String.join("; ", problems));
+		helper.succeed();
+	}
+
 	/** Weapon types some other type beats against every mob in every scenario when this guard was written. None. */
 	private static final java.util.Set<String> KNOWN_DOMINATED = java.util.Set.of();
 	/**

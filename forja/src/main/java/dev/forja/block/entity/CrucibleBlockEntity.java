@@ -400,6 +400,10 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 			return true;
 		}
 		for (Alloys.Recipe recipe : Alloys.POURABLE) {
+			// The far forge alloys are not the pot's business, and neither is their soul soil or chorus.
+			if (!Alloys.anywhere(recipe)) {
+				continue;
+			}
 			for (Alloys.Part part : recipe.inputs()) {
 				if (stack.is(part.item().get())) {
 					return true;
@@ -482,7 +486,7 @@ public class CrucibleBlockEntity extends BlockEntity implements WorldlyContainer
 		Pour best = null;
 		for (int index = 0; index < Alloys.POURABLE.size(); index++) {
 			Alloys.Recipe recipe = Alloys.POURABLE.get(index);
-			if (!heat.reaches(recipe.heat()) || (best != null && recipe.heat().ordinal() <= best.recipe().heat().ordinal())) {
+			if (!Alloys.anywhere(recipe) || !heat.reaches(recipe.heat()) || (best != null && recipe.heat().ordinal() <= best.recipe().heat().ordinal())) {
 				continue;
 			}
 			List<Alloys.Part> needed = new java.util.ArrayList<>(recipe.inputs());

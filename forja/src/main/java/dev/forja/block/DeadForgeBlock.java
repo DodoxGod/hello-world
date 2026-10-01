@@ -105,12 +105,27 @@ public class DeadForgeBlock extends Block {
 		if (!(level instanceof ServerLevel server) || !(player instanceof ServerPlayer smith)) {
 			return InteractionResult.SUCCESS;
 		}
+		// The Fragua caída of a world made before its forge was a soul forge (docs/ALEACIONES_NETHER_END.md): its
+		// dead forge becomes the cold soul forge it is now, not a second star portal next to the Bastion's.
+		if (dev.forja.world.RuinMood.inFallenForge(server, pos)) {
+			becomeSoulForge(server, pos);
+			smith.sendSystemMessage(Component.translatable("gui.forja.fragua_lejana.vieja"));
+			return InteractionResult.SUCCESS;
+		}
 		// It no longer wakes him (docs/HERRERO_DIMENSION.md, 1.3): he is fought in his own dimension now, and
 		// this forge opens into the frame of the portal there. The castle's own is already a frame; this is
-		// for the castles of worlds made before, and for the old ruins that carry one.
+		// for the castles of worlds made before.
 		openFrame(server, pos);
 		smith.sendSystemMessage(Component.translatable("gui.forja.fragua.abre"));
 		return InteractionResult.SUCCESS;
+	}
+
+	/** Turns the dead forge of an old Fragua caída into the cold soul forge it holds today. */
+	public static void becomeSoulForge(ServerLevel level, BlockPos pos) {
+		level.setBlockAndUpdate(pos, dev.forja.registry.ModBlocks.FRAGUA_DE_ALMAS.defaultBlockState());
+		level.playSound(null, pos, net.minecraft.sounds.SoundEvents.SOUL_ESCAPE.value(), net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 0.6F);
+		level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5,
+			20, 0.5, 0.5, 0.5, 0.02);
 	}
 
 	/**

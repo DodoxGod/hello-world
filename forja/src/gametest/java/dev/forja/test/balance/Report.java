@@ -496,6 +496,7 @@ public final class Report {
 		this.ttkTables();
 		this.difficulty();
 		this.materialsSection();
+		this.farAlloysSection();
 		this.upgradesSection();
 		this.mobs();
 		this.outliers();
@@ -1111,6 +1112,76 @@ public final class Report {
 			+ (byPair.isEmpty() ? "ninguno." : ""));
 		this.line("");
 		byPair.forEach((pair, parts) -> this.line("- " + pair + ": " + String.join(", ", parts)));
+		this.line("");
+	}
+
+	/** One far forge alloy (docs/ALEACIONES_NETHER_END.md) next to netherite, for the section and the guard. */
+	public record FarAlloy(ForgeMaterial material, String place, int usedIn, int builds, boolean betterNetherite) {
+	}
+
+	/** The far forge alloys as measured this run; BalanceGameTests.aleacionesDeFraguaEnSuSitio reads it. */
+	public final List<FarAlloy> farAlloys = new ArrayList<>();
+
+	/** A full set of plates of this material: the armour of its four pieces. */
+	private static int setArmor(ForgeMaterial material) {
+		int total = 0;
+		for (net.minecraft.world.item.equipment.ArmorType type : List.of(net.minecraft.world.item.equipment.ArmorType.HELMET,
+			net.minecraft.world.item.equipment.ArmorType.CHESTPLATE, net.minecraft.world.item.equipment.ArmorType.LEGGINGS,
+			net.minecraft.world.item.equipment.ArmorType.BOOTS)) {
+			total += material.defense(type);
+		}
+		return total;
+	}
+
+	/**
+	 * The far forge alloys (Andy, 2026-10-01): two from the Nether's soul forge and one from the End's void forge, each
+	 * only made at its own forge. None may be "netherite but better" (as good or better in head damage, durability, set
+	 * armour and toughness at once), and none may decide the best weapons the way damascus and glass steel do.
+	 */
+	private void farAlloysSection() {
+		Analysis an = this.analysis;
+		this.line("## Aleaciones de fragua frente a la netherita");
+		this.line("");
+		this.line("Las aleaciones que solo funde una fragua lejana (docs/ALEACIONES_NETHER_END.md). *¿Netherita mejor?*: igual o mejor que "
+			+ "la netherita a la vez en daño de cabeza, durabilidad, armadura del conjunto y dureza (la prueba "
+			+ "`aleacionesDeFraguaEnSuSitio` lo prohíbe, y que estén en más de la mitad de las mejores armas). *En las mejores armas*: "
+			+ "en cuántas de las mejores armas de cada tipo y escenario, con y sin pactos, entra alguna pieza suya.");
+		this.line("");
+		int builds = 0;
+		java.util.Map<ForgeMaterial, Integer> used = new java.util.EnumMap<>(ForgeMaterial.class);
+		for (Analysis.TypeReport report : an.reports.values()) {
+			for (Map<Analysis.Scenario, Analysis.Evaluated> map : List.of(report.best, report.bestWithPacts)) {
+				for (Analysis.Evaluated evaluated : map.values()) {
+					builds++;
+					for (ForgeMaterial material : java.util.EnumSet.copyOf(evaluated.build.materials)) {
+						used.merge(material, 1, Integer::sum);
+					}
+				}
+			}
+		}
+		ForgeMaterial netherite = ForgeMaterial.NETHERITA;
+		this.table("Material", "Fragua", "Rasgo", "Daño de cabeza", "Durabilidad", "Armadura del conjunto", "Dureza", "Ataque de mango",
+			"En las mejores armas", "¿Netherita mejor?");
+		this.row("netherita (referencia)", "—", "—", f(netherite.attackDamageBonus, 1), String.valueOf(netherite.durability),
+			String.valueOf(setArmor(netherite)), f(netherite.toughness, 1), f(netherite.handleAttackSpeed, 2),
+			used.getOrDefault(netherite, 0) + " de " + builds, "—");
+		this.farAlloys.clear();
+		for (dev.forja.forge.Alloys.Recipe recipe : dev.forja.forge.Alloys.ALL) {
+			if (dev.forja.forge.Alloys.anywhere(recipe)) {
+				continue;
+			}
+			ForgeMaterial material = ForgeMaterial.fromInput(recipe.result());
+			if (material == null) {
+				continue;
+			}
+			boolean better = material.attackDamageBonus >= netherite.attackDamageBonus && material.durability >= netherite.durability
+				&& setArmor(material) >= setArmor(netherite) && material.toughness >= netherite.toughness;
+			FarAlloy far = new FarAlloy(material, dev.forja.forge.Alloys.place(recipe).id(), used.getOrDefault(material, 0), builds, better);
+			this.farAlloys.add(far);
+			this.row(material.getSerializedName(), far.place(), material.trait.id(), f(material.attackDamageBonus, 1),
+				String.valueOf(material.durability), String.valueOf(setArmor(material)), f(material.toughness, 1),
+				f(material.handleAttackSpeed, 2), far.usedIn() + " de " + builds, better ? "**sí**" : "no");
+		}
 		this.line("");
 	}
 

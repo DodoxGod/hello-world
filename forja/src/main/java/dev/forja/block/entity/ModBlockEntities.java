@@ -105,6 +105,16 @@ public final class ModBlockEntities {
 		new BlockEntityType<>(BoilerBlockEntity::new, java.util.Set.of(ModBlocks.CALDERA, ModBlocks.DEPOSITO_DE_CALOR))
 	);
 
+	private static final ResourceKey<BlockEntityType<?>> FRAGUA_LEJANA_KEY =
+		ResourceKey.create(Registries.BLOCK_ENTITY_TYPE, Forja.id("fragua_lejana"));
+
+	/** The far forges' hearth (docs/ALEACIONES_NETHER_END.md): the soul forge and the void forge share one. */
+	public static final BlockEntityType<FarForgeBlockEntity> FRAGUA_LEJANA = Registry.register(
+		BuiltInRegistries.BLOCK_ENTITY_TYPE,
+		FRAGUA_LEJANA_KEY,
+		new BlockEntityType<>(FarForgeBlockEntity::new, java.util.Set.of(ModBlocks.FRAGUA_DE_ALMAS))
+	);
+
 	private ModBlockEntities() {
 	}
 

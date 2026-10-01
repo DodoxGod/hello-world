@@ -281,8 +281,11 @@ public class ForjaJeiPlugin implements IModPlugin {
 		public void draw(Alloys.Recipe recipe, IRecipeSlotsView slots, GuiGraphicsExtractor graphics, double mouseX, double mouseY) {
 			var font = net.minecraft.client.Minecraft.getInstance().font;
 			graphics.text(font, recipe.displayName(), 1, 1, 0xFF404040, false);
-			// "The table is X" is a lie for white heat, where there is no table that will do.
-			Component where = recipe.heat() == Alloys.Heat.FORJA_BLANCA
+			// "The table is X" is a lie for white heat, where there is no table that will do, and for the far forge
+			// alloys, which no table and no crucible make at all (docs/ALEACIONES_NETHER_END.md).
+			Component where = !Alloys.anywhere(recipe)
+				? Component.translatable("gui.forja.jei.fragua_lejana." + Alloys.place(recipe).id())
+				: recipe.heat() == Alloys.Heat.FORJA_BLANCA
 				? Component.translatable("gui.forja.calor.crisol")
 				: Component.translatable("gui.forja.calor", recipe.heat().displayName());
 			graphics.text(font, where, 1, 10, 0xFF804000, false);

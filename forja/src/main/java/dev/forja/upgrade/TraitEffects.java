@@ -103,6 +103,42 @@ public final class TraitEffects {
 		if (melee && resin > 0) {
 			attacker.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 20 * resin, 0), victim);
 		}
+		// Espectral: the blue fire goes with every blow, and from the plate to whoever hits it.
+		if (parts != null && !weapon.isBroken() && parts.hasTrait(ForgeMaterial.Trait.ESPECTRAL)) {
+			ForgeType.Kind kind = parts.type().kind;
+			if ((melee && (kind == ForgeType.Kind.WEAPON || kind == ForgeType.Kind.TOOL))
+				|| (kind == ForgeType.Kind.RANGED && source.getDirectEntity() instanceof AbstractArrow)) {
+				soulFlame(level, victim, attacker, SOUL_FLAME_TICKS);
+			}
+		}
+		int spectral = armorPieces(victim, ForgeMaterial.Trait.ESPECTRAL);
+		if (melee && spectral > 0) {
+			soulFlame(level, attacker, victim, SOUL_FLAME_ARMOR_TICKS * spectral);
+		}
+	}
+
+	// ------------------------------------------------------------------ the far forge alloys
+	/** How long a blow of wispfire leaves the blue fire on what it hit. */
+	public static final int SOUL_FLAME_TICKS = 80;
+	/** How long it goes to an attacker, per piece of wispfire armor it struck. */
+	public static final int SOUL_FLAME_ARMOR_TICKS = 20;
+	/** What the blue fire takes each time it bites, and how often. */
+	public static final float SOUL_FLAME_DAMAGE = 1.0F;
+	public static final int SOUL_FLAME_PERIOD = 40;
+
+	/**
+	 * Sets the blue fire on something, or keeps it burning: a new blow renews it, it never stacks. Magic, so it
+	 * burns what fire cannot; an effect, so water does not put it out.
+	 */
+	public static void soulFlame(ServerLevel level, LivingEntity victim, LivingEntity source, int ticks) {
+		if (!victim.isAlive()) {
+			return;
+		}
+		MobEffectInstance burning = victim.getEffect(dev.forja.registry.ModEffects.LLAMA_FATUA);
+		if (burning == null || burning.getDuration() < ticks) {
+			victim.addEffect(new MobEffectInstance(dev.forja.registry.ModEffects.LLAMA_FATUA, ticks, 0), source);
+		}
+		level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, victim.getX(), victim.getY(0.6), victim.getZ(), 6, 0.25, 0.35, 0.25, 0.01);
 	}
 
 	// ------------------------------------------------------------------ the foundry alloys

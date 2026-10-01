@@ -131,8 +131,50 @@ public final class Alloys {
 		/** Moon steel: the same trick the other way round. It wakes up when the sun goes down. */
 		new Recipe("lunacero", Heat.FORJA_BLANCA, List.of(new Part(() -> ModItems.alloy("obsidiacero"), 1), new Part(() -> Items.ECHO_SHARD, 3)), 1),
 		/** Living steel: the smith's own heart melted into damascus. The last metal in the mod. */
-		new Recipe("acero_vivo", Heat.FORJA_BLANCA, List.of(new Part(() -> ModItems.CORAZON_DE_FORJA, 1), new Part(() -> ModItems.alloy("damasco"), 2)), 1)
+		new Recipe("acero_vivo", Heat.FORJA_BLANCA, List.of(new Part(() -> ModItems.CORAZON_DE_FORJA, 1), new Part(() -> ModItems.alloy("damasco"), 2)), 1),
+
+		// ---- the far forges (docs/ALEACIONES_NETHER_END.md): only the one forge of their own makes them, see
+		// place(). The heat is what they read as in the guide and the crucible's melting; no table reaches them.
+		/** Wispfire: iron and netherite scrap run through soul soil in blue fire. It burns what does not burn. */
+		new Recipe("fatuo", Heat.FUNDIDA, List.of(new Part(() -> Items.IRON_INGOT, 2), new Part(() -> Items.NETHERITE_SCRAP, 1),
+			new Part(() -> Items.SOUL_SOIL, 4)), 2)
 	);
+
+	/**
+	 * Where an alloy can be made. Almost all of them anywhere that is hot enough; the far forge alloys only at
+	 * their own forge (block/FarForgeBlock), which is the whole reason to go to the ruin that holds it.
+	 */
+	public enum Place {
+		/** A forge table, the assembler or a crucible, at the heat the recipe asks. */
+		ANY,
+		/** The soul forge of the Fragua caída, lit, in the Nether. */
+		ALMAS,
+		/** The void forge of the End ruin, lit, in the End. */
+		VACIO;
+
+		public String id() {
+			return this.name().toLowerCase(Locale.ROOT);
+		}
+	}
+
+	private static final java.util.Map<String, Place> PLACES = java.util.Map.of(
+		"fatuo", Place.ALMAS
+	);
+
+	/** Where this alloy is made. */
+	public static Place place(Recipe recipe) {
+		return PLACES.getOrDefault(recipe.id(), Place.ANY);
+	}
+
+	/** Whether a table or a crucible may make it at all. */
+	public static boolean anywhere(Recipe recipe) {
+		return place(recipe) == Place.ANY;
+	}
+
+	/** The alloys one far forge makes, in the order of {@link #ALL}. */
+	public static List<Recipe> at(Place place) {
+		return ALL.stream().filter(recipe -> place(recipe) == place).toList();
+	}
 
 	/**
 	 * What the crucible pours that is <b>not</b> an alloy.
@@ -267,7 +309,7 @@ public final class Alloys {
 	public static @Nullable Recipe match(List<ItemStack> inputs, Heat heat) {
 		Recipe best = null;
 		for (Recipe recipe : POURABLE) {
-			if (!heat.reaches(recipe.heat()) || !matches(recipe, inputs)) {
+			if (!anywhere(recipe) || !heat.reaches(recipe.heat()) || !matches(recipe, inputs)) {
 				continue;
 			}
 			if (best == null || recipe.heat().ordinal() > best.heat().ordinal()) {

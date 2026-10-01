@@ -143,7 +143,15 @@ public enum ForgeMaterial implements StringRepresentable {
 	 * docs/HERRERO_DIMENSION.md, 1.4.
 	 */
 	ORICALCO(0xCFD45A, alloyTag("oricalco"), null, true, 1650, 8.5F, 3.5F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
-		30, 1.30F, 0.15F, 1.10F, new int[]{3, 6, 8, 3}, 36, 2.5F, 0.05F, SoundEvents.ARMOR_EQUIP_GOLD, Trait.ASTRAL);
+		30, 1.30F, 0.15F, 1.10F, new int[]{3, 6, 8, 3}, 36, 2.5F, 0.05F, SoundEvents.ARMOR_EQUIP_GOLD, Trait.ASTRAL),
+	// ------------------------------------------- the far forge alloys (docs/ALEACIONES_NETHER_END.md)
+	/**
+	 * Wispfire: iron and netherite scrap run through soul soil at the soul forge of the Fragua caída, and
+	 * nowhere else. Below damascus and netherite in every number netherite sets; what it has is a fire that
+	 * burns blazes, wither skeletons and ghasts, which nothing else in the mod does.
+	 */
+	FATUO(0x3A5466, alloyTag("fatuo"), null, true, 1000, 8.0F, 3.0F, BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
+		18, 1.25F, 0.10F, 1.05F, new int[]{3, 6, 7, 3}, 30, 2.0F, 0F, SoundEvents.ARMOR_EQUIP_NETHERITE, Trait.ESPECTRAL);
 
 	/** A material's special effect, active when any part of the item uses it. */
 	public enum Trait {
@@ -185,7 +193,9 @@ public enum ForgeMaterial implements StringRepresentable {
 		/** It feeds: every kill mends it, and once it is whole the rest goes to you. */
 		VIVO,
 		/** The Guild's metal: mana comes back faster for each piece of it worn or held, twice as fast beside star iron. */
-		ASTRAL;
+		ASTRAL,
+		/** It burns blue: its flame hurts what fire cannot and water does not put it out. Armor gives it to attackers. */
+		ESPECTRAL;
 
 		public String id() {
 			return this.name().toLowerCase(Locale.ROOT);

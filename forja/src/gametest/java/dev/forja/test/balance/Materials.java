@@ -24,7 +24,7 @@ public final class Materials {
 	/** Traits that change what a blow does to one foe; the rest are ties as far as killing goes. */
 	public static final Set<ForgeMaterial.Trait> COMBAT_TRAITS = EnumSet.of(
 		ForgeMaterial.Trait.AFILADO, ForgeMaterial.Trait.IGNEO, ForgeMaterial.Trait.RESONANTE,
-		ForgeMaterial.Trait.ACUATICO, ForgeMaterial.Trait.DIAFANO);
+		ForgeMaterial.Trait.ACUATICO, ForgeMaterial.Trait.DIAFANO, ForgeMaterial.Trait.ESPECTRAL);
 
 	private Materials() {
 	}

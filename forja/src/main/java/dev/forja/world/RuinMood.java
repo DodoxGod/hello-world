@@ -82,6 +82,11 @@ public final class RuinMood {
 		return found[0];
 	}
 
+	/** Whether this spot is inside a Fragua caída, the Nether ruin whose forge is the soul forge. */
+	public static boolean inFallenForge(ServerLevel level, net.minecraft.core.BlockPos pos) {
+		return ruinAt(level, pos) == FRAGUA_CAIDA;
+	}
+
 	/** The three that were built in a workshop, and so the three a construct might still be guarding. */
 	public static boolean isWorkshop(@Nullable ResourceKey<Structure> ruin) {
 		return ruin == FORJA_ABANDONADA || ruin == FRAGUA_CAIDA || ruin == TALLER;

@@ -177,6 +177,8 @@ GLYPHS = {
     "acero_vivo": (".#..", "####", "..#."),
     "oricalco": ("#..#", "####", "#..#"),
     "lingote_de_temple": None,
+    # The far forge alloys (docs/ALEACIONES_NETHER_END.md).
+    "fatuo": (".#..", "##.#", ".##."),
     # The vanilla metals, which have a repair kit but no Forja ingot.
     "cobre": ("#.##", "#...", "####"),
     "hierro": ("####", "#..#", "####"),
@@ -335,6 +337,14 @@ def mark_a(bar, name):
             put(x, y, colour=(186, 255, 250))
         for (x, y) in ((10, 6), (11, 6), (12, 5)):
             put(x, y, 0)
+    elif name == "fatuo":
+        # Wispfire: two tongues of soul fire standing up off the smoked steel, white at the heart.
+        for (cx, cy) in ((6, 7), (10, 5)):
+            put(cx, cy, colour=(95, 211, 224))
+            put(cx, cy - 1, colour=(214, 250, 252))
+            put(cx + 1, cy, colour=(34, 104, 150))
+            put(cx - 1, cy + 1, dark)
+            put(cx, cy + 1, colour=(34, 104, 150))
     elif name == "oricalco":
         # Oricalco: one star caught in it, as in its pearl.
         put(8, 5, colour=(255, 252, 214))

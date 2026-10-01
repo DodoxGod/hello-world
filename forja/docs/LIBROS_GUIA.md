@@ -134,7 +134,9 @@ Cada punto indica la clave de `tools/generate_lang.py`.
 6. **`aleaciones_intro`**: "las tres mejores solo en el crisol de obsidiana". Desde fundición 2 también salen con
    aliento de forja por un tubo, como dice el propio capítulo de la fundición.
 7. **`automata`**: "dos en la fragua del Nether". La estructura `fragua_caida` sigue generándose, pero su fragua ya
-   solo abre un marco de portal, y la guía no lo dice. ¿Qué pinta hoy esa ruina? (pregunta 9).
+   solo abre un marco de portal, y la guía no lo dice. ¿Qué pinta hoy esa ruina? (pregunta 9). **Resuelto
+   (2026-10-01):** su fragua es la fragua de almas de las aleaciones del Nether (`docs/ALEACIONES_NETHER_END.md`); el
+   libro VI lo cuenta en «Ruinas» y en «Las fraguas lejanas», y el III en «Aleaciones de fragua».
 8. **`mana.costes`** enseña números de la versión anterior al jugador: "la espera es de 6 tics (antes 14)". El
    "antes" es del changelog, no de la guía.
 9. **`bestiario.herrero`**: "%s de vida y tres fases. Suelta el corazón de forja… y una leyenda". Faltan la Estrella

@@ -1881,7 +1881,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 			int forges = 0;
 			int tables = 0;
 			for (BlockPos pos : BlockPos.betweenClosed(originX - 2, y - 2, fraguaZ - 2, originX + 17, y + 11, fraguaZ + 17)) {
-				forges += level.getBlockState(pos).is(dev.forja.registry.ModBlocks.FRAGUA_APAGADA) ? 1 : 0;
+				// Its forge is the cold soul forge now (docs/ALEACIONES_NETHER_END.md), not the old dead forge.
+				forges += level.getBlockState(pos).is(dev.forja.registry.ModBlocks.FRAGUA_DE_ALMAS) ? 1 : 0;
 				tables += level.getBlockState(pos).is(dev.forja.registry.ModBlocks.MESA_DE_FORJA)
 					|| level.getBlockState(pos).is(dev.forja.registry.ModBlocks.MESA_DE_PIEZAS) ? 1 : 0;
 			}
@@ -1890,8 +1891,8 @@ public class ForjaClientTest implements FabricClientGameTest {
 		int guards = server.computeOnServer(s -> connection.getServerLevel().getEntitiesOfClass(
 			dev.forja.entity.ForgeAutomaton.class, new net.minecraft.world.phys.AABB(new BlockPos(originX, y, fraguaZ)).inflate(24)
 		).size());
-		log("fragua caida: fraguas apagadas " + fallen[0] + ", mesas " + fallen[1] + ", guardias " + guards);
-		check(fallen[0] == 1, "the fallen forge should hold exactly one dead forge, got " + fallen[0]);
+		log("fragua caida: fraguas de almas " + fallen[0] + ", mesas " + fallen[1] + ", guardias " + guards);
+		check(fallen[0] == 1, "the fallen forge should hold exactly one soul forge, got " + fallen[0]);
 		check(fallen[1] == 2, "and both of his tables, got " + fallen[1]);
 		check(guards == 2, "and the two automatons guarding it, got " + guards);
 		server.runOnServer(s -> {
