@@ -268,6 +268,9 @@ public final class CaptainBrain {
 	 * order and 60 outputs, or revision 2's 253 and 68.
 	 */
 	public static String check(NetBrain net) {
+		if (net.hasNonFinite()) {
+			return net.nonFiniteProblem();
+		}
 		if (!FORMAT.equals(net.format)) {
 			return "formato '" + net.format + "': no es " + FORMAT;
 		}
@@ -332,6 +335,13 @@ public final class CaptainBrain {
 			obs = observe(g, player, now);
 		}
 		float[] logits = net.forward(obs, g.memory);
+		if (!NetBrain.finiteLogits(logits)) {
+			// Never sample from NaN: the rules' order this pass (20 passes switch the network off).
+			g.memory = new float[net.memory];
+			MobAi.badLogits(net, MobAi.V4_CAPTAIN);
+			g.protection = Captain.PROTECT_RULES;
+			return ruleOrder(g, player, now);
+		}
 		if (v2 && !(logits[MANDO_AT + 1] > logits[MANDO_AT])) {
 			// mando 0 (argmax, no temperature, no draw): the rules' order as it is, and protection by the rules
 			g.protection = Captain.PROTECT_RULES;

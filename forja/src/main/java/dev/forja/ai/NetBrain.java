@@ -63,6 +63,10 @@ public final class NetBrain {
 	private final float[] mean;
 	private final float[] std;
 	public final int memory;
+	/** How many ticks produced non-finite logits; at {@link #MAX_BAD_TICKS} the network is switched off (rules instead). */
+	private int badTicks;
+	private boolean disabled;
+	public static final int MAX_BAD_TICKS = 20;
 
 	private NetBrain(JsonObject json) {
 		this.group = json.get("grupo").getAsString();
@@ -100,6 +104,67 @@ public final class NetBrain {
 		try (Reader reader = Files.newBufferedReader(file)) {
 			return new NetBrain(JsonParser.parseReader(reader).getAsJsonObject());
 		}
+	}
+
+	/** True when any weight, bias or normalisation parameter is NaN or infinite: such a file is refused at load. */
+	public boolean hasNonFinite() {
+		for (float[][] m : new float[][][] {this.w1, this.w2, this.gruIh, this.gruHh, this.wOut}) {
+			for (float[] row : m) {
+				if (anyNonFinite(row)) {
+					return true;
+				}
+			}
+		}
+		for (float[] v : new float[][] {this.b1, this.b2, this.gruBih, this.gruBhh, this.bOut, this.mean, this.std}) {
+			if (v != null && anyNonFinite(v)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean anyNonFinite(float[] values) {
+		for (float v : values) {
+			if (!Float.isFinite(v)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** The common refusal reason for a non-finite file; every contract check starts with it. */
+	public String nonFiniteProblem() {
+		return "pesos no finitos (NaN o infinito)";
+	}
+
+	/** True when the logits are all finite and can be sampled. */
+	public static boolean finiteLogits(float[] logits) {
+		return !anyNonFinite(logits);
+	}
+
+	/**
+	 * Counts one tick of non-finite logits. Returns true exactly once, on the tick that reaches {@link #MAX_BAD_TICKS}
+	 * and switches the network off (the caller logs it).
+	 */
+	public synchronized boolean noteBadTick() {
+		if (this.disabled) {
+			return false;
+		}
+		this.badTicks++;
+		if (this.badTicks >= MAX_BAD_TICKS) {
+			this.disabled = true;
+			return true;
+		}
+		return false;
+	}
+
+	public int badTicks() {
+		return this.badTicks;
+	}
+
+	/** Switched off after too many non-finite ticks: callers treat it as no network. */
+	public boolean disabled() {
+		return this.disabled;
 	}
 
 	public int inputs() {

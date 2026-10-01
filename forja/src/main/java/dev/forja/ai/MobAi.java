@@ -260,7 +260,7 @@ public final class MobAi {
 			String problem = CaptainBrain.check(net);
 			if (problem != null) {
 				NET_PROBLEMS.put(V4_CAPTAIN, "v4: " + problem);
-				Forja.LOGGER.warn("Red de capitán v4 descartada, los grupos siguen con el capitán de reglas: {}", problem);
+				Forja.LOGGER.warn("Red de capitán v4 {} descartada, los grupos siguen con el capitán de reglas: {}", V4_CAPTAIN, problem);
 				return;
 			}
 			captain = net;
@@ -276,7 +276,7 @@ public final class MobAi {
 		if (!loaded) {
 			reload();
 		}
-		return captain;
+		return captain != null && captain.disabled() ? null : captain;
 	}
 
 	/** Why a network cannot drive a blaze, or null: the red_blaze_v1 contract, exactly (BlazeBrain.check). */
@@ -355,6 +355,9 @@ public final class MobAi {
 	 * is one size.
 	 */
 	public static String checkV4(NetBrain net) {
+		if (net.hasNonFinite()) {
+			return net.nonFiniteProblem();
+		}
 		if (!V4_FORMAT.equals(net.format)) {
 			return "formato '" + net.format + "': no es " + V4_FORMAT;
 		}
@@ -394,6 +397,9 @@ public final class MobAi {
 	 * formato, not by the names, since v4's first 280 are v3b's), and its inputs ours, in our order.
 	 */
 	public static String check(NetBrain net) {
+		if (net.hasNonFinite()) {
+			return net.nonFiniteProblem();
+		}
 		if (!v3Format(net.format)) {
 			return "formato '" + net.format + "': no es una red v1..v3" + (V4_FORMAT.equals(net.format) ? " (las v4 van en redes_v4)" : "");
 		}
@@ -442,7 +448,16 @@ public final class MobAi {
 		if (!loaded) {
 			reload();
 		}
-		return NETS.get(family);
+		NetBrain net = NETS.get(family);
+		return net != null && net.disabled() ? null : net;
+	}
+
+	/** Counts a tick of non-finite logits for this network; on the 20th it is switched off and logged once. */
+	public static void badLogits(NetBrain net, String what) {
+		if (net.noteBadTick()) {
+			Forja.LOGGER.warn("Red {} desactivada: {} ticks con salidas no finitas, se usan las reglas", what, NetBrain.MAX_BAD_TICKS);
+			NET_PROBLEMS.put(what, "desactivada: salidas no finitas en " + NetBrain.MAX_BAD_TICKS + " ticks");
+		}
 	}
 
 	public static NetBrain net(MobFamily family) {
@@ -564,7 +579,7 @@ public final class MobAi {
 		}
 		// A caster fights by the rules whatever the mode: no network has ever seen a staff or a tome, and
 		// the observation it would be fed has nothing in it that says one is in the hand.
-		NetBrain net = mind.override != null ? mind.override
+		NetBrain net = mind.override != null && !mind.override.disabled() ? mind.override
 			: mode() == Mode.REGLAS || dev.forja.entity.ai.CasterGoal.casts(mob) ? null : net(familyOf(mob));
 		int every = net != null ? Math.max(1, net.ticksPerDecision) : 1;
 		if (now - mind.decidedAt < every) {
@@ -593,21 +608,7 @@ public final class MobAi {
 			mind.memory = null;
 		}
 		if (net == null) {
-			mind.networked = false;
-			// A warned blow is a commitment (Andy): once vanilla's melee goal has warned it, the rules do not turn the mob to
-			// another tactic until it lands or misses; a stun, a feint in its first half, death or losing the target
-			// still end it (MeleeAttackGoalMixin). Before, 1 in 6 warnings was dropped, most for RODEAR mid-warning.
-			// The same for a blow TacticGoal warned under a tactic (mind.windup): its decision stays until the blow is
-			// out, or the goal would stop and drop it (nearly every one of them was, 2026-09-30).
-			Decision decision = mind.windup > 0 ? mind.decision : mind.warning ? Decision.APPROACH : RuleBrain.decide(mind, target);
-			// v4's heads by the rules too (Andy, 2026-09-29): what it carries, the bash after a block, and fury.
-			int item = MobItems.ruleItem(mind, target, now);
-			boolean bash = ShieldPlay.ruleBash(mob, mind, target, now);
-			boolean fury = RuleBrain.fury(mind, now);
-			mind.decision = item != 0 || bash || fury ? decision.withV4(item, fury, bash) : decision;
-			mind.wantsRun = MobSprint.rules(mind, target);
-			retreat(mind, target, now);
-			AiStats.count(mob, mind.decision);
+			rulesTick(mind, target, now);
 			return;
 		}
 		if (mind.memory == null || mind.memory.length != net.memory) {
@@ -641,6 +642,13 @@ public final class MobAi {
 			mask = mask(mob, mind, target, net.outputs());
 		}
 		float[] logits = net.forward(obs, mind.memory);
+		if (!NetBrain.finiteLogits(logits)) {
+			// Never sample from NaN: this tick is the rules' (counted; 20 of them switch the network off).
+			mind.resetMemory(net.memory);
+			badLogits(net, family);
+			rulesTick(mind, target, now);
+			return;
+		}
 		double temperature = CombatConfig.get().iaTemperatura * ForjaDifficulty.current().temperature * Threat.of(mob).temperature();
 		mind.decision = NetBrain.sample(logits, temperature, mind.random, mask);
 		// A network without the run head leaves running to the rules.
@@ -652,6 +660,26 @@ public final class MobAi {
 		retreat(mind, target, now);
 		AiStats.count(mob, mind.decision);
 		AiRecorder.record(mind, target, obs, mask, now);
+	}
+
+	/** The rules' decision for this tick (no network, or one whose output could not be used). */
+	private static void rulesTick(MobMind mind, Player target, long now) {
+		Mob mob = mind.mob;
+		mind.networked = false;
+		// A warned blow is a commitment (Andy): once vanilla's melee goal has warned it, the rules do not turn the mob to
+		// another tactic until it lands or misses; a stun, a feint in its first half, death or losing the target
+		// still end it (MeleeAttackGoalMixin). Before, 1 in 6 warnings was dropped, most for RODEAR mid-warning.
+		// The same for a blow TacticGoal warned under a tactic (mind.windup): its decision stays until the blow is
+		// out, or the goal would stop and drop it (nearly every one of them was, 2026-09-30).
+		Decision decision = mind.windup > 0 ? mind.decision : mind.warning ? Decision.APPROACH : RuleBrain.decide(mind, target);
+		// v4's heads by the rules too (Andy, 2026-09-29): what it carries, the bash after a block, and fury.
+		int item = MobItems.ruleItem(mind, target, now);
+		boolean bash = ShieldPlay.ruleBash(mob, mind, target, now);
+		boolean fury = RuleBrain.fury(mind, now);
+		mind.decision = item != 0 || bash || fury ? decision.withV4(item, fury, bash) : decision;
+		mind.wantsRun = MobSprint.rules(mind, target);
+		retreat(mind, target, now);
+		AiStats.count(mob, mind.decision);
 	}
 
 	/** Beyond this, running away for {@link #ABANDON_TICKS} ticks, a monster gives the fight up (v4, §4.3). */
@@ -696,6 +724,17 @@ public final class MobAi {
 		float[] obs = ObsBlaze.build(mob, target, mind);
 		boolean[] mask = BlazeBrain.mask(mob, mind, target);
 		float[] logits = net.forward(obs, mind.memory);
+		if (!NetBrain.finiteLogits(logits)) {
+			// Non-finite output: vanilla's own goals this tick, as with no network (20 ticks switch the network off).
+			mind.resetMemory(net.memory);
+			badLogits(net, MobFamily.BLAZE.file);
+			BlazePilot.release(mob, mind);
+			mind.blaze = null;
+			mind.networked = false;
+			mind.decision = Decision.APPROACH;
+			mind.wantsRun = false;
+			return;
+		}
 		double temperature = CombatConfig.get().iaTemperatura * ForjaDifficulty.current().temperature * Threat.of(mob).temperature();
 		mind.blaze = BlazeBrain.sample(logits, temperature, mind.random, mask);
 		mind.decision = mind.blaze.asDecision();

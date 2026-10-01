@@ -40,6 +40,9 @@ public final class BlazeBrain {
 	 * and the blaze keeps to its rules.
 	 */
 	public static String check(NetBrain net) {
+		if (net.hasNonFinite()) {
+			return net.nonFiniteProblem();
+		}
 		if (!ObsBlaze.FORMAT.equals(net.format)) {
 			return "formato '" + net.format + "': el blaze solo acepta " + ObsBlaze.FORMAT;
 		}
