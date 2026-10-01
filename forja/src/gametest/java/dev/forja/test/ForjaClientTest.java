@@ -193,6 +193,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// The armour pressure indicator (client/PressureHud): whole, half, broken, coming back, hidden.
+			if ("presion".equals(solo)) {
+				PressureFootage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("hud".equals(solo)) {
 				shotHudAndPools(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");

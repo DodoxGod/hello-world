@@ -44,6 +44,7 @@ public final class CombatClient {
 		CombatAnims.register();
 		HudElementRegistry.attachElementAfter(VanillaHudElements.AIR_BAR, dev.forja.Forja.id("barra_estamina"), new StaminaHud());
 		HudElementRegistry.attachElementAfter(VanillaHudElements.ARMOR_BAR, dev.forja.Forja.id("barra_mana"), new ManaHud());
+		HudElementRegistry.attachElementAfter(VanillaHudElements.ARMOR_BAR, dev.forja.Forja.id("indicador_presion"), new PressureHud());
 		HudElementRegistry.attachElementAfter(VanillaHudElements.CROSSHAIR, dev.forja.Forja.id("barra_postura"), new PostureHud());
 		HudElementRegistry.attachElementAfter(VanillaHudElements.CROSSHAIR, dev.forja.Forja.id("barra_carga"), new ChargeHud());
 	}

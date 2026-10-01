@@ -41,14 +41,8 @@ public final class StaminaHud implements HudElement {
 			changedAt = now;
 		}
 		float ratio = Math.max(0F, Math.min(1F, value / max));
-		float pressure = CombatAnims.pressure(delta.getGameTimeDeltaPartialTick(false));
 		int x = graphics.guiWidth() / 2 + 10;
 		int y = graphics.guiHeight() - 64;
-		// Pressure: a red line under the bar, as long as the armor penetration the next blows get.
-		if (pressure > 0.01F) {
-			int length = Math.round(WIDTH * Math.min(1F, pressure / 0.7F));
-			graphics.fill(x + WIDTH - length, y + HEIGHT + 2, x + WIDTH, y + HEIGHT + 3, 0xFFD8402E);
-		}
 		if (ratio >= 1F && now - changedAt > LINGER) {
 			return;
 		}
