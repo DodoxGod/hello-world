@@ -555,7 +555,7 @@ public final class Report {
 			+ "antes lo mata (cada cuántos ticks golpea, si carga, si espera a tener estamina o descansa hasta llenarla).");
 		this.line("- **Escenarios**: 0 % = sin mejoras; 50 % = pieza de potencial 50 (mejoras al 50 %, carga "
 			+ Potential.capacity(50) + "); 100 % = potencial 100 con fundente (mejoras al 100 %, carga " + Potential.capacity(100)
-			+ "). *Con pactos*: además los dos pactos de arma al 100 %, que suben el potencial " + Potential.PER_PACT + " cada uno.");
+			+ "). *Con pactos*: además los dos pactos de arma al 100 %, que suben el potencial " + Potential.PER_WEAPON_PACT + " cada uno y pesan " + Potential.WEAPON_PACT_WEIGHT + " en la carga.");
 		this.line("- **Supuestos**: el mob está quieto y no se defiende (sin escudo, sin esquiva, sin IA); el jugador sin armadura, "
 			+ "no salta (sin críticos de salto), no ataca por la espalda, apunta al centro del mob; el arma nueva (Afilado entero); "
 			+ "sin Maestría ni don; de día sin sol directo (los rasgos solar, nocturno y ascua apagados). Contra mobs bajos (arañas, "
@@ -684,7 +684,7 @@ public final class Report {
 			}
 			pactBest = Math.min(pactBest, gain[0]);
 		}
-		this.row("3", "Los pactos son ganancia pura para el daño y encima dan sitio (+" + Potential.PER_PACT + " de potencial cada uno)",
+		this.row("3", "Los pactos son ganancia pura para el daño y encima dan sitio (+" + Potential.PER_WEAPON_PACT + " de potencial y peso " + Potential.WEAPON_PACT_WEIGHT + " cada uno)",
 			pactsHelp * 2 > Analysis.TYPES.size() ? "**Confirmada**" : "Refutada",
 			"Al 50 % el potencial pasa de 50 a " + Analysis.potential(Analysis.Scenario.MEDIO, true) + " (carga "
 				+ Potential.capacity(50) + " → " + Potential.capacity(Analysis.potential(Analysis.Scenario.MEDIO, true)) + ") y el TTK baja en "
@@ -1373,8 +1373,9 @@ public final class Report {
 		}
 		if (pactType != null) {
 			this.line(n++ + ". **Los pactos en " + pactType.id() + " al 50 %: TTK " + change(pactBest) + ".** Porqué: +"
-				+ f(Upgrade.thirstDamage(1.0F) * 100, 0) + " % y +" + f(Upgrade.glassDamage(1.0F) * 100, 0) + " % de daño al atributo, peso 0, "
-				+ "sin techo, y +" + (2 * Potential.PER_PACT) + " de potencial que sube el techo de las demás de 50 a "
+				+ f(Upgrade.thirstDamage(1.0F) * 100, 0) + " % y +" + f(Upgrade.glassDamage(1.0F) * 100, 0) + " % de daño al atributo, peso "
+				+ Potential.WEAPON_PACT_WEIGHT + " cada uno, "
+				+ "sin techo, y +" + Analysis.bothPactsPotential() + " de potencial que sube el techo de las demás de 50 a "
 				+ Analysis.potential(Analysis.Scenario.MEDIO, true) + " % y la carga de " + Potential.capacity(50) + " a "
 				+ Potential.capacity(Analysis.potential(Analysis.Scenario.MEDIO, true)) + ". Lo que cuestan (hambre, durabilidad) no es daño.");
 		}

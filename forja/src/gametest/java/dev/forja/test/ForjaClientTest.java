@@ -11196,7 +11196,7 @@ public class ForjaClientTest implements FabricClientGameTest {
 		log("potencial: pacto de vidrio a " + rest[0] + " en una pieza de 45 -> potencial " + rest[1] + "; orbe 50 -> " + rest[2] + ", otro orbe 50 -> "
 			+ rest[4] + " y quedan " + rest[5] + " en el orbe; dos orbes de 50 se funden en uno de " + rest[6]);
 		check(rest[0] == 100, "a pact is outside the ceiling, got " + rest[0]);
-		check(rest[1] == 45 + dev.forja.forge.Potential.PER_PACT, "and widens it for the rest, got " + rest[1]);
+		check(rest[1] == 45 + dev.forja.forge.Potential.PER_WEAPON_PACT, "and widens it for the rest, got " + rest[1]);
 		check(rest[2] == 50 && rest[3] == 1, "an orb on a bare piece gives all it holds and is used up");
 		check(rest[4] == 55 && rest[5] > 0, "a second one stops at the potential and keeps the rest, reached " + rest[4] + " kept " + rest[5]);
 		check(rest[6] == 75, "two orbs of fifty are worth one of seventy-five, got " + rest[6]);
@@ -11303,8 +11303,9 @@ public class ForjaClientTest implements FabricClientGameTest {
 			check(dev.forja.forge.Potential.capacity(100) == 20 && dev.forja.forge.Potential.MOST_CAPACITY == 20, "and a perfect one twenty");
 			check(dev.forja.forge.Potential.weight(Upgrade.FILO) == 4 && dev.forja.forge.Potential.weight(Upgrade.CASTIGO) == 2
 				&& dev.forja.forge.Potential.weight(Upgrade.EMPUJE) == 1, "Filo weighs four, Castigo two, Empuje one");
-			check(dev.forja.forge.Potential.weight(Upgrade.PACTO_DE_VIDRIO) == 0 && dev.forja.forge.Potential.weight(Upgrade.AURORA) == 0
-				&& dev.forja.forge.Potential.weight(Upgrade.RECOCIDO) == 0, "pacts, what the sky leaves and the anneal weigh nothing");
+			check(dev.forja.forge.Potential.weight(Upgrade.PACTO_DE_VIDRIO) == 2 && dev.forja.forge.Potential.weight(Upgrade.PACTO_DE_SOMBRA) == 0
+				&& dev.forja.forge.Potential.weight(Upgrade.AURORA) == 0 && dev.forja.forge.Potential.weight(Upgrade.RECOCIDO) == 0,
+				"the weapon pacts weigh two; the other pacts, what the sky leaves and the anneal weigh nothing");
 			List<Upgrade> whole = new java.util.ArrayList<>();
 			for (Upgrade upgrade : Upgrade.values()) {
 				if (dev.forja.forge.Potential.allOrNothing(upgrade)) {

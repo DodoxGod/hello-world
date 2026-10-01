@@ -72,6 +72,49 @@ public class PactosGameTests {
 		helper.succeed();
 	}
 
+	/** The pacts of Sed and Vidrio give 5 potential and weigh 2; the other two pacts keep 10 and weigh nothing. */
+	@GameTest
+	public void weaponPactsPayForTheirRoom(GameTestHelper helper) {
+		var registries = helper.getLevel().registryAccess();
+		helper.assertTrue(Potential.PER_WEAPON_PACT == 5 && Potential.WEAPON_PACT_WEIGHT == 2, "5 de potencial y peso 2");
+		for (Upgrade pact : Upgrade.values()) {
+			if (!pact.isPact()) {
+				continue;
+			}
+			boolean weapon = pact == Upgrade.PACTO_DE_SED || pact == Upgrade.PACTO_DE_VIDRIO;
+			helper.assertTrue(Potential.weight(pact) == (weapon ? 2 : 0), pact + " pesa " + Potential.weight(pact));
+			ItemStack sword = Assembler.create(ForgeType.ESPADA, Assembler.defaultMaterials(ForgeType.ESPADA), registries);
+			int before = Potential.of(sword);
+			int load = Potential.load(sword);
+			sword = UpgradeRecipes.upgraded(sword, ForgeType.ESPADA, pact, 100, registries);
+			helper.assertTrue(Potential.of(sword) - before == (weapon ? 5 : 10),
+				pact + " suma " + (Potential.of(sword) - before) + " de potencial");
+			helper.assertTrue(Potential.load(sword) - load == (weapon ? 2 : 0), pact + " carga " + (Potential.load(sword) - load));
+		}
+		// And a weapon pact takes room like anything that weighs: a piece with none left turns it away.
+		ItemStack full = Assembler.create(ForgeType.ESPADA, Assembler.defaultMaterials(ForgeType.ESPADA), registries);
+		full.set(ModComponents.CARGA_EXTRA, 0);
+		Upgrades crowded = Upgrades.EMPTY;
+		for (Upgrade filler : List.of(Upgrade.FILO, Upgrade.VAMPIRISMO, Upgrade.PODER, Upgrade.FORTUNA, Upgrade.EXCAVACION)) {
+			if (Potential.load(crowded) + Potential.weight(filler) > Potential.capacity(full)) {
+				break;
+			}
+			crowded = crowded.with(filler, 50);
+		}
+		full.set(ModComponents.UPGRADES, crowded);
+		int free = Potential.capacity(full) - Potential.load(full);
+		if (free < Potential.WEAPON_PACT_WEIGHT) {
+			helper.assertTrue(!Potential.fits(full, Upgrade.PACTO_DE_SED), "sin sitio, el pacto de sed no cabe");
+			helper.assertTrue(Potential.ceiling(full, Upgrade.PACTO_DE_SED, null, true).limit() == Potential.Limit.LOAD,
+				"y la mesa dice que es por la carga");
+		} else {
+			helper.assertTrue(Potential.fits(full, Upgrade.PACTO_DE_SED), "con sitio, el pacto de sed cabe");
+		}
+		helper.assertTrue(Potential.ceiling(full, Upgrade.PACTO_DE_SOMBRA, null, true).limit() == Potential.Limit.NONE,
+			"el pacto de sombra no pesa y no se rechaza nunca");
+		helper.succeed();
+	}
+
 	/** Four synergies reached, three awake: the strongest, and the fourth wakes when it outgrows one. */
 	@GameTest
 	public void threeSynergiesAtMost(GameTestHelper helper) {

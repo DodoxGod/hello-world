@@ -444,9 +444,19 @@ public final class Analysis {
 		return map;
 	}
 
-	/** The potential a piece of this scenario really has: each pact on it is ten more (Potential.PER_PACT). */
+	/** The potential a piece of this scenario really has: each of the two weapon pacts on it adds Potential.pactPotential. */
 	public static int potential(Scenario scenario, boolean pacts) {
-		return Math.min(Potential.MOST, scenario.potential + (pacts ? 2 * Potential.PER_PACT : 0));
+		return Math.min(Potential.MOST, scenario.potential + (pacts ? bothPactsPotential() : 0));
+	}
+
+	/** What the two weapon pacts, Sed and Vidrio, add to the potential together. */
+	public static int bothPactsPotential() {
+		return Potential.pactPotential(Upgrade.PACTO_DE_SED) + Potential.pactPotential(Upgrade.PACTO_DE_VIDRIO);
+	}
+
+	/** What the two weapon pacts take of the load together. */
+	public static int bothPactsWeight() {
+		return Potential.weight(Upgrade.PACTO_DE_SED) + Potential.weight(Upgrade.PACTO_DE_VIDRIO);
 	}
 
 	/**
@@ -459,7 +469,8 @@ public final class Analysis {
 	public Knapsack knapsack(ForgeType type, List<ForgeMaterial> materials, Scenario scenario, boolean pacts) {
 		Knapsack knapsack = new Knapsack();
 		knapsack.potential = potential(scenario, pacts);
-		knapsack.capacity = Potential.capacity(knapsack.potential);
+		// The two pacts weigh on the load too, so the room left for everything else is what they do not take.
+		knapsack.capacity = Math.max(0, Potential.capacity(knapsack.potential) - (pacts ? bothPactsWeight() : 0));
 		knapsack.candidates = candidates(type);
 		Build base = this.build(type, materials, this.upgradeMap(List.of(), knapsack.potential, pacts));
 		knapsack.baseGeo = this.geo(base, this.search, SEARCH_RUNS, this.options);

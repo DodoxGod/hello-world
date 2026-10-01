@@ -3008,7 +3008,7 @@ public class GuideBookScreen extends Screen {
 			dev.forja.forge.Potential.FLOOR, dev.forja.forge.Potential.CAST_PARTS, dev.forja.forge.Potential.PER_QUALITY,
 			dev.forja.forge.Potential.PER_QUALITY * 2, dev.forja.forge.Potential.GREATER_TABLE, dev.forja.forge.Potential.WHOLE_WORKSHOP), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.potencial.despues",
-			dev.forja.forge.Potential.PER_PACT, dev.forja.forge.Potential.ANNEAL), INK_SOFT));
+			dev.forja.forge.Potential.PER_WEAPON_PACT, dev.forja.forge.Potential.PER_PACT, dev.forja.forge.Potential.ANNEAL), INK_SOFT));
 		body.add(new SubHeader(Component.translatable("gui.forja.libro.potencial.topes")));
 		body.add(new Text(Component.translatable("gui.forja.libro.potencial.mesas",
 			dev.forja.menu.Station.FORJA.capacity(), dev.forja.menu.Station.FORJA_MAYOR.capacity()), INK_SOFT));
@@ -3022,7 +3022,8 @@ public class GuideBookScreen extends Screen {
 		body.add(new Text(Component.translatable("gui.forja.libro.potencial.carga", dev.forja.forge.Potential.POINTS_PER_LOAD,
 			dev.forja.forge.Potential.CAPACITY_FROM, dev.forja.forge.Potential.capacity(dev.forja.forge.Potential.FLOOR),
 			dev.forja.forge.Potential.MOST_CAPACITY), INK_SOFT));
-		body.add(new Text(Component.translatable("gui.forja.libro.potencial.carga.libres", dev.forja.upgrade.Synergy.THRESHOLD), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.potencial.carga.libres", dev.forja.upgrade.Synergy.THRESHOLD,
+			dev.forja.forge.Potential.WEAPON_PACT_WEIGHT), INK_SOFT));
 		for (int weight : new int[] {4, 3, 1}) {
 			body.add(new Text(Component.translatable("gui.forja.libro.potencial.pesan", weight, namesOf(upgrade ->
 				dev.forja.forge.Potential.weight(upgrade) == weight)), INK_SOFT));

@@ -29,7 +29,7 @@ en `forge/Potential.java`** para poder tocarlos sin buscar.
 ## Decisiones (mías, revisables)
 
 - **Punto 2**, leído así: pactos y mejoras de evento van **por fuera del límite** — siempre pueden llegar al
-  100 % — y un pacto además **amplía** el potencial del objeto (+10 cada uno). Es la lectura de Codex y la
+  100 % — y un pacto además **amplía** el potencial del objeto (+10 cada uno; +5 y peso 2 los de sed y de vidrio, 2026-10-01). Es la lectura de Codex y la
   única que cuadra con «los pactos amplían el máximo a cambio de maleficios».
 - **Dos límites distintos**: *potencial* (del objeto) y *capacidad* (de la mesa). Se aplica hasta el menor.
   Ninguno de los dos **baja** nunca una mejora ya puesta: sólo impide subirla.
@@ -102,7 +102,7 @@ la mesa normal; `Potential.needsFlux` evita que un orbe o un libro de una de ell
 | Mesa | forja 0 · forja mayor +10 · taller completo +5 |
 | **Base máxima al forjar** | **95** |
 | Maestría del objeto | +1 por nivel (0–10) |
-| Pacto | +10 cada uno |
+| Pacto | +10 cada uno (sed y vidrio: +5 y peso 2 en la carga) |
 | Recocido | hasta +15 |
 | Tope | 100 |
 
@@ -142,7 +142,7 @@ Capacidad de la mesa: forja **50** · forja mayor **100** · talabartería **100
 - La mesa básica no sube nada normal del 50 % ni baja lo que ya esté por encima.
 - Subir potencial no cambia ningún porcentaje instalado.
 - Sin fundente nada normal pasa del 90 %; con él sí, y se gasta uno.
-- Pactos y mejoras de evento ignoran ambos límites; un pacto sube el potencial.
+- Pactos y mejoras de evento ignoran ambos límites; un pacto sube el potencial; los de sed y vidrio suben 5 y pesan 2.
 - Extraer quita **una** mejora y conserva piezas, calidad, firma, historial, maestría y las demás.
 - Con orbe vacío sale un orbe con el porcentaje entero; sin orbe no sale nada; nunca se duplica.
 - Libros, orbes, fusión, colada y botín respetan las mismas reglas.

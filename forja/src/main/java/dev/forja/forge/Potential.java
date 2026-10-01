@@ -49,6 +49,13 @@ public final class Potential {
 	public static final int PER_MASTERY_LEVEL = 1;
 	/** A pact is a bargain: the curse it carries buys this much more room for everything else. */
 	public static final int PER_PACT = 10;
+	/**
+	 * The two weapon pacts (Sed and Vidrio) are the dearest in damage, so they give half the room and take some of
+	 * it back: each is worth this many points of potential and weighs {@link #WEAPON_PACT_WEIGHT} on the load
+	 * (docs/REVISION_CODEX.md, Equilibrio). The other pacts keep {@link #PER_PACT} and weigh nothing.
+	 */
+	public static final int PER_WEAPON_PACT = 5;
+	public static final int WEAPON_PACT_WEIGHT = 2;
 	/** Recocido at 100 %. */
 	public static final int ANNEAL = 15;
 	/** What a piece from before any of this is taken to be, all told. */
@@ -142,9 +149,13 @@ public final class Potential {
 	 * weighs nothing: it is what spending the room on a pair buys. Inside an exclusive group the general
 	 * one is the heavy one, which is what finally gives Castigo a reason to exist beside Filo.
 	 *
-	 * <p>Pacts, what the sky leaves and the anneal weigh nothing, as they answer to no ceiling.
+	 * <p>The pacts of Sed and Vidrio weigh {@link #WEAPON_PACT_WEIGHT}; the other pacts, what the sky leaves and the
+	 * anneal weigh nothing, as they answer to no ceiling.
 	 */
 	public static int weight(Upgrade upgrade) {
+		if (isWeaponPact(upgrade)) {
+			return WEAPON_PACT_WEIGHT;
+		}
 		if (exempt(upgrade)) {
 			return 0;
 		}
@@ -160,6 +171,16 @@ public final class Potential {
 				SIRGA, CEBO -> 1;
 			default -> 2;
 		};
+	}
+
+	/** The pacts of Sed and Vidrio: the ones that add damage to a weapon, and so pay for it. */
+	public static boolean isWeaponPact(Upgrade upgrade) {
+		return upgrade == Upgrade.PACTO_DE_SED || upgrade == Upgrade.PACTO_DE_VIDRIO;
+	}
+
+	/** The potential a pact on a piece adds to it. */
+	public static int pactPotential(Upgrade pact) {
+		return isWeaponPact(pact) ? PER_WEAPON_PACT : PER_PACT;
 	}
 
 	/** How much a piece with this potential holds. */
@@ -223,7 +244,7 @@ public final class Potential {
 		Upgrades upgrades = stack.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY);
 		for (Upgrade upgrade : upgrades.percents().keySet()) {
 			if (upgrade.isPact()) {
-				total += PER_PACT;
+				total += pactPotential(upgrade);
 			}
 		}
 		total += ANNEAL * upgrades.percent(Upgrade.RECOCIDO) / 100;
@@ -239,6 +260,10 @@ public final class Potential {
 	 * Never lower than it already is: a ceiling under a number leaves the number alone.
 	 */
 	public static Ceiling ceiling(ItemStack gear, Upgrade upgrade, @Nullable Station station, boolean flux) {
+		if (isWeaponPact(upgrade) && !fits(gear, upgrade)) {
+			// No ceiling on a pact's percentage, but it takes room on the piece like anything that weighs.
+			return new Ceiling(0, Limit.LOAD);
+		}
 		if (exempt(upgrade)) {
 			return new Ceiling(MOST, Limit.NONE);
 		}
