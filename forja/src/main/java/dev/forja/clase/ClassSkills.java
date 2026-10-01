@@ -1,11 +1,15 @@
 package dev.forja.clase;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import dev.forja.combat.Posture;
 import dev.forja.combat.Stamina;
+import dev.forja.difficulty.Bosses;
 import dev.forja.entity.Shockwave;
 import dev.forja.magic.Healing;
 import dev.forja.magic.Mana;
@@ -24,6 +28,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
@@ -37,9 +42,10 @@ import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 /**
- * What the eighteen active skills do: three a class, on V, B and N (their numbers, and their II's, are in the
- * tree's file, {@link ActiveSkill#numbers}). A skill that finds nothing to do — no mob in sight to mark, not
- * enough stamina for the whirlwind — says so and does not start its wait.
+ * What the thirty active skills do: five a class — V, B, and the three ultimates of which a player learns one, all
+ * on N (their numbers, and their II's, are in the tree's file, {@link ActiveSkill#numbers}). A skill that finds
+ * nothing to do — no mob in sight to mark, not enough stamina for the whirlwind — says so and does not start its
+ * wait, and spends nothing.
  */
 public final class ClassSkills {
 	/** Something a skill does a moment later: an arrow of the rain, the meteor landing, a whirl's second turn. */
@@ -52,10 +58,22 @@ public final class ClassSkills {
 	/** Tag on a knife of the Abanico de dagas: it poisons what it hits. */
 	public static final String KNIFE_TAG = "forja_daga";
 
+	/** Segunda vida: who is warded, until when, and with what share of their health a lethal blow leaves them. */
+	private record Ward(long until, float share) {
+	}
+
+	private static final Map<UUID, Ward> WARDS = new HashMap<>();
+	/** The class's shields of absorption still standing: their cap goes when they are spent. */
+	private static final Map<LivingEntity, Boolean> SHIELDED = new java.util.WeakHashMap<>();
+	private static final net.minecraft.resources.Identifier SHIELD = dev.forja.Forja.id("escudo_de_clase");
+	/** What the skill just cast does to its own wait (Ejecución II after a kill); 1 otherwise. */
+	private static float cooldownScale = 1.0F;
+
 	private ClassSkills() {
 	}
 
 	public static void register() {
+		ServerTickEvents.END_SERVER_TICK.register(server -> SHIELDED.keySet().removeIf(ClassSkills::shieldSpent));
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			if (LATER.isEmpty()) {
 				return;
@@ -78,9 +96,15 @@ public final class ClassSkills {
 		LATER.add(new Later(level, level.getGameTime() + Math.max(1, ticks), action));
 	}
 
-	/** The skill on this key (1 V, 2 B, 3 N), if the class has it: the first always, the others once learned. */
+	/**
+	 * The skill on this key (1 V, 2 B, 3 N), if the class has it: the first always, the second once learned, and on
+	 * the third whichever of the three ultimates the player chose.
+	 */
 	public static @Nullable ActiveSkill skill(Player player, int slot) {
-		ClassData data = ClassProgress.data(player);
+		return skill(ClassProgress.data(player), slot);
+	}
+
+	public static @Nullable ActiveSkill skill(ClassData data, int slot) {
 		PlayerClass owner = data.playerClass();
 		if (owner == null) {
 			return null;
@@ -88,8 +112,13 @@ public final class ClassSkills {
 		if (slot == 1) {
 			return owner.firstSkill;
 		}
-		ClassTree.Node node = owner.tree().bySlot(slot == 2 ? ClassTree.Slot.B : ClassTree.Slot.N);
-		return node != null && data.has(node.id) ? owner.skill(slot) : null;
+		ClassTree.Tree tree = owner.tree();
+		if (slot == 2) {
+			ClassTree.Node node = tree.bySlot(ClassTree.Slot.B);
+			return node != null && data.has(node.id) ? owner.secondSkill() : null;
+		}
+		int chosen = tree.chosenUltimate(data.nodes());
+		return chosen == 0 ? null : ActiveSkill.byId(tree.ultimates.get(chosen - 1).id);
 	}
 
 	/** Ticks until the skill on this key is ready, 0 if it is. Works on the client, from the synced data. */
@@ -114,10 +143,12 @@ public final class ClassSkills {
 			player.sendOverlayMessage(Component.translatable("gui.forja.habilidad.esperando", skill.displayName(player), (wait + 19) / 20));
 			return false;
 		}
+		cooldownScale = 1.0F;
 		if (!perform(player, skill)) {
 			return false;
 		}
-		ClassProgress.set(player, ClassProgress.data(player).withReady(slot, player.level().getGameTime() + skill.cooldownTicks(player)));
+		int cooldown = Math.round(skill.cooldownTicks(player) * cooldownScale);
+		ClassProgress.set(player, ClassProgress.data(player).withReady(slot, player.level().getGameTime() + cooldown));
 		player.sendOverlayMessage(skill.displayName(player).copy().withColor(0xFF000000 | ClassProgress.clazz(player).color));
 		return true;
 	}
@@ -210,7 +241,7 @@ public final class ClassSkills {
 				}
 				player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, ActiveSkill.ticks(n[1]), 0), player);
 				if (two) {
-					player.setAbsorptionAmount(Math.max(player.getAbsorptionAmount(), n[2]));
+					shield(player, n[2]);
 				}
 				level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BELL_BLOCK, SoundSource.PLAYERS, 1.0F, 0.8F);
 				ring(level, player, n[0], 0x8C99A6);
@@ -226,6 +257,251 @@ public final class ClassSkills {
 				ring(level, player, n[1], 0xC8D0D8);
 			}
 			case EMBESTIDA_DE_ESCUDO -> charge(level, player, n, two);
+			case BRAMIDO -> {
+				List<LivingEntity> foes = hostilesAround(level, player.position(), n[0], player);
+				if (foes.isEmpty()) {
+					player.sendOverlayMessage(Component.translatable("gui.forja.habilidad.sin_objetivo"));
+					return false;
+				}
+				if (!stamina(player, n[5])) {
+					return false;
+				}
+				long now = level.getGameTime();
+				for (LivingEntity foe : foes) {
+					Posture.push(foe, n[1], now);
+					foe.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, ActiveSkill.ticks(n[2]), 0), player);
+				}
+				shield(player, Math.min(n[4], n[3] * foes.size()));
+				level.sendParticles(ParticleTypes.SONIC_BOOM, player.getX(), player.getY() + 1.2, player.getZ(), 1, 0.0, 0.0, 0.0, 0.0);
+				level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.RAVAGER_ROAR, SoundSource.PLAYERS, 1.0F, 0.7F);
+				ring(level, player, n[0], 0xC0463A);
+			}
+			case HENDEDURA -> {
+				Vec3 ahead = flatLook(player);
+				double half = Math.toRadians(n[1] / 2.0F);
+				List<LivingEntity> foes = new ArrayList<>();
+				for (LivingEntity foe : hostilesAround(level, player.position(), n[0] + 0.5F, player)) {
+					Vec3 to = foe.position().subtract(player.position()).multiply(1.0, 0.0, 1.0);
+					if (to.lengthSqr() < 0.25 || Math.acos(Math.max(-1.0, Math.min(1.0, to.normalize().dot(ahead)))) <= half) {
+						foes.add(foe);
+					}
+				}
+				if (foes.isEmpty()) {
+					player.sendOverlayMessage(Component.translatable("gui.forja.habilidad.sin_objetivo"));
+					return false;
+				}
+				if (!stamina(player, n[4])) {
+					return false;
+				}
+				float damage = (float) player.getAttributeValue(Attributes.ATTACK_DAMAGE) * n[2];
+				long now = level.getGameTime();
+				for (LivingEntity foe : foes) {
+					foe.invulnerableTime = 0;
+					foe.hurtServer(level, level.damageSources().playerAttack(player), damage);
+					Posture.push(foe, n[3], now);
+				}
+				for (int step = -4; step <= 4; step++) {
+					Vec3 p = player.position().add(ahead.yRot((float) (half * step / 4.0)).scale(n[0] * 0.7));
+					level.sendParticles(ParticleTypes.SWEEP_ATTACK, p.x, player.getY() + 1.0, p.z, 1, 0.0, 0.0, 0.0, 0.0);
+				}
+				player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+				level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_STRONG, SoundSource.PLAYERS, 1.0F, 0.6F);
+				level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.4F, 1.4F);
+			}
+			case DANZA_DE_SOMBRAS -> {
+				List<LivingEntity> foes = hostilesAround(level, player.position(), n[0], player);
+				if (foes.isEmpty()) {
+					player.sendOverlayMessage(Component.translatable("gui.forja.habilidad.sin_objetivo"));
+					return false;
+				}
+				if (!stamina(player, n[3])) {
+					return false;
+				}
+				foes.sort(Comparator.comparingDouble(foe -> foe.distanceToSqr(player)));
+				List<LivingEntity> dance = foes.subList(0, Math.min(foes.size(), Math.max(1, Math.round(n[1]))));
+				int every = 5;
+				// Resistance V: nothing gets through while the dance lasts.
+				player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, dance.size() * every + 10, 4, false, false), player);
+				float damage = (float) player.getAttributeValue(Attributes.ATTACK_DAMAGE) * n[2];
+				for (int i = 0; i < dance.size(); i++) {
+					LivingEntity foe = dance.get(i);
+					later(level, 1 + i * every, () -> {
+						if (present(player) && foe.isAlive()) {
+							behind(player, foe);
+							foe.invulnerableTime = 0;
+							foe.hurtServer(level, level.damageSources().playerAttack(player), damage);
+							level.sendParticles(ParticleTypes.LARGE_SMOKE, player.getX(), player.getY() + 1.0, player.getZ(), 10, 0.3, 0.5, 0.3, 0.02);
+							level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.PLAYERS, 0.9F, 1.3F);
+						}
+					});
+				}
+				level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ILLUSIONER_MIRROR_MOVE, SoundSource.PLAYERS, 0.8F, 0.8F);
+			}
+			case EJECUCION -> {
+				LivingEntity target = foeInSight(level, player, n[0]);
+				if (target == null) {
+					player.sendOverlayMessage(Component.translatable("gui.forja.habilidad.sin_objetivo"));
+					return false;
+				}
+				if (!stamina(player, n[3])) {
+					return false;
+				}
+				level.sendParticles(ParticleTypes.LARGE_SMOKE, player.getX(), player.getY() + 1.0, player.getZ(), 16, 0.3, 0.6, 0.3, 0.02);
+				behind(player, target);
+				float damage = (float) player.getAttributeValue(Attributes.ATTACK_DAMAGE) * n[1];
+				if (target.getHealth() < target.getMaxHealth() * n[2]) {
+					damage *= 2.0F;
+				}
+				target.invulnerableTime = 0;
+				target.hurtServer(level, level.damageSources().playerAttack(player), damage);
+				level.sendParticles(new DustParticleOptions(0x8A6BC8, 1.5F), target.getX(), target.getY() + target.getBbHeight() * 0.6, target.getZ(),
+					20, 0.3, 0.4, 0.3, 0.0);
+				level.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.PLAYERS, 1.0F, 0.7F);
+				if (two && !target.isAlive()) {
+					cooldownScale = 1.0F - n[4];
+				}
+			}
+			case GOLPE_SISMICO -> {
+				List<LivingEntity> foes = hostilesAround(level, player.position(), n[0], player);
+				if (foes.isEmpty()) {
+					player.sendOverlayMessage(Component.translatable("gui.forja.habilidad.sin_objetivo"));
+					return false;
+				}
+				if (!stamina(player, n[4])) {
+					return false;
+				}
+				long now = level.getGameTime();
+				for (LivingEntity foe : foes) {
+					foe.invulnerableTime = 0;
+					foe.hurtServer(level, level.damageSources().playerAttack(player), n[1]);
+					Posture.push(foe, n[2], now);
+					foe.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, ActiveSkill.ticks(n[3]), 1), player);
+					Vec3 away = foe.position().subtract(player.position()).multiply(1.0, 0.0, 1.0);
+					away = away.lengthSqr() < 1.0E-4 ? Vec3.ZERO : away.normalize().scale(0.4);
+					foe.setDeltaMovement(away.x, 0.55, away.z);
+					foe.hurtMarked = true;
+				}
+				Shockwave.burst(level, player.position(), n[0], 12, 0x8C99A6, 0.4F);
+				level.sendParticles(ParticleTypes.EXPLOSION, player.getX(), player.getY() + 0.2, player.getZ(), 4, n[0] * 0.3, 0.1, n[0] * 0.3, 0.0);
+				level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1.0F, 0.8F);
+			}
+			case SANTUARIO_DE_ACERO -> {
+				if (!stamina(player, n[2])) {
+					return false;
+				}
+				sanctuary(level, player, player.position(), n, two);
+				level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ANVIL_PLACE, SoundSource.PLAYERS, 0.8F, 0.6F);
+			}
+			case RELAMPAGO_EN_CADENA -> {
+				LivingEntity first = foeInSight(level, player, n[0]);
+				if (first == null) {
+					player.sendOverlayMessage(Component.translatable("gui.forja.habilidad.sin_objetivo"));
+					return false;
+				}
+				if (!mana(player, n[5])) {
+					return false;
+				}
+				chain(level, player, first, n);
+				level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 0.4F, 1.6F);
+			}
+			case PRISION_DE_HIELO -> {
+				Vec3 at = spot(level, player, n[0]);
+				List<LivingEntity> foes = hostilesAround(level, at, n[1], player);
+				if (foes.isEmpty()) {
+					player.sendOverlayMessage(Component.translatable("gui.forja.habilidad.sin_objetivo"));
+					return false;
+				}
+				if (!mana(player, n[4])) {
+					return false;
+				}
+				float damage = n[3] * ClassEffects.spellDamageMultiplier(player);
+				long now = level.getGameTime();
+				for (LivingEntity foe : foes) {
+					foe.invulnerableTime = 0;
+					foe.hurtServer(level, level.damageSources().indirectMagic(player, player), damage);
+					foe.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, ActiveSkill.ticks(n[2]), 6), player);
+					if (Bosses.isBoss(foe)) {
+						Posture.push(foe, 40.0, now);
+					} else {
+						// Staggered: whatever it was winding up is cut off.
+						Posture.breakPosture(foe, now);
+					}
+					level.sendParticles(ParticleTypes.SNOWFLAKE, foe.getX(), foe.getY() + foe.getBbHeight() * 0.5, foe.getZ(), 20, 0.4, 0.6, 0.4, 0.02);
+				}
+				level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.PACKED_ICE.defaultBlockState()), at.x, at.y + 0.3, at.z, 60,
+					n[1] * 0.4, 0.3, n[1] * 0.4, 0.0);
+				level.playSound(null, at.x, at.y, at.z, SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 1.0F, 0.6F);
+			}
+			case OLEADA_DE_VIDA -> {
+				if (!mana(player, n[4])) {
+					return false;
+				}
+				float amount = n[1] * ClassEffects.healingMultiplier(player);
+				for (LivingEntity ally : alliesAround(level, player, player.position(), n[0])) {
+					Healing.mend(level, player, ally, amount);
+					ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, ActiveSkill.ticks(n[2]), 1), player);
+					if (two) {
+						for (MobEffectInstance effect : new ArrayList<>(ally.getActiveEffects())) {
+							if (!effect.getEffect().value().isBeneficial()) {
+								ally.removeEffect(effect.getEffect());
+							}
+						}
+					}
+				}
+				for (LivingEntity foe : hostilesAround(level, player.position(), n[3], player)) {
+					Vec3 away = foe.position().subtract(player.position()).multiply(1.0, 0.0, 1.0);
+					away = away.lengthSqr() < 1.0E-4 ? new Vec3(0.0, 0.0, 1.0) : away.normalize();
+					foe.setDeltaMovement(away.x * 1.0, 0.35, away.z * 1.0);
+					foe.hurtMarked = true;
+				}
+				Shockwave.burst(level, player.position(), n[3], 12, 0x5CC46A, 0.0F);
+				ring(level, player, n[0], 0x5CC46A);
+				level.sendParticles(ParticleTypes.HEART, player.getX(), player.getY() + 1.5, player.getZ(), 12, 1.5, 0.5, 1.5, 0.0);
+				level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 1.0F, 1.4F);
+			}
+			case SEGUNDA_VIDA -> {
+				LivingEntity ally = Healing.allyInSight(level, player, n[0]);
+				LivingEntity target = ally != null ? ally : player;
+				if (!mana(player, n[3])) {
+					return false;
+				}
+				WARDS.put(target.getUUID(), new Ward(level.getGameTime() + ActiveSkill.ticks(n[1]), n[2]));
+				level.sendParticles(ParticleTypes.TOTEM_OF_UNDYING, target.getX(), target.getY() + 1.0, target.getZ(), 30, 0.4, 0.6, 0.4, 0.2);
+				level.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.PLAYERS, 1.0F, 1.2F);
+			}
+			case SAETA_LETAL -> {
+				if (!stamina(player, n[5])) {
+					return false;
+				}
+				bolt(level, player, n);
+				level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.CROSSBOW_LOADING_MIDDLE.value(), SoundSource.PLAYERS, 1.0F, 0.8F);
+			}
+			case FLECHA_EXPLOSIVA -> {
+				if (!stamina(player, n[4])) {
+					return false;
+				}
+				Vec3 at = spot(level, player, n[0]);
+				Vec3 from = player.getEyePosition();
+				for (int step = 0; step <= 16; step++) {
+					Vec3 p = from.lerp(at, step / 16.0);
+					level.sendParticles(ParticleTypes.CRIT, p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.0);
+				}
+				Arrow arrow = new Arrow(level, player, new ItemStack(Items.ARROW), null);
+				long now = level.getGameTime();
+				for (LivingEntity foe : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(n[1], 2.0, n[1]),
+					e -> e != player && e.isAlive() && !(e instanceof Player) && !Healing.ally(player, e) && e.position().distanceTo(at) <= n[1] + 0.5)) {
+					foe.invulnerableTime = 0;
+					foe.hurtServer(level, level.damageSources().arrow(arrow, player), n[2]);
+					Posture.push(foe, n[3], now);
+					Vec3 away = foe.position().subtract(at).multiply(1.0, 0.0, 1.0);
+					away = away.lengthSqr() < 1.0E-4 ? Vec3.ZERO : away.normalize().scale(0.8);
+					foe.setDeltaMovement(away.x, 0.4, away.z);
+					foe.hurtMarked = true;
+				}
+				level.sendParticles(ParticleTypes.EXPLOSION, at.x, at.y + 0.5, at.z, 4, n[1] * 0.3, 0.3, n[1] * 0.3, 0.0);
+				level.sendParticles(ParticleTypes.FLAME, at.x, at.y + 0.3, at.z, 30, n[1] * 0.4, 0.2, n[1] * 0.4, 0.02);
+				level.playSound(null, at.x, at.y, at.z, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.9F, 1.2F);
+			}
 			case NOVA_ARCANA -> {
 				float damage = n[1] * ClassEffects.spellDamageMultiplier(player);
 				Shockwave.burst(level, player.position(), n[0], 12, 0x4F7FE8, 0.6F);
@@ -309,7 +585,7 @@ public final class ClassSkills {
 			case ESCUDO_DE_LUZ -> {
 				LivingEntity ally = Healing.allyInSight(level, player, n[0]);
 				LivingEntity target = ally != null ? ally : player;
-				target.setAbsorptionAmount(Math.max(target.getAbsorptionAmount(), n[1]));
+				shield(target, n[1]);
 				target.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, ActiveSkill.ticks(n[2]), 0), player);
 				if (two) {
 					for (MobEffectInstance effect : new ArrayList<>(target.getActiveEffects())) {
@@ -371,6 +647,222 @@ public final class ClassSkills {
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Absorption from a skill or a node (Provocar II, Bramido, Escudo de luz, Égida, Milagro). Vanilla caps absorption
+	 * at the MAX_ABSORPTION attribute, 0 without an Absorption effect, so a bare setAbsorptionAmount did nothing: the
+	 * cap is raised for as long as the shield lasts, and dropped once it is spent.
+	 */
+	public static void shield(LivingEntity target, float amount) {
+		var max = target.getAttribute(Attributes.MAX_ABSORPTION);
+		if (max != null) {
+			var old = max.getModifier(SHIELD);
+			double cap = Math.max(amount, old == null ? 0.0 : Math.min(old.amount(), target.getAbsorptionAmount()));
+			max.addOrUpdateTransientModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(SHIELD, cap,
+				net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE));
+		}
+		target.setAbsorptionAmount(Math.max(target.getAbsorptionAmount(), amount));
+		SHIELDED.put(target, Boolean.TRUE);
+	}
+
+	private static boolean shieldSpent(LivingEntity target) {
+		if (target.isAlive() && !target.isRemoved() && target.getAbsorptionAmount() > 0.0F) {
+			return false;
+		}
+		var max = target.getAttribute(Attributes.MAX_ABSORPTION);
+		if (max != null) {
+			max.removeModifier(SHIELD);
+		}
+		return true;
+	}
+
+	/** Whether a player a delayed part of a skill holds on to is still there (alive, not logged out nor respawned). */
+	private static boolean present(ServerPlayer player) {
+		return player.isAlive() && !player.isRemoved();
+	}
+
+	/** The caster and their allies within reach of a point. */
+	private static List<LivingEntity> alliesAround(ServerLevel level, ServerPlayer caster, Vec3 at, double reach) {
+		List<LivingEntity> out = new ArrayList<>(level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(reach, 2.0, reach),
+			e -> e != caster && Healing.ally(caster, e) && e.position().distanceTo(at) <= reach));
+		if (caster.position().distanceTo(at) <= reach + 0.5) {
+			out.add(caster);
+		}
+		return out;
+	}
+
+	private static boolean stamina(ServerPlayer player, float amount) {
+		if (!Stamina.trySpend(player, amount)) {
+			player.sendOverlayMessage(Component.translatable("gui.forja.habilidad.sin_estamina"));
+			return false;
+		}
+		return true;
+	}
+
+	private static boolean mana(ServerPlayer player, float amount) {
+		if (!Mana.trySpend(player, amount * ClassEffects.spellCostMultiplier(player))) {
+			Mana.deny(player);
+			player.sendOverlayMessage(Component.translatable("gui.forja.habilidad.sin_mana"));
+			return false;
+		}
+		return true;
+	}
+
+	/** The hostile monsters within reach of a point, the caster left out. */
+	private static List<LivingEntity> hostilesAround(ServerLevel level, Vec3 at, double reach, Player caster) {
+		return level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(reach, 2.0, reach),
+			e -> e != caster && e.isAlive() && e instanceof Enemy && e.position().distanceTo(at) <= reach + 0.5);
+	}
+
+	private static Vec3 flatLook(Player player) {
+		Vec3 look = player.getLookAngle();
+		Vec3 flat = new Vec3(look.x, 0.0, look.z);
+		return flat.lengthSqr() < 1.0E-4 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
+	}
+
+	/** Puts the player right behind a foe (the way it faces), looking at it: what Danza de sombras and Ejecución do. */
+	private static void behind(ServerPlayer player, LivingEntity foe) {
+		double yaw = Math.toRadians(foe.getYHeadRot());
+		double back = foe.getBbWidth() / 2.0 + 0.9;
+		double x = foe.getX() + Math.sin(yaw) * back;
+		double z = foe.getZ() - Math.cos(yaw) * back;
+		player.teleportTo(x, foe.getY(), z);
+		player.lookAt(EntityAnchorArgument.Anchor.EYES, foe.getEyePosition());
+		player.hurtMarked = true;
+	}
+
+	/** Santuario de acero: every half second, the allies in the circle are shielded and mended, and hostiles thrown out. */
+	private static void sanctuary(ServerLevel level, ServerPlayer player, Vec3 at, float[] n, boolean strong) {
+		int halves = Math.max(1, Math.round(n[0] * 2.0F));
+		long end = level.getGameTime() + ActiveSkill.ticks(n[0]);
+		for (int h = 0; h < halves; h++) {
+			later(level, 1 + h * 10, () -> {
+				if (!present(player)) {
+					return;
+				}
+				ServerPlayer owner = player;
+				for (int step = 0; step < 32; step++) {
+					double angle = step * Math.PI / 16.0;
+					level.sendParticles(new DustParticleOptions(0xC8D0D8, 1.2F), at.x + Math.cos(angle) * n[1], at.y + 0.15, at.z + Math.sin(angle) * n[1],
+						1, 0.0, 0.0, 0.0, 0.0);
+				}
+				int left = (int) Math.max(20L, end - level.getGameTime());
+				for (LivingEntity ally : alliesAround(level, owner, at, n[1])) {
+					ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 15, ally == owner && strong ? 1 : 0, false, true), owner);
+					// Regeneration heals on a beat its timer keeps: given once for what is left, not refreshed every time.
+					if (!ally.hasEffect(MobEffects.REGENERATION)) {
+						ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, left, 0, false, true), owner);
+					}
+				}
+				for (LivingEntity foe : hostilesAround(level, at, n[1], owner)) {
+					Vec3 away = foe.position().subtract(at).multiply(1.0, 0.0, 1.0);
+					away = away.lengthSqr() < 1.0E-4 ? new Vec3(1.0, 0.0, 0.0) : away.normalize();
+					foe.setDeltaMovement(away.x * 0.9, 0.3, away.z * 0.9);
+					foe.hurtMarked = true;
+				}
+			});
+		}
+	}
+
+	/** Relámpago en cadena: the bolt and its leaps, each one a little weaker, never twice on the same foe. */
+	private static void chain(ServerLevel level, ServerPlayer player, LivingEntity first, float[] n) {
+		float damage = n[1] * ClassEffects.spellDamageMultiplier(player);
+		List<LivingEntity> struck = new ArrayList<>();
+		Vec3 from = player.getEyePosition();
+		LivingEntity current = first;
+		int leaps = Math.max(0, Math.round(n[2]));
+		for (int i = 0; i <= leaps && current != null; i++) {
+			Vec3 to = current.position().add(0.0, current.getBbHeight() * 0.6, 0.0);
+			for (int step = 0; step <= 10; step++) {
+				Vec3 p = from.lerp(to, step / 10.0);
+				level.sendParticles(ParticleTypes.ELECTRIC_SPARK, p.x, p.y, p.z, 2, 0.05, 0.05, 0.05, 0.0);
+			}
+			current.invulnerableTime = 0;
+			current.hurtServer(level, level.damageSources().indirectMagic(player, player), damage);
+			struck.add(current);
+			damage *= 1.0F - n[4];
+			from = to;
+			LivingEntity at = current;
+			current = null;
+			double best = Double.MAX_VALUE;
+			for (LivingEntity next : hostilesAround(level, at.position(), n[3], player)) {
+				if (!struck.contains(next) && next.distanceToSqr(at) < best) {
+					best = next.distanceToSqr(at);
+					current = next;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Saeta letal: a line of light along the look while the archer aims, then the bolt along wherever they look by
+	 * then, through everything on it up to the first wall. A projectile, for the class's factors.
+	 */
+	private static void bolt(ServerLevel level, ServerPlayer still, float[] n) {
+		int aim = Math.max(1, ActiveSkill.ticks(n[0]));
+		for (int t = 0; t < aim; t += 2) {
+			later(level, 1 + t, () -> {
+				if (present(still)) {
+					Vec3 from = still.getEyePosition();
+					Vec3 to = reach(level, still, n[1]);
+					for (int step = 1; step <= 24; step++) {
+						Vec3 p = from.lerp(to, step / 24.0);
+						level.sendParticles(ParticleTypes.END_ROD, p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.0);
+					}
+				}
+			});
+		}
+		later(level, aim, () -> {
+			if (!present(still)) {
+				return;
+			}
+			Vec3 from = still.getEyePosition();
+			Vec3 to = reach(level, still, n[1]);
+			Arrow arrow = new Arrow(level, still, new ItemStack(Items.ARROW), null);
+			for (LivingEntity foe : level.getEntitiesOfClass(LivingEntity.class, new AABB(from, to).inflate(1.0),
+				e -> e != still && e.isAlive() && !(e instanceof Player) && !Healing.ally(still, e) && e.getBoundingBox().inflate(0.3).clip(from, to).isPresent())) {
+				float damage = foe.getHealth() < foe.getMaxHealth() * n[4] ? n[2] * n[3] : n[2];
+				foe.invulnerableTime = 0;
+				foe.hurtServer(level, level.damageSources().arrow(arrow, still), damage);
+			}
+			for (int step = 1; step <= 32; step++) {
+				Vec3 p = from.lerp(to, step / 32.0);
+				level.sendParticles(ParticleTypes.CRIT, p.x, p.y, p.z, 2, 0.02, 0.02, 0.02, 0.0);
+			}
+			level.playSound(null, still.getX(), still.getY(), still.getZ(), SoundEvents.TRIDENT_THROW.value(), SoundSource.PLAYERS, 1.0F, 0.6F);
+		});
+	}
+
+	/** Where the look ends: the first wall, or {@code distance} blocks out. */
+	private static Vec3 reach(ServerLevel level, Player player, double distance) {
+		Vec3 from = player.getEyePosition();
+		Vec3 to = from.add(player.getLookAngle().scale(distance));
+		HitResult wall = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+		return wall.getType() == HitResult.Type.MISS ? to : wall.getLocation();
+	}
+
+	/**
+	 * Segunda vida: a lethal blow on someone warded leaves them standing with a share of their health instead
+	 * (ClassEvents, on the death that is about to happen). Spent by the first blow it stops.
+	 */
+	public static boolean spare(LivingEntity entity) {
+		Ward ward = WARDS.remove(entity.getUUID());
+		if (ward == null || ward.until < entity.level().getGameTime()) {
+			return false;
+		}
+		entity.setHealth(Math.max(1.0F, entity.getMaxHealth() * ward.share));
+		if (entity.level() instanceof ServerLevel level) {
+			level.sendParticles(ParticleTypes.TOTEM_OF_UNDYING, entity.getX(), entity.getY() + 1.0, entity.getZ(), 40, 0.5, 0.8, 0.5, 0.3);
+			level.playSound(null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.TOTEM_USE, SoundSource.PLAYERS, 0.6F, 1.3F);
+		}
+		return true;
+	}
+
+	/** Whether Segunda vida is still waiting on someone (tests and the tooltip). */
+	public static boolean warded(LivingEntity entity) {
+		Ward ward = WARDS.get(entity.getUUID());
+		return ward != null && ward.until >= entity.level().getGameTime();
 	}
 
 	/** One turn of the Torbellino: everything hostile around takes a share of the weapon and a shove of posture. */

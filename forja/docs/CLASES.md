@@ -6,6 +6,14 @@
 > el tope es el **nivel 50**, los niveles dan 1 o 2 puntos (70 en total) y los hitos 33 más. Lo que sigue de esta
 > página vale para la base de cada clase, sus factores de daño, el Farol, el Medallón y el maná; las tablas de ramas
 > y talentos son historia.
+>
+> **2026-09-30, después: las tres habilidades finales.** Andy: «1 habilidad por cada senda, y solo puedes escoger una
+> habilidad final, pero sí puedes mejorar las otras sendas». Cada clase tiene ahora **V** (viene con ella), **B** (en
+> la rama B del árbol) y **tres finales**, una al final de cada senda, de las que se aprende **una** para la tecla N;
+> las otras dos se cierran, pero el resto de sus sendas no. Son 18 finales (las seis N de antes y doce nuevas: Bramido,
+> Hendedura, Danza de sombras, Ejecución, Golpe sísmico, Santuario de acero, Relámpago en cadena, Prisión de hielo,
+> Oleada de vida, Segunda vida, Saeta letal y Flecha explosiva). El árbol tiene 101 nodos; lo que se puede tener cuesta
+> 117. Todo en `docs/ARBOLES.md`, «Las habilidades finales».
 
 Lo que pidió Andy (2026-09-28), lo que decidí donde había hueco y todos los números. **Los números viven en
 el código** (`clase/PlayerClass.java`, `clase/Talent.java`, `clase/ActiveSkill.java`, `clase/ClassProgress.java`,

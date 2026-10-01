@@ -16,8 +16,9 @@ import org.jspecify.annotations.Nullable;
  * time), how many times the class was changed, and the milestones reached (the player's, not the class's:
  * they stay through a change).
  *
- * <p>{@code version} is the tree's save version: 2 since the big trees. A save from before them carries the old
- * small tree's mask in {@code legacyMask}; {@link ClassProgress#migrate} reads it once and clears it.
+ * <p>{@code version} is the tree's save version: 2 since the big trees, 3 since the three ultimates (some nodes were
+ * renamed). A save from before the big trees carries the old small tree's mask in {@code legacyMask};
+ * {@link ClassProgress#migrate} reads it once and clears it, and brings a version 2 save's node names up to date.
  *
  * @param skillReady game time at which the first skill (V) can be used again
  * @param secondReady the same for the second (B)
@@ -25,7 +26,7 @@ import org.jspecify.annotations.Nullable;
  */
 public record ClassData(String clazz, int level, int xp, List<String> nodes, long skillReady, long secondReady, long thirdReady, int changes,
 	List<String> milestones, int version, int legacyMask) {
-	public static final int VERSION = 2;
+	public static final int VERSION = 3;
 	public static final ClassData NONE = new ClassData("", 0, 0, List.of(), 0L, 0L, 0L, 0, List.of(), VERSION, 0);
 
 	public static final Codec<ClassData> CODEC = RecordCodecBuilder.create(i -> i.group(
@@ -99,6 +100,11 @@ public record ClassData(String clazz, int level, int xp, List<String> nodes, lon
 		List<String> next = new ArrayList<>(this.nodes);
 		next.add(node);
 		return this.withNodes(next);
+	}
+
+	public ClassData withVersion(int version) {
+		return new ClassData(this.clazz, this.level, this.xp, this.nodes, this.skillReady, this.secondReady, this.thirdReady, this.changes, this.milestones,
+			version, this.legacyMask);
 	}
 
 	public ClassData withMilestone(String milestone) {

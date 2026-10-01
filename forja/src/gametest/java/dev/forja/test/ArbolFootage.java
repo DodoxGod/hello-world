@@ -18,7 +18,9 @@ import net.minecraft.world.item.ItemStack;
  * The big class tree (docs/ARBOLES.md) played with the mouse, for Andy to look at (FORJA_SOLO=arbol): the tree as
  * it opens, nodes learned by clicking, the wheel zooming out, a drag moving it, "Probar" planning in blue and
  * "Aplicar" learning the plan, a keystone's tooltip, the search, the milestones, the Mago's tree, the Vela del
- * olvido, and the three skills beside the hotbar. Every step that changes something is checked on the server.
+ * olvido, and the three skills beside the hotbar; then the three ultimates as a "choose one" set (shots "ultimas_*"):
+ * none chosen, one tried with "Probar", one learned with the other two locked, the candle swapping it, and every class.
+ * Every step that changes something is checked on the server.
  */
 final class ArbolFootage {
 	private ArbolFootage() {
@@ -170,7 +172,8 @@ final class ArbolFootage {
 			for (ClassTree.Milestone milestone : ClassTree.milestones()) {
 				ClassProgress.reach(player, milestone.id());
 			}
-			for (String id : List.of("mago.a1.5", "mago.b2.3", "mago.s2.lado", "mago.s3.lado", "mago.c.tronco_4", "forja.mano_firme", "forja.alma_del_metal")) {
+			for (String id : List.of("mago.a1.5", "mago.b2.3", "mago.b.habilidad_b2", "mago.s3.ultima_ii", "mago.c.tronco_4", "forja.mano_firme",
+				"forja.alma_del_metal")) {
 				ArbolGameTests.learnTo(player, id);
 			}
 		});
@@ -179,7 +182,7 @@ final class ArbolFootage {
 		context.waitForScreen(TalentTreeScreen.class);
 		context.getInput().setCursorPos(0, 0);
 		shot(context, "09_mago");
-		onNode(context, "mago.s3.4");
+		onNode(context, "mago.s3.ultima");
 		shot(context, "10_meteoro_tooltip");
 
 		// The Vela del olvido: two nodes at the edge marked in red, and taken off.
@@ -233,7 +236,7 @@ final class ArbolFootage {
 			for (ClassTree.Milestone milestone : ClassTree.milestones()) {
 				ClassProgress.reach(player, milestone.id());
 			}
-			for (String id : List.of("guerrero.a1.5", "guerrero.b2.4", "guerrero.s1.2", "guerrero.s3.lado", "guerrero.c.tronco_4", "forja.mano_firme",
+			for (String id : List.of("guerrero.a1.5", "guerrero.b2.4", "guerrero.a.habilidad_v2", "guerrero.s3.ultima_ii", "guerrero.c.tronco_4", "forja.mano_firme",
 				"forja.alma_del_metal", "forja.temple_de_campana")) {
 				ArbolGameTests.learnTo(player, id);
 			}
@@ -258,7 +261,9 @@ final class ArbolFootage {
 		shot(context, "iconos_05_cerca_senda_puente");
 		onNode(context, "guerrero.s1.puente_1");
 		shot(context, "iconos_06_tooltip_puente");
-		onNode(context, "guerrero.s1.2");
+		context.runOnClient(mc -> screen(mc).home());
+		zoomOn(context, "guerrero.a.habilidad_v2", 2.0F);
+		onNode(context, "guerrero.a.habilidad_v2");
 		shot(context, "iconos_07_tooltip_habilidad_ii");
 		context.runOnClient(mc -> screen(mc).home());
 		zoomOn(context, "guerrero.nucleo_4", 2.0F);
@@ -289,6 +294,119 @@ final class ArbolFootage {
 			context.getInput().setCursorPos(0, 0);
 			context.runOnClient(mc -> screen(mc).zoomAt(mc.getWindow().getGuiScaledWidth() * 0.4F, mc.getWindow().getGuiScaledHeight() * 0.5F, 0.8F));
 			shot(context, "iconos_clase_" + clazz.id());
+		}
+		context.runOnClient(mc -> mc.gui.setScreen(null));
+		server.runOnServer(s -> ClassProgress.clear(connection.getServerPlayer()));
+		ultimates(context, server, connection);
+	}
+
+	private static int ultimate(TestServerContext server, TestServerConnection connection) {
+		return server.computeOnServer(s -> {
+			ServerPlayer player = connection.getServerPlayer();
+			return ClassProgress.clazz(player).tree().chosenUltimate(ClassProgress.data(player).nodes());
+		});
+	}
+
+	/**
+	 * The three ultimates (docs/ARBOLES.md, "Las habilidades finales"): the set to choose from at a normal zoom, with its
+	 * icons; one picked in "Probar" and the other two locked in blue; one learned by a click and the others locked, with
+	 * the tooltip that says which was chosen; the candle taking it off; every class with one chosen. Shots "ultimas_*".
+	 */
+	private static void ultimates(ClientGameTestContext context, TestServerContext server, TestServerConnection connection) {
+		server.runOnServer(s -> {
+			ServerPlayer player = connection.getServerPlayer();
+			ClassProgress.choose(player, PlayerClass.GUERRERO);
+			ClassProgress.setLevel(player, ClassProgress.MAX_LEVEL);
+			for (String id : List.of("guerrero.s1.3", "guerrero.s2.1", "guerrero.s3.2", "guerrero.a.tronco_2", "guerrero.b.habilidad_b2")) {
+				ArbolGameTests.learnTo(player, id);
+			}
+		});
+		context.waitTicks(3);
+		context.runOnClient(mc -> mc.gui.setScreen(new TalentTreeScreen()));
+		context.waitForScreen(TalentTreeScreen.class);
+		context.getInput().setCursorPos(0, 0);
+		// As it opens: the icons at the zoom the screen starts at, and the three finals with "Final · elige una".
+		shot(context, "ultimas_01_iconos_zoom_normal");
+		context.runOnClient(mc -> screen(mc).zoomAt(mc.getWindow().getGuiScaledWidth() * 0.4F, mc.getWindow().getGuiScaledHeight() * 0.53F, 0.82F));
+		shot(context, "ultimas_02_elige_una");
+		check(ultimate(server, connection) == 0, "no ultimate chosen yet");
+
+		// "Probar": the Hendedura planned, the other two locked in the preview, and the tooltip that says why.
+		context.runOnClient(mc -> screen(mc).press("probar"));
+		for (String id : List.of("guerrero.s2.2", "guerrero.s2.3", "guerrero.s2.ultima")) {
+			clickNode(context, id);
+		}
+		check(context.computeOnClient(mc -> screen(mc).plan().contains("guerrero.s2.ultima")), "the plan should hold the Hendedura");
+		clickNode(context, "guerrero.s1.ultima");
+		check(!context.computeOnClient(mc -> screen(mc).plan().contains("guerrero.s1.ultima")), "a second ultimate cannot go in the plan");
+		context.getInput().setCursorPos(0, 0);
+		shot(context, "ultimas_03_probar_una");
+		onNode(context, "guerrero.s1.ultima");
+		shot(context, "ultimas_04_probar_tooltip_cerrada");
+		check(ultimate(server, connection) == 0, "trying spends nothing");
+		context.runOnClient(mc -> {
+			screen(mc).press("descartar");
+			screen(mc).press("probar");
+		});
+
+		// One learned with a click: the Bramido. The other two lock, their II too.
+		clickNode(context, "guerrero.s1.ultima");
+		check(ultimate(server, connection) == 1, "a click should choose the Bramido");
+		clickNode(context, "guerrero.s3.3");
+		clickNode(context, "guerrero.s3.ultima");
+		check(ultimate(server, connection) == 1 && !has(server, connection, "guerrero.s3.ultima"), "the Torbellino stays locked");
+		check(has(server, connection, "guerrero.s3.3"), "but the rest of its senda can still be learned");
+		context.getInput().setCursorPos(0, 0);
+		shot(context, "ultimas_05_elegida");
+		onNode(context, "guerrero.s3.ultima");
+		shot(context, "ultimas_06_tooltip_ya_elegiste");
+		onNode(context, "guerrero.s1.ultima");
+		shot(context, "ultimas_07_tooltip_elegida");
+		// Zoomed out to the edge: still icons, not squares.
+		context.runOnClient(mc -> screen(mc).zoomAt(mc.getWindow().getGuiScaledWidth() * 0.4F, mc.getWindow().getGuiScaledHeight() * 0.53F, 0.7F));
+		context.getInput().setCursorPos(0, 0);
+		shot(context, "ultimas_08_iconos_lejos");
+
+		// The candle takes the ultimate off, II and all, and the three are open again.
+		server.runOnServer(s -> {
+			ServerPlayer player = connection.getServerPlayer();
+			ArbolGameTests.learnTo(player, "guerrero.s1.ultima_ii");
+			player.getInventory().add(new ItemStack(ModItems.VELA_DEL_OLVIDO));
+		});
+		context.waitTicks(3);
+		context.runOnClient(mc -> mc.gui.setScreen(new TalentTreeScreen(true)));
+		context.waitForScreen(TalentTreeScreen.class);
+		clickNode(context, "guerrero.s1.ultima_ii");
+		clickNode(context, "guerrero.s1.ultima");
+		int marked = context.computeOnClient(mc -> screen(mc).forgetting().size());
+		check(marked == 2, "the candle should mark the Bramido and its II: " + marked);
+		context.getInput().setCursorPos(0, 0);
+		shot(context, "ultimas_09_vela");
+		context.runOnClient(mc -> screen(mc).press("quitar"));
+		context.waitTicks(5);
+		check(ultimate(server, connection) == 0, "the candle should free the choice");
+		context.runOnClient(mc -> mc.gui.setScreen(new TalentTreeScreen()));
+		context.waitForScreen(TalentTreeScreen.class);
+		context.getInput().setCursorPos(0, 0);
+		shot(context, "ultimas_10_libre_otra_vez");
+
+		// Every class, one ultimate chosen (a different senda each time) and the other two locked.
+		int k = 0;
+		for (PlayerClass clazz : PlayerClass.values()) {
+			int which = 1 + (k++ % 3);
+			server.runOnServer(s -> {
+				ServerPlayer player = connection.getServerPlayer();
+				ClassProgress.choose(player, clazz);
+				ClassProgress.setLevel(player, ClassProgress.MAX_LEVEL);
+				ArbolGameTests.learnTo(player, clazz.tree().ultimateNode(which, true).id);
+			});
+			context.waitTicks(3);
+			context.runOnClient(mc -> mc.gui.setScreen(new TalentTreeScreen()));
+			context.waitForScreen(TalentTreeScreen.class);
+			context.getInput().setCursorPos(0, 0);
+			context.runOnClient(mc -> screen(mc).zoomAt(mc.getWindow().getGuiScaledWidth() * 0.4F, mc.getWindow().getGuiScaledHeight() * 0.53F, 0.82F));
+			shot(context, "ultimas_clase_" + clazz.id());
+			check(ultimate(server, connection) == which, clazz + ": the ultimate " + which + " should be chosen");
 		}
 		context.runOnClient(mc -> mc.gui.setScreen(null));
 		server.runOnServer(s -> ClassProgress.clear(connection.getServerPlayer()));

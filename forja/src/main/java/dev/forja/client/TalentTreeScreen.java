@@ -46,6 +46,9 @@ import org.lwjgl.glfw.GLFW;
  * asks the server for all of them in order, "Descartar" drops them. The plan is kept while the game runs. The search
  * box lights the nodes whose name or text holds what is typed. "Hitos" lists the milestones. Opened by the Vela del
  * olvido, the screen is in its "forget" form: learned nodes at the edge are picked in red and "Quitar" takes them off.
+ *
+ * <p>The three ultimates, one at the end of each senda, are a "choose one" set: drawn as gold-rimmed diamonds with a
+ * label, and once one is learned (or planned in "Probar") the other two and their II are greyed with a padlock.
  */
 public class TalentTreeScreen extends Screen {
 	static final int HEADER = 30;
@@ -56,6 +59,8 @@ public class TalentTreeScreen extends Screen {
 	static final float ZOOM_MIN = 0.4F;
 	static final float ZOOM_MAX = 2.0F;
 	static final int BLUE = 0xFF5AA8F0;
+	/** Below this many pixels across, a node is a coloured square instead of its icon. */
+	static final float ICON_MIN_NODE = 5.0F;
 	static final int GOLD_LINE = 0xFFF0C24A;
 
 	/** The plans of "Probar", one per class, kept while the game runs. */
@@ -179,7 +184,7 @@ public class TalentTreeScreen extends Screen {
 		float r = switch (node.kind) {
 			case ORIGEN -> 13.0F;
 			case CLAVE -> 11.0F;
-			case HABILIDAD -> 10.0F;
+			case HABILIDAD -> node.isUltimate() ? 12.0F : 10.0F;
 			case NOTABLE, PUENTE -> 9.0F;
 			case FORJA -> 8.0F;
 			default -> 6.0F;
@@ -234,6 +239,11 @@ public class TalentTreeScreen extends Screen {
 		if (node.kind == ClassTree.Kind.ORIGEN || node.excludes != null && planned.has(node.excludes) || !ClassProgress.reachable(tree, planned, node)) {
 			return false;
 		}
+		// One ultimate: with another one learned or planned, this one is out (its II too).
+		int chosen = tree.chosenUltimate(planned.nodes());
+		if (node.ultimate > 0 && chosen != 0 && chosen != node.ultimate) {
+			return false;
+		}
 		this.plan().add(id);
 		return true;
 	}
@@ -285,11 +295,7 @@ public class TalentTreeScreen extends Screen {
 	}
 
 	private int forgetCost(ClassTree.Tree tree) {
-		int total = 0;
-		for (String id : this.forget) {
-			total += tree.node(id).cost;
-		}
-		return total;
+		return ClassProgress.forgetCost(tree, this.forget);
 	}
 
 	// ------------------------------------------------------------------ drawing
@@ -318,6 +324,8 @@ public class TalentTreeScreen extends Screen {
 		Set<String> matches = this.matches(tree, clazz);
 		long time = player.level().getGameTime();
 		boolean pulse = (time / 10) % 2 == 0;
+		// The ultimate learned, or else the one "Probar" picked: the other two show locked.
+		int chosen = tree.chosenUltimate(planned.nodes());
 
 		g.enableScissor(this.canvasLeft(), this.canvasTop(), this.canvasRight(), this.canvasBottom());
 		this.regionLabels(g, clazz, tree);
@@ -351,7 +359,12 @@ public class TalentTreeScreen extends Screen {
 			boolean canNow = !have && !inPlan && ClassProgress.check(data, node.id) == ClassProgress.Refusal.NONE;
 			ClassGui.NodeState state = have || inPlan ? ClassGui.NodeState.LEARNED : canNow ? ClassGui.NodeState.AVAILABLE : ClassGui.NodeState.LOCKED;
 			boolean dim = !this.search.isEmpty() && !matches.contains(node.id);
-			this.node(g, clazz, node, at[0], at[1], r, state, inPlan, canNow && pulse, dim, this.forget.contains(node.id));
+			boolean locked = node.ultimate > 0 && chosen != 0 && chosen != node.ultimate;
+			this.node(g, clazz, node, at[0], at[1], r, locked ? ClassGui.NodeState.LOCKED : state, inPlan, canNow && pulse, dim,
+				this.forget.contains(node.id), locked);
+			if (node.isUltimate()) {
+				this.ultimateLabel(g, node, at[0], at[1], r, chosen == 0 ? 0 : chosen == node.ultimate ? 1 : 2, data.has(node.id));
+			}
 			if (Math.hypot(mouseX - at[0], mouseY - at[1]) <= r + 1 && this.overCanvas(mouseX, mouseY) && !this.milestonesOpen) {
 				pointed = node;
 			}
@@ -423,23 +436,40 @@ public class TalentTreeScreen extends Screen {
 	}
 
 	private void node(GuiGraphicsExtractor g, PlayerClass clazz, ClassTree.Node node, int x, int y, float r, ClassGui.NodeState state, boolean plan,
-		boolean pulse, boolean dim, boolean forgetting) {
+		boolean pulse, boolean dim, boolean forgetting, boolean locked) {
 		boolean octagon = node.kind == ClassTree.Kind.CLAVE || node.kind == ClassTree.Kind.HABILIDAD || node.kind == ClassTree.Kind.ORIGEN;
+		boolean ultimate = node.ultimate > 0;
 		float scale = 2.0F * r / ClassGui.NODE;
 		g.pose().pushMatrix();
-		g.pose().translate(x - r, y - r);
-		g.pose().scale(scale, scale);
+		if (ultimate) {
+			// The ultimates and their II: the frame turned into a diamond, with a gold rim behind it.
+			g.pose().translate(x, y);
+			g.pose().rotate((float) (Math.PI / 4.0));
+			float side = r * 1.5F;
+			int rim = Math.round(side / 2.0F + Math.max(1.0F, r * 0.12F));
+			g.fill(-rim, -rim, rim, rim, locked ? 0xFF5A5660 : 0xFFE8B23A);
+			g.pose().scale(side / ClassGui.NODE, side / ClassGui.NODE);
+			g.pose().translate(-ClassGui.NODE / 2.0F, -ClassGui.NODE / 2.0F);
+		} else {
+			g.pose().translate(x - r, y - r);
+			g.pose().scale(scale, scale);
+		}
 		ClassGui.node(g, 0, 0, state, octagon);
 		g.pose().popMatrix();
 		int inner = Math.max(2, Math.round(r * 0.45F));
 		// What it is, in the middle: its icon (clase/TreeIcon), scaled to the node, dimmed while it is out of reach.
+		// Andy (2026-09-30): squares instead of icons at a normal zoom; now an icon whenever the node is 5 pixels or more.
 		boolean big = node.kind == ClassTree.Kind.ORIGEN || node.kind == ClassTree.Kind.HABILIDAD;
 		float size = r * (big ? 1.3F : 1.5F);
-		if (size >= 6.0F) {
+		if (2.0F * r >= ICON_MIN_NODE) {
+			size = Math.max(size, Math.min(2.0F * r, 6.0F));
 			ClassGui.treeIcon(g, this.font, node.icon, x, y, size, node.slot != null && node.slot.upgrade);
 			if (state != ClassGui.NodeState.LEARNED) {
 				int half = Math.round(size / 2.0F);
-				g.fill(x - half, y - half, x + half, y + half, state == ClassGui.NodeState.LOCKED ? 0xA0262226 : 0x40262226);
+				g.fill(x - half, y - half, x + half, y + half, locked ? 0xC0262226 : state == ClassGui.NodeState.LOCKED ? 0x70262226 : 0x30262226);
+			}
+			if (locked) {
+				padlock(g, x, y, r);
 			}
 		} else {
 			int colour = switch (node.kind) {
@@ -467,6 +497,42 @@ public class TalentTreeScreen extends Screen {
 		}
 	}
 
+	/** A padlock over a locked ultimate: a shackle and a body, sized to the node. */
+	private static void padlock(GuiGraphicsExtractor g, int x, int y, float r) {
+		int w = Math.max(3, Math.round(r * 0.55F));
+		int h = Math.max(2, Math.round(r * 0.45F));
+		int top = y - h / 2 + 1;
+		int shackle = Math.max(1, Math.round(w * 0.3F));
+		int t = Math.max(1, Math.round(r * 0.12F));
+		g.fill(x - w / 2 + 1, top - h + 1, x - w / 2 + 1 + t, top, 0xFFD8D4DC);
+		g.fill(x + w / 2 - t, top - h + 1, x + w / 2, top, 0xFFD8D4DC);
+		g.fill(x - w / 2 + 1, top - h, x + w / 2, top - h + t, 0xFFD8D4DC);
+		g.fill(x - w / 2 - 1, top, x + w / 2 + 1, top + h + 1, 0xFFD8D4DC);
+		g.fill(x - shackle / 2, top + 1, x - shackle / 2 + Math.max(1, t), top + h - 1, 0xFF2A2630);
+	}
+
+	/**
+	 * The words under an ultimate: "Final · elige una" while none is chosen, "Elegida" on the chosen one (in blue if
+	 * only planned), nothing on the locked ones (their padlock says it). Only when the node is big enough to read. Set
+	 * beside the node, square to its senda, on the side away from the bridge: out along the senda is its II.
+	 */
+	private void ultimateLabel(GuiGraphicsExtractor g, ClassTree.Node node, int x, int y, float r, int which, boolean learned) {
+		if (r < 6.0F || which == 2) {
+			return;
+		}
+		Component text = Component.translatable(which == 0 ? "gui.forja.arbol.ultima_elige" : "gui.forja.arbol.ultima_elegida");
+		int width = Math.round(this.font.width(text) * 0.75F);
+		int colour = which == 0 ? 0xFFE8B23A : learned ? ClassGui.GOLD : BLUE;
+		// The senda's direction on screen (y grows downwards), turned a quarter towards the side the bridge is not on.
+		double axis = Math.atan2(-node.y, node.x);
+		double side = axis - Math.PI / 2.0;
+		float reach = r * 1.35F + 2.0F;
+		int lx = Math.round(x + (float) Math.cos(side) * reach);
+		int ly = Math.round(y + (float) Math.sin(side) * reach) - 3;
+		int left = Math.cos(side) > 0.3 ? lx : Math.cos(side) < -0.3 ? lx - width : lx - width / 2;
+		ClassGui.small(g, this.font, text, left, ly, colour);
+	}
+
 	private static void ring(GuiGraphicsExtractor g, int x, int y, float r, int colour) {
 		int steps = 16;
 		for (int i = 0; i < steps; i++) {
@@ -481,8 +547,9 @@ public class TalentTreeScreen extends Screen {
 		String[] regions = {"A", "S1", "B", "S2", "C", "S3"};
 		float[] angles = {90, 30, -30, -90, -150, 150};
 		for (int i = 0; i < regions.length; i++) {
-			float r = regions[i].startsWith("S") ? 10.6F : 6.6F;
-			double angle = Math.toRadians(angles[i] + (regions[i].startsWith("S") ? 9 : 22));
+			// The sendas' names out past their ultimate's II, on the side away from the bridge.
+			float r = regions[i].startsWith("S") ? 9.6F : 6.6F;
+			double angle = Math.toRadians(angles[i] + (regions[i].startsWith("S") ? 10 : 22));
 			int x = Math.round(this.centreX() + (float) Math.cos(angle) * r * UNIT * this.zoom);
 			int y = Math.round(this.centreY() - (float) Math.sin(angle) * r * UNIT * this.zoom);
 			Component name = ClassTree.regionName(clazz, regions[i]);
@@ -490,7 +557,12 @@ public class TalentTreeScreen extends Screen {
 				PlayerClass to = PlayerClass.byId(tree.bridges.get(Integer.parseInt(regions[i].substring(1)) - 1));
 				name = Component.translatable("gui.forja.arbol.senda_a", name, to == null ? Component.empty() : to.displayName());
 			}
-			g.centeredText(this.font, name, x, y, 0xFFB8A8C0);
+			if (regions[i].startsWith("S")) {
+				int width = Math.round(this.font.width(name) * 0.75F);
+				ClassGui.small(g, this.font, name, x - width / 2, y, 0xFFB8A8C0);
+			} else {
+				g.centeredText(this.font, name, x, y, 0xFFB8A8C0);
+			}
 		}
 	}
 
@@ -561,16 +633,27 @@ public class TalentTreeScreen extends Screen {
 		y += 9;
 		ActiveSkill pointedSkill = null;
 		for (int slot = 1; slot <= 3; slot++) {
-			ActiveSkill skill = clazz.skill(slot);
-			boolean have = ClassSkills.skill(player, slot) == skill;
+			ActiveSkill skill = slot < 3 ? clazz.skill(slot) : ClassSkills.skill(planned, 3);
+			boolean have = skill != null && ClassSkills.skill(player, slot) == skill;
 			ClassGui.hudSlot(g, x - 2, y, have && ClassSkills.waiting(player, slot) == 0);
-			g.item(skill.icon(), x + 1, y + 3);
-			if (!have) {
+			if (skill == null) {
+				// No ultimate yet: the three to choose from, small, side by side.
+				List<ActiveSkill> ultimates = clazz.ultimates();
+				for (int i = 0; i < ultimates.size(); i++) {
+					ClassGui.item(g, ultimates.get(i).icon(), x + 1 + i * 6, y + 3 + (i % 2) * 6, 0.6F);
+				}
 				g.fill(x + 1, y + 3, x + 17, y + 19, 0x90201A16);
+				ClassGui.small(g, this.font, Component.translatable("gui.forja.arbol.ultima_ninguna"), x + 23, y + 3, ClassGui.INK_DIM);
+			} else {
+				g.item(skill.icon(), x + 1, y + 3);
+				if (!have) {
+					g.fill(x + 1, y + 3, x + 17, y + 19, 0x90201A16);
+				}
+				boolean planning = slot == 3 && !have;
+				ClassGui.small(g, this.font, skill.displayName(player), x + 23, y + 3, have ? 0xFFFFFFFF : planning ? BLUE : ClassGui.INK_DIM);
 			}
-			ClassGui.small(g, this.font, skill.displayName(player), x + 23, y + 3, have ? 0xFFFFFFFF : ClassGui.INK_DIM);
 			ClassGui.small(g, this.font, ClassClient.keyName(slot), x + 23, y + 12, ClassGui.INK_SOFT);
-			if (ClassGui.over(mouseX, mouseY, x - 2, y, width, ClassGui.HUD_SIZE)) {
+			if (skill != null && ClassGui.over(mouseX, mouseY, x - 2, y, width, ClassGui.HUD_SIZE)) {
 				pointedSkill = skill;
 			}
 			y += 25;
@@ -655,6 +738,15 @@ public class TalentTreeScreen extends Screen {
 			kind = Component.translatable("gui.forja.arbol.de_clase", kind, PlayerClass.byId(node.target).displayName());
 		}
 		lines.add(Component.translatable("gui.forja.arbol.tipo_coste", kind, node.cost).withColor(ClassGui.INK_SOFT));
+		ClassTree.Tree tree = clazz.tree();
+		int chosen = tree.chosenUltimate(planned.nodes());
+		if (node.ultimate > 0) {
+			lines.add(Component.translatable("gui.forja.arbol.ultima_info", ClassClient.keyName(3)).withColor(0xFFE8B23A));
+			if (chosen != 0 && chosen != node.ultimate) {
+				ClassTree.Node other = tree.ultimateNode(chosen, false);
+				lines.add(Component.translatable("gui.forja.arbol.ya_elegiste", other.displayName(clazz)).withColor(ClassGui.RED));
+			}
+		}
 		lines.addAll(node.effectLines(clazz));
 		// What it would do to the totals.
 		for (ClassStat.Mod mod : node.mods) {
@@ -674,12 +766,16 @@ public class TalentTreeScreen extends Screen {
 		}
 		ClassProgress.Refusal why = ClassProgress.check(data, node.id);
 		lines.add(switch (why) {
-			case NONE -> Component.translatable(this.trying ? "gui.forja.arbol.clic_probar" : "gui.forja.arbol.clic_aprender").withColor(ClassGui.GOLD);
+			case NONE -> node.ultimate > 0 && chosen != 0 && chosen != node.ultimate
+				// Free to learn, but "Probar" already picked another one.
+				? Component.translatable("gui.forja.arbol.cambiar_ultima").withColor(ClassGui.INK_SOFT)
+				: Component.translatable(this.trying ? "gui.forja.arbol.clic_probar" : "gui.forja.arbol.clic_aprender").withColor(ClassGui.GOLD);
 			case ALREADY -> Component.translatable("gui.forja.talento.no.already").withColor(ClassGui.GREEN);
 			case POINTS -> Component.translatable("gui.forja.talento.no.points", data.points()).withColor(ClassGui.RED);
+			case ULTIMATE -> Component.translatable("gui.forja.arbol.cambiar_ultima").withColor(ClassGui.INK_SOFT);
 			default -> Component.translatable("gui.forja.talento.no." + why.name().toLowerCase(Locale.ROOT)).withColor(ClassGui.RED);
 		});
-		if (why != ClassProgress.Refusal.ALREADY && why != ClassProgress.Refusal.NONE && !this.trying) {
+		if (why != ClassProgress.Refusal.ALREADY && why != ClassProgress.Refusal.NONE && why != ClassProgress.Refusal.ULTIMATE && !this.trying) {
 			lines.add(Component.translatable("gui.forja.arbol.mayus_probar").withColor(ClassGui.INK_DIM));
 		}
 		return lines;

@@ -2,7 +2,7 @@
 
 Los árboles pequeños de antes (3 ramas × 3 niveles y la habilidad B) se sustituyeron por **un árbol grande por clase**,
 con el esquema que aprobó Andy. Paso 1 (diseño) el 2026-09-30; paso 2 (construido, con las respuestas de Andy) el mismo
-día.
+día; paso 3 (las tres habilidades finales, una por senda) también el 2026-09-30.
 
 **Dónde viven los números.** Todo el árbol está en **`tools/arboles_datos.py`**: nodos, costes, habilidades, hitos,
 tope de nivel, puntos por nivel y curva de experiencia. **`tools/arboles.py`** lo coloca, lo comprueba y escribe:
@@ -17,8 +17,9 @@ tope de nivel, puntos por nivel y curva de experiencia. **`tools/arboles.py`** l
 Java.
 
 Imágenes: `E:\IA\Claude\Forja_capturas_mejoras\arbol\arbol_guerrero.png` y `arbol_mago.png` (dibujadas desde los
-datos, con una partida de nivel 50 en dorado). En la misma carpeta, `hoja_arbol.png`: la hoja de contactos de la
-prueba de cliente (`FORJA_SOLO=arbol`).
+datos, con una partida de nivel 50 en dorado y una sola final; las finales sin elegir, en gris con candado). En la
+misma carpeta, `hoja_arbol.png`: la hoja de contactos de la prueba de cliente (`FORJA_SOLO=arbol`), y en `ultimas\`,
+`hoja_ultimas.png`: la de las habilidades finales.
 
 ## Lo que pidió Andy, y lo que decidió
 
@@ -42,10 +43,14 @@ prueba de cliente (`FORJA_SOLO=arbol`).
    quedan como estaban y viven en los datos, para poder cambiar la proporción.
 10. Los hitos de la lista, más **el Warden** (como un jefe) y **la ciudad antigua**.
 11. **GearScore** cuenta los puntos gastados.
+12. Andy (2026-09-30, confirmado): «1 habilidad por cada senda, y solo puedes escoger una habilidad final, pero sí puedes
+    mejorar las otras sendas». Cada senda acaba en su propia **habilidad final** (tres por clase, 18 en total, cada una
+    con su II); solo se aprende **una**, que va a la tecla N; el resto de las otras dos sendas (menores, notables, el
+    puente y lo de la otra clase) se sigue aprendiendo. V II, B y B II salen de las sendas y pasan a las ramas A y B.
 
 ## Forma del árbol
 
-Es igual en las seis clases: 97 nodos cada una, contando los 13 de la forja.
+Es igual en las seis clases: 101 nodos cada una, contando los 13 de la forja.
 
 ```
                    clave              clave           (una de las dos: se excluyen)
@@ -56,14 +61,20 @@ Es igual en las seis clases: 97 nodos cada una, contando los 13 de la forja.
                              |
                           tronco ×3                   RAMA A (arriba)
                              |
-  senda 3 → puente    forja – PUERTA A – forja        senda 1 → puente
+  senda 3 → FINAL    forja – PUERTA A – forja        senda 1 → FINAL
+          ↘ puente                                              ↘ puente
                  puerta       |        puerta
                       \    ORIGEN     /               el origen es la clase y su habilidad V
                  puerta       |        puerta
      RAMA C (abajo izq.)  forja – puerta – forja      RAMA B (abajo dcha.)
                              |
-                     senda 2 → puente (abajo)
+                     senda 2 → FINAL (abajo)
+                             ↘ puente
 ```
+
+Cada senda: puerta, 3 nodos propios y, desde el último, dos salidas: recto, su **habilidad final** (un rombo dorado)
+con su II detrás; de lado (17° hacia la rama siguiente), el **puente** y los dos nodos de la otra clase. Así el
+puente no pasa por la final: se puede cruzar a la otra clase sin haberla elegido.
 
 - **Origen** (gratis): la clase, sus números de base y la habilidad I (V).
 - **Núcleo**: 6 puertas alrededor del origen. Todas tocan el origen y se tocan entre sí en anillo. Abren las ramas A
@@ -71,11 +82,12 @@ Es igual en las seis clases: 97 nodos cada una, contando los 13 de la forja.
 - **Región de la forja**: 13 nodos naranjas, iguales en todas las clases, en los huecos entre las puertas.
 - **Ramas** (18 nodos): tronco de 3 menores y un notable; dos caminos de 5; 2 laterales por camino. **Las dos claves
   de una rama se excluyen**: con 103 puntos se puede llegar a casi todo, así que cada rama obliga a elegir una forma de
-  jugar (decisión mía para que las claves no se apilen; ver «Equilibrio»).
-- **Sendas**: menor, notable, menor, menor; luego el puente y dos nodos de la otra clase. Llevan las habilidades:
-  - senda 1: V II;
-  - senda 2: la habilidad B y, al lado, B II;
-  - senda 3: un notable propio y, al final, la **habilidad N**, con N II al lado.
+  jugar (decisión mía para que las claves no se apilen; ver «Equilibrio»). Del segundo nodo del tronco cuelgan además
+  las habilidades normales: **V II** en la rama A y **B** (con **B II** detrás) en la rama B; son hojas, no acortan
+  ningún camino.
+- **Sendas**: 3 nodos propios (la senda 3 con su notable), y al final la **habilidad final** de esa senda con su II, y
+  el puente con los dos nodos de la otra clase. **Solo se tiene una final**: al aprender una, las otras dos y sus II
+  quedan cerradas (`ClassProgress.Refusal.ULTIMATE`); lo demás de esas sendas sigue abierto.
 - Solo se aprende un nodo pegado al origen o a algo aprendido.
 
 ### Costes (en los datos: `COST` y `SKILL_COST`)
@@ -84,15 +96,18 @@ Es igual en las seis clases: 97 nodos cada una, contando los 13 de la forja.
 |---|---|
 | Puerta, menor, notable, forja | 1 |
 | Clave | 2 |
-| Habilidad B, V II, B II, N II | 2 |
-| Habilidad N | 3 (a 7 puntos del origen) |
+| Habilidad B, V II, B II (en las ramas) | 2 (B y V II a 5 puntos, B II a 7) |
+| Habilidad final (N) | 3 (las tres a 7 puntos del origen) |
+| Su II | 2 |
 | Puente y nodos de otra clase | 2 cada uno |
 
 **El menor (+3 %)** y sus equivalencias para lo que no es un porcentaje: armadura +1, dureza +0,5, ventana de parada
 +1 tick, resistencia al empuje +5 %, regeneración de maná +0,2. La invulnerabilidad de esquiva solo la dan notables.
 
-El árbol entero cuesta **117 puntos**, y toda clave está a **11 puntos** del origen (lo comprueba la prueba
-`theTreesHoldTogether`).
+Todos los nodos juntos cuestan **127 puntos**, pero de las tres finales solo se tiene una: **lo que se puede tener cuesta
+117** (127 menos las otras dos finales con su II, 5 cada una), lo mismo que el árbol de antes. **La regla de equidad**:
+toda clave está a **11 puntos** del origen y toda final a **7** (lo comprueban `theTreesHoldTogether` y
+`tools/arboles.py`), así que ninguna clave ni ninguna final sale más barata que sus hermanas.
 
 ## Niveles, puntos e hitos
 
@@ -108,7 +123,7 @@ Andy (2026-09-30): ~87 % del árbol en el tope, subiendo el tope y bajando los p
 - **Tope de hitos: 1 por nivel de clase.** En el nivel 10 se gastan como mucho 10; los 33 desde el nivel 33. Los que
   esperan se ven en la pantalla («+N al subir de nivel»). Así quien cambia de clase con todos los hitos no empieza con
   34 puntos.
-- **En el tope: 70 + 33 = 103 puntos, el 88 % del árbol** (103 de 117).
+- **En el tope: 70 + 33 = 103 puntos, el 88 % de lo que se puede tener** (103 de 117: todo menos dos finales).
 - Los hitos se dan **con efecto retroactivo**: al entrar y cada 5 segundos se miran los logros y las estadísticas.
 
 | Hito | Puntos | Cómo se detecta |
@@ -164,22 +179,61 @@ por forjar. Un guardado que dice «herrero» se lee como **sin clase**: al entra
 gratis con K. Sus habilidades: Temple de campaña es ahora el nodo pasivo de arriba, y Forja al rojo, un nodo pasivo
 tras la forja perfecta.
 
-## Las tres habilidades
+## Las habilidades: V, B y las tres finales
 
-Teclas **V** (habilidad I, viene con la clase), **B** (senda 2) y **N** (al final de la senda 3), todas `KeyMapping`
-en «Forja: clases». La II **sustituye** los números de la habilidad (están enteros en los datos).
+Teclas **V** (habilidad I, viene con la clase), **B** (rama B) y **N** (la final que elijas), todas `KeyMapping` en
+«Forja: clases». La II **sustituye** los números de la habilidad (están enteros en los datos).
 
-| Clase | V | B | N (nueva) |
-|---|---|---|---|
-| Guerrero | Grito de guerra | Postura de hierro | **Torbellino**: golpe a todo a 3 bloques con el 80 % del arma y 30 de postura (II: dos vueltas, 45 de postura) |
-| Asesino | Paso sombrío | Marca de muerte | **Abanico de dagas**: 5 dagas en 60°, 4 de daño y Veneno I (II: 7, Veneno II) |
-| Tanque | Provocar | Baluarte | **Embestida de escudo**: carga de 6 bloques, 6 de daño, 40 de postura (II: 8 bloques, rompe la postura) |
-| Mago | Nova arcana | Concentración | **Meteoro**: tras 1,5 s, 12 de daño mágico en 3 bloques y fuego; 40 de maná (II: 16 en 4) |
-| Curandero | Pulso sanador | Resurgir | **Escudo de luz**: 6 de absorción y Resistencia I 6 s a un aliado o a ti (II: 8 y quita un mal) |
-| Arquero | Salto atrás | Lluvia de flechas | **Flecha de red**: Lentitud IV 3 s a lo que hay a 3 bloques (II: 4 bloques, 4 s, +15 % de tus flechas) |
+| Clase | V | B |
+|---|---|---|
+| Guerrero | Grito de guerra | Postura de hierro |
+| Asesino | Paso sombrío | Marca de muerte |
+| Tanque | Provocar | Baluarte |
+| Mago | Nova arcana | Concentración |
+| Curandero | Pulso sanador | Resurgir |
+| Arquero | Salto atrás | Lluvia de flechas |
 
-Todas pasan por los factores de daño de su clase: el Torbellino y la Embestida son cuerpo a cuerpo, las dagas y la red
-proyectiles, el Meteoro magia.
+### Las habilidades finales (tecla N, una de tres)
+
+Cada senda acaba en la suya, con el aire de la senda y de la clase a la que lleva su puente. Las seis N de antes son la
+final de la senda 3; las otras doce son nuevas. Fuertes, con esperas de verdad, y hechas con lo que tiene el combate
+del mod: postura (rompe guardias y corta avisos, porque un monstruo aturdido suelta su ataque), estamina, maná,
+avisos propios (la Saeta letal se ve venir) y los factores de daño de la clase. Cuestan 3 puntos y su II 2; las tres
+están a 7 puntos del origen.
+
+| Clase | Senda (puente) | Final | Qué hace | Espera | Coste | II |
+|---|---|---|---|---|---|---|
+| Guerrero | 1 grito (Tanque) | **Bramido** | los hostiles a 6 bloques: 40 de postura y Debilidad I 5 s; tú, 2 de absorción por cada uno (hasta 10) | 45 s | 30 estamina | 8 bloques, 60 de postura, 3 por cada uno (hasta 12) |
+| Guerrero | 2 hierro (Asesino) | **Hendedura** | tajo de arriba abajo al frente (3,5 bloques, 100°): 200 % del arma y 50 de postura | 30 s | 35 estamina | 250 % y 80 de postura |
+| Guerrero | 3 torbellino (Arquero) | **Torbellino** | todo a 3 bloques: 80 % del arma y 30 de postura | 30 s | 30 estamina | dos vueltas, 45 de postura |
+| Asesino | 1 sombra (Guerrero) | **Danza de sombras** | saltas a la espalda de hasta 4 enemigos a 8 bloques: 100 % del arma a cada uno (cuenta como puñalada); nada te daña mientras bailas | 40 s | 30 estamina | 6 enemigos, 120 % |
+| Asesino | 2 marca (Arquero) | **Ejecución** | apareces detrás del que miras (16 bloques): 150 % del arma, el doble si le queda menos del 35 % | 30 s | 25 estamina | 200 %; si muere, media espera |
+| Asesino | 3 veneno (Mago) | **Abanico de dagas** | 5 dagas en 60°, 4 de daño y Veneno I 3 s | 25 s | — | 7 dagas, Veneno II |
+| Tanque | 1 desafío (Guerrero) | **Golpe sísmico** | los hostiles a 5 bloques: 8 de daño, 50 de postura, saltan, Lentitud II 3 s | 35 s | 30 estamina | 6 bloques, 10 de daño, 70 de postura |
+| Tanque | 2 baluarte (Curandero) | **Santuario de acero** | 8 s, un círculo de 4 bloques: Resistencia I y Regeneración I a los aliados dentro y a ti; echa fuera a los hostiles | 60 s | 30 estamina | 10 s, 5 bloques, tú Resistencia II |
+| Tanque | 3 embestida (Mago) | **Embestida de escudo** | carga de 6 bloques, 6 de daño, 40 de postura, empuja | 20 s | — | 8 bloques, y aturde |
+| Mago | 1 nova (Asesino) | **Relámpago en cadena** | al que miras (16 bloques): 10 de daño mágico, salta a 4 más a 5 bloques, −20 % por salto | 25 s | 35 maná | 12 de daño, 6 saltos |
+| Mago | 2 calma (Curandero) | **Prisión de hielo** | los hostiles a 4 bloques de donde miras (24): 6 de daño mágico, 3 s congelados (Lentitud VII) y, si no son jefes, aturdidos | 45 s | 45 maná | 5 bloques, 4 s, 8 de daño |
+| Mago | 3 meteoro (Tanque) | **Meteoro** | tras 1,5 s, 12 de daño mágico en 3 bloques y fuego 3 s | 40 s | 40 maná | 16 en 4 bloques |
+| Curandero | 1 pulso (Tanque) | **Oleada de vida** | cura 8 (× tu curación) a ti y a los aliados a 10 bloques, Regeneración II 4 s, empuja a los hostiles a 4 | 60 s | 50 maná | cura 10 y quita los efectos negativos |
+| Curandero | 2 resurgir (Mago) | **Segunda vida** | el aliado que miras, o tú: 20 s en que el primer golpe mortal le deja con el 40 % de su vida | 120 s | 40 maná | 30 s, 60 % |
+| Curandero | 3 luz (Arquero) | **Escudo de luz** | 6 de absorción y Resistencia I 6 s a un aliado o a ti | 35 s | — | 8 de absorción y quita un mal |
+| Arquero | 1 salto (Asesino) | **Saeta letal** | apuntas 0,75 s (una línea de luz lo avisa) y la saeta atraviesa todo en 32 bloques: 12 de daño, ×1,5 a lo que tiene menos del 50 % | 30 s | 25 estamina | apuntas 0,5 s, 15 de daño |
+| Arquero | 2 lluvia (Guerrero) | **Flecha explosiva** | estalla donde miras (32 bloques): 8 de daño, 40 de postura y empuje a 3 bloques; no rompe bloques | 25 s | 20 estamina | 4 bloques, 10 de daño, 60 de postura |
+| Arquero | 3 trampero (Curandero) | **Flecha de red** | Lentitud IV 3 s a lo que hay a 3 bloques de donde miras | 20 s | — | 4 bloques, 4 s, +15 % de tus flechas |
+
+Todas pasan por los factores de daño de su clase: lo que pega con el arma (Hendedura, Torbellino, Danza, Ejecución,
+Golpe sísmico, Embestida) es cuerpo a cuerpo; las dagas, la Saeta y la Flecha explosiva, proyectiles; el Relámpago, la
+Prisión y el Meteoro, magia (con el daño de hechizos del árbol, como la Nova). La espera de las finales no la toca
+ninguna clave.
+
+**Elegir y cambiar.** Aprender una final cierra las otras dos y sus II; el resto de esas sendas se sigue comprando.
+Cambiarla es un reinicio: la **Vela del olvido** quita la final como hoja (con su II a la vez, que entonces no cuenta:
+3 puntos, dentro de los 4 de una vela) y libera la elección; el **Medallón** vacía el árbol entero.
+
+**Lo que se arregló de paso.** Las absorciones de las habilidades y nodos (Provocar II, Escudo de luz, Égida, Milagro, y
+ahora el Bramido) no daban nada: el juego limita la absorción al atributo `max_absorption`, que es 0 sin el efecto de
+Absorción. Ahora suben ese tope mientras dura el escudo (`ClassSkills.shield`) y lo quitan al gastarse.
 
 ## Puentes
 
@@ -201,52 +255,52 @@ defensa, nunca daño de hechizos.
 <!-- CALCULOS:INICIO -->
 Presupuesto en el tope: **103 puntos** (70 de nivel + 33 de hitos).
 
-| Clase | Nodos | Coste del árbol entero | % del árbol con 103 puntos | Claves (puntos para llegar) |
-|---|---|---|---|---|
-| Guerrero | 97 | 117 | 88 % | Adrenalina 11, Duelista 11, Fortaleza 11, Martillo de guerra 11, Muro de carne 11, Sed de sangre 11 |
-| Asesino | 97 | 117 | 88 % | Fantasma 11, Filo del viento 11, Frenesí 11, Funámbulo 11, Golpe de gracia 11, Sin sombra 11 |
-| Tanque | 97 | 117 | 88 % | Espinas de acero 11, Gigante 11, Imán de golpes 11, Muralla viva 11, Yunque viviente 11, Último bastión 11 |
-| Mago | 97 | 117 | 88 % | Escudo de maná 11, Hechizo encadenado 11, Parpadeo 11, Pozo sin fondo 11, Sangre por maná 11, Todo o nada 11 |
-| Curandero | 97 | 117 | 88 % | Florecer 11, Lazo vital 11, Martillo de la fe 11, Mártir 11, Peregrino 11, Tierra sagrada 11 |
-| Arquero | 97 | 117 | 88 % | Disparo en carrera 11, Flecha perforante 11, Francotirador 11, Halcón 11, Ojo de águila 11, Ráfaga 11 |
+| Clase | Nodos | Coste de todos los nodos | Lo que se puede tener (una última) | % de eso con 103 puntos | Claves (puntos para llegar) |
+|---|---|---|---|---|---|
+| Guerrero | 101 | 127 | 117 | 88 % | Adrenalina 11, Duelista 11, Fortaleza 11, Martillo de guerra 11, Muro de carne 11, Sed de sangre 11 |
+| Asesino | 101 | 127 | 117 | 88 % | Fantasma 11, Filo del viento 11, Frenesí 11, Funámbulo 11, Golpe de gracia 11, Sin sombra 11 |
+| Tanque | 101 | 127 | 117 | 88 % | Espinas de acero 11, Gigante 11, Imán de golpes 11, Muralla viva 11, Yunque viviente 11, Último bastión 11 |
+| Mago | 101 | 127 | 117 | 88 % | Escudo de maná 11, Hechizo encadenado 11, Parpadeo 11, Pozo sin fondo 11, Sangre por maná 11, Todo o nada 11 |
+| Curandero | 101 | 127 | 117 | 88 % | Florecer 11, Lazo vital 11, Martillo de la fe 11, Mártir 11, Peregrino 11, Tierra sagrada 11 |
+| Arquero | 101 | 127 | 117 | 88 % | Disparo en carrera 11, Flecha perforante 11, Francotirador 11, Halcón 11, Ojo de águila 11, Ráfaga 11 |
 
 Puntos hasta cada habilidad (desde el origen, por el camino más barato):
 
-- Guerrero: Grito de guerra II 4, Postura de hierro 4, Postura de hierro II 6, Torbellino 7, Torbellino II 9.
-- Asesino: Marca de muerte 4, Paso sombrío II 4, Marca de muerte II 6, Abanico de dagas 7, Abanico de dagas II 9.
-- Tanque: Baluarte 4, Provocar II 4, Baluarte II 6, Embestida de escudo 7, Embestida de escudo II 9.
-- Mago: Concentración 4, Nova arcana II 4, Concentración II 6, Meteoro 7, Meteoro II 9.
-- Curandero: Pulso sanador II 4, Resurgir 4, Resurgir II 6, Escudo de luz 7, Escudo de luz II 9.
-- Arquero: Lluvia de flechas 4, Salto atrás II 4, Lluvia de flechas II 6, Flecha de red 7, Flecha de red II 9.
+- Guerrero: Grito de guerra II 5, Postura de hierro 5, Bramido 7, Hendedura 7, Postura de hierro II 7, Torbellino 7, Bramido II 9, Hendedura II 9, Torbellino II 9.
+- Asesino: Marca de muerte 5, Paso sombrío II 5, Abanico de dagas 7, Danza de sombras 7, Ejecución 7, Marca de muerte II 7, Abanico de dagas II 9, Danza de sombras II 9, Ejecución II 9.
+- Tanque: Baluarte 5, Provocar II 5, Baluarte II 7, Embestida de escudo 7, Golpe sísmico 7, Santuario de acero 7, Embestida de escudo II 9, Golpe sísmico II 9, Santuario de acero II 9.
+- Mago: Concentración 5, Nova arcana II 5, Concentración II 7, Meteoro 7, Prisión de hielo 7, Relámpago en cadena 7, Meteoro II 9, Prisión de hielo II 9, Relámpago en cadena II 9.
+- Curandero: Pulso sanador II 5, Resurgir 5, Escudo de luz 7, Oleada de vida 7, Resurgir II 7, Segunda vida 7, Escudo de luz II 9, Oleada de vida II 9, Segunda vida II 9.
+- Arquero: Lluvia de flechas 5, Salto atrás II 5, Flecha de red 7, Flecha explosiva 7, Lluvia de flechas II 7, Saeta letal 7, Flecha de red II 9, Flecha explosiva II 9, Saeta letal II 9.
 
 Lo que el árbol suma a una estadística (sin la base de la clase): con los 103 puntos puestos solo en ella, y el árbol entero (con la mejor clave de cada rama, porque las dos claves de una rama se excluyen):
 
 | Clase | Estadística | Con 103 puntos | Puntos usados | Árbol entero |
 |---|---|---|---|---|
 | Guerrero | daño cuerpo a cuerpo | +15 % | 14 | +15 % |
-| Guerrero | vida | +49 % | 45 | +49 % |
+| Guerrero | vida | +49 % | 41 | +49 % |
 | Guerrero | daño de postura | +81 % | 23 | +81 % |
-| Guerrero | daño recibido | −6 % | 15 | −6 % |
+| Guerrero | daño recibido | −6 % | 13 | −6 % |
 | Asesino | daño cuerpo a cuerpo | +12 % | 9 | +12 % |
 | Asesino | daño por la espalda | +45 % | 12 | +45 % |
-| Asesino | coste de esquiva | −15 % | 16 | −15 % |
-| Asesino | daño a enemigos bajo el 35 % | +40 % | 17 | +40 % |
-| Tanque | vida | +66 % | 43 | +66 % |
+| Asesino | coste de esquiva | −15 % | 14 | −15 % |
+| Asesino | daño a enemigos bajo el 35 % | +40 % | 15 | +40 % |
+| Tanque | vida | +66 % | 41 | +66 % |
 | Tanque | armadura | +9 | 26 | +9 |
-| Tanque | daño recibido | −35 % | 31 | −35 % |
+| Tanque | daño recibido | −35 % | 29 | −35 % |
 | Tanque | daño cuerpo a cuerpo | +3 % | 1 | +3 % |
 | Mago | daño de hechizos | +20 % | 9 | +20 % |
 | Mago | espera de hechizos | −6 % | 8 | −6 % |
 | Mago | bono de la carga completa | +89 % | 11 | +89 % |
 | Mago | maná máximo | +91 % | 13 | +91 % |
 | Curandero | curación | +109 % | 33 | +109 % |
-| Curandero | vida | +62 % | 50 | +62 % |
-| Curandero | regeneración de maná | +270 % | 29 | +270 % |
+| Curandero | vida | +62 % | 46 | +62 % |
+| Curandero | regeneración de maná | +270 % | 27 | +270 % |
 | Curandero | daño recibido | −15 % | 19 | −15 % |
 | Arquero | daño de proyectiles | +15 % | 5 | +15 % |
 | Arquero | tiros a la cabeza | +81 % | 23 | +81 % |
-| Arquero | tensado | +39 % | 28 | +39 % |
-| Arquero | velocidad | +32 % | 39 | +32 % |
+| Arquero | tensado | +39 % | 26 | +39 % |
+| Arquero | velocidad | +32 % | 35 | +32 % |
 
 Puntos por nivel (de nivel en el tope: 70):
 
@@ -280,6 +334,37 @@ no partidas reales.
 - **El Curandero** cura hasta +109 % con Mártir, que le cuesta vida por cada cura.
 - **Los monstruos lo notan**: `GearScore` cuenta los puntos gastados (`0,08 × gastados / 103`), no el nivel.
 
+### Lo que hacen las finales que pegan (medido)
+
+`UltimasGameTests` lanza cada final, la I y la II, contra un zombi quieto de 200 de vida (para que ninguna lo mate) y
+mide lo que le quita por el mismo camino que cualquier golpe (`hurtServer`, armadura, los factores de la clase y sus
+nodos), como las sondas de equilibrio miden las armas. Jugador de nivel 50 con solo la final aprendida y una espada de
+hierro forjada en la mano. Es lo que recibe **un** enemigo: el Torbellino, el Golpe sísmico, la Hendedura, la Danza, el
+Relámpago, la Prisión, el Meteoro, la Saeta y la Flecha explosiva llegan a varios.
+
+| Clase | Final | Daño (I) | Daño (II) | Espera | Daño por segundo de espera (I / II) |
+|---|---|---|---|---|---|
+| Guerrero | Hendedura | 15,0 | 18,8 | 30 s | 0,50 / 0,63 |
+| Guerrero | Torbellino | 6,2 | 6,2 + la segunda vuelta | 30 s | 0,21 / ~0,4 |
+| Asesino | Danza de sombras | 8,9 | 9,4 | 40 s | 0,22 / 0,24 |
+| Asesino | Ejecución | 12,2 | 16,2 | 30 s | 0,41 / 0,54 |
+| Asesino | Abanico de dagas | 4,8 | 6,1 | 25 s | 0,19 / 0,24 |
+| Tanque | Golpe sísmico | 6,4 | 8,0 | 35 s | 0,18 / 0,23 |
+| Tanque | Embestida de escudo | 4,8 | 4,8 (y aturde) | 20 s | 0,24 / 0,24 |
+| Mago | Relámpago en cadena | 11,0 | 13,2 | 25 s | 0,44 / 0,53 |
+| Mago | Prisión de hielo | 6,6 | 8,8 | 45 s | 0,15 / 0,20 |
+| Mago | Meteoro | 13,2 | 19,6 | 40 s | 0,33 / 0,49 |
+| Arquero | Saeta letal | 16,8 | 21,0 | 30 s | 0,56 / 0,70 |
+| Arquero | Flecha explosiva | 10,9 | 13,7 | 25 s | 0,44 / 0,55 |
+
+La prueba exige a cada una que haga daño, que no pase de **30 en un golpe** (no matan de una a nada que aguante un poco)
+y que no pase de **1 de daño por segundo de espera**: una espada forjada hace unos 5 por segundo, así que una final
+suma como mucho un 20 % sobre lo que ya hace el arma en ese tiempo. Su fuerza está en el área, la postura y el
+control, no en el daño a un solo enemigo. La Saeta letal salía a 25 con la II (19,6 con la I) y se bajó de 14/18 a
+12/15 de daño. Ninguna toca `BalanceGameTests.magiaEnSuSitio` ni las pruebas de jefes (que miden armas, no
+habilidades), y las 489 pruebas de servidor siguen en verde. (En la prueba, la segunda vuelta del Torbellino II no
+llega a medirse: el jugador de prueba no está en la lista de jugadores del mundo, que es donde la busca.)
+
 ## La pantalla del árbol (K)
 
 - **Lienzo**: arrastrar con el botón izquierdo en vacío o con el derecho en cualquier sitio; la rueda acerca y aleja
@@ -293,7 +378,12 @@ no partidas reales.
   comprueba cada uno) y **Descartar** los borra. El plan se recuerda mientras el juego esté abierto.
 - **Buscar**: un campo arriba; apaga lo que no coincide e Intro centra la siguiente coincidencia.
 - **Hitos**: el botón abre la lista, con los conseguidos en verde y sus puntos.
-- **A la derecha**: las tres habilidades con su tecla (con la II en el tooltip) y lo que suma la clase.
+- **A la derecha**: las tres habilidades con su tecla (con la II en el tooltip) y lo que suma la clase. En la N, la final
+  elegida (en azul si solo está en «Probar»), o «Final: elige una» con los tres iconos pequeños.
+- **Las tres finales** se ven como un grupo «elige una»: un rombo con borde dorado (el marco del nodo girado 45°),
+  algo más grande que una habilidad, y debajo «Final · elige una» mientras no hay ninguna, o «Elegida» en la tuya. Al
+  aprender una (o ponerla en «Probar»), las otras dos y sus II se ponen grises con un **candado** y su tooltip dice
+  «Ya elegiste X» y cómo cambiarla. «Probar» no deja meter una segunda final en el plan.
 - **Vela del olvido**: abierta desde la vela, la pantalla marca en rojo los nodos que se quitarán y «Quitar» gasta la
   vela.
 
@@ -305,6 +395,17 @@ Cada nodo lleva un icono (`icono` en los datos; `clase/TreeIcon` lo resuelve): `
 `NOTABLE_ICONS`, `KEYSTONE_GLYPHS` (el dibujo de cada clave), `FORGE_ICONS` y, en cada habilidad, `icono`.
 Capturas: `E:\IA\Claude\Forja_capturas_mejoras\arbol\iconos\`.
 
+Las doce finales nuevas llevan icono propio: Bramido, chillador de sculk; Hendedura, hacha de diamante; Danza de
+sombras, fragmento de eco; Ejecución, espada de diamante; Golpe sísmico, núcleo pesado; Santuario de acero, magnetita;
+Relámpago en cadena, pararrayos; Prisión de hielo, hielo compacto; Oleada de vida, corazón del mar; Segunda vida, nexo
+de reaparición; Saeta letal, tridente; Flecha explosiva, dinamita.
+
+**Iconos a cualquier zoom.** Andy (2026-09-30) veía casi todos los nodos como cuadrados de color a un zoom normal: el
+icono solo se dibujaba si medía 6 píxeles o más, y un menor (6 de radio × el zoom) se quedaba por debajo en cuanto la
+ventana o el zoom eran algo pequeños. Ahora el icono sale **siempre que el nodo mida 5 píxeles o más**
+(`TalentTreeScreen.ICON_MIN_NODE`), con un mínimo de 6 píxeles de icono; el cuadrado de color solo queda para el zoom
+más lejano. El velo de lo bloqueado es más suave (se ve el icono debajo).
+
 ## Reiniciar
 
 - **Medallón del olvido** (sin cambios): cambia de clase (nivel 1, los hitos se quedan) o, en tu misma clase, vacía el
@@ -312,21 +413,34 @@ Capturas: `E:\IA\Claude\Forja_capturas_mejoras\arbol\iconos\`.
 - **Vela del olvido** (`forja:vela_del_olvido`, se apila hasta 16): quita hasta **4 puntos** de nodos del borde de lo
   aprendido, los que no dejan a otro suelto. Mesa de trabajo: **vela + 2 fragmentos de amatista + lágrima de ghast**.
   Clic derecho abre el árbol en modo «olvidar»; la vela solo se gasta al quitar.
+- **Cambiar de final**: la final es una hoja. La vela la quita junto con su II como si fuera un solo nodo (la II no
+  cuenta si su final se va con ella: 3 puntos), y entonces se puede elegir otra (`ClassProgress.forgetCost`).
 
 ## Guardados
 
 - `ClassData` guarda los nodos por **id de texto** (`nodos`), los hitos (`hitos`), las tres esperas
-  (`habilidad_1..3`) y la versión del árbol (`arbol` = 2). Todo con `optionalFieldOf`: un guardado viejo carga.
+  (`habilidad_1..3`; la 3 es la de la final) y la versión del árbol (`arbol` = 3). Todo con `optionalFieldOf`: un
+  guardado viejo carga. La final elegida no se guarda aparte: es la que esté aprendida.
 - Un guardado sin `arbol` es del árbol pequeño (versión 1). Al entrar, `ClassProgress.migrate`:
   - borra los talentos viejos (su `talentos` se lee y se olvida) y avisa de cuántos puntos hay para repartir;
   - si la clase era «herrero», deja al jugador sin clase y le avisa.
+- Un guardado con `arbol` = 2 es del árbol de una sola N. `ClassProgress.toV3` renombra sus nodos
+  (`ClassProgress.V3_NAMES`): `s3.4` → `s3.ultima` y `s3.lado` → `s3.ultima_ii` (**la N que tenía sigue siendo su
+  final elegida, con su II**), `s1.2` → `a.habilidad_v2`, `s2.2` → `b.habilidad_b`, `s2.lado` → `b.habilidad_b2`, y los
+  menores de las sendas 1 y 2 suben un puesto (`s1.3` → `s1.2`...). Lo que queda suelto (V II y B, si no tenía el
+  tronco de su rama) se suelta y sus puntos vuelven; un mensaje dice cuántos.
 - Comandos: `/forja clase aprender <nodo>`, `puntos`, `hito <id>`, `hitos`, `habilidad 1|2|3`.
 
 ## Pruebas
 
-- **Servidor** (`ArbolGameTests`, y las de clases y maná adaptadas):
-  - los datos (seis árboles, 97 nodos, 117 puntos, conexos, enlaces de ida y vuelta, claves a 11 y emparejadas, todos
-    los ganchos con código);
+- **Servidor** (`ArbolGameTests`, `UltimasGameTests`, y las de clases y maná adaptadas):
+  - los datos (seis árboles, 101 nodos, 127 puntos y 117 que se pueden tener, conexos, enlaces de ida y vuelta, claves a
+    11 y emparejadas, finales a 7, todos los ganchos con código);
+  - las finales: tres por clase, cada una al final de su senda con su II, el puente sin pasar por ella, V II y B en las
+    ramas (`threeUltimatesPerClass`); elegir una cierra las otras y sus II, el resto de sus sendas se sigue
+    aprendiendo, la vela la quita con su II y el medallón lo vacía todo (`onlyOneUltimate`); un guardado de la versión 2
+    conserva su N (`oldSaveKeepsItsUltimate`); y las 18, I y II, haciendo lo que dicen, con su daño medido
+    (`ultimasDel<Clase>`);
   - las reglas (vecindad, puntos, otra clase, exclusión, plan);
   - puntos, hitos y su tope;
   - hitos por estadística y élite;
@@ -337,7 +451,9 @@ Capturas: `E:\IA\Claude\Forja_capturas_mejoras\arbol\iconos\`.
   - GearScore.
 - **Cliente** (`FORJA_SOLO=arbol`, `ArbolFootage`): aprender con clics, rueda, arrastre, Probar y Aplicar, tooltip de
   una clave, búsqueda, hitos, el árbol del Mago, la Vela y la tecla N. Hoja de contactos en
-  `Forja_capturas_mejoras\arbol\hoja_arbol.png`.
+  `Forja_capturas_mejoras\arbol\hoja_arbol.png`. Las finales (capturas `ultimas_*`): los iconos al zoom con que se
+  abre, las tres por elegir, una en «Probar» con las otras cerradas, una aprendida con un clic y su tooltip, la cerrada
+  con «Ya elegiste», la vela quitándola y las seis clases. Hoja en `Forja_capturas_mejoras\arbol\ultimas\`.
 
 ## Todos los nodos
 
@@ -345,7 +461,8 @@ Ids sin el prefijo de la clase (`b2.3` es `guerrero.b2.3`):
 
 - `a`, `b` y `c` son las ramas: `tronco_1` a `tronco_4`, y los caminos `a1`/`a2` con los nodos 1 a 5 y
   `lado_1`/`lado_2`;
-- `s1`, `s2` y `s3` son las sendas: nodos 1 a 4, `lado` y `puente_1` a `puente_3`;
+- `a.habilidad_v2` es V II; `b.habilidad_b` y `b.habilidad_b2`, la habilidad B y su II;
+- `s1`, `s2` y `s3` son las sendas: nodos 1 a 3, `ultima` (su final) y `ultima_ii`, y `puente_1` a `puente_3`;
 - `nucleo_1` a `nucleo_6` son las puertas: 1 → rama A, 2 → senda 1, 3 → rama B, 4 → senda 2, 5 → rama C, 6 → senda 3.
   Además se conectan con los dos nodos de forja de sus huecos.
 
@@ -374,7 +491,9 @@ Base: vida +10 %, daño c/c +5 %, estamina máx. +20 %, regeneración +10 %, pos
 
 - **Grito de guerra** (V): recuperas 40 de estamina; tú y los jugadores a 8 bloques ganáis Fuerza I 8 s; espera 45 s. **II**: recuperas 60 de estamina; tú y los jugadores a 12 bloques ganáis Fuerza I 10 s; espera 45 s.
 - **Postura de hierro** (B): 6 s de Resistencia II y Lentitud I; espera 50 s. **II**: 8 s de Resistencia II, sin Lentitud; al acabar recuperas 20 de estamina; espera 50 s.
-- **Torbellino** (N): giras y golpeas todo lo que hay a 3 bloques con el 80 % del daño de tu arma y 30 de postura; cuesta 30 de estamina; espera 30 s. **II**: dos vueltas: golpeas dos veces todo lo que hay a 3 bloques con el 80 % del daño de tu arma y 45 de postura; cuesta 30 de estamina; espera 30 s.
+- **Bramido** (N, final de la senda del grito; una de tres): bramas: los hostiles a 6 bloques reciben 40 de postura y Debilidad I 5 s, y ganas 2 de absorción por cada uno (hasta 10); cuesta 30 de estamina; espera 45 s. **II**: bramas: los hostiles a 8 bloques reciben 60 de postura y Debilidad I 5 s, y ganas 3 de absorción por cada uno (hasta 12); cuesta 30 de estamina; espera 45 s.
+- **Hendedura** (N, final de la senda del hierro; una de tres): un tajo de arriba abajo a lo que tienes delante (hasta 3,5 bloques, 100°): el 200 % del daño de tu arma y 50 de postura; cuesta 35 de estamina; espera 30 s. **II**: un tajo de arriba abajo a lo que tienes delante (hasta 3,5 bloques, 100°): el 250 % del daño de tu arma y 80 de postura; cuesta 35 de estamina; espera 30 s.
+- **Torbellino** (N, final de la senda del torbellino; una de tres): giras y golpeas todo lo que hay a 3 bloques con el 80 % del daño de tu arma y 30 de postura; cuesta 30 de estamina; espera 30 s. **II**: dos vueltas: golpeas dos veces todo lo que hay a 3 bloques con el 80 % del daño de tu arma y 45 de postura; cuesta 30 de estamina; espera 30 s.
 
 | Id | Nombre | Tipo | Coste | Efecto | Conecta con |
 |---|---|---|---|---|---|
@@ -386,9 +505,10 @@ Base: vida +10 %, daño c/c +5 %, estamina máx. +20 %, regeneración +10 %, pos
 | `nucleo_5` | Daño de postura | núcleo | 1 | daño de postura +3 % | `origen`, `nucleo_6`, `mano_firme`, `fuelle`, `nucleo_4`, `c.tronco_1` |
 | `nucleo_6` | Daño cuerpo a cuerpo | núcleo | 1 | daño cuerpo a cuerpo +3 % | `origen`, `nucleo_1`, `brazo_de_herrero`, `mano_firme`, `nucleo_5`, `s3.1` |
 | `a.tronco_1` | Regeneración de estamina | menor | 1 | regeneración de estamina +3 % | `nucleo_1`, `a.tronco_2` |
-| `a.tronco_2` | Vida | menor | 1 | vida +3 % | `a.tronco_1`, `a.tronco_3` |
+| `a.tronco_2` | Vida | menor | 1 | vida +3 % | `a.tronco_1`, `a.tronco_3`, `a.habilidad_v2` |
 | `a.tronco_3` | Estamina máxima | menor | 1 | estamina máxima +3 % | `a.tronco_2`, `a.tronco_4` |
 | `a.tronco_4` | Segundo aliento | notable | 1 | regeneración de estamina +15 %; por debajo del 25 % de estamina, la estamina se regenera el doble | `a.tronco_3`, `a1.1`, `a2.1` |
+| `a.habilidad_v2` | Grito de guerra II | habilidad | 2 | recuperas 60 de estamina; tú y los jugadores a 12 bloques ganáis Fuerza I 10 s; espera 45 s | `a.tronco_2` |
 | `a1.1` | Vida | menor | 1 | vida +3 % | `a.tronco_4`, `a1.2` |
 | `a1.2` | Resistencia al empuje | menor | 1 | resistencia al empuje +5 % | `a1.1`, `a1.3`, `a1.lado_1` |
 | `a1.3` | Inquebrantable | notable | 1 | por debajo del 30 % de vida, daño recibido −20 % | `a1.2`, `a1.4` |
@@ -404,16 +524,19 @@ Base: vida +10 %, daño c/c +5 %, estamina máx. +20 %, regeneración +10 %, pos
 | `a2.lado_1` | Regeneración de estamina | menor | 1 | regeneración de estamina +3 % | `a2.2` |
 | `a2.lado_2` | Velocidad | menor | 1 | velocidad +3 % | `a2.4` |
 | `s1.1` | Regeneración de estamina | menor | 1 | regeneración de estamina +3 % | `nucleo_2`, `s1.2` |
-| `s1.2` | Grito de guerra II | habilidad | 2 | recuperas 60 de estamina; tú y los jugadores a 12 bloques ganáis Fuerza I 10 s; espera 45 s | `s1.1`, `s1.3` |
-| `s1.3` | Vida | menor | 1 | vida +3 % | `s1.2`, `s1.4` |
-| `s1.4` | Estamina máxima | menor | 1 | estamina máxima +3 % | `s1.3`, `s1.puente_1` |
-| `s1.puente_1` | Puente al Tanque | puente | 2 | vida +5 % *(del Tanque)* | `s1.4`, `s1.puente_2` |
+| `s1.2` | Vida | menor | 1 | vida +3 % | `s1.1`, `s1.3` |
+| `s1.3` | Estamina máxima | menor | 1 | estamina máxima +3 % | `s1.2`, `s1.ultima`, `s1.puente_1` |
+| `s1.ultima` | Bramido | habilidad | 3 | bramas: los hostiles a 6 bloques reciben 40 de postura y Debilidad I 5 s, y ganas 2 de absorción por cada uno (hasta 10); cuesta 30 de estamina; espera 45 s | `s1.3`, `s1.ultima_ii` |
+| `s1.ultima_ii` | Bramido II | habilidad | 2 | bramas: los hostiles a 8 bloques reciben 60 de postura y Debilidad I 5 s, y ganas 3 de absorción por cada uno (hasta 12); cuesta 30 de estamina; espera 45 s | `s1.ultima` |
+| `s1.puente_1` | Puente al Tanque | puente | 2 | vida +5 % *(del Tanque)* | `s1.3`, `s1.puente_2` |
 | `s1.puente_2` | Armadura | cruzado | 2 | armadura +1 *(del Tanque)* | `s1.puente_1`, `s1.puente_3` |
 | `s1.puente_3` | Represalia menor | cruzado | 2 | quien golpea tu escudo levantado recibe 2 de daño *(del Tanque)* | `s1.puente_2` |
 | `b.tronco_1` | Ventana de parada | menor | 1 | ventana de parada +1 tick | `nucleo_3`, `b.tronco_2` |
-| `b.tronco_2` | Estamina al parar | menor | 1 | estamina al parar −3 % | `b.tronco_1`, `b.tronco_3` |
+| `b.tronco_2` | Estamina al parar | menor | 1 | estamina al parar −3 % | `b.tronco_1`, `b.tronco_3`, `b.habilidad_b` |
 | `b.tronco_3` | Armadura | menor | 1 | armadura +1 | `b.tronco_2`, `b.tronco_4` |
 | `b.tronco_4` | Réplica | notable | 1 | una parada devuelve 15 de estamina y tu siguiente golpe en 3 s hace +30 % | `b.tronco_3`, `b1.1`, `b2.1` |
+| `b.habilidad_b` | Postura de hierro | habilidad | 2 | 6 s de Resistencia II y Lentitud I; espera 50 s | `b.tronco_2`, `b.habilidad_b2` |
+| `b.habilidad_b2` | Postura de hierro II | habilidad | 2 | 8 s de Resistencia II, sin Lentitud; al acabar recuperas 20 de estamina; espera 50 s | `b.habilidad_b` |
 | `b1.1` | Armadura | menor | 1 | armadura +1 | `b.tronco_4`, `b1.2` |
 | `b1.2` | Estamina al parar | menor | 1 | estamina al parar −3 % | `b1.1`, `b1.3`, `b1.lado_1` |
 | `b1.3` | Parada firme | notable | 1 | estamina al parar −25 % | `b1.2`, `b1.4` |
@@ -429,11 +552,11 @@ Base: vida +10 %, daño c/c +5 %, estamina máx. +20 %, regeneración +10 %, pos
 | `b2.lado_1` | Daño de postura | menor | 1 | daño de postura +3 % | `b2.2` |
 | `b2.lado_2` | Regeneración de estamina | menor | 1 | regeneración de estamina +3 % | `b2.4` |
 | `s2.1` | Daño de postura | menor | 1 | daño de postura +3 % | `nucleo_4`, `s2.2` |
-| `s2.2` | Postura de hierro | habilidad | 2 | 6 s de Resistencia II y Lentitud I; espera 50 s | `s2.1`, `s2.3`, `s2.lado` |
-| `s2.3` | Daño recibido | menor | 1 | daño recibido −3 % | `s2.2`, `s2.4` |
-| `s2.4` | Vida | menor | 1 | vida +3 % | `s2.3`, `s2.puente_1` |
-| `s2.lado` | Postura de hierro II | habilidad | 2 | 8 s de Resistencia II, sin Lentitud; al acabar recuperas 20 de estamina; espera 50 s | `s2.2` |
-| `s2.puente_1` | Puente al Asesino | puente | 2 | velocidad +3 % *(del Asesino)* | `s2.4`, `s2.puente_2` |
+| `s2.2` | Daño recibido | menor | 1 | daño recibido −3 % | `s2.1`, `s2.3` |
+| `s2.3` | Vida | menor | 1 | vida +3 % | `s2.2`, `s2.ultima`, `s2.puente_1` |
+| `s2.ultima` | Hendedura | habilidad | 3 | un tajo de arriba abajo a lo que tienes delante (hasta 3,5 bloques, 100°): el 200 % del daño de tu arma y 50 de postura; cuesta 35 de estamina; espera 30 s | `s2.3`, `s2.ultima_ii` |
+| `s2.ultima_ii` | Hendedura II | habilidad | 2 | un tajo de arriba abajo a lo que tienes delante (hasta 3,5 bloques, 100°): el 250 % del daño de tu arma y 80 de postura; cuesta 35 de estamina; espera 30 s | `s2.ultima` |
+| `s2.puente_1` | Puente al Asesino | puente | 2 | velocidad +3 % *(del Asesino)* | `s2.3`, `s2.puente_2` |
 | `s2.puente_2` | Coste de esquiva | cruzado | 2 | coste de esquiva −8 % *(del Asesino)* | `s2.puente_1`, `s2.puente_3` |
 | `s2.puente_3` | Puñalada menor | cruzado | 2 | daño por la espalda +20 % *(del Asesino)* | `s2.puente_2` |
 | `c.tronco_1` | Daño de postura | menor | 1 | daño de postura +3 % | `nucleo_5`, `c.tronco_2` |
@@ -456,10 +579,10 @@ Base: vida +10 %, daño c/c +5 %, estamina máx. +20 %, regeneración +10 %, pos
 | `c2.lado_2` | Daño cuerpo a cuerpo | menor | 1 | daño cuerpo a cuerpo +3 % | `c2.4` |
 | `s3.1` | Daño de postura | menor | 1 | daño de postura +3 % | `nucleo_6`, `s3.2` |
 | `s3.2` | Carga brutal | notable | 1 | un golpe cargado rompe la postura de un monstruo normal | `s3.1`, `s3.3` |
-| `s3.3` | Regeneración de estamina | menor | 1 | regeneración de estamina +3 % | `s3.2`, `s3.4` |
-| `s3.4` | Torbellino | habilidad | 3 | giras y golpeas todo lo que hay a 3 bloques con el 80 % del daño de tu arma y 30 de postura; cuesta 30 de estamina; espera 30 s | `s3.3`, `s3.lado`, `s3.puente_1` |
-| `s3.lado` | Torbellino II | habilidad | 2 | dos vueltas: golpeas dos veces todo lo que hay a 3 bloques con el 80 % del daño de tu arma y 45 de postura; cuesta 30 de estamina; espera 30 s | `s3.4` |
-| `s3.puente_1` | Puente al Arquero | puente | 2 | tensado +5 % *(del Arquero)* | `s3.4`, `s3.puente_2` |
+| `s3.3` | Regeneración de estamina | menor | 1 | regeneración de estamina +3 % | `s3.2`, `s3.ultima`, `s3.puente_1` |
+| `s3.ultima` | Torbellino | habilidad | 3 | giras y golpeas todo lo que hay a 3 bloques con el 80 % del daño de tu arma y 30 de postura; cuesta 30 de estamina; espera 30 s | `s3.3`, `s3.ultima_ii` |
+| `s3.ultima_ii` | Torbellino II | habilidad | 2 | dos vueltas: golpeas dos veces todo lo que hay a 3 bloques con el 80 % del daño de tu arma y 45 de postura; cuesta 30 de estamina; espera 30 s | `s3.ultima` |
+| `s3.puente_1` | Puente al Arquero | puente | 2 | tensado +5 % *(del Arquero)* | `s3.3`, `s3.puente_2` |
 | `s3.puente_2` | Daño de proyectiles | cruzado | 2 | daño de proyectiles +4 % *(del Arquero)* | `s3.puente_1`, `s3.puente_3` |
 | `s3.puente_3` | Ojo de halcón menor | cruzado | 2 | tiros a la cabeza +15 % *(del Arquero)* | `s3.puente_2` |
 
@@ -469,7 +592,9 @@ Base: vida −30 %, daño c/c +10 %, velocidad +5 %, estamina +30 %, esquiva: di
 
 - **Paso sombrío** (V): 4 s de invisibilidad y Velocidad II; tu siguiente golpe c/c en ese tiempo hace +60 %; espera 30 s. **II**: 6 s de invisibilidad y Velocidad II; tu siguiente golpe c/c en ese tiempo hace +80 %; espera 30 s.
 - **Marca de muerte** (B): el monstruo que miras (hasta 16 bloques) brilla 10 s y recibe +30 % de tus golpes; espera 40 s. **II**: el monstruo que miras (hasta 16 bloques) brilla 10 s y recibe +40 % de tus golpes; si muere marcado, la espera baja un 50 %; espera 40 s.
-- **Abanico de dagas** (N): lanzas 5 dagas en abanico de 60°: 4 de daño cada una y Veneno I 3 s; espera 25 s. **II**: lanzas 7 dagas en abanico de 60°: 4 de daño cada una y Veneno II 3 s; espera 25 s.
+- **Danza de sombras** (N, final de la senda de la sombra; una de tres): saltas de enemigo en enemigo, hasta 4 a 8 bloques, y golpeas a cada uno por la espalda con el 100 % del daño de tu arma; mientras bailas nada te hace daño; cuesta 30 de estamina; espera 40 s. **II**: saltas de enemigo en enemigo, hasta 6 a 8 bloques, y golpeas a cada uno por la espalda con el 120 % del daño de tu arma; mientras bailas nada te hace daño; cuesta 30 de estamina; espera 40 s.
+- **Ejecución** (N, final de la senda de la marca; una de tres): apareces detrás del enemigo que miras (hasta 16 bloques) y le golpeas con el 150 % del daño de tu arma, el doble si le queda menos del 35 % de vida; cuesta 25 de estamina; espera 30 s. **II**: apareces detrás del enemigo que miras (hasta 16 bloques) y le golpeas con el 200 % del daño de tu arma, el doble si le queda menos del 35 % de vida; si muere, la espera baja un 50 %; cuesta 25 de estamina; espera 30 s.
+- **Abanico de dagas** (N, final de la senda del veneno; una de tres): lanzas 5 dagas en abanico de 60°: 4 de daño cada una y Veneno I 3 s; espera 25 s. **II**: lanzas 7 dagas en abanico de 60°: 4 de daño cada una y Veneno II 3 s; espera 25 s.
 
 | Id | Nombre | Tipo | Coste | Efecto | Conecta con |
 |---|---|---|---|---|---|
@@ -481,9 +606,10 @@ Base: vida −30 %, daño c/c +10 %, velocidad +5 %, estamina +30 %, esquiva: di
 | `nucleo_5` | Velocidad agachado | núcleo | 1 | velocidad agachado +3 % | `origen`, `nucleo_6`, `mano_firme`, `fuelle`, `nucleo_4`, `c.tronco_1` |
 | `nucleo_6` | Daño cuerpo a cuerpo | núcleo | 1 | daño cuerpo a cuerpo +3 % | `origen`, `nucleo_1`, `brazo_de_herrero`, `mano_firme`, `nucleo_5`, `s3.1` |
 | `a.tronco_1` | Coste de esquiva | menor | 1 | coste de esquiva −3 % | `nucleo_1`, `a.tronco_2` |
-| `a.tronco_2` | Espera de esquiva | menor | 1 | espera de esquiva −3 % | `a.tronco_1`, `a.tronco_3` |
+| `a.tronco_2` | Espera de esquiva | menor | 1 | espera de esquiva −3 % | `a.tronco_1`, `a.tronco_3`, `a.habilidad_v2` |
 | `a.tronco_3` | Distancia de esquiva | menor | 1 | distancia de esquiva +3 % | `a.tronco_2`, `a.tronco_4` |
 | `a.tronco_4` | Danza | notable | 1 | invulnerabilidad de esquiva +1 tick; espera de esquiva −10 % | `a.tronco_3`, `a1.1`, `a2.1` |
+| `a.habilidad_v2` | Paso sombrío II | habilidad | 2 | 6 s de invisibilidad y Velocidad II; tu siguiente golpe c/c en ese tiempo hace +80 %; espera 30 s | `a.tronco_2` |
 | `a1.1` | Contraataques | menor | 1 | contraataques +3 % | `a.tronco_4`, `a1.2` |
 | `a1.2` | Coste de esquiva | menor | 1 | coste de esquiva −3 % | `a1.1`, `a1.3`, `a1.lado_1` |
 | `a1.3` | Contraataque | notable | 1 | contraataques +30 % | `a1.2`, `a1.4` |
@@ -499,16 +625,19 @@ Base: vida −30 %, daño c/c +10 %, velocidad +5 %, estamina +30 %, esquiva: di
 | `a2.lado_1` | Velocidad | menor | 1 | velocidad +3 % | `a2.2` |
 | `a2.lado_2` | Daño de caída | menor | 1 | daño de caída −3 % | `a2.4` |
 | `s1.1` | Estamina máxima | menor | 1 | estamina máxima +3 % | `nucleo_2`, `s1.2` |
-| `s1.2` | Paso sombrío II | habilidad | 2 | 6 s de invisibilidad y Velocidad II; tu siguiente golpe c/c en ese tiempo hace +80 %; espera 30 s | `s1.1`, `s1.3` |
-| `s1.3` | Coste de esquiva | menor | 1 | coste de esquiva −3 % | `s1.2`, `s1.4` |
-| `s1.4` | Velocidad | menor | 1 | velocidad +3 % | `s1.3`, `s1.puente_1` |
-| `s1.puente_1` | Puente al Guerrero | puente | 2 | regeneración de estamina +5 % *(del Guerrero)* | `s1.4`, `s1.puente_2` |
+| `s1.2` | Coste de esquiva | menor | 1 | coste de esquiva −3 % | `s1.1`, `s1.3` |
+| `s1.3` | Velocidad | menor | 1 | velocidad +3 % | `s1.2`, `s1.ultima`, `s1.puente_1` |
+| `s1.ultima` | Danza de sombras | habilidad | 3 | saltas de enemigo en enemigo, hasta 4 a 8 bloques, y golpeas a cada uno por la espalda con el 100 % del daño de tu arma; mientras bailas nada te hace daño; cuesta 30 de estamina; espera 40 s | `s1.3`, `s1.ultima_ii` |
+| `s1.ultima_ii` | Danza de sombras II | habilidad | 2 | saltas de enemigo en enemigo, hasta 6 a 8 bloques, y golpeas a cada uno por la espalda con el 120 % del daño de tu arma; mientras bailas nada te hace daño; cuesta 30 de estamina; espera 40 s | `s1.ultima` |
+| `s1.puente_1` | Puente al Guerrero | puente | 2 | regeneración de estamina +5 % *(del Guerrero)* | `s1.3`, `s1.puente_2` |
 | `s1.puente_2` | Daño de postura | cruzado | 2 | daño de postura +5 % *(del Guerrero)* | `s1.puente_1`, `s1.puente_3` |
 | `s1.puente_3` | Réplica menor | cruzado | 2 | una parada perfecta te devuelve 10 de estamina *(del Guerrero)* | `s1.puente_2` |
 | `b.tronco_1` | Daño por la espalda | menor | 1 | daño por la espalda +3 % | `nucleo_3`, `b.tronco_2` |
-| `b.tronco_2` | Daño cuerpo a cuerpo | menor | 1 | daño cuerpo a cuerpo +3 % | `b.tronco_1`, `b.tronco_3` |
+| `b.tronco_2` | Daño cuerpo a cuerpo | menor | 1 | daño cuerpo a cuerpo +3 % | `b.tronco_1`, `b.tronco_3`, `b.habilidad_b` |
 | `b.tronco_3` | Daño a enemigos bajo el 35 % | menor | 1 | daño a enemigos bajo el 35 % +3 % | `b.tronco_2`, `b.tronco_4` |
 | `b.tronco_4` | Puñalada | notable | 1 | daño por la espalda +30 % | `b.tronco_3`, `b1.1`, `b2.1` |
+| `b.habilidad_b` | Marca de muerte | habilidad | 2 | el monstruo que miras (hasta 16 bloques) brilla 10 s y recibe +30 % de tus golpes; espera 40 s | `b.tronco_2`, `b.habilidad_b2` |
+| `b.habilidad_b2` | Marca de muerte II | habilidad | 2 | el monstruo que miras (hasta 16 bloques) brilla 10 s y recibe +40 % de tus golpes; si muere marcado, la espera baja un 50 %; espera 40 s | `b.habilidad_b` |
 | `b1.1` | Daño a enemigos bajo el 35 % | menor | 1 | daño a enemigos bajo el 35 % +3 % | `b.tronco_4`, `b1.2` |
 | `b1.2` | Daño cuerpo a cuerpo | menor | 1 | daño cuerpo a cuerpo +3 % | `b1.1`, `b1.3`, `b1.lado_1` |
 | `b1.3` | Ejecutor | notable | 1 | daño a enemigos bajo el 35 % +25 % | `b1.2`, `b1.4` |
@@ -524,11 +653,11 @@ Base: vida −30 %, daño c/c +10 %, velocidad +5 %, estamina +30 %, esquiva: di
 | `b2.lado_1` | Daño a enemigos bajo el 35 % | menor | 1 | daño a enemigos bajo el 35 % +3 % | `b2.2` |
 | `b2.lado_2` | Regeneración de estamina | menor | 1 | regeneración de estamina +3 % | `b2.4` |
 | `s2.1` | Daño por la espalda | menor | 1 | daño por la espalda +3 % | `nucleo_4`, `s2.2` |
-| `s2.2` | Marca de muerte | habilidad | 2 | el monstruo que miras (hasta 16 bloques) brilla 10 s y recibe +30 % de tus golpes; espera 40 s | `s2.1`, `s2.3`, `s2.lado` |
-| `s2.3` | Daño a enemigos bajo el 35 % | menor | 1 | daño a enemigos bajo el 35 % +3 % | `s2.2`, `s2.4` |
-| `s2.4` | Velocidad | menor | 1 | velocidad +3 % | `s2.3`, `s2.puente_1` |
-| `s2.lado` | Marca de muerte II | habilidad | 2 | el monstruo que miras (hasta 16 bloques) brilla 10 s y recibe +40 % de tus golpes; si muere marcado, la espera baja un 50 %; espera 40 s | `s2.2` |
-| `s2.puente_1` | Puente al Arquero | puente | 2 | tensado +5 % *(del Arquero)* | `s2.4`, `s2.puente_2` |
+| `s2.2` | Daño a enemigos bajo el 35 % | menor | 1 | daño a enemigos bajo el 35 % +3 % | `s2.1`, `s2.3` |
+| `s2.3` | Velocidad | menor | 1 | velocidad +3 % | `s2.2`, `s2.ultima`, `s2.puente_1` |
+| `s2.ultima` | Ejecución | habilidad | 3 | apareces detrás del enemigo que miras (hasta 16 bloques) y le golpeas con el 150 % del daño de tu arma, el doble si le queda menos del 35 % de vida; cuesta 25 de estamina; espera 30 s | `s2.3`, `s2.ultima_ii` |
+| `s2.ultima_ii` | Ejecución II | habilidad | 2 | apareces detrás del enemigo que miras (hasta 16 bloques) y le golpeas con el 200 % del daño de tu arma, el doble si le queda menos del 35 % de vida; si muere, la espera baja un 50 %; cuesta 25 de estamina; espera 30 s | `s2.ultima` |
+| `s2.puente_1` | Puente al Arquero | puente | 2 | tensado +5 % *(del Arquero)* | `s2.3`, `s2.puente_2` |
 | `s2.puente_2` | Daño de proyectiles | cruzado | 2 | daño de proyectiles +4 % *(del Arquero)* | `s2.puente_1`, `s2.puente_3` |
 | `s2.puente_3` | Ojo de halcón menor | cruzado | 2 | tiros a la cabeza +15 % *(del Arquero)* | `s2.puente_2` |
 | `c.tronco_1` | Velocidad agachado | menor | 1 | velocidad agachado +3 % | `nucleo_5`, `c.tronco_2` |
@@ -551,10 +680,10 @@ Base: vida −30 %, daño c/c +10 %, velocidad +5 %, estamina +30 %, esquiva: di
 | `c2.lado_2` | Velocidad agachado | menor | 1 | velocidad agachado +3 % | `c2.4` |
 | `s3.1` | Velocidad agachado | menor | 1 | velocidad agachado +3 % | `nucleo_6`, `s3.2` |
 | `s3.2` | Veneno en la hoja | notable | 1 | tus golpes por la espalda envenenan (Veneno I 3 s) | `s3.1`, `s3.3` |
-| `s3.3` | Distancia de esquiva | menor | 1 | distancia de esquiva +3 % | `s3.2`, `s3.4` |
-| `s3.4` | Abanico de dagas | habilidad | 3 | lanzas 5 dagas en abanico de 60°: 4 de daño cada una y Veneno I 3 s; espera 25 s | `s3.3`, `s3.lado`, `s3.puente_1` |
-| `s3.lado` | Abanico de dagas II | habilidad | 2 | lanzas 7 dagas en abanico de 60°: 4 de daño cada una y Veneno II 3 s; espera 25 s | `s3.4` |
-| `s3.puente_1` | Puente al Mago | puente | 2 | maná máximo +10 % *(del Mago)* | `s3.4`, `s3.puente_2` |
+| `s3.3` | Distancia de esquiva | menor | 1 | distancia de esquiva +3 % | `s3.2`, `s3.ultima`, `s3.puente_1` |
+| `s3.ultima` | Abanico de dagas | habilidad | 3 | lanzas 5 dagas en abanico de 60°: 4 de daño cada una y Veneno I 3 s; espera 25 s | `s3.3`, `s3.ultima_ii` |
+| `s3.ultima_ii` | Abanico de dagas II | habilidad | 2 | lanzas 7 dagas en abanico de 60°: 4 de daño cada una y Veneno II 3 s; espera 25 s | `s3.ultima` |
+| `s3.puente_1` | Puente al Mago | puente | 2 | maná máximo +10 % *(del Mago)* | `s3.3`, `s3.puente_2` |
 | `s3.puente_2` | Regeneración de maná | cruzado | 2 | regeneración de maná +50 % *(del Mago)* | `s3.puente_1`, `s3.puente_3` |
 | `s3.puente_3` | Barrera menor | cruzado | 2 | daño mágico recibido −15 % *(del Mago)* | `s3.puente_2` |
 
@@ -564,7 +693,9 @@ Base: vida +60 %, armadura +2, empuje +30 %, velocidad −12 %, esquiva −35 %,
 
 - **Provocar** (V): los monstruos hostiles a 10 bloques te toman como objetivo; Resistencia I 6 s; espera 25 s. **II**: los monstruos hostiles a 14 bloques te toman como objetivo; Resistencia I 9 s y 4 de absorción; espera 25 s.
 - **Baluarte** (B): 8 s de Resistencia II para ti y Resistencia I para los jugadores a 6 bloques; espera 60 s. **II**: 10 s de Resistencia II para ti y Resistencia I para los jugadores a 9 bloques; espera 60 s.
-- **Embestida de escudo** (N): cargas 6 bloques al frente; lo que golpeas recibe 6 de daño, 40 de postura y sale empujado; espera 20 s. **II**: cargas 8 bloques al frente; lo que golpeas recibe 6 de daño, 40 de postura, sale empujado y queda aturdido; espera 20 s.
+- **Golpe sísmico** (N, final de la senda del desafío; una de tres): golpeas el suelo: los hostiles a 5 bloques reciben 8 de daño y 50 de postura, saltan y quedan con Lentitud II 3 s; cuesta 30 de estamina; espera 35 s. **II**: golpeas el suelo: los hostiles a 6 bloques reciben 10 de daño y 70 de postura, saltan y quedan con Lentitud II 3 s; cuesta 30 de estamina; espera 35 s.
+- **Santuario de acero** (N, final de la senda del baluarte; una de tres): clavas el escudo: durante 8 s, un círculo de 4 bloques da Resistencia I y Regeneración I a los aliados que están dentro, y a ti, y echa fuera a los hostiles; cuesta 30 de estamina; espera 60 s. **II**: clavas el escudo: durante 10 s, un círculo de 5 bloques da Resistencia I y Regeneración I a los aliados que están dentro, y a ti Resistencia II, y echa fuera a los hostiles; cuesta 30 de estamina; espera 60 s.
+- **Embestida de escudo** (N, final de la senda de la embestida; una de tres): cargas 6 bloques al frente; lo que golpeas recibe 6 de daño, 40 de postura y sale empujado; espera 20 s. **II**: cargas 8 bloques al frente; lo que golpeas recibe 6 de daño, 40 de postura, sale empujado y queda aturdido; espera 20 s.
 
 | Id | Nombre | Tipo | Coste | Efecto | Conecta con |
 |---|---|---|---|---|---|
@@ -576,9 +707,10 @@ Base: vida +60 %, armadura +2, empuje +30 %, velocidad −12 %, esquiva −35 %,
 | `nucleo_5` | Estamina máxima | núcleo | 1 | estamina máxima +3 % | `origen`, `nucleo_6`, `mano_firme`, `fuelle`, `nucleo_4`, `c.tronco_1` |
 | `nucleo_6` | Daño cuerpo a cuerpo | núcleo | 1 | daño cuerpo a cuerpo +3 % | `origen`, `nucleo_1`, `brazo_de_herrero`, `mano_firme`, `nucleo_5`, `s3.1` |
 | `a.tronco_1` | Estamina al parar | menor | 1 | estamina al parar −3 % | `nucleo_1`, `a.tronco_2` |
-| `a.tronco_2` | Ventana de parada | menor | 1 | ventana de parada +1 tick | `a.tronco_1`, `a.tronco_3` |
+| `a.tronco_2` | Ventana de parada | menor | 1 | ventana de parada +1 tick | `a.tronco_1`, `a.tronco_3`, `a.habilidad_v2` |
 | `a.tronco_3` | Estamina al parar | menor | 1 | estamina al parar −3 % | `a.tronco_2`, `a.tronco_4` |
 | `a.tronco_4` | Escudo pesado | notable | 1 | estamina al parar −20 % | `a.tronco_3`, `a1.1`, `a2.1` |
+| `a.habilidad_v2` | Provocar II | habilidad | 2 | los monstruos hostiles a 14 bloques te toman como objetivo; Resistencia I 9 s y 4 de absorción; espera 25 s | `a.tronco_2` |
 | `a1.1` | Estamina al parar | menor | 1 | estamina al parar −3 % | `a.tronco_4`, `a1.2` |
 | `a1.2` | Armadura | menor | 1 | armadura +1 | `a1.1`, `a1.3`, `a1.lado_1` |
 | `a1.3` | Represalia | notable | 1 | quien golpea tu escudo levantado recibe 3 de daño | `a1.2`, `a1.4` |
@@ -594,16 +726,19 @@ Base: vida +60 %, armadura +2, empuje +30 %, velocidad −12 %, esquiva −35 %,
 | `a2.lado_1` | Armadura | menor | 1 | armadura +1 | `a2.2` |
 | `a2.lado_2` | Vida | menor | 1 | vida +3 % | `a2.4` |
 | `s1.1` | Armadura | menor | 1 | armadura +1 | `nucleo_2`, `s1.2` |
-| `s1.2` | Provocar II | habilidad | 2 | los monstruos hostiles a 14 bloques te toman como objetivo; Resistencia I 9 s y 4 de absorción; espera 25 s | `s1.1`, `s1.3` |
-| `s1.3` | Vida | menor | 1 | vida +3 % | `s1.2`, `s1.4` |
-| `s1.4` | Estamina al parar | menor | 1 | estamina al parar −3 % | `s1.3`, `s1.puente_1` |
-| `s1.puente_1` | Puente al Guerrero | puente | 2 | regeneración de estamina +5 % *(del Guerrero)* | `s1.4`, `s1.puente_2` |
+| `s1.2` | Vida | menor | 1 | vida +3 % | `s1.1`, `s1.3` |
+| `s1.3` | Estamina al parar | menor | 1 | estamina al parar −3 % | `s1.2`, `s1.ultima`, `s1.puente_1` |
+| `s1.ultima` | Golpe sísmico | habilidad | 3 | golpeas el suelo: los hostiles a 5 bloques reciben 8 de daño y 50 de postura, saltan y quedan con Lentitud II 3 s; cuesta 30 de estamina; espera 35 s | `s1.3`, `s1.ultima_ii` |
+| `s1.ultima_ii` | Golpe sísmico II | habilidad | 2 | golpeas el suelo: los hostiles a 6 bloques reciben 10 de daño y 70 de postura, saltan y quedan con Lentitud II 3 s; cuesta 30 de estamina; espera 35 s | `s1.ultima` |
+| `s1.puente_1` | Puente al Guerrero | puente | 2 | regeneración de estamina +5 % *(del Guerrero)* | `s1.3`, `s1.puente_2` |
 | `s1.puente_2` | Daño de postura | cruzado | 2 | daño de postura +5 % *(del Guerrero)* | `s1.puente_1`, `s1.puente_3` |
 | `s1.puente_3` | Réplica menor | cruzado | 2 | una parada perfecta te devuelve 10 de estamina *(del Guerrero)* | `s1.puente_2` |
 | `b.tronco_1` | Armadura | menor | 1 | armadura +1 | `nucleo_3`, `b.tronco_2` |
-| `b.tronco_2` | Vida | menor | 1 | vida +3 % | `b.tronco_1`, `b.tronco_3` |
+| `b.tronco_2` | Vida | menor | 1 | vida +3 % | `b.tronco_1`, `b.tronco_3`, `b.habilidad_b` |
 | `b.tronco_3` | Dureza de armadura | menor | 1 | dureza de armadura +0,5 | `b.tronco_2`, `b.tronco_4` |
 | `b.tronco_4` | Piel de hierro | notable | 1 | armadura +2 | `b.tronco_3`, `b1.1`, `b2.1` |
+| `b.habilidad_b` | Baluarte | habilidad | 2 | 8 s de Resistencia II para ti y Resistencia I para los jugadores a 6 bloques; espera 60 s | `b.tronco_2`, `b.habilidad_b2` |
+| `b.habilidad_b2` | Baluarte II | habilidad | 2 | 10 s de Resistencia II para ti y Resistencia I para los jugadores a 9 bloques; espera 60 s | `b.habilidad_b` |
 | `b1.1` | Dureza de armadura | menor | 1 | dureza de armadura +0,5 | `b.tronco_4`, `b1.2` |
 | `b1.2` | Daño recibido | menor | 1 | daño recibido −3 % | `b1.1`, `b1.3`, `b1.lado_1` |
 | `b1.3` | Dureza | notable | 1 | dureza de armadura +2; daño recibido −8 % | `b1.2`, `b1.4` |
@@ -619,11 +754,11 @@ Base: vida +60 %, armadura +2, empuje +30 %, velocidad −12 %, esquiva −35 %,
 | `b2.lado_1` | Resistencia al empuje | menor | 1 | resistencia al empuje +5 % | `b2.2` |
 | `b2.lado_2` | Armadura | menor | 1 | armadura +1 | `b2.4` |
 | `s2.1` | Vida | menor | 1 | vida +3 % | `nucleo_4`, `s2.2` |
-| `s2.2` | Baluarte | habilidad | 2 | 8 s de Resistencia II para ti y Resistencia I para los jugadores a 6 bloques; espera 60 s | `s2.1`, `s2.3`, `s2.lado` |
-| `s2.3` | Dureza de armadura | menor | 1 | dureza de armadura +0,5 | `s2.2`, `s2.4` |
-| `s2.4` | Daño recibido | menor | 1 | daño recibido −3 % | `s2.3`, `s2.puente_1` |
-| `s2.lado` | Baluarte II | habilidad | 2 | 10 s de Resistencia II para ti y Resistencia I para los jugadores a 9 bloques; espera 60 s | `s2.2` |
-| `s2.puente_1` | Puente al Curandero | puente | 2 | curación +10 % *(del Curandero)* | `s2.4`, `s2.puente_2` |
+| `s2.2` | Dureza de armadura | menor | 1 | dureza de armadura +0,5 | `s2.1`, `s2.3` |
+| `s2.3` | Daño recibido | menor | 1 | daño recibido −3 % | `s2.2`, `s2.ultima`, `s2.puente_1` |
+| `s2.ultima` | Santuario de acero | habilidad | 3 | clavas el escudo: durante 8 s, un círculo de 4 bloques da Resistencia I y Regeneración I a los aliados que están dentro, y a ti, y echa fuera a los hostiles; cuesta 30 de estamina; espera 60 s | `s2.3`, `s2.ultima_ii` |
+| `s2.ultima_ii` | Santuario de acero II | habilidad | 2 | clavas el escudo: durante 10 s, un círculo de 5 bloques da Resistencia I y Regeneración I a los aliados que están dentro, y a ti Resistencia II, y echa fuera a los hostiles; cuesta 30 de estamina; espera 60 s | `s2.ultima` |
+| `s2.puente_1` | Puente al Curandero | puente | 2 | curación +10 % *(del Curandero)* | `s2.3`, `s2.puente_2` |
 | `s2.puente_2` | Regeneración de estamina | cruzado | 2 | regeneración de estamina +5 % *(del Curandero)* | `s2.puente_1`, `s2.puente_3` |
 | `s2.puente_3` | Vendaje | cruzado | 2 | cada 8 s sin recibir daño recuperas 1 de vida *(del Curandero)* | `s2.puente_2` |
 | `c.tronco_1` | Estamina máxima | menor | 1 | estamina máxima +3 % | `nucleo_5`, `c.tronco_2` |
@@ -646,10 +781,10 @@ Base: vida +60 %, armadura +2, empuje +30 %, velocidad −12 %, esquiva −35 %,
 | `c2.lado_2` | Estamina al parar | menor | 1 | estamina al parar −3 % | `c2.4` |
 | `s3.1` | Regeneración de estamina | menor | 1 | regeneración de estamina +3 % | `nucleo_6`, `s3.2` |
 | `s3.2` | Pisotón | notable | 1 | al caer desde 3 bloques o más empujas lo que hay a 3 bloques y le haces 10 de postura | `s3.1`, `s3.3` |
-| `s3.3` | Resistencia al empuje | menor | 1 | resistencia al empuje +5 % | `s3.2`, `s3.4` |
-| `s3.4` | Embestida de escudo | habilidad | 3 | cargas 6 bloques al frente; lo que golpeas recibe 6 de daño, 40 de postura y sale empujado; espera 20 s | `s3.3`, `s3.lado`, `s3.puente_1` |
-| `s3.lado` | Embestida de escudo II | habilidad | 2 | cargas 8 bloques al frente; lo que golpeas recibe 6 de daño, 40 de postura, sale empujado y queda aturdido; espera 20 s | `s3.4` |
-| `s3.puente_1` | Puente al Mago | puente | 2 | maná máximo +10 % *(del Mago)* | `s3.4`, `s3.puente_2` |
+| `s3.3` | Resistencia al empuje | menor | 1 | resistencia al empuje +5 % | `s3.2`, `s3.ultima`, `s3.puente_1` |
+| `s3.ultima` | Embestida de escudo | habilidad | 3 | cargas 6 bloques al frente; lo que golpeas recibe 6 de daño, 40 de postura y sale empujado; espera 20 s | `s3.3`, `s3.ultima_ii` |
+| `s3.ultima_ii` | Embestida de escudo II | habilidad | 2 | cargas 8 bloques al frente; lo que golpeas recibe 6 de daño, 40 de postura, sale empujado y queda aturdido; espera 20 s | `s3.ultima` |
+| `s3.puente_1` | Puente al Mago | puente | 2 | maná máximo +10 % *(del Mago)* | `s3.3`, `s3.puente_2` |
 | `s3.puente_2` | Regeneración de maná | cruzado | 2 | regeneración de maná +50 % *(del Mago)* | `s3.puente_1`, `s3.puente_3` |
 | `s3.puente_3` | Barrera menor | cruzado | 2 | daño mágico recibido −15 % *(del Mago)* | `s3.puente_2` |
 
@@ -659,7 +794,9 @@ Base: vida −10 %, estamina −10 %, hechizos +10 %, espera −10 %, maná +25 
 
 - **Nova arcana** (V): un anillo de 5 bloques: 6 de daño mágico a los hostiles, y los empuja; espera 20 s. **II**: un anillo de 6 bloques: 9 de daño mágico a los hostiles, y los empuja; espera 20 s.
 - **Concentración** (B): 8 s con la espera de los hechizos al 50 % y sin coste de maná; espera 60 s. **II**: 11 s con la espera de los hechizos al 50 % y sin coste de maná; espera 60 s.
-- **Meteoro** (N): tras 1,5 s cae un meteoro donde miras (hasta 24 bloques): 12 de daño mágico en 3 bloques y fuego 3 s; cuesta 40 de maná; espera 40 s. **II**: tras 1,5 s cae un meteoro donde miras (hasta 24 bloques): 16 de daño mágico en 4 bloques y fuego 3 s; cuesta 40 de maná; espera 40 s.
+- **Relámpago en cadena** (N, final de la senda de la nova; una de tres): un rayo al enemigo que miras (hasta 16 bloques): 10 de daño mágico, y salta a 4 enemigos más a 5 bloques, un 20 % menos en cada salto; cuesta 35 de maná; espera 25 s. **II**: un rayo al enemigo que miras (hasta 16 bloques): 12 de daño mágico, y salta a 6 enemigos más a 5 bloques, un 20 % menos en cada salto; cuesta 35 de maná; espera 25 s.
+- **Prisión de hielo** (N, final de la senda de la calma; una de tres): el hielo atrapa a los hostiles a 4 bloques de donde miras (hasta 24): 6 de daño mágico y 3 s congelados (Lentitud VII; si no son jefes, aturdidos: se corta su ataque); cuesta 45 de maná; espera 45 s. **II**: el hielo atrapa a los hostiles a 5 bloques de donde miras (hasta 24): 8 de daño mágico y 4 s congelados (Lentitud VII; si no son jefes, aturdidos: se corta su ataque); cuesta 45 de maná; espera 45 s.
+- **Meteoro** (N, final de la senda del meteoro; una de tres): tras 1,5 s cae un meteoro donde miras (hasta 24 bloques): 12 de daño mágico en 3 bloques y fuego 3 s; cuesta 40 de maná; espera 40 s. **II**: tras 1,5 s cae un meteoro donde miras (hasta 24 bloques): 16 de daño mágico en 4 bloques y fuego 3 s; cuesta 40 de maná; espera 40 s.
 
 | Id | Nombre | Tipo | Coste | Efecto | Conecta con |
 |---|---|---|---|---|---|
@@ -671,9 +808,10 @@ Base: vida −10 %, estamina −10 %, hechizos +10 %, espera −10 %, maná +25 
 | `nucleo_5` | Daño mágico recibido | núcleo | 1 | daño mágico recibido −3 % | `origen`, `nucleo_6`, `mano_firme`, `fuelle`, `nucleo_4`, `c.tronco_1` |
 | `nucleo_6` | Vida | núcleo | 1 | vida +3 % | `origen`, `nucleo_1`, `brazo_de_herrero`, `mano_firme`, `nucleo_5`, `s3.1` |
 | `a.tronco_1` | Daño de hechizos | menor | 1 | daño de hechizos +3 % | `nucleo_1`, `a.tronco_2` |
-| `a.tronco_2` | Tiempo de carga | menor | 1 | tiempo de carga −3 % | `a.tronco_1`, `a.tronco_3` |
+| `a.tronco_2` | Tiempo de carga | menor | 1 | tiempo de carga −3 % | `a.tronco_1`, `a.tronco_3`, `a.habilidad_v2` |
 | `a.tronco_3` | Bono de la carga completa | menor | 1 | bono de la carga completa +3 % | `a.tronco_2`, `a.tronco_4` |
 | `a.tronco_4` | Sobrecarga arcana | notable | 1 | bono de la carga completa +20 % | `a.tronco_3`, `a1.1`, `a2.1` |
+| `a.habilidad_v2` | Nova arcana II | habilidad | 2 | un anillo de 6 bloques: 9 de daño mágico a los hostiles, y los empuja; espera 20 s | `a.tronco_2` |
 | `a1.1` | Daño de hechizos | menor | 1 | daño de hechizos +3 % | `a.tronco_4`, `a1.2` |
 | `a1.2` | Daño de hechizos | menor | 1 | daño de hechizos +3 % | `a1.1`, `a1.3`, `a1.lado_1` |
 | `a1.3` | Catalizador | notable | 1 | daño de hechizos +5 %; un hechizo que mata te devuelve 5 de maná | `a1.2`, `a1.4` |
@@ -689,16 +827,19 @@ Base: vida −10 %, estamina −10 %, hechizos +10 %, espera −10 %, maná +25 
 | `a2.lado_1` | Estamina máxima | menor | 1 | estamina máxima +3 % | `a2.2` |
 | `a2.lado_2` | Velocidad | menor | 1 | velocidad +3 % | `a2.4` |
 | `s1.1` | Velocidad | menor | 1 | velocidad +3 % | `nucleo_2`, `s1.2` |
-| `s1.2` | Nova arcana II | habilidad | 2 | un anillo de 6 bloques: 9 de daño mágico a los hostiles, y los empuja; espera 20 s | `s1.1`, `s1.3` |
-| `s1.3` | Estamina máxima | menor | 1 | estamina máxima +3 % | `s1.2`, `s1.4` |
-| `s1.4` | Daño mágico recibido | menor | 1 | daño mágico recibido −3 % | `s1.3`, `s1.puente_1` |
-| `s1.puente_1` | Puente al Asesino | puente | 2 | velocidad +3 % *(del Asesino)* | `s1.4`, `s1.puente_2` |
+| `s1.2` | Estamina máxima | menor | 1 | estamina máxima +3 % | `s1.1`, `s1.3` |
+| `s1.3` | Daño mágico recibido | menor | 1 | daño mágico recibido −3 % | `s1.2`, `s1.ultima`, `s1.puente_1` |
+| `s1.ultima` | Relámpago en cadena | habilidad | 3 | un rayo al enemigo que miras (hasta 16 bloques): 10 de daño mágico, y salta a 4 enemigos más a 5 bloques, un 20 % menos en cada salto; cuesta 35 de maná; espera 25 s | `s1.3`, `s1.ultima_ii` |
+| `s1.ultima_ii` | Relámpago en cadena II | habilidad | 2 | un rayo al enemigo que miras (hasta 16 bloques): 12 de daño mágico, y salta a 6 enemigos más a 5 bloques, un 20 % menos en cada salto; cuesta 35 de maná; espera 25 s | `s1.ultima` |
+| `s1.puente_1` | Puente al Asesino | puente | 2 | velocidad +3 % *(del Asesino)* | `s1.3`, `s1.puente_2` |
 | `s1.puente_2` | Coste de esquiva | cruzado | 2 | coste de esquiva −8 % *(del Asesino)* | `s1.puente_1`, `s1.puente_3` |
 | `s1.puente_3` | Puñalada menor | cruzado | 2 | daño por la espalda +20 % *(del Asesino)* | `s1.puente_2` |
 | `b.tronco_1` | Regeneración de maná | menor | 1 | regeneración de maná +20 % | `nucleo_3`, `b.tronco_2` |
-| `b.tronco_2` | Espera de hechizos | menor | 1 | espera de hechizos −3 % | `b.tronco_1`, `b.tronco_3` |
+| `b.tronco_2` | Espera de hechizos | menor | 1 | espera de hechizos −3 % | `b.tronco_1`, `b.tronco_3`, `b.habilidad_b` |
 | `b.tronco_3` | Coste de maná | menor | 1 | coste de maná −3 % | `b.tronco_2`, `b.tronco_4` |
 | `b.tronco_4` | Mente clara | notable | 1 | regeneración de maná +100 % | `b.tronco_3`, `b1.1`, `b2.1` |
+| `b.habilidad_b` | Concentración | habilidad | 2 | 8 s con la espera de los hechizos al 50 % y sin coste de maná; espera 60 s | `b.tronco_2`, `b.habilidad_b2` |
+| `b.habilidad_b2` | Concentración II | habilidad | 2 | 11 s con la espera de los hechizos al 50 % y sin coste de maná; espera 60 s | `b.habilidad_b` |
 | `b1.1` | Daño mágico recibido | menor | 1 | daño mágico recibido −3 % | `b.tronco_4`, `b1.2` |
 | `b1.2` | Tiempo de carga | menor | 1 | tiempo de carga −3 % | `b1.1`, `b1.3`, `b1.lado_1` |
 | `b1.3` | Canalización | notable | 1 | tiempo de carga −20 %; maná máximo +25 % | `b1.2`, `b1.4` |
@@ -714,11 +855,11 @@ Base: vida −10 %, estamina −10 %, hechizos +10 %, espera −10 %, maná +25 
 | `b2.lado_1` | Espera de hechizos | menor | 1 | espera de hechizos −3 % | `b2.2` |
 | `b2.lado_2` | Velocidad | menor | 1 | velocidad +3 % | `b2.4` |
 | `s2.1` | Distancia de esquiva | menor | 1 | distancia de esquiva +3 % | `nucleo_4`, `s2.2` |
-| `s2.2` | Concentración | habilidad | 2 | 8 s con la espera de los hechizos al 50 % y sin coste de maná; espera 60 s | `s2.1`, `s2.3`, `s2.lado` |
-| `s2.3` | Vida | menor | 1 | vida +3 % | `s2.2`, `s2.4` |
-| `s2.4` | Vida | menor | 1 | vida +3 % | `s2.3`, `s2.puente_1` |
-| `s2.lado` | Concentración II | habilidad | 2 | 11 s con la espera de los hechizos al 50 % y sin coste de maná; espera 60 s | `s2.2` |
-| `s2.puente_1` | Puente al Curandero | puente | 2 | curación +10 % *(del Curandero)* | `s2.4`, `s2.puente_2` |
+| `s2.2` | Vida | menor | 1 | vida +3 % | `s2.1`, `s2.3` |
+| `s2.3` | Vida | menor | 1 | vida +3 % | `s2.2`, `s2.ultima`, `s2.puente_1` |
+| `s2.ultima` | Prisión de hielo | habilidad | 3 | el hielo atrapa a los hostiles a 4 bloques de donde miras (hasta 24): 6 de daño mágico y 3 s congelados (Lentitud VII; si no son jefes, aturdidos: se corta su ataque); cuesta 45 de maná; espera 45 s | `s2.3`, `s2.ultima_ii` |
+| `s2.ultima_ii` | Prisión de hielo II | habilidad | 2 | el hielo atrapa a los hostiles a 5 bloques de donde miras (hasta 24): 8 de daño mágico y 4 s congelados (Lentitud VII; si no son jefes, aturdidos: se corta su ataque); cuesta 45 de maná; espera 45 s | `s2.ultima` |
+| `s2.puente_1` | Puente al Curandero | puente | 2 | curación +10 % *(del Curandero)* | `s2.3`, `s2.puente_2` |
 | `s2.puente_2` | Regeneración de estamina | cruzado | 2 | regeneración de estamina +5 % *(del Curandero)* | `s2.puente_1`, `s2.puente_3` |
 | `s2.puente_3` | Vendaje | cruzado | 2 | cada 8 s sin recibir daño recuperas 1 de vida *(del Curandero)* | `s2.puente_2` |
 | `c.tronco_1` | Daño mágico recibido | menor | 1 | daño mágico recibido −3 % | `nucleo_5`, `c.tronco_2` |
@@ -741,10 +882,10 @@ Base: vida −10 %, estamina −10 %, hechizos +10 %, espera −10 %, maná +25 
 | `c2.lado_2` | Vida | menor | 1 | vida +3 % | `c2.4` |
 | `s3.1` | Daño mágico recibido | menor | 1 | daño mágico recibido −3 % | `nucleo_6`, `s3.2` |
 | `s3.2` | Runa de escarcha | notable | 1 | tus hechizos dejan Lentitud I 2 s | `s3.1`, `s3.3` |
-| `s3.3` | Vida | menor | 1 | vida +3 % | `s3.2`, `s3.4` |
-| `s3.4` | Meteoro | habilidad | 3 | tras 1,5 s cae un meteoro donde miras (hasta 24 bloques): 12 de daño mágico en 3 bloques y fuego 3 s; cuesta 40 de maná; espera 40 s | `s3.3`, `s3.lado`, `s3.puente_1` |
-| `s3.lado` | Meteoro II | habilidad | 2 | tras 1,5 s cae un meteoro donde miras (hasta 24 bloques): 16 de daño mágico en 4 bloques y fuego 3 s; cuesta 40 de maná; espera 40 s | `s3.4` |
-| `s3.puente_1` | Puente al Tanque | puente | 2 | vida +5 % *(del Tanque)* | `s3.4`, `s3.puente_2` |
+| `s3.3` | Vida | menor | 1 | vida +3 % | `s3.2`, `s3.ultima`, `s3.puente_1` |
+| `s3.ultima` | Meteoro | habilidad | 3 | tras 1,5 s cae un meteoro donde miras (hasta 24 bloques): 12 de daño mágico en 3 bloques y fuego 3 s; cuesta 40 de maná; espera 40 s | `s3.3`, `s3.ultima_ii` |
+| `s3.ultima_ii` | Meteoro II | habilidad | 2 | tras 1,5 s cae un meteoro donde miras (hasta 24 bloques): 16 de daño mágico en 4 bloques y fuego 3 s; cuesta 40 de maná; espera 40 s | `s3.ultima` |
+| `s3.puente_1` | Puente al Tanque | puente | 2 | vida +5 % *(del Tanque)* | `s3.3`, `s3.puente_2` |
 | `s3.puente_2` | Armadura | cruzado | 2 | armadura +1 *(del Tanque)* | `s3.puente_1`, `s3.puente_3` |
 | `s3.puente_3` | Represalia menor | cruzado | 2 | quien golpea tu escudo levantado recibe 2 de daño *(del Tanque)* | `s3.puente_2` |
 
@@ -754,7 +895,9 @@ Base: curación +50 %, maná +15 %, regeneración de maná ×4, regeneración de
 
 - **Pulso sanador** (V): cura 4 (× tu curación) a ti, a los jugadores y a tus animales a 8 bloques; espera 30 s. **II**: cura 6 (× tu curación) a ti, a los jugadores y a tus animales a 8 bloques, y les quita Veneno y Marchitamiento; espera 30 s.
 - **Resurgir** (B): el aliado que miras (hasta 16 bloques) recupera el 50 % de la vida que le falta y Regeneración II 5 s; espera 90 s. **II**: el aliado que miras (hasta 16 bloques) recupera el 50 % de la vida que le falta y Regeneración II 8 s; espera 70 s.
-- **Escudo de luz** (N): el aliado que miras (hasta 16 bloques), o tú, gana 6 de absorción y Resistencia I 6 s; espera 35 s. **II**: el aliado que miras (hasta 16 bloques), o tú, gana 8 de absorción y Resistencia I 6 s, y pierde un efecto negativo; espera 35 s.
+- **Oleada de vida** (N, final de la senda del pulso; una de tres): una oleada cura 8 (× tu curación) a ti y a los aliados a 10 bloques, con Regeneración II 4 s, y empuja a los hostiles a 4 bloques; cuesta 50 de maná; espera 60 s. **II**: una oleada cura 10 (× tu curación) a ti y a los aliados a 10 bloques, con Regeneración II 4 s y sin efectos negativos, y empuja a los hostiles a 4 bloques; cuesta 50 de maná; espera 60 s.
+- **Segunda vida** (N, final de la senda del resurgir; una de tres): el aliado que miras (hasta 16 bloques), o tú: durante 20 s, el primer golpe mortal le deja con el 40 % de su vida en vez de matarlo; cuesta 40 de maná; espera 120 s. **II**: el aliado que miras (hasta 16 bloques), o tú: durante 30 s, el primer golpe mortal le deja con el 60 % de su vida en vez de matarlo; cuesta 40 de maná; espera 120 s.
+- **Escudo de luz** (N, final de la senda de la luz; una de tres): el aliado que miras (hasta 16 bloques), o tú, gana 6 de absorción y Resistencia I 6 s; espera 35 s. **II**: el aliado que miras (hasta 16 bloques), o tú, gana 8 de absorción y Resistencia I 6 s, y pierde un efecto negativo; espera 35 s.
 
 | Id | Nombre | Tipo | Coste | Efecto | Conecta con |
 |---|---|---|---|---|---|
@@ -766,9 +909,10 @@ Base: curación +50 %, maná +15 %, regeneración de maná ×4, regeneración de
 | `nucleo_5` | Regeneración de estamina | núcleo | 1 | regeneración de estamina +3 % | `origen`, `nucleo_6`, `mano_firme`, `fuelle`, `nucleo_4`, `c.tronco_1` |
 | `nucleo_6` | Vida | núcleo | 1 | vida +3 % | `origen`, `nucleo_1`, `brazo_de_herrero`, `mano_firme`, `nucleo_5`, `s3.1` |
 | `a.tronco_1` | Curación | menor | 1 | curación +3 % | `nucleo_1`, `a.tronco_2` |
-| `a.tronco_2` | Curación | menor | 1 | curación +3 % | `a.tronco_1`, `a.tronco_3` |
+| `a.tronco_2` | Curación | menor | 1 | curación +3 % | `a.tronco_1`, `a.tronco_3`, `a.habilidad_v2` |
 | `a.tronco_3` | Coste de maná | menor | 1 | coste de maná −3 % | `a.tronco_2`, `a.tronco_4` |
 | `a.tronco_4` | Manos cálidas | notable | 1 | curación +15 % | `a.tronco_3`, `a1.1`, `a2.1` |
+| `a.habilidad_v2` | Pulso sanador II | habilidad | 2 | cura 6 (× tu curación) a ti, a los jugadores y a tus animales a 8 bloques, y les quita Veneno y Marchitamiento; espera 30 s | `a.tronco_2` |
 | `a1.1` | Curación | menor | 1 | curación +3 % | `a.tronco_4`, `a1.2` |
 | `a1.2` | Curación | menor | 1 | curación +3 % | `a1.1`, `a1.3`, `a1.lado_1` |
 | `a1.3` | Milagro | notable | 1 | curación +15 %; una cura que llena la vida da 2 de absorción | `a1.2`, `a1.4` |
@@ -784,16 +928,19 @@ Base: curación +50 %, maná +15 %, regeneración de maná ×4, regeneración de
 | `a2.lado_1` | Curación | menor | 1 | curación +3 % | `a2.2` |
 | `a2.lado_2` | Vida | menor | 1 | vida +3 % | `a2.4` |
 | `s1.1` | Curación | menor | 1 | curación +3 % | `nucleo_2`, `s1.2` |
-| `s1.2` | Pulso sanador II | habilidad | 2 | cura 6 (× tu curación) a ti, a los jugadores y a tus animales a 8 bloques, y les quita Veneno y Marchitamiento; espera 30 s | `s1.1`, `s1.3` |
-| `s1.3` | Maná máximo | menor | 1 | maná máximo +3 % | `s1.2`, `s1.4` |
-| `s1.4` | Vida | menor | 1 | vida +3 % | `s1.3`, `s1.puente_1` |
-| `s1.puente_1` | Puente al Tanque | puente | 2 | vida +5 % *(del Tanque)* | `s1.4`, `s1.puente_2` |
+| `s1.2` | Maná máximo | menor | 1 | maná máximo +3 % | `s1.1`, `s1.3` |
+| `s1.3` | Vida | menor | 1 | vida +3 % | `s1.2`, `s1.ultima`, `s1.puente_1` |
+| `s1.ultima` | Oleada de vida | habilidad | 3 | una oleada cura 8 (× tu curación) a ti y a los aliados a 10 bloques, con Regeneración II 4 s, y empuja a los hostiles a 4 bloques; cuesta 50 de maná; espera 60 s | `s1.3`, `s1.ultima_ii` |
+| `s1.ultima_ii` | Oleada de vida II | habilidad | 2 | una oleada cura 10 (× tu curación) a ti y a los aliados a 10 bloques, con Regeneración II 4 s y sin efectos negativos, y empuja a los hostiles a 4 bloques; cuesta 50 de maná; espera 60 s | `s1.ultima` |
+| `s1.puente_1` | Puente al Tanque | puente | 2 | vida +5 % *(del Tanque)* | `s1.3`, `s1.puente_2` |
 | `s1.puente_2` | Armadura | cruzado | 2 | armadura +1 *(del Tanque)* | `s1.puente_1`, `s1.puente_3` |
 | `s1.puente_3` | Represalia menor | cruzado | 2 | quien golpea tu escudo levantado recibe 2 de daño *(del Tanque)* | `s1.puente_2` |
 | `b.tronco_1` | Daño recibido | menor | 1 | daño recibido −3 % | `nucleo_3`, `b.tronco_2` |
-| `b.tronco_2` | Curación | menor | 1 | curación +3 % | `b.tronco_1`, `b.tronco_3` |
+| `b.tronco_2` | Curación | menor | 1 | curación +3 % | `b.tronco_1`, `b.tronco_3`, `b.habilidad_b` |
 | `b.tronco_3` | Vida | menor | 1 | vida +3 % | `b.tronco_2`, `b.tronco_4` |
 | `b.tronco_4` | Bendición | notable | 1 | curar a alguien por debajo del 50 % de vida le da Resistencia I 4 s | `b.tronco_3`, `b1.1`, `b2.1` |
+| `b.habilidad_b` | Resurgir | habilidad | 2 | el aliado que miras (hasta 16 bloques) recupera el 50 % de la vida que le falta y Regeneración II 5 s; espera 90 s | `b.tronco_2`, `b.habilidad_b2` |
+| `b.habilidad_b2` | Resurgir II | habilidad | 2 | el aliado que miras (hasta 16 bloques) recupera el 50 % de la vida que le falta y Regeneración II 8 s; espera 70 s | `b.habilidad_b` |
 | `b1.1` | Curación | menor | 1 | curación +3 % | `b.tronco_4`, `b1.2` |
 | `b1.2` | Daño recibido | menor | 1 | daño recibido −3 % | `b1.1`, `b1.3`, `b1.lado_1` |
 | `b1.3` | Purificar | notable | 1 | tus curas quitan Veneno, Marchitamiento, Debilidad y Lentitud | `b1.2`, `b1.4` |
@@ -809,11 +956,11 @@ Base: curación +50 %, maná +15 %, regeneración de maná ×4, regeneración de
 | `b2.lado_1` | Daño recibido | menor | 1 | daño recibido −3 % | `b2.2` |
 | `b2.lado_2` | Maná máximo | menor | 1 | maná máximo +3 % | `b2.4` |
 | `s2.1` | Regeneración de maná | menor | 1 | regeneración de maná +20 % | `nucleo_4`, `s2.2` |
-| `s2.2` | Resurgir | habilidad | 2 | el aliado que miras (hasta 16 bloques) recupera el 50 % de la vida que le falta y Regeneración II 5 s; espera 90 s | `s2.1`, `s2.3`, `s2.lado` |
-| `s2.3` | Vida | menor | 1 | vida +3 % | `s2.2`, `s2.4` |
-| `s2.4` | Regeneración de estamina | menor | 1 | regeneración de estamina +3 % | `s2.3`, `s2.puente_1` |
-| `s2.lado` | Resurgir II | habilidad | 2 | el aliado que miras (hasta 16 bloques) recupera el 50 % de la vida que le falta y Regeneración II 8 s; espera 70 s | `s2.2` |
-| `s2.puente_1` | Puente al Mago | puente | 2 | maná máximo +10 % *(del Mago)* | `s2.4`, `s2.puente_2` |
+| `s2.2` | Vida | menor | 1 | vida +3 % | `s2.1`, `s2.3` |
+| `s2.3` | Regeneración de estamina | menor | 1 | regeneración de estamina +3 % | `s2.2`, `s2.ultima`, `s2.puente_1` |
+| `s2.ultima` | Segunda vida | habilidad | 3 | el aliado que miras (hasta 16 bloques), o tú: durante 20 s, el primer golpe mortal le deja con el 40 % de su vida en vez de matarlo; cuesta 40 de maná; espera 120 s | `s2.3`, `s2.ultima_ii` |
+| `s2.ultima_ii` | Segunda vida II | habilidad | 2 | el aliado que miras (hasta 16 bloques), o tú: durante 30 s, el primer golpe mortal le deja con el 60 % de su vida en vez de matarlo; cuesta 40 de maná; espera 120 s | `s2.ultima` |
+| `s2.puente_1` | Puente al Mago | puente | 2 | maná máximo +10 % *(del Mago)* | `s2.3`, `s2.puente_2` |
 | `s2.puente_2` | Regeneración de maná | cruzado | 2 | regeneración de maná +50 % *(del Mago)* | `s2.puente_1`, `s2.puente_3` |
 | `s2.puente_3` | Barrera menor | cruzado | 2 | daño mágico recibido −15 % *(del Mago)* | `s2.puente_2` |
 | `c.tronco_1` | Regeneración de estamina | menor | 1 | regeneración de estamina +3 % | `nucleo_5`, `c.tronco_2` |
@@ -836,10 +983,10 @@ Base: curación +50 %, maná +15 %, regeneración de maná ×4, regeneración de
 | `c2.lado_2` | Regeneración de maná | menor | 1 | regeneración de maná +20 % | `c2.4` |
 | `s3.1` | Vida | menor | 1 | vida +3 % | `nucleo_6`, `s3.2` |
 | `s3.2` | Rocío | notable | 1 | tu cura sobre alguien por debajo del 25 % de vida es +50 % (cada 20 s) | `s3.1`, `s3.3` |
-| `s3.3` | Maná máximo | menor | 1 | maná máximo +3 % | `s3.2`, `s3.4` |
-| `s3.4` | Escudo de luz | habilidad | 3 | el aliado que miras (hasta 16 bloques), o tú, gana 6 de absorción y Resistencia I 6 s; espera 35 s | `s3.3`, `s3.lado`, `s3.puente_1` |
-| `s3.lado` | Escudo de luz II | habilidad | 2 | el aliado que miras (hasta 16 bloques), o tú, gana 8 de absorción y Resistencia I 6 s, y pierde un efecto negativo; espera 35 s | `s3.4` |
-| `s3.puente_1` | Puente al Arquero | puente | 2 | tensado +5 % *(del Arquero)* | `s3.4`, `s3.puente_2` |
+| `s3.3` | Maná máximo | menor | 1 | maná máximo +3 % | `s3.2`, `s3.ultima`, `s3.puente_1` |
+| `s3.ultima` | Escudo de luz | habilidad | 3 | el aliado que miras (hasta 16 bloques), o tú, gana 6 de absorción y Resistencia I 6 s; espera 35 s | `s3.3`, `s3.ultima_ii` |
+| `s3.ultima_ii` | Escudo de luz II | habilidad | 2 | el aliado que miras (hasta 16 bloques), o tú, gana 8 de absorción y Resistencia I 6 s, y pierde un efecto negativo; espera 35 s | `s3.ultima` |
+| `s3.puente_1` | Puente al Arquero | puente | 2 | tensado +5 % *(del Arquero)* | `s3.3`, `s3.puente_2` |
 | `s3.puente_2` | Daño de proyectiles | cruzado | 2 | daño de proyectiles +4 % *(del Arquero)* | `s3.puente_1`, `s3.puente_3` |
 | `s3.puente_3` | Ojo de halcón menor | cruzado | 2 | tiros a la cabeza +15 % *(del Arquero)* | `s3.puente_2` |
 
@@ -849,7 +996,9 @@ Base: vida −10 %, velocidad +8 %, proyectiles +15 %, tensado +10 %, esquiva +2
 
 - **Salto atrás** (V): un salto hacia atrás de unos 6 bloques y Caída lenta 2 s; espera 12 s. **II**: un salto hacia atrás de unos 6 bloques y Caída lenta 2 s; tu siguiente flecha en 3 s hace +25 %; espera 8 s.
 - **Lluvia de flechas** (B): 12 flechas en 2 s sobre un círculo de 3 bloques donde miras (hasta 32), 4 de daño cada una; espera 45 s. **II**: 18 flechas en 2 s sobre un círculo de 4 bloques donde miras (hasta 32), 4 de daño cada una; espera 45 s.
-- **Flecha de red** (N): una red donde miras (hasta 24 bloques) atrapa a los monstruos a 3 bloques: Lentitud IV 3 s; espera 20 s. **II**: una red donde miras (hasta 24 bloques) atrapa a los monstruos a 4 bloques: Lentitud IV 4 s, y tus flechas les hacen +15 %; espera 20 s.
+- **Saeta letal** (N, final de la senda del salto; una de tres): apuntas 0,75 s (una línea de luz lo avisa) y disparas una saeta que atraviesa todo en 32 bloques: 12 de daño, ×1,5 a lo que tiene menos del 50 % de vida; cuesta 25 de estamina; espera 30 s. **II**: apuntas 0,5 s (una línea de luz lo avisa) y disparas una saeta que atraviesa todo en 32 bloques: 15 de daño, ×1,5 a lo que tiene menos del 50 % de vida; cuesta 25 de estamina; espera 30 s.
+- **Flecha explosiva** (N, final de la senda de la lluvia; una de tres): una flecha estalla donde miras (hasta 32 bloques): 8 de daño, 40 de postura y empuje a lo que hay a 3 bloques, sin romper bloques; cuesta 20 de estamina; espera 25 s. **II**: una flecha estalla donde miras (hasta 32 bloques): 10 de daño, 60 de postura y empuje a lo que hay a 4 bloques, sin romper bloques; cuesta 20 de estamina; espera 25 s.
+- **Flecha de red** (N, final de la senda del trampero; una de tres): una red donde miras (hasta 24 bloques) atrapa a los monstruos a 3 bloques: Lentitud IV 3 s; espera 20 s. **II**: una red donde miras (hasta 24 bloques) atrapa a los monstruos a 4 bloques: Lentitud IV 4 s, y tus flechas les hacen +15 %; espera 20 s.
 
 | Id | Nombre | Tipo | Coste | Efecto | Conecta con |
 |---|---|---|---|---|---|
@@ -861,9 +1010,10 @@ Base: vida −10 %, velocidad +8 %, proyectiles +15 %, tensado +10 %, esquiva +2
 | `nucleo_5` | Distancia de esquiva | núcleo | 1 | distancia de esquiva +3 % | `origen`, `nucleo_6`, `mano_firme`, `fuelle`, `nucleo_4`, `c.tronco_1` |
 | `nucleo_6` | Vida | núcleo | 1 | vida +3 % | `origen`, `nucleo_1`, `brazo_de_herrero`, `mano_firme`, `nucleo_5`, `s3.1` |
 | `a.tronco_1` | Daño de proyectiles | menor | 1 | daño de proyectiles +3 % | `nucleo_1`, `a.tronco_2` |
-| `a.tronco_2` | Tiros a la cabeza | menor | 1 | tiros a la cabeza +3 % | `a.tronco_1`, `a.tronco_3` |
+| `a.tronco_2` | Tiros a la cabeza | menor | 1 | tiros a la cabeza +3 % | `a.tronco_1`, `a.tronco_3`, `a.habilidad_v2` |
 | `a.tronco_3` | Daño de proyectiles | menor | 1 | daño de proyectiles +3 % | `a.tronco_2`, `a.tronco_4` |
 | `a.tronco_4` | Ojo de halcón | notable | 1 | daño de proyectiles +6 % | `a.tronco_3`, `a1.1`, `a2.1` |
+| `a.habilidad_v2` | Salto atrás II | habilidad | 2 | un salto hacia atrás de unos 6 bloques y Caída lenta 2 s; tu siguiente flecha en 3 s hace +25 %; espera 8 s | `a.tronco_2` |
 | `a1.1` | Tiros a la cabeza | menor | 1 | tiros a la cabeza +3 % | `a.tronco_4`, `a1.2` |
 | `a1.2` | Tiros a la cabeza | menor | 1 | tiros a la cabeza +3 % | `a1.1`, `a1.3`, `a1.lado_1` |
 | `a1.3` | Tiro a la cabeza | notable | 1 | tiros a la cabeza +20 % | `a1.2`, `a1.4` |
@@ -879,16 +1029,19 @@ Base: vida −10 %, velocidad +8 %, proyectiles +15 %, tensado +10 %, esquiva +2
 | `a2.lado_1` | Tiros a la cabeza | menor | 1 | tiros a la cabeza +3 % | `a2.2` |
 | `a2.lado_2` | Daño de caída | menor | 1 | daño de caída −3 % | `a2.4` |
 | `s1.1` | Tiros a la cabeza | menor | 1 | tiros a la cabeza +3 % | `nucleo_2`, `s1.2` |
-| `s1.2` | Salto atrás II | habilidad | 2 | un salto hacia atrás de unos 6 bloques y Caída lenta 2 s; tu siguiente flecha en 3 s hace +25 %; espera 8 s | `s1.1`, `s1.3` |
-| `s1.3` | Tensado | menor | 1 | tensado +3 % | `s1.2`, `s1.4` |
-| `s1.4` | Velocidad | menor | 1 | velocidad +3 % | `s1.3`, `s1.puente_1` |
-| `s1.puente_1` | Puente al Asesino | puente | 2 | velocidad +3 % *(del Asesino)* | `s1.4`, `s1.puente_2` |
+| `s1.2` | Tensado | menor | 1 | tensado +3 % | `s1.1`, `s1.3` |
+| `s1.3` | Velocidad | menor | 1 | velocidad +3 % | `s1.2`, `s1.ultima`, `s1.puente_1` |
+| `s1.ultima` | Saeta letal | habilidad | 3 | apuntas 0,75 s (una línea de luz lo avisa) y disparas una saeta que atraviesa todo en 32 bloques: 12 de daño, ×1,5 a lo que tiene menos del 50 % de vida; cuesta 25 de estamina; espera 30 s | `s1.3`, `s1.ultima_ii` |
+| `s1.ultima_ii` | Saeta letal II | habilidad | 2 | apuntas 0,5 s (una línea de luz lo avisa) y disparas una saeta que atraviesa todo en 32 bloques: 15 de daño, ×1,5 a lo que tiene menos del 50 % de vida; cuesta 25 de estamina; espera 30 s | `s1.ultima` |
+| `s1.puente_1` | Puente al Asesino | puente | 2 | velocidad +3 % *(del Asesino)* | `s1.3`, `s1.puente_2` |
 | `s1.puente_2` | Coste de esquiva | cruzado | 2 | coste de esquiva −8 % *(del Asesino)* | `s1.puente_1`, `s1.puente_3` |
 | `s1.puente_3` | Puñalada menor | cruzado | 2 | daño por la espalda +20 % *(del Asesino)* | `s1.puente_2` |
 | `b.tronco_1` | Tensado | menor | 1 | tensado +3 % | `nucleo_3`, `b.tronco_2` |
-| `b.tronco_2` | Tensado | menor | 1 | tensado +3 % | `b.tronco_1`, `b.tronco_3` |
+| `b.tronco_2` | Tensado | menor | 1 | tensado +3 % | `b.tronco_1`, `b.tronco_3`, `b.habilidad_b` |
 | `b.tronco_3` | Velocidad de flecha | menor | 1 | velocidad de flecha +3 % | `b.tronco_2`, `b.tronco_4` |
 | `b.tronco_4` | Mano rápida | notable | 1 | tensado +12 % | `b.tronco_3`, `b1.1`, `b2.1` |
+| `b.habilidad_b` | Lluvia de flechas | habilidad | 2 | 12 flechas en 2 s sobre un círculo de 3 bloques donde miras (hasta 32), 4 de daño cada una; espera 45 s | `b.tronco_2`, `b.habilidad_b2` |
+| `b.habilidad_b2` | Lluvia de flechas II | habilidad | 2 | 18 flechas en 2 s sobre un círculo de 4 bloques donde miras (hasta 32), 4 de daño cada una; espera 45 s | `b.habilidad_b` |
 | `b1.1` | Tensado | menor | 1 | tensado +3 % | `b.tronco_4`, `b1.2` |
 | `b1.2` | Coste de estamina | menor | 1 | coste de estamina −3 % | `b1.1`, `b1.3`, `b1.lado_1` |
 | `b1.3` | Flecha veloz | notable | 1 | velocidad de flecha +15 % | `b1.2`, `b1.4` |
@@ -904,11 +1057,11 @@ Base: vida −10 %, velocidad +8 %, proyectiles +15 %, tensado +10 %, esquiva +2
 | `b2.lado_1` | Daño de caída | menor | 1 | daño de caída −3 % | `b2.2` |
 | `b2.lado_2` | Vida | menor | 1 | vida +3 % | `b2.4` |
 | `s2.1` | Velocidad de flecha | menor | 1 | velocidad de flecha +3 % | `nucleo_4`, `s2.2` |
-| `s2.2` | Lluvia de flechas | habilidad | 2 | 12 flechas en 2 s sobre un círculo de 3 bloques donde miras (hasta 32), 4 de daño cada una; espera 45 s | `s2.1`, `s2.3`, `s2.lado` |
-| `s2.3` | Distancia de esquiva | menor | 1 | distancia de esquiva +3 % | `s2.2`, `s2.4` |
-| `s2.4` | Velocidad | menor | 1 | velocidad +3 % | `s2.3`, `s2.puente_1` |
-| `s2.lado` | Lluvia de flechas II | habilidad | 2 | 18 flechas en 2 s sobre un círculo de 4 bloques donde miras (hasta 32), 4 de daño cada una; espera 45 s | `s2.2` |
-| `s2.puente_1` | Puente al Guerrero | puente | 2 | regeneración de estamina +5 % *(del Guerrero)* | `s2.4`, `s2.puente_2` |
+| `s2.2` | Distancia de esquiva | menor | 1 | distancia de esquiva +3 % | `s2.1`, `s2.3` |
+| `s2.3` | Velocidad | menor | 1 | velocidad +3 % | `s2.2`, `s2.ultima`, `s2.puente_1` |
+| `s2.ultima` | Flecha explosiva | habilidad | 3 | una flecha estalla donde miras (hasta 32 bloques): 8 de daño, 40 de postura y empuje a lo que hay a 3 bloques, sin romper bloques; cuesta 20 de estamina; espera 25 s | `s2.3`, `s2.ultima_ii` |
+| `s2.ultima_ii` | Flecha explosiva II | habilidad | 2 | una flecha estalla donde miras (hasta 32 bloques): 10 de daño, 60 de postura y empuje a lo que hay a 4 bloques, sin romper bloques; cuesta 20 de estamina; espera 25 s | `s2.ultima` |
+| `s2.puente_1` | Puente al Guerrero | puente | 2 | regeneración de estamina +5 % *(del Guerrero)* | `s2.3`, `s2.puente_2` |
 | `s2.puente_2` | Daño de postura | cruzado | 2 | daño de postura +5 % *(del Guerrero)* | `s2.puente_1`, `s2.puente_3` |
 | `s2.puente_3` | Réplica menor | cruzado | 2 | una parada perfecta te devuelve 10 de estamina *(del Guerrero)* | `s2.puente_2` |
 | `c.tronco_1` | Velocidad | menor | 1 | velocidad +3 % | `nucleo_5`, `c.tronco_2` |
@@ -931,10 +1084,10 @@ Base: vida −10 %, velocidad +8 %, proyectiles +15 %, tensado +10 %, esquiva +2
 | `c2.lado_2` | Daño de caída | menor | 1 | daño de caída −3 % | `c2.4` |
 | `s3.1` | Daño de caída | menor | 1 | daño de caída −3 % | `nucleo_6`, `s3.2` |
 | `s3.2` | Marca del cazador | notable | 1 | la primera flecha que acierta marca 8 s: tus siguientes flechas le hacen +10 % | `s3.1`, `s3.3` |
-| `s3.3` | Velocidad | menor | 1 | velocidad +3 % | `s3.2`, `s3.4` |
-| `s3.4` | Flecha de red | habilidad | 3 | una red donde miras (hasta 24 bloques) atrapa a los monstruos a 3 bloques: Lentitud IV 3 s; espera 20 s | `s3.3`, `s3.lado`, `s3.puente_1` |
-| `s3.lado` | Flecha de red II | habilidad | 2 | una red donde miras (hasta 24 bloques) atrapa a los monstruos a 4 bloques: Lentitud IV 4 s, y tus flechas les hacen +15 %; espera 20 s | `s3.4` |
-| `s3.puente_1` | Puente al Curandero | puente | 2 | curación +10 % *(del Curandero)* | `s3.4`, `s3.puente_2` |
+| `s3.3` | Velocidad | menor | 1 | velocidad +3 % | `s3.2`, `s3.ultima`, `s3.puente_1` |
+| `s3.ultima` | Flecha de red | habilidad | 3 | una red donde miras (hasta 24 bloques) atrapa a los monstruos a 3 bloques: Lentitud IV 3 s; espera 20 s | `s3.3`, `s3.ultima_ii` |
+| `s3.ultima_ii` | Flecha de red II | habilidad | 2 | una red donde miras (hasta 24 bloques) atrapa a los monstruos a 4 bloques: Lentitud IV 4 s, y tus flechas les hacen +15 %; espera 20 s | `s3.ultima` |
+| `s3.puente_1` | Puente al Curandero | puente | 2 | curación +10 % *(del Curandero)* | `s3.3`, `s3.puente_2` |
 | `s3.puente_2` | Regeneración de estamina | cruzado | 2 | regeneración de estamina +5 % *(del Curandero)* | `s3.puente_1`, `s3.puente_3` |
 | `s3.puente_3` | Vendaje | cruzado | 2 | cada 8 s sin recibir daño recuperas 1 de vida *(del Curandero)* | `s3.puente_2` |
 

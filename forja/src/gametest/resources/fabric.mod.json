@@ -32,6 +32,7 @@
 			"dev.forja.test.JefeGameTests",
 			"dev.forja.test.ClasesGameTests",
 			"dev.forja.test.ArbolGameTests",
+			"dev.forja.test.UltimasGameTests",
 			"dev.forja.test.FormacionGameTests",
 			"dev.forja.test.SitioGameTests",
 			"dev.forja.test.BastionCercaGameTests",

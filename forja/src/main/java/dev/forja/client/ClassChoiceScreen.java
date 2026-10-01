@@ -139,15 +139,21 @@ public class ClassChoiceScreen extends Screen {
 		lineY += 5;
 		ClassGui.small(g, this.font, Component.translatable("gui.forja.clase.habilidades"), x + PAGE_X, lineY, ClassGui.GOLD);
 		lineY += 9;
-		for (int slot = 1; slot <= 3; slot++) {
+		for (int slot = 1; slot <= 2; slot++) {
 			ActiveSkill skill = clazz.skill(slot);
 			ClassGui.item(g, skill.icon(), x + PAGE_X, lineY, 0.75F);
-			ClassGui.small(g, this.font, Component.translatable(slot == 1 ? "gui.forja.clase.habilidad_1" : slot == 2 ? "gui.forja.clase.habilidad_2" : "gui.forja.clase.habilidad_3",
+			ClassGui.small(g, this.font, Component.translatable(slot == 1 ? "gui.forja.clase.habilidad_1" : "gui.forja.clase.habilidad_2",
 				skill.displayName(), ClassClient.keyName(slot)), x + PAGE_X + 15, lineY + 1, 0xFFFFFFFF);
-			// The last one runs down beside the button: it wraps short of it.
-			int textWidth = slot == 3 ? CONFIRM_X - PAGE_X - 21 : width - 15;
-			lineY = ClassGui.smallWrapped(g, this.font, skill.def().effect(false), x + PAGE_X + 15, lineY + 7, textWidth, ClassGui.INK_SOFT) + 1;
+			lineY = ClassGui.smallWrapped(g, this.font, skill.def().effect(false), x + PAGE_X + 15, lineY + 7, width - 15, ClassGui.INK_SOFT) + 1;
 		}
+		// The third key: one of three ultimates, one at the end of each senda. It runs down beside the button.
+		List<ActiveSkill> ultimates = clazz.ultimates();
+		for (int i = 0; i < ultimates.size(); i++) {
+			ClassGui.item(g, ultimates.get(i).icon(), x + PAGE_X + (i % 2) * 6, lineY + (i / 2) * 6, 0.45F);
+		}
+		ClassGui.small(g, this.font, Component.translatable("gui.forja.clase.habilidad_3", ClassClient.keyName(3)), x + PAGE_X + 15, lineY + 1, 0xFFFFFFFF);
+		ClassGui.smallWrapped(g, this.font, Component.translatable("gui.forja.clase.habilidad_3_cuales", ultimates.get(0).displayName(),
+			ultimates.get(1).displayName(), ultimates.get(2).displayName()), x + PAGE_X + 15, lineY + 7, CONFIRM_X - PAGE_X - 21, ClassGui.INK_SOFT);
 
 		// What it costs, and the button.
 		if (this.change) {

@@ -2311,23 +2311,32 @@ GUI.update({
     "gui.forja.clase.habilidades": ("Habilidades", "Skills"),
     "gui.forja.clase.habilidad_1": ("I · %s %s", "I · %s %s"),
     "gui.forja.clase.habilidad_2": ("II · %s %s · del árbol", "II · %s %s · from the tree"),
-    "gui.forja.clase.habilidad_3": ("III · %s %s · al fondo del árbol", "III · %s %s · deep in the tree"),
+    "gui.forja.clase.habilidad_3": ("III · Final %s · elige una de tres", "III · Ultimate %s · pick one of three"),
+    "gui.forja.clase.habilidad_3_cuales": ("Al final de cada senda del árbol: %s, %s o %s. Solo puedes tener una.",
+                                           "At the end of each path of the tree: %s, %s or %s. You can only have one."),
     "gui.forja.clase.arbol": ("Árbol de clase", "Class Tree"),
     "gui.forja.clase.coste_cambio": ("Cambiar gasta el Medallón del olvido y la nueva clase empieza en el nivel 1 (los hitos se quedan). Tu misma clase solo vacía el árbol y conserva el nivel.",
                                      "Changing spends the Medallion of Oblivion and the new class starts at level 1 (milestones stay). Your own class only empties the tree and keeps the level."),
     "gui.forja.clase.elegida": ("Tu clase ahora es %s. Tu árbol está en la tecla %s.", "Your class is now %s. Your tree is on the %s key."),
     "gui.forja.clase.herrero_retirado": ("La clase Herrero ya no existe: la forja está ahora en el árbol de todas las clases. Elige clase gratis con la tecla %s.",
                                          "The Smith class is gone: the forge is now in every class's tree. Pick a class for free with the %s key."),
+    "gui.forja.clase.arbol_ultimas": (
+        "Tu árbol cambió: cada senda acaba ahora en su propia habilidad final, y solo se elige una. Conservas la que "
+        "tenías; %s puntos de nodos que se movieron vuelven para repartir (tecla %s).",
+        "Your tree changed: each path now ends in its own ultimate, and only one can be chosen. You keep the one you "
+        "had; %s points of nodes that moved come back to spend (key %s)."),
     "gui.forja.clase.arbol_nuevo": ("Los árboles de clase han crecido: tienes %s puntos para repartir (tecla %s).",
                                     "The class trees have grown: you have %s points to spend (%s key)."),
     "gui.forja.habilidad.sin_aprender": ("Aún no has aprendido esa habilidad: está en tu árbol", "You have not learned that skill yet: it is in your tree"),
     "gui.forja.habilidad.sin_estamina": ("No tienes estamina suficiente", "Not enough stamina"),
     "gui.forja.habilidad.sin_mana": ("No tienes maná suficiente", "Not enough mana"),
     "gui.forja.talento.no.excluded": ("Ya tienes la otra clave de esta rama", "You already have this branch's other keystone"),
+    "gui.forja.talento.no.ultimate": ("Ya elegiste otra habilidad final: solo se puede tener una",
+                                      "You already chose another ultimate: you can only have one"),
     "gui.forja.clase.toast.punto": ("+%s puntos de árbol (%s)", "+%s tree points (%s)"),
     "commands.forja.clase.info": ("%s: %s de nivel %s · %s de experiencia · %s puntos libres · %s nodos · %s puntos de hitos",
                                   "%s: %s, level %s · %s XP · %s free points · %s nodes · %s milestone points"),
-    "key.forja.habilidad_3": ("Habilidad de clase III", "Class skill III"),
+    "key.forja.habilidad_3": ("Habilidad de clase III (final)", "Class skill III (ultimate)"),
     # The big tree screen (client/TalentTreeScreen, docs/ARBOLES.md).
     "gui.forja.arbol.puntos": ("Puntos: %s de %s", "Points: %s of %s"),
     "gui.forja.arbol.hitos_puntos": ("de hitos: %s", "from milestones: %s"),
@@ -2364,6 +2373,14 @@ GUI.update({
     "gui.forja.arbol.clic_probar": ("Clic para probarlo", "Click to try it"),
     "gui.forja.arbol.mayus_probar": ("Mayús + clic: añadirlo a la prueba", "Shift + click: add it to the plan"),
     "gui.forja.arbol.senda_a": ("%s → %s", "%s → %s"),
+    "gui.forja.arbol.ultima_elige": ("Final · elige una", "Ultimate · pick one"),
+    "gui.forja.arbol.ultima_elegida": ("Elegida", "Chosen"),
+    "gui.forja.arbol.ultima_ninguna": ("Final: elige una", "Ultimate: pick one"),
+    "gui.forja.arbol.ultima_info": ("Habilidad final %s: una de tres; solo puedes tener una",
+                                    "Ultimate %s: one of three; you can only have one"),
+    "gui.forja.arbol.ya_elegiste": ("Ya elegiste %s", "You already chose %s"),
+    "gui.forja.arbol.cambiar_ultima": ("Para cambiarla: la Vela del olvido quita la que tienes, o el Medallón vacía el árbol",
+                                       "To change it: the Candle of Oblivion takes yours off, or the Medallion empties the tree"),
     "gui.forja.hito.logrado": ("¡Hito! %s: +%s puntos de árbol", "Milestone! %s: +%s tree points"),
     "gui.forja.hito.logrado_espera": ("¡Hito! %s: +%s puntos de árbol (%s esperan a que subas de nivel)",
                                       "Milestone! %s: +%s tree points (%s wait until you level up)"),
@@ -2378,11 +2395,12 @@ GUI.update({
     "gui.forja.libro.clases.intro": (
         "Una **clase** es tu forma de pelear. Elegir la primera es gratis: con el botón de aquí abajo o con la tecla "
         "**%s**. Sin clase juegas como siempre, sin bonos ni penalizaciones. La clase, el nivel y el árbol "
-        "**sobreviven a la muerte**. Cada clase trae una habilidad (**%s**) y guarda dos más en su árbol (**%s** y "
-        "**%s**). Las teclas se cambian en Controles, en «Forja: clases».",
+        "**sobreviven a la muerte**. Cada clase trae una habilidad (**%s**), guarda otra en su árbol (**%s**) y "
+        "acaba cada senda en una **habilidad final**: eliges una de las tres para **%s**. Las teclas se cambian en Controles, en «Forja: clases».",
         "A **class** is your way of fighting. The first one is free: with the button below or with the **%s** key. "
         "Without a class you play as always, with no bonuses and no drawbacks. Your class, level and tree **survive "
-        "death**. Each class comes with one skill (**%s**) and keeps two more in its tree (**%s** and **%s**). The keys "
+        "death**. Each class comes with one skill (**%s**), keeps another in its tree (**%s**) and ends each path in an "
+        "**ultimate**: you pick one of the three for **%s**. The keys "
         "can be changed in Controls, under \"Forja: Classes\".",
     ),
     "gui.forja.libro.clases.niveles": (
@@ -2397,11 +2415,13 @@ GUI.update({
     ),
     "gui.forja.libro.clases.arbol": (
         "**El árbol** (tecla del árbol): un origen, un núcleo, tres ramas que acaban en dos **claves** cada una (solo "
-        "una de las dos), tres sendas con las habilidades y un **puente** a otra clase, y la **forja**, igual en todos "
+        "una de las dos), tres sendas que acaban cada una en una **habilidad final** (solo se elige una) y un **puente** a "
+        "otra clase, y la **forja**, igual en todos "
         "los árboles. Solo se aprende lo que toca algo aprendido. Los nodos cuestan %s, las claves %s y lo que hay tras "
         "un puente %s. Arrastra para moverte, la rueda acerca, «Probar» deja planear sin gastar.",
         "**The tree** (the tree key): an origin, a core, three branches that end in two **keystones** each (only one "
-        "of the two), three paths with the skills and a **bridge** to another class, and the **forge**, the same in "
+        "of the two), three paths that each end in an **ultimate** (only one can be chosen) and a **bridge** to another "
+        "class, and the **forge**, the same in "
         "every tree. You only learn what touches something learned. Nodes cost %s, keystones %s and what lies past a "
         "bridge %s. Drag to move, the wheel zooms, \"Try\" lets you plan without spending.",
     ),
@@ -2415,8 +2435,8 @@ GUI.update({
         "perfect dodges and backstabs for the Assassin, damage taken for the Tank, spells that land for the Mage, "
         "health healed on others for the Healer, arrows that hit (more the farther they fly) for the Archer.",
     ),
-    "gui.forja.libro.clases.habilidades": ("Habilidades: **%s** (%s), **%s** (%s, del árbol) y **%s** (%s, al fondo del árbol).",
-                                           "Skills: **%s** (%s), **%s** (%s, from the tree) and **%s** (%s, deep in the tree)."),
+    "gui.forja.libro.clases.habilidades": ("Habilidades: **%s** (%s), **%s** (%s, del árbol) y una final de tres: **%s**, **%s** o **%s** (%s).",
+                                           "Skills: **%s** (%s), **%s** (%s, from the tree) and one ultimate of three: **%s**, **%s** or **%s** (%s)."),
     "gui.forja.libro.clases.vela": (
         "El reinicio barato: quita hasta **%s puntos** de nodos del borde de lo aprendido (los que no dejan a otro "
         "suelto). Clic derecho abre el árbol: marcas los nodos y «Quitar» gasta la vela. El árbol entero, o cambiar de "

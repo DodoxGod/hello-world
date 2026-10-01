@@ -679,12 +679,25 @@ BOOKS.update({
     "gui.forja.libros.clases.cerradas": ("Las clases se abren con su libro: hazlo y léelo (libro y esmeralda).",
                                          "The classes open with their book: make it and read it (a book and an emerald)."),
     "gui.forja.libros.clases_sabes": (
-        "Una clase es tu forma de pelear: seis, cada una con sus números, tres habilidades y un árbol grande que crece "
-        "con la experiencia y con los hitos, y en el que también está la forja. Abrir este libro por primera vez es lo "
-        "que las abre: desde ahora puedes elegir la tuya con **%s** o con el botón de aquí abajo. La primera es gratis.",
-        "A class is your way of fighting: six, each with its numbers, three skills and a big tree that grows with "
-        "experience and milestones, and where the forge is too. Opening this book for the first time is what opens "
-        "them: from now on you can choose yours with **%s** or with the button below. The first one is free."),
+        "Una clase es tu forma de pelear: seis, cada una con sus números, dos habilidades, una final que eliges entre "
+        "tres y un árbol grande que crece con la experiencia y con los hitos, y en el que también está la forja. Abrir "
+        "este libro por primera vez es lo que las abre: desde ahora puedes elegir la tuya con **%s** o con el botón de "
+        "aquí abajo. La primera es gratis.",
+        "A class is your way of fighting: six, each with its numbers, two skills, an ultimate you pick out of three and"
+        " a big tree that grows with experience and milestones, and where the forge is too. Opening this book for the "
+        "first time is what opens them: from now on you can choose yours with **%s** or with the button below. The "
+        "first one is free."),
+    "gui.forja.libro.clases.ultimas": (
+        "**Habilidades finales.** Cada senda del árbol acaba en la suya: tres por clase, fuertes y con esperas largas, y "
+        "cada una con su mejora II. Solo puedes tener **una**, y va a la tecla **%s**: al aprender una, las otras dos se "
+        "cierran con candado. El resto de esas sendas, el puente y lo que hay detrás se siguen aprendiendo. «Probar» "
+        "enseña cómo quedaría. Para cambiarla, una Vela del olvido quita la final con su II de una vez (cuentan como "
+        "los %s puntos de una vela), y el Medallón vacía el árbol entero.",
+        "**Ultimates.** Each path of the tree ends in its own: three per class, strong and with long cooldowns, each "
+        "with its II upgrade. You can only have **one**, and it goes on the **%s** key: once you learn one, the other "
+        "two lock with a padlock. The rest of those paths, the bridge and what lies past it can still be learned. "
+        "\"Try\" shows how it would look. To change it, a Candle of Oblivion takes the ultimate and its II off at once "
+        "(they fit in one candle's %s points), and the Medallion empties the whole tree."),
     "gui.forja.libros.clases_siguiente": (
         "Con tu clase elegida, lo que queda está ahí fuera: las ruinas, el castillo del Herrero y lo que hay más allá.",
         "With your class chosen, what is left is out there: the ruins, the Smith's castle and what lies beyond."),

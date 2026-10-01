@@ -101,10 +101,22 @@ public final class ClassProgress {
 	/**
 	 * A save from before the big trees (docs/ARBOLES.md, "Migración"): its old talents go and their points come
 	 * back by themselves; a Herrero — a class that no longer exists — is left with no class to choose again.
-	 * Andy (2026-09-30): nobody plays the mod yet, so nothing more than that. Run when the player joins.
+	 * Andy (2026-09-30): nobody plays the mod yet, so nothing more than that. A save of the big trees from before
+	 * the three ultimates (version 2) keeps its nodes under their new names ({@link #V3_NAMES}), so the N it had
+	 * stays the chosen ultimate. Run when the player joins.
 	 */
 	public static boolean migrate(ServerPlayer player) {
 		ClassData data = data(player);
+		if (data.version() == 2 && data.playerClass() != null) {
+			int before = data.points();
+			set(player, toV3(data));
+			ClassEffects.forget(player);
+			int back = data(player).points() - before;
+			if (back > 0) {
+				player.sendSystemMessage(Component.translatable("gui.forja.clase.arbol_ultimas", back, key(KEY_TREE)).withColor(0xFFF0C070));
+			}
+			return true;
+		}
 		if (data.version() >= ClassData.VERSION && (data.clazz().isEmpty() || data.playerClass() != null)) {
 			return false;
 		}
@@ -118,6 +130,55 @@ public final class ClassProgress {
 			player.sendSystemMessage(Component.translatable("gui.forja.clase.arbol_nuevo", data(player).points(), key(KEY_TREE)).withColor(0xFFF0C070));
 		}
 		return true;
+	}
+
+	/**
+	 * Node ids of a version 2 save (one N, on senda 3; V II and B on the sendas) and what they are called since the
+	 * three ultimates (version 3). Ids not listed keep their name. Run per class: "%s" is the class.
+	 */
+	static final java.util.Map<String, String> V3_NAMES = java.util.Map.of(
+		"s1.2", "a.habilidad_v2", "s1.3", "s1.2", "s1.4", "s1.3",
+		"s2.2", "b.habilidad_b", "s2.lado", "b.habilidad_b2", "s2.3", "s2.2", "s2.4", "s2.3",
+		"s3.4", "s3.ultima", "s3.lado", "s3.ultima_ii");
+
+	/**
+	 * A version 2 save brought to the three ultimates: every node renamed, and whatever no longer hangs from the
+	 * origin let go (V II and B moved to the branches, so they stay only if the trunk under them is learned); the
+	 * points of what goes come back by themselves.
+	 */
+	public static ClassData toV3(ClassData data) {
+		ClassTree.Tree tree = data.tree();
+		String prefix = data.clazz() + ".";
+		List<String> renamed = new ArrayList<>();
+		for (String id : data.nodes()) {
+			String name = id.startsWith(prefix) ? V3_NAMES.get(id.substring(prefix.length())) : null;
+			String now = name == null ? id : prefix + name;
+			if (tree != null && tree.node(now) != null && !renamed.contains(now)) {
+				renamed.add(now);
+			}
+		}
+		Set<String> kept = new java.util.LinkedHashSet<>(renamed);
+		if (tree != null) {
+			Set<String> reached = reachedFromOrigin(tree, kept);
+			kept.retainAll(reached);
+		}
+		return data.withNodes(new ArrayList<>(kept)).withVersion(ClassData.VERSION);
+	}
+
+	/** The owned nodes that hang from the origin through owned nodes. */
+	private static Set<String> reachedFromOrigin(ClassTree.Tree tree, Set<String> owned) {
+		Set<String> seen = new HashSet<>();
+		Deque<String> open = new ArrayDeque<>();
+		open.add(tree.origin().id);
+		while (!open.isEmpty()) {
+			String id = open.poll();
+			for (String link : tree.node(id).links) {
+				if (owned.contains(link) && seen.add(link)) {
+					open.add(link);
+				}
+			}
+		}
+		return seen;
 	}
 
 	/**
@@ -207,6 +268,8 @@ public final class ClassProgress {
 		PREREQUISITE,
 		/** The other keystone of its branch is learned. */
 		EXCLUDED,
+		/** Another of the three ultimates is learned: only one can be had (this covers its II too). */
+		ULTIMATE,
 		POINTS
 	}
 
@@ -225,6 +288,12 @@ public final class ClassProgress {
 		}
 		if (node.excludes != null && data.has(node.excludes)) {
 			return Refusal.EXCLUDED;
+		}
+		if (node.ultimate > 0) {
+			int chosen = tree.chosenUltimate(data.nodes());
+			if (chosen != 0 && chosen != node.ultimate) {
+				return Refusal.ULTIMATE;
+			}
 		}
 		if (!reachable(tree, data, node)) {
 			return Refusal.PREREQUISITE;
@@ -290,27 +359,42 @@ public final class ClassProgress {
 
 	/**
 	 * Whether these learned nodes can go together (the Vela del olvido): all learned, none of them the origin,
-	 * worth no more than {@code most} points, and what stays still all hangs from the origin.
+	 * worth no more than {@code most} points, and what stays still all hangs from the origin. An ultimate and its II
+	 * go as one leaf at the ultimate's price, so one candle always frees the choice of ultimate (docs/ARBOLES.md).
 	 */
 	public static boolean canForget(ClassData data, Collection<String> ids, int most) {
 		ClassTree.Tree tree = data.tree();
 		if (tree == null || ids.isEmpty()) {
 			return false;
 		}
-		int cost = 0;
 		for (String id : ids) {
 			ClassTree.Node node = tree.node(id);
 			if (node == null || !data.has(id) || node.kind == ClassTree.Kind.ORIGEN) {
 				return false;
 			}
-			cost += node.cost;
 		}
-		if (cost > most) {
+		if (forgetCost(tree, ids) > most) {
 			return false;
 		}
 		Set<String> kept = new HashSet<>(data.nodes());
 		kept.removeAll(ids);
 		return connected(tree, kept);
+	}
+
+	/** What these nodes weigh against a candle: their costs, an ultimate's II free when the ultimate goes with it. */
+	public static int forgetCost(ClassTree.Tree tree, Collection<String> ids) {
+		int cost = 0;
+		for (String id : ids) {
+			ClassTree.Node node = tree.node(id);
+			if (node == null) {
+				continue;
+			}
+			ClassTree.Node base = node.slot == ClassTree.Slot.N2 ? tree.ultimateNode(node.ultimate, false) : null;
+			if (base == null || !ids.contains(base.id)) {
+				cost += node.cost;
+			}
+		}
+		return cost;
 	}
 
 	/** Whether every node in {@code owned} hangs from the origin through owned nodes. */

@@ -204,7 +204,7 @@ public final class ClassEvents {
 		}
 		float[] aegis = ClassEffects.hook(player, Hooks.EGIDA);
 		if (aegis != null && ClassEffects.aegisDue(player, Math.round(aegis[0] * 20.0F)) && player.getAbsorptionAmount() < aegis[1]) {
-			player.setAbsorptionAmount(aegis[1]);
+			ClassSkills.shield(player, aegis[1]);
 			level.sendParticles(ParticleTypes.ENCHANT, player.getX(), player.getY() + 1.0, player.getZ(), 20, 0.4, 0.6, 0.4, 0.4);
 		}
 		float[] bandage = ClassEffects.hook(player, Hooks.VENDAJE);
@@ -426,8 +426,14 @@ public final class ClassEvents {
 		return true;
 	}
 
-	/** Último bastión: a blow that would kill a Tanque leaves them standing, once every few minutes. */
+	/**
+	 * Segunda vida: whoever a Curandero warded is left standing (ClassSkills.spare). Último bastión: a blow that
+	 * would kill a Tanque leaves them standing, once every few minutes.
+	 */
 	private static boolean allowDeath(LivingEntity entity, DamageSource source, float amount) {
+		if (!source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY) && ClassSkills.spare(entity)) {
+			return false;
+		}
 		if (entity instanceof ServerPlayer player && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
 			float[] n = ClassEffects.hook(player, Hooks.ULTIMO_BASTION);
 			if (n != null && ClassEffects.spendLastStand(player, Math.round(n[0] * 60.0F * 20.0F))) {
@@ -547,12 +553,12 @@ public final class ClassEvents {
 		ClassProgress.award(player, xp);
 	}
 
-	/** Every skill whose cooldown a test might want to read, in key order. */
+	/** Every skill of a class, in key order: V, B and the three ultimates. */
 	public static List<ActiveSkill> skillsOf(PlayerClass clazz) {
 		List<ActiveSkill> out = new ArrayList<>();
-		for (int key = 1; key <= 3; key++) {
-			out.add(clazz.skill(key));
-		}
+		out.add(clazz.skill(1));
+		out.add(clazz.skill(2));
+		out.addAll(clazz.ultimates());
 		return out;
 	}
 }

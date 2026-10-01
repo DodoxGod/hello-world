@@ -3063,18 +3063,23 @@ public class GuideBookScreen extends Screen {
 		// Every number from the tree's file (clase/ClassTree): the cap, the points, the milestones, the curve.
 		int levelPoints = dev.forja.clase.ClassTree.levelPoints(dev.forja.clase.ClassTree.maxLevel());
 		int milestonePoints = dev.forja.clase.ClassTree.allMilestonePoints();
-		int treeCost = dev.forja.clase.PlayerClass.GUERRERO.tree().totalCost();
+		// What one can own: everything but the two ultimates not chosen (docs/ARBOLES.md).
+		int treeCost = dev.forja.clase.PlayerClass.GUERRERO.tree().ownableCost();
 		body.add(new Text(Component.translatable("gui.forja.libro.clases.niveles", dev.forja.clase.ClassTree.maxLevel(), levelPoints,
 			milestonePoints, dev.forja.clase.ClassTree.milestoneCapPerLevel(), levelPoints + milestonePoints, treeCost,
 			Math.round(100.0F * (levelPoints + milestonePoints) / treeCost), dev.forja.clase.ClassTree.firstStep(),
 			dev.forja.clase.ClassTree.stepGrowth()), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.clases.arbol", dev.forja.clase.ClassTree.cost("menor"),
 			dev.forja.clase.ClassTree.cost("clave"), dev.forja.clase.ClassTree.cost("puente")), INK_SOFT));
+		body.add(new Text(Component.translatable("gui.forja.libro.clases.ultimas", dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_3),
+			dev.forja.item.OblivionCandleItem.POINTS), INK_SOFT));
 		body.add(new Text(Component.translatable("gui.forja.libro.clases.experiencia"), INK_SOFT));
 		for (dev.forja.clase.PlayerClass clazz : dev.forja.clase.PlayerClass.values()) {
 			body.add(new Divider());
 			body.add(new SubHeader(clazz.displayName()));
-			body.add(new IconRow(List.of(clazz.icon(), clazz.firstSkill.icon(), clazz.secondSkill().icon(), clazz.thirdSkill().icon())));
+			List<dev.forja.clase.ActiveSkill> ultimates = clazz.ultimates();
+			body.add(new IconRow(List.of(clazz.icon(), clazz.firstSkill.icon(), clazz.secondSkill().icon(), ultimates.get(0).icon(),
+				ultimates.get(1).icon(), ultimates.get(2).icon())));
 			body.add(new Text(clazz.description(), INK));
 			net.minecraft.network.chat.MutableComponent numbers = Component.empty();
 			for (int i = 0; i < clazz.base.size(); i++) {
@@ -3091,7 +3096,8 @@ public class GuideBookScreen extends Screen {
 				dev.forja.clase.ClassDamage.format(clazz.damageFactor(dev.forja.clase.ClassDamage.Blow.MAGIC))), INK_SOFT));
 			body.add(new Text(Component.translatable("gui.forja.libro.clases.habilidades", clazz.firstSkill.displayName(),
 				dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_1), clazz.secondSkill().displayName(),
-				dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_2), clazz.thirdSkill().displayName(),
+				dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_2), ultimates.get(0).displayName(),
+				ultimates.get(1).displayName(), ultimates.get(2).displayName(),
 				dev.forja.clase.ClassProgress.key(dev.forja.clase.ClassProgress.KEY_SKILL_3)), INK_SOFT));
 		}
 		body.add(new Divider());

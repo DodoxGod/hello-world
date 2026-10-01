@@ -16,8 +16,8 @@ import static dev.forja.clase.ClassStat.*;
 
 /**
  * The six classes (docs/CLASES.md). A class is its base numbers, the active skill it comes with, and its big
- * tree ({@link ClassTree}, docs/ARBOLES.md), which holds its other two skills. The order here is the order of the
- * choice screen, and the ids are what the attachment saves, so a class is never renamed. There was a seventh, the
+ * tree ({@link ClassTree}, docs/ARBOLES.md), which holds its B skill and its three ultimates. The order here is the
+ * order of the choice screen, and the ids are what the attachment saves, so a class is never renamed. There was a seventh, the
  * Herrero: Andy (2026-09-30) took it out and put the forge in every tree; a save that still says "herrero"
  * reads as no class (ClassProgress.migrate).
  */
@@ -126,13 +126,20 @@ public enum PlayerClass {
 		return ActiveSkill.byId(this.tree().skill(2).id);
 	}
 
-	/** The skill on the third key (N), deep in the tree. */
-	public ActiveSkill thirdSkill() {
-		return ActiveSkill.byId(this.tree().skill(3).id);
+	/**
+	 * The three ultimates, one at the end of each senda, in senda order: whichever one the player learns goes on the
+	 * third key (N), and only one can be learned (docs/ARBOLES.md).
+	 */
+	public List<ActiveSkill> ultimates() {
+		List<ActiveSkill> out = new java.util.ArrayList<>();
+		for (ClassTree.SkillDef def : this.tree().ultimates) {
+			out.add(ActiveSkill.byId(def.id));
+		}
+		return out;
 	}
 
-	/** The skill on a key: 1 V, 2 B, 3 N. */
+	/** The skill on key 1 (V) or 2 (B); the third key holds the ultimate a player chose ({@link ClassSkills#skill}). */
 	public ActiveSkill skill(int key) {
-		return key == 1 ? this.firstSkill : key == 2 ? this.secondSkill() : this.thirdSkill();
+		return key == 1 ? this.firstSkill : this.secondSkill();
 	}
 }

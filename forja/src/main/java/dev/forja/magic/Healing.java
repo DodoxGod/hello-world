@@ -170,7 +170,7 @@ public final class Healing {
 			}
 			float[] miracle = ClassEffects.hook(player, Hooks.MILAGRO);
 			if (miracle != null && mended > 0.0F && target.getHealth() >= target.getMaxHealth()) {
-				target.setAbsorptionAmount(Math.max(target.getAbsorptionAmount(), miracle[0]));
+				dev.forja.clase.ClassSkills.shield(target, miracle[0]);
 			}
 			if (target != player && mended > 0.0F) {
 				float[] bond = ClassEffects.hook(player, Hooks.VINCULO);

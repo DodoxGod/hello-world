@@ -23,8 +23,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * The big class trees (docs/ARBOLES.md), read from {@code forja_arboles.json} — which tools/arboles.py writes
  * from tools/arboles_datos.py. Every number of a tree lives there: the nodes and what they do, their costs, the
- * three skills of each class and their II, the level cap, the points a level gives, the experience curve and
- * the milestones. Changing any of them is changing that file, not this code.
+ * skills of each class and their II (V and B, and the three ultimates at the ends of the sendas, of which a player
+ * has one), the level cap, the points a level gives, the experience curve and the milestones. Changing any of them
+ * is changing that file, not this code.
  *
  * <p>A node's plain numbers are its {@link Node#mods} (ClassStat, summed with the class's base). What a number
  * cannot say is its {@link Node#hook}, a name the code that does it asks for ({@link ClassEffects#hook}), with
@@ -51,7 +52,10 @@ public final class ClassTree {
 		}
 	}
 
-	/** Which skill a skill node is, or what it upgrades. */
+	/**
+	 * Which skill a skill node is, or what it upgrades. N and N2 are the ultimates and their II: three of each in a
+	 * tree, one at the end of each senda ({@link Node#ultimate} says which), and a player learns only one N.
+	 */
 	public enum Slot {
 		B(2, false),
 		N(3, false),
@@ -92,6 +96,8 @@ public final class ClassTree {
 		public final @Nullable String path;
 		/** What the tree screen draws in the node (see {@link TreeIcon}); chosen in tools/arboles_datos.py. */
 		public final String icon;
+		/** For an ultimate or its II (slot N or N2): which senda it ends, 1 to 3; 0 for any other node. */
+		public final int ultimate;
 		final boolean hasText;
 		final String nameEs;
 
@@ -121,6 +127,7 @@ public final class ClassTree {
 			this.excludes = json.has("excluye") ? json.get("excluye").getAsString() : null;
 			this.path = json.has("camino") ? json.get("camino").getAsString() : null;
 			this.icon = json.get("icono").getAsString();
+			this.ultimate = json.has("ultima") ? json.get("ultima").getAsInt() : 0;
 			this.hasText = json.has("plantilla") && !json.get("plantilla").isJsonNull();
 			this.nameEs = json.getAsJsonObject("nombre").get("es").getAsString();
 		}
@@ -143,6 +150,7 @@ public final class ClassTree {
 			this.excludes = other.excludes;
 			this.path = other.path;
 			this.icon = other.icon;
+			this.ultimate = other.ultimate;
 			this.hasText = other.hasText;
 			this.nameEs = other.nameEs;
 		}
@@ -152,10 +160,15 @@ public final class ClassTree {
 			return this.hasText;
 		}
 
+		/** Whether it is one of the three ultimates (not its II). */
+		public boolean isUltimate() {
+			return this.slot == Slot.N;
+		}
+
 		/** The node's name: its own, its skill's, or (a small node) its stat's line. */
 		public Component displayName(PlayerClass owner) {
 			if (this.slot != null) {
-				SkillDef skill = tree(owner).skill(this.slot);
+				SkillDef skill = tree(owner).skill(this);
 				return Component.translatable("gui.forja.habilidad." + skill.id + (this.slot.upgrade ? ".ii" : ""));
 			}
 			if (this.kind == Kind.ORIGEN) {
@@ -171,7 +184,7 @@ public final class ClassTree {
 		public List<Component> effectLines(PlayerClass owner) {
 			List<Component> lines = new ArrayList<>();
 			if (this.slot != null) {
-				SkillDef skill = tree(owner).skill(this.slot);
+				SkillDef skill = tree(owner).skill(this);
 				lines.add(skill.effect(this.slot.upgrade));
 				lines.add(Component.translatable("gui.forja.habilidad.espera", skill.cooldown(this.slot.upgrade)).withColor(0xFF9A9A9A));
 				return lines;
@@ -200,9 +213,11 @@ public final class ClassTree {
 		}
 	}
 
-	/** One of the three skills of a class: its numbers and its II's. */
+	/** One skill of a class (V, B or an ultimate): its numbers and its II's. */
 	public static final class SkillDef {
 		public final String id;
+		/** Its icon, as a node's (see {@link TreeIcon}). */
+		public final String icon;
 		public final float[] numbers;
 		final boolean[] percent;
 		public final int cooldown;
@@ -212,6 +227,7 @@ public final class ClassTree {
 
 		SkillDef(JsonObject json) {
 			this.id = json.get("id").getAsString();
+			this.icon = json.get("icono").getAsString();
 			this.numbers = floats(json.getAsJsonArray("numeros"));
 			this.percent = percents(json.getAsJsonArray("formatos"));
 			this.cooldown = json.get("espera").getAsInt();
@@ -242,12 +258,14 @@ public final class ClassTree {
 		public final List<Node> nodes;
 		private final Map<String, Node> byId;
 		private final Map<String, SkillDef> skills;
+		/** The three ultimates, in senda order (index 0 ends senda 1). */
+		public final List<SkillDef> ultimates;
 		/** A, B, C, S1, S2, S3, a1, a2, b1... */
 		public final List<String> regions;
 		/** The three classes its bridges lead to. */
 		public final List<String> bridges;
 
-		Tree(PlayerClass owner, List<Node> nodes, Map<String, SkillDef> skills, List<String> regions, List<String> bridges) {
+		Tree(PlayerClass owner, List<Node> nodes, Map<String, SkillDef> skills, List<SkillDef> ultimates, List<String> regions, List<String> bridges) {
 			this.owner = owner;
 			this.nodes = List.copyOf(nodes);
 			Map<String, Node> byId = new LinkedHashMap<>();
@@ -256,6 +274,7 @@ public final class ClassTree {
 			}
 			this.byId = byId;
 			this.skills = skills;
+			this.ultimates = List.copyOf(ultimates);
 			this.regions = List.copyOf(regions);
 			this.bridges = List.copyOf(bridges);
 		}
@@ -268,17 +287,51 @@ public final class ClassTree {
 			return this.nodes.getFirst();
 		}
 
-		/** The skill on a key: "V", "B" or "N". */
+		/** The skill on a key: "V" or "B" (the N key holds whichever ultimate the player chose). */
 		public SkillDef skill(String key) {
 			return this.skills.get(key);
 		}
 
-		public SkillDef skill(Slot slot) {
-			return this.skills.get(slot.name().substring(0, 1));
+		/** The skill a skill node unlocks or upgrades: V, B, or its senda's ultimate. */
+		public SkillDef skill(Node node) {
+			if (node.slot == Slot.N || node.slot == Slot.N2) {
+				return this.ultimates.get(node.ultimate - 1);
+			}
+			return node.slot == Slot.V2 ? this.skills.get("V") : this.skills.get("B");
 		}
 
+		/** The skill on key 1 (V) or 2 (B). */
 		public SkillDef skill(int key) {
-			return this.skills.get(key == 1 ? "V" : key == 2 ? "B" : "N");
+			return this.skills.get(key == 1 ? "V" : "B");
+		}
+
+		/** The ultimate at the end of senda {@code index} (1 to 3), or its II. */
+		public @Nullable Node ultimateNode(int index, boolean upgrade) {
+			for (Node node : this.nodes) {
+				if (node.ultimate == index && node.slot == (upgrade ? Slot.N2 : Slot.N)) {
+					return node;
+				}
+			}
+			return null;
+		}
+
+		/** The three ultimate nodes, in senda order. */
+		public List<Node> ultimateNodes() {
+			List<Node> out = new ArrayList<>();
+			for (int i = 1; i <= this.ultimates.size(); i++) {
+				out.add(this.ultimateNode(i, false));
+			}
+			return out;
+		}
+
+		/** Which ultimate these nodes hold (1 to 3), or 0 if none: there is never more than one. */
+		public int chosenUltimate(java.util.Collection<String> owned) {
+			for (Node node : this.nodes) {
+				if (node.slot == Slot.N && owned.contains(node.id)) {
+					return node.ultimate;
+				}
+			}
+			return 0;
 		}
 
 		/** Every node with this hook (bridges and forge nodes can share one across trees, never within one). */
@@ -291,7 +344,7 @@ public final class ClassTree {
 			return null;
 		}
 
-		/** The node that unlocks or upgrades this skill slot. */
+		/** The node that unlocks or upgrades this skill slot (for N and N2, the first senda's; see {@link #ultimateNode}). */
 		public @Nullable Node bySlot(Slot slot) {
 			for (Node node : this.nodes) {
 				if (node.slot == slot) {
@@ -301,11 +354,20 @@ public final class ClassTree {
 			return null;
 		}
 
-		/** Points to own every node at once (both keystones of a branch counted). */
+		/** Points to own every node at once (both keystones of a branch, and all three ultimates, counted). */
 		public int totalCost() {
 			int total = 0;
 			for (Node node : this.nodes) {
 				total += node.cost;
+			}
+			return total;
+		}
+
+		/** Points to own all one can: everything but two of the three ultimates and their II (docs/ARBOLES.md). */
+		public int ownableCost() {
+			int total = this.totalCost();
+			for (int i = 2; i <= this.ultimates.size(); i++) {
+				total -= this.ultimateNode(i, false).cost + this.ultimateNode(i, true).cost;
 			}
 			return total;
 		}
@@ -393,12 +455,16 @@ public final class ClassTree {
 			for (Map.Entry<String, JsonElement> skill : json.getAsJsonObject("habilidades").entrySet()) {
 				skills.put(skill.getKey(), new SkillDef(skill.getValue().getAsJsonObject()));
 			}
+			List<SkillDef> ultimates = new ArrayList<>();
+			for (JsonElement element : json.getAsJsonArray("ultimas")) {
+				ultimates.add(new SkillDef(element.getAsJsonObject()));
+			}
 			List<String> regions = new ArrayList<>(json.getAsJsonObject("regiones").keySet());
 			List<String> bridges = new ArrayList<>();
 			for (JsonElement element : json.getAsJsonArray("puentes")) {
 				bridges.add(element.getAsString());
 			}
-			TREES.put(clazz, new Tree(clazz, nodes, skills, regions, bridges));
+			TREES.put(clazz, new Tree(clazz, nodes, skills, ultimates, regions, bridges));
 		}
 	}
 

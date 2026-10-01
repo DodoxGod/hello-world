@@ -101,7 +101,10 @@ public class ArbolGameTests {
 		return dist;
 	}
 
-	/** Every tree: all of it hangs from the origin, the costs add up, every keystone is eleven points away, the links go both ways. */
+	/**
+	 * Every tree: all of it hangs from the origin, the costs add up (what one can own, with one ultimate, is 117), every
+	 * keystone is eleven points away and every ultimate seven, the links go both ways.
+	 */
 	@GameTest
 	public void theTreesHoldTogether(GameTestHelper helper) {
 		helper.assertTrue(PlayerClass.values().length == 6, "seis clases, sin Herrero: " + PlayerClass.values().length);
@@ -112,10 +115,11 @@ public class ArbolGameTests {
 		Set<String> allHooks = new HashSet<>();
 		for (PlayerClass clazz : PlayerClass.values()) {
 			ClassTree.Tree tree = clazz.tree();
-			helper.assertTrue(tree.nodes.size() == 97, clazz + ": 97 nodos, tiene " + tree.nodes.size());
-			helper.assertTrue(tree.totalCost() == 117, clazz + ": el árbol entero cuesta 117, cuesta " + tree.totalCost());
-			float share = top / (float) tree.totalCost();
-			helper.assertTrue(share > 0.85F && share < 0.9F, clazz + ": en el tope se compra ~87 %: " + share);
+			helper.assertTrue(tree.nodes.size() == 101, clazz + ": 101 nodos, tiene " + tree.nodes.size());
+			helper.assertTrue(tree.totalCost() == 127, clazz + ": todos los nodos cuestan 127, cuestan " + tree.totalCost());
+			helper.assertTrue(tree.ownableCost() == 117, clazz + ": lo que se puede tener (una última) cuesta 117: " + tree.ownableCost());
+			float share = top / (float) tree.ownableCost();
+			helper.assertTrue(share > 0.86F && share < 0.9F, clazz + ": en el tope se compra ~88 %: " + share);
 			// Connected, and every link both ways.
 			Set<String> seen = new HashSet<>();
 			Deque<String> open = new ArrayDeque<>(List.of(tree.origin().id));
@@ -151,12 +155,14 @@ public class ArbolGameTests {
 			for (ClassTree.Slot slot : ClassTree.Slot.values()) {
 				helper.assertTrue(tree.bySlot(slot) != null, clazz + ": falta el nodo de habilidad " + slot);
 			}
-			for (int key = 1; key <= 3; key++) {
-				ActiveSkill skill = clazz.skill(key);
-				helper.assertTrue(skill.owner() == clazz, clazz + ": la habilidad " + key + " es suya");
+			for (ActiveSkill skill : dev.forja.clase.ClassEvents.skillsOf(clazz)) {
+				helper.assertTrue(skill.owner() == clazz, clazz + ": " + skill + " es suya");
 				helper.assertTrue(skill.def().upgradeNumbers.length >= skill.def().numbers.length, clazz + ": " + skill + " II tiene todos sus números");
+				helper.assertTrue(skill.upgradeNode() != null, clazz + ": " + skill + " tiene su nodo II");
 			}
-			helper.assertTrue(dist.get(tree.bySlot(ClassTree.Slot.N).id) == 7, clazz + ": la habilidad N está a 7 puntos");
+			for (ClassTree.Node ultimate : tree.ultimateNodes()) {
+				helper.assertTrue(dist.get(ultimate.id) == 7, clazz + ": la final " + ultimate.id + " está a " + dist.get(ultimate.id) + " puntos, no a 7");
+			}
 		}
 		// The code knows every node that does something a number cannot say, and nothing it knows is missing.
 		for (String hook : Hooks.all()) {
@@ -190,14 +196,14 @@ public class ArbolGameTests {
 				if (node.slot != null && node.slot.upgrade) {
 					ClassTree.Node base = null;
 					for (ClassTree.Node other : clazz.tree().nodes) {
-						if (other.slot != null && other.slot.key == node.slot.key && !other.slot.upgrade) {
+						if (other.slot != null && other.slot.key == node.slot.key && !other.slot.upgrade && other.ultimate == node.ultimate) {
 							base = other;
 						}
 					}
 					helper.assertTrue(node.slot.key == 1 || base != null && base.icon.equals(node.icon), node.id + ": la mejora lleva el icono de su habilidad");
 				}
 			}
-			helper.assertTrue(skills.size() == 2, clazz + ": la B y la N con icono propio, " + skills.size());
+			helper.assertTrue(skills.size() == 4, clazz + ": la B y las tres finales con icono propio, " + skills.size());
 			helper.assertTrue(keystones.size() == 6, clazz + ": seis claves con icono propio, " + keystones.size());
 		}
 		helper.succeed();
@@ -375,7 +381,7 @@ public class ArbolGameTests {
 		helper.succeed();
 	}
 
-	/** The three keys: V always, B and N once learned, the II's numbers once upgraded, and the new skills doing their thing. */
+	/** The three keys: V always, B and N once learned (N the ultimate chosen), the II's numbers once upgraded. */
 	@GameTest
 	public void threeSkillsAndTheirII(GameTestHelper helper) {
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
@@ -393,7 +399,7 @@ public class ArbolGameTests {
 		ClassSkills.use(player, 2, true);
 		helper.assertTrue(!player.hasEffect(MobEffects.SLOWNESS) && player.getEffect(MobEffects.RESISTANCE).getDuration() > 150, "la II, sin Lentitud y más larga");
 		// The Torbellino: everything around takes part of the weapon.
-		learnTo(player, ClassTree.tree(PlayerClass.GUERRERO).bySlot(ClassTree.Slot.N).id);
+		learnTo(player, ClassTree.tree(PlayerClass.GUERRERO).ultimateNode(3, false).id);
 		helper.assertTrue(ClassSkills.skill(player, 3) == ActiveSkill.TORBELLINO, "N: Torbellino");
 		CombatGameTests.noRandomThreat();
 		var zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(2, 1, 1));
@@ -413,7 +419,7 @@ public class ArbolGameTests {
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
 		ClassProgress.choose(player, PlayerClass.MAGO);
 		ClassProgress.setLevel(player, ClassProgress.MAX_LEVEL);
-		learnTo(player, ClassTree.tree(PlayerClass.MAGO).bySlot(ClassTree.Slot.N).id);
+		learnTo(player, ClassTree.tree(PlayerClass.MAGO).ultimateNode(3, false).id);
 		CombatGameTests.noRandomThreat();
 		var zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(4, 1, 1));
 		zombie.setNoAi(true);

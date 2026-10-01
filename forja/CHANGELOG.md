@@ -1,5 +1,43 @@
 # Novedades
 
+## 2026-10-01 — Árboles de clase: una habilidad final por senda, y se elige una
+
+Andy: «1 habilidad por cada senda, y solo puedes escoger una habilidad final, pero sí puedes mejorar las otras sendas».
+Detalle en `docs/ARBOLES.md`, «Las habilidades finales».
+
+- **Tres finales por clase, 18 en total**, una al final de cada senda y con su II. Las seis N de antes son la final de
+  la senda 3; las doce nuevas, con el aire de su senda y de la clase de su puente:
+  - Guerrero: **Bramido** (postura y Debilidad en área, absorción por enemigo) y **Hendedura** (tajo al frente, 200 %
+    del arma y 50 de postura);
+  - Asesino: **Danza de sombras** (salta a la espalda de hasta 4 enemigos, intocable mientras baila) y **Ejecución**
+    (aparece detrás del que miras; doble bajo el 35 %);
+  - Tanque: **Golpe sísmico** (daño, postura, los levanta y ralentiza) y **Santuario de acero** (círculo de Resistencia
+    y Regeneración que echa fuera a los hostiles);
+  - Mago: **Relámpago en cadena** (salta a 4 enemigos más) y **Prisión de hielo** (congela y aturde: corta el ataque);
+  - Curandero: **Oleada de vida** (cura en área y empuja) y **Segunda vida** (el golpe mortal deja al aliado con el 40 %);
+  - Arquero: **Saeta letal** (se apunta con un aviso de luz y atraviesa todo) y **Flecha explosiva** (área, postura y
+    empuje, sin romper bloques).
+- **Solo una**: al aprender una final, las otras dos y sus II se cierran (`Refusal.ULTIMATE`); el resto de esas sendas,
+  el puente y lo de la otra clase se siguen aprendiendo. La elegida va a la N. La Vela del olvido la quita junto con su
+  II como una sola hoja (3 puntos) y libera la elección; el Medallón lo vacía todo.
+- **V II, B y B II** salen de las sendas: V II cuelga del tronco de la rama A, B y B II del de la rama B.
+- **Árbol**: 101 nodos; todo junto cuesta 127, pero lo que se puede tener (una final) cuesta 117: con 103 puntos en el
+  tope se compra el 88 %, como antes. Toda clave sigue a 11 puntos y toda final está a 7.
+- **Pantalla**: las tres finales son rombos con borde dorado y «Final · elige una»; la elegida dice «Elegida» y las
+  otras salen grises con candado y el tooltip «Ya elegiste X». «Probar» enseña la elección y no deja meter una segunda.
+  A la derecha, la N muestra la final elegida (o la probada, en azul).
+- **Iconos a cualquier zoom**: Andy veía casi todo como cuadrados de color. Ahora el icono sale siempre que el nodo mida
+  5 píxeles o más, y el velo de lo bloqueado deja verlo. Las doce finales nuevas llevan icono propio.
+- **Arreglo**: las absorciones de Provocar II, Escudo de luz, Égida y Milagro no daban nada (el juego limita la absorción
+  a `max_absorption`, 0 sin el efecto). Ahora suben ese tope mientras dura el escudo (`ClassSkills.shield`).
+- **Guardados**: versión 3. Un árbol de la versión 2 conserva su N como final elegida (con su II); los nodos se
+  renombran y lo que se queda suelto devuelve sus puntos, con un aviso.
+- Libro V, la pantalla de elegir clase y `CLASES.md` al día; los dibujos del Guerrero y el Mago, regenerados.
+- Pruebas: `UltimasGameTests` (datos, una sola final, vela y medallón, migración, y las 18 finales I y II haciendo lo
+  que dicen, con su daño medido por el camino real: ninguna pasa de 30 en un golpe ni de 1 por segundo de espera) y
+  `FORJA_SOLO=arbol` con las capturas `ultimas_*` (hoja en `Forja_capturas_mejoras\arbol\ultimas\hoja_ultimas.png`).
+  `./gradlew runGametest`: 489 en verde.
+
 ## 2026-09-30 — Aviso en movimiento: los mobs ya no se paran al avisar
 
 Andy: «cuando los mobs preparan un ataque ya no se pueden mover, por lo que es muy fácil esquivarlos».

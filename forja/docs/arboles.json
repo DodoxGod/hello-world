@@ -662,8 +662,8 @@
    "gancho": "temple_de_campana_ii",
    "icono": "forja:lingote_de_temple",
    "efecto": "la pieza forjada de tu mano y la armadura forjada que llevas puesta recuperan el 2 % de su durabilidad cada minuto",
-   "x": 2.863,
-   "y": -3.536,
+   "x": 1.631,
+   "y": -4.248,
    "conexiones": [
     "forja.temple_de_campana"
    ]
@@ -750,8 +750,112 @@
       ],
       "espera": 50
      }
+    }
+   },
+   "ultimas": [
+    {
+     "id": "bramido",
+     "icono": "minecraft:sculk_shrieker",
+     "nombre": {
+      "es": "Bramido",
+      "en": "Bellow"
+     },
+     "plantilla": {
+      "es": "bramas: los hostiles a {0} bloques reciben {1} de postura y Debilidad I {2} s, y ganas {3} de absorción por cada uno (hasta {4}); cuesta {5} de estamina",
+      "en": "you bellow: hostiles within {0} blocks take {1} posture and Weakness I for {2} s, and you gain {3} absorption for each (up to {4}); costs {5} stamina"
+     },
+     "numeros": [
+      6,
+      40,
+      5,
+      2,
+      10,
+      30
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "espera": 45,
+     "mejora": {
+      "plantilla": {
+       "es": "bramas: los hostiles a {0} bloques reciben {1} de postura y Debilidad I {2} s, y ganas {3} de absorción por cada uno (hasta {4}); cuesta {5} de estamina",
+       "en": "you bellow: hostiles within {0} blocks take {1} posture and Weakness I for {2} s, and you gain {3} absorption for each (up to {4}); costs {5} stamina"
+      },
+      "numeros": [
+       8,
+       60,
+       5,
+       3,
+       12,
+       30
+      ],
+      "formatos": [
+       "num",
+       "num",
+       "num",
+       "num",
+       "num",
+       "num"
+      ],
+      "espera": 45
+     },
+     "senda": "S1"
     },
-    "N": {
+    {
+     "id": "hendedura",
+     "icono": "minecraft:diamond_axe",
+     "nombre": {
+      "es": "Hendedura",
+      "en": "Cleave"
+     },
+     "plantilla": {
+      "es": "un tajo de arriba abajo a lo que tienes delante (hasta {0} bloques, {1}°): el {2%} del daño de tu arma y {3} de postura; cuesta {4} de estamina",
+      "en": "an overhead cleave at whatever is in front of you (up to {0} blocks, {1}°): {2%} of your weapon's damage and {3} posture; costs {4} stamina"
+     },
+     "numeros": [
+      3.5,
+      100,
+      2.0,
+      50,
+      35
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "pct",
+      "num",
+      "num"
+     ],
+     "espera": 30,
+     "mejora": {
+      "plantilla": {
+       "es": "un tajo de arriba abajo a lo que tienes delante (hasta {0} bloques, {1}°): el {2%} del daño de tu arma y {3} de postura; cuesta {4} de estamina",
+       "en": "an overhead cleave at whatever is in front of you (up to {0} blocks, {1}°): {2%} of your weapon's damage and {3} posture; costs {4} stamina"
+      },
+      "numeros": [
+       3.5,
+       100,
+       2.5,
+       80,
+       35
+      ],
+      "formatos": [
+       "num",
+       "num",
+       "pct",
+       "num",
+       "num"
+      ],
+      "espera": 30
+     },
+     "senda": "S2"
+    },
+    {
      "id": "torbellino",
      "icono": "minecraft:iron_axe",
      "nombre": {
@@ -793,9 +897,10 @@
        "num"
       ],
       "espera": 30
-     }
+     },
+     "senda": "S3"
     }
-   },
+   ],
    "regiones": {
     "A": {
      "es": "Aguante",
@@ -1124,7 +1229,8 @@
      "y": 4.2,
      "conexiones": [
       "guerrero.a.tronco_1",
-      "guerrero.a.tronco_3"
+      "guerrero.a.tronco_3",
+      "guerrero.a.habilidad_v2"
      ]
     },
     {
@@ -1190,6 +1296,40 @@
       "guerrero.a1.1",
       "guerrero.a2.1"
      ]
+    },
+    {
+     "id": "guerrero.a.habilidad_v2",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Grito de guerra II",
+      "en": "War Cry II"
+     },
+     "coste": 2,
+     "region": "rama_a",
+     "mods": [],
+     "numeros": [
+      60,
+      12,
+      10
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "recuperas {0} de estamina; tú y los jugadores a {1} bloques ganáis Fuerza I {2} s",
+      "en": "recover {0} stamina; you and players within {1} blocks gain Strength I for {2} s"
+     },
+     "gancho": null,
+     "icono": "minecraft:goat_horn",
+     "efecto": "recuperas 60 de estamina; tú y los jugadores a 12 bloques ganáis Fuerza I 10 s; espera 45 s",
+     "x": 1.126,
+     "y": 4.202,
+     "conexiones": [
+      "guerrero.a.tronco_2"
+     ],
+     "habilidad": "V2"
     },
     {
      "id": "guerrero.a1.1",
@@ -1654,41 +1794,6 @@
     },
     {
      "id": "guerrero.s1.2",
-     "tipo": "habilidad",
-     "nombre": {
-      "es": "Grito de guerra II",
-      "en": "War Cry II"
-     },
-     "coste": 2,
-     "region": "senda_1",
-     "mods": [],
-     "numeros": [
-      60,
-      12,
-      10
-     ],
-     "formatos": [
-      "num",
-      "num",
-      "num"
-     ],
-     "plantilla": {
-      "es": "recuperas {0} de estamina; tú y los jugadores a {1} bloques ganáis Fuerza I {2} s",
-      "en": "recover {0} stamina; you and players within {1} blocks gain Strength I for {2} s"
-     },
-     "gancho": null,
-     "icono": "minecraft:goat_horn",
-     "efecto": "recuperas 60 de estamina; tú y los jugadores a 12 bloques ganáis Fuerza I 10 s; espera 45 s",
-     "x": 3.811,
-     "y": 2.2,
-     "conexiones": [
-      "guerrero.s1.1",
-      "guerrero.s1.3"
-     ],
-     "habilidad": "V2"
-    },
-    {
-     "id": "guerrero.s1.3",
      "tipo": "menor",
      "nombre": {
       "es": "Vida",
@@ -1708,15 +1813,15 @@
      "gancho": null,
      "icono": "sprite:corazon",
      "efecto": "vida +3 %",
-     "x": 4.677,
-     "y": 2.7,
+     "x": 3.811,
+     "y": 2.2,
      "conexiones": [
-      "guerrero.s1.2",
-      "guerrero.s1.4"
+      "guerrero.s1.1",
+      "guerrero.s1.3"
      ]
     },
     {
-     "id": "guerrero.s1.4",
+     "id": "guerrero.s1.3",
      "tipo": "menor",
      "nombre": {
       "es": "Estamina máxima",
@@ -1736,12 +1841,96 @@
      "gancho": null,
      "icono": "minecraft:bread",
      "efecto": "estamina máxima +3 %",
-     "x": 5.543,
-     "y": 3.2,
+     "x": 4.677,
+     "y": 2.7,
      "conexiones": [
-      "guerrero.s1.3",
+      "guerrero.s1.2",
+      "guerrero.s1.ultima",
       "guerrero.s1.puente_1"
      ]
+    },
+    {
+     "id": "guerrero.s1.ultima",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Bramido",
+      "en": "Bellow"
+     },
+     "coste": 3,
+     "region": "senda_1",
+     "mods": [],
+     "numeros": [
+      6,
+      40,
+      5,
+      2,
+      10,
+      30
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "bramas: los hostiles a {0} bloques reciben {1} de postura y Debilidad I {2} s, y ganas {3} de absorción por cada uno (hasta {4}); cuesta {5} de estamina",
+      "en": "you bellow: hostiles within {0} blocks take {1} posture and Weakness I for {2} s, and you gain {3} absorption for each (up to {4}); costs {5} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:sculk_shrieker",
+     "efecto": "bramas: los hostiles a 6 bloques reciben 40 de postura y Debilidad I 5 s, y ganas 2 de absorción por cada uno (hasta 10); cuesta 30 de estamina; espera 45 s",
+     "x": 5.802,
+     "y": 3.35,
+     "conexiones": [
+      "guerrero.s1.3",
+      "guerrero.s1.ultima_ii"
+     ],
+     "habilidad": "N",
+     "ultima": 1
+    },
+    {
+     "id": "guerrero.s1.ultima_ii",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Bramido II",
+      "en": "Bellow II"
+     },
+     "coste": 2,
+     "region": "senda_1",
+     "mods": [],
+     "numeros": [
+      8,
+      60,
+      5,
+      3,
+      12,
+      30
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "bramas: los hostiles a {0} bloques reciben {1} de postura y Debilidad I {2} s, y ganas {3} de absorción por cada uno (hasta {4}); cuesta {5} de estamina",
+      "en": "you bellow: hostiles within {0} blocks take {1} posture and Weakness I for {2} s, and you gain {3} absorption for each (up to {4}); costs {5} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:sculk_shrieker",
+     "efecto": "bramas: los hostiles a 8 bloques reciben 60 de postura y Debilidad I 5 s, y ganas 3 de absorción por cada uno (hasta 12); cuesta 30 de estamina; espera 45 s",
+     "x": 6.755,
+     "y": 3.9,
+     "conexiones": [
+      "guerrero.s1.ultima"
+     ],
+     "habilidad": "N2",
+     "ultima": 1
     },
     {
      "id": "guerrero.s1.puente_1",
@@ -1764,10 +1953,10 @@
      "gancho": "puente_al_tanque",
      "icono": "clase:tanque",
      "efecto": "vida +5 %",
-     "x": 6.495,
-     "y": 3.75,
+     "x": 6.626,
+     "y": 1.53,
      "conexiones": [
-      "guerrero.s1.4",
+      "guerrero.s1.3",
       "guerrero.s1.puente_2"
      ],
      "destino": "tanque"
@@ -1793,8 +1982,8 @@
      "gancho": null,
      "icono": "minecraft:iron_chestplate",
      "efecto": "armadura +1",
-     "x": 7.361,
-     "y": 4.25,
+     "x": 7.6,
+     "y": 1.755,
      "conexiones": [
       "guerrero.s1.puente_1",
       "guerrero.s1.puente_3"
@@ -1824,8 +2013,8 @@
      "gancho": "represalia_menor",
      "icono": "minecraft:cactus",
      "efecto": "quien golpea tu escudo levantado recibe 2 de daño",
-     "x": 8.227,
-     "y": 4.75,
+     "x": 8.574,
+     "y": 1.98,
      "conexiones": [
       "guerrero.s1.puente_2"
      ],
@@ -1884,7 +2073,8 @@
      "y": -2.1,
      "conexiones": [
       "guerrero.b.tronco_1",
-      "guerrero.b.tronco_3"
+      "guerrero.b.tronco_3",
+      "guerrero.b.habilidad_b"
      ]
     },
     {
@@ -1949,6 +2139,69 @@
       "guerrero.b1.1",
       "guerrero.b2.1"
      ]
+    },
+    {
+     "id": "guerrero.b.habilidad_b",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Postura de hierro",
+      "en": "Iron Stance"
+     },
+     "coste": 2,
+     "region": "rama_b",
+     "mods": [],
+     "numeros": [
+      6
+     ],
+     "formatos": [
+      "num"
+     ],
+     "plantilla": {
+      "es": "{0} s de Resistencia II y Lentitud I",
+      "en": "Resistance II and Slowness I for {0} s"
+     },
+     "gancho": null,
+     "icono": "minecraft:iron_block",
+     "efecto": "6 s de Resistencia II y Lentitud I; espera 50 s",
+     "x": 3.076,
+     "y": -3.076,
+     "conexiones": [
+      "guerrero.b.tronco_2",
+      "guerrero.b.habilidad_b2"
+     ],
+     "habilidad": "B"
+    },
+    {
+     "id": "guerrero.b.habilidad_b2",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Postura de hierro II",
+      "en": "Iron Stance II"
+     },
+     "coste": 2,
+     "region": "rama_b",
+     "mods": [],
+     "numeros": [
+      8,
+      20
+     ],
+     "formatos": [
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "{0} s de Resistencia II, sin Lentitud; al acabar recuperas {1} de estamina",
+      "en": "Resistance II for {0} s, without Slowness; when it ends you recover {1} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:iron_block",
+     "efecto": "8 s de Resistencia II, sin Lentitud; al acabar recuperas 20 de estamina; espera 50 s",
+     "x": 3.683,
+     "y": -3.949,
+     "conexiones": [
+      "guerrero.b.habilidad_b"
+     ],
+     "habilidad": "B2"
     },
     {
      "id": "guerrero.b1.1",
@@ -2402,38 +2655,6 @@
     },
     {
      "id": "guerrero.s2.2",
-     "tipo": "habilidad",
-     "nombre": {
-      "es": "Postura de hierro",
-      "en": "Iron Stance"
-     },
-     "coste": 2,
-     "region": "senda_2",
-     "mods": [],
-     "numeros": [
-      6
-     ],
-     "formatos": [
-      "num"
-     ],
-     "plantilla": {
-      "es": "{0} s de Resistencia II y Lentitud I",
-      "en": "Resistance II and Slowness I for {0} s"
-     },
-     "gancho": null,
-     "icono": "minecraft:iron_block",
-     "efecto": "6 s de Resistencia II y Lentitud I; espera 50 s",
-     "x": 0.0,
-     "y": -4.4,
-     "conexiones": [
-      "guerrero.s2.1",
-      "guerrero.s2.3",
-      "guerrero.s2.lado"
-     ],
-     "habilidad": "B"
-    },
-    {
-     "id": "guerrero.s2.3",
      "tipo": "menor",
      "nombre": {
       "es": "Daño recibido",
@@ -2454,14 +2675,14 @@
      "icono": "minecraft:leather_chestplate",
      "efecto": "daño recibido −3 %",
      "x": 0.0,
-     "y": -5.4,
+     "y": -4.4,
      "conexiones": [
-      "guerrero.s2.2",
-      "guerrero.s2.4"
+      "guerrero.s2.1",
+      "guerrero.s2.3"
      ]
     },
     {
-     "id": "guerrero.s2.4",
+     "id": "guerrero.s2.3",
      "tipo": "menor",
      "nombre": {
       "es": "Vida",
@@ -2482,43 +2703,91 @@
      "icono": "sprite:corazon",
      "efecto": "vida +3 %",
      "x": 0.0,
-     "y": -6.4,
+     "y": -5.4,
      "conexiones": [
-      "guerrero.s2.3",
+      "guerrero.s2.2",
+      "guerrero.s2.ultima",
       "guerrero.s2.puente_1"
      ]
     },
     {
-     "id": "guerrero.s2.lado",
+     "id": "guerrero.s2.ultima",
      "tipo": "habilidad",
      "nombre": {
-      "es": "Postura de hierro II",
-      "en": "Iron Stance II"
+      "es": "Hendedura",
+      "en": "Cleave"
+     },
+     "coste": 3,
+     "region": "senda_2",
+     "mods": [],
+     "numeros": [
+      3.5,
+      100,
+      2.0,
+      50,
+      35
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "pct",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "un tajo de arriba abajo a lo que tienes delante (hasta {0} bloques, {1}°): el {2%} del daño de tu arma y {3} de postura; cuesta {4} de estamina",
+      "en": "an overhead cleave at whatever is in front of you (up to {0} blocks, {1}°): {2%} of your weapon's damage and {3} posture; costs {4} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:diamond_axe",
+     "efecto": "un tajo de arriba abajo a lo que tienes delante (hasta 3,5 bloques, 100°): el 200 % del daño de tu arma y 50 de postura; cuesta 35 de estamina; espera 30 s",
+     "x": 0.0,
+     "y": -6.7,
+     "conexiones": [
+      "guerrero.s2.3",
+      "guerrero.s2.ultima_ii"
+     ],
+     "habilidad": "N",
+     "ultima": 2
+    },
+    {
+     "id": "guerrero.s2.ultima_ii",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Hendedura II",
+      "en": "Cleave II"
      },
      "coste": 2,
      "region": "senda_2",
      "mods": [],
      "numeros": [
-      8,
-      20
+      3.5,
+      100,
+      2.5,
+      80,
+      35
      ],
      "formatos": [
+      "num",
+      "num",
+      "pct",
       "num",
       "num"
      ],
      "plantilla": {
-      "es": "{0} s de Resistencia II, sin Lentitud; al acabar recuperas {1} de estamina",
-      "en": "Resistance II for {0} s, without Slowness; when it ends you recover {1} stamina"
+      "es": "un tajo de arriba abajo a lo que tienes delante (hasta {0} bloques, {1}°): el {2%} del daño de tu arma y {3} de postura; cuesta {4} de estamina",
+      "en": "an overhead cleave at whatever is in front of you (up to {0} blocks, {1}°): {2%} of your weapon's damage and {3} posture; costs {4} stamina"
      },
      "gancho": null,
-     "icono": "minecraft:iron_block",
-     "efecto": "8 s de Resistencia II, sin Lentitud; al acabar recuperas 20 de estamina; espera 50 s",
-     "x": 0.99,
-     "y": -4.287,
+     "icono": "minecraft:diamond_axe",
+     "efecto": "un tajo de arriba abajo a lo que tienes delante (hasta 3,5 bloques, 100°): el 250 % del daño de tu arma y 80 de postura; cuesta 35 de estamina; espera 30 s",
+     "x": 0.0,
+     "y": -7.8,
      "conexiones": [
-      "guerrero.s2.2"
+      "guerrero.s2.ultima"
      ],
-     "habilidad": "B2"
+     "habilidad": "N2",
+     "ultima": 2
     },
     {
      "id": "guerrero.s2.puente_1",
@@ -2541,10 +2810,10 @@
      "gancho": "puente_al_asesino",
      "icono": "clase:asesino",
      "efecto": "velocidad +3 %",
-     "x": 0.0,
-     "y": -7.5,
+     "x": -1.988,
+     "y": -6.503,
      "conexiones": [
-      "guerrero.s2.4",
+      "guerrero.s2.3",
       "guerrero.s2.puente_2"
      ],
      "destino": "asesino"
@@ -2570,8 +2839,8 @@
      "gancho": null,
      "icono": "minecraft:gunpowder",
      "efecto": "coste de esquiva −8 %",
-     "x": 0.0,
-     "y": -8.5,
+     "x": -2.28,
+     "y": -7.459,
      "conexiones": [
       "guerrero.s2.puente_1",
       "guerrero.s2.puente_3"
@@ -2599,8 +2868,8 @@
      "gancho": "punalada_menor",
      "icono": "minecraft:iron_sword",
      "efecto": "daño por la espalda +20 %",
-     "x": 0.0,
-     "y": -9.5,
+     "x": -2.573,
+     "y": -8.415,
      "conexiones": [
       "guerrero.s2.puente_2"
      ],
@@ -3226,11 +3495,12 @@
      "y": 2.7,
      "conexiones": [
       "guerrero.s3.2",
-      "guerrero.s3.4"
+      "guerrero.s3.ultima",
+      "guerrero.s3.puente_1"
      ]
     },
     {
-     "id": "guerrero.s3.4",
+     "id": "guerrero.s3.ultima",
      "tipo": "habilidad",
      "nombre": {
       "es": "Torbellino",
@@ -3258,17 +3528,17 @@
      "gancho": null,
      "icono": "minecraft:iron_axe",
      "efecto": "giras y golpeas todo lo que hay a 3 bloques con el 80 % del daño de tu arma y 30 de postura; cuesta 30 de estamina; espera 30 s",
-     "x": -5.543,
-     "y": 3.2,
+     "x": -5.802,
+     "y": 3.35,
      "conexiones": [
       "guerrero.s3.3",
-      "guerrero.s3.lado",
-      "guerrero.s3.puente_1"
+      "guerrero.s3.ultima_ii"
      ],
-     "habilidad": "N"
+     "habilidad": "N",
+     "ultima": 3
     },
     {
-     "id": "guerrero.s3.lado",
+     "id": "guerrero.s3.ultima_ii",
      "tipo": "habilidad",
      "nombre": {
       "es": "Torbellino II",
@@ -3296,12 +3566,13 @@
      "gancho": null,
      "icono": "minecraft:iron_axe",
      "efecto": "dos vueltas: golpeas dos veces todo lo que hay a 3 bloques con el 80 % del daño de tu arma y 45 de postura; cuesta 30 de estamina; espera 30 s",
-     "x": -6.12,
-     "y": 1.871,
+     "x": -6.755,
+     "y": 3.9,
      "conexiones": [
-      "guerrero.s3.4"
+      "guerrero.s3.ultima"
      ],
-     "habilidad": "N2"
+     "habilidad": "N2",
+     "ultima": 3
     },
     {
      "id": "guerrero.s3.puente_1",
@@ -3324,10 +3595,10 @@
      "gancho": "puente_al_arquero",
      "icono": "clase:arquero",
      "efecto": "tensado +5 %",
-     "x": -6.495,
-     "y": 3.75,
+     "x": -4.638,
+     "y": 4.973,
      "conexiones": [
-      "guerrero.s3.4",
+      "guerrero.s3.3",
       "guerrero.s3.puente_2"
      ],
      "destino": "arquero"
@@ -3353,8 +3624,8 @@
      "gancho": null,
      "icono": "minecraft:arrow",
      "efecto": "daño de proyectiles +4 %",
-     "x": -7.361,
-     "y": 4.25,
+     "x": -5.32,
+     "y": 5.705,
      "conexiones": [
       "guerrero.s3.puente_1",
       "guerrero.s3.puente_3"
@@ -3382,8 +3653,8 @@
      "gancho": "ojo_de_halcon_menor",
      "icono": "minecraft:spyglass",
      "efecto": "tiros a la cabeza +15 %",
-     "x": -8.227,
-     "y": 4.75,
+     "x": -6.002,
+     "y": 6.436,
      "conexiones": [
       "guerrero.s3.puente_2"
      ],
@@ -3475,8 +3746,102 @@
       ],
       "espera": 40
      }
+    }
+   },
+   "ultimas": [
+    {
+     "id": "danza_de_sombras",
+     "icono": "minecraft:echo_shard",
+     "nombre": {
+      "es": "Danza de sombras",
+      "en": "Shadow Dance"
+     },
+     "plantilla": {
+      "es": "saltas de enemigo en enemigo, hasta {1} a {0} bloques, y golpeas a cada uno por la espalda con el {2%} del daño de tu arma; mientras bailas nada te hace daño; cuesta {3} de estamina",
+      "en": "you leap from foe to foe, up to {1} within {0} blocks, striking each from behind for {2%} of your weapon's damage; nothing hurts you while you dance; costs {3} stamina"
+     },
+     "numeros": [
+      8,
+      4,
+      1.0,
+      30
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "pct",
+      "num"
+     ],
+     "espera": 40,
+     "mejora": {
+      "plantilla": {
+       "es": "saltas de enemigo en enemigo, hasta {1} a {0} bloques, y golpeas a cada uno por la espalda con el {2%} del daño de tu arma; mientras bailas nada te hace daño; cuesta {3} de estamina",
+       "en": "you leap from foe to foe, up to {1} within {0} blocks, striking each from behind for {2%} of your weapon's damage; nothing hurts you while you dance; costs {3} stamina"
+      },
+      "numeros": [
+       8,
+       6,
+       1.2,
+       30
+      ],
+      "formatos": [
+       "num",
+       "num",
+       "pct",
+       "num"
+      ],
+      "espera": 40
+     },
+     "senda": "S1"
     },
-    "N": {
+    {
+     "id": "ejecucion",
+     "icono": "minecraft:diamond_sword",
+     "nombre": {
+      "es": "Ejecución",
+      "en": "Execution"
+     },
+     "plantilla": {
+      "es": "apareces detrás del enemigo que miras (hasta {0} bloques) y le golpeas con el {1%} del daño de tu arma, el doble si le queda menos del {2%} de vida; cuesta {3} de estamina",
+      "en": "you appear behind the foe you look at (up to {0} blocks) and strike it for {1%} of your weapon's damage, twice that if it has under {2%} health; costs {3} stamina"
+     },
+     "numeros": [
+      16,
+      1.5,
+      0.35,
+      25
+     ],
+     "formatos": [
+      "num",
+      "pct",
+      "pct",
+      "num"
+     ],
+     "espera": 30,
+     "mejora": {
+      "plantilla": {
+       "es": "apareces detrás del enemigo que miras (hasta {0} bloques) y le golpeas con el {1%} del daño de tu arma, el doble si le queda menos del {2%} de vida; si muere, la espera baja un {4%}; cuesta {3} de estamina",
+       "en": "you appear behind the foe you look at (up to {0} blocks) and strike it for {1%} of your weapon's damage, twice that if it has under {2%} health; if it dies, the cooldown drops by {4%}; costs {3} stamina"
+      },
+      "numeros": [
+       16,
+       2.0,
+       0.35,
+       25,
+       0.5
+      ],
+      "formatos": [
+       "num",
+       "pct",
+       "pct",
+       "num",
+       "pct"
+      ],
+      "espera": 30
+     },
+     "senda": "S2"
+    },
+    {
      "id": "abanico_de_dagas",
      "icono": "minecraft:iron_sword",
      "nombre": {
@@ -3518,9 +3883,10 @@
        "num"
       ],
       "espera": 25
-     }
+     },
+     "senda": "S3"
     }
-   },
+   ],
    "regiones": {
     "A": {
      "es": "Sombra",
@@ -3849,7 +4215,8 @@
      "y": 4.2,
      "conexiones": [
       "asesino.a.tronco_1",
-      "asesino.a.tronco_3"
+      "asesino.a.tronco_3",
+      "asesino.a.habilidad_v2"
      ]
     },
     {
@@ -3912,6 +4279,38 @@
       "asesino.a1.1",
       "asesino.a2.1"
      ]
+    },
+    {
+     "id": "asesino.a.habilidad_v2",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Paso sombrío II",
+      "en": "Shadow Step II"
+     },
+     "coste": 2,
+     "region": "rama_a",
+     "mods": [],
+     "numeros": [
+      6,
+      0.8
+     ],
+     "formatos": [
+      "num",
+      "pct"
+     ],
+     "plantilla": {
+      "es": "{0} s de invisibilidad y Velocidad II; tu siguiente golpe c/c en ese tiempo hace +{1%}",
+      "en": "{0} s of invisibility and Speed II; your next melee blow in that time deals +{1%}"
+     },
+     "gancho": null,
+     "icono": "minecraft:ink_sac",
+     "efecto": "6 s de invisibilidad y Velocidad II; tu siguiente golpe c/c en ese tiempo hace +80 %; espera 30 s",
+     "x": 1.126,
+     "y": 4.202,
+     "conexiones": [
+      "asesino.a.tronco_2"
+     ],
+     "habilidad": "V2"
     },
     {
      "id": "asesino.a1.1",
@@ -4368,39 +4767,6 @@
     },
     {
      "id": "asesino.s1.2",
-     "tipo": "habilidad",
-     "nombre": {
-      "es": "Paso sombrío II",
-      "en": "Shadow Step II"
-     },
-     "coste": 2,
-     "region": "senda_1",
-     "mods": [],
-     "numeros": [
-      6,
-      0.8
-     ],
-     "formatos": [
-      "num",
-      "pct"
-     ],
-     "plantilla": {
-      "es": "{0} s de invisibilidad y Velocidad II; tu siguiente golpe c/c en ese tiempo hace +{1%}",
-      "en": "{0} s of invisibility and Speed II; your next melee blow in that time deals +{1%}"
-     },
-     "gancho": null,
-     "icono": "minecraft:ink_sac",
-     "efecto": "6 s de invisibilidad y Velocidad II; tu siguiente golpe c/c en ese tiempo hace +80 %; espera 30 s",
-     "x": 3.811,
-     "y": 2.2,
-     "conexiones": [
-      "asesino.s1.1",
-      "asesino.s1.3"
-     ],
-     "habilidad": "V2"
-    },
-    {
-     "id": "asesino.s1.3",
      "tipo": "menor",
      "nombre": {
       "es": "Coste de esquiva",
@@ -4420,15 +4786,15 @@
      "gancho": null,
      "icono": "minecraft:gunpowder",
      "efecto": "coste de esquiva −3 %",
-     "x": 4.677,
-     "y": 2.7,
+     "x": 3.811,
+     "y": 2.2,
      "conexiones": [
-      "asesino.s1.2",
-      "asesino.s1.4"
+      "asesino.s1.1",
+      "asesino.s1.3"
      ]
     },
     {
-     "id": "asesino.s1.4",
+     "id": "asesino.s1.3",
      "tipo": "menor",
      "nombre": {
       "es": "Velocidad",
@@ -4448,12 +4814,88 @@
      "gancho": null,
      "icono": "minecraft:feather",
      "efecto": "velocidad +3 %",
-     "x": 5.543,
-     "y": 3.2,
+     "x": 4.677,
+     "y": 2.7,
      "conexiones": [
-      "asesino.s1.3",
+      "asesino.s1.2",
+      "asesino.s1.ultima",
       "asesino.s1.puente_1"
      ]
+    },
+    {
+     "id": "asesino.s1.ultima",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Danza de sombras",
+      "en": "Shadow Dance"
+     },
+     "coste": 3,
+     "region": "senda_1",
+     "mods": [],
+     "numeros": [
+      8,
+      4,
+      1.0,
+      30
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "pct",
+      "num"
+     ],
+     "plantilla": {
+      "es": "saltas de enemigo en enemigo, hasta {1} a {0} bloques, y golpeas a cada uno por la espalda con el {2%} del daño de tu arma; mientras bailas nada te hace daño; cuesta {3} de estamina",
+      "en": "you leap from foe to foe, up to {1} within {0} blocks, striking each from behind for {2%} of your weapon's damage; nothing hurts you while you dance; costs {3} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:echo_shard",
+     "efecto": "saltas de enemigo en enemigo, hasta 4 a 8 bloques, y golpeas a cada uno por la espalda con el 100 % del daño de tu arma; mientras bailas nada te hace daño; cuesta 30 de estamina; espera 40 s",
+     "x": 5.802,
+     "y": 3.35,
+     "conexiones": [
+      "asesino.s1.3",
+      "asesino.s1.ultima_ii"
+     ],
+     "habilidad": "N",
+     "ultima": 1
+    },
+    {
+     "id": "asesino.s1.ultima_ii",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Danza de sombras II",
+      "en": "Shadow Dance II"
+     },
+     "coste": 2,
+     "region": "senda_1",
+     "mods": [],
+     "numeros": [
+      8,
+      6,
+      1.2,
+      30
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "pct",
+      "num"
+     ],
+     "plantilla": {
+      "es": "saltas de enemigo en enemigo, hasta {1} a {0} bloques, y golpeas a cada uno por la espalda con el {2%} del daño de tu arma; mientras bailas nada te hace daño; cuesta {3} de estamina",
+      "en": "you leap from foe to foe, up to {1} within {0} blocks, striking each from behind for {2%} of your weapon's damage; nothing hurts you while you dance; costs {3} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:echo_shard",
+     "efecto": "saltas de enemigo en enemigo, hasta 6 a 8 bloques, y golpeas a cada uno por la espalda con el 120 % del daño de tu arma; mientras bailas nada te hace daño; cuesta 30 de estamina; espera 40 s",
+     "x": 6.755,
+     "y": 3.9,
+     "conexiones": [
+      "asesino.s1.ultima"
+     ],
+     "habilidad": "N2",
+     "ultima": 1
     },
     {
      "id": "asesino.s1.puente_1",
@@ -4476,10 +4918,10 @@
      "gancho": "puente_al_guerrero",
      "icono": "clase:guerrero",
      "efecto": "regeneración de estamina +5 %",
-     "x": 6.495,
-     "y": 3.75,
+     "x": 6.626,
+     "y": 1.53,
      "conexiones": [
-      "asesino.s1.4",
+      "asesino.s1.3",
       "asesino.s1.puente_2"
      ],
      "destino": "guerrero"
@@ -4505,8 +4947,8 @@
      "gancho": null,
      "icono": "minecraft:mace",
      "efecto": "daño de postura +5 %",
-     "x": 7.361,
-     "y": 4.25,
+     "x": 7.6,
+     "y": 1.755,
      "conexiones": [
       "asesino.s1.puente_1",
       "asesino.s1.puente_3"
@@ -4536,8 +4978,8 @@
      "gancho": "replica_menor",
      "icono": "minecraft:flint_and_steel",
      "efecto": "una parada perfecta te devuelve 10 de estamina",
-     "x": 8.227,
-     "y": 4.75,
+     "x": 8.574,
+     "y": 1.98,
      "conexiones": [
       "asesino.s1.puente_2"
      ],
@@ -4596,7 +5038,8 @@
      "y": -2.1,
      "conexiones": [
       "asesino.b.tronco_1",
-      "asesino.b.tronco_3"
+      "asesino.b.tronco_3",
+      "asesino.b.habilidad_b"
      ]
     },
     {
@@ -4655,6 +5098,77 @@
       "asesino.b1.1",
       "asesino.b2.1"
      ]
+    },
+    {
+     "id": "asesino.b.habilidad_b",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Marca de muerte",
+      "en": "Death Mark"
+     },
+     "coste": 2,
+     "region": "rama_b",
+     "mods": [],
+     "numeros": [
+      16,
+      10,
+      0.3
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "pct"
+     ],
+     "plantilla": {
+      "es": "el monstruo que miras (hasta {0} bloques) brilla {1} s y recibe +{2%} de tus golpes",
+      "en": "the monster you look at (up to {0} blocks) glows for {1} s and takes +{2%} from your blows"
+     },
+     "gancho": null,
+     "icono": "minecraft:wither_rose",
+     "efecto": "el monstruo que miras (hasta 16 bloques) brilla 10 s y recibe +30 % de tus golpes; espera 40 s",
+     "x": 3.076,
+     "y": -3.076,
+     "conexiones": [
+      "asesino.b.tronco_2",
+      "asesino.b.habilidad_b2"
+     ],
+     "habilidad": "B"
+    },
+    {
+     "id": "asesino.b.habilidad_b2",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Marca de muerte II",
+      "en": "Death Mark II"
+     },
+     "coste": 2,
+     "region": "rama_b",
+     "mods": [],
+     "numeros": [
+      16,
+      10,
+      0.4,
+      0.5
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "pct",
+      "pct"
+     ],
+     "plantilla": {
+      "es": "el monstruo que miras (hasta {0} bloques) brilla {1} s y recibe +{2%} de tus golpes; si muere marcado, la espera baja un {3%}",
+      "en": "the monster you look at (up to {0} blocks) glows for {1} s and takes +{2%} from your blows; if it dies marked, the cooldown drops by {3%}"
+     },
+     "gancho": null,
+     "icono": "minecraft:wither_rose",
+     "efecto": "el monstruo que miras (hasta 16 bloques) brilla 10 s y recibe +40 % de tus golpes; si muere marcado, la espera baja un 50 %; espera 40 s",
+     "x": 3.683,
+     "y": -3.949,
+     "conexiones": [
+      "asesino.b.habilidad_b"
+     ],
+     "habilidad": "B2"
     },
     {
      "id": "asesino.b1.1",
@@ -5117,42 +5631,6 @@
     },
     {
      "id": "asesino.s2.2",
-     "tipo": "habilidad",
-     "nombre": {
-      "es": "Marca de muerte",
-      "en": "Death Mark"
-     },
-     "coste": 2,
-     "region": "senda_2",
-     "mods": [],
-     "numeros": [
-      16,
-      10,
-      0.3
-     ],
-     "formatos": [
-      "num",
-      "num",
-      "pct"
-     ],
-     "plantilla": {
-      "es": "el monstruo que miras (hasta {0} bloques) brilla {1} s y recibe +{2%} de tus golpes",
-      "en": "the monster you look at (up to {0} blocks) glows for {1} s and takes +{2%} from your blows"
-     },
-     "gancho": null,
-     "icono": "minecraft:wither_rose",
-     "efecto": "el monstruo que miras (hasta 16 bloques) brilla 10 s y recibe +30 % de tus golpes; espera 40 s",
-     "x": 0.0,
-     "y": -4.4,
-     "conexiones": [
-      "asesino.s2.1",
-      "asesino.s2.3",
-      "asesino.s2.lado"
-     ],
-     "habilidad": "B"
-    },
-    {
-     "id": "asesino.s2.3",
      "tipo": "menor",
      "nombre": {
       "es": "Daño a enemigos bajo el 35 %",
@@ -5173,14 +5651,14 @@
      "icono": "minecraft:wither_skeleton_skull",
      "efecto": "daño a enemigos bajo el 35 % +3 %",
      "x": 0.0,
-     "y": -5.4,
+     "y": -4.4,
      "conexiones": [
-      "asesino.s2.2",
-      "asesino.s2.4"
+      "asesino.s2.1",
+      "asesino.s2.3"
      ]
     },
     {
-     "id": "asesino.s2.4",
+     "id": "asesino.s2.3",
      "tipo": "menor",
      "nombre": {
       "es": "Velocidad",
@@ -5201,47 +5679,89 @@
      "icono": "minecraft:feather",
      "efecto": "velocidad +3 %",
      "x": 0.0,
-     "y": -6.4,
+     "y": -5.4,
      "conexiones": [
-      "asesino.s2.3",
+      "asesino.s2.2",
+      "asesino.s2.ultima",
       "asesino.s2.puente_1"
      ]
     },
     {
-     "id": "asesino.s2.lado",
+     "id": "asesino.s2.ultima",
      "tipo": "habilidad",
      "nombre": {
-      "es": "Marca de muerte II",
-      "en": "Death Mark II"
+      "es": "Ejecución",
+      "en": "Execution"
+     },
+     "coste": 3,
+     "region": "senda_2",
+     "mods": [],
+     "numeros": [
+      16,
+      1.5,
+      0.35,
+      25
+     ],
+     "formatos": [
+      "num",
+      "pct",
+      "pct",
+      "num"
+     ],
+     "plantilla": {
+      "es": "apareces detrás del enemigo que miras (hasta {0} bloques) y le golpeas con el {1%} del daño de tu arma, el doble si le queda menos del {2%} de vida; cuesta {3} de estamina",
+      "en": "you appear behind the foe you look at (up to {0} blocks) and strike it for {1%} of your weapon's damage, twice that if it has under {2%} health; costs {3} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:diamond_sword",
+     "efecto": "apareces detrás del enemigo que miras (hasta 16 bloques) y le golpeas con el 150 % del daño de tu arma, el doble si le queda menos del 35 % de vida; cuesta 25 de estamina; espera 30 s",
+     "x": 0.0,
+     "y": -6.7,
+     "conexiones": [
+      "asesino.s2.3",
+      "asesino.s2.ultima_ii"
+     ],
+     "habilidad": "N",
+     "ultima": 2
+    },
+    {
+     "id": "asesino.s2.ultima_ii",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Ejecución II",
+      "en": "Execution II"
      },
      "coste": 2,
      "region": "senda_2",
      "mods": [],
      "numeros": [
       16,
-      10,
-      0.4,
+      2.0,
+      0.35,
+      25,
       0.5
      ],
      "formatos": [
       "num",
-      "num",
       "pct",
+      "pct",
+      "num",
       "pct"
      ],
      "plantilla": {
-      "es": "el monstruo que miras (hasta {0} bloques) brilla {1} s y recibe +{2%} de tus golpes; si muere marcado, la espera baja un {3%}",
-      "en": "the monster you look at (up to {0} blocks) glows for {1} s and takes +{2%} from your blows; if it dies marked, the cooldown drops by {3%}"
+      "es": "apareces detrás del enemigo que miras (hasta {0} bloques) y le golpeas con el {1%} del daño de tu arma, el doble si le queda menos del {2%} de vida; si muere, la espera baja un {4%}; cuesta {3} de estamina",
+      "en": "you appear behind the foe you look at (up to {0} blocks) and strike it for {1%} of your weapon's damage, twice that if it has under {2%} health; if it dies, the cooldown drops by {4%}; costs {3} stamina"
      },
      "gancho": null,
-     "icono": "minecraft:wither_rose",
-     "efecto": "el monstruo que miras (hasta 16 bloques) brilla 10 s y recibe +40 % de tus golpes; si muere marcado, la espera baja un 50 %; espera 40 s",
-     "x": 0.99,
-     "y": -4.287,
+     "icono": "minecraft:diamond_sword",
+     "efecto": "apareces detrás del enemigo que miras (hasta 16 bloques) y le golpeas con el 200 % del daño de tu arma, el doble si le queda menos del 35 % de vida; si muere, la espera baja un 50 %; cuesta 25 de estamina; espera 30 s",
+     "x": 0.0,
+     "y": -7.8,
      "conexiones": [
-      "asesino.s2.2"
+      "asesino.s2.ultima"
      ],
-     "habilidad": "B2"
+     "habilidad": "N2",
+     "ultima": 2
     },
     {
      "id": "asesino.s2.puente_1",
@@ -5264,10 +5784,10 @@
      "gancho": "puente_al_arquero",
      "icono": "clase:arquero",
      "efecto": "tensado +5 %",
-     "x": 0.0,
-     "y": -7.5,
+     "x": -1.988,
+     "y": -6.503,
      "conexiones": [
-      "asesino.s2.4",
+      "asesino.s2.3",
       "asesino.s2.puente_2"
      ],
      "destino": "arquero"
@@ -5293,8 +5813,8 @@
      "gancho": null,
      "icono": "minecraft:arrow",
      "efecto": "daño de proyectiles +4 %",
-     "x": 0.0,
-     "y": -8.5,
+     "x": -2.28,
+     "y": -7.459,
      "conexiones": [
       "asesino.s2.puente_1",
       "asesino.s2.puente_3"
@@ -5322,8 +5842,8 @@
      "gancho": "ojo_de_halcon_menor",
      "icono": "minecraft:spyglass",
      "efecto": "tiros a la cabeza +15 %",
-     "x": 0.0,
-     "y": -9.5,
+     "x": -2.573,
+     "y": -8.415,
      "conexiones": [
       "asesino.s2.puente_2"
      ],
@@ -5961,11 +6481,12 @@
      "y": 2.7,
      "conexiones": [
       "asesino.s3.2",
-      "asesino.s3.4"
+      "asesino.s3.ultima",
+      "asesino.s3.puente_1"
      ]
     },
     {
-     "id": "asesino.s3.4",
+     "id": "asesino.s3.ultima",
      "tipo": "habilidad",
      "nombre": {
       "es": "Abanico de dagas",
@@ -5993,17 +6514,17 @@
      "gancho": null,
      "icono": "minecraft:iron_sword",
      "efecto": "lanzas 5 dagas en abanico de 60°: 4 de daño cada una y Veneno I 3 s; espera 25 s",
-     "x": -5.543,
-     "y": 3.2,
+     "x": -5.802,
+     "y": 3.35,
      "conexiones": [
       "asesino.s3.3",
-      "asesino.s3.lado",
-      "asesino.s3.puente_1"
+      "asesino.s3.ultima_ii"
      ],
-     "habilidad": "N"
+     "habilidad": "N",
+     "ultima": 3
     },
     {
-     "id": "asesino.s3.lado",
+     "id": "asesino.s3.ultima_ii",
      "tipo": "habilidad",
      "nombre": {
       "es": "Abanico de dagas II",
@@ -6031,12 +6552,13 @@
      "gancho": null,
      "icono": "minecraft:iron_sword",
      "efecto": "lanzas 7 dagas en abanico de 60°: 4 de daño cada una y Veneno II 3 s; espera 25 s",
-     "x": -6.12,
-     "y": 1.871,
+     "x": -6.755,
+     "y": 3.9,
      "conexiones": [
-      "asesino.s3.4"
+      "asesino.s3.ultima"
      ],
-     "habilidad": "N2"
+     "habilidad": "N2",
+     "ultima": 3
     },
     {
      "id": "asesino.s3.puente_1",
@@ -6059,10 +6581,10 @@
      "gancho": "puente_al_mago",
      "icono": "clase:mago",
      "efecto": "maná máximo +10 %",
-     "x": -6.495,
-     "y": 3.75,
+     "x": -4.638,
+     "y": 4.973,
      "conexiones": [
-      "asesino.s3.4",
+      "asesino.s3.3",
       "asesino.s3.puente_2"
      ],
      "destino": "mago"
@@ -6088,8 +6610,8 @@
      "gancho": null,
      "icono": "minecraft:experience_bottle",
      "efecto": "regeneración de maná +50 %",
-     "x": -7.361,
-     "y": 4.25,
+     "x": -5.32,
+     "y": 5.705,
      "conexiones": [
       "asesino.s3.puente_1",
       "asesino.s3.puente_3"
@@ -6117,8 +6639,8 @@
      "gancho": "barrera_menor",
      "icono": "minecraft:amethyst_shard",
      "efecto": "daño mágico recibido −15 %",
-     "x": -8.227,
-     "y": 4.75,
+     "x": -6.002,
+     "y": 6.436,
      "conexiones": [
       "asesino.s3.puente_2"
      ],
@@ -6206,8 +6728,100 @@
       ],
       "espera": 60
      }
+    }
+   },
+   "ultimas": [
+    {
+     "id": "golpe_sismico",
+     "icono": "minecraft:heavy_core",
+     "nombre": {
+      "es": "Golpe sísmico",
+      "en": "Seismic Slam"
+     },
+     "plantilla": {
+      "es": "golpeas el suelo: los hostiles a {0} bloques reciben {1} de daño y {2} de postura, saltan y quedan con Lentitud II {3} s; cuesta {4} de estamina",
+      "en": "you slam the ground: hostiles within {0} blocks take {1} damage and {2} posture, are thrown up and get Slowness II for {3} s; costs {4} stamina"
+     },
+     "numeros": [
+      5,
+      8,
+      50,
+      3,
+      30
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "espera": 35,
+     "mejora": {
+      "plantilla": {
+       "es": "golpeas el suelo: los hostiles a {0} bloques reciben {1} de daño y {2} de postura, saltan y quedan con Lentitud II {3} s; cuesta {4} de estamina",
+       "en": "you slam the ground: hostiles within {0} blocks take {1} damage and {2} posture, are thrown up and get Slowness II for {3} s; costs {4} stamina"
+      },
+      "numeros": [
+       6,
+       10,
+       70,
+       3,
+       30
+      ],
+      "formatos": [
+       "num",
+       "num",
+       "num",
+       "num",
+       "num"
+      ],
+      "espera": 35
+     },
+     "senda": "S1"
     },
-    "N": {
+    {
+     "id": "santuario_de_acero",
+     "icono": "minecraft:lodestone",
+     "nombre": {
+      "es": "Santuario de acero",
+      "en": "Steel Sanctuary"
+     },
+     "plantilla": {
+      "es": "clavas el escudo: durante {0} s, un círculo de {1} bloques da Resistencia I y Regeneración I a los aliados que están dentro, y a ti, y echa fuera a los hostiles; cuesta {2} de estamina",
+      "en": "you plant your shield: for {0} s, a circle of {1} blocks gives Resistance I and Regeneration I to the allies inside, and you, and throws hostiles out; costs {2} stamina"
+     },
+     "numeros": [
+      8,
+      4,
+      30
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num"
+     ],
+     "espera": 60,
+     "mejora": {
+      "plantilla": {
+       "es": "clavas el escudo: durante {0} s, un círculo de {1} bloques da Resistencia I y Regeneración I a los aliados que están dentro, y a ti Resistencia II, y echa fuera a los hostiles; cuesta {2} de estamina",
+       "en": "you plant your shield: for {0} s, a circle of {1} blocks gives Resistance I and Regeneration I to the allies inside, and you Resistance II, and throws hostiles out; costs {2} stamina"
+      },
+      "numeros": [
+       10,
+       5,
+       30
+      ],
+      "formatos": [
+       "num",
+       "num",
+       "num"
+      ],
+      "espera": 60
+     },
+     "senda": "S2"
+    },
+    {
      "id": "embestida_de_escudo",
      "icono": "minecraft:shield",
      "nombre": {
@@ -6245,9 +6859,10 @@
        "num"
       ],
       "espera": 20
-     }
+     },
+     "senda": "S3"
     }
-   },
+   ],
    "regiones": {
     "A": {
      "es": "Muralla",
@@ -6576,7 +7191,8 @@
      "y": 4.2,
      "conexiones": [
       "tanque.a.tronco_1",
-      "tanque.a.tronco_3"
+      "tanque.a.tronco_3",
+      "tanque.a.habilidad_v2"
      ]
     },
     {
@@ -6635,6 +7251,40 @@
       "tanque.a1.1",
       "tanque.a2.1"
      ]
+    },
+    {
+     "id": "tanque.a.habilidad_v2",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Provocar II",
+      "en": "Taunt II"
+     },
+     "coste": 2,
+     "region": "rama_a",
+     "mods": [],
+     "numeros": [
+      14,
+      9,
+      4
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "los monstruos hostiles a {0} bloques te toman como objetivo; Resistencia I {1} s y {2} de absorción",
+      "en": "hostile monsters within {0} blocks turn on you; Resistance I for {1} s and {2} absorption"
+     },
+     "gancho": null,
+     "icono": "minecraft:bell",
+     "efecto": "los monstruos hostiles a 14 bloques te toman como objetivo; Resistencia I 9 s y 4 de absorción; espera 25 s",
+     "x": 1.126,
+     "y": 4.202,
+     "conexiones": [
+      "tanque.a.tronco_2"
+     ],
+     "habilidad": "V2"
     },
     {
      "id": "tanque.a1.1",
@@ -7094,41 +7744,6 @@
     },
     {
      "id": "tanque.s1.2",
-     "tipo": "habilidad",
-     "nombre": {
-      "es": "Provocar II",
-      "en": "Taunt II"
-     },
-     "coste": 2,
-     "region": "senda_1",
-     "mods": [],
-     "numeros": [
-      14,
-      9,
-      4
-     ],
-     "formatos": [
-      "num",
-      "num",
-      "num"
-     ],
-     "plantilla": {
-      "es": "los monstruos hostiles a {0} bloques te toman como objetivo; Resistencia I {1} s y {2} de absorción",
-      "en": "hostile monsters within {0} blocks turn on you; Resistance I for {1} s and {2} absorption"
-     },
-     "gancho": null,
-     "icono": "minecraft:bell",
-     "efecto": "los monstruos hostiles a 14 bloques te toman como objetivo; Resistencia I 9 s y 4 de absorción; espera 25 s",
-     "x": 3.811,
-     "y": 2.2,
-     "conexiones": [
-      "tanque.s1.1",
-      "tanque.s1.3"
-     ],
-     "habilidad": "V2"
-    },
-    {
-     "id": "tanque.s1.3",
      "tipo": "menor",
      "nombre": {
       "es": "Vida",
@@ -7148,15 +7763,15 @@
      "gancho": null,
      "icono": "sprite:corazon",
      "efecto": "vida +3 %",
-     "x": 4.677,
-     "y": 2.7,
+     "x": 3.811,
+     "y": 2.2,
      "conexiones": [
-      "tanque.s1.2",
-      "tanque.s1.4"
+      "tanque.s1.1",
+      "tanque.s1.3"
      ]
     },
     {
-     "id": "tanque.s1.4",
+     "id": "tanque.s1.3",
      "tipo": "menor",
      "nombre": {
       "es": "Estamina al parar",
@@ -7176,12 +7791,92 @@
      "gancho": null,
      "icono": "minecraft:shield",
      "efecto": "estamina al parar −3 %",
-     "x": 5.543,
-     "y": 3.2,
+     "x": 4.677,
+     "y": 2.7,
      "conexiones": [
-      "tanque.s1.3",
+      "tanque.s1.2",
+      "tanque.s1.ultima",
       "tanque.s1.puente_1"
      ]
+    },
+    {
+     "id": "tanque.s1.ultima",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Golpe sísmico",
+      "en": "Seismic Slam"
+     },
+     "coste": 3,
+     "region": "senda_1",
+     "mods": [],
+     "numeros": [
+      5,
+      8,
+      50,
+      3,
+      30
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "golpeas el suelo: los hostiles a {0} bloques reciben {1} de daño y {2} de postura, saltan y quedan con Lentitud II {3} s; cuesta {4} de estamina",
+      "en": "you slam the ground: hostiles within {0} blocks take {1} damage and {2} posture, are thrown up and get Slowness II for {3} s; costs {4} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:heavy_core",
+     "efecto": "golpeas el suelo: los hostiles a 5 bloques reciben 8 de daño y 50 de postura, saltan y quedan con Lentitud II 3 s; cuesta 30 de estamina; espera 35 s",
+     "x": 5.802,
+     "y": 3.35,
+     "conexiones": [
+      "tanque.s1.3",
+      "tanque.s1.ultima_ii"
+     ],
+     "habilidad": "N",
+     "ultima": 1
+    },
+    {
+     "id": "tanque.s1.ultima_ii",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Golpe sísmico II",
+      "en": "Seismic Slam II"
+     },
+     "coste": 2,
+     "region": "senda_1",
+     "mods": [],
+     "numeros": [
+      6,
+      10,
+      70,
+      3,
+      30
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "golpeas el suelo: los hostiles a {0} bloques reciben {1} de daño y {2} de postura, saltan y quedan con Lentitud II {3} s; cuesta {4} de estamina",
+      "en": "you slam the ground: hostiles within {0} blocks take {1} damage and {2} posture, are thrown up and get Slowness II for {3} s; costs {4} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:heavy_core",
+     "efecto": "golpeas el suelo: los hostiles a 6 bloques reciben 10 de daño y 70 de postura, saltan y quedan con Lentitud II 3 s; cuesta 30 de estamina; espera 35 s",
+     "x": 6.755,
+     "y": 3.9,
+     "conexiones": [
+      "tanque.s1.ultima"
+     ],
+     "habilidad": "N2",
+     "ultima": 1
     },
     {
      "id": "tanque.s1.puente_1",
@@ -7204,10 +7899,10 @@
      "gancho": "puente_al_guerrero",
      "icono": "clase:guerrero",
      "efecto": "regeneración de estamina +5 %",
-     "x": 6.495,
-     "y": 3.75,
+     "x": 6.626,
+     "y": 1.53,
      "conexiones": [
-      "tanque.s1.4",
+      "tanque.s1.3",
       "tanque.s1.puente_2"
      ],
      "destino": "guerrero"
@@ -7233,8 +7928,8 @@
      "gancho": null,
      "icono": "minecraft:mace",
      "efecto": "daño de postura +5 %",
-     "x": 7.361,
-     "y": 4.25,
+     "x": 7.6,
+     "y": 1.755,
      "conexiones": [
       "tanque.s1.puente_1",
       "tanque.s1.puente_3"
@@ -7264,8 +7959,8 @@
      "gancho": "replica_menor",
      "icono": "minecraft:flint_and_steel",
      "efecto": "una parada perfecta te devuelve 10 de estamina",
-     "x": 8.227,
-     "y": 4.75,
+     "x": 8.574,
+     "y": 1.98,
      "conexiones": [
       "tanque.s1.puente_2"
      ],
@@ -7324,7 +8019,8 @@
      "y": -2.1,
      "conexiones": [
       "tanque.b.tronco_1",
-      "tanque.b.tronco_3"
+      "tanque.b.tronco_3",
+      "tanque.b.habilidad_b"
      ]
     },
     {
@@ -7383,6 +8079,71 @@
       "tanque.b1.1",
       "tanque.b2.1"
      ]
+    },
+    {
+     "id": "tanque.b.habilidad_b",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Baluarte",
+      "en": "Bulwark"
+     },
+     "coste": 2,
+     "region": "rama_b",
+     "mods": [],
+     "numeros": [
+      8,
+      6
+     ],
+     "formatos": [
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "{0} s de Resistencia II para ti y Resistencia I para los jugadores a {1} bloques",
+      "en": "Resistance II for you and Resistance I for players within {1} blocks, for {0} s"
+     },
+     "gancho": null,
+     "icono": "minecraft:netherite_chestplate",
+     "efecto": "8 s de Resistencia II para ti y Resistencia I para los jugadores a 6 bloques; espera 60 s",
+     "x": 3.076,
+     "y": -3.076,
+     "conexiones": [
+      "tanque.b.tronco_2",
+      "tanque.b.habilidad_b2"
+     ],
+     "habilidad": "B"
+    },
+    {
+     "id": "tanque.b.habilidad_b2",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Baluarte II",
+      "en": "Bulwark II"
+     },
+     "coste": 2,
+     "region": "rama_b",
+     "mods": [],
+     "numeros": [
+      10,
+      9
+     ],
+     "formatos": [
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "{0} s de Resistencia II para ti y Resistencia I para los jugadores a {1} bloques",
+      "en": "Resistance II for you and Resistance I for players within {1} blocks, for {0} s"
+     },
+     "gancho": null,
+     "icono": "minecraft:netherite_chestplate",
+     "efecto": "10 s de Resistencia II para ti y Resistencia I para los jugadores a 9 bloques; espera 60 s",
+     "x": 3.683,
+     "y": -3.949,
+     "conexiones": [
+      "tanque.b.habilidad_b"
+     ],
+     "habilidad": "B2"
     },
     {
      "id": "tanque.b1.1",
@@ -7852,40 +8613,6 @@
     },
     {
      "id": "tanque.s2.2",
-     "tipo": "habilidad",
-     "nombre": {
-      "es": "Baluarte",
-      "en": "Bulwark"
-     },
-     "coste": 2,
-     "region": "senda_2",
-     "mods": [],
-     "numeros": [
-      8,
-      6
-     ],
-     "formatos": [
-      "num",
-      "num"
-     ],
-     "plantilla": {
-      "es": "{0} s de Resistencia II para ti y Resistencia I para los jugadores a {1} bloques",
-      "en": "Resistance II for you and Resistance I for players within {1} blocks, for {0} s"
-     },
-     "gancho": null,
-     "icono": "minecraft:netherite_chestplate",
-     "efecto": "8 s de Resistencia II para ti y Resistencia I para los jugadores a 6 bloques; espera 60 s",
-     "x": 0.0,
-     "y": -4.4,
-     "conexiones": [
-      "tanque.s2.1",
-      "tanque.s2.3",
-      "tanque.s2.lado"
-     ],
-     "habilidad": "B"
-    },
-    {
-     "id": "tanque.s2.3",
      "tipo": "menor",
      "nombre": {
       "es": "Dureza de armadura",
@@ -7906,14 +8633,14 @@
      "icono": "minecraft:netherite_scrap",
      "efecto": "dureza de armadura +0,5",
      "x": 0.0,
-     "y": -5.4,
+     "y": -4.4,
      "conexiones": [
-      "tanque.s2.2",
-      "tanque.s2.4"
+      "tanque.s2.1",
+      "tanque.s2.3"
      ]
     },
     {
-     "id": "tanque.s2.4",
+     "id": "tanque.s2.3",
      "tipo": "menor",
      "nombre": {
       "es": "Daño recibido",
@@ -7934,43 +8661,83 @@
      "icono": "minecraft:leather_chestplate",
      "efecto": "daño recibido −3 %",
      "x": 0.0,
-     "y": -6.4,
+     "y": -5.4,
      "conexiones": [
-      "tanque.s2.3",
+      "tanque.s2.2",
+      "tanque.s2.ultima",
       "tanque.s2.puente_1"
      ]
     },
     {
-     "id": "tanque.s2.lado",
+     "id": "tanque.s2.ultima",
      "tipo": "habilidad",
      "nombre": {
-      "es": "Baluarte II",
-      "en": "Bulwark II"
+      "es": "Santuario de acero",
+      "en": "Steel Sanctuary"
+     },
+     "coste": 3,
+     "region": "senda_2",
+     "mods": [],
+     "numeros": [
+      8,
+      4,
+      30
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "clavas el escudo: durante {0} s, un círculo de {1} bloques da Resistencia I y Regeneración I a los aliados que están dentro, y a ti, y echa fuera a los hostiles; cuesta {2} de estamina",
+      "en": "you plant your shield: for {0} s, a circle of {1} blocks gives Resistance I and Regeneration I to the allies inside, and you, and throws hostiles out; costs {2} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:lodestone",
+     "efecto": "clavas el escudo: durante 8 s, un círculo de 4 bloques da Resistencia I y Regeneración I a los aliados que están dentro, y a ti, y echa fuera a los hostiles; cuesta 30 de estamina; espera 60 s",
+     "x": 0.0,
+     "y": -6.7,
+     "conexiones": [
+      "tanque.s2.3",
+      "tanque.s2.ultima_ii"
+     ],
+     "habilidad": "N",
+     "ultima": 2
+    },
+    {
+     "id": "tanque.s2.ultima_ii",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Santuario de acero II",
+      "en": "Steel Sanctuary II"
      },
      "coste": 2,
      "region": "senda_2",
      "mods": [],
      "numeros": [
       10,
-      9
+      5,
+      30
      ],
      "formatos": [
+      "num",
       "num",
       "num"
      ],
      "plantilla": {
-      "es": "{0} s de Resistencia II para ti y Resistencia I para los jugadores a {1} bloques",
-      "en": "Resistance II for you and Resistance I for players within {1} blocks, for {0} s"
+      "es": "clavas el escudo: durante {0} s, un círculo de {1} bloques da Resistencia I y Regeneración I a los aliados que están dentro, y a ti Resistencia II, y echa fuera a los hostiles; cuesta {2} de estamina",
+      "en": "you plant your shield: for {0} s, a circle of {1} blocks gives Resistance I and Regeneration I to the allies inside, and you Resistance II, and throws hostiles out; costs {2} stamina"
      },
      "gancho": null,
-     "icono": "minecraft:netherite_chestplate",
-     "efecto": "10 s de Resistencia II para ti y Resistencia I para los jugadores a 9 bloques; espera 60 s",
-     "x": 0.99,
-     "y": -4.287,
+     "icono": "minecraft:lodestone",
+     "efecto": "clavas el escudo: durante 10 s, un círculo de 5 bloques da Resistencia I y Regeneración I a los aliados que están dentro, y a ti Resistencia II, y echa fuera a los hostiles; cuesta 30 de estamina; espera 60 s",
+     "x": 0.0,
+     "y": -7.8,
      "conexiones": [
-      "tanque.s2.2"
+      "tanque.s2.ultima"
      ],
-     "habilidad": "B2"
+     "habilidad": "N2",
+     "ultima": 2
     },
     {
      "id": "tanque.s2.puente_1",
@@ -7993,10 +8760,10 @@
      "gancho": "puente_al_curandero",
      "icono": "clase:curandero",
      "efecto": "curación +10 %",
-     "x": 0.0,
-     "y": -7.5,
+     "x": -1.988,
+     "y": -6.503,
      "conexiones": [
-      "tanque.s2.4",
+      "tanque.s2.3",
       "tanque.s2.puente_2"
      ],
      "destino": "curandero"
@@ -8022,8 +8789,8 @@
      "gancho": null,
      "icono": "minecraft:cooked_beef",
      "efecto": "regeneración de estamina +5 %",
-     "x": 0.0,
-     "y": -8.5,
+     "x": -2.28,
+     "y": -7.459,
      "conexiones": [
       "tanque.s2.puente_1",
       "tanque.s2.puente_3"
@@ -8055,8 +8822,8 @@
      "gancho": "vendaje",
      "icono": "minecraft:paper",
      "efecto": "cada 8 s sin recibir daño recuperas 1 de vida",
-     "x": 0.0,
-     "y": -9.5,
+     "x": -2.573,
+     "y": -8.415,
      "conexiones": [
       "tanque.s2.puente_2"
      ],
@@ -8699,11 +9466,12 @@
      "y": 2.7,
      "conexiones": [
       "tanque.s3.2",
-      "tanque.s3.4"
+      "tanque.s3.ultima",
+      "tanque.s3.puente_1"
      ]
     },
     {
-     "id": "tanque.s3.4",
+     "id": "tanque.s3.ultima",
      "tipo": "habilidad",
      "nombre": {
       "es": "Embestida de escudo",
@@ -8729,17 +9497,17 @@
      "gancho": null,
      "icono": "minecraft:shield",
      "efecto": "cargas 6 bloques al frente; lo que golpeas recibe 6 de daño, 40 de postura y sale empujado; espera 20 s",
-     "x": -5.543,
-     "y": 3.2,
+     "x": -5.802,
+     "y": 3.35,
      "conexiones": [
       "tanque.s3.3",
-      "tanque.s3.lado",
-      "tanque.s3.puente_1"
+      "tanque.s3.ultima_ii"
      ],
-     "habilidad": "N"
+     "habilidad": "N",
+     "ultima": 3
     },
     {
-     "id": "tanque.s3.lado",
+     "id": "tanque.s3.ultima_ii",
      "tipo": "habilidad",
      "nombre": {
       "es": "Embestida de escudo II",
@@ -8765,12 +9533,13 @@
      "gancho": null,
      "icono": "minecraft:shield",
      "efecto": "cargas 8 bloques al frente; lo que golpeas recibe 6 de daño, 40 de postura, sale empujado y queda aturdido; espera 20 s",
-     "x": -6.12,
-     "y": 1.871,
+     "x": -6.755,
+     "y": 3.9,
      "conexiones": [
-      "tanque.s3.4"
+      "tanque.s3.ultima"
      ],
-     "habilidad": "N2"
+     "habilidad": "N2",
+     "ultima": 3
     },
     {
      "id": "tanque.s3.puente_1",
@@ -8793,10 +9562,10 @@
      "gancho": "puente_al_mago",
      "icono": "clase:mago",
      "efecto": "maná máximo +10 %",
-     "x": -6.495,
-     "y": 3.75,
+     "x": -4.638,
+     "y": 4.973,
      "conexiones": [
-      "tanque.s3.4",
+      "tanque.s3.3",
       "tanque.s3.puente_2"
      ],
      "destino": "mago"
@@ -8822,8 +9591,8 @@
      "gancho": null,
      "icono": "minecraft:experience_bottle",
      "efecto": "regeneración de maná +50 %",
-     "x": -7.361,
-     "y": 4.25,
+     "x": -5.32,
+     "y": 5.705,
      "conexiones": [
       "tanque.s3.puente_1",
       "tanque.s3.puente_3"
@@ -8851,8 +9620,8 @@
      "gancho": "barrera_menor",
      "icono": "minecraft:amethyst_shard",
      "efecto": "daño mágico recibido −15 %",
-     "x": -8.227,
-     "y": 4.75,
+     "x": -6.002,
+     "y": 6.436,
      "conexiones": [
       "tanque.s3.puente_2"
      ],
@@ -8938,8 +9707,112 @@
       ],
       "espera": 60
      }
+    }
+   },
+   "ultimas": [
+    {
+     "id": "relampago_en_cadena",
+     "icono": "minecraft:lightning_rod",
+     "nombre": {
+      "es": "Relámpago en cadena",
+      "en": "Chain Lightning"
+     },
+     "plantilla": {
+      "es": "un rayo al enemigo que miras (hasta {0} bloques): {1} de daño mágico, y salta a {2} enemigos más a {3} bloques, un {4%} menos en cada salto; cuesta {5} de maná",
+      "en": "a bolt at the foe you look at (up to {0} blocks): {1} magic damage, and it leaps to {2} more foes within {3} blocks, {4%} less at each leap; costs {5} mana"
+     },
+     "numeros": [
+      16,
+      10,
+      4,
+      5,
+      0.2,
+      35
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "pct",
+      "num"
+     ],
+     "espera": 25,
+     "mejora": {
+      "plantilla": {
+       "es": "un rayo al enemigo que miras (hasta {0} bloques): {1} de daño mágico, y salta a {2} enemigos más a {3} bloques, un {4%} menos en cada salto; cuesta {5} de maná",
+       "en": "a bolt at the foe you look at (up to {0} blocks): {1} magic damage, and it leaps to {2} more foes within {3} blocks, {4%} less at each leap; costs {5} mana"
+      },
+      "numeros": [
+       16,
+       12,
+       6,
+       5,
+       0.2,
+       35
+      ],
+      "formatos": [
+       "num",
+       "num",
+       "num",
+       "num",
+       "pct",
+       "num"
+      ],
+      "espera": 25
+     },
+     "senda": "S1"
     },
-    "N": {
+    {
+     "id": "prision_de_hielo",
+     "icono": "minecraft:packed_ice",
+     "nombre": {
+      "es": "Prisión de hielo",
+      "en": "Ice Prison"
+     },
+     "plantilla": {
+      "es": "el hielo atrapa a los hostiles a {1} bloques de donde miras (hasta {0}): {3} de daño mágico y {2} s congelados (Lentitud VII; si no son jefes, aturdidos: se corta su ataque); cuesta {4} de maná",
+      "en": "ice traps the hostiles within {1} blocks of where you look (up to {0}): {3} magic damage and frozen for {2} s (Slowness VII; unless they are bosses, staggered: their attack is cut off); costs {4} mana"
+     },
+     "numeros": [
+      24,
+      4,
+      3,
+      6,
+      45
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "espera": 45,
+     "mejora": {
+      "plantilla": {
+       "es": "el hielo atrapa a los hostiles a {1} bloques de donde miras (hasta {0}): {3} de daño mágico y {2} s congelados (Lentitud VII; si no son jefes, aturdidos: se corta su ataque); cuesta {4} de maná",
+       "en": "ice traps the hostiles within {1} blocks of where you look (up to {0}): {3} magic damage and frozen for {2} s (Slowness VII; unless they are bosses, staggered: their attack is cut off); costs {4} mana"
+      },
+      "numeros": [
+       24,
+       5,
+       4,
+       8,
+       45
+      ],
+      "formatos": [
+       "num",
+       "num",
+       "num",
+       "num",
+       "num"
+      ],
+      "espera": 45
+     },
+     "senda": "S2"
+    },
+    {
      "id": "meteoro",
      "icono": "minecraft:magma_block",
      "nombre": {
@@ -8989,9 +9862,10 @@
        "num"
       ],
       "espera": 40
-     }
+     },
+     "senda": "S3"
     }
-   },
+   ],
    "regiones": {
     "A": {
      "es": "Arcano",
@@ -9320,7 +10194,8 @@
      "y": 4.2,
      "conexiones": [
       "mago.a.tronco_1",
-      "mago.a.tronco_3"
+      "mago.a.tronco_3",
+      "mago.a.habilidad_v2"
      ]
     },
     {
@@ -9379,6 +10254,38 @@
       "mago.a1.1",
       "mago.a2.1"
      ]
+    },
+    {
+     "id": "mago.a.habilidad_v2",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Nova arcana II",
+      "en": "Arcane Nova II"
+     },
+     "coste": 2,
+     "region": "rama_a",
+     "mods": [],
+     "numeros": [
+      6,
+      9
+     ],
+     "formatos": [
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "un anillo de {0} bloques: {1} de daño mágico a los hostiles, y los empuja",
+      "en": "a ring of {0} blocks: {1} magic damage to hostiles, and it pushes them back"
+     },
+     "gancho": null,
+     "icono": "minecraft:fire_charge",
+     "efecto": "un anillo de 6 bloques: 9 de daño mágico a los hostiles, y los empuja; espera 20 s",
+     "x": 1.126,
+     "y": 4.202,
+     "conexiones": [
+      "mago.a.tronco_2"
+     ],
+     "habilidad": "V2"
     },
     {
      "id": "mago.a1.1",
@@ -9847,39 +10754,6 @@
     },
     {
      "id": "mago.s1.2",
-     "tipo": "habilidad",
-     "nombre": {
-      "es": "Nova arcana II",
-      "en": "Arcane Nova II"
-     },
-     "coste": 2,
-     "region": "senda_1",
-     "mods": [],
-     "numeros": [
-      6,
-      9
-     ],
-     "formatos": [
-      "num",
-      "num"
-     ],
-     "plantilla": {
-      "es": "un anillo de {0} bloques: {1} de daño mágico a los hostiles, y los empuja",
-      "en": "a ring of {0} blocks: {1} magic damage to hostiles, and it pushes them back"
-     },
-     "gancho": null,
-     "icono": "minecraft:fire_charge",
-     "efecto": "un anillo de 6 bloques: 9 de daño mágico a los hostiles, y los empuja; espera 20 s",
-     "x": 3.811,
-     "y": 2.2,
-     "conexiones": [
-      "mago.s1.1",
-      "mago.s1.3"
-     ],
-     "habilidad": "V2"
-    },
-    {
-     "id": "mago.s1.3",
      "tipo": "menor",
      "nombre": {
       "es": "Estamina máxima",
@@ -9899,15 +10773,15 @@
      "gancho": null,
      "icono": "minecraft:bread",
      "efecto": "estamina máxima +3 %",
-     "x": 4.677,
-     "y": 2.7,
+     "x": 3.811,
+     "y": 2.2,
      "conexiones": [
-      "mago.s1.2",
-      "mago.s1.4"
+      "mago.s1.1",
+      "mago.s1.3"
      ]
     },
     {
-     "id": "mago.s1.4",
+     "id": "mago.s1.3",
      "tipo": "menor",
      "nombre": {
       "es": "Daño mágico recibido",
@@ -9927,12 +10801,96 @@
      "gancho": null,
      "icono": "minecraft:amethyst_shard",
      "efecto": "daño mágico recibido −3 %",
-     "x": 5.543,
-     "y": 3.2,
+     "x": 4.677,
+     "y": 2.7,
      "conexiones": [
-      "mago.s1.3",
+      "mago.s1.2",
+      "mago.s1.ultima",
       "mago.s1.puente_1"
      ]
+    },
+    {
+     "id": "mago.s1.ultima",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Relámpago en cadena",
+      "en": "Chain Lightning"
+     },
+     "coste": 3,
+     "region": "senda_1",
+     "mods": [],
+     "numeros": [
+      16,
+      10,
+      4,
+      5,
+      0.2,
+      35
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "pct",
+      "num"
+     ],
+     "plantilla": {
+      "es": "un rayo al enemigo que miras (hasta {0} bloques): {1} de daño mágico, y salta a {2} enemigos más a {3} bloques, un {4%} menos en cada salto; cuesta {5} de maná",
+      "en": "a bolt at the foe you look at (up to {0} blocks): {1} magic damage, and it leaps to {2} more foes within {3} blocks, {4%} less at each leap; costs {5} mana"
+     },
+     "gancho": null,
+     "icono": "minecraft:lightning_rod",
+     "efecto": "un rayo al enemigo que miras (hasta 16 bloques): 10 de daño mágico, y salta a 4 enemigos más a 5 bloques, un 20 % menos en cada salto; cuesta 35 de maná; espera 25 s",
+     "x": 5.802,
+     "y": 3.35,
+     "conexiones": [
+      "mago.s1.3",
+      "mago.s1.ultima_ii"
+     ],
+     "habilidad": "N",
+     "ultima": 1
+    },
+    {
+     "id": "mago.s1.ultima_ii",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Relámpago en cadena II",
+      "en": "Chain Lightning II"
+     },
+     "coste": 2,
+     "region": "senda_1",
+     "mods": [],
+     "numeros": [
+      16,
+      12,
+      6,
+      5,
+      0.2,
+      35
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "pct",
+      "num"
+     ],
+     "plantilla": {
+      "es": "un rayo al enemigo que miras (hasta {0} bloques): {1} de daño mágico, y salta a {2} enemigos más a {3} bloques, un {4%} menos en cada salto; cuesta {5} de maná",
+      "en": "a bolt at the foe you look at (up to {0} blocks): {1} magic damage, and it leaps to {2} more foes within {3} blocks, {4%} less at each leap; costs {5} mana"
+     },
+     "gancho": null,
+     "icono": "minecraft:lightning_rod",
+     "efecto": "un rayo al enemigo que miras (hasta 16 bloques): 12 de daño mágico, y salta a 6 enemigos más a 5 bloques, un 20 % menos en cada salto; cuesta 35 de maná; espera 25 s",
+     "x": 6.755,
+     "y": 3.9,
+     "conexiones": [
+      "mago.s1.ultima"
+     ],
+     "habilidad": "N2",
+     "ultima": 1
     },
     {
      "id": "mago.s1.puente_1",
@@ -9955,10 +10913,10 @@
      "gancho": "puente_al_asesino",
      "icono": "clase:asesino",
      "efecto": "velocidad +3 %",
-     "x": 6.495,
-     "y": 3.75,
+     "x": 6.626,
+     "y": 1.53,
      "conexiones": [
-      "mago.s1.4",
+      "mago.s1.3",
       "mago.s1.puente_2"
      ],
      "destino": "asesino"
@@ -9984,8 +10942,8 @@
      "gancho": null,
      "icono": "minecraft:gunpowder",
      "efecto": "coste de esquiva −8 %",
-     "x": 7.361,
-     "y": 4.25,
+     "x": 7.6,
+     "y": 1.755,
      "conexiones": [
       "mago.s1.puente_1",
       "mago.s1.puente_3"
@@ -10013,8 +10971,8 @@
      "gancho": "punalada_menor",
      "icono": "minecraft:iron_sword",
      "efecto": "daño por la espalda +20 %",
-     "x": 8.227,
-     "y": 4.75,
+     "x": 8.574,
+     "y": 1.98,
      "conexiones": [
       "mago.s1.puente_2"
      ],
@@ -10073,7 +11031,8 @@
      "y": -2.1,
      "conexiones": [
       "mago.b.tronco_1",
-      "mago.b.tronco_3"
+      "mago.b.tronco_3",
+      "mago.b.habilidad_b"
      ]
     },
     {
@@ -10132,6 +11091,71 @@
       "mago.b1.1",
       "mago.b2.1"
      ]
+    },
+    {
+     "id": "mago.b.habilidad_b",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Concentración",
+      "en": "Focus"
+     },
+     "coste": 2,
+     "region": "rama_b",
+     "mods": [],
+     "numeros": [
+      8,
+      0.5
+     ],
+     "formatos": [
+      "num",
+      "pct"
+     ],
+     "plantilla": {
+      "es": "{0} s con la espera de los hechizos al {1%} y sin coste de maná",
+      "en": "for {0} s your spells wait {1%} as long and cost no mana"
+     },
+     "gancho": null,
+     "icono": "minecraft:ender_eye",
+     "efecto": "8 s con la espera de los hechizos al 50 % y sin coste de maná; espera 60 s",
+     "x": 3.076,
+     "y": -3.076,
+     "conexiones": [
+      "mago.b.tronco_2",
+      "mago.b.habilidad_b2"
+     ],
+     "habilidad": "B"
+    },
+    {
+     "id": "mago.b.habilidad_b2",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Concentración II",
+      "en": "Focus II"
+     },
+     "coste": 2,
+     "region": "rama_b",
+     "mods": [],
+     "numeros": [
+      11,
+      0.5
+     ],
+     "formatos": [
+      "num",
+      "pct"
+     ],
+     "plantilla": {
+      "es": "{0} s con la espera de los hechizos al {1%} y sin coste de maná",
+      "en": "for {0} s your spells wait {1%} as long and cost no mana"
+     },
+     "gancho": null,
+     "icono": "minecraft:ender_eye",
+     "efecto": "11 s con la espera de los hechizos al 50 % y sin coste de maná; espera 60 s",
+     "x": 3.683,
+     "y": -3.949,
+     "conexiones": [
+      "mago.b.habilidad_b"
+     ],
+     "habilidad": "B2"
     },
     {
      "id": "mago.b1.1",
@@ -10590,37 +11614,31 @@
     },
     {
      "id": "mago.s2.2",
-     "tipo": "habilidad",
+     "tipo": "menor",
      "nombre": {
-      "es": "Concentración",
-      "en": "Focus"
+      "es": "Vida",
+      "en": "Health"
      },
-     "coste": 2,
+     "coste": 1,
      "region": "senda_2",
-     "mods": [],
-     "numeros": [
-      8,
-      0.5
+     "mods": [
+      [
+       "max_health",
+       0.03
+      ]
      ],
-     "formatos": [
-      "num",
-      "pct"
-     ],
-     "plantilla": {
-      "es": "{0} s con la espera de los hechizos al {1%} y sin coste de maná",
-      "en": "for {0} s your spells wait {1%} as long and cost no mana"
-     },
+     "numeros": [],
+     "formatos": [],
+     "plantilla": null,
      "gancho": null,
-     "icono": "minecraft:ender_eye",
-     "efecto": "8 s con la espera de los hechizos al 50 % y sin coste de maná; espera 60 s",
+     "icono": "sprite:corazon",
+     "efecto": "vida +3 %",
      "x": 0.0,
      "y": -4.4,
      "conexiones": [
       "mago.s2.1",
-      "mago.s2.3",
-      "mago.s2.lado"
-     ],
-     "habilidad": "B"
+      "mago.s2.3"
+     ]
     },
     {
      "id": "mago.s2.3",
@@ -10647,68 +11665,88 @@
      "y": -5.4,
      "conexiones": [
       "mago.s2.2",
-      "mago.s2.4"
-     ]
-    },
-    {
-     "id": "mago.s2.4",
-     "tipo": "menor",
-     "nombre": {
-      "es": "Vida",
-      "en": "Health"
-     },
-     "coste": 1,
-     "region": "senda_2",
-     "mods": [
-      [
-       "max_health",
-       0.03
-      ]
-     ],
-     "numeros": [],
-     "formatos": [],
-     "plantilla": null,
-     "gancho": null,
-     "icono": "sprite:corazon",
-     "efecto": "vida +3 %",
-     "x": 0.0,
-     "y": -6.4,
-     "conexiones": [
-      "mago.s2.3",
+      "mago.s2.ultima",
       "mago.s2.puente_1"
      ]
     },
     {
-     "id": "mago.s2.lado",
+     "id": "mago.s2.ultima",
      "tipo": "habilidad",
      "nombre": {
-      "es": "Concentración II",
-      "en": "Focus II"
+      "es": "Prisión de hielo",
+      "en": "Ice Prison"
+     },
+     "coste": 3,
+     "region": "senda_2",
+     "mods": [],
+     "numeros": [
+      24,
+      4,
+      3,
+      6,
+      45
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "el hielo atrapa a los hostiles a {1} bloques de donde miras (hasta {0}): {3} de daño mágico y {2} s congelados (Lentitud VII; si no son jefes, aturdidos: se corta su ataque); cuesta {4} de maná",
+      "en": "ice traps the hostiles within {1} blocks of where you look (up to {0}): {3} magic damage and frozen for {2} s (Slowness VII; unless they are bosses, staggered: their attack is cut off); costs {4} mana"
+     },
+     "gancho": null,
+     "icono": "minecraft:packed_ice",
+     "efecto": "el hielo atrapa a los hostiles a 4 bloques de donde miras (hasta 24): 6 de daño mágico y 3 s congelados (Lentitud VII; si no son jefes, aturdidos: se corta su ataque); cuesta 45 de maná; espera 45 s",
+     "x": 0.0,
+     "y": -6.7,
+     "conexiones": [
+      "mago.s2.3",
+      "mago.s2.ultima_ii"
+     ],
+     "habilidad": "N",
+     "ultima": 2
+    },
+    {
+     "id": "mago.s2.ultima_ii",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Prisión de hielo II",
+      "en": "Ice Prison II"
      },
      "coste": 2,
      "region": "senda_2",
      "mods": [],
      "numeros": [
-      11,
-      0.5
+      24,
+      5,
+      4,
+      8,
+      45
      ],
      "formatos": [
       "num",
-      "pct"
+      "num",
+      "num",
+      "num",
+      "num"
      ],
      "plantilla": {
-      "es": "{0} s con la espera de los hechizos al {1%} y sin coste de maná",
-      "en": "for {0} s your spells wait {1%} as long and cost no mana"
+      "es": "el hielo atrapa a los hostiles a {1} bloques de donde miras (hasta {0}): {3} de daño mágico y {2} s congelados (Lentitud VII; si no son jefes, aturdidos: se corta su ataque); cuesta {4} de maná",
+      "en": "ice traps the hostiles within {1} blocks of where you look (up to {0}): {3} magic damage and frozen for {2} s (Slowness VII; unless they are bosses, staggered: their attack is cut off); costs {4} mana"
      },
      "gancho": null,
-     "icono": "minecraft:ender_eye",
-     "efecto": "11 s con la espera de los hechizos al 50 % y sin coste de maná; espera 60 s",
-     "x": 0.99,
-     "y": -4.287,
+     "icono": "minecraft:packed_ice",
+     "efecto": "el hielo atrapa a los hostiles a 5 bloques de donde miras (hasta 24): 8 de daño mágico y 4 s congelados (Lentitud VII; si no son jefes, aturdidos: se corta su ataque); cuesta 45 de maná; espera 45 s",
+     "x": 0.0,
+     "y": -7.8,
      "conexiones": [
-      "mago.s2.2"
+      "mago.s2.ultima"
      ],
-     "habilidad": "B2"
+     "habilidad": "N2",
+     "ultima": 2
     },
     {
      "id": "mago.s2.puente_1",
@@ -10731,10 +11769,10 @@
      "gancho": "puente_al_curandero",
      "icono": "clase:curandero",
      "efecto": "curación +10 %",
-     "x": 0.0,
-     "y": -7.5,
+     "x": -1.988,
+     "y": -6.503,
      "conexiones": [
-      "mago.s2.4",
+      "mago.s2.3",
       "mago.s2.puente_2"
      ],
      "destino": "curandero"
@@ -10760,8 +11798,8 @@
      "gancho": null,
      "icono": "minecraft:cooked_beef",
      "efecto": "regeneración de estamina +5 %",
-     "x": 0.0,
-     "y": -8.5,
+     "x": -2.28,
+     "y": -7.459,
      "conexiones": [
       "mago.s2.puente_1",
       "mago.s2.puente_3"
@@ -10793,8 +11831,8 @@
      "gancho": "vendaje",
      "icono": "minecraft:paper",
      "efecto": "cada 8 s sin recibir daño recuperas 1 de vida",
-     "x": 0.0,
-     "y": -9.5,
+     "x": -2.573,
+     "y": -8.415,
      "conexiones": [
       "mago.s2.puente_2"
      ],
@@ -11433,11 +12471,12 @@
      "y": 2.7,
      "conexiones": [
       "mago.s3.2",
-      "mago.s3.4"
+      "mago.s3.ultima",
+      "mago.s3.puente_1"
      ]
     },
     {
-     "id": "mago.s3.4",
+     "id": "mago.s3.ultima",
      "tipo": "habilidad",
      "nombre": {
       "es": "Meteoro",
@@ -11469,17 +12508,17 @@
      "gancho": null,
      "icono": "minecraft:magma_block",
      "efecto": "tras 1,5 s cae un meteoro donde miras (hasta 24 bloques): 12 de daño mágico en 3 bloques y fuego 3 s; cuesta 40 de maná; espera 40 s",
-     "x": -5.543,
-     "y": 3.2,
+     "x": -5.802,
+     "y": 3.35,
      "conexiones": [
       "mago.s3.3",
-      "mago.s3.lado",
-      "mago.s3.puente_1"
+      "mago.s3.ultima_ii"
      ],
-     "habilidad": "N"
+     "habilidad": "N",
+     "ultima": 3
     },
     {
-     "id": "mago.s3.lado",
+     "id": "mago.s3.ultima_ii",
      "tipo": "habilidad",
      "nombre": {
       "es": "Meteoro II",
@@ -11511,12 +12550,13 @@
      "gancho": null,
      "icono": "minecraft:magma_block",
      "efecto": "tras 1,5 s cae un meteoro donde miras (hasta 24 bloques): 16 de daño mágico en 4 bloques y fuego 3 s; cuesta 40 de maná; espera 40 s",
-     "x": -6.12,
-     "y": 1.871,
+     "x": -6.755,
+     "y": 3.9,
      "conexiones": [
-      "mago.s3.4"
+      "mago.s3.ultima"
      ],
-     "habilidad": "N2"
+     "habilidad": "N2",
+     "ultima": 3
     },
     {
      "id": "mago.s3.puente_1",
@@ -11539,10 +12579,10 @@
      "gancho": "puente_al_tanque",
      "icono": "clase:tanque",
      "efecto": "vida +5 %",
-     "x": -6.495,
-     "y": 3.75,
+     "x": -4.638,
+     "y": 4.973,
      "conexiones": [
-      "mago.s3.4",
+      "mago.s3.3",
       "mago.s3.puente_2"
      ],
      "destino": "tanque"
@@ -11568,8 +12608,8 @@
      "gancho": null,
      "icono": "minecraft:iron_chestplate",
      "efecto": "armadura +1",
-     "x": -7.361,
-     "y": 4.25,
+     "x": -5.32,
+     "y": 5.705,
      "conexiones": [
       "mago.s3.puente_1",
       "mago.s3.puente_3"
@@ -11599,8 +12639,8 @@
      "gancho": "represalia_menor",
      "icono": "minecraft:cactus",
      "efecto": "quien golpea tu escudo levantado recibe 2 de daño",
-     "x": -8.227,
-     "y": 4.75,
+     "x": -6.002,
+     "y": 6.436,
      "conexiones": [
       "mago.s3.puente_2"
      ],
@@ -11690,8 +12730,104 @@
       ],
       "espera": 70
      }
+    }
+   },
+   "ultimas": [
+    {
+     "id": "oleada_de_vida",
+     "icono": "minecraft:heart_of_the_sea",
+     "nombre": {
+      "es": "Oleada de vida",
+      "en": "Tide of Life"
+     },
+     "plantilla": {
+      "es": "una oleada cura {1} (× tu curación) a ti y a los aliados a {0} bloques, con Regeneración II {2} s, y empuja a los hostiles a {3} bloques; cuesta {4} de maná",
+      "en": "a tide heals {1} (× your healing) to you and the allies within {0} blocks, with Regeneration II for {2} s, and pushes away the hostiles within {3} blocks; costs {4} mana"
+     },
+     "numeros": [
+      10,
+      8,
+      4,
+      4,
+      50
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "espera": 60,
+     "mejora": {
+      "plantilla": {
+       "es": "una oleada cura {1} (× tu curación) a ti y a los aliados a {0} bloques, con Regeneración II {2} s y sin efectos negativos, y empuja a los hostiles a {3} bloques; cuesta {4} de maná",
+       "en": "a tide heals {1} (× your healing) to you and the allies within {0} blocks, with Regeneration II for {2} s and no harmful effects, and pushes away the hostiles within {3} blocks; costs {4} mana"
+      },
+      "numeros": [
+       10,
+       10,
+       4,
+       4,
+       50
+      ],
+      "formatos": [
+       "num",
+       "num",
+       "num",
+       "num",
+       "num"
+      ],
+      "espera": 60
+     },
+     "senda": "S1"
     },
-    "N": {
+    {
+     "id": "segunda_vida",
+     "icono": "minecraft:respawn_anchor",
+     "nombre": {
+      "es": "Segunda vida",
+      "en": "Second Life"
+     },
+     "plantilla": {
+      "es": "el aliado que miras (hasta {0} bloques), o tú: durante {1} s, el primer golpe mortal le deja con el {2%} de su vida en vez de matarlo; cuesta {3} de maná",
+      "en": "the ally you look at (up to {0} blocks), or you: for {1} s, the first lethal blow leaves them at {2%} of their health instead of killing them; costs {3} mana"
+     },
+     "numeros": [
+      16,
+      20,
+      0.4,
+      40
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "pct",
+      "num"
+     ],
+     "espera": 120,
+     "mejora": {
+      "plantilla": {
+       "es": "el aliado que miras (hasta {0} bloques), o tú: durante {1} s, el primer golpe mortal le deja con el {2%} de su vida en vez de matarlo; cuesta {3} de maná",
+       "en": "the ally you look at (up to {0} blocks), or you: for {1} s, the first lethal blow leaves them at {2%} of their health instead of killing them; costs {3} mana"
+      },
+      "numeros": [
+       16,
+       30,
+       0.6,
+       40
+      ],
+      "formatos": [
+       "num",
+       "num",
+       "pct",
+       "num"
+      ],
+      "espera": 120
+     },
+     "senda": "S2"
+    },
+    {
      "id": "escudo_de_luz",
      "icono": "minecraft:golden_apple",
      "nombre": {
@@ -11729,9 +12865,10 @@
        "num"
       ],
       "espera": 35
-     }
+     },
+     "senda": "S3"
     }
-   },
+   ],
    "regiones": {
     "A": {
      "es": "Sanación",
@@ -12060,7 +13197,8 @@
      "y": 4.2,
      "conexiones": [
       "curandero.a.tronco_1",
-      "curandero.a.tronco_3"
+      "curandero.a.tronco_3",
+      "curandero.a.habilidad_v2"
      ]
     },
     {
@@ -12119,6 +13257,38 @@
       "curandero.a1.1",
       "curandero.a2.1"
      ]
+    },
+    {
+     "id": "curandero.a.habilidad_v2",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Pulso sanador II",
+      "en": "Healing Pulse II"
+     },
+     "coste": 2,
+     "region": "rama_a",
+     "mods": [],
+     "numeros": [
+      6,
+      8
+     ],
+     "formatos": [
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "cura {0} (× tu curación) a ti, a los jugadores y a tus animales a {1} bloques, y les quita Veneno y Marchitamiento",
+      "en": "heals {0} (× your healing) to you, players and your animals within {1} blocks, and cures Poison and Wither"
+     },
+     "gancho": null,
+     "icono": "minecraft:glistering_melon_slice",
+     "efecto": "cura 6 (× tu curación) a ti, a los jugadores y a tus animales a 8 bloques, y les quita Veneno y Marchitamiento; espera 30 s",
+     "x": 1.126,
+     "y": 4.202,
+     "conexiones": [
+      "curandero.a.tronco_2"
+     ],
+     "habilidad": "V2"
     },
     {
      "id": "curandero.a1.1",
@@ -12580,39 +13750,6 @@
     },
     {
      "id": "curandero.s1.2",
-     "tipo": "habilidad",
-     "nombre": {
-      "es": "Pulso sanador II",
-      "en": "Healing Pulse II"
-     },
-     "coste": 2,
-     "region": "senda_1",
-     "mods": [],
-     "numeros": [
-      6,
-      8
-     ],
-     "formatos": [
-      "num",
-      "num"
-     ],
-     "plantilla": {
-      "es": "cura {0} (× tu curación) a ti, a los jugadores y a tus animales a {1} bloques, y les quita Veneno y Marchitamiento",
-      "en": "heals {0} (× your healing) to you, players and your animals within {1} blocks, and cures Poison and Wither"
-     },
-     "gancho": null,
-     "icono": "minecraft:glistering_melon_slice",
-     "efecto": "cura 6 (× tu curación) a ti, a los jugadores y a tus animales a 8 bloques, y les quita Veneno y Marchitamiento; espera 30 s",
-     "x": 3.811,
-     "y": 2.2,
-     "conexiones": [
-      "curandero.s1.1",
-      "curandero.s1.3"
-     ],
-     "habilidad": "V2"
-    },
-    {
-     "id": "curandero.s1.3",
      "tipo": "menor",
      "nombre": {
       "es": "Maná máximo",
@@ -12632,15 +13769,15 @@
      "gancho": null,
      "icono": "minecraft:lapis_lazuli",
      "efecto": "maná máximo +3 %",
-     "x": 4.677,
-     "y": 2.7,
+     "x": 3.811,
+     "y": 2.2,
      "conexiones": [
-      "curandero.s1.2",
-      "curandero.s1.4"
+      "curandero.s1.1",
+      "curandero.s1.3"
      ]
     },
     {
-     "id": "curandero.s1.4",
+     "id": "curandero.s1.3",
      "tipo": "menor",
      "nombre": {
       "es": "Vida",
@@ -12660,12 +13797,92 @@
      "gancho": null,
      "icono": "sprite:corazon",
      "efecto": "vida +3 %",
-     "x": 5.543,
-     "y": 3.2,
+     "x": 4.677,
+     "y": 2.7,
      "conexiones": [
-      "curandero.s1.3",
+      "curandero.s1.2",
+      "curandero.s1.ultima",
       "curandero.s1.puente_1"
      ]
+    },
+    {
+     "id": "curandero.s1.ultima",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Oleada de vida",
+      "en": "Tide of Life"
+     },
+     "coste": 3,
+     "region": "senda_1",
+     "mods": [],
+     "numeros": [
+      10,
+      8,
+      4,
+      4,
+      50
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "una oleada cura {1} (× tu curación) a ti y a los aliados a {0} bloques, con Regeneración II {2} s, y empuja a los hostiles a {3} bloques; cuesta {4} de maná",
+      "en": "a tide heals {1} (× your healing) to you and the allies within {0} blocks, with Regeneration II for {2} s, and pushes away the hostiles within {3} blocks; costs {4} mana"
+     },
+     "gancho": null,
+     "icono": "minecraft:heart_of_the_sea",
+     "efecto": "una oleada cura 8 (× tu curación) a ti y a los aliados a 10 bloques, con Regeneración II 4 s, y empuja a los hostiles a 4 bloques; cuesta 50 de maná; espera 60 s",
+     "x": 5.802,
+     "y": 3.35,
+     "conexiones": [
+      "curandero.s1.3",
+      "curandero.s1.ultima_ii"
+     ],
+     "habilidad": "N",
+     "ultima": 1
+    },
+    {
+     "id": "curandero.s1.ultima_ii",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Oleada de vida II",
+      "en": "Tide of Life II"
+     },
+     "coste": 2,
+     "region": "senda_1",
+     "mods": [],
+     "numeros": [
+      10,
+      10,
+      4,
+      4,
+      50
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "una oleada cura {1} (× tu curación) a ti y a los aliados a {0} bloques, con Regeneración II {2} s y sin efectos negativos, y empuja a los hostiles a {3} bloques; cuesta {4} de maná",
+      "en": "a tide heals {1} (× your healing) to you and the allies within {0} blocks, with Regeneration II for {2} s and no harmful effects, and pushes away the hostiles within {3} blocks; costs {4} mana"
+     },
+     "gancho": null,
+     "icono": "minecraft:heart_of_the_sea",
+     "efecto": "una oleada cura 10 (× tu curación) a ti y a los aliados a 10 bloques, con Regeneración II 4 s y sin efectos negativos, y empuja a los hostiles a 4 bloques; cuesta 50 de maná; espera 60 s",
+     "x": 6.755,
+     "y": 3.9,
+     "conexiones": [
+      "curandero.s1.ultima"
+     ],
+     "habilidad": "N2",
+     "ultima": 1
     },
     {
      "id": "curandero.s1.puente_1",
@@ -12688,10 +13905,10 @@
      "gancho": "puente_al_tanque",
      "icono": "clase:tanque",
      "efecto": "vida +5 %",
-     "x": 6.495,
-     "y": 3.75,
+     "x": 6.626,
+     "y": 1.53,
      "conexiones": [
-      "curandero.s1.4",
+      "curandero.s1.3",
       "curandero.s1.puente_2"
      ],
      "destino": "tanque"
@@ -12717,8 +13934,8 @@
      "gancho": null,
      "icono": "minecraft:iron_chestplate",
      "efecto": "armadura +1",
-     "x": 7.361,
-     "y": 4.25,
+     "x": 7.6,
+     "y": 1.755,
      "conexiones": [
       "curandero.s1.puente_1",
       "curandero.s1.puente_3"
@@ -12748,8 +13965,8 @@
      "gancho": "represalia_menor",
      "icono": "minecraft:cactus",
      "efecto": "quien golpea tu escudo levantado recibe 2 de daño",
-     "x": 8.227,
-     "y": 4.75,
+     "x": 8.574,
+     "y": 1.98,
      "conexiones": [
       "curandero.s1.puente_2"
      ],
@@ -12808,7 +14025,8 @@
      "y": -2.1,
      "conexiones": [
       "curandero.b.tronco_1",
-      "curandero.b.tronco_3"
+      "curandero.b.tronco_3",
+      "curandero.b.habilidad_b"
      ]
     },
     {
@@ -12871,6 +14089,75 @@
       "curandero.b1.1",
       "curandero.b2.1"
      ]
+    },
+    {
+     "id": "curandero.b.habilidad_b",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Resurgir",
+      "en": "Resurgence"
+     },
+     "coste": 2,
+     "region": "rama_b",
+     "mods": [],
+     "numeros": [
+      16,
+      0.5,
+      5
+     ],
+     "formatos": [
+      "num",
+      "pct",
+      "num"
+     ],
+     "plantilla": {
+      "es": "el aliado que miras (hasta {0} bloques) recupera el {1%} de la vida que le falta y Regeneración II {2} s",
+      "en": "the ally you look at (up to {0} blocks) gets back {1%} of their missing health and Regeneration II for {2} s"
+     },
+     "gancho": null,
+     "icono": "minecraft:totem_of_undying",
+     "efecto": "el aliado que miras (hasta 16 bloques) recupera el 50 % de la vida que le falta y Regeneración II 5 s; espera 90 s",
+     "x": 3.076,
+     "y": -3.076,
+     "conexiones": [
+      "curandero.b.tronco_2",
+      "curandero.b.habilidad_b2"
+     ],
+     "habilidad": "B"
+    },
+    {
+     "id": "curandero.b.habilidad_b2",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Resurgir II",
+      "en": "Resurgence II"
+     },
+     "coste": 2,
+     "region": "rama_b",
+     "mods": [],
+     "numeros": [
+      16,
+      0.5,
+      8
+     ],
+     "formatos": [
+      "num",
+      "pct",
+      "num"
+     ],
+     "plantilla": {
+      "es": "el aliado que miras (hasta {0} bloques) recupera el {1%} de la vida que le falta y Regeneración II {2} s",
+      "en": "the ally you look at (up to {0} blocks) gets back {1%} of their missing health and Regeneration II for {2} s"
+     },
+     "gancho": null,
+     "icono": "minecraft:totem_of_undying",
+     "efecto": "el aliado que miras (hasta 16 bloques) recupera el 50 % de la vida que le falta y Regeneración II 8 s; espera 70 s",
+     "x": 3.683,
+     "y": -3.949,
+     "conexiones": [
+      "curandero.b.habilidad_b"
+     ],
+     "habilidad": "B2"
     },
     {
      "id": "curandero.b1.1",
@@ -13327,42 +14614,6 @@
     },
     {
      "id": "curandero.s2.2",
-     "tipo": "habilidad",
-     "nombre": {
-      "es": "Resurgir",
-      "en": "Resurgence"
-     },
-     "coste": 2,
-     "region": "senda_2",
-     "mods": [],
-     "numeros": [
-      16,
-      0.5,
-      5
-     ],
-     "formatos": [
-      "num",
-      "pct",
-      "num"
-     ],
-     "plantilla": {
-      "es": "el aliado que miras (hasta {0} bloques) recupera el {1%} de la vida que le falta y Regeneración II {2} s",
-      "en": "the ally you look at (up to {0} blocks) gets back {1%} of their missing health and Regeneration II for {2} s"
-     },
-     "gancho": null,
-     "icono": "minecraft:totem_of_undying",
-     "efecto": "el aliado que miras (hasta 16 bloques) recupera el 50 % de la vida que le falta y Regeneración II 5 s; espera 90 s",
-     "x": 0.0,
-     "y": -4.4,
-     "conexiones": [
-      "curandero.s2.1",
-      "curandero.s2.3",
-      "curandero.s2.lado"
-     ],
-     "habilidad": "B"
-    },
-    {
-     "id": "curandero.s2.3",
      "tipo": "menor",
      "nombre": {
       "es": "Vida",
@@ -13383,14 +14634,14 @@
      "icono": "sprite:corazon",
      "efecto": "vida +3 %",
      "x": 0.0,
-     "y": -5.4,
+     "y": -4.4,
      "conexiones": [
-      "curandero.s2.2",
-      "curandero.s2.4"
+      "curandero.s2.1",
+      "curandero.s2.3"
      ]
     },
     {
-     "id": "curandero.s2.4",
+     "id": "curandero.s2.3",
      "tipo": "menor",
      "nombre": {
       "es": "Regeneración de estamina",
@@ -13411,45 +14662,87 @@
      "icono": "minecraft:cooked_beef",
      "efecto": "regeneración de estamina +3 %",
      "x": 0.0,
-     "y": -6.4,
+     "y": -5.4,
      "conexiones": [
-      "curandero.s2.3",
+      "curandero.s2.2",
+      "curandero.s2.ultima",
       "curandero.s2.puente_1"
      ]
     },
     {
-     "id": "curandero.s2.lado",
+     "id": "curandero.s2.ultima",
      "tipo": "habilidad",
      "nombre": {
-      "es": "Resurgir II",
-      "en": "Resurgence II"
+      "es": "Segunda vida",
+      "en": "Second Life"
+     },
+     "coste": 3,
+     "region": "senda_2",
+     "mods": [],
+     "numeros": [
+      16,
+      20,
+      0.4,
+      40
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "pct",
+      "num"
+     ],
+     "plantilla": {
+      "es": "el aliado que miras (hasta {0} bloques), o tú: durante {1} s, el primer golpe mortal le deja con el {2%} de su vida en vez de matarlo; cuesta {3} de maná",
+      "en": "the ally you look at (up to {0} blocks), or you: for {1} s, the first lethal blow leaves them at {2%} of their health instead of killing them; costs {3} mana"
+     },
+     "gancho": null,
+     "icono": "minecraft:respawn_anchor",
+     "efecto": "el aliado que miras (hasta 16 bloques), o tú: durante 20 s, el primer golpe mortal le deja con el 40 % de su vida en vez de matarlo; cuesta 40 de maná; espera 120 s",
+     "x": 0.0,
+     "y": -6.7,
+     "conexiones": [
+      "curandero.s2.3",
+      "curandero.s2.ultima_ii"
+     ],
+     "habilidad": "N",
+     "ultima": 2
+    },
+    {
+     "id": "curandero.s2.ultima_ii",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Segunda vida II",
+      "en": "Second Life II"
      },
      "coste": 2,
      "region": "senda_2",
      "mods": [],
      "numeros": [
       16,
-      0.5,
-      8
+      30,
+      0.6,
+      40
      ],
      "formatos": [
+      "num",
       "num",
       "pct",
       "num"
      ],
      "plantilla": {
-      "es": "el aliado que miras (hasta {0} bloques) recupera el {1%} de la vida que le falta y Regeneración II {2} s",
-      "en": "the ally you look at (up to {0} blocks) gets back {1%} of their missing health and Regeneration II for {2} s"
+      "es": "el aliado que miras (hasta {0} bloques), o tú: durante {1} s, el primer golpe mortal le deja con el {2%} de su vida en vez de matarlo; cuesta {3} de maná",
+      "en": "the ally you look at (up to {0} blocks), or you: for {1} s, the first lethal blow leaves them at {2%} of their health instead of killing them; costs {3} mana"
      },
      "gancho": null,
-     "icono": "minecraft:totem_of_undying",
-     "efecto": "el aliado que miras (hasta 16 bloques) recupera el 50 % de la vida que le falta y Regeneración II 8 s; espera 70 s",
-     "x": 0.99,
-     "y": -4.287,
+     "icono": "minecraft:respawn_anchor",
+     "efecto": "el aliado que miras (hasta 16 bloques), o tú: durante 30 s, el primer golpe mortal le deja con el 60 % de su vida en vez de matarlo; cuesta 40 de maná; espera 120 s",
+     "x": 0.0,
+     "y": -7.8,
      "conexiones": [
-      "curandero.s2.2"
+      "curandero.s2.ultima"
      ],
-     "habilidad": "B2"
+     "habilidad": "N2",
+     "ultima": 2
     },
     {
      "id": "curandero.s2.puente_1",
@@ -13472,10 +14765,10 @@
      "gancho": "puente_al_mago",
      "icono": "clase:mago",
      "efecto": "maná máximo +10 %",
-     "x": 0.0,
-     "y": -7.5,
+     "x": -1.988,
+     "y": -6.503,
      "conexiones": [
-      "curandero.s2.4",
+      "curandero.s2.3",
       "curandero.s2.puente_2"
      ],
      "destino": "mago"
@@ -13501,8 +14794,8 @@
      "gancho": null,
      "icono": "minecraft:experience_bottle",
      "efecto": "regeneración de maná +50 %",
-     "x": 0.0,
-     "y": -8.5,
+     "x": -2.28,
+     "y": -7.459,
      "conexiones": [
       "curandero.s2.puente_1",
       "curandero.s2.puente_3"
@@ -13530,8 +14823,8 @@
      "gancho": "barrera_menor",
      "icono": "minecraft:amethyst_shard",
      "efecto": "daño mágico recibido −15 %",
-     "x": 0.0,
-     "y": -9.5,
+     "x": -2.573,
+     "y": -8.415,
      "conexiones": [
       "curandero.s2.puente_2"
      ],
@@ -14172,11 +15465,12 @@
      "y": 2.7,
      "conexiones": [
       "curandero.s3.2",
-      "curandero.s3.4"
+      "curandero.s3.ultima",
+      "curandero.s3.puente_1"
      ]
     },
     {
-     "id": "curandero.s3.4",
+     "id": "curandero.s3.ultima",
      "tipo": "habilidad",
      "nombre": {
       "es": "Escudo de luz",
@@ -14202,17 +15496,17 @@
      "gancho": null,
      "icono": "minecraft:golden_apple",
      "efecto": "el aliado que miras (hasta 16 bloques), o tú, gana 6 de absorción y Resistencia I 6 s; espera 35 s",
-     "x": -5.543,
-     "y": 3.2,
+     "x": -5.802,
+     "y": 3.35,
      "conexiones": [
       "curandero.s3.3",
-      "curandero.s3.lado",
-      "curandero.s3.puente_1"
+      "curandero.s3.ultima_ii"
      ],
-     "habilidad": "N"
+     "habilidad": "N",
+     "ultima": 3
     },
     {
-     "id": "curandero.s3.lado",
+     "id": "curandero.s3.ultima_ii",
      "tipo": "habilidad",
      "nombre": {
       "es": "Escudo de luz II",
@@ -14238,12 +15532,13 @@
      "gancho": null,
      "icono": "minecraft:golden_apple",
      "efecto": "el aliado que miras (hasta 16 bloques), o tú, gana 8 de absorción y Resistencia I 6 s, y pierde un efecto negativo; espera 35 s",
-     "x": -6.12,
-     "y": 1.871,
+     "x": -6.755,
+     "y": 3.9,
      "conexiones": [
-      "curandero.s3.4"
+      "curandero.s3.ultima"
      ],
-     "habilidad": "N2"
+     "habilidad": "N2",
+     "ultima": 3
     },
     {
      "id": "curandero.s3.puente_1",
@@ -14266,10 +15561,10 @@
      "gancho": "puente_al_arquero",
      "icono": "clase:arquero",
      "efecto": "tensado +5 %",
-     "x": -6.495,
-     "y": 3.75,
+     "x": -4.638,
+     "y": 4.973,
      "conexiones": [
-      "curandero.s3.4",
+      "curandero.s3.3",
       "curandero.s3.puente_2"
      ],
      "destino": "arquero"
@@ -14295,8 +15590,8 @@
      "gancho": null,
      "icono": "minecraft:arrow",
      "efecto": "daño de proyectiles +4 %",
-     "x": -7.361,
-     "y": 4.25,
+     "x": -5.32,
+     "y": 5.705,
      "conexiones": [
       "curandero.s3.puente_1",
       "curandero.s3.puente_3"
@@ -14324,8 +15619,8 @@
      "gancho": "ojo_de_halcon_menor",
      "icono": "minecraft:spyglass",
      "efecto": "tiros a la cabeza +15 %",
-     "x": -8.227,
-     "y": 4.75,
+     "x": -6.002,
+     "y": 6.436,
      "conexiones": [
       "curandero.s3.puente_2"
      ],
@@ -14427,8 +15722,112 @@
       ],
       "espera": 45
      }
+    }
+   },
+   "ultimas": [
+    {
+     "id": "saeta_letal",
+     "icono": "minecraft:trident",
+     "nombre": {
+      "es": "Saeta letal",
+      "en": "Lethal Bolt"
+     },
+     "plantilla": {
+      "es": "apuntas {0} s (una línea de luz lo avisa) y disparas una saeta que atraviesa todo en {1} bloques: {2} de daño, ×{3} a lo que tiene menos del {4%} de vida; cuesta {5} de estamina",
+      "en": "you aim for {0} s (a line of light gives it away) and loose a bolt that pierces everything for {1} blocks: {2} damage, ×{3} to whatever has under {4%} health; costs {5} stamina"
+     },
+     "numeros": [
+      0.75,
+      32,
+      12,
+      1.5,
+      0.5,
+      25
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "pct",
+      "num"
+     ],
+     "espera": 30,
+     "mejora": {
+      "plantilla": {
+       "es": "apuntas {0} s (una línea de luz lo avisa) y disparas una saeta que atraviesa todo en {1} bloques: {2} de daño, ×{3} a lo que tiene menos del {4%} de vida; cuesta {5} de estamina",
+       "en": "you aim for {0} s (a line of light gives it away) and loose a bolt that pierces everything for {1} blocks: {2} damage, ×{3} to whatever has under {4%} health; costs {5} stamina"
+      },
+      "numeros": [
+       0.5,
+       32,
+       15,
+       1.5,
+       0.5,
+       25
+      ],
+      "formatos": [
+       "num",
+       "num",
+       "num",
+       "num",
+       "pct",
+       "num"
+      ],
+      "espera": 30
+     },
+     "senda": "S1"
     },
-    "N": {
+    {
+     "id": "flecha_explosiva",
+     "icono": "minecraft:tnt",
+     "nombre": {
+      "es": "Flecha explosiva",
+      "en": "Blast Arrow"
+     },
+     "plantilla": {
+      "es": "una flecha estalla donde miras (hasta {0} bloques): {2} de daño, {3} de postura y empuje a lo que hay a {1} bloques, sin romper bloques; cuesta {4} de estamina",
+      "en": "an arrow bursts where you look (up to {0} blocks): {2} damage, {3} posture and a shove to whatever is within {1} blocks, breaking no blocks; costs {4} stamina"
+     },
+     "numeros": [
+      32,
+      3,
+      8,
+      40,
+      20
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "espera": 25,
+     "mejora": {
+      "plantilla": {
+       "es": "una flecha estalla donde miras (hasta {0} bloques): {2} de daño, {3} de postura y empuje a lo que hay a {1} bloques, sin romper bloques; cuesta {4} de estamina",
+       "en": "an arrow bursts where you look (up to {0} blocks): {2} damage, {3} posture and a shove to whatever is within {1} blocks, breaking no blocks; costs {4} stamina"
+      },
+      "numeros": [
+       32,
+       4,
+       10,
+       60,
+       20
+      ],
+      "formatos": [
+       "num",
+       "num",
+       "num",
+       "num",
+       "num"
+      ],
+      "espera": 25
+     },
+     "senda": "S2"
+    },
+    {
      "id": "flecha_de_red",
      "icono": "minecraft:cobweb",
      "nombre": {
@@ -14468,9 +15867,10 @@
        "pct"
       ],
       "espera": 20
-     }
+     },
+     "senda": "S3"
     }
-   },
+   ],
    "regiones": {
     "A": {
      "es": "Puntería",
@@ -14799,7 +16199,8 @@
      "y": 4.2,
      "conexiones": [
       "arquero.a.tronco_1",
-      "arquero.a.tronco_3"
+      "arquero.a.tronco_3",
+      "arquero.a.habilidad_v2"
      ]
     },
     {
@@ -14858,6 +16259,42 @@
       "arquero.a1.1",
       "arquero.a2.1"
      ]
+    },
+    {
+     "id": "arquero.a.habilidad_v2",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Salto atrás II",
+      "en": "Backflip II"
+     },
+     "coste": 2,
+     "region": "rama_a",
+     "mods": [],
+     "numeros": [
+      6,
+      2,
+      3,
+      0.25
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "pct"
+     ],
+     "plantilla": {
+      "es": "un salto hacia atrás de unos {0} bloques y Caída lenta {1} s; tu siguiente flecha en {2} s hace +{3%}",
+      "en": "a leap of about {0} blocks backwards and Slow Falling for {1} s; your next arrow within {2} s deals +{3%}"
+     },
+     "gancho": null,
+     "icono": "minecraft:rabbit_foot",
+     "efecto": "un salto hacia atrás de unos 6 bloques y Caída lenta 2 s; tu siguiente flecha en 3 s hace +25 %; espera 8 s",
+     "x": 1.126,
+     "y": 4.202,
+     "conexiones": [
+      "arquero.a.tronco_2"
+     ],
+     "habilidad": "V2"
     },
     {
      "id": "arquero.a1.1",
@@ -15321,43 +16758,6 @@
     },
     {
      "id": "arquero.s1.2",
-     "tipo": "habilidad",
-     "nombre": {
-      "es": "Salto atrás II",
-      "en": "Backflip II"
-     },
-     "coste": 2,
-     "region": "senda_1",
-     "mods": [],
-     "numeros": [
-      6,
-      2,
-      3,
-      0.25
-     ],
-     "formatos": [
-      "num",
-      "num",
-      "num",
-      "pct"
-     ],
-     "plantilla": {
-      "es": "un salto hacia atrás de unos {0} bloques y Caída lenta {1} s; tu siguiente flecha en {2} s hace +{3%}",
-      "en": "a leap of about {0} blocks backwards and Slow Falling for {1} s; your next arrow within {2} s deals +{3%}"
-     },
-     "gancho": null,
-     "icono": "minecraft:rabbit_foot",
-     "efecto": "un salto hacia atrás de unos 6 bloques y Caída lenta 2 s; tu siguiente flecha en 3 s hace +25 %; espera 8 s",
-     "x": 3.811,
-     "y": 2.2,
-     "conexiones": [
-      "arquero.s1.1",
-      "arquero.s1.3"
-     ],
-     "habilidad": "V2"
-    },
-    {
-     "id": "arquero.s1.3",
      "tipo": "menor",
      "nombre": {
       "es": "Tensado",
@@ -15377,15 +16777,15 @@
      "gancho": null,
      "icono": "minecraft:bow",
      "efecto": "tensado +3 %",
-     "x": 4.677,
-     "y": 2.7,
+     "x": 3.811,
+     "y": 2.2,
      "conexiones": [
-      "arquero.s1.2",
-      "arquero.s1.4"
+      "arquero.s1.1",
+      "arquero.s1.3"
      ]
     },
     {
-     "id": "arquero.s1.4",
+     "id": "arquero.s1.3",
      "tipo": "menor",
      "nombre": {
       "es": "Velocidad",
@@ -15405,12 +16805,96 @@
      "gancho": null,
      "icono": "minecraft:feather",
      "efecto": "velocidad +3 %",
-     "x": 5.543,
-     "y": 3.2,
+     "x": 4.677,
+     "y": 2.7,
      "conexiones": [
-      "arquero.s1.3",
+      "arquero.s1.2",
+      "arquero.s1.ultima",
       "arquero.s1.puente_1"
      ]
+    },
+    {
+     "id": "arquero.s1.ultima",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Saeta letal",
+      "en": "Lethal Bolt"
+     },
+     "coste": 3,
+     "region": "senda_1",
+     "mods": [],
+     "numeros": [
+      0.75,
+      32,
+      12,
+      1.5,
+      0.5,
+      25
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "pct",
+      "num"
+     ],
+     "plantilla": {
+      "es": "apuntas {0} s (una línea de luz lo avisa) y disparas una saeta que atraviesa todo en {1} bloques: {2} de daño, ×{3} a lo que tiene menos del {4%} de vida; cuesta {5} de estamina",
+      "en": "you aim for {0} s (a line of light gives it away) and loose a bolt that pierces everything for {1} blocks: {2} damage, ×{3} to whatever has under {4%} health; costs {5} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:trident",
+     "efecto": "apuntas 0,75 s (una línea de luz lo avisa) y disparas una saeta que atraviesa todo en 32 bloques: 12 de daño, ×1,5 a lo que tiene menos del 50 % de vida; cuesta 25 de estamina; espera 30 s",
+     "x": 5.802,
+     "y": 3.35,
+     "conexiones": [
+      "arquero.s1.3",
+      "arquero.s1.ultima_ii"
+     ],
+     "habilidad": "N",
+     "ultima": 1
+    },
+    {
+     "id": "arquero.s1.ultima_ii",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Saeta letal II",
+      "en": "Lethal Bolt II"
+     },
+     "coste": 2,
+     "region": "senda_1",
+     "mods": [],
+     "numeros": [
+      0.5,
+      32,
+      15,
+      1.5,
+      0.5,
+      25
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "pct",
+      "num"
+     ],
+     "plantilla": {
+      "es": "apuntas {0} s (una línea de luz lo avisa) y disparas una saeta que atraviesa todo en {1} bloques: {2} de daño, ×{3} a lo que tiene menos del {4%} de vida; cuesta {5} de estamina",
+      "en": "you aim for {0} s (a line of light gives it away) and loose a bolt that pierces everything for {1} blocks: {2} damage, ×{3} to whatever has under {4%} health; costs {5} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:trident",
+     "efecto": "apuntas 0,5 s (una línea de luz lo avisa) y disparas una saeta que atraviesa todo en 32 bloques: 15 de daño, ×1,5 a lo que tiene menos del 50 % de vida; cuesta 25 de estamina; espera 30 s",
+     "x": 6.755,
+     "y": 3.9,
+     "conexiones": [
+      "arquero.s1.ultima"
+     ],
+     "habilidad": "N2",
+     "ultima": 1
     },
     {
      "id": "arquero.s1.puente_1",
@@ -15433,10 +16917,10 @@
      "gancho": "puente_al_asesino",
      "icono": "clase:asesino",
      "efecto": "velocidad +3 %",
-     "x": 6.495,
-     "y": 3.75,
+     "x": 6.626,
+     "y": 1.53,
      "conexiones": [
-      "arquero.s1.4",
+      "arquero.s1.3",
       "arquero.s1.puente_2"
      ],
      "destino": "asesino"
@@ -15462,8 +16946,8 @@
      "gancho": null,
      "icono": "minecraft:gunpowder",
      "efecto": "coste de esquiva −8 %",
-     "x": 7.361,
-     "y": 4.25,
+     "x": 7.6,
+     "y": 1.755,
      "conexiones": [
       "arquero.s1.puente_1",
       "arquero.s1.puente_3"
@@ -15491,8 +16975,8 @@
      "gancho": "punalada_menor",
      "icono": "minecraft:iron_sword",
      "efecto": "daño por la espalda +20 %",
-     "x": 8.227,
-     "y": 4.75,
+     "x": 8.574,
+     "y": 1.98,
      "conexiones": [
       "arquero.s1.puente_2"
      ],
@@ -15551,7 +17035,8 @@
      "y": -2.1,
      "conexiones": [
       "arquero.b.tronco_1",
-      "arquero.b.tronco_3"
+      "arquero.b.tronco_3",
+      "arquero.b.habilidad_b"
      ]
     },
     {
@@ -15610,6 +17095,83 @@
       "arquero.b1.1",
       "arquero.b2.1"
      ]
+    },
+    {
+     "id": "arquero.b.habilidad_b",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Lluvia de flechas",
+      "en": "Arrow Rain"
+     },
+     "coste": 2,
+     "region": "rama_b",
+     "mods": [],
+     "numeros": [
+      12,
+      2,
+      3,
+      32,
+      4
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "{0} flechas en {1} s sobre un círculo de {2} bloques donde miras (hasta {3}), {4} de daño cada una",
+      "en": "{0} arrows over {1} s on a circle of {2} blocks where you look (up to {3}), {4} damage each"
+     },
+     "gancho": null,
+     "icono": "minecraft:tipped_arrow",
+     "efecto": "12 flechas en 2 s sobre un círculo de 3 bloques donde miras (hasta 32), 4 de daño cada una; espera 45 s",
+     "x": 3.076,
+     "y": -3.076,
+     "conexiones": [
+      "arquero.b.tronco_2",
+      "arquero.b.habilidad_b2"
+     ],
+     "habilidad": "B"
+    },
+    {
+     "id": "arquero.b.habilidad_b2",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Lluvia de flechas II",
+      "en": "Arrow Rain II"
+     },
+     "coste": 2,
+     "region": "rama_b",
+     "mods": [],
+     "numeros": [
+      18,
+      2,
+      4,
+      32,
+      4
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "{0} flechas en {1} s sobre un círculo de {2} bloques donde miras (hasta {3}), {4} de daño cada una",
+      "en": "{0} arrows over {1} s on a circle of {2} blocks where you look (up to {3}), {4} damage each"
+     },
+     "gancho": null,
+     "icono": "minecraft:tipped_arrow",
+     "efecto": "18 flechas en 2 s sobre un círculo de 4 bloques donde miras (hasta 32), 4 de daño cada una; espera 45 s",
+     "x": 3.683,
+     "y": -3.949,
+     "conexiones": [
+      "arquero.b.habilidad_b"
+     ],
+     "habilidad": "B2"
     },
     {
      "id": "arquero.b1.1",
@@ -16067,46 +17629,6 @@
     },
     {
      "id": "arquero.s2.2",
-     "tipo": "habilidad",
-     "nombre": {
-      "es": "Lluvia de flechas",
-      "en": "Arrow Rain"
-     },
-     "coste": 2,
-     "region": "senda_2",
-     "mods": [],
-     "numeros": [
-      12,
-      2,
-      3,
-      32,
-      4
-     ],
-     "formatos": [
-      "num",
-      "num",
-      "num",
-      "num",
-      "num"
-     ],
-     "plantilla": {
-      "es": "{0} flechas en {1} s sobre un círculo de {2} bloques donde miras (hasta {3}), {4} de daño cada una",
-      "en": "{0} arrows over {1} s on a circle of {2} blocks where you look (up to {3}), {4} damage each"
-     },
-     "gancho": null,
-     "icono": "minecraft:tipped_arrow",
-     "efecto": "12 flechas en 2 s sobre un círculo de 3 bloques donde miras (hasta 32), 4 de daño cada una; espera 45 s",
-     "x": 0.0,
-     "y": -4.4,
-     "conexiones": [
-      "arquero.s2.1",
-      "arquero.s2.3",
-      "arquero.s2.lado"
-     ],
-     "habilidad": "B"
-    },
-    {
-     "id": "arquero.s2.3",
      "tipo": "menor",
      "nombre": {
       "es": "Distancia de esquiva",
@@ -16127,14 +17649,14 @@
      "icono": "minecraft:ender_pearl",
      "efecto": "distancia de esquiva +3 %",
      "x": 0.0,
-     "y": -5.4,
+     "y": -4.4,
      "conexiones": [
-      "arquero.s2.2",
-      "arquero.s2.4"
+      "arquero.s2.1",
+      "arquero.s2.3"
      ]
     },
     {
-     "id": "arquero.s2.4",
+     "id": "arquero.s2.3",
      "tipo": "menor",
      "nombre": {
       "es": "Velocidad",
@@ -16155,28 +17677,29 @@
      "icono": "minecraft:feather",
      "efecto": "velocidad +3 %",
      "x": 0.0,
-     "y": -6.4,
+     "y": -5.4,
      "conexiones": [
-      "arquero.s2.3",
+      "arquero.s2.2",
+      "arquero.s2.ultima",
       "arquero.s2.puente_1"
      ]
     },
     {
-     "id": "arquero.s2.lado",
+     "id": "arquero.s2.ultima",
      "tipo": "habilidad",
      "nombre": {
-      "es": "Lluvia de flechas II",
-      "en": "Arrow Rain II"
+      "es": "Flecha explosiva",
+      "en": "Blast Arrow"
      },
-     "coste": 2,
+     "coste": 3,
      "region": "senda_2",
      "mods": [],
      "numeros": [
-      18,
-      2,
-      4,
       32,
-      4
+      3,
+      8,
+      40,
+      20
      ],
      "formatos": [
       "num",
@@ -16186,18 +17709,59 @@
       "num"
      ],
      "plantilla": {
-      "es": "{0} flechas en {1} s sobre un círculo de {2} bloques donde miras (hasta {3}), {4} de daño cada una",
-      "en": "{0} arrows over {1} s on a circle of {2} blocks where you look (up to {3}), {4} damage each"
+      "es": "una flecha estalla donde miras (hasta {0} bloques): {2} de daño, {3} de postura y empuje a lo que hay a {1} bloques, sin romper bloques; cuesta {4} de estamina",
+      "en": "an arrow bursts where you look (up to {0} blocks): {2} damage, {3} posture and a shove to whatever is within {1} blocks, breaking no blocks; costs {4} stamina"
      },
      "gancho": null,
-     "icono": "minecraft:tipped_arrow",
-     "efecto": "18 flechas en 2 s sobre un círculo de 4 bloques donde miras (hasta 32), 4 de daño cada una; espera 45 s",
-     "x": 0.99,
-     "y": -4.287,
+     "icono": "minecraft:tnt",
+     "efecto": "una flecha estalla donde miras (hasta 32 bloques): 8 de daño, 40 de postura y empuje a lo que hay a 3 bloques, sin romper bloques; cuesta 20 de estamina; espera 25 s",
+     "x": 0.0,
+     "y": -6.7,
      "conexiones": [
-      "arquero.s2.2"
+      "arquero.s2.3",
+      "arquero.s2.ultima_ii"
      ],
-     "habilidad": "B2"
+     "habilidad": "N",
+     "ultima": 2
+    },
+    {
+     "id": "arquero.s2.ultima_ii",
+     "tipo": "habilidad",
+     "nombre": {
+      "es": "Flecha explosiva II",
+      "en": "Blast Arrow II"
+     },
+     "coste": 2,
+     "region": "senda_2",
+     "mods": [],
+     "numeros": [
+      32,
+      4,
+      10,
+      60,
+      20
+     ],
+     "formatos": [
+      "num",
+      "num",
+      "num",
+      "num",
+      "num"
+     ],
+     "plantilla": {
+      "es": "una flecha estalla donde miras (hasta {0} bloques): {2} de daño, {3} de postura y empuje a lo que hay a {1} bloques, sin romper bloques; cuesta {4} de estamina",
+      "en": "an arrow bursts where you look (up to {0} blocks): {2} damage, {3} posture and a shove to whatever is within {1} blocks, breaking no blocks; costs {4} stamina"
+     },
+     "gancho": null,
+     "icono": "minecraft:tnt",
+     "efecto": "una flecha estalla donde miras (hasta 32 bloques): 10 de daño, 60 de postura y empuje a lo que hay a 4 bloques, sin romper bloques; cuesta 20 de estamina; espera 25 s",
+     "x": 0.0,
+     "y": -7.8,
+     "conexiones": [
+      "arquero.s2.ultima"
+     ],
+     "habilidad": "N2",
+     "ultima": 2
     },
     {
      "id": "arquero.s2.puente_1",
@@ -16220,10 +17784,10 @@
      "gancho": "puente_al_guerrero",
      "icono": "clase:guerrero",
      "efecto": "regeneración de estamina +5 %",
-     "x": 0.0,
-     "y": -7.5,
+     "x": -1.988,
+     "y": -6.503,
      "conexiones": [
-      "arquero.s2.4",
+      "arquero.s2.3",
       "arquero.s2.puente_2"
      ],
      "destino": "guerrero"
@@ -16249,8 +17813,8 @@
      "gancho": null,
      "icono": "minecraft:mace",
      "efecto": "daño de postura +5 %",
-     "x": 0.0,
-     "y": -8.5,
+     "x": -2.28,
+     "y": -7.459,
      "conexiones": [
       "arquero.s2.puente_1",
       "arquero.s2.puente_3"
@@ -16280,8 +17844,8 @@
      "gancho": "replica_menor",
      "icono": "minecraft:flint_and_steel",
      "efecto": "una parada perfecta te devuelve 10 de estamina",
-     "x": 0.0,
-     "y": -9.5,
+     "x": -2.573,
+     "y": -8.415,
      "conexiones": [
       "arquero.s2.puente_2"
      ],
@@ -16914,11 +18478,12 @@
      "y": 2.7,
      "conexiones": [
       "arquero.s3.2",
-      "arquero.s3.4"
+      "arquero.s3.ultima",
+      "arquero.s3.puente_1"
      ]
     },
     {
-     "id": "arquero.s3.4",
+     "id": "arquero.s3.ultima",
      "tipo": "habilidad",
      "nombre": {
       "es": "Flecha de red",
@@ -16944,17 +18509,17 @@
      "gancho": null,
      "icono": "minecraft:cobweb",
      "efecto": "una red donde miras (hasta 24 bloques) atrapa a los monstruos a 3 bloques: Lentitud IV 3 s; espera 20 s",
-     "x": -5.543,
-     "y": 3.2,
+     "x": -5.802,
+     "y": 3.35,
      "conexiones": [
       "arquero.s3.3",
-      "arquero.s3.lado",
-      "arquero.s3.puente_1"
+      "arquero.s3.ultima_ii"
      ],
-     "habilidad": "N"
+     "habilidad": "N",
+     "ultima": 3
     },
     {
-     "id": "arquero.s3.lado",
+     "id": "arquero.s3.ultima_ii",
      "tipo": "habilidad",
      "nombre": {
       "es": "Flecha de red II",
@@ -16982,12 +18547,13 @@
      "gancho": null,
      "icono": "minecraft:cobweb",
      "efecto": "una red donde miras (hasta 24 bloques) atrapa a los monstruos a 4 bloques: Lentitud IV 4 s, y tus flechas les hacen +15 %; espera 20 s",
-     "x": -6.12,
-     "y": 1.871,
+     "x": -6.755,
+     "y": 3.9,
      "conexiones": [
-      "arquero.s3.4"
+      "arquero.s3.ultima"
      ],
-     "habilidad": "N2"
+     "habilidad": "N2",
+     "ultima": 3
     },
     {
      "id": "arquero.s3.puente_1",
@@ -17010,10 +18576,10 @@
      "gancho": "puente_al_curandero",
      "icono": "clase:curandero",
      "efecto": "curación +10 %",
-     "x": -6.495,
-     "y": 3.75,
+     "x": -4.638,
+     "y": 4.973,
      "conexiones": [
-      "arquero.s3.4",
+      "arquero.s3.3",
       "arquero.s3.puente_2"
      ],
      "destino": "curandero"
@@ -17039,8 +18605,8 @@
      "gancho": null,
      "icono": "minecraft:cooked_beef",
      "efecto": "regeneración de estamina +5 %",
-     "x": -7.361,
-     "y": 4.25,
+     "x": -5.32,
+     "y": 5.705,
      "conexiones": [
       "arquero.s3.puente_1",
       "arquero.s3.puente_3"
@@ -17072,8 +18638,8 @@
      "gancho": "vendaje",
      "icono": "minecraft:paper",
      "efecto": "cada 8 s sin recibir daño recuperas 1 de vida",
-     "x": -8.227,
-     "y": 4.75,
+     "x": -6.002,
+     "y": 6.436,
      "conexiones": [
       "arquero.s3.puente_2"
      ],
