@@ -54,6 +54,20 @@ final class PressureFootage {
 	}
 
 	static void film(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
+		// The test world is peaceful, and pressure is armour penetration, which the ladder only turns on from
+		// Normal up (difficulty/Ladder, Pressure.add): on peaceful no blow adds any and the shield stays whole.
+		server.runCommand("difficulty normal");
+		try {
+			filmOnNormal(context, server, connection, x, y, z);
+		} finally {
+			server.runCommand("difficulty peaceful");
+		}
+	}
+
+	private static void filmOnNormal(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x,
+		int y, int z) {
+		check(server.computeOnServer(s -> dev.forja.difficulty.Ladder.current().penetration),
+			"the pressure needs a level with armour penetration, at " + server.computeOnServer(s -> dev.forja.difficulty.Ladder.current()));
 		server.runCommand("gamemode survival @a");
 		server.runCommand(String.format(Locale.ROOT, "tp @a %.2f %.2f %.2f 0.0 20.0", x + 0.5, (double) y, z + 0.5));
 		server.runOnServer(s -> {
