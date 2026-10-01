@@ -2,9 +2,11 @@
 
     python tools/hoja_objetos.py <folder> [prefix]
     python tools/hoja_objetos.py --comparar <batch> <git revision> <out.jpg>
+    python tools/hoja_objetos.py --capturas <before dir> <after dir> <out.jpg> <shot> [<shot> ...]
 
 The second form lays a batch of the visual pass (BATCHES below) out before and after: "antes" read from that
-git revision, "después" from the working tree, each at 8x and at 1x and 2x on the slot grey.
+git revision, "después" from the working tree, each at 8x and at 1x and 2x on the slot grey. The third puts
+FORJA_SOLO=objetos_visual screenshots of two runs (before and after a change) one above the other.
 
 Writes <prefix>_objetos.jpg (loose items), <prefix>_forjados.jpg (forged gear in a few material sets),
 <prefix>_piezas.jpg (parts, moulds and templates) and <prefix>_bloques.jpg (block textures) into the folder.
@@ -153,6 +155,8 @@ def block_cells():
 BATCHES = {
     "1_objetos": ["forjado:cincel", "forjado:farol", "item/parte/punta_cincel.png", "item/cinturon.png",
                   "item/molde/punta_cincel.png", "item/marco/farol.png"],
+    "2_bloques": ["block/mesa_de_forja_top.png", "block/mesa_de_forja_side.png", "block/mesa_de_forja_front.png",
+                  "block/yunque_del_herrero_top.png", "block/montadora_side.png", "block/montadora_side_lit.png"],
 }
 
 
@@ -224,7 +228,41 @@ def compare(batch, revision, path):
     print("wrote", path, out.size, path.stat().st_size // 1024, "KB")
 
 
+def screenshots(before, after, path, names):
+    """Each shot of the before run over the same shot of the after run, scaled to half width."""
+    rows = []
+    for name in names:
+        pair = []
+        for folder in (before, after):
+            image = Image.open(Path(folder) / f"objetos_visual_{name}.png").convert("RGB")
+            image = image.resize((image.width * 900 // image.width, image.height * 900 // image.width), Image.LANCZOS)
+            pair.append(image)
+        rows.append((name, pair))
+    w = 900
+    h = rows[0][1][0].height
+    out = Image.new("RGB", (2 * w + 12, 44 + len(rows) * (h + 30)), BACK)
+    draw = ImageDraw.Draw(out)
+    draw.text((8, 8), "Forja, pase visual: en el juego (izquierda antes, derecha después)", fill=INK, font=TITLE)
+    for i, (name, pair) in enumerate(rows):
+        y = 44 + i * (h + 30)
+        draw.text((8, y), name, fill=INK, font=FONT)
+        out.paste(pair[0], (0, y + 18))
+        out.paste(pair[1], (w + 12, y + 18))
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    quality = 88
+    while True:
+        out.save(path, quality=quality)
+        if path.stat().st_size < 2_900_000 or quality < 40:
+            break
+        quality -= 8
+    print("wrote", path, out.size, path.stat().st_size // 1024, "KB")
+
+
 def main():
+    if sys.argv[1] == "--capturas":
+        screenshots(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5:])
+        return
     if sys.argv[1] == "--comparar":
         compare(sys.argv[2], sys.argv[3], sys.argv[4])
         return

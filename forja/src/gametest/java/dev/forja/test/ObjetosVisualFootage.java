@@ -183,13 +183,17 @@ final class ObjetosVisualFootage {
 		return BuiltInRegistries.BLOCK.getValue(net.minecraft.resources.Identifier.fromNamespaceAndPath("forja", id)).defaultBlockState();
 	}
 
+	/** The blocks redrawn by the visual pass (tools/visual_objetos.py), placed in a row of their own for a close look. */
+	private static final List<String> FOCUS = List.of("mesa_de_forja", "montadora", "yunque_del_herrero", "mesa_de_losa", "mesa_de_forja_mayor",
+		"caja_de_moldeo", "crisol_de_hierro", "mesa_de_extraccion");
+
 	/** Every block in a lit yard, a block every second space; then the foundry and the heat line, connected. */
 	private static void world(ClientGameTestContext context, TestServerContext server, TestServerConnection connection, int x, int y, int z) {
 		int ox = x + 40;
 		int oz = z + 40;
 		int floor = y - 1;
-		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d minecraft:polished_andesite", ox - 4, floor, oz - 4, ox + 26, floor, oz + 30));
-		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d minecraft:air", ox - 4, floor + 1, oz - 4, ox + 26, floor + 8, oz + 30));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d minecraft:polished_andesite", ox - 4, floor, oz - 4, ox + 26, floor, oz + 44));
+		server.runCommand(String.format(Locale.ROOT, "fill %d %d %d %d %d %d minecraft:air", ox - 4, floor + 1, oz - 4, ox + 26, floor + 8, oz + 44));
 		server.runCommand("time set noon");
 		server.runCommand("weather clear");
 		List<String> skip = List.of("metal_fundido", "portal_estelar");
@@ -218,6 +222,10 @@ final class ObjetosVisualFootage {
 				place(level, new BlockPos(ox + i, floor + 1, row + 3), block(heat[i]));
 			}
 			place(level, new BlockPos(ox + 3, floor + 2, row + 3), block("tubo_de_calor"));
+			// The blocks the visual pass redrew, side by side for a close look (FOCUS).
+			for (int i = 0; i < FOCUS.size(); i++) {
+				place(level, new BlockPos(ox + i * 2, floor + 1, oz + 40), block(FOCUS.get(i)));
+			}
 			place(level, new BlockPos(ox + 3, floor + 3, row + 3), block("tubo_de_calor"));
 			// Shapes that depend on the neighbours (pipes and their arms) are worked out again now that all are down.
 			for (BlockPos pos : BlockPos.betweenClosed(ox - 1, floor + 1, row - 1, ox + 10, floor + 4, row + 4)) {
@@ -242,6 +250,10 @@ final class ObjetosVisualFootage {
 			{String.valueOf(cx + 14.0), String.valueOf(floor + 7.0), String.valueOf(oz + 30.0), "135", "30", "e_detras"},
 			{String.valueOf(ox + 4.5), String.valueOf(floor + 4.0), String.valueOf(oz + 19.5), "0", "30", "f_fundicion"},
 			{String.valueOf(ox + 4.5), String.valueOf(floor + 3.5), String.valueOf(oz + 31.5), "180", "25", "g_calor"},
+			{String.valueOf(ox + 3.5), String.valueOf(floor + 3.4), String.valueOf(oz + 37.0), "0", "35", "h_cerca_1"},
+			{String.valueOf(ox + 11.5), String.valueOf(floor + 3.4), String.valueOf(oz + 37.0), "0", "35", "h_cerca_2"},
+			{String.valueOf(ox + 3.5), String.valueOf(floor + 3.4), String.valueOf(oz + 44.0), "180", "35", "i_detras_1"},
+			{String.valueOf(ox + 11.5), String.valueOf(floor + 3.4), String.valueOf(oz + 44.0), "180", "35", "i_detras_2"},
 		};
 		for (String[] view : views) {
 			server.runCommand(String.format(Locale.ROOT, "tp @a %s %s %s %s %s", view[0], view[1], view[2], view[3], view[4]));
