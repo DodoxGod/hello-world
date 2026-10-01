@@ -255,7 +255,10 @@ public final class TraitEffects {
 		if ((ready != null && now < ready) || ground == null || ground.dimension() != level.dimension()) {
 			return false;
 		}
-		BlockPos to = ground.pos();
+		BlockPos to = safeLanding(level, ground.pos());
+		if (to == null) {
+			return false;
+		}
 		player.teleportTo(to.getX() + 0.5, to.getY(), to.getZ() + 0.5);
 		player.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
 		player.resetFallDistance();
@@ -273,6 +276,35 @@ public final class TraitEffects {
 		level.sendParticles(ParticleTypes.REVERSE_PORTAL, player.getX(), player.getY(1.0), player.getZ(), 60, 0.4, 0.8, 0.4, 0.1);
 		player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("gui.forja.eterio.vacio").withColor(0xB98AE6));
 		return true;
+	}
+
+	/** Prefer nearby ground at the remembered height, then search upward for a clear landing. */
+	private static @org.jspecify.annotations.Nullable BlockPos safeLanding(ServerLevel level, BlockPos remembered) {
+		if (clearLanding(level, remembered)) {
+			return remembered;
+		}
+		for (int rise = 0; rise <= 3; rise++) {
+			for (int radius = rise == 0 ? 1 : 0; radius <= 3; radius++) {
+				for (int dx = -radius; dx <= radius; dx++) {
+					for (int dz = -radius; dz <= radius; dz++) {
+						if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) {
+							continue;
+						}
+						BlockPos candidate = remembered.offset(dx, rise, dz);
+						if (clearLanding(level, candidate)) {
+							return candidate;
+						}
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	private static boolean clearLanding(ServerLevel level, BlockPos feet) {
+		BlockPos below = feet.below();
+		return level.getBlockState(below).isFaceSturdy(level, below, net.minecraft.core.Direction.UP)
+			&& level.getBlockState(feet).isAir() && level.getBlockState(feet.above()).isAir();
 	}
 
 	// ------------------------------------------------------------------ the far forge alloys

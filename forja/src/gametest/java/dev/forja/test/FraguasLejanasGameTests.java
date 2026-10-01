@@ -365,6 +365,32 @@ public class FraguasLejanasGameTests {
 		helper.succeed();
 	}
 
+	@GameTest(maxTicks = 20)
+	public void blockedVoidLandingFindsClearGround(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayerInLevel();
+		player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+		BlockPos ground = helper.absolutePos(new BlockPos(2, 1, 2));
+		level.setBlockAndUpdate(ground.below(), Blocks.STONE.defaultBlockState());
+		player.teleportTo(ground.getX() + 0.5, ground.getY(), ground.getZ() + 0.5);
+		player.setOnGround(true);
+		player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET,
+			Assembler.create(ForgeType.BOTAS, List.of(ForgeMaterial.ETERIO, ForgeMaterial.CUERO), level.registryAccess()));
+		TraitEffects.rememberGround(level, player);
+		level.setBlockAndUpdate(ground, Blocks.STONE.defaultBlockState());
+		BlockPos nearby = ground.east();
+		level.setBlockAndUpdate(nearby.below(), Blocks.STONE.defaultBlockState());
+		level.setBlockAndUpdate(nearby, Blocks.AIR.defaultBlockState());
+		level.setBlockAndUpdate(nearby.above(), Blocks.AIR.defaultBlockState());
+		player.teleportTo(ground.getX() + 0.5, level.getMinY() - TraitEffects.VOID_DEPTH - 4, ground.getZ() + 0.5);
+		helper.assertTrue(TraitEffects.voidRescue(level, player), "blocked remembered spot must find nearby ground");
+		BlockPos landed = player.blockPosition();
+		helper.assertTrue(!landed.equals(ground) && landed.closerThan(ground, 4), "safe nearby landing: " + landed);
+		helper.assertTrue(level.getBlockState(landed).isAir() && level.getBlockState(landed.above()).isAir(), "two blocks of air");
+		helper.assertTrue(level.getBlockState(landed.below()).isFaceSturdy(level, landed.below(), Direction.UP), "solid ground");
+		helper.succeed();
+	}
+
 	/** The End ruin carries the cold void forge, its three guards and the chest with the note, and generates on the outer islands. */
 	@GameTest(maxTicks = 20)
 	public void theVoidRuinCarriesItsForge(GameTestHelper helper) {

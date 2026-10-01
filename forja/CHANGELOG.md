@@ -1,5 +1,9 @@
 # Novedades
 
+## 2026-10-01 — Rescate seguro del vacío
+
+- El eterio comprueba suelo firme y dos bloques libres antes de devolver al jugador; si el punto recordado está ocupado, busca un lugar cercano y luego más alto.
+
 ## 2026-10-01 — Limpiar los estados efímeros de clase
 
 - Desconexión, cambio de clase y reinicio vacían las protecciones de Segunda vida y los restos de experiencia de Tanque y Curandero. Las protecciones vencidas también desaparecen sin esperar un golpe.
