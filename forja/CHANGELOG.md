@@ -1,5 +1,27 @@
 # Novedades
 
+## 2026-09-30 — Aviso en movimiento: los mobs ya no se paran al avisar
+
+Andy: «cuando los mobs preparan un ataque ya no se pueden mover, por lo que es muy fácil esquivarlos».
+
+- **Durante el aviso de un golpe el mob sigue al jugador** y se gira hacia él (`ai/WindupChase`): a su velocidad de
+  acercarse × el factor de peso (1 hasta 1 kg, −0,1 por kg de más, mínimo 0,7), sin correr, y se para a 0,8 dentro
+  del alcance de su golpe. En los dos caminos (la meta cuerpo a cuerpo de los mobs de reglas y de los de Forja, y el
+  ejecutor de las redes) y en el golpe del enderman tras su teletransporte.
+- **No cambia:** la duración del aviso, que el golpe solo entra si al acabar estás a su alcance, el compromiso, las
+  fintas, el aturdimiento, la espera tras el golpe y los turnos. Los especiales con aviso propio (embestida, carga,
+  movimientos de los jefes) siguen igual; un mob de Forja con un especial cargándose no se mueve.
+- **Qué escapa:** retroceder andando ya no basta; correr, esquivar, bloquear o parar, sí.
+- Config: `windupChase` (encendido) y `windupChaseSpeed` (1,0).
+- Medido con `CapitanMedidaGameTests` (160 peleas por modo): los avisos que fallan porque el jugador se movió bajan de
+  1,4–3,4 a 0,3–1,0 por pelea; daño/min +4–8 % en Difícil y +5–10 % en Extremo. La regla exacta, para el simulador, en
+  `docs/red_mob_v4_mod_estado.md`, «Aviso en movimiento». El banco acepta `FORJA_CAPITAN_NIVEL`,
+  `FORJA_CAPITAN_ABLACION=avisoquieto` y `FORJA_CAPITAN_AVISO_VEL`.
+- Guía (libro II, «El aviso»), especificación de combate y documento de la red al día.
+- **Pruebas:** `AvisoMovilGameTests` (6): un zombi que avisa alcanza a quien retrocede andando, también por el
+  ejecutor; quien corre escapa; una esquiva lateral a tiempo escapa; el escudo sigue parando; las cifras del factor
+  de peso. 485 pruebas en verde; ninguna de las anteriores hubo que cambiar.
+
 ## 2026-09-30 — El Herrero Caído, más fuerte
 
 Andy: «parece que puedes llegar a estar muy fuerte, o el Herrero Caído es muy débil, hazlo más fuerte». Un Mago o un

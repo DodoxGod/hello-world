@@ -367,6 +367,14 @@ public final class CombatConfig {
 	/** Melee mobs stop, flash and wait before striking a player. */
 	public boolean telegraph = true;
 	public int windupTicks = 8;
+	/**
+	 * A monster warning a blow keeps following its target instead of standing still (ai.WindupChase, Andy
+	 * 2026-09-30: "cuando los mobs preparan un ataque ya no se pueden mover, por lo que es muy fácil esquivarlos").
+	 * Off, it stands still through the warning, as before.
+	 */
+	public boolean windupChase = true;
+	/** The share of its approach speed modifier it keeps while warning with light hands; heavier ones keep less (Weight.chaseFactor). */
+	public double windupChaseSpeed = 1.0;
 	/** How many mobs may swing at the same player at once; the rest wait their turn. */
 	public int maxSimultaneousAttackers = 2;
 	public double strikeReachBonus = 0.5;

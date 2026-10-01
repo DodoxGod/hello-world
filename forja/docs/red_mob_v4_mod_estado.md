@@ -744,6 +744,94 @@ Lo que sigue es del código final.
 - si en el simulador solo cuenta mientras la meta está en marcha, se alarga: la meta está parada ~17 de los ~32 ticks de
   espera. Eso explicaría su 47 % de "esperando" frente al 30 % del mod, y sus 85 ticks entre avisos frente a los 71.
 
+### Aviso en movimiento (30-09): el mob ya no se para al avisar
+
+Andy: «cuando los mobs preparan un ataque ya no se pueden mover, por lo que es muy fácil esquivarlos». Hasta ahora el
+mob se quedaba quieto los 8 ticks (+ el peso) del aviso, y el golpe solo entra si al acabar el jugador sigue a
+≤ `Reach.landing` (≈ 2,0 de centro a centro para un zombi). Bastaba un paso atrás. Ahora sigue al jugador durante el
+aviso. **El simulador tiene que copiar esta regla.**
+
+#### La regla exacta (`ai/WindupChase`, llamada cada tick del aviso)
+
+- **Dónde:** los dos caminos del golpe avisado: la meta cuerpo a cuerpo (`MeleeAttackGoalMixin`, mobs de reglas y los
+  propios de Forja) y el ejecutor (`TacticGoal.strike` / `tickWindup`, red o táctica con `usar`). También el golpe del
+  enderman tras su teletransporte (`VanillaSpecials.BLINK.follow`), que es una copia del aviso normal.
+- **Velocidad:** modificador de velocidad = el de acercarse × `windupChaseSpeed` (**1,0**) × `Weight.chaseFactor`.
+  - El de acercarse: el de su meta cuerpo a cuerpo (zombi 1,0; Cargador 1,25; Yunque andante 0,8…); en el ejecutor, 1,0.
+  - `chaseFactor = clamp(1 − 0,1 × max(0, kg − 1), 0,7, 1)`, con kg = `Weight.carried` (arma + armadura, lo mismo que
+    alarga el aviso). Puño o daga: 1; espada de hierro (1,3 kg): 0,97; espadón (3 kg): 0,8; martillo de guerra
+    (3,6 kg): 0,74; nunca menos de 0,7.
+  - **Ojo, física de vanilla:** la velocidad en el suelo de un mob crece con el **cuadrado** de (atributo × modificador)
+    (`Mob.setSpeed` pone también `zza`). Zombi (atributo 0,23) a 1,0: ≈ 0,117 bloques/tick en recta; a 0,7: ≈ 0,057.
+    En la prueba, un zombi que avisa anda 0,78–0,93 bloques en los 8 ticks (≈ 0,10/tick con la aceleración).
+  - **No corre:** `MobSprint.able` es falso con `mind.warning` (camino vanilla) o `mind.windup` > 0 (ejecutor).
+- **Cómo se mueve:**
+  - A ≤ 4 en horizontal, con |Δy| ≤ 0,6, en el suelo, viéndolo y sin peligro (lava o caída de 3) a 1 bloque en esa
+    dirección: **en línea recta** hacia el jugador (`MoveControl.setWantedPosition` cada tick; la ruta se suelta).
+  - Si no: por ruta (`moveTo(jugador)`), rehecha si se acabó, o cada 3 ticks si su final queda a > 1 del jugador.
+- **Giro:** la cabeza, `LookControl.setLookAt(jugador, 30°, 30°)` cada tick (30° por tick como mucho); el cuerpo gira
+  hacia donde anda con el `MoveControl` de vanilla (hasta 90° por tick). El golpe **no mira el ángulo**: solo distancia
+  y vista, como antes.
+- **Cuándo se para** (se queda quieto mirando, como antes):
+  - a ≤ `pressAt` del jugador, de centro a centro: `max(½ ancho mob + ½ ancho jugador + 0,1; Reach.landing − 0,8)`
+    (zombi contra jugador: **1,2**; con espada, 1,8). Si el jugador se aleja, vuelve a seguirlo en el mismo tick;
+  - sin ruta posible (y fuera del caso de la línea recta);
+  - si es un mob de Forja con un especial propio cargándose (`Windup`): sus especiales siguen plantados;
+  - con `windupChase` apagado (el comportamiento anterior).
+- **Lo que no cambia:** la duración del aviso (8 + min(14, round(1,5·kg)); 4 con el contraataque), la regla de
+  llegada (`Reach.landing` y vista al acabar), el compromiso (sin cambio de táctica en mitad del aviso), la finta en la
+  primera mitad, el aturdimiento que lo corta, la única espera tras el golpe (`MobMind.nextBlowAt`) y los turnos.
+  Los especiales con aviso propio (embestida, carga, andanada, hachazo, la lanza de `SpearUseGoalMixin`, los movimientos
+  de los jefes y de los mobs de Forja con `Windup`) siguen con su lógica: o ya se mueven (embestida, carga, lanza) o
+  plantan los pies a propósito. El golpe normal de los jefes (su meta cuerpo a cuerpo) sí sigue al jugador.
+
+#### Qué escapa ahora (pruebas `AvisoMovilGameTests`)
+
+El zombi empieza el aviso a 1,28 del jugador, que reacciona a los 2 ticks (más rápido que nadie):
+
+| El jugador… | Antes (quieto) | Ahora |
+|---|---|---|
+| retrocede andando (0,216/tick) | escapa: 1,04 → 2,32 | **le dan**: 1,28 → 1,76 (el zombi anda 0,82) |
+| lo mismo, golpe del ejecutor (`TacticGoal`) | escapa: 1,51 → 2,67 | **le dan**: 1,51 → 1,87 |
+| corre hacia atrás (0,281/tick) | escapa | **escapa**: acaba a 3,47 |
+| retrocede y esquiva de lado 3 ticks antes del golpe | escapa | **escapa** (invulnerabilidad de la esquiva) |
+| retrocede y levanta el escudo forjado 2 ticks antes | escapa | **para el golpe** (en alcance, sin daño) |
+
+#### Lo medido (`CapitanMedidaGameTests`, 160 peleas por modo, jugador en el mundo; antes → después)
+
+`FORJA_CAPITAN_NIVEL=DIFICIL|EXTREMO` pone el nivel con sus cifras («auto»: Herrero en Difícil, Maestro en Extremo);
+`FORJA_CAPITAN_ABLACION=avisoquieto` es el antes (mob quieto) con el mismo código; `FORJA_CAPITAN_AVISO_VEL` cambia
+`windupChaseSpeed`. El jugador de guion no reacciona a los avisos: se queda, se aleja a 0,18 o rodea a 0,15 por fases.
+
+| Difícil | sin capitán | sin órdenes | capitán de reglas | capitán 2 |
+|---|---|---|---|---|
+| daño/min | 162,7 → **176,3** | 177,0 → **184,9** | 191,7 → **198,4** | 119,4 → **125,7** |
+| avisos vanilla / llegan | 15,7 / 6,20 → 15,4 / 6,83 | 16,3 / 6,66 → 17,2 / 7,82 | 23,6 / 9,73 → 23,5 / 10,86 | 14,1 / 5,14 → 15,3 / 6,49 |
+| fallan: se movió | 1,44 → 0,59 | 1,57 → 0,61 | 2,22 → 0,72 | 1,15 → 0,33 |
+| fallan: empujado | 2,22 → 1,73 | 2,33 → 2,02 | 2,44 → 1,97 | 2,14 → 1,70 |
+| en alcance sin daño (i-frames) | 2,04 → 2,54 | 2,17 → 2,75 | 4,22 → 4,77 | 2,39 → 3,21 |
+| llegan / acabados | 52 % → **58 %** | 52 % → **59 %** | 52 % → **59 %** | 48 % → **55 %** |
+| distancia al acabar (al empezar ≈ 1,45–1,62) | 1,92 → 1,62 | 1,90 → 1,59 | 1,76 → 1,47 | 1,76 → 1,43 |
+
+| Extremo | sin capitán | sin órdenes | capitán de reglas | capitán 2 |
+|---|---|---|---|---|
+| daño/min | 226,3 → **244,2** | 238,6 → **262,9** | 271,4 → **295,2** | 158,3 → **166,5** |
+| avisos vanilla / llegan | 21,9 / 8,17 → 22,5 / 9,58 | 24,8 / 9,15 → 25,9 / 11,45 | 34,5 / 13,54 → 35,3 / 15,26 | 21,9 / 7,61 → 22,1 / 8,95 |
+| fallan: se movió | 2,03 → 0,86 | 2,39 → 0,84 | 3,41 → 1,01 | 1,65 → 0,53 |
+| fallan: empujado | 3,05 → 2,23 | 3,54 → 2,54 | 3,29 → 2,43 | 2,86 → 1,92 |
+| llegan / acabados | 50 % → **57 %** | 50 % → **58 %** | 51 % → **56 %** | 47 % → **53 %** |
+| daño cuerpo a cuerpo (por pelea) | 65,3 → 74,8 | 72,4 → 88,3 | 98,5 → 111,1 | 34,8 → 38,5 |
+
+- Los fallos por «se movió» caen a menos de la mitad (−55 a −70 %); el daño por minuto sube un 4–8 % en Difícil y un
+  5–10 % en Extremo. Los avisos «tactica» siguen siendo pocos (0,1–0,7 por pelea).
+- **Afinado:** con `windupChaseSpeed` 0,7 (lo primero que se pidió probar; Extremo): daño/min 246,0 / 255,2 / 285,6 /
+  161,9, «se movió» 1,32 / 1,59 / 2,03 / 0,88, llegan 55 / 55 / 54 / 50 %: la mitad del efecto, porque la velocidad
+  en el suelo va con el cuadrado (0,7 → 49 %) y un jugador que retrocede andando escapa. Se queda en **1,0** con el
+  factor de peso: los ligeros siguen a su paso, los pesados más despacio pero con un aviso más largo.
+
+**Para el simulador:** durante el aviso, el mob se mueve hacia el jugador a su velocidad de andar × `chaseFactor`
+(nunca corriendo), gira la cabeza 30°/tick, y se para a `Reach.landing − 0,8` (zombi 1,2); el aviso dura y llega igual.
+
 ## Capitán 2 (30-09; responde a `mod_spec_capitan2.md`)
 
 Rama `forja-capitan2`. Las seis piezas del simulador (`capitan2.rs`, motor `py_mobs_v4j`) están en el mod con los

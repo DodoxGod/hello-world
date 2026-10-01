@@ -21,8 +21,8 @@ import net.minecraft.world.phys.Vec3;
  * <p>The run is vanilla's sprint (+30 %, the flag every client already sees and throws dust for) and a modifier
  * on top (or under it, when the level's share is less than 30 %) to make the level's figure. By the rules a monster runs to close on a player getting away from it, to go round to
  * its slot of the ring when it is far round from it, and to get away when it is badly hurt; a network with
- * the {@code correr} output decides for itself. Never while stunned, never during the warning of a blow
- * (it stands still for that anyway), and not again until its breath is partly back.
+ * the {@code correr} output decides for itself. Never while stunned, never during the warning of a blow (it
+ * follows the player at its walk then, WindupChase), and not again until its breath is partly back.
  */
 public final class MobSprint {
 	public static final float MAX = 100.0F;
@@ -216,7 +216,7 @@ public final class MobSprint {
 	public static boolean able(MobMind mind, long now) {
 		Mob mob = mind.mob;
 		float needed = mind.winded ? RESUME : 0.0F;
-		return mind.stamina > needed && mind.windup == 0 && !Posture.isStaggered(mob, now) && !mob.isInWater() && runs(mob);
+		return mind.stamina > needed && mind.windup == 0 && !mind.warning && !Posture.isStaggered(mob, now) && !mob.isInWater() && runs(mob);
 	}
 
 	/** Every tick, for every monster with a mind: run or not, spend or recover. */

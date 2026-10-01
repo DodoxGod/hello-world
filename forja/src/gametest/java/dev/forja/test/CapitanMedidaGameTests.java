@@ -56,7 +56,7 @@ public class CapitanMedidaGameTests {
 
 	/** With FORJA_CAPITAN_TRAZA=<file>, every tick of the first fights of each mode, mob by mob, goes to it. */
 	static final int TRACED = 2;
-	static final int MAX_FIGHTS = 100;
+	static final int MAX_FIGHTS = 160;
 
 	/** Whether FORJA_CAPITAN_ABLACION (a comma list) names this switch. */
 	static boolean ablation(String name) {
@@ -74,6 +74,8 @@ public class CapitanMedidaGameTests {
 		final Map<Mob, long[]> lastEnd = new java.util.HashMap<>();
 		final Map<Mob, String> lastOutcome = new java.util.HashMap<>();
 		final Map<Mob, String> path = new java.util.HashMap<>();
+		/** Centre to centre at the start of each mob's warning under way (the moving warning, 2026-09-30). */
+		final Map<Mob, Double> startDist = new java.util.HashMap<>();
 		/** Since each mob's last blow (landed, missed or feinted), until its next warned blow: what it did (sixth pass). */
 		final Map<Mob, GapTrack> gaps = new java.util.HashMap<>();
 		Player player;
@@ -173,6 +175,7 @@ public class CapitanMedidaGameTests {
 				double gx = Math.max(0.0, Math.max(a.minX - b.maxX, b.minX - a.maxX));
 				double gz = Math.max(0.0, Math.max(a.minZ - b.maxZ, b.minZ - a.maxZ));
 				double gap = Math.hypot(gx, gz);
+				log.startDist.put(mob, centre);
 				log.add("dist_centro_x100", (int) Math.round(centre * 100));
 				log.add("dist_hueco_x100", (int) Math.round(gap * 100));
 				log.add("dist_n", 1);
@@ -208,6 +211,14 @@ public class CapitanMedidaGameTests {
 				}
 				log.add("fin_" + outcome, 1);
 				log.add("fin_" + log.path.getOrDefault(mob, "?") + "_" + outcome, 1);
+				// the moving warning: how far apart they are when it ends, and how much nearer than at its start
+				Double from = log.startDist.remove(mob);
+				if (from != null && log.player != null && ("llega".equals(outcome) || "falla".equals(outcome))) {
+					double centre = Math.hypot(mob.getX() - log.player.getX(), mob.getZ() - log.player.getZ());
+					log.add("fin_dist_x100", (int) Math.round(centre * 100));
+					log.add("fin_cerrado_x100", (int) Math.round((from - centre) * 100));
+					log.add("fin_dist_n", 1);
+				}
 				if (!"especial".equals(outcome)) {
 					log.lastEnd.put(mob, new long[] {mob.level().getGameTime()});
 					log.lastOutcome.put(mob, outcome);
@@ -401,6 +412,18 @@ public class CapitanMedidaGameTests {
 		}
 		int fights = Math.min(MAX_FIGHTS, fights());
 		CombatConfig.get().veteranChance = 0.0;
+		// FORJA_CAPITAN_NIVEL: the difficulty level the fights run at (DIFICIL, EXTREMO...), with that level's own figures
+		// (the preset "auto"); unset, the tests' own (TestDefaults: Extremo with Herrero's figures)
+		String level = System.getenv("FORJA_CAPITAN_NIVEL");
+		if (level != null && !level.isBlank()) {
+			CombatConfig.get().nivel = level.trim().toUpperCase(Locale.ROOT);
+			CombatConfig.get().dificultad = "auto";
+		}
+		// the warning as it was before the moving warning (2026-09-30): standing still
+		CombatConfig.get().windupChase = !ablation("avisoquieto");
+		// FORJA_CAPITAN_AVISO_VEL: the share of its approach speed a warning monster keeps (windupChaseSpeed), to tune it
+		String chase = System.getenv("FORJA_CAPITAN_AVISO_VEL");
+		CombatConfig.get().windupChaseSpeed = chase == null || chase.isBlank() ? 1.0 : Double.parseDouble(chase.trim());
 		// FORJA_CAPITAN_ABLACION: switches for looking for what slows the group down (they apply to every mode at once)
 		if (ablation("sinaviso")) {
 			CombatConfig.get().telegraph = false;

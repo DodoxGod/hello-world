@@ -235,6 +235,20 @@ public final class Weight {
 		return Math.min(WINDUP_MAX_EXTRA, Math.round(carried(mob) * WINDUP_PER_KG));
 	}
 
+	/** Monster: up to this many kilograms carried, it follows through a warning at its whole approach speed. */
+	public static final float CHASE_FREE_KG = 1.0F;
+	/** Monster: the share of that speed each kilogram over {@link #CHASE_FREE_KG} takes off, and the least it keeps. */
+	public static final float CHASE_PER_KG = 0.1F;
+	public static final float CHASE_MIN = 0.7F;
+
+	/**
+	 * Monster: the share of its approach speed modifier it keeps while it warns a blow (ai.WindupChase): 1 with a
+	 * fist or a dagger, 0.97 with an iron sword, 0.74 with an iron war hammer, never under 0.7.
+	 */
+	public static float chaseFactor(Mob mob) {
+		return Math.max(CHASE_MIN, Math.min(1.0F, 1.0F - CHASE_PER_KG * Math.max(0.0F, carried(mob) - CHASE_FREE_KG)));
+	}
+
 	/** Monster: the wait after a blow, from the wait it would have with nothing. */
 	public static int interval(Mob mob, int base) {
 		return Math.round(base * (1.0F + INTERVAL_PER_KG * carried(mob)));

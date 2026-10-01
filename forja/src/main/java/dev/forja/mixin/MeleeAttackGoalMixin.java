@@ -21,8 +21,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Melee monsters warn a player before they strike: they stop, flash and wait a few ticks, and a player
- * who steps back, dodges or raises a shield in time is not hit. Only a few of them swing at the same
+ * Melee monsters warn a player before they strike: they flash and wait a few ticks, following the player all the
+ * while (ai.WindupChase, 2026-09-30; they used to stop), and a player who gets out of reach, dodges or raises a
+ * shield in time is not hit. Only a few of them swing at the same
  * player at once. That covers vanilla's monsters and Forja's own (see {@link AttackTokens#warns}):
  * Forja's keep their Windup telegraphs for their special moves on top of this. Since 2026-09-29 (Andy) the
  * same holds against anything, not only players: the warning, the turns and, for the ones waiting, the ring
@@ -92,7 +93,7 @@ abstract class MeleeAttackGoalMixin {
 			forja$target = target;
 		}
 		if (forja$windup > 0) {
-			forja$holdStill(target);
+			forja$followOrHold(target);
 			mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
 			if (forja$feint && forja$windup <= Math.max(1, forja$windupTotal / 2)) {
 				// The fake: it wound up, the player raised the shield for it, and nothing comes.
@@ -122,6 +123,11 @@ abstract class MeleeAttackGoalMixin {
 			if (mind != null) {
 				mind.lastStrike = mob.level().getGameTime();
 			}
+			// walked straight in without a path (WindupChase): one again, or the goal of a mob that does not follow unseen
+			// targets ends on the next tick and stands it idle until it is looked at again
+			if (!landed && dev.forja.ai.WindupChase.on() && mob.getNavigation().isDone()) {
+				mob.getNavigation().moveTo(target, speedModifier);
+			}
 			forja$reset();
 			return;
 		}
@@ -135,7 +141,7 @@ abstract class MeleeAttackGoalMixin {
 		forja$target = target;
 		forja$feint = mob.getRandom().nextDouble() < (mob instanceof dev.forja.entity.ForgeAutomaton
 			? dev.forja.ai.Aggression.adaptiveFeintChance(target) : dev.forja.ai.Aggression.feintChance(mob, target));
-		forja$holdStill(target);
+		forja$followOrHold(target);
 		CombatFeedback.telegraph(mob, forja$windup);
 		dev.forja.combat.CombatStats.record(mob, dev.forja.combat.CombatStats.WARNED);
 		dev.forja.combat.CombatStats.warnStarted(mob, target, "vanilla");
@@ -167,6 +173,21 @@ abstract class MeleeAttackGoalMixin {
 		dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(mob);
 		return mind == null ? "parada" : "parada_" + mind.decision.tactic().name().toLowerCase(java.util.Locale.ROOT);
 	}
+
+	/**
+	 * Through the warning it keeps following its target, at its own approach speed times WindupChase.factor (Andy,
+	 * 2026-09-30); close enough, with no way to it, or with windupChase off, it stands still.
+	 */
+	@Unique
+	private void forja$followOrHold(LivingEntity target) {
+		if (!dev.forja.ai.WindupChase.follow(mob, target, speedModifier)) {
+			forja$holdStill(target);
+		}
+	}
+
+	@Shadow
+	@Final
+	private double speedModifier;
 
 	/**
 	 * Still during the warning without dropping the path: a melee goal whose navigation is done ends

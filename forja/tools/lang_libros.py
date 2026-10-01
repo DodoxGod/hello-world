@@ -377,12 +377,14 @@ BOOKS.update({
         "leader. They cannot see through walls, but they **hear** you. And the better your gear, the harder they hit."),
     "gui.forja.libros.combate.aviso.titulo": ("El aviso", "The warning"),
     "gui.forja.libros.combate.aviso": (
-        "Antes de cada golpe se paran y cogen impulso: la pose de su arma lo dice, y cuanto más pesa lo que llevan, más "
-        "largo es el aviso. A veces **amagan**: entre un %1$s%% y un %2$s%% de las veces según la dificultad, y más contra "
+        "Antes de cada golpe cogen impulso **sin dejar de venir a por ti**: la pose de su arma lo dice, y cuanto más pesa "
+        "lo que llevan, más largo es el aviso y más despacio te siguen. Retroceder andando no basta: **corre**, esquiva, "
+        "bloquea o para. A veces **amagan**: entre un %1$s%% y un %2$s%% de las veces según la dificultad, y más contra "
         "quien para mucho.",
-        "Before every blow they stop and wind up: the pose of their weapon tells you, and the heavier what they carry, the "
-        "longer the warning. Sometimes they **feint**: between %1$s%% and %2$s%% of the time by difficulty, and more "
-        "against someone who parries a lot."),
+        "Before every blow they wind up **still coming for you**: the pose of their weapon tells you, and the heavier what "
+        "they carry, the longer the warning and the slower they follow. Walking back is not enough: **run**, dodge, block "
+        "or parry. Sometimes they **feint**: between %1$s%% and %2$s%% of the time by difficulty, and more against "
+        "someone who parries a lot."),
     "gui.forja.libros.combate.anillo.titulo": ("Turnos y anillo", "Turns and the ring"),
     "gui.forja.libros.combate.anillo": (
         "De base solo pegan %s a la vez; el resto espera su turno en un **anillo** a tu alrededor, llenando los flancos y "

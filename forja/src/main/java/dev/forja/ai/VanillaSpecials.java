@@ -353,7 +353,10 @@ public final class VanillaSpecials {
 				}
 				return false;
 			}
-			mob.getNavigation().stop();
+			// the usual warning follows the player as every warned blow does (WindupChase)
+			if (!WindupChase.follow(mob, target, 1.0)) {
+				mob.getNavigation().stop();
+			}
 			return true;
 		}
 	};

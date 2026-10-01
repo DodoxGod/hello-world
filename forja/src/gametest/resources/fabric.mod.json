@@ -54,6 +54,7 @@
 			"dev.forja.test.RedV4PercepcionGameTests",
 			"dev.forja.test.RedV4CapitanGameTests",
 			"dev.forja.test.CapitanMedidaGameTests",
+			"dev.forja.test.AvisoMovilGameTests",
 			"dev.forja.test.Capitan2GameTests",
 			"dev.forja.test.RedV4MundoGameTests",
 			"dev.forja.test.MiraGameTests",

@@ -375,7 +375,10 @@ public final class TacticGoal extends Goal {
 		MobDefense.spendCounter(this.mob);
 		this.mind.windup = this.mind.windupTotal;
 		this.struck = target;
-		this.mob.getNavigation().stop();
+		// it keeps following through the warning (WindupChase), or stands for it
+		if (!WindupChase.follow(this.mob, target, WINDUP_APPROACH)) {
+			this.mob.getNavigation().stop();
+		}
 		CombatFeedback.telegraph(this.mob, this.mind.windupTotal);
 		dev.forja.combat.CombatStats.warnStarted(this.mob, target, "tactica");
 	}
@@ -396,8 +399,14 @@ public final class TacticGoal extends Goal {
 		}
 	}
 
+	/** The approach speed modifier its warning follows the player at, before WindupChase.factor: the one it walks in at (free). */
+	private static final double WINDUP_APPROACH = 1.0;
+
 	private void tickWindup(Player target) {
-		this.mob.getNavigation().stop();
+		// Following the player through the warning (Andy, 2026-09-30: it used to stand still, and one step back dodged it).
+		if (!WindupChase.follow(this.mob, target, WINDUP_APPROACH)) {
+			this.mob.getNavigation().stop();
+		}
 		// A feint drops the blow, but only in the first half of the warning.
 		if (this.mind.decision.feint() && this.mind.windup > this.mind.windupTotal / 2) {
 			this.mind.windup = 0;

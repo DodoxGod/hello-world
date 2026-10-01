@@ -1676,7 +1676,7 @@
   "gui.forja.libros.combate.farol_curandero": "El Curandero lo usa mucho mejor: el libro de clases lo cuenta.",
   "gui.forja.libros.combate.enemigos.resumen": "Los monstruos de Forja **avisan** antes de pegar, pegan **por turnos**, te **rodean** y vienen en **grupos** con un jefe. No ven a través de las paredes, pero te **oyen**. Y cuanto mejor vas equipado, más fuerte pegan.",
   "gui.forja.libros.combate.aviso.titulo": "El aviso",
-  "gui.forja.libros.combate.aviso": "Antes de cada golpe se paran y cogen impulso: la pose de su arma lo dice, y cuanto más pesa lo que llevan, más largo es el aviso. A veces **amagan**: entre un %1$s%% y un %2$s%% de las veces según la dificultad, y más contra quien para mucho.",
+  "gui.forja.libros.combate.aviso": "Antes de cada golpe cogen impulso **sin dejar de venir a por ti**: la pose de su arma lo dice, y cuanto más pesa lo que llevan, más largo es el aviso y más despacio te siguen. Retroceder andando no basta: **corre**, esquiva, bloquea o para. A veces **amagan**: entre un %1$s%% y un %2$s%% de las veces según la dificultad, y más contra quien para mucho.",
   "gui.forja.libros.combate.anillo.titulo": "Turnos y anillo",
   "gui.forja.libros.combate.anillo": "De base solo pegan %s a la vez; el resto espera su turno en un **anillo** a tu alrededor, llenando los flancos y la espalda. Tras acertar saltan atrás y dejan el turno a otro. Si retrocedes, corren a su hueco del anillo, y los arqueros se apartan para tener línea de tiro.",
   "gui.forja.libros.combate.grupos.titulo": "Grupos y capitanes",

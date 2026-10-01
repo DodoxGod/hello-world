@@ -140,7 +140,7 @@ peso sale de la fórmula. Se pueden cambiar en `materiales` con la clave `cota_d
 ### Mobs normales (namespace `minecraft`) y los propios de Forja
 | Qué | Valor |
 |---|---|
-| Aviso cuerpo a cuerpo | **8** ticks quieto antes del golpe (solo contra jugadores). El golpe entra si la distancia es ≤ `2×ancho_mob + 0,5×ancho_jugador + 0,5` y hay línea de visión. Lo tienen los mobs vanilla **y los de Forja** (decisión de Andy, 2026-09-26: antes los de Forja daban su golpe normal sin aviso). Sus ataques especiales siguen con su propio aviso (`Windup`) |
+| Aviso cuerpo a cuerpo | **8** ticks (+ el peso) antes del golpe, **siguiendo al jugador** (aviso en movimiento, 2026-09-30: antes se quedaba quieto). Durante el aviso camina hacia él a su velocidad de acercarse × `windupChaseSpeed` (**1,0**) × el factor de peso (1 hasta 1 kg, −0,1 por kg de más, mínimo **0,7**), sin correr, y se para a `alcance_golpe − 0,8` de centro a centro; la regla exacta está en `red_mob_v4_mod_estado.md`, «Aviso en movimiento». El golpe entra si la distancia es ≤ `2×ancho_mob + 0,5×ancho_jugador + 0,5` y hay línea de visión. Lo tienen los mobs vanilla **y los de Forja** (decisión de Andy, 2026-09-26: antes los de Forja daban su golpe normal sin aviso). Sus ataques especiales siguen con su propio aviso (`Windup`) |
 | Atacantes simultáneos | **2** por jugador (los demás esperan) |
 | Embestida del zombi | de **3,5** a **7** bloques de distancia. **12** ticks agachado y luego salto con velocidad horizontal **0,85** y vertical **0,35**. Si alcanza, golpea y pone Lentitud II **30** ticks. Enfriamiento de **100** a **200** ticks |
 | Disparo cargado del esqueleto | **1 de cada 3** disparos; tensa **20** ticks más |
@@ -388,7 +388,8 @@ One-hot de tipo (entradas 33–39): zombie, husk, drowned, skeleton, stray, cree
   `LeapAtTargetGoal`: velocidad horizontal = dirección·0,4 + movimiento·0,2, vertical 0,4.
 - **usar**:
   - **Cuerpo a cuerpo** (y cualquier otra familia): si alcanza, no tiene recarga y consigue turno (máx. 2 atacantes),
-    empieza un **aviso de 8 ticks** quieto; después golpea si está a ≤ 2·ancho + 0,5·ancho_jugador + 0,5 y lo ve.
+    empieza un **aviso de 8 ticks** siguiendo al jugador (velocidad 1,0 × el factor de peso, sin correr; se para a
+    `alcance_golpe − 0,8`); después golpea si está a ≤ 2·ancho + 0,5·ancho_jugador + 0,5 y lo ve.
     Recarga 20. *Diferencia con M1: allí el golpe era inmediato; en Forja siempre hay aviso.*
   - **Arquero**: tensa mientras se pida, lo vea y esté a < 16. A los 20 ticks dispara (`performRangedAttack` con la
     fuerza de 20 ticks); recarga 20. Si deja de pedirlo o lo pierde de vista, destensa.
