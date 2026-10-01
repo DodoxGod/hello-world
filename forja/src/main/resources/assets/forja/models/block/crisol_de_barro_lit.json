@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "forja:block/crisol_de_barro_top_lit",
+    "bottom": "forja:block/crisol_de_barro_side",
+    "side": "forja:block/crisol_de_barro_side_lit",
+    "particle": "forja:block/crisol_de_barro_side_lit"
+  }
+}

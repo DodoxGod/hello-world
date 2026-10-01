@@ -1,0 +1,32 @@
+{
+  "gives": {
+    "id": "forja:orbe_de_mejora",
+    "components": {
+      "forja:orbe": {
+        "mejora": "reparacion",
+        "porcentaje": 50
+      },
+      "minecraft:item_name": {
+        "translate": "item.forja.orbe_de_mejora.de",
+        "with": [
+          {
+            "translate": "upgrade.forja.reparacion"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          10289003
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  },
+  "max_uses": 1.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 32.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 30.0
+}

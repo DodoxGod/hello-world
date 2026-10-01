@@ -1,0 +1,57 @@
+{
+  "parent": "forja:forja/forja",
+  "display": {
+    "icon": {
+      "id": "forja:lanza"
+    },
+    "title": {
+      "translate": "advancements.forja.arsenal.title"
+    },
+    "description": {
+      "translate": "advancements.forja.arsenal.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "arco": {
+      "trigger": "minecraft:impossible"
+    },
+    "ballesta": {
+      "trigger": "minecraft:impossible"
+    },
+    "escudo": {
+      "trigger": "minecraft:impossible"
+    },
+    "lanza": {
+      "trigger": "minecraft:impossible"
+    },
+    "mazo": {
+      "trigger": "minecraft:impossible"
+    },
+    "tridente": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "arco"
+    ],
+    [
+      "ballesta"
+    ],
+    [
+      "escudo"
+    ],
+    [
+      "lanza"
+    ],
+    [
+      "mazo"
+    ],
+    [
+      "tridente"
+    ]
+  ]
+}

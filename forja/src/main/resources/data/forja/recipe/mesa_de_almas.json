@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "OPO",
+    "BMB",
+    "BBB"
+  ],
+  "key": {
+    "O": "minecraft:obsidian",
+    "P": "forja:placa_hueca",
+    "B": "minecraft:basalt",
+    "M": "forja:mesa_de_brasa"
+  },
+  "result": {
+    "id": "forja:mesa_de_almas",
+    "count": 1
+  }
+}

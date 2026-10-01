@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/pavesa",
+  "display": {
+    "icon": {
+      "id": "forja:farol_de_pavesa"
+    },
+    "title": {
+      "translate": "advancements.forja.farol.title"
+    },
+    "description": {
+      "translate": "advancements.forja.farol.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

@@ -1,0 +1,321 @@
+{
+  "type": "minecraft:chest",
+  "random_sequence": "forja:chests/bastion_cripta",
+  "pools": [
+    {
+      "rolls": {
+        "type": "minecraft:uniform",
+        "min": 3,
+        "max": 5
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:bone",
+          "weight": 8,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 2,
+                "max": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:gold_nugget",
+          "weight": 8,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 4,
+                "max": 12
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:candle",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 3
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:experience_bottle",
+          "weight": 6,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 2,
+                "max": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "forja:obsidiacero",
+          "weight": 3,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 2
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "forja:damasco",
+          "weight": 3,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 2
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:gold_ingot",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 2,
+                "max": 5
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 2
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "forja:plantilla",
+          "weight": 48,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 3
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "forja:lingote_de_temple",
+          "weight": 36
+        },
+        {
+          "type": "minecraft:item",
+          "name": "forja:sello",
+          "weight": 24
+        },
+        {
+          "type": "minecraft:item",
+          "name": "forja:orbe_de_mejora",
+          "weight": 18
+        },
+        {
+          "type": "minecraft:item",
+          "name": "forja:talisman",
+          "weight": 2,
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "forja:talisman": "esmeralda",
+                "minecraft:item_name": {
+                  "translate": "item.forja.talisman.de",
+                  "with": [
+                    {
+                      "translate": "talisman.forja.esmeralda"
+                    }
+                  ]
+                },
+                "minecraft:custom_model_data": {
+                  "colors": [
+                    4183146
+                  ]
+                },
+                "minecraft:rarity": "uncommon"
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "forja:talisman",
+          "weight": 2,
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "forja:talisman": "diamante",
+                "minecraft:item_name": {
+                  "translate": "item.forja.talisman.de",
+                  "with": [
+                    {
+                      "translate": "talisman.forja.diamante"
+                    }
+                  ]
+                },
+                "minecraft:custom_model_data": {
+                  "colors": [
+                    6287586
+                  ]
+                },
+                "minecraft:rarity": "uncommon"
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "forja:talisman",
+          "weight": 2,
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "forja:talisman": "cuarzo",
+                "minecraft:item_name": {
+                  "translate": "item.forja.talisman.de",
+                  "with": [
+                    {
+                      "translate": "talisman.forja.cuarzo"
+                    }
+                  ]
+                },
+                "minecraft:custom_model_data": {
+                  "colors": [
+                    15656666
+                  ]
+                },
+                "minecraft:rarity": "uncommon"
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "forja:talisman",
+          "weight": 2,
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "forja:talisman": "amatista",
+                "minecraft:item_name": {
+                  "translate": "item.forja.talisman.de",
+                  "with": [
+                    {
+                      "translate": "talisman.forja.amatista"
+                    }
+                  ]
+                },
+                "minecraft:custom_model_data": {
+                  "colors": [
+                    11893738
+                  ]
+                },
+                "minecraft:rarity": "uncommon"
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "forja:talisman",
+          "weight": 2,
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "forja:talisman": "eco",
+                "minecraft:item_name": {
+                  "translate": "item.forja.talisman.de",
+                  "with": [
+                    {
+                      "translate": "talisman.forja.eco"
+                    }
+                  ]
+                },
+                "minecraft:custom_model_data": {
+                  "colors": [
+                    2788500
+                  ]
+                },
+                "minecraft:rarity": "uncommon"
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "forja:talisman",
+          "weight": 2,
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "forja:talisman": "prismarina",
+                "minecraft:item_name": {
+                  "translate": "item.forja.talisman.de",
+                  "with": [
+                    {
+                      "translate": "talisman.forja.prismarina"
+                    }
+                  ]
+                },
+                "minecraft:custom_model_data": {
+                  "colors": [
+                    7129010
+                  ]
+                },
+                "minecraft:rarity": "uncommon"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "parent": "forja:forja/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:cracked_stone_bricks"
+    },
+    "title": {
+      "translate": "advancements.forja.ruina.title"
+    },
+    "description": {
+      "translate": "advancements.forja.ruina.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:player_generates_container_loot",
+      "conditions": {
+        "loot_table": "forja:chests/forja_abandonada"
+      }
+    }
+  }
+}

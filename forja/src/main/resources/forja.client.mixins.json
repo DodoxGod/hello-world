@@ -1,0 +1,38 @@
+{
+	"required": true,
+	"package": "dev.forja.mixin.client",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"AnimationUtilsMixin",
+		"AvatarRendererMixin",
+		"BossHealthOverlayMixin",
+		"ClientAdvancementsMixin",
+		"CreateWorldGameTabMixin",
+		"CycleButtonMixin",
+		"DifficultyButtonsMixin",
+		"CameraMixin",
+		"CreeperModelMixin",
+		"EntityRendererMixin",
+		"FogRendererMixin",
+		"HudTextMixin",
+		"GeoEntityRendererMixin",
+		"HumanoidModelMixin",
+		"IllagerModelMixin",
+		"ItemInHandLayerMixin",
+		"ItemInHandRendererMixin",
+		"LevelRendererMixin",
+		"LivingEntityHitstopMixin",
+		"LivingEntityRendererMixin",
+		"LightmapExtractorMixin",
+		"PiglinModelMixin",
+		"SkeletonModelMixin",
+		"SkyRendererMixin",
+		"SpiderModelMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

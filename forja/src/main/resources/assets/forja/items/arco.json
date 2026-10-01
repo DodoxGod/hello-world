@@ -1,0 +1,389 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:broken",
+    "on_true": {
+      "type": "minecraft:composite",
+      "models": [
+        {
+          "type": "minecraft:condition",
+          "property": "minecraft:using_item",
+          "on_false": {
+            "type": "minecraft:composite",
+            "models": [
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/arco/bow_0",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 0,
+                    "default": 15000804
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/arco/bow_1",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 1,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/arco/bow_2",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 2,
+                    "default": 12093775
+                  }
+                ]
+              }
+            ]
+          },
+          "on_true": {
+            "type": "minecraft:range_dispatch",
+            "property": "minecraft:use_duration",
+            "scale": 0.05,
+            "entries": [
+              {
+                "threshold": 0.65,
+                "model": {
+                  "type": "minecraft:composite",
+                  "models": [
+                    {
+                      "type": "minecraft:model",
+                      "model": "forja:item/arco/bow_pulling_1_0",
+                      "tints": [
+                        {
+                          "type": "minecraft:custom_model_data",
+                          "index": 0,
+                          "default": 15000804
+                        }
+                      ]
+                    },
+                    {
+                      "type": "minecraft:model",
+                      "model": "forja:item/arco/bow_pulling_1_1",
+                      "tints": [
+                        {
+                          "type": "minecraft:custom_model_data",
+                          "index": 1,
+                          "default": 12093775
+                        }
+                      ]
+                    },
+                    {
+                      "type": "minecraft:model",
+                      "model": "forja:item/arco/bow_pulling_1_2",
+                      "tints": [
+                        {
+                          "type": "minecraft:custom_model_data",
+                          "index": 2,
+                          "default": 12093775
+                        }
+                      ]
+                    },
+                    {
+                      "type": "minecraft:model",
+                      "model": "forja:item/arco/bow_pulling_1_3"
+                    }
+                  ]
+                }
+              },
+              {
+                "threshold": 0.9,
+                "model": {
+                  "type": "minecraft:composite",
+                  "models": [
+                    {
+                      "type": "minecraft:model",
+                      "model": "forja:item/arco/bow_pulling_2_0",
+                      "tints": [
+                        {
+                          "type": "minecraft:custom_model_data",
+                          "index": 0,
+                          "default": 15000804
+                        }
+                      ]
+                    },
+                    {
+                      "type": "minecraft:model",
+                      "model": "forja:item/arco/bow_pulling_2_1",
+                      "tints": [
+                        {
+                          "type": "minecraft:custom_model_data",
+                          "index": 1,
+                          "default": 12093775
+                        }
+                      ]
+                    },
+                    {
+                      "type": "minecraft:model",
+                      "model": "forja:item/arco/bow_pulling_2_2",
+                      "tints": [
+                        {
+                          "type": "minecraft:custom_model_data",
+                          "index": 2,
+                          "default": 12093775
+                        }
+                      ]
+                    },
+                    {
+                      "type": "minecraft:model",
+                      "model": "forja:item/arco/bow_pulling_2_3"
+                    }
+                  ]
+                }
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:composite",
+              "models": [
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/arco/bow_pulling_0_0",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 0,
+                      "default": 15000804
+                    }
+                  ]
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/arco/bow_pulling_0_1",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 1,
+                      "default": 12093775
+                    }
+                  ]
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/arco/bow_pulling_0_2",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 2,
+                      "default": 12093775
+                    }
+                  ]
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/arco/bow_pulling_0_3"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": "gui",
+              "model": {
+                "type": "minecraft:model",
+                "model": "forja:item/grieta"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:empty"
+          }
+        }
+      ]
+    },
+    "on_false": {
+      "type": "minecraft:condition",
+      "property": "minecraft:using_item",
+      "on_false": {
+        "type": "minecraft:composite",
+        "models": [
+          {
+            "type": "minecraft:model",
+            "model": "forja:item/arco/bow_0",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 0,
+                "default": 15000804
+              }
+            ]
+          },
+          {
+            "type": "minecraft:model",
+            "model": "forja:item/arco/bow_1",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 1,
+                "default": 12093775
+              }
+            ]
+          },
+          {
+            "type": "minecraft:model",
+            "model": "forja:item/arco/bow_2",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 2,
+                "default": 12093775
+              }
+            ]
+          }
+        ]
+      },
+      "on_true": {
+        "type": "minecraft:range_dispatch",
+        "property": "minecraft:use_duration",
+        "scale": 0.05,
+        "entries": [
+          {
+            "threshold": 0.65,
+            "model": {
+              "type": "minecraft:composite",
+              "models": [
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/arco/bow_pulling_1_0",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 0,
+                      "default": 15000804
+                    }
+                  ]
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/arco/bow_pulling_1_1",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 1,
+                      "default": 12093775
+                    }
+                  ]
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/arco/bow_pulling_1_2",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 2,
+                      "default": 12093775
+                    }
+                  ]
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/arco/bow_pulling_1_3"
+                }
+              ]
+            }
+          },
+          {
+            "threshold": 0.9,
+            "model": {
+              "type": "minecraft:composite",
+              "models": [
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/arco/bow_pulling_2_0",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 0,
+                      "default": 15000804
+                    }
+                  ]
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/arco/bow_pulling_2_1",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 1,
+                      "default": 12093775
+                    }
+                  ]
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/arco/bow_pulling_2_2",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 2,
+                      "default": 12093775
+                    }
+                  ]
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/arco/bow_pulling_2_3"
+                }
+              ]
+            }
+          }
+        ],
+        "fallback": {
+          "type": "minecraft:composite",
+          "models": [
+            {
+              "type": "minecraft:model",
+              "model": "forja:item/arco/bow_pulling_0_0",
+              "tints": [
+                {
+                  "type": "minecraft:custom_model_data",
+                  "index": 0,
+                  "default": 15000804
+                }
+              ]
+            },
+            {
+              "type": "minecraft:model",
+              "model": "forja:item/arco/bow_pulling_0_1",
+              "tints": [
+                {
+                  "type": "minecraft:custom_model_data",
+                  "index": 1,
+                  "default": 12093775
+                }
+              ]
+            },
+            {
+              "type": "minecraft:model",
+              "model": "forja:item/arco/bow_pulling_0_2",
+              "tints": [
+                {
+                  "type": "minecraft:custom_model_data",
+                  "index": 2,
+                  "default": 12093775
+                }
+              ]
+            },
+            {
+              "type": "minecraft:model",
+              "model": "forja:item/arco/bow_pulling_0_3"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

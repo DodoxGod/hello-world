@@ -1,0 +1,58 @@
+{
+  "textures": {
+    "spine": "forja:block/lomo_7",
+    "particle": "forja:block/lomo_7"
+  },
+  "elements": [
+    {
+      "from": [
+        1.1,
+        2,
+        0.2
+      ],
+      "to": [
+        2.65,
+        14,
+        1
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            2,
+            16,
+            14
+          ],
+          "texture": "#spine"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            1
+          ],
+          "texture": "#spine"
+        },
+        "east": {
+          "uv": [
+            0,
+            2,
+            1,
+            14
+          ],
+          "texture": "#spine"
+        },
+        "west": {
+          "uv": [
+            15,
+            2,
+            16,
+            14
+          ],
+          "texture": "#spine"
+        }
+      }
+    }
+  ]
+}

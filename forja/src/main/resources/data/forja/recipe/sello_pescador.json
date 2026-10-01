@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:gold_ingot",
+    "minecraft:nautilus_shell",
+    "minecraft:string"
+  ],
+  "result": {
+    "id": "forja:sello",
+    "components": {
+      "forja:sello": "pescador",
+      "minecraft:item_name": {
+        "translate": "item.forja.sello.de",
+        "with": [
+          {
+            "translate": "perk.forja.pescador"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          5230786
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

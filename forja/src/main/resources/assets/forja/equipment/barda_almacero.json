@@ -1,0 +1,12 @@
+{
+  "layers": {
+    "horse_body": [
+      {
+        "texture": "forja:barda",
+        "dyeable": {
+          "color_when_undyed": 7851219
+        }
+      }
+    ]
+  }
+}

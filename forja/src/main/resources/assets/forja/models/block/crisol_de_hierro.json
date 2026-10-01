@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "forja:block/crisol_de_hierro_top",
+    "bottom": "forja:block/crisol_de_hierro_side",
+    "side": "forja:block/crisol_de_hierro_side",
+    "particle": "forja:block/crisol_de_hierro_side"
+  }
+}

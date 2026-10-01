@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:gold_ingot",
+    "minecraft:shield",
+    "minecraft:iron_ingot"
+  ],
+  "result": {
+    "id": "forja:sello",
+    "components": {
+      "forja:sello": "baluarte",
+      "minecraft:item_name": {
+        "translate": "item.forja.sello.de",
+        "with": [
+          {
+            "translate": "perk.forja.baluarte"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          10212218
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

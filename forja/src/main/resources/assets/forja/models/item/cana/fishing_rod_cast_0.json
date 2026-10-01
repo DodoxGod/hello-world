@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld_rod",
+  "textures": {
+    "layer0": "forja:item/cana/fishing_rod_cast_0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "level=0": {
+      "model": "forja:block/cuba_de_colada"
+    },
+    "level=1": {
+      "model": "forja:block/cuba_de_colada"
+    },
+    "level=2": {
+      "model": "forja:block/cuba_de_colada"
+    },
+    "level=3": {
+      "model": "forja:block/cuba_de_colada"
+    },
+    "level=4": {
+      "model": "forja:block/cuba_de_colada"
+    }
+  }
+}

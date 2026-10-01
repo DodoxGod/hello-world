@@ -1,0 +1,272 @@
+{
+  "parent": "minecraft:block/block",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "casing": "forja:block/tubo_de_calor",
+    "fluido": "forja:block/fluido_de_calor",
+    "particle": "forja:block/tubo_de_calor"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        4,
+        4
+      ],
+      "to": [
+        4,
+        12,
+        12
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            4,
+            4,
+            12
+          ],
+          "texture": "#casing"
+        },
+        "south": {
+          "uv": [
+            0,
+            4,
+            4,
+            12
+          ],
+          "texture": "#casing"
+        },
+        "west": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#casing"
+        },
+        "up": {
+          "uv": [
+            0,
+            4,
+            4,
+            12
+          ],
+          "texture": "#casing"
+        },
+        "down": {
+          "uv": [
+            0,
+            4,
+            4,
+            12
+          ],
+          "texture": "#casing"
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        4,
+        4
+      ],
+      "to": [
+        12,
+        12,
+        12
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#casing"
+        },
+        "south": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#casing"
+        },
+        "up": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#casing"
+        },
+        "down": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#casing"
+        }
+      }
+    },
+    {
+      "from": [
+        12,
+        4,
+        4
+      ],
+      "to": [
+        16,
+        12,
+        12
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            12,
+            4,
+            16,
+            12
+          ],
+          "texture": "#casing"
+        },
+        "south": {
+          "uv": [
+            12,
+            4,
+            16,
+            12
+          ],
+          "texture": "#casing"
+        },
+        "east": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#casing"
+        },
+        "up": {
+          "uv": [
+            12,
+            4,
+            16,
+            12
+          ],
+          "texture": "#casing"
+        },
+        "down": {
+          "uv": [
+            12,
+            4,
+            16,
+            12
+          ],
+          "texture": "#casing"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        5,
+        5
+      ],
+      "to": [
+        16,
+        11,
+        11
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            5,
+            16,
+            11
+          ],
+          "texture": "#fluido",
+          "tintindex": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            5,
+            16,
+            11
+          ],
+          "texture": "#fluido",
+          "tintindex": 0
+        },
+        "east": {
+          "uv": [
+            5,
+            5,
+            11,
+            11
+          ],
+          "texture": "#fluido",
+          "tintindex": 0
+        },
+        "west": {
+          "uv": [
+            5,
+            5,
+            11,
+            11
+          ],
+          "texture": "#fluido",
+          "tintindex": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            5,
+            16,
+            11
+          ],
+          "texture": "#fluido",
+          "tintindex": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            5,
+            16,
+            11
+          ],
+          "texture": "#fluido",
+          "tintindex": 0
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.625,
+        0.625,
+        0.625
+      ]
+    }
+  }
+}

@@ -1,0 +1,687 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:broken",
+    "on_true": {
+      "type": "minecraft:composite",
+      "models": [
+        {
+          "type": "minecraft:select",
+          "property": "minecraft:charge_type",
+          "cases": [
+            {
+              "when": "arrow",
+              "model": {
+                "type": "minecraft:composite",
+                "models": [
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_arrow_0",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 0,
+                        "default": 15000804
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_arrow_1",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 1,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_arrow_2",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 2,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_arrow_3",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 3,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_arrow_4"
+                  }
+                ]
+              }
+            },
+            {
+              "when": "rocket",
+              "model": {
+                "type": "minecraft:composite",
+                "models": [
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_firework_0",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 0,
+                        "default": 15000804
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_firework_1",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 1,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_firework_2",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 2,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_firework_3",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 3,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_firework_4"
+                  }
+                ]
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:condition",
+            "property": "minecraft:using_item",
+            "on_false": {
+              "type": "minecraft:composite",
+              "models": [
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/ballesta/crossbow_standby_0",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 0,
+                      "default": 15000804
+                    }
+                  ]
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/ballesta/crossbow_standby_1",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 1,
+                      "default": 12093775
+                    }
+                  ]
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/ballesta/crossbow_standby_2",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 2,
+                      "default": 12093775
+                    }
+                  ]
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "forja:item/ballesta/crossbow_standby_3",
+                  "tints": [
+                    {
+                      "type": "minecraft:custom_model_data",
+                      "index": 3,
+                      "default": 12093775
+                    }
+                  ]
+                }
+              ]
+            },
+            "on_true": {
+              "type": "minecraft:range_dispatch",
+              "property": "minecraft:crossbow/pull",
+              "entries": [
+                {
+                  "threshold": 0.58,
+                  "model": {
+                    "type": "minecraft:composite",
+                    "models": [
+                      {
+                        "type": "minecraft:model",
+                        "model": "forja:item/ballesta/crossbow_pulling_1_0",
+                        "tints": [
+                          {
+                            "type": "minecraft:custom_model_data",
+                            "index": 0,
+                            "default": 15000804
+                          }
+                        ]
+                      },
+                      {
+                        "type": "minecraft:model",
+                        "model": "forja:item/ballesta/crossbow_pulling_1_1",
+                        "tints": [
+                          {
+                            "type": "minecraft:custom_model_data",
+                            "index": 1,
+                            "default": 12093775
+                          }
+                        ]
+                      },
+                      {
+                        "type": "minecraft:model",
+                        "model": "forja:item/ballesta/crossbow_pulling_1_2",
+                        "tints": [
+                          {
+                            "type": "minecraft:custom_model_data",
+                            "index": 2,
+                            "default": 12093775
+                          }
+                        ]
+                      },
+                      {
+                        "type": "minecraft:model",
+                        "model": "forja:item/ballesta/crossbow_pulling_1_3",
+                        "tints": [
+                          {
+                            "type": "minecraft:custom_model_data",
+                            "index": 3,
+                            "default": 12093775
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "threshold": 1.0,
+                  "model": {
+                    "type": "minecraft:composite",
+                    "models": [
+                      {
+                        "type": "minecraft:model",
+                        "model": "forja:item/ballesta/crossbow_pulling_2_0",
+                        "tints": [
+                          {
+                            "type": "minecraft:custom_model_data",
+                            "index": 0,
+                            "default": 15000804
+                          }
+                        ]
+                      },
+                      {
+                        "type": "minecraft:model",
+                        "model": "forja:item/ballesta/crossbow_pulling_2_1",
+                        "tints": [
+                          {
+                            "type": "minecraft:custom_model_data",
+                            "index": 1,
+                            "default": 12093775
+                          }
+                        ]
+                      },
+                      {
+                        "type": "minecraft:model",
+                        "model": "forja:item/ballesta/crossbow_pulling_2_2",
+                        "tints": [
+                          {
+                            "type": "minecraft:custom_model_data",
+                            "index": 2,
+                            "default": 12093775
+                          }
+                        ]
+                      },
+                      {
+                        "type": "minecraft:model",
+                        "model": "forja:item/ballesta/crossbow_pulling_2_3",
+                        "tints": [
+                          {
+                            "type": "minecraft:custom_model_data",
+                            "index": 3,
+                            "default": 12093775
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "fallback": {
+                "type": "minecraft:composite",
+                "models": [
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_pulling_0_0",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 0,
+                        "default": 15000804
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_pulling_0_1",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 1,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_pulling_0_2",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 2,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_pulling_0_3",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 3,
+                        "default": 12093775
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": "gui",
+              "model": {
+                "type": "minecraft:model",
+                "model": "forja:item/grieta"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:empty"
+          }
+        }
+      ]
+    },
+    "on_false": {
+      "type": "minecraft:select",
+      "property": "minecraft:charge_type",
+      "cases": [
+        {
+          "when": "arrow",
+          "model": {
+            "type": "minecraft:composite",
+            "models": [
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_arrow_0",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 0,
+                    "default": 15000804
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_arrow_1",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 1,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_arrow_2",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 2,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_arrow_3",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 3,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_arrow_4"
+              }
+            ]
+          }
+        },
+        {
+          "when": "rocket",
+          "model": {
+            "type": "minecraft:composite",
+            "models": [
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_firework_0",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 0,
+                    "default": 15000804
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_firework_1",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 1,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_firework_2",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 2,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_firework_3",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 3,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_firework_4"
+              }
+            ]
+          }
+        }
+      ],
+      "fallback": {
+        "type": "minecraft:condition",
+        "property": "minecraft:using_item",
+        "on_false": {
+          "type": "minecraft:composite",
+          "models": [
+            {
+              "type": "minecraft:model",
+              "model": "forja:item/ballesta/crossbow_standby_0",
+              "tints": [
+                {
+                  "type": "minecraft:custom_model_data",
+                  "index": 0,
+                  "default": 15000804
+                }
+              ]
+            },
+            {
+              "type": "minecraft:model",
+              "model": "forja:item/ballesta/crossbow_standby_1",
+              "tints": [
+                {
+                  "type": "minecraft:custom_model_data",
+                  "index": 1,
+                  "default": 12093775
+                }
+              ]
+            },
+            {
+              "type": "minecraft:model",
+              "model": "forja:item/ballesta/crossbow_standby_2",
+              "tints": [
+                {
+                  "type": "minecraft:custom_model_data",
+                  "index": 2,
+                  "default": 12093775
+                }
+              ]
+            },
+            {
+              "type": "minecraft:model",
+              "model": "forja:item/ballesta/crossbow_standby_3",
+              "tints": [
+                {
+                  "type": "minecraft:custom_model_data",
+                  "index": 3,
+                  "default": 12093775
+                }
+              ]
+            }
+          ]
+        },
+        "on_true": {
+          "type": "minecraft:range_dispatch",
+          "property": "minecraft:crossbow/pull",
+          "entries": [
+            {
+              "threshold": 0.58,
+              "model": {
+                "type": "minecraft:composite",
+                "models": [
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_pulling_1_0",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 0,
+                        "default": 15000804
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_pulling_1_1",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 1,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_pulling_1_2",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 2,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_pulling_1_3",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 3,
+                        "default": 12093775
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "threshold": 1.0,
+              "model": {
+                "type": "minecraft:composite",
+                "models": [
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_pulling_2_0",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 0,
+                        "default": 15000804
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_pulling_2_1",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 1,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_pulling_2_2",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 2,
+                        "default": 12093775
+                      }
+                    ]
+                  },
+                  {
+                    "type": "minecraft:model",
+                    "model": "forja:item/ballesta/crossbow_pulling_2_3",
+                    "tints": [
+                      {
+                        "type": "minecraft:custom_model_data",
+                        "index": 3,
+                        "default": 12093775
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:composite",
+            "models": [
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_pulling_0_0",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 0,
+                    "default": 15000804
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_pulling_0_1",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 1,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_pulling_0_2",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 2,
+                    "default": 12093775
+                  }
+                ]
+              },
+              {
+                "type": "minecraft:model",
+                "model": "forja:item/ballesta/crossbow_pulling_0_3",
+                "tints": [
+                  {
+                    "type": "minecraft:custom_model_data",
+                    "index": 3,
+                    "default": 12093775
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

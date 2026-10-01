@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "forja:forjador/3/plantilla_brazos_arco",
+    "forja:forjador/3/plantilla_cuerda",
+    "forja:forjador/3/plantilla_cabeza_mazo",
+    "forja:forjador/3/orbe_irrompible",
+    "forja:forjador/3/plantilla_punta_flecha",
+    "forja:forjador/3/plantilla_garfio"
+  ]
+}

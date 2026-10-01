@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " C ",
+    "CBC",
+    " C "
+  ],
+  "key": {
+    "C": "minecraft:clay_ball",
+    "B": "minecraft:brick"
+  },
+  "result": {
+    "id": "forja:colador",
+    "count": 1
+  }
+}

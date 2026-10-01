@@ -1,0 +1,18 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 771204853,
+    "separation": 26,
+    "spacing": 84,
+    "exclusion_zone": {
+      "other_set": "forja:bastion_del_gremio",
+      "chunk_count": 12
+    }
+  },
+  "structures": [
+    {
+      "structure": "forja:castillo_de_forja",
+      "weight": 1
+    }
+  ]
+}

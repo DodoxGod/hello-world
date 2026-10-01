@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BGB",
+    "DMD",
+    "BBB"
+  ],
+  "key": {
+    "B": "minecraft:polished_blackstone",
+    "G": "minecraft:gold_ingot",
+    "D": "forja:damasco",
+    "M": "forja:mesa_de_forja"
+  },
+  "result": {
+    "id": "forja:mesa_de_forja_mayor",
+    "count": 1
+  }
+}

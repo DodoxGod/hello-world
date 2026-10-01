@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/ruina",
+  "display": {
+    "icon": {
+      "id": "forja:huevo_pavesa"
+    },
+    "title": {
+      "translate": "advancements.forja.pavesa.title"
+    },
+    "description": {
+      "translate": "advancements.forja.pavesa.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "gives": {
+    "id": "forja:plantilla",
+    "components": {
+      "forja:molde": "cabeza_mazo",
+      "minecraft:item_name": {
+        "translate": "item.forja.plantilla.de",
+        "with": [
+          {
+            "translate": "part.forja.cabeza_mazo"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "strings": [
+          "cabeza_mazo"
+        ]
+      }
+    }
+  },
+  "max_uses": 3.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 8.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 15.0
+}

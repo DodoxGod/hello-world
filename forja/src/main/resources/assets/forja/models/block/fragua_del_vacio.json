@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "forja:block/fragua_del_vacio_top",
+    "bottom": "forja:block/fragua_del_vacio_bottom",
+    "side": "forja:block/fragua_del_vacio_side",
+    "particle": "forja:block/fragua_del_vacio_side"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "parent": "forja:forja/saqueadores",
+  "display": {
+    "icon": {
+      "id": "minecraft:bell"
+    },
+    "title": {
+      "translate": "advancements.forja.campamento.title"
+    },
+    "description": {
+      "translate": "advancements.forja.campamento.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:player_generates_container_loot",
+      "conditions": {
+        "loot_table": "forja:chests/campamento_saqueadores"
+      }
+    }
+  }
+}

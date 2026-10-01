@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "forja:acero_vivo",
+    "forja:acero_vivo",
+    "minecraft:leather",
+    "minecraft:string"
+  ],
+  "result": {
+    "id": "forja:kit_de_reparacion_acero_vivo"
+  }
+}

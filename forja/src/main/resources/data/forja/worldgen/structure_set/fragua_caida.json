@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 665110394,
+    "separation": 10,
+    "spacing": 32
+  },
+  "structures": [
+    {
+      "structure": "forja:fragua_caida",
+      "weight": 1
+    }
+  ]
+}

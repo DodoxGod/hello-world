@@ -1,0 +1,32 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "forja:forro",
+        "dyeable": {
+          "color_when_undyed": 10134704
+        }
+      },
+      {
+        "texture": "forja:placa",
+        "dyeable": {
+          "color_when_undyed": 15234603
+        }
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "forja:forro",
+        "dyeable": {
+          "color_when_undyed": 10134704
+        }
+      },
+      {
+        "texture": "forja:placa",
+        "dyeable": {
+          "color_when_undyed": 15234603
+        }
+      }
+    ]
+  }
+}

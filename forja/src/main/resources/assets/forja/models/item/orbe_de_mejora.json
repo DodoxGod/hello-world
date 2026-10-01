@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "forja:item/orbe_de_mejora",
+    "layer1": "forja:item/orbe_de_mejora_brillo"
+  }
+}

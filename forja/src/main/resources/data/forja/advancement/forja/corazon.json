@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/herrero_caido",
+  "display": {
+    "icon": {
+      "id": "forja:corazon_de_forja"
+    },
+    "title": {
+      "translate": "advancements.forja.corazon.title"
+    },
+    "description": {
+      "translate": "advancements.forja.corazon.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "lll",
+    "isi",
+    "lll"
+  ],
+  "key": {
+    "l": "minecraft:leather",
+    "i": "minecraft:iron_ingot",
+    "s": "minecraft:string"
+  },
+  "result": {
+    "id": "forja:cinturon",
+    "count": 1
+  }
+}

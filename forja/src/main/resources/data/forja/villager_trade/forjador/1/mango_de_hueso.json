@@ -1,0 +1,28 @@
+{
+  "gives": {
+    "id": "forja:mango",
+    "components": {
+      "forja:material": "hueso",
+      "minecraft:custom_model_data": {
+        "colors": [
+          15854802
+        ]
+      },
+      "minecraft:item_name": {
+        "translate": "part.forja.mango.de",
+        "with": [
+          {
+            "translate": "material.forja.hueso"
+          }
+        ]
+      }
+    }
+  },
+  "max_uses": 8.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 2.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 2.0
+}

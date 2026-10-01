@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "forja:forjador/5/orbe_reparacion",
+    "forja:forjador/5/mapa_forja_abandonada",
+    "forja:forjador/5/cinturon",
+    "forja:forjador/5/orbe_aturdimiento",
+    "forja:forjador/5/mapa_campamento",
+    "forja:forjador/5/mapa_bastion"
+  ]
+}

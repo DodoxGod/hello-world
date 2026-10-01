@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/rasgo",
+  "display": {
+    "icon": {
+      "id": "forja:hierro_estelar"
+    },
+    "title": {
+      "translate": "advancements.forja.estelar.title"
+    },
+    "description": {
+      "translate": "advancements.forja.estelar.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "forja:forjador/4/orbe_filo",
+    "forja:forjador/4/orbe_eficiencia",
+    "forja:forjador/4/orbe_proteccion",
+    "forja:forjador/4/plantilla_placa_barda",
+    "forja:forjador/4/talisman_cuarzo",
+    "forja:forjador/4/mapa_taller"
+  ]
+}

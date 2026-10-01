@@ -1,0 +1,28 @@
+{
+  "gives": {
+    "id": "forja:plantilla",
+    "components": {
+      "forja:molde": "atadura",
+      "minecraft:item_name": {
+        "translate": "item.forja.plantilla.de",
+        "with": [
+          {
+            "translate": "part.forja.atadura"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "strings": [
+          "atadura"
+        ]
+      }
+    }
+  },
+  "max_uses": 4.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 3.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 10.0
+}

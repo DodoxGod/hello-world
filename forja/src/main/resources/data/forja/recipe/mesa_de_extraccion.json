@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "LOL",
+    "DGD",
+    "DDD"
+  ],
+  "key": {
+    "L": "forja:laton",
+    "O": "forja:orbe_vacio",
+    "G": "minecraft:grindstone",
+    "D": "minecraft:polished_deepslate"
+  },
+  "result": {
+    "id": "forja:mesa_de_extraccion"
+  }
+}

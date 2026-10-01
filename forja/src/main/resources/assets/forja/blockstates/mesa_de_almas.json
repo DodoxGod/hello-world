@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "forja:block/mesa_de_almas"
+    },
+    "lit=true": {
+      "model": "forja:block/mesa_de_almas"
+    }
+  }
+}

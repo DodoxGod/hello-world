@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:gold_ingot",
+    "minecraft:feather",
+    "minecraft:sugar"
+  ],
+  "result": {
+    "id": "forja:sello",
+    "components": {
+      "forja:sello": "viajero",
+      "minecraft:item_name": {
+        "translate": "item.forja.sello.de",
+        "with": [
+          {
+            "translate": "perk.forja.viajero"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          11133695
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

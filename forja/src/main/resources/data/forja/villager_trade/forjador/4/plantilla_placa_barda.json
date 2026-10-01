@@ -1,0 +1,28 @@
+{
+  "gives": {
+    "id": "forja:plantilla",
+    "components": {
+      "forja:molde": "placa_barda",
+      "minecraft:item_name": {
+        "translate": "item.forja.plantilla.de",
+        "with": [
+          {
+            "translate": "part.forja.placa_barda"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "strings": [
+          "placa_barda"
+        ]
+      }
+    }
+  },
+  "max_uses": 2.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 10.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 20.0
+}

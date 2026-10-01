@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:book",
+    "minecraft:iron_ingot"
+  ],
+  "result": {
+    "id": "forja:guia_de_forja"
+  }
+}

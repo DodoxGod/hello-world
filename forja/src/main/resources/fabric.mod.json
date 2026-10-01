@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "forja",
+  "version": "${version}",
+  "name": "Forja",
+  "description": "Herramientas, armas, armaduras, alas, flechas, tridentes, cinceles y monturas armadas pieza por pieza en tres mesas, con 31 materiales (8 aleaciones que dependen del calor bajo la mesa), 106 mejoras que reemplazan los encantamientos, maestria de objeto y de herrero con sus tecnicas, temple, sinergias, pactos, talismanes, eventos del cielo, elites, saqueadores y el Herrero Caido en el Nether.",
+  "authors": [
+    "andye"
+  ],
+  "license": "MIT",
+  "icon": "assets/forja/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.forja.Forja"
+    ],
+    "client": [
+      "dev.forja.client.ForjaClient"
+    ],
+    "jade": [
+      "dev.forja.compat.ForjaJadePlugin"
+    ]
+  },
+  "mixins": [
+    "forja.mixins.json",
+    {
+      "config": "forja.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": "*",
+    "geckolib": ">=5.5.5"
+  },
+  "suggests": {
+    "jei": "*",
+    "jade": "*"
+  }
+}

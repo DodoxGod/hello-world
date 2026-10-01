@@ -1,0 +1,28 @@
+{
+  "gives": {
+    "id": "forja:plantilla",
+    "components": {
+      "forja:molde": "placa_escudo",
+      "minecraft:item_name": {
+        "translate": "item.forja.plantilla.de",
+        "with": [
+          {
+            "translate": "part.forja.placa_escudo"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "strings": [
+          "placa_escudo"
+        ]
+      }
+    }
+  },
+  "max_uses": 3.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 6.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 15.0
+}

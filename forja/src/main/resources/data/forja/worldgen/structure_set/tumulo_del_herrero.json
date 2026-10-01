@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 517733991,
+    "separation": 16,
+    "spacing": 44
+  },
+  "structures": [
+    {
+      "structure": "forja:tumulo_del_herrero",
+      "weight": 1
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/forja",
+  "display": {
+    "icon": {
+      "id": "minecraft:emerald"
+    },
+    "title": {
+      "translate": "advancements.forja.rasgo.title"
+    },
+    "description": {
+      "translate": "advancements.forja.rasgo.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "nnn",
+    "ngn",
+    "nnn"
+  ],
+  "key": {
+    "n": "minecraft:gold_nugget",
+    "g": "minecraft:diamond"
+  },
+  "result": {
+    "id": "forja:talisman",
+    "components": {
+      "forja:talisman": "diamante",
+      "minecraft:item_name": {
+        "translate": "item.forja.talisman.de",
+        "with": [
+          {
+            "translate": "talisman.forja.diamante"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          6287586
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

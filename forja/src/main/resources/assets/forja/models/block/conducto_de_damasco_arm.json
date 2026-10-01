@@ -1,0 +1,215 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "piedra": "forja:block/canal_piedra",
+    "metal": "forja:block/canal_metal",
+    "borde": "forja:block/conducto_de_damasco",
+    "particle": "forja:block/canal_piedra"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        4,
+        0
+      ],
+      "to": [
+        6,
+        6,
+        5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5,
+            10,
+            6,
+            12
+          ],
+          "texture": "#borde"
+        },
+        "south": {
+          "uv": [
+            5,
+            10,
+            6,
+            12
+          ],
+          "texture": "#borde"
+        },
+        "east": {
+          "uv": [
+            0,
+            10,
+            5,
+            12
+          ],
+          "texture": "#borde"
+        },
+        "west": {
+          "uv": [
+            0,
+            10,
+            5,
+            12
+          ],
+          "texture": "#borde"
+        },
+        "up": {
+          "uv": [
+            5,
+            0,
+            6,
+            5
+          ],
+          "texture": "#borde"
+        },
+        "down": {
+          "uv": [
+            5,
+            0,
+            6,
+            5
+          ],
+          "texture": "#borde"
+        }
+      }
+    },
+    {
+      "from": [
+        10,
+        4,
+        0
+      ],
+      "to": [
+        11,
+        6,
+        5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            10,
+            10,
+            11,
+            12
+          ],
+          "texture": "#borde"
+        },
+        "south": {
+          "uv": [
+            10,
+            10,
+            11,
+            12
+          ],
+          "texture": "#borde"
+        },
+        "east": {
+          "uv": [
+            0,
+            10,
+            5,
+            12
+          ],
+          "texture": "#borde"
+        },
+        "west": {
+          "uv": [
+            0,
+            10,
+            5,
+            12
+          ],
+          "texture": "#borde"
+        },
+        "up": {
+          "uv": [
+            10,
+            0,
+            11,
+            5
+          ],
+          "texture": "#borde"
+        },
+        "down": {
+          "uv": [
+            10,
+            0,
+            11,
+            5
+          ],
+          "texture": "#borde"
+        }
+      }
+    },
+    {
+      "from": [
+        6,
+        4,
+        0
+      ],
+      "to": [
+        10,
+        5.5,
+        6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            6,
+            10.5,
+            10,
+            12
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            6,
+            10.5,
+            10,
+            12
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            10.5,
+            6,
+            12
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            10.5,
+            6,
+            12
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            6,
+            0,
+            10,
+            6
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            6,
+            0,
+            10,
+            6
+          ],
+          "texture": "#metal"
+        }
+      }
+    }
+  ]
+}

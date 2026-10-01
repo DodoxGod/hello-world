@@ -1,0 +1,13 @@
+{
+  "asset_id": "forja:estrella",
+  "width": 2,
+  "height": 1,
+  "title": {
+    "color": "yellow",
+    "translate": "painting.forja.estrella.title"
+  },
+  "author": {
+    "color": "gray",
+    "translate": "painting.forja.estrella.author"
+  }
+}

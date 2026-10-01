@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "nnn",
+    "ngn",
+    "nnn"
+  ],
+  "key": {
+    "n": "minecraft:gold_nugget",
+    "g": "minecraft:netherite_ingot"
+  },
+  "result": {
+    "id": "forja:talisman",
+    "components": {
+      "forja:talisman": "neterita",
+      "minecraft:item_name": {
+        "translate": "item.forja.talisman.de",
+        "with": [
+          {
+            "translate": "talisman.forja.neterita"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          7035482
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

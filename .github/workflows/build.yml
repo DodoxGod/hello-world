@@ -1,0 +1,79 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build
+        run: |
+          chmod +x gradlew
+          ./gradlew build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: filo-mod
+          path: build/libs/*.jar
+      - name: Game tests (servidor real de Minecraft)
+        run: |
+          ./gradlew runGametest > gametest.log 2>&1 || { grep -E "GameTestException|required tests|filogametests|ERROR" gametest.log; grep -o '<failure[^>]*>' build/gametest/junit.xml; exit 1; }
+          grep -E "tests? (passed|failed)|All .* tests" gametest.log || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gametest-report
+          path: build/gametest/
+
+  forja:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: forja
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build Forja (incluye las pruebas de servidor, runGameTest)
+        run: |
+          chmod +x gradlew
+          ./gradlew build --stacktrace > build.log 2>&1 || { grep -E ": error:" -A 3 build.log | head -150; grep -E "What went wrong" -A 6 build.log | head -20; grep -E "ERROR|Caused by|GameTestAssert|required tests|combatgametests|Mixin|Injection|Exception:|failed" build.log | grep -v "^\s*at " | head -80; exit 1; }
+          grep -E "required tests|tests? (passed|failed)" build.log || true
+          tail -5 build.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forja-mod
+          path: forja/build/libs/*.jar
+      - name: Mini jar del cliente (bloques y colores) para el generador del castillo
+        run: |
+          pip install -q pillow
+          python3 - <<'PY'
+          import base64, io, lzma, zipfile, glob
+          from PIL import Image
+          jar = glob.glob('/home/runner/.gradle/caches/fabric-loom/26.2/minecraft-client.jar')[0]
+          out = io.BytesIO()
+          with zipfile.ZipFile(jar) as src, zipfile.ZipFile(out, 'w', zipfile.ZIP_STORED) as dst:
+              for name in src.namelist():
+                  if name.startswith('assets/minecraft/blockstates/') and name.endswith('.json'):
+                      dst.writestr(name, src.read(name))
+                  elif name.startswith('assets/minecraft/textures/block/') and name.endswith('.png'):
+                      im = Image.open(io.BytesIO(src.read(name))).convert('RGBA').resize((1, 1), Image.BOX)
+                      b = io.BytesIO(); im.save(b, 'PNG'); dst.writestr(name, b.getvalue())
+          data = base64.b64encode(lzma.compress(out.getvalue(), preset=9)).decode()
+          print('===MINIJAR===')
+          for i in range(0, len(data), 2000):
+              print(data[i:i+2000])
+          print('===FIN===')
+          PY
+

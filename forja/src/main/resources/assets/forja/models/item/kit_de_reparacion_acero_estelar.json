@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "forja:item/kit_de_reparacion_acero_estelar"
+  }
+}

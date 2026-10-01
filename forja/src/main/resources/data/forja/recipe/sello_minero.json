@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:gold_ingot",
+    "minecraft:quartz",
+    "minecraft:lapis_lazuli"
+  ],
+  "result": {
+    "id": "forja:sello",
+    "components": {
+      "forja:sello": "minero",
+      "minecraft:item_name": {
+        "translate": "item.forja.sello.de",
+        "with": [
+          {
+            "translate": "perk.forja.minero"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          15261135
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

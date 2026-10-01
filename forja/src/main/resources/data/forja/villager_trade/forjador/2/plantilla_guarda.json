@@ -1,0 +1,28 @@
+{
+  "gives": {
+    "id": "forja:plantilla",
+    "components": {
+      "forja:molde": "guarda",
+      "minecraft:item_name": {
+        "translate": "item.forja.plantilla.de",
+        "with": [
+          {
+            "translate": "part.forja.guarda"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "strings": [
+          "guarda"
+        ]
+      }
+    }
+  },
+  "max_uses": 4.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 4.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 10.0
+}

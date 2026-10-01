@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "nnn",
+    "ngn",
+    "nnn"
+  ],
+  "key": {
+    "n": "minecraft:gold_nugget",
+    "g": "minecraft:quartz"
+  },
+  "result": {
+    "id": "forja:talisman",
+    "components": {
+      "forja:talisman": "cuarzo",
+      "minecraft:item_name": {
+        "translate": "item.forja.talisman.de",
+        "with": [
+          {
+            "translate": "talisman.forja.cuarzo"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          15656666
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

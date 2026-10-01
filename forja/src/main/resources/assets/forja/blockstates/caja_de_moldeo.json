@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "forja:block/caja_de_moldeo"
+    },
+    "lit=true": {
+      "model": "forja:block/caja_de_moldeo_lit"
+    }
+  }
+}

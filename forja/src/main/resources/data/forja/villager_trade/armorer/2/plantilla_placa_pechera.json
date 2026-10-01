@@ -1,0 +1,28 @@
+{
+  "gives": {
+    "id": "forja:plantilla",
+    "components": {
+      "forja:molde": "placa_pechera",
+      "minecraft:item_name": {
+        "translate": "item.forja.plantilla.de",
+        "with": [
+          {
+            "translate": "part.forja.placa_pechera"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "strings": [
+          "placa_pechera"
+        ]
+      }
+    }
+  },
+  "max_uses": 4.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 6.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 10.0
+}

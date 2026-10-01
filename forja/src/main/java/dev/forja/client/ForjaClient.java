@@ -1,0 +1,462 @@
+package dev.forja.client;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import dev.forja.forge.ForgeStats;
+import dev.forja.forge.ForgeType;
+import dev.forja.forge.Mastery;
+import dev.forja.upgrade.ArmorSets;
+import dev.forja.item.GuideBookItem;
+import dev.forja.item.PartItem;
+import dev.forja.item.TemplateItem;
+import dev.forja.material.ForgeMaterial;
+import dev.forja.part.ForgedParts;
+import dev.forja.part.PartType;
+import dev.forja.registry.ModComponents;
+import dev.forja.registry.ModEntities;
+import dev.forja.registry.ModMenus;
+import dev.forja.upgrade.Upgrades;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.renderer.entity.EntityRenderers;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+
+public final class ForjaClient implements ClientModInitializer {
+	@Override
+	public void onInitializeClient() {
+		// Stat colors rank against every material combination; work those ranges out now instead of on the first tooltip.
+		Thread warmup = new Thread(() -> {
+			for (ForgeType type : ForgeType.values()) {
+				ForgeStats.range(type, ForgeStats.Stat.DURABILIDAD);
+			}
+			for (PartType part : PartType.values()) {
+				ForgeStats.partRange(part, ForgeStats.Stat.DURABILIDAD);
+			}
+		}, "Forja stat ranges");
+		warmup.setDaemon(true);
+		warmup.start();
+		MenuScreens.register(ModMenus.FORGE, ForgeScreen::new);
+		MenuScreens.register(ModMenus.FORGE_MAYOR, ForgeScreen::new);
+		MenuScreens.register(ModMenus.PARTS, ForgeScreen::new);
+		MenuScreens.register(ModMenus.TALABARTERIA, ForgeScreen::new);
+		MenuScreens.register(ModMenus.CRISOL, CrucibleScreen::new);
+		MenuScreens.register(ModMenus.CAJA, CastingBoxScreen::new);
+		MenuScreens.register(ModMenus.ARMARIO, CabinetScreen::new);
+		MenuScreens.register(ModMenus.EXTRACCION, ExtractionScreen::new);
+		MenuScreens.register(ModMenus.MONTADORA, AssemblerMachineScreen::new);
+		net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(
+			dev.forja.block.entity.ModBlockEntities.CUBA, MeltTankRenderer::new);
+		net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(
+			dev.forja.block.entity.ModBlockEntities.CRISOL, CrucibleRenderer::new);
+		net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(
+			dev.forja.block.entity.ModBlockEntities.MESA_DE_COLADA, CastingTableRenderer::new);
+		net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(
+			dev.forja.block.entity.ModBlockEntities.COLADA, MeltFlowRenderer::new);
+		// A strainer set down on a table keeps the colour of whatever metal it was bathed in, as the item
+		// does: the grate is drawn grey and tinted by what the block entity says it is made of.
+		net.fabricmc.fabric.api.client.rendering.v1.BlockColorRegistry.register(
+			List.of(new net.minecraft.client.color.block.BlockTintSource() {
+				@Override
+				public int color(net.minecraft.world.level.block.state.BlockState state) {
+					return 0xFF000000 | dev.forja.item.StrainerItem.CLAY_COLOUR;
+				}
+
+				@Override
+				public int colorInWorld(net.minecraft.world.level.block.state.BlockState state,
+					net.minecraft.client.renderer.block.BlockAndTintGetter level, net.minecraft.core.BlockPos pos) {
+					return 0xFF000000 | (level.getBlockEntity(pos) instanceof dev.forja.block.entity.StrainerBlockEntity strainer
+						? strainer.colour() : dev.forja.item.StrainerItem.CLAY_COLOUR);
+				}
+			}),
+			dev.forja.registry.ModBlocks.COLADOR);
+		// The heat line: the fluid seen through the slit of a pipe and the window of a boiler or a depot is
+		// drawn in grey and tinted by what the block says it carries.
+		net.fabricmc.fabric.api.client.rendering.v1.BlockColorRegistry.register(
+			List.of(new net.minecraft.client.color.block.BlockTintSource() {
+				@Override
+				public int color(net.minecraft.world.level.block.state.BlockState state) {
+					var fluid = state.getValue(dev.forja.block.HeatPipeBlock.FLUIDO).fluid;
+					return 0xFF000000 | (fluid == null ? 0x3A302A : fluid.colour);
+				}
+
+				@Override
+				public java.util.Set<net.minecraft.world.level.block.state.properties.Property<?>> relevantProperties() {
+					return java.util.Set.of(dev.forja.block.HeatPipeBlock.FLUIDO);
+				}
+			}),
+			dev.forja.registry.ModBlocks.TUBO_DE_CALOR, dev.forja.registry.ModBlocks.CALDERA,
+			dev.forja.registry.ModBlocks.DEPOSITO_DE_CALOR);
+		GuideBookItem.opener = book -> Minecraft.getInstance().gui.setScreen(new GuideBookScreen(book));
+		// The mod's own three. A particle needs its behaviour registered on the client and its sprites
+		// listed in assets/forja/particles; the registry hands over the loaded sprite set here.
+		SkyMood.register();
+		// the difficulty button past Difícil, to Extremo, and the world's flag from the server
+		LadderClient.register();
+
+		var particles = net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry.getInstance();
+		particles.register(dev.forja.registry.ModParticles.CHISPA,
+			sprites -> new ForjaParticles.Maker(sprites, ForjaParticles.Maker.Kind.SPARK));
+		particles.register(dev.forja.registry.ModParticles.CENIZA,
+			sprites -> new ForjaParticles.Maker(sprites, ForjaParticles.Maker.Kind.ASH));
+		particles.register(dev.forja.registry.ModParticles.ALMA,
+			sprites -> new ForjaParticles.Maker(sprites, ForjaParticles.Maker.Kind.SOUL));
+		particles.register(dev.forja.registry.ModParticles.VAPOR,
+			sprites -> new ForjaParticles.Maker(sprites, ForjaParticles.Maker.Kind.STEAM));
+		particles.register(dev.forja.registry.ModParticles.GOTA,
+			sprites -> new ForjaParticles.Maker(sprites, ForjaParticles.Maker.Kind.DRIP));
+		particles.register(dev.forja.registry.ModParticles.BRASA,
+			sprites -> new ForjaParticles.Maker(sprites, ForjaParticles.Maker.Kind.EMBER));
+		particles.register(dev.forja.registry.ModParticles.DESTELLO, ForjaParticles.GlintMaker::new);
+		// El Cementerio entre Estrellas: its sky, its fog and its ash (docs/HERRERO_DIMENSION.md, 2.7 and 2.8).
+		StarYardSky.register();
+
+		EntityRenderers.register(ModEntities.THROWN_HEAD, ThrownHeadRenderer::new);
+		EntityRenderers.register(ModEntities.PROYECTIL_MAGICO, net.minecraft.client.renderer.entity.NoopRenderer::new);
+		EntityRenderers.register(ModEntities.HERRERO_CAIDO, FallenSmithRenderer::new);
+		EntityRenderers.register(ModEntities.AUTOMATA, ForgeAutomatonRenderer::new);
+		EntityRenderers.register(ModEntities.CORAZA, HollowArmorRenderer::new);
+		EntityRenderers.register(ModEntities.PAVESA, EmberWispRenderer::new);
+		EntityRenderers.register(ModEntities.HERRUMBRE, RustSwarmRenderer::new);
+		EntityRenderers.register(ModEntities.ASCUA_MAYOR, GreaterEmberRenderer::new);
+		EntityRenderers.register(ModEntities.ESCORIA, LivingSlagRenderer::new);
+		EntityRenderers.register(ModEntities.YUNQUE_ANDANTE, WalkingAnvilRenderer::new);
+		EntityRenderers.register(ModEntities.PERCUTOR, StrikerRenderer::new);
+		EntityRenderers.register(ModEntities.TENAZA, TongsRenderer::new);
+		EntityRenderers.register(ModEntities.CARGADOR_DE_CARBON, CoalHaulerRenderer::new);
+		EntityRenderers.register(ModEntities.TEMPLADOR, QuencherRenderer::new);
+		EntityRenderers.register(ModEntities.NUCLEO_ESTELAR, StarCoreRenderer::new);
+		EntityRenderers.register(ModEntities.MOLDE_ROTO, BrokenMouldRenderer::new);
+		EntityRenderers.register(ModEntities.GUARDIAN_DE_CUNO, CuneGuardianRenderer::new);
+		EntityRenderers.register(ModEntities.ONDA, ShockwaveRenderer::new);
+		ShockwaveFx.register();
+		ScreenShake.register();
+		GearAura.register();
+		// Forged arrows: vanilla's arrow with the head in the colour of the tip's material.
+		EntityRenderers.register(ModEntities.FLECHA_FORJADA, ForgedArrowRenderer::new);
+		ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> addPartLines(stack, lines));
+		ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> addArmorLines(stack, lines));
+		net.fabricmc.fabric.api.client.rendering.v1.ClientTooltipComponentCallback.EVENT.register(
+			data -> data instanceof dev.forja.item.PartsStrip strip ? new PartsStripTooltip(strip) : null);
+		registerGuideKey();
+		CreatureSightings.register();
+		CombatClient.register();
+		ClassClient.register();
+		net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.attachElementAfter(
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.AIR_BAR, dev.forja.Forja.id("barra_vuelo"), new FlightHud()
+		);
+		net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.attachElementAfter(
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.AIR_BAR, dev.forja.Forja.id("barra_frenesi"), new FrenzyHud()
+		);
+		net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.attachElementAfter(
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.BOSS_BAR, dev.forja.Forja.id("cartel_evento"), new EventBannerHud()
+		);
+	}
+
+	/** The guide's key (G by default), for the notebook's page of keys, which names whatever it is bound to. */
+	public static net.minecraft.client.@org.jspecify.annotations.Nullable KeyMapping GUIDE_KEY;
+
+	/**
+	 * A key for the guide (Andy, 2026-09-29): with the starter notebook anywhere in the bag, it opens the library
+	 * (every book, the path and the catalogue); without it, the Forja book in either hand. The book is where the
+	 * mod explains itself, so reaching it should not mean digging through the inventory first.
+	 */
+	private static void registerGuideKey() {
+		net.minecraft.client.KeyMapping key = net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper.registerKeyMapping(
+			new net.minecraft.client.KeyMapping("key.forja.guia", com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM,
+				org.lwjgl.glfw.GLFW.GLFW_KEY_G, net.minecraft.client.KeyMapping.Category.INVENTORY)
+		);
+		GUIDE_KEY = key;
+		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			while (key.consumeClick()) {
+				if (client.player == null || client.gui.screen() != null) {
+					continue;
+				}
+				dev.forja.GuideBooks.@org.jspecify.annotations.Nullable Book book = guideKeyOpens(client.player);
+				if (book != null) {
+					client.gui.setScreen(new GuideBookScreen(book));
+				} else {
+					client.gui.hud.setOverlayMessage(Component.translatable("gui.forja.sin_libro"), false);
+				}
+			}
+		});
+	}
+
+	/**
+	 * What G opens for this player: the library with the starter notebook in the bag, else the Forja book held in
+	 * either hand, else nothing. Public for the client test.
+	 */
+	public static dev.forja.GuideBooks.@org.jspecify.annotations.Nullable Book guideKeyOpens(net.minecraft.world.entity.player.Player player) {
+		for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+			if (player.getInventory().getItem(slot).getItem() instanceof GuideBookItem guide && guide.book == dev.forja.GuideBooks.Book.CUADERNO) {
+				return dev.forja.GuideBooks.Book.BIBLIOTECA;
+			}
+		}
+		for (net.minecraft.world.InteractionHand hand : net.minecraft.world.InteractionHand.values()) {
+			if (player.getItemInHand(hand).getItem() instanceof GuideBookItem guide) {
+				return guide.book;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * The forged item of the same type the player has equipped where this one would go (worn armor, the
+	 * off hand for shields, the main hand otherwise), when it is a different stack.
+	 */
+	private static ItemStack equippedCounterpart(ItemStack stack, ForgeType type) {
+		var player = Minecraft.getInstance().player;
+		if (player == null) {
+			return ItemStack.EMPTY;
+		}
+		ItemStack equipped = switch (type.kind) {
+			case ARMOR -> player.getItemBySlot(type.armorType.getSlot());
+			case SHIELD -> player.getOffhandItem();
+			default -> player.getMainHandItem();
+		};
+		ForgedParts parts = equipped.get(ModComponents.PARTS);
+		return equipped != stack && parts != null && parts.type() == type && !ItemStack.matches(equipped, stack) ? equipped : ItemStack.EMPTY;
+	}
+
+	/**
+	 * What a piece of armor is good against, and how heavy it is. The combat overhaul treats every piece
+	 * differently by the kind of blow, and none of that shows anywhere else: without these two lines,
+	 * nobody would know chain turns edges or that a soft lining soaks up a hammer.
+	 */
+	private static void addArmorLines(ItemStack stack, List<Component> lines) {
+		if (!dev.forja.combat.CombatConfig.get().enabled) {
+			return;
+		}
+		dev.forja.combat.MaterialCombat.Profile profile = dev.forja.combat.ArmorCalculator.profileOf(stack);
+		if (profile == null) {
+			return;
+		}
+		lines.add(Component.translatable("tooltip.forja.resiste",
+			resistance("tooltip.forja.resiste.corte", profile.slash()),
+			resistance("tooltip.forja.resiste.golpe", profile.blunt()),
+			resistance("tooltip.forja.resiste.perforacion", profile.pierce())
+		).withColor(0xFF9A9A9A));
+		double weight = profile.weight();
+		String key = weight < 0.25 ? "ligera" : weight < 0.6 ? "media" : "pesada";
+		int colour = weight < 0.25 ? 0xFF7FD34E : weight < 0.6 ? 0xFFE8C547 : 0xFFE0533D;
+		lines.add(Component.translatable("tooltip.forja.peso", Component.translatable("tooltip.forja.peso." + key).withColor(colour))
+			.withColor(0xFF9A9A9A));
+	}
+
+	/** One kind of blow: "corte +15 %", green when it resists, red when it does not. */
+	private static Component resistance(String key, double multiplier) {
+		int percent = (int) Math.round((multiplier - 1.0) * 100.0);
+		String text = (percent > 0 ? "+" : percent < 0 ? "−" : "±") + Math.abs(percent) + " %";
+		int colour = percent >= 5 ? 0xFF7FD34E : percent <= -5 ? 0xFFE0533D : 0xFFBBBBBB;
+		return Component.translatable(key, text).withColor(colour);
+	}
+
+	/** Lists the colored stats, traits and upgrades, right under the item name and its row of parts. */
+	private static void addPartLines(ItemStack stack, List<Component> lines) {
+		int insertAt = Math.min(1, lines.size());
+		ForgedParts parts = stack.get(ModComponents.PARTS);
+		if (parts != null) {
+			List<Component> added = new ArrayList<>();
+			if (stack.has(ModComponents.LEYENDA)) {
+				added.add(Component.translatable("tooltip.forja.leyenda").withStyle(ChatFormatting.ITALIC).withColor(0xFFD75E));
+			}
+			if (stack.isBroken()) {
+				added.add(Component.translatable("tooltip.forja.rota").withColor(0xFF5555));
+			}
+			// What it is made of is drawn, not written: item/PartsStrip puts the parts themselves in a row
+			// under the name, which is where these lines used to be, one to a part.
+			Upgrades stackUpgrades = stack.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY);
+			ItemStack equipped = equippedCounterpart(stack, parts.type());
+			java.util.Map<ForgeStats.Stat, Double> before = ForgeStats.values(equipped);
+			if (!equipped.isEmpty()) {
+				added.add(Component.translatable("tooltip.forja.comparado", equipped.getHoverName()).withColor(0x8A8A8A));
+			}
+			for (ForgeStats.Line line : ForgeStats.sheet(stack, parts).lines()) {
+				if (line.stat() == ForgeStats.Stat.DURABILIDAD) {
+					int max = stack.getMaxDamage();
+					Component durability = Component.translatable("tooltip.forja.durabilidad", max - stack.getDamageValue(), max).withColor(ForgeStats.color(parts.type(), line));
+					added.add(ForgeStats.withDelta(durability, line, before.get(line.stat())));
+				} else if (ForgeStats.shown(line)) {
+					added.add(ForgeStats.withDelta(ForgeStats.colored(parts.type(), line), line, before.get(line.stat())));
+				}
+			}
+			// A heavy or light handle or binding: what it gives and what it costs, in one line each.
+			added.addAll(dev.forja.combat.Grip.tradeoff(stack));
+			if (dev.forja.forge.Oxidation.isCopper(stack)) {
+				added.add(Component.translatable(
+					dev.forja.forge.Oxidation.waxed(stack) ? "tooltip.forja.oxido.encerado" : "tooltip.forja.oxido",
+					dev.forja.forge.Oxidation.stage(stack), dev.forja.forge.Oxidation.STAGES
+				).withColor(0xFF8FAE8A));
+			}
+			added.add(dev.forja.forge.Potential.describe(stack));
+			if (dev.forja.forge.Masterpiece.is(stack)) {
+				added.add(Component.translatable("tooltip.forja.obra_maestra").withColor(0xFFFFF0C0));
+			} else if (dev.forja.forge.Quality.perfect(stack)) {
+				added.add(Component.translatable("tooltip.forja.perfecta").withColor(0xFFE8A33C));
+			}
+			dev.forja.forge.Temple temple = dev.forja.forge.Temple.of(stack);
+			if (temple != null) {
+				added.add(Component.translatable("tooltip.forja.temple", temple.displayName(), temple.description()).withColor(temple.color));
+			} else if (dev.forja.forge.Temple.hot(stack, Minecraft.getInstance().level == null ? 0L : Minecraft.getInstance().level.getGameTime())) {
+				added.add(Component.translatable("tooltip.forja.caliente").withColor(0xFFE2622B));
+			}
+			added.add(Mastery.describe(stack).copy().withColor(0xFFC857));
+			if (parts.type().kind == ForgeType.Kind.ARMOR && Minecraft.getInstance().player != null) {
+				int worn = ArmorSets.count(Minecraft.getInstance().player, parts.primary());
+				added.add(Component.translatable("tooltip.forja.conjunto", parts.primary().displayName(), worn).withColor(worn >= 4 ? 0x55FF55 : 0xAAAAAA));
+				added.add(Component.translatable("tooltip.forja.conjunto.bono", Component.translatable("conjunto.forja." + parts.primary().getSerializedName())).withColor(worn >= 4 ? 0x55FF55 : 0x777777));
+			}
+			// An arrow's tip says what it does in flight and on impact (combat/ArrowTips); its materials' traits
+			// are what the tip does, so they are not listed again.
+			ForgeMaterial tip = dev.forja.combat.ArrowTips.tipOf(stack);
+			if (tip != null) {
+				for (Component line : dev.forja.combat.ArrowTips.describe(tip)) {
+					added.add(line.copy().withColor(0xFFB9D98C));
+				}
+			}
+			for (ForgeMaterial.Trait trait : ForgeMaterial.Trait.values()) {
+				if (tip == null && trait != ForgeMaterial.Trait.NONE && parts.hasTrait(trait)) {
+					added.add(Component.translatable("tooltip.forja.rasgo", trait.displayName(), trait.description()).withColor(0xFFD37F));
+				}
+			}
+			Upgrades upgrades = stack.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY);
+			if (!upgrades.isEmpty()) {
+				added.add(Component.translatable("tooltip.forja.mejoras").withStyle(ChatFormatting.GRAY));
+				upgrades.percents().forEach((upgrade, percent) -> added.add(
+					Component.translatable("tooltip.forja.mejora", upgrade.displayName(), percent, upgrade.effect(percent)).withColor(upgrade.color)
+				));
+			}
+			dev.forja.forge.Perk perk = dev.forja.forge.Perk.of(stack);
+			if (perk != null) {
+				added.add(Component.translatable("tooltip.forja.don.largo", perk.displayName(), perk.description()).withColor(perk.color));
+			}
+			for (dev.forja.upgrade.Synergy synergy : dev.forja.upgrade.Synergy.on(stack)) {
+				added.add(Component.translatable("tooltip.forja.sinergia", synergy.displayName(), synergy.description()).withColor(synergy.color));
+			}
+			// And the ones within reach: both upgrades are on it, one of them is still short.
+			for (dev.forja.upgrade.Synergy synergy : dev.forja.upgrade.Synergy.values()) {
+				int first = upgrades.percent(synergy.first);
+				int second = upgrades.percent(synergy.second);
+				if (synergy.active(stack) || first <= 0 || second <= 0) {
+					continue;
+				}
+				if (synergy.reached(upgrades) && !stack.isBroken()) {
+					// Far enough along, and asleep anyway: three stronger ones are awake.
+					added.add(Component.translatable("tooltip.forja.sinergia_dormida", synergy.displayName(),
+						dev.forja.upgrade.Synergy.MOST).withColor(0xFF7A7A7A));
+					continue;
+				}
+				added.add(Component.translatable("tooltip.forja.sinergia_cerca", synergy.displayName(),
+					Math.min(first, second), dev.forja.upgrade.Synergy.THRESHOLD).withColor(0xFF7A7A7A));
+			}
+			if (dev.forja.forge.Quality.smith(stack) != null) {
+				added.add(dev.forja.forge.Quality.signatureLine(stack, Minecraft.getInstance().player).copy().withColor(0xFFA9A9A9));
+			}
+			dev.forja.forge.ItemHistory history = dev.forja.forge.ItemHistory.of(stack);
+			if (!history.isEmpty()) {
+				for (Component line : history.lines()) {
+					added.add(line.copy().withColor(0xFF8A8A8A));
+				}
+			}
+			lines.addAll(insertAt, added);
+			return;
+		}
+		// A loose part that was poured cleanly carries an upgrade, and it has to say so: an upgrade you
+		// cannot see is an upgrade nobody will pour for.
+		if (stack.getItem() instanceof dev.forja.item.PartItem loose) {
+			// A heavy or light handle or binding (its name says the material): what it weighs in that material, and
+			// the trade its shape makes, with the speed that weight buys.
+			ForgeMaterial made = stack.get(ModComponents.MATERIAL);
+			if (made != null && loose.type.variant != dev.forja.part.PartVariant.NORMAL) {
+				List<Component> trade = new ArrayList<>();
+				Component weighs = dev.forja.combat.Grip.weightLine(loose.type, made);
+				if (weighs != null) {
+					trade.add(weighs);
+				}
+				trade.addAll(dev.forja.combat.Grip.tradeoff(loose.type, made));
+				lines.addAll(insertAt, trade);
+			}
+			Upgrades cast = stack.getOrDefault(ModComponents.UPGRADES, Upgrades.EMPTY);
+			if (!cast.isEmpty()) {
+				lines.add(insertAt, Component.translatable("tooltip.forja.colada").withStyle(ChatFormatting.GRAY));
+				cast.percents().forEach((upgrade, percent) -> lines.add(insertAt + 1,
+					Component.translatable("tooltip.forja.mejora", upgrade.displayName(), percent,
+						upgrade.effect(percent)).withColor(upgrade.color)));
+			}
+			if (stack.getOrDefault(ModComponents.ROUGH, false)) {
+				lines.add(insertAt, Component.translatable("tooltip.forja.basta").withColor(0xFFB06030));
+			}
+			return;
+		}
+		dev.forja.forge.Perk sealed = dev.forja.item.SealItem.perk(stack);
+		if (sealed != null) {
+			lines.add(insertAt, Component.translatable("tooltip.forja.sello").withStyle(ChatFormatting.GRAY));
+			lines.add(insertAt, sealed.description().copy().withColor(sealed.color));
+			return;
+		}
+		dev.forja.item.Talisman talisman = dev.forja.item.Talisman.of(stack);
+		if (talisman != null) {
+			boolean active = Minecraft.getInstance().player != null && dev.forja.item.Talisman.carried(Minecraft.getInstance().player, talisman);
+			lines.add(insertAt, Component.translatable("tooltip.forja.talisman").withStyle(ChatFormatting.DARK_GRAY));
+			lines.add(insertAt, talisman.description().copy().withColor(active ? talisman.color : 0xFF808080));
+			if (active) {
+				lines.add(insertAt, Component.translatable("tooltip.forja.talisman.activo").withColor(0xFF55FF55));
+			}
+			return;
+		}
+		if (stack.getItem() instanceof dev.forja.item.ToolBeltItem) {
+			java.util.List<ItemStack> tools = dev.forja.item.ToolBeltItem.tools(stack);
+			lines.add(insertAt, Component.translatable("tooltip.forja.cinturon").withStyle(ChatFormatting.GRAY));
+			if (tools.isEmpty()) {
+				lines.add(insertAt + 1, Component.translatable("tooltip.forja.cinturon.vacio").withStyle(ChatFormatting.DARK_GRAY));
+			} else {
+				for (ItemStack tool : tools) {
+					lines.add(insertAt + 1, Component.translatable("tooltip.forja.cinturon.lleva", tool.getHoverName()).withStyle(ChatFormatting.DARK_GRAY));
+				}
+			}
+			return;
+		}
+		if (stack.getItem() instanceof dev.forja.item.TemperIngotItem) {
+			lines.add(insertAt, Component.translatable("tooltip.forja.temple").withStyle(ChatFormatting.GRAY));
+			return;
+		}
+		dev.forja.upgrade.UpgradeOrb orb = dev.forja.item.UpgradeOrbItem.orb(stack);
+		if (orb != null) {
+			lines.add(insertAt, Component.translatable("tooltip.forja.orbe.uso").withStyle(ChatFormatting.GRAY));
+			lines.add(insertAt, Component.translatable("tooltip.forja.mejora", orb.upgrade().displayName(), orb.percent(), orb.upgrade().effect(orb.percent())).withColor(orb.upgrade().color));
+			return;
+		}
+		if (stack.getItem() instanceof TemplateItem) {
+			PartType pattern = TemplateItem.pattern(stack);
+			lines.add(insertAt, pattern == null
+				? Component.translatable("tooltip.forja.plantilla.base").withStyle(ChatFormatting.GRAY)
+				: Component.translatable("tooltip.forja.plantilla.molde", pattern.cost).withStyle(ChatFormatting.GRAY));
+			if (pattern != null && pattern.variant != dev.forja.part.PartVariant.NORMAL) {
+				lines.addAll(insertAt + 1, dev.forja.combat.Grip.tradeoff(pattern));
+				lines.add(insertAt + 3, dev.forja.combat.Grip.materials(pattern));
+				lines.add(insertAt + 4, Component.translatable("tooltip.forja.plantilla.a_la_caja").withStyle(ChatFormatting.GRAY));
+			}
+			return;
+		}
+		ForgeMaterial material = stack.get(ModComponents.MATERIAL);
+		if (material != null && stack.getItem() instanceof PartItem part) {
+			List<Component> added = new ArrayList<>();
+			for (ForgeStats.Line line : ForgeStats.partLines(part.type, material)) {
+				if (ForgeStats.shown(line)) {
+					added.add(ForgeStats.colored(part.type, line));
+				}
+			}
+			if (material.trait != ForgeMaterial.Trait.NONE) {
+				added.add(Component.translatable("tooltip.forja.rasgo", material.trait.displayName(), material.trait.description()).withColor(0xFFD37F));
+			}
+			added.addAll(dev.forja.combat.Grip.tradeoff(part.type));
+			added.add(Component.translatable("tooltip.forja.coste", part.type.cost, material.displayName()).withStyle(ChatFormatting.DARK_GRAY));
+			lines.addAll(insertAt, added);
+		}
+	}
+
+}

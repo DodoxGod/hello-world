@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "forja:block/montadora_top",
+    "bottom": "forja:block/montadora_bottom",
+    "side": "forja:block/montadora_side",
+    "particle": "forja:block/montadora_side"
+  }
+}

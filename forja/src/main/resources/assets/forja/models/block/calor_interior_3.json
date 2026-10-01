@@ -1,0 +1,147 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "fluido": "forja:block/fluido_de_calor",
+    "hueco": "forja:block/calor_hueco",
+    "particle": "forja:block/calor_hueco"
+  },
+  "elements": [
+    {
+      "from": [
+        1,
+        0.5,
+        1
+      ],
+      "to": [
+        15,
+        1,
+        15
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": "#hueco"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        1,
+        1
+      ],
+      "to": [
+        15,
+        11.5,
+        15
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            4.5,
+            15,
+            15
+          ],
+          "texture": "#fluido",
+          "tintindex": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            4.5,
+            15,
+            15
+          ],
+          "texture": "#fluido",
+          "tintindex": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            4.5,
+            15,
+            15
+          ],
+          "texture": "#fluido",
+          "tintindex": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            4.5,
+            15,
+            15
+          ],
+          "texture": "#fluido",
+          "tintindex": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": "#fluido",
+          "tintindex": 0
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        11.5,
+        1
+      ],
+      "to": [
+        15,
+        15,
+        15
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            1,
+            15,
+            4.5
+          ],
+          "texture": "#hueco"
+        },
+        "south": {
+          "uv": [
+            1,
+            1,
+            15,
+            4.5
+          ],
+          "texture": "#hueco"
+        },
+        "east": {
+          "uv": [
+            1,
+            1,
+            15,
+            4.5
+          ],
+          "texture": "#hueco"
+        },
+        "west": {
+          "uv": [
+            1,
+            1,
+            15,
+            4.5
+          ],
+          "texture": "#hueco"
+        }
+      }
+    }
+  ]
+}

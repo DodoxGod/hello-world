@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "nnn",
+    "ngn",
+    "nnn"
+  ],
+  "key": {
+    "n": "minecraft:gold_nugget",
+    "g": "minecraft:prismarine_shard"
+  },
+  "result": {
+    "id": "forja:talisman",
+    "components": {
+      "forja:talisman": "prismarina",
+      "minecraft:item_name": {
+        "translate": "item.forja.talisman.de",
+        "with": [
+          {
+            "translate": "talisman.forja.prismarina"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          7129010
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

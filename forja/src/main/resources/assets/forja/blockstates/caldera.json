@@ -1,0 +1,60 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "lit": "false"
+      },
+      "apply": {
+        "model": "forja:block/caldera"
+      }
+    },
+    {
+      "when": {
+        "lit": "true"
+      },
+      "apply": {
+        "model": "forja:block/caldera_lit"
+      }
+    },
+    {
+      "when": {
+        "nivel": "0"
+      },
+      "apply": {
+        "model": "forja:block/calor_interior_0"
+      }
+    },
+    {
+      "when": {
+        "nivel": "1"
+      },
+      "apply": {
+        "model": "forja:block/calor_interior_1"
+      }
+    },
+    {
+      "when": {
+        "nivel": "2"
+      },
+      "apply": {
+        "model": "forja:block/calor_interior_2"
+      }
+    },
+    {
+      "when": {
+        "nivel": "3"
+      },
+      "apply": {
+        "model": "forja:block/calor_interior_3"
+      }
+    },
+    {
+      "when": {
+        "nivel": "4"
+      },
+      "apply": {
+        "model": "forja:block/calor_interior_4"
+      }
+    }
+  ]
+}

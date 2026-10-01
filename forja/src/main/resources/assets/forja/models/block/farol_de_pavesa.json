@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "forja:block/farol_de_pavesa_top",
+    "bottom": "forja:block/farol_de_pavesa_top",
+    "side": "forja:block/farol_de_pavesa_side",
+    "particle": "forja:block/farol_de_pavesa_side"
+  }
+}

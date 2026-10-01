@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/root",
+  "display": {
+    "icon": {
+      "id": "forja:jarra"
+    },
+    "title": {
+      "translate": "advancements.forja.evento.title"
+    },
+    "description": {
+      "translate": "advancements.forja.evento.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

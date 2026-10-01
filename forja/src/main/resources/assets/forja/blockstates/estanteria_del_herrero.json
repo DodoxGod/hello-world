@@ -1,0 +1,360 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_del_herrero",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "libro_0": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_0",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "libro_1": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_1",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "libro_2": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_2",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "libro_3": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_3",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "libro_4": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_4",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "libro_5": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_5",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "libro_6": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_6",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "libro_7": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_7",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_del_herrero",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "libro_0": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_0",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "libro_1": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "libro_2": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "libro_3": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_3",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "libro_4": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_4",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "libro_5": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_5",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "libro_6": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_6",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "libro_7": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_7",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_del_herrero",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "libro_0": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_0",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "libro_1": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "libro_2": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "libro_3": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_3",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "libro_4": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_4",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "libro_5": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_5",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "libro_6": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_6",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "libro_7": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_7",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_del_herrero",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "libro_0": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_0",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "libro_1": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "libro_2": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "libro_3": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_3",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "libro_4": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_4",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "libro_5": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_5",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "libro_6": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_6",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "libro_7": "true"
+      },
+      "apply": {
+        "model": "forja:block/estanteria_libro_7",
+        "y": 270
+      }
+    }
+  ]
+}

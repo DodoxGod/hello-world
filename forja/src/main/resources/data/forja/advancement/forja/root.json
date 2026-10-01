@@ -1,0 +1,66 @@
+{
+  "display": {
+    "icon": {
+      "id": "forja:mesa_de_forja"
+    },
+    "title": {
+      "translate": "advancements.forja.root.title"
+    },
+    "description": {
+      "translate": "advancements.forja.root.description"
+    },
+    "background": "forja:gui/advancements/backgrounds/forja",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "mesa_de_piezas": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "forja:mesa_de_piezas"
+          }
+        ]
+      }
+    },
+    "mesa_de_forja": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "forja:mesa_de_forja"
+          }
+        ]
+      }
+    },
+    "plantilla": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "forja:plantilla"
+          }
+        ]
+      }
+    },
+    "guia_de_forja": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "forja:guia_de_forja"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "mesa_de_piezas",
+      "mesa_de_forja",
+      "plantilla",
+      "guia_de_forja"
+    ]
+  ]
+}

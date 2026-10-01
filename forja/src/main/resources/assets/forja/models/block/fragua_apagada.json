@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "forja:block/fragua_apagada_top",
+    "bottom": "forja:block/fragua_apagada_side",
+    "side": "forja:block/fragua_apagada_side",
+    "particle": "forja:block/fragua_apagada_side"
+  }
+}

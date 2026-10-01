@@ -1,0 +1,205 @@
+{
+  "parent": "forja:forja/forja",
+  "display": {
+    "icon": {
+      "id": "minecraft:nether_star"
+    },
+    "title": {
+      "translate": "advancements.forja.leyenda.title"
+    },
+    "description": {
+      "translate": "advancements.forja.leyenda.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "aliento_de_invierno": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "aliento_de_invierno"
+            }
+          }
+        ]
+      }
+    },
+    "sed_del_ocaso": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "sed_del_ocaso"
+            }
+          }
+        ]
+      }
+    },
+    "veta_madre": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "veta_madre"
+            }
+          }
+        ]
+      }
+    },
+    "muralla": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "muralla"
+            }
+          }
+        ]
+      }
+    },
+    "paso_del_viento": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "paso_del_viento"
+            }
+          }
+        ]
+      }
+    },
+    "ojo_de_halcon": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "ojo_de_halcon"
+            }
+          }
+        ]
+      }
+    },
+    "yunque_andante": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "yunque_andante"
+            }
+          }
+        ]
+      }
+    },
+    "cadena_del_juicio": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "cadena_del_juicio"
+            }
+          }
+        ]
+      }
+    },
+    "punos_del_yunque": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "punos_del_yunque"
+            }
+          }
+        ]
+      }
+    },
+    "garra_del_abismo": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "garra_del_abismo"
+            }
+          }
+        ]
+      }
+    },
+    "alas_del_alba": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "alas_del_alba"
+            }
+          }
+        ]
+      }
+    },
+    "barda_del_invicto": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "barda_del_invicto"
+            }
+          }
+        ]
+      }
+    },
+    "marea_del_ahogado": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "marea_del_ahogado"
+            }
+          }
+        ]
+      }
+    },
+    "filo_de_la_guadana": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "components": {
+              "forja:leyenda": "filo_de_la_guadana"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "aliento_de_invierno",
+      "sed_del_ocaso",
+      "veta_madre",
+      "muralla",
+      "paso_del_viento",
+      "ojo_de_halcon",
+      "yunque_andante",
+      "cadena_del_juicio",
+      "punos_del_yunque",
+      "garra_del_abismo",
+      "alas_del_alba",
+      "barda_del_invicto",
+      "marea_del_ahogado",
+      "filo_de_la_guadana"
+    ]
+  ]
+}

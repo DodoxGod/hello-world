@@ -1,0 +1,12 @@
+{
+  "layers": {
+    "wings": [
+      {
+        "texture": "forja:alas",
+        "dyeable": {
+          "color_when_undyed": 2788500
+        }
+      }
+    ]
+  }
+}

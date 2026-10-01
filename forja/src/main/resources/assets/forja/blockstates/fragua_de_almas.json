@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "forja:block/fragua_de_almas"
+    },
+    "lit=true": {
+      "model": "forja:block/fragua_de_almas_encendida"
+    }
+  }
+}

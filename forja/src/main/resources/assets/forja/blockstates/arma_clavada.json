@@ -1,0 +1,274 @@
+{
+  "variants": {
+    "arma=espada,facing=north,inclinacion=0": {
+      "model": "forja:block/arma_clavada_espada_0"
+    },
+    "arma=espada,facing=east,inclinacion=0": {
+      "model": "forja:block/arma_clavada_espada_0",
+      "y": 90
+    },
+    "arma=espada,facing=south,inclinacion=0": {
+      "model": "forja:block/arma_clavada_espada_0",
+      "y": 180
+    },
+    "arma=espada,facing=west,inclinacion=0": {
+      "model": "forja:block/arma_clavada_espada_0",
+      "y": 270
+    },
+    "arma=espada,facing=north,inclinacion=1": {
+      "model": "forja:block/arma_clavada_espada_1"
+    },
+    "arma=espada,facing=east,inclinacion=1": {
+      "model": "forja:block/arma_clavada_espada_1",
+      "y": 90
+    },
+    "arma=espada,facing=south,inclinacion=1": {
+      "model": "forja:block/arma_clavada_espada_1",
+      "y": 180
+    },
+    "arma=espada,facing=west,inclinacion=1": {
+      "model": "forja:block/arma_clavada_espada_1",
+      "y": 270
+    },
+    "arma=espada,facing=north,inclinacion=2": {
+      "model": "forja:block/arma_clavada_espada_2"
+    },
+    "arma=espada,facing=east,inclinacion=2": {
+      "model": "forja:block/arma_clavada_espada_2",
+      "y": 90
+    },
+    "arma=espada,facing=south,inclinacion=2": {
+      "model": "forja:block/arma_clavada_espada_2",
+      "y": 180
+    },
+    "arma=espada,facing=west,inclinacion=2": {
+      "model": "forja:block/arma_clavada_espada_2",
+      "y": 270
+    },
+    "arma=espada_negra,facing=north,inclinacion=0": {
+      "model": "forja:block/arma_clavada_espada_negra_0"
+    },
+    "arma=espada_negra,facing=east,inclinacion=0": {
+      "model": "forja:block/arma_clavada_espada_negra_0",
+      "y": 90
+    },
+    "arma=espada_negra,facing=south,inclinacion=0": {
+      "model": "forja:block/arma_clavada_espada_negra_0",
+      "y": 180
+    },
+    "arma=espada_negra,facing=west,inclinacion=0": {
+      "model": "forja:block/arma_clavada_espada_negra_0",
+      "y": 270
+    },
+    "arma=espada_negra,facing=north,inclinacion=1": {
+      "model": "forja:block/arma_clavada_espada_negra_1"
+    },
+    "arma=espada_negra,facing=east,inclinacion=1": {
+      "model": "forja:block/arma_clavada_espada_negra_1",
+      "y": 90
+    },
+    "arma=espada_negra,facing=south,inclinacion=1": {
+      "model": "forja:block/arma_clavada_espada_negra_1",
+      "y": 180
+    },
+    "arma=espada_negra,facing=west,inclinacion=1": {
+      "model": "forja:block/arma_clavada_espada_negra_1",
+      "y": 270
+    },
+    "arma=espada_negra,facing=north,inclinacion=2": {
+      "model": "forja:block/arma_clavada_espada_negra_2"
+    },
+    "arma=espada_negra,facing=east,inclinacion=2": {
+      "model": "forja:block/arma_clavada_espada_negra_2",
+      "y": 90
+    },
+    "arma=espada_negra,facing=south,inclinacion=2": {
+      "model": "forja:block/arma_clavada_espada_negra_2",
+      "y": 180
+    },
+    "arma=espada_negra,facing=west,inclinacion=2": {
+      "model": "forja:block/arma_clavada_espada_negra_2",
+      "y": 270
+    },
+    "arma=hacha,facing=north,inclinacion=0": {
+      "model": "forja:block/arma_clavada_hacha_0"
+    },
+    "arma=hacha,facing=east,inclinacion=0": {
+      "model": "forja:block/arma_clavada_hacha_0",
+      "y": 90
+    },
+    "arma=hacha,facing=south,inclinacion=0": {
+      "model": "forja:block/arma_clavada_hacha_0",
+      "y": 180
+    },
+    "arma=hacha,facing=west,inclinacion=0": {
+      "model": "forja:block/arma_clavada_hacha_0",
+      "y": 270
+    },
+    "arma=hacha,facing=north,inclinacion=1": {
+      "model": "forja:block/arma_clavada_hacha_1"
+    },
+    "arma=hacha,facing=east,inclinacion=1": {
+      "model": "forja:block/arma_clavada_hacha_1",
+      "y": 90
+    },
+    "arma=hacha,facing=south,inclinacion=1": {
+      "model": "forja:block/arma_clavada_hacha_1",
+      "y": 180
+    },
+    "arma=hacha,facing=west,inclinacion=1": {
+      "model": "forja:block/arma_clavada_hacha_1",
+      "y": 270
+    },
+    "arma=hacha,facing=north,inclinacion=2": {
+      "model": "forja:block/arma_clavada_hacha_2"
+    },
+    "arma=hacha,facing=east,inclinacion=2": {
+      "model": "forja:block/arma_clavada_hacha_2",
+      "y": 90
+    },
+    "arma=hacha,facing=south,inclinacion=2": {
+      "model": "forja:block/arma_clavada_hacha_2",
+      "y": 180
+    },
+    "arma=hacha,facing=west,inclinacion=2": {
+      "model": "forja:block/arma_clavada_hacha_2",
+      "y": 270
+    },
+    "arma=tridente,facing=north,inclinacion=0": {
+      "model": "forja:block/arma_clavada_tridente_0"
+    },
+    "arma=tridente,facing=east,inclinacion=0": {
+      "model": "forja:block/arma_clavada_tridente_0",
+      "y": 90
+    },
+    "arma=tridente,facing=south,inclinacion=0": {
+      "model": "forja:block/arma_clavada_tridente_0",
+      "y": 180
+    },
+    "arma=tridente,facing=west,inclinacion=0": {
+      "model": "forja:block/arma_clavada_tridente_0",
+      "y": 270
+    },
+    "arma=tridente,facing=north,inclinacion=1": {
+      "model": "forja:block/arma_clavada_tridente_1"
+    },
+    "arma=tridente,facing=east,inclinacion=1": {
+      "model": "forja:block/arma_clavada_tridente_1",
+      "y": 90
+    },
+    "arma=tridente,facing=south,inclinacion=1": {
+      "model": "forja:block/arma_clavada_tridente_1",
+      "y": 180
+    },
+    "arma=tridente,facing=west,inclinacion=1": {
+      "model": "forja:block/arma_clavada_tridente_1",
+      "y": 270
+    },
+    "arma=tridente,facing=north,inclinacion=2": {
+      "model": "forja:block/arma_clavada_tridente_2"
+    },
+    "arma=tridente,facing=east,inclinacion=2": {
+      "model": "forja:block/arma_clavada_tridente_2",
+      "y": 90
+    },
+    "arma=tridente,facing=south,inclinacion=2": {
+      "model": "forja:block/arma_clavada_tridente_2",
+      "y": 180
+    },
+    "arma=tridente,facing=west,inclinacion=2": {
+      "model": "forja:block/arma_clavada_tridente_2",
+      "y": 270
+    },
+    "arma=maza,facing=north,inclinacion=0": {
+      "model": "forja:block/arma_clavada_maza_0"
+    },
+    "arma=maza,facing=east,inclinacion=0": {
+      "model": "forja:block/arma_clavada_maza_0",
+      "y": 90
+    },
+    "arma=maza,facing=south,inclinacion=0": {
+      "model": "forja:block/arma_clavada_maza_0",
+      "y": 180
+    },
+    "arma=maza,facing=west,inclinacion=0": {
+      "model": "forja:block/arma_clavada_maza_0",
+      "y": 270
+    },
+    "arma=maza,facing=north,inclinacion=1": {
+      "model": "forja:block/arma_clavada_maza_1"
+    },
+    "arma=maza,facing=east,inclinacion=1": {
+      "model": "forja:block/arma_clavada_maza_1",
+      "y": 90
+    },
+    "arma=maza,facing=south,inclinacion=1": {
+      "model": "forja:block/arma_clavada_maza_1",
+      "y": 180
+    },
+    "arma=maza,facing=west,inclinacion=1": {
+      "model": "forja:block/arma_clavada_maza_1",
+      "y": 270
+    },
+    "arma=maza,facing=north,inclinacion=2": {
+      "model": "forja:block/arma_clavada_maza_2"
+    },
+    "arma=maza,facing=east,inclinacion=2": {
+      "model": "forja:block/arma_clavada_maza_2",
+      "y": 90
+    },
+    "arma=maza,facing=south,inclinacion=2": {
+      "model": "forja:block/arma_clavada_maza_2",
+      "y": 180
+    },
+    "arma=maza,facing=west,inclinacion=2": {
+      "model": "forja:block/arma_clavada_maza_2",
+      "y": 270
+    },
+    "arma=pico,facing=north,inclinacion=0": {
+      "model": "forja:block/arma_clavada_pico_0"
+    },
+    "arma=pico,facing=east,inclinacion=0": {
+      "model": "forja:block/arma_clavada_pico_0",
+      "y": 90
+    },
+    "arma=pico,facing=south,inclinacion=0": {
+      "model": "forja:block/arma_clavada_pico_0",
+      "y": 180
+    },
+    "arma=pico,facing=west,inclinacion=0": {
+      "model": "forja:block/arma_clavada_pico_0",
+      "y": 270
+    },
+    "arma=pico,facing=north,inclinacion=1": {
+      "model": "forja:block/arma_clavada_pico_1"
+    },
+    "arma=pico,facing=east,inclinacion=1": {
+      "model": "forja:block/arma_clavada_pico_1",
+      "y": 90
+    },
+    "arma=pico,facing=south,inclinacion=1": {
+      "model": "forja:block/arma_clavada_pico_1",
+      "y": 180
+    },
+    "arma=pico,facing=west,inclinacion=1": {
+      "model": "forja:block/arma_clavada_pico_1",
+      "y": 270
+    },
+    "arma=pico,facing=north,inclinacion=2": {
+      "model": "forja:block/arma_clavada_pico_2"
+    },
+    "arma=pico,facing=east,inclinacion=2": {
+      "model": "forja:block/arma_clavada_pico_2",
+      "y": 90
+    },
+    "arma=pico,facing=south,inclinacion=2": {
+      "model": "forja:block/arma_clavada_pico_2",
+      "y": 180
+    },
+    "arma=pico,facing=west,inclinacion=2": {
+      "model": "forja:block/arma_clavada_pico_2",
+      "y": 270
+    }
+  }
+}

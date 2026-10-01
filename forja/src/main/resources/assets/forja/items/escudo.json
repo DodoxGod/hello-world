@@ -1,0 +1,119 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:broken",
+    "on_true": {
+      "type": "minecraft:composite",
+      "models": [
+        {
+          "type": "minecraft:condition",
+          "property": "minecraft:using_item",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "forja:item/escudo/escudo",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 0,
+                "default": 15000804
+              },
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 1,
+                "default": 12093775
+              },
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 2,
+                "default": 12093775
+              }
+            ]
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "forja:item/escudo/escudo_bloqueando",
+            "tints": [
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 0,
+                "default": 15000804
+              },
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 1,
+                "default": 12093775
+              },
+              {
+                "type": "minecraft:custom_model_data",
+                "index": 2,
+                "default": 12093775
+              }
+            ]
+          }
+        },
+        {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": "gui",
+              "model": {
+                "type": "minecraft:model",
+                "model": "forja:item/grieta"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:empty"
+          }
+        }
+      ]
+    },
+    "on_false": {
+      "type": "minecraft:condition",
+      "property": "minecraft:using_item",
+      "on_false": {
+        "type": "minecraft:model",
+        "model": "forja:item/escudo/escudo",
+        "tints": [
+          {
+            "type": "minecraft:custom_model_data",
+            "index": 0,
+            "default": 15000804
+          },
+          {
+            "type": "minecraft:custom_model_data",
+            "index": 1,
+            "default": 12093775
+          },
+          {
+            "type": "minecraft:custom_model_data",
+            "index": 2,
+            "default": 12093775
+          }
+        ]
+      },
+      "on_true": {
+        "type": "minecraft:model",
+        "model": "forja:item/escudo/escudo_bloqueando",
+        "tints": [
+          {
+            "type": "minecraft:custom_model_data",
+            "index": 0,
+            "default": 15000804
+          },
+          {
+            "type": "minecraft:custom_model_data",
+            "index": 1,
+            "default": 12093775
+          },
+          {
+            "type": "minecraft:custom_model_data",
+            "index": 2,
+            "default": 12093775
+          }
+        ]
+      }
+    }
+  }
+}

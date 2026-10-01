@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/damasco",
+  "display": {
+    "icon": {
+      "id": "forja:fragua_apagada"
+    },
+    "title": {
+      "translate": "advancements.forja.herrero_caido.title"
+    },
+    "description": {
+      "translate": "advancements.forja.herrero_caido.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

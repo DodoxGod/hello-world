@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "R R",
+    "RCR",
+    "RRR"
+  ],
+  "key": {
+    "R": "forja:acero_refractario",
+    "C": "forja:caja_de_moldeo"
+  },
+  "result": {
+    "id": "forja:caja_de_moldeo_de_acero",
+    "count": 1
+  }
+}

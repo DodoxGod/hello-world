@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:gold_ingot",
+    "minecraft:arrow",
+    "minecraft:feather"
+  ],
+  "result": {
+    "id": "forja:sello",
+    "components": {
+      "forja:sello": "cargador",
+      "minecraft:item_name": {
+        "translate": "item.forja.sello.de",
+        "with": [
+          {
+            "translate": "perk.forja.cargador"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          14207130
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

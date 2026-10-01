@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "forja:block/yunque_del_herrero"
+    },
+    "facing=east": {
+      "model": "forja:block/yunque_del_herrero",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "forja:block/yunque_del_herrero",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "forja:block/yunque_del_herrero",
+      "y": 270
+    }
+  }
+}

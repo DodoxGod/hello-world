@@ -1,0 +1,27 @@
+{
+  "parent": "forja:forja/forja",
+  "display": {
+    "icon": {
+      "id": "forja:escudo"
+    },
+    "title": {
+      "translate": "advancements.forja.parada.title"
+    },
+    "description": {
+      "translate": "advancements.forja.parada.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

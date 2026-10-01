@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "DRD",
+    "DCD",
+    "DDD"
+  ],
+  "key": {
+    "D": "forja:damasco",
+    "R": "forja:acero_refractario",
+    "C": "forja:caja_de_moldeo_de_acero"
+  },
+  "result": {
+    "id": "forja:caja_de_moldeo_de_damasco",
+    "count": 1
+  }
+}

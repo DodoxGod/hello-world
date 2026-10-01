@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "C": "minecraft:grindstone",
+    "P": "#minecraft:planks"
+  },
+  "pattern": [
+    "III",
+    "PCP",
+    "P P"
+  ],
+  "result": {
+    "id": "forja:mesa_de_piezas"
+  }
+}

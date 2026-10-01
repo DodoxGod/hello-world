@@ -1,0 +1,87 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "forja:block/conducto_de_acero_core"
+      }
+    },
+    {
+      "when": {
+        "north": "true"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_arm"
+      }
+    },
+    {
+      "when": {
+        "north": "false"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_cap"
+      }
+    },
+    {
+      "when": {
+        "south": "true"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_arm",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "false"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_cap",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "east": "true"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_arm",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "false"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_cap",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "west": "true"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_arm",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "false"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_cap",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "up": "true"
+      },
+      "apply": {
+        "model": "forja:block/conducto_de_acero_riser"
+      }
+    }
+  ]
+}

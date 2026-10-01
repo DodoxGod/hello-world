@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BGB",
+    "G G",
+    "BGB"
+  ],
+  "key": {
+    "B": "forja:bronce",
+    "G": "minecraft:glass"
+  },
+  "result": {
+    "id": "forja:cuba_de_colada",
+    "count": 2
+  }
+}

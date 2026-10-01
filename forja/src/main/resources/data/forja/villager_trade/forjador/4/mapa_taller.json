@@ -1,0 +1,39 @@
+{
+  "gives": {
+    "id": "minecraft:map"
+  },
+  "max_uses": 4.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 12.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 20.0,
+  "given_item_modifiers": [
+    {
+      "function": "minecraft:exploration_map",
+      "destination": "forja:on_taller_de_montana",
+      "decoration": "minecraft:red_x",
+      "search_radius": 100
+    },
+    {
+      "function": "minecraft:set_name",
+      "name": {
+        "translate": "filled_map.forja.taller_de_montana"
+      },
+      "target": "item_name"
+    },
+    {
+      "function": "minecraft:filtered",
+      "item_filter": {
+        "items": "minecraft:filled_map",
+        "predicates": {
+          "minecraft:map_id": {}
+        }
+      },
+      "on_fail": {
+        "function": "minecraft:discard"
+      }
+    }
+  ]
+}

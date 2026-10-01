@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:gold_ingot",
+    "minecraft:arrow",
+    "minecraft:wind_charge"
+  ],
+  "result": {
+    "id": "forja:sello",
+    "components": {
+      "forja:sello": "tirador",
+      "minecraft:item_name": {
+        "translate": "item.forja.sello.de",
+        "with": [
+          {
+            "translate": "perk.forja.tirador"
+          }
+        ]
+      },
+      "minecraft:custom_model_data": {
+        "colors": [
+          12179186
+        ]
+      },
+      "minecraft:rarity": "uncommon"
+    }
+  }
+}

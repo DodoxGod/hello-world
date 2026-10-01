@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BGB",
+    "BMB",
+    "BBB"
+  ],
+  "key": {
+    "B": "minecraft:polished_blackstone",
+    "G": "minecraft:gold_ingot",
+    "M": "forja:mesa_de_losa"
+  },
+  "result": {
+    "id": "forja:mesa_de_brasa",
+    "count": 1
+  }
+}

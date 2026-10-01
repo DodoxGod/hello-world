@@ -1,0 +1,29 @@
+{
+  "parent": "forja:forja/aleacion",
+  "display": {
+    "icon": {
+      "id": "forja:mesa_de_forja_mayor"
+    },
+    "title": {
+      "translate": "advancements.forja.mesa_mayor.title"
+    },
+    "description": {
+      "translate": "advancements.forja.mesa_mayor.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "forja:mesa_de_forja_mayor"
+          }
+        ]
+      }
+    }
+  }
+}
