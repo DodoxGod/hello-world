@@ -141,6 +141,11 @@ public class AprendicesGameTests {
 	@GameTest(maxTicks = 240)
 	public void rangedApprenticesShoot(GameTestHelper helper) {
 		CombatGameTests.noRandomThreat();
+		// The archer stands at x 8, past the test's 8 x 8 box: where the box is the last of its row (or the last
+		// column, as the test is turned) that chunk is nobody's, and an entity there never ticks. It stood where it
+		// was spawned for the whole test, 7.0 from the player, without ever seeing them, now and then (6 in 400
+		// with FORJA_VERIFICAR, and once in a whole run). Its chunks are forced, as RedV4ModGameTests.room does.
+		TestChunks.force(helper, 10);
 		CombatGameTests.TestPlayer player = CombatGameTests.player(helper, new BlockPos(1, 1, 1));
 		ApprenticeKits.Role role = ApprenticeKits.ARCHER;
 		Mob archer = helper.spawn(role.body(), new BlockPos(8, 1, 1));
@@ -153,9 +158,14 @@ public class AprendicesGameTests {
 		helper.onEachTick(() -> shot[0] |= !helper.getLevel().getEntitiesOfClass(AbstractArrow.class, archer.getBoundingBox().inflate(30.0),
 			arrow -> arrow.getOwner() == archer).isEmpty());
 		helper.runAfterDelay(220, () -> {
+			dev.forja.ai.MobMind mind = dev.forja.ai.MobAi.mind(archer);
 			helper.assertTrue(shot[0] || player.getHealth() < player.getMaxHealth(), "el arquero no disparo (a " + archer.distanceTo(player)
-				+ ", usando " + archer.isUsingItem() + ")");
+				+ ", usando " + archer.isUsingItem() + ", objetivo " + (archer.getTarget() == player ? "el jugador" : String.valueOf(archer.getTarget()))
+				+ ", nivel " + dev.forja.difficulty.Ladder.current() + ", decision " + (mind == null ? null : mind.decision) + ", red " + (mind != null && mind.networked)
+				+ ", turno " + dev.forja.combat.AttackTokens.holds(player, archer) + ", tipo " + archer.getType() + ", vista " + archer.hasLineOfSight(player)
+				+ ", noAi " + archer.isNoAi() + ", vivo " + archer.isAlive() + ")");
 			archer.discard();
+			TestChunks.release(helper);
 			helper.succeed();
 		});
 	}

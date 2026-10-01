@@ -28,6 +28,11 @@ import net.minecraft.world.phys.Vec3;
  * ticks the network is switched off.
  */
 public class RedFinitaGameTests {
+	/** How many copies of nanFileIsRefusedAndMobUsesRules have MobAi on their folder now, and what was there before the first. */
+	private static int swapped;
+	private static String savedFolder;
+	private static String savedContract;
+
 	/** Puts a non-finite value in the first number of the named matrix or vector. */
 	private static JsonObject poison(JsonObject json, String key, float value) {
 		JsonArray array = json.getAsJsonArray(key);
@@ -101,12 +106,36 @@ public class RedFinitaGameTests {
 		helper.succeed();
 	}
 
-	/** A file with a NaN weight is refused at load, listed in the problems, and its mob fights by the rules; a good one loads. */
-	@GameTest(maxTicks = 80)
+	/**
+	 * A file with a NaN weight is refused at load, listed in the problems, and its mob fights by the rules; a good one loads.
+	 *
+	 * <p>In a batch of its own (its environment, like RedV4ModGameTests.aChangeOfFamilySwitchesNetworkAndMemory): the
+	 * folder it points MobAi at is every mob's for the 40 ticks it watches its zombie, so for those ticks no zombie
+	 * anywhere has a body network and the contract is v3. In the common batch that took the networks away from the tests
+	 * running beside it (the apprentices among them, once). And the folder and contract go back whatever happens: on
+	 * a failed check now or in the delayed one, not only on success. Run side by side with itself (FORJA_VERIFICAR),
+	 * each copy found the folder the one before had set and put that back; the count below has the first copy in
+	 * keep the world's own folder and the last one out put it back.
+	 */
+	@GameTest(environment = "forja-test:red_finita", maxTicks = 80)
 	public void nanFileIsRefusedAndMobUsesRules(GameTestHelper helper) throws java.io.IOException {
 		CombatConfig cfg = CombatConfig.get();
-		String savedFolder = cfg.iaCarpetaRedes;
-		String savedContract = cfg.iaContrato;
+		if (swapped++ == 0) {
+			savedFolder = cfg.iaCarpetaRedes;
+			savedContract = cfg.iaContrato;
+		}
+		boolean[] restored = {false};
+		Runnable restore = () -> {
+			if (restored[0]) {
+				return;
+			}
+			restored[0] = true;
+			if (--swapped == 0) {
+				cfg.iaCarpetaRedes = savedFolder;
+				cfg.iaContrato = savedContract;
+				MobAi.reload();
+			}
+		};
 		Path root = Files.createTempDirectory("forja_finita");
 		Gson gson = new GsonBuilder().serializeSpecialFloatingPointValues().create();
 		try {
@@ -124,16 +153,15 @@ public class RedFinitaGameTests {
 			Zombie zombie = zombieWith(helper, null);
 			MobMind mind = MobAi.mind(zombie);
 			helper.runAfterDelay(40, () -> {
-				helper.assertTrue(!mind.networked, "sin red válida el zombi usa las reglas");
-				cfg.iaCarpetaRedes = savedFolder;
-				cfg.iaContrato = savedContract;
-				MobAi.reload();
+				try {
+					helper.assertTrue(!mind.networked, "sin red válida el zombi usa las reglas");
+				} finally {
+					restore.run();
+				}
 				helper.succeed();
 			});
-		} catch (RuntimeException failure) {
-			cfg.iaCarpetaRedes = savedFolder;
-			cfg.iaContrato = savedContract;
-			MobAi.reload();
+		} catch (RuntimeException | java.io.IOException failure) {
+			restore.run();
 			throw failure;
 		}
 	}
