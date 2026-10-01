@@ -162,6 +162,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// The second visual pass (Visual2Footage): the dimension's ground, the Bastión's blocks, forged armour worn.
+			if ("visual_2".equals(solo)) {
+				Visual2Footage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			// Every material in every handle and binding shape (Andy, 2026-09-30): the bench, the star, the hand, a wall.
 			if ("mangos_todos".equals(solo)) {
 				MangosTodosFootage.film(context, server, connection, x, y, z);

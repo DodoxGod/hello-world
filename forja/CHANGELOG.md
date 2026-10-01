@@ -1,5 +1,19 @@
 # Novedades
 
+## 2026-10-01 — Segunda pasada visual: Molde Roto, lingotes, ceniza, farol de pavesa y armadura
+
+- **Molde Roto:** su generador vuelve a coincidir con el modelo del agarre a dos manos y pasa por el pintor de los
+  demás monstruos: arena de moldeo cocida con línea de partición, hierro ennegrecido y el lingote como metal que corre.
+  Sin caras que parpadeen (eran 17; también una del cargador de carbón).
+- **Lingotes:** el peltre lleva tres poros limpios y el damasco dos ondas de capas, en vez de manchas y un tablero.
+- **Cementerio entre Estrellas:** la ceniza y la ceniza prensada ya no parecen estática de televisión: tonos suaves
+  en ondas que se repiten sin costura y alguna mota de hueso quemado.
+- **Farol de pavesa:** hierro ennegrecido en todo el marco y dos barrotes finos; antes era el bloque más claro de los
+  muros negros del Bastión y la pavesa casi no se veía.
+- **Armadura forjada:** las sombras de las bandas ya no llegan casi a negro; en oro, cobre y cuero eran rayas oscuras.
+- **Herramientas:** `python tools/generate_assets.py` en limpio ya no cambia nada del repo (`tools/escritura_estable.py`).
+- Pruebas: FORJA_SOLO=visual_2 filma la ceniza, los bloques del Bastión y armaduras de diez materiales.
+
 ## 2026-10-01 — El garfio del herrero se puede esquivar
 
 Antes la garra del Herrero Caído siempre alcanzaba a su objetivo al soltarla, aunque se hubiera puesto un muro delante,

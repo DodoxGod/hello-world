@@ -7,8 +7,8 @@ with LF endings itself, so it never turns the repo's JSON into CRLF the way a pl
     python tools/dimension_assets.py
 
 Every texture is a vanilla one recoloured, never painted from nothing:
-  - ceniza            <- sand, turned to a grey ash with a little violet in it
-  - ceniza_prensada   <- coarse dirt, turned to a near-black trodden ash
+  - ceniza            <- sand, turned to a grey ash with a little violet in it, in soft drifts (ash())
+  - ceniza_prensada   <- coarse dirt, turned to a near-black trodden ash, likewise
   - metal_fundido     <- lava_still (all its frames), turned to molten gold-white
   - metal_fundido_cae <- lava_flow, likewise, for the falls
   - arma_clavada_*    <- the iron and netherite sword, iron axe, trident, mace and iron pickaxe items,
@@ -105,8 +105,6 @@ def recolour(image, stops, lo=None, hi=None, jitter=0, seed=0):
     return out
 
 
-ASH = [(0.0, (58, 55, 64)), (0.45, (98, 93, 104)), (1.0, (146, 140, 150))]
-TRODDEN = [(0.0, (26, 24, 30)), (0.5, (48, 45, 54)), (1.0, (78, 73, 84))]
 MOLTEN = [(0.0, (150, 38, 6)), (0.35, (236, 104, 18)), (0.7, (255, 176, 56)), (1.0, (255, 244, 190))]
 RUST = [(0.0, (34, 24, 22)), (0.3, (78, 46, 32)), (0.6, (124, 78, 52)), (0.85, (156, 124, 102)), (1.0, (182, 170, 160))]
 CHAR = [(0.0, (20, 14, 12)), (0.5, (52, 34, 24)), (1.0, (92, 62, 40))]
@@ -137,11 +135,41 @@ def rusted(item):
     return out
 
 
+def ash(image, stops, seed, drift, flecks, fleck_colour):
+    """Ground ash from a vanilla ground texture, calm enough to lie in a plain twelve blocks wide.
+
+    recolour() stretched sand's few shades over the whole ramp and added jitter on top: every pixel against its
+    neighbour, and a field of it read as television static (the second visual pass, 2026-10-01). Here the shades
+    stay in the middle of a narrow ramp, a slow swell that tiles (sixteen pixels a period) lays the ash in soft
+    drifts, and a few pale flecks of burnt bone lie on it. Still the vanilla texture underneath, recoloured."""
+    rng = random.Random(seed)
+    values = [lum(p) for p in image.getdata() if p[3] > 0]
+    lo, hi = min(values), max(values)
+    mid = (lo + hi) / 2
+    out = Image.new("RGBA", image.size)
+    src, dst = image.load(), out.load()
+    for y in range(16):
+        for x in range(16):
+            p = src[x, y]
+            t = 0.5 + ((lum(p) - mid) / max(1e-6, hi - lo)) * 0.55
+            swell = (math.sin(2 * math.pi * (x + 2 * y) / 16) + math.sin(2 * math.pi * (3 * x - y) / 16 + 1.3)) / 4
+            dst[x, y] = (*ramp(stops, t + drift * swell), 255)
+    for _ in range(flecks):
+        x, y = rng.randrange(16), rng.randrange(16)
+        dst[x, y] = (*fleck_colour, 255)
+        dst[(x + 1) % 16, y] = (*ramp(stops, 0.2), 255)
+    return out
+
+
+ASH_SOFT = [(0.0, (70, 66, 78)), (0.5, (100, 95, 108)), (1.0, (132, 126, 140))]
+TRODDEN_SOFT = [(0.0, (34, 31, 38)), (0.5, (50, 47, 56)), (1.0, (70, 66, 76))]
+
+
 def textures(gen):
     folder = gen.ASSETS / "textures/block"
     folder.mkdir(parents=True, exist_ok=True)
-    recolour(gen.vanilla("block/sand.png"), ASH, jitter=4, seed=11).save(folder / "ceniza.png")
-    recolour(gen.vanilla("block/coarse_dirt.png"), TRODDEN, jitter=3, seed=12).save(folder / "ceniza_prensada.png")
+    ash(gen.vanilla("block/sand.png"), ASH_SOFT, 11, 0.22, 2, (150, 144, 156)).save(folder / "ceniza.png")
+    ash(gen.vanilla("block/coarse_dirt.png"), TRODDEN_SOFT, 12, 0.18, 1, (80, 75, 86)).save(folder / "ceniza_prensada.png")
     for name, source in (("metal_fundido", "block/lava_still.png"), ("metal_fundido_cae", "block/lava_flow.png")):
         image = whole(gen, source)
         recolour(image, MOLTEN).save(folder / f"{name}.png")

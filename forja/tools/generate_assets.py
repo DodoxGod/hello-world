@@ -6505,48 +6505,53 @@ def generate_wisp_lantern_assets():
     IRON_D = (38, 36, 40)
 
     side = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    # The frame (second visual pass, 2026-10-01): blackened iron all round, lit along its outer top and left edge
+    # only. Lit on the whole left and top posts and dark on the others, a block of it read as pale stone with a
+    # shadow, the brightest thing on the Bastión's black walls.
     for y in range(16):
         for x in range(16):
             frame = x < 2 or x > 13 or y < 2 or y > 13
             if frame:
-                grain = rng.randint(-8, 8)
-                lit_edge = y < 2 or x < 2
-                base = IRON_L if lit_edge else IRON
+                grain = rng.randint(-5, 5)
+                if y == 0 or x == 0:
+                    base = IRON_L
+                elif y == 15 or x == 15:
+                    base = IRON_D
+                else:
+                    base = IRON
                 side.putpixel((x, y), tuple(max(0, c + grain) for c in base) + (255,))
             else:
                 side.putpixel((x, y), (20, 17, 22, 255))
-    # The wisp: a small hot body low in the cage, with the air glowing around it.
-    cx, cy = 7.5, 9.0
+    # The wisp: a small hot body in the middle of the cage, with the air glowing round it.
+    cx, cy = 7.5, 8.5
     for y in range(2, 14):
         for x in range(2, 14):
             d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
-            if d < 1.8:
+            if d < 1.6:
                 side.putpixel((x, y), (255, 246, 216, 255))
-            elif d < 3.0:
+            elif d < 2.8:
                 side.putpixel((x, y), (255, 176, 66, 255))
-            elif d < 4.4:
-                fade = 1.0 - (d - 3.0) / 1.4
-                side.putpixel((x, y), (int(120 + 90 * fade), int(52 + 60 * fade), int(28 + 20 * fade), 255))
+            elif d < 4.6:
+                fade = 1.0 - (d - 2.8) / 1.8
+                side.putpixel((x, y), (int(70 + 150 * fade), int(32 + 80 * fade), int(24 + 20 * fade), 255))
     # Sparks coming off it, which is how you know it is not a coal.
-    for (x, y) in ((5, 5), (10, 4), (11, 7), (4, 11)):
+    for (x, y) in ((4, 4), (11, 5), (3, 11), (12, 11)):
         side.putpixel((x, y), (255, 214, 128, 255))
-    # The bars, drawn last so the light is always behind them.
-    for x in (4, 7, 10, 13):
+    # Two thin bars, drawn last so the light is behind them: four thick ones hid the wisp but for two slits.
+    for x in (5, 10):
         for y in range(2, 14):
             side.putpixel((x, y), IRON_D + (255,))
-            if x + 1 < 14:
-                side.putpixel((x + 1, y), (58, 56, 62, 255))
     # And the two hoops that hold the bars top and bottom.
     for y in (2, 13):
         for x in range(2, 14):
-            side.putpixel((x, y), (IRON_L if y == 2 else IRON_D) + (255,))
+            side.putpixel((x, y), (IRON if y == 2 else IRON_D) + (255,))
 
     top = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     for y in range(16):
         for x in range(16):
-            grain = rng.randint(-7, 7)
-            d = max(abs(x - 7.5), abs(y - 7.5))
-            base = IRON_L if d >= 6 else IRON
+            grain = rng.randint(-5, 5)
+            # the lid in the frame's own iron, lit on one edge like the sides
+            base = IRON_L if x == 0 or y == 0 else IRON_D if x == 15 or y == 15 else IRON
             top.putpixel((x, y), tuple(max(0, c + grain) for c in base) + (255,))
     # The ring on the lid, where the hook went.
     for y in range(5, 11):

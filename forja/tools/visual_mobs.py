@@ -701,7 +701,9 @@ def shade_armor(ga):
             lo_x, hi_x, lo_y, hi_y = spans[(box, face)]
             side = face in ga.SIDES
             # Spread the design's values (a tint only darkens, so contrast has to be in the grey).
-            value = 146 + (value - 190) * 1.35
+            # The shadows of the bands only at 0.95: spread like the lights they went near black, and under a
+            # bright tint (gold, copper, leather) every band was a dark stripe across the body (2026-10-01).
+            value = 146 + (value - 190) * (1.35 if value >= 190 else 0.95)
             if side:
                 t = (fy - lo_y) / max(1, hi_y - lo_y)
                 value *= 1.1 - 0.28 * t
