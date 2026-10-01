@@ -3,6 +3,7 @@ package dev.forja.entity;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import dev.forja.registry.ModEntities;
 import net.minecraft.core.BlockPos;
@@ -38,6 +39,12 @@ import net.minecraft.world.phys.Vec3;
  * drops follow the tool's tier and enchantments (Fortune, Silk Touch, Fundicion, Telequinesis).
  * Drops land at the thrower's feet. The head is never saved: if the world closes mid-flight the
  * cooldown simply runs out.
+ *
+ * <p>A thrown weapon or shield is different: it carries the only copy of the item, since the hand it
+ * left was emptied. However its flight ends (back to the hand, against a wall, out of time, its thrower
+ * dead or gone, its chunk unloaded) that one copy goes to exactly one place: the ground, for a weapon
+ * that does not come back and hit something, or else {@link dev.forja.upgrade.ThrowReturns}, which
+ * puts it in the thrower's inventory or keeps it for them.
  */
 public class ThrownHead extends Projectile {
 	/** What is flying, and what it does when it reaches something. */
@@ -68,9 +75,13 @@ public class ThrownHead extends Projectile {
 	private static final double ARRIVED = 2.2;
 	private static final EntityDataAccessor<ItemStack> DATA_HEAD = SynchedEntityData.defineId(ThrownHead.class, EntityDataSerializers.ITEM_STACK);
 	private static final EntityDataAccessor<Boolean> DATA_RETURNING = SynchedEntityData.defineId(ThrownHead.class, EntityDataSerializers.BOOLEAN);
+	/** A pointed weapon (trident, dagger, spear) flies tip first instead of tumbling end over end. */
+	private static final EntityDataAccessor<Boolean> DATA_POINT_FIRST = SynchedEntityData.defineId(ThrownHead.class, EntityDataSerializers.BOOLEAN);
 
 	private ItemStack tool = ItemStack.EMPTY;
 	private InteractionHand hand = InteractionHand.MAIN_HAND;
+	/** Who threw it, kept apart from the owner reference so it is known even when they are not there. */
+	private UUID ownerId;
 	private Mode mode = Mode.HEAD;
 	private boolean returns = true;
 	/**
@@ -104,6 +115,7 @@ public class ThrownHead extends Projectile {
 	public ThrownHead(ServerLevel level, Player owner, ItemStack tool, ItemStack headStack, InteractionHand hand, int quota) {
 		this(ModEntities.THROWN_HEAD, level);
 		this.setOwner(owner);
+		this.ownerId = owner.getUUID();
 		this.tool = tool;
 		this.hand = hand;
 		this.quota = quota;
@@ -111,6 +123,9 @@ public class ThrownHead extends Projectile {
 		Vec3 look = owner.getLookAngle();
 		this.setPos(owner.getX() + look.x * 0.5, owner.getEyeY() - 0.2 + look.y * 0.5, owner.getZ() + look.z * 0.5);
 		this.setDeltaMovement(look.scale(SPEED));
+		this.faceAlong(this.getDeltaMovement());
+		this.yRotO = this.getYRot();
+		this.xRotO = this.getXRot();
 	}
 
 	/** A thrown weapon or shield: it carries the real item, so the hand it left is empty until it lands. */
@@ -121,10 +136,38 @@ public class ThrownHead extends Projectile {
 		this.bounces = bounces;
 		// This constructor is the one the hand was emptied for.
 		this.carriesItem = true;
+		this.entityData.set(DATA_POINT_FIRST, mode == Mode.WEAPON && dev.forja.upgrade.WeaponThrow.fliesPointFirst(thrown));
 	}
 
 	public Mode mode() {
 		return this.mode;
+	}
+
+	/** Who threw it, or null on the client. */
+	public UUID ownerId() {
+		return this.ownerId;
+	}
+
+	/** Whether it is drawn tip first along its flight rather than tumbling. */
+	public boolean isPointFirst() {
+		return this.entityData.get(DATA_POINT_FIRST);
+	}
+
+	/**
+	 * Faces the way it moves, the way an arrow does: yaw and pitch of the motion, in the convention the
+	 * arrow renderer reads. Synced like any rotation, so the client draws it without guessing.
+	 */
+	private void faceAlong(Vec3 motion) {
+		if (motion.lengthSqr() < 1.0E-7) {
+			return;
+		}
+		this.setYRot((float) Math.toDegrees(Math.atan2(motion.x, motion.z)));
+		this.setXRot((float) Math.toDegrees(Math.atan2(motion.y, motion.horizontalDistance())));
+	}
+
+	/** Ends the flight now and sends what it carries home: the thrower is leaving the game. */
+	public void recall() {
+		this.finish(this.getOwner() instanceof ServerPlayer owner ? owner : null);
 	}
 
 	/**
@@ -181,6 +224,7 @@ public class ThrownHead extends Projectile {
 	protected void defineSynchedData(SynchedEntityData.Builder builder) {
 		builder.define(DATA_HEAD, ItemStack.EMPTY);
 		builder.define(DATA_RETURNING, false);
+		builder.define(DATA_POINT_FIRST, false);
 	}
 
 	public ItemStack getHead() {
@@ -217,12 +261,17 @@ public class ThrownHead extends Projectile {
 	@Override
 	public void tick() {
 		super.tick();
-		if (!(this.level() instanceof ServerLevel level)) {
+		// The base tick can take it out of the world (below the void, say), and onRemoval has already sent
+		// the weapon home by then.
+		if (!(this.level() instanceof ServerLevel level) || this.isRemoved()) {
 			return;
 		}
 
-		if (!(this.getOwner() instanceof ServerPlayer owner) || !owner.isAlive() || owner.level() != level || this.tickCount > MAX_LIFETIME) {
-			this.finish(null);
+		ServerPlayer owner = this.getOwner() instanceof ServerPlayer player ? player : null;
+		if (owner == null || !owner.isAlive() || owner.level() != level || this.tickCount > MAX_LIFETIME) {
+			// Out of time, or no thrower here to fly back to: it goes home straight away rather than
+			// falling where it is (or, as it used to, vanishing with the weapon still in it).
+			this.finish(owner);
 			return;
 		}
 
@@ -243,6 +292,9 @@ public class ThrownHead extends Projectile {
 			}
 			Vec3 motion = toOwner.normalize().scale(Math.min(RETURN_SPEED, distance));
 			this.setDeltaMovement(motion);
+			// Coming back it turns its tip away and flies haft first into the hand, as vanilla's loyal
+			// trident does.
+			this.faceAlong(motion.reverse());
 			this.setPos(this.position().add(motion));
 			return;
 		}
@@ -260,6 +312,7 @@ public class ThrownHead extends Projectile {
 			}
 		}
 
+		this.faceAlong(motion);
 		this.setPos(end);
 		this.traveled += this.speed;
 		if (this.traveled >= this.reach) {
@@ -459,8 +512,13 @@ public class ThrownHead extends Projectile {
 		// Only drop what actually left the hand. Dropping the hook here would be the same duplication
 		// as handing it back in finish().
 		if (this.carriesItem && !this.tool.isEmpty()) {
+			// The weapon itself goes to the ground, and with it out of the entity finish() has nothing left
+			// to give back. It used to drop a copy and keep the original, so finish() then put that in the
+			// inventory too: one throw, two weapons.
+			ItemStack dropped = this.tool;
+			this.tool = ItemStack.EMPTY;
 			level.addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(
-				level, this.getX(), this.getY(), this.getZ(), this.tool.copy()));
+				level, this.getX(), this.getY(), this.getZ(), dropped));
 		}
 		this.finish(this.getOwner() instanceof ServerPlayer owner ? owner : null);
 	}
@@ -473,19 +531,46 @@ public class ThrownHead extends Projectile {
 	}
 
 	private void finish(ServerPlayer owner) {
-		if (owner != null) {
+		if (owner != null && owner.isAlive()) {
 			owner.getCooldowns().removeCooldown(owner.getCooldowns().getCooldownGroup(this.tool));
 			this.level().playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.8F, 0.7F);
-			// A thrown weapon left the hand empty; this is it coming back to it. A hook never left it.
-			if (this.carriesItem && !this.tool.isEmpty()) {
-				if (owner.getItemInHand(this.hand).isEmpty()) {
-					owner.setItemInHand(this.hand, this.tool.copy());
-				} else if (!owner.getInventory().add(this.tool.copy())) {
-					owner.drop(this.tool.copy(), false);
-				}
-				this.tool = ItemStack.EMPTY;
-			}
 		}
+		this.sendHome(owner);
 		this.discard();
+	}
+
+	/**
+	 * A thrown weapon left the hand empty; this is it coming back. A hook never left it. The entity lets
+	 * go of the stack before handing it over, so nothing can give it back a second time.
+	 */
+	private void sendHome(ServerPlayer owner) {
+		if (!this.carriesItem || this.tool.isEmpty() || !(this.level() instanceof ServerLevel level)) {
+			return;
+		}
+		ItemStack weapon = this.tool;
+		this.tool = ItemStack.EMPTY;
+		if (this.ownerId == null) {
+			// No thrower known at all: never from a real throw, and the ground still beats nowhere.
+			level.addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(level, this.getX(), this.getY(), this.getZ(), weapon));
+			return;
+		}
+		dev.forja.upgrade.ThrowReturns.giveBack(level.getServer(), owner, this.ownerId, weapon, this.hand);
+	}
+
+	/**
+	 * Whatever takes it out of the world (its chunk unloading, the void, a command) the weapon in it
+	 * still goes home. finish() has already emptied it by the time it discards itself, so this only acts
+	 * when something else ends the flight.
+	 */
+	@Override
+	public void onRemoval(RemovalReason reason) {
+		this.sendHome(this.getOwner() instanceof ServerPlayer owner ? owner : null);
+		super.onRemoval(reason);
+	}
+
+	/** It never goes through a portal: the copy on the far side would be a second weapon. */
+	@Override
+	public boolean canUsePortal(boolean allowPassengers) {
+		return false;
 	}
 }

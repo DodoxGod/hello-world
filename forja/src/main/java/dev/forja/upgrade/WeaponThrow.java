@@ -15,8 +15,8 @@ import net.minecraft.world.level.Level;
 /**
  * Throwing the whole weapon, not just its head. Crouch and use an axe or a dagger and it leaves your
  * hand for two thirds of its bite; with Retorno it comes back, and without it you walk over and pick
- * it up. A shield thrown the same way is a discus: it shoves and stuns up to three in a row and
- * always comes home.
+ * it up. The trident always comes back, Retorno or not, the way vanilla's loyal one does. A shield
+ * thrown the same way is a discus: it shoves and stuns up to three in a row and always comes home.
  */
 public final class WeaponThrow {
 	/** How long the hand stays empty at most, matching the flight of the thrown item. */
@@ -33,6 +33,24 @@ public final class WeaponThrow {
 		return type == ForgeType.DAGA || type == ForgeType.HACHA || type == ForgeType.PICAHACHA || type == ForgeType.TRIDENTE;
 	}
 
+	/**
+	 * Whether a thrown weapon flies tip first, like an arrow or vanilla's trident, rather than tumbling end
+	 * over end like a thrown axe. Anything that is all point: the trident, the dagger, the spear.
+	 */
+	public static boolean fliesPointFirst(ItemStack weapon) {
+		dev.forja.part.ForgedParts parts = weapon.get(ModComponents.PARTS);
+		if (parts == null) {
+			return false;
+		}
+		ForgeType type = parts.type();
+		return type == ForgeType.TRIDENTE || type == ForgeType.DAGA || type == ForgeType.LANZA;
+	}
+
+	/** Whether this kind of weapon always flies back to the hand, whatever its Retorno. */
+	public static boolean alwaysReturns(ForgeType type) {
+		return type == ForgeType.TRIDENTE;
+	}
+
 	/** Crouch and use: the axe or dagger flies. */
 	public static InteractionResult tryThrowWeapon(Level level, Player player, InteractionHand hand, ForgeType type) {
 		ItemStack stack = player.getItemInHand(hand);
@@ -43,7 +61,8 @@ public final class WeaponThrow {
 			return InteractionResult.FAIL;
 		}
 		if (level instanceof ServerLevel serverLevel) {
-			boolean returns = serverLevel.getRandom().nextFloat() < Upgrade.returnChance(Upgrades.fraction(stack, Upgrade.RETORNO));
+			boolean returns = alwaysReturns(type)
+				|| serverLevel.getRandom().nextFloat() < Upgrade.returnChance(Upgrades.fraction(stack, Upgrade.RETORNO));
 			ItemStack thrown = stack.copy();
 			player.setItemInHand(hand, ItemStack.EMPTY);
 			serverLevel.addFreshEntity(new ThrownHead(serverLevel, player, thrown, hand, ThrownHead.Mode.WEAPON, returns, 0));

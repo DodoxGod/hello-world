@@ -1096,8 +1096,9 @@ GUI = {
     "gui.forja.libro.especiales": ("Agáchate y usa: el espadón hace Torbellino, el martillo y el mazo Sismo, y el escudo embiste a lo que tengas delante. El mangual reparte en área y pasa por encima de los escudos; los guanteletes pegan rapidísimo y viven del frenesí.",
                                    "Crouch and use: the greatsword sweeps, the hammer and the mace quake, and the shield bashes whatever is in front of you. The flail spreads its blow and swings past shields; the gauntlets punch fast and live off the frenzy."),
     "gui.forja.libro.lanzar.titulo": ("Armas arrojadizas", "Throwing weapons"),
-    "gui.forja.libro.lanzar": ("Agáchate y usa un hacha o una daga para lanzarla: hace dos tercios de su daño y se queda en el suelo, salvo que tenga Retorno. El escudo con Bumerán sale volando, empuja y aturde hasta a tres y vuelve solo. Y Lanzacabezas sigue lanzando la cabeza de una herramienta.",
-                               "Crouch and use an axe or a dagger to throw it: it bites for two thirds and stays where it lands, unless it has Return. A shield with Boomerang goes out, shoves and stuns up to three and comes back on its own. And Head Throw still throws the head of a tool."),
+    "gui.forja.libro.lanzar": ("Agáchate y usa un hacha o una daga para lanzarla: hace dos tercios de su daño y se queda en el suelo, salvo que tenga Retorno. El tridente vuela de punta y vuelve siempre a tu mano; si tienes el inventario lleno, te espera hasta que hagas hueco. El escudo con Bumerán sale volando, empuja y aturde hasta a tres y vuelve solo. Y Lanzacabezas sigue lanzando la cabeza de una herramienta.",
+                               "Crouch and use an axe or a dagger to throw it: it bites for two thirds and stays where it lands, unless it has Return. The trident flies point first and always comes back to your hand; if your inventory is full, it waits until you make room. A shield with Boomerang goes out, shoves and stuns up to three and comes back on its own. And Head Throw still throws the head of a tool."),
+    "gui.forja.lanzada.espera": ("%s te espera: haz hueco en el inventario", "%s is waiting for you: make room in your inventory"),
     "gui.forja.libro.caballo.titulo": ("Lanza a caballo", "A lance at the gallop"),
     "gui.forja.libro.caballo": ("Una lanza forjada golpea el doble si vas montado y a galope, y suena la corneta cuando entra.",
                                 "A forged lance hits twice as hard from the saddle at a gallop, and the horn sounds when it lands."),
@@ -1293,12 +1294,12 @@ GUI = {
     "gui.forja.libro.especial.tridente.titulo": ("Tridente", "Trident"),
     "gui.forja.libro.especial.tridente": (
         "Tres puntas sobre un asta: llega más lejos que una espada, golpea algo más flojo y se lanza "
-        "entero agachándote, como el hacha. Sus dos mejoras solo sirven donde hay agua o tormenta: "
+        "entero agachándote, de punta, y siempre vuelve a tu mano. Sus dos mejoras solo sirven donde hay agua o tormenta: "
         "Corriente te lanza al usarlo dentro del agua o bajo la lluvia, y Canalización llama al rayo "
         "sobre lo que golpeas si la tormenta te ve. La punta cuesta cuatro de material, más que ninguna "
         "otra cabeza.",
         "Three prongs on a shaft: it reaches further than a sword, hits a little softer, and is thrown "
-        "whole by crouching, the same as an axe. Its two upgrades only work where there is water or a "
+        "whole by crouching, point first, and always comes back to your hand. Its two upgrades only work where there is water or a "
         "storm: Corriente throws you when you use it in water or rain, and Canalizacion calls the "
         "lightning down on what you hit if the storm can see you. Its head costs four of a material, "
         "more than any other.",

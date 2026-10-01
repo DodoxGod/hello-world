@@ -1,5 +1,27 @@
 # Novedades
 
+## 2026-09-30 — El tridente lanzado: sin duplicarse y de punta
+
+Andy: al lanzar el tridente, chocaba con el suelo, «se rompía» y quedaba tirado, y además volvía al inventario.
+
+- **La causa:** al acabar el vuelo de un arma sin Retorno contra un bloque, `ThrownHead.stopFlight` soltaba en el
+  suelo una *copia* del arma y luego `finish` devolvía al inventario el original que aún llevaba dentro: dos armas de
+  un lanzamiento. El tridente no tenía Retorno, así que le pasaba siempre. Y al revés: si el vuelo acababa por tiempo,
+  por morir el que lo lanzó o por cambiar de dimensión, el arma desaparecía.
+- **El arreglo:** el arma lanzada es la única copia y acaba en un solo sitio. Si cae al suelo, sale de la entidad
+  antes de soltarse; si vuelve, la entidad la suelta antes de entregarla. Lo que no puede volver a la mano va a
+  `upgrade/ThrowReturns`: al inventario si hay hueco, o se guarda con el mundo a nombre del que la lanzó y se le
+  entrega en cuanto esté vivo, conectado y con hueco (con un aviso en pantalla si tiene el inventario lleno). Cubre
+  inventario lleno, muerte, desconexión, cambio de dimensión, fin del tiempo, el vacío y un chunk que se descarga.
+  La entidad ya no cruza portales.
+- **El tridente vuelve siempre**, tenga Retorno o no. Las demás armas lanzadas siguen igual (sin Retorno se quedan
+  en el suelo, una sola vez).
+- **De punta:** el tridente, la daga y la lanza vuelan con la punta por delante, orientados por su movimiento como
+  una flecha y dibujados con dos planos cruzados para verse desde cualquier lado. A la vuelta vienen con el asta por
+  delante, como el tridente leal de vanilla. Hachas, cabezas lanzadas y escudos siguen girando.
+- Pruebas: `TridenteGameTests` (suelo, alcance máximo, vacío, inventario lleno, muerte en vuelo, daga sin Retorno,
+  guardado) y `FORJA_SOLO=tridente` para las capturas.
+
 ## 2026-09-30 — Los aprendices del Herrero Caído, con equipo de final de juego
 
 Andy: «los aprendices no tienen armadura, siempre llevan las mismas armas y a veces hasta de madera; es el final del

@@ -205,6 +205,12 @@ public class ForjaClientTest implements FabricClientGameTest {
 				log("ALL CHECKS PASSED (solo " + solo + ")");
 				return;
 			}
+			// The thrown trident (TridentFootage): tip first across the view, haft first on the way back.
+			if ("tridente".equals(solo)) {
+				TridentFootage.film(context, server, connection, x, y, z);
+				log("ALL CHECKS PASSED (solo " + solo + ")");
+				return;
+			}
 			if ("hud".equals(solo)) {
 				shotHudAndPools(context, server, connection, x, y, z);
 				log("ALL CHECKS PASSED (solo " + solo + ")");

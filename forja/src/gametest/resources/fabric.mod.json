@@ -13,6 +13,7 @@
 			"dev.forja.test.AiGameTests",
 			"dev.forja.test.ObjetosContrato",
 			"dev.forja.test.ArsenalGameTests",
+			"dev.forja.test.TridenteGameTests",
 			"dev.forja.test.TwoPlayerGameTests",
 			"dev.forja.test.PathGameTests",
 			"dev.forja.test.LibrosGameTests",
