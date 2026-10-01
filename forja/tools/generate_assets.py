@@ -5735,9 +5735,15 @@ def geo_bones(cubes, tree):
     """The bone tree, with each bone's cubes looked up by name so the geometry cannot drift from the UVs."""
     uvs = tree["uvs"]
 
+    turns = tree.get("turns") or {}
+
     def cube(name):
         origin, size, _ = tree["cubes"][name]
-        return {"origin": origin, "size": size, "uv": list(uvs[name])}
+        out = {"origin": origin, "size": size}
+        if name in turns:
+            out["pivot"], out["rotation"] = (list(value) for value in turns[name])
+        out["uv"] = list(uvs[name])
+        return out
 
     bones = []
     for entry in tree["bones"]:
@@ -5753,7 +5759,7 @@ def geo_bones(cubes, tree):
     return bones
 
 
-def write_geo(identifier, cubes, bones, atlas, bounds):
+def write_geo(identifier, cubes, bones, atlas, bounds, turns=None):
     uvs, _ = pack_boxes(cubes, atlas[0])
     # The packer fills rows left to right and then starts a new one, and it will happily start a new
     # row below the bottom of the sheet. Nothing complains: the cube gets a UV that is simply not on
@@ -5783,7 +5789,7 @@ def write_geo(identifier, cubes, bones, atlas, bounds):
                 "visible_bounds_height": bounds[1],
                 "visible_bounds_offset": [0, bounds[2], 0],
             },
-            "bones": geo_bones(cubes, {"cubes": cubes, "uvs": uvs, "bones": bones}),
+            "bones": geo_bones(cubes, {"cubes": cubes, "uvs": uvs, "bones": bones, "turns": turns}),
         }],
     })
     return uvs
@@ -8027,14 +8033,29 @@ MOULD_CUBES = {
     "chimney_cap": ([3, 39, 0], [7, 2, 7], "stone"),
     "head": ([-4, 34, -5], [8, 6, 10], "dark"),
     "eye": ([-4, 37, -6], [8, 2, 1], "molten"),
-    "arm_right": ([-12, 16, -5], [4, 15, 8], "stone"),
-    "arm_left": ([8, 16, -5], [4, 15, 8], "stone"),
-    "hand_right": ([-7.5, 15.5, -9], [6, 6, 6], "dark"),
-    "hand_left": ([1.5, 15.5, -9], [6, 6, 6], "dark"),
-    "blade_grip": ([-1.5, 15, -8.5], [3, 9, 4], "dark"),
-    "blade_guard": ([-5.5, 24, -9], [11, 1.5, 5], "molten"),
-    "blade_body": ([-1.5, 25.5, -8.5], [3, 18, 4], "molten"),
-    "blade_tip": ([-1, 43.5, -8], [2, 3, 3], "molten"),
+    # The two-handed grip (2026-09-28, "el Molde Roto agarra el arma con las dos manos"): shoulder, elbow and
+    # forearm reach in to two fists closed one over the other on the copy's own grip, the way a player holds it.
+    # The upper arms and forearms are turned on their own pivots (MOULD_CUBE_TURNS).
+    "arm_right": ([-12.0, 20.55, -3.0], [4, 10.45, 6], "stone"),
+    "elbow_right": ([-13.5, 20.0, -8.5], [5, 5, 5], "dark"),
+    "forearm_right": ([-13.0, 20.5, -17.87], [4, 4, 11.87], "stone"),
+    "arm_left": ([8.0, 19.45, -3.0], [4, 11.55, 6], "stone"),
+    "elbow_left": ([8.5, 19.0, -9.0], [5, 5, 5], "dark"),
+    "forearm_left": ([9.0, 19.5, -17.91], [4, 4, 11.41], "stone"),
+    "hand_right": ([-2.5, 19.6, -15.5], [5, 3.6, 5], "dark"),
+    "hand_left": ([-2.5, 15.6, -15.5], [5, 3.6, 5], "dark"),
+    "blade_grip": ([-1.5, 14.5, -15], [3, 9, 4], "dark"),
+    "blade_guard": ([-5.5, 23.5, -15.5], [11, 1.5, 5], "molten"),
+    "blade_body": ([-1.5, 25.0, -15], [3, 18, 4], "molten"),
+    "blade_tip": ([-1, 43.0, -14.5], [2, 3, 3], "molten"),
+}
+
+# Cubes turned about a pivot of their own, inside a bone that is not: (pivot, rotation).
+MOULD_CUBE_TURNS = {
+    "arm_right": ([-10, 31, 0], [-35.03, 0, 6.71]),
+    "forearm_right": ([-11, 22.5, -6], [5.87, -49.64, 0]),
+    "arm_left": ([10, 31, 0], [-34.23, 0, -6.01]),
+    "forearm_left": ([11, 21.5, -6.5], [20.38, 57.28, 0]),
 }
 
 MOULD_BONES = [
@@ -8051,10 +8072,13 @@ MOULD_BONES = [
     ("chest_right", "body", [-1.5, 20, 5], ["chest_right"], [0, -8, 0]),
     ("chest_left", "body", [1.5, 20, 5], ["chest_left", "seam"], [0, 8, 0]),
     ("head", "body", [0, 34, 0], ["head", "eye"]),
-    ("arm_right", "body", [-10, 31, 0], ["arm_right"], [14, 0, 7]),
-    ("arm_left", "body", [10, 31, 0], ["arm_left"], [14, 0, -7]),
-    ("tool", "body", [0, 20, -8], ["hand_right", "hand_left"]),
-    ("blank", "tool", [0, 20, -7], ["blade_grip", "blade_guard", "blade_body", "blade_tip"]),
+    # Both arms and the grip turn together from the shoulders: raising the copy over the head, the cut, the thrust.
+    ("arms", "body", [0, 31, 0], []),
+    ("arm_right", "arms", [-10, 31, 0], ["arm_right", "elbow_right", "forearm_right"]),
+    ("arm_left", "arms", [10, 31, 0], ["arm_left", "elbow_left", "forearm_left"]),
+    # The fists. BrokenMouldRenderer draws the copied weapon on this bone, so it follows the arms everywhere.
+    ("grip", "arms", [0, 19.5, -13], ["hand_right", "hand_left"], [20, 0, 0]),
+    ("blank", "grip", [0, 19.5, -13], ["blade_grip", "blade_guard", "blade_body", "blade_tip"]),
 ]
 
 MOULD_PALETTE = {
@@ -8075,51 +8099,56 @@ MOULD_HOT_SLIDE = -4
 def check_broken_mould_fit():
     """The fists close on the grip, and the hot door stays out of sight until the recast fetches it.
 
-    Measured on the cubes rather than trusted to the eye: each hand meets the grip face to face with no
-    gap, the white-hot door sits wholly inside the stone belly in the rest pose, and at the height of the
-    recast its face stands in front of the dull door and behind the bars, which is the fire turning
-    strong orange without anything swelling.
+    Measured on the cubes rather than trusted to the eye: the copy's grip runs through both fists (inside
+    each of them across, and caught by both along its length), the white-hot door sits wholly inside the
+    stone belly in the rest pose, and at the height of the recast its face stands in front of the dull door
+    and behind the bars, which is the fire turning strong orange without anything swelling.
     """
     def box(name):
         origin, size, _ = MOULD_CUBES[name]
         return [(origin[axis], origin[axis] + size[axis]) for axis in range(3)]
 
     grip, right, left = box("blade_grip"), box("hand_right"), box("hand_left")
-    gaps = (grip[0][0] - right[0][1], left[0][0] - grip[0][1])
-    assert gaps == (0, 0), f"the mould's hands do not close on the grip: gaps {gaps}"
     for hand in (right, left):
-        for axis in (1, 2):
-            assert hand[axis][0] < grip[axis][1] and grip[axis][0] < hand[axis][1], "a hand misses the grip"
+        for axis in (0, 2):
+            assert hand[axis][0] < grip[axis][0] and grip[axis][1] < hand[axis][1], "the grip sticks out of a fist"
+        assert hand[1][0] < grip[1][1] and grip[1][0] < hand[1][1], "a fist misses the grip"
+    gap = right[1][0] - left[1][1]
+    assert 0 <= gap < 1, f"the fists are {gap} apart: one over the other on the grip"
     belly, hot, door = box("belly"), box("door_hot"), box("door")
     assert all(belly[axis][0] < hot[axis][0] and hot[axis][1] < belly[axis][1] for axis in range(3)), \
         "the hot door shows through the belly in the rest pose"
     bars = min(box(name)[2][0] for name in ("bar_right", "bar_middle", "bar_left"))
     front = hot[2][0] + MOULD_HOT_SLIDE
     assert bars < front < door[2][0], f"the recast leaves the hot door at z {front}, not between the bars and the door"
-    return gaps, front
+    return gap, front
 
 
 def generate_broken_mould_assets():
     check_broken_mould_fit()
     atlas = (256, 256)
-    uvs = write_geo("molde_roto", MOULD_CUBES, MOULD_BONES, atlas, (2.5, 3.25, 1.6))
+    uvs = write_geo("molde_roto", MOULD_CUBES, MOULD_BONES, atlas, (2.5, 3.25, 1.6), turns=MOULD_CUBE_TURNS)
     skin, glow = paint_model(MOULD_CUBES, MOULD_PALETTE, uvs, atlas, 56001, wear=0.95,
                              rust=(124, 76, 40), damage=0.55)
     skin.save(ASSETS / "textures/entity/molde_roto.png")
     glow.save(ASSETS / "textures/entity/molde_roto_glowmask.png")
 
+    # BrokenMould's controllers: "molde" (idle, walk, recast), "blank" (blank_shown, blank_gone) and "golpe"
+    # (raise, strike, draw, stab, guard). The recast swaps the blade at 1.5 s = RECAST_WINDUP (30 ticks), and
+    # ForjaClientTest.checkAttackTimings holds it to that.
     write_json(ASSETS / "geckolib/animations/entity/molde_roto.animation.json", {
         "format_version": "1.8.0",
         "animations": {
-            # The furnace breathes and the blade it is holding never quite settles.
+            # The furnace breathes and the copy it is holding never quite settles.
             "idle": {
                 "loop": True,
                 "animation_length": 3.6,
                 "bones": {
                     "body": pos([(0, [0, 0, 0]), (1.8, [0, -0.4, 0]), (3.6, [0, 0, 0])]),
                     "fire_hot": pos([(0, [0, 0, 0]), (3.6, [0, 0, 0])]),
-                    "tool": rot([(0, [0, 0, 1.5]), (1.8, [0, 0, -1.5]), (3.6, [0, 0, 1.5])]),
                     "head": rot([(0, [0, -4, 0]), (1.8, [0, 4, 0]), (3.6, [0, -4, 0])]),
+                    "arms": rot([(0, [0, 0, 0]), (1.8, [-2.5, 0, 0]), (3.6, [0, 0, 0])]),
+                    "grip": rot([(0, [0, 0, 1.5]), (1.8, [0, 0, -1.5]), (3.6, [0, 0, 1.5])]),
                 },
             },
             "walk": {
@@ -8135,11 +8164,14 @@ def generate_broken_mould_assets():
                     ),
                     "chimney": rot([(0, [4, 0, -11]), (0.65, [4, 0, -14]), (1.3, [4, 0, -11])]),
                     "fire_hot": pos([(0, [0, 0, 0]), (1.3, [0, 0, 0])]),
+                    "arms": rot([(0, [0, 0, 0]), (0.32, [-4, 0, 0]), (0.65, [0, 0, 0]), (0.97, [-4, 0, 0]),
+                                 (1.3, [0, 0, 0])]),
+                    "grip": rot([(0, [0, 0, 2]), (0.65, [0, 0, -2]), (1.3, [0, 0, 2])]),
                 },
             },
             # The blank, on its own bone and its own controller. Once the mould has copied a weapon
             # the real item is drawn in its hands by the render layer, so the molten bar has to go
-            # somewhere: it shrinks into the fist that was holding it.
+            # somewhere: it shrinks into the fists that were holding it.
             "blank_shown": {
                 "loop": True,
                 "animation_length": 1.0,
@@ -8156,22 +8188,82 @@ def generate_broken_mould_assets():
                 "loop": False,
                 "animation_length": 2.6,
                 "bones": {
-                    "tool": bone(
-                        pos([(0, [0, 0, 0]), (0.6, [0, -6, 2]), (1.2, [0, -8, 3]),
-                             (1.5, [0, -8, 3]), (1.9, [0, 0, 0]), (2.6, [0, 0, 0])]),
+                    "fire_hot": pos([(0, [0, 0, 0]), (0.5, [0, 0, 0]), (0.8, [0, 0, MOULD_HOT_SLIDE]),
+                                     (1.9, [0, 0, MOULD_HOT_SLIDE]), (2.2, [0, 0, 0]), (2.6, [0, 0, 0])]),
+                    "body": rot([(0, [0, 0, 0]), (0.6, [10, 0, 0]), (1.5, [12, 0, 0]),
+                                 (1.9, [-6, 0, 0]), (2.6, [0, 0, 0])]),
+                    "arms": rot([(0, [0, 0, 0]), (0.6, [26, 0, 0]), (1.2, [34, 0, 0]), (1.5, [34, 0, 0]),
+                                 (1.9, [-8, 0, 0]), (2.6, [0, 0, 0])]),
+                    "grip": bone(
+                        rot([(0, [0, 0, 0]), (0.6, [-10, 0, 0]), (1.5, [-14, 0, 0]), (1.9, [4, 0, 0]),
+                             (2.6, [0, 0, 0])]),
+                        pos([(0, [0, 0, 0]), (0.6, [0, -1.5, 1]), (1.2, [0, -2.5, 2]), (1.5, [0, -2.5, 2]),
+                             (1.9, [0, 0.5, 0]), (2.6, [0, 0, 0])]),
                         scale([(0, [1, 1, 1]), (1.2, [0.85, 0.7, 0.85]), (1.5, [0.6, 0.4, 0.6]),
                                (1.9, [1.15, 1.15, 1.15]), (2.6, [1, 1, 1])]),
                     ),
-                    "fire_hot": pos([(0, [0, 0, 0]), (0.5, [0, 0, 0]), (0.8, [0, 0, MOULD_HOT_SLIDE]),
-                                     (1.9, [0, 0, MOULD_HOT_SLIDE]), (2.2, [0, 0, 0]), (2.6, [0, 0, 0])]),
-                    "arm_right": rot([(0, [14, 0, 7]), (0.6, [42, 0, 10]), (1.5, [46, 0, 10]),
-                                      (1.9, [14, 0, 7]), (2.6, [14, 0, 7])]),
-                    "arm_left": rot([(0, [14, 0, -7]), (0.6, [42, 0, -10]), (1.5, [46, 0, -10]),
-                                     (1.9, [14, 0, -7]), (2.6, [14, 0, -7])]),
-                    "body": rot([(0, [0, 0, 0]), (0.6, [10, 0, 0]), (1.5, [12, 0, 0]),
-                                 (1.9, [-6, 0, 0]), (2.6, [0, 0, 0])]),
                 },
             },
+            # The warning before a cut: the copy goes up over the head in both hands, and is held there.
+            "raise": {
+                "loop": "hold_on_last_frame",
+                "animation_length": 0.4,
+                "bones": {
+                    "arms": rot([(0, [0, 0, 0]), (0.25, [-102.0, 0, 0]), (0.4, [-120, 0, 0])]),
+                    "grip": rot([(0, [0, 0, 0]), (0.4, [10, 0, 0])]),
+                    "body": rot([(0, [0, 0, 0]), (0.4, [-5, 10, 0])]),
+                    "head": rot([(0, [0, 0, 0]), (0.4, [-6, 0, 0])]),
+                },
+            },
+            # The cut: down in front of it from the raised pose, and back to its guard.
+            "strike": {
+                "loop": False,
+                "animation_length": 0.9,
+                "bones": {
+                    "arms": rot([(0, [-120, 0, 0]), (0.1, [-70, 0, 0]), (0.18, [-25, 0, 0]), (0.35, [-29, 0, 0]),
+                                 (0.9, [0, 0, 0])]),
+                    "grip": rot([(0, [10, 0, 0]), (0.1, [50, 0, 0]), (0.18, [100, 0, 0]), (0.35, [106, 0, 0]),
+                                 (0.9, [0, 0, 0])]),
+                    "body": bone(
+                        rot([(0, [-5, 10, 0]), (0.18, [10, -5.0, 0]), (0.35, [12, -5.0, 0]), (0.9, [0, 0, 0])]),
+                        pos([(0, [0, 0, 0]), (0.18, [0, -1.2, -1]), (0.35, [0, -1.2, -1]), (0.9, [0, 0, 0])]),
+                    ),
+                    "head": rot([(0, [-6, 0, 0]), (0.18, [8, 0, 0]), (0.9, [0, 0, 0])]),
+                },
+            },
+            # The warning before a thrust (lance, trident, dagger): drawn back to the hip, point first.
+            "draw": {
+                "loop": "hold_on_last_frame",
+                "animation_length": 0.4,
+                "bones": {
+                    "arms": rot([(0, [0, 0, 0]), (0.4, [20, 0, 0])]),
+                    "grip": bone(rot([(0, [0, 0, 0]), (0.4, [-15, 0, 0])]), pos([(0, [0, 0, 0]), (0.4, [0, 0, 2])])),
+                    "body": rot([(0, [0, 0, 0]), (0.4, [-4, 12, 0])]),
+                    "leg_left": rot([(0, [0, 0, 0]), (0.4, [6, 0, 0])]),
+                    "leg_right": rot([(0, [0, 0, 0]), (0.4, [-6, 0, 0])]),
+                },
+            },
+            # The thrust: straight along the shaft, a step in and the body behind it.
+            "stab": {
+                "loop": False,
+                "animation_length": 0.8,
+                "bones": {
+                    "arms": rot([(0, [20, 0, 0]), (0.15, [-15, 0, 0]), (0.3, [-15, 0, 0]), (0.8, [0, 0, 0])]),
+                    "grip": bone(
+                        rot([(0, [-15, 0, 0]), (0.15, [10, 0, 0]), (0.3, [10, 0, 0]), (0.8, [0, 0, 0])]),
+                        pos([(0, [0, 0, 2]), (0.15, [0, 0, -4]), (0.3, [0, 0, -4]), (0.8, [0, 0, 0])]),
+                    ),
+                    "body": bone(
+                        rot([(0, [-4, 12, 0]), (0.15, [10, -12, 0]), (0.3, [10, -12, 0]), (0.8, [0, 0, 0])]),
+                        pos([(0, [0, 0, 0]), (0.15, [0, -0.8, -3]), (0.3, [0, -0.8, -3]), (0.8, [0, 0, 0])]),
+                    ),
+                    "leg_left": rot([(0, [6, 0, 0]), (0.15, [-22, 0, 0]), (0.3, [-22, 0, 0]), (0.8, [0, 0, 0])]),
+                    "leg_right": rot([(0, [-6, 0, 0]), (0.15, [14, 0, 0]), (0.3, [14, 0, 0]), (0.8, [0, 0, 0])]),
+                    "head": rot([(0, [0, 0, 0]), (0.15, [6, 0, 0]), (0.8, [0, 0, 0])]),
+                },
+            },
+            # Between blows: animates nothing, and leaves the arms to the walk.
+            "guard": {"loop": True, "animation_length": 1.0, "bones": {}},
         },
     })
 

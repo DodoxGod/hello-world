@@ -224,6 +224,37 @@ def _paint_pixel(style, kind, fx, fy, fw, fh, colors, noise, ox, oy, wear):
             c = _mul(dark, 0.9 + 0.1 * grain)
         return c, None
 
+    if style == "cast":
+        # Fired moulding sand: a fine even grain with pores, and the parting line where the two halves of a
+        # mould met. Stone laid in courses made the Molde Roto a walking brick wall.
+        c = _mul(light if kind == "up" else base, ramp * (0.93 + 0.1 * grain))
+        if speck < 0.06:
+            c = _mul(c, 0.86)
+        elif speck > 0.975:
+            c = _mix(c, light, 0.4)
+        if side:
+            if fh >= 8 and fy == fh // 2:
+                c = _mul(dark, 0.95)
+            elif fh >= 8 and fy == fh // 2 - 1:
+                c = _mix(c, light, 0.25)
+            c = _bevel(c, light, dark, fx, fy, fw, fh, 0.6)
+        if kind == "down":
+            c = _mul(dark, 0.9 + 0.1 * grain)
+        return c, None
+
+    if style == "molten":
+        # A bar of running metal: white-hot down the middle of each face, a duller skin cooling at its edges, and
+        # slow streaks along its length. No crust: the lava surface on the blank drew a fishbone of black cracks.
+        if side:
+            across = abs(fx - (fw - 1) / 2) / max(0.5, (fw - 1) / 2)
+            g = _mix(_mix(hot, (255, 246, 210), 0.45), hot, across)
+            if fw >= 3 and across >= 0.99:
+                g = _mix(g, base, 0.35)
+        else:
+            g = _mix(hot, (255, 246, 210), 0.3)
+        g = _mul(g, 0.92 + 0.1 * noise.smooth(ox, oy, 5.0, 43))
+        return g, g
+
     if style == "coal":
         _, edge, owner = noise.cells(ox, oy, 2.6)
         tint = 0.7 + 0.6 * noise.at(owner[0], owner[1], 9)
@@ -395,7 +426,7 @@ def paint_model_v2(cubes, palette, uvs, size, seed, wear=0.6, rust=None, damage=
                     sp[x, y] = c + (255,)
                     if g is not None:
                         gp[x, y] = g + (255,)
-        metal = style in ("metal", "stone")
+        metal = style in ("metal", "stone", "cast")
         # Rust bleeding a little way down from the top edge of the front and back plates.
         if rust and style == "metal":
             for face_start in (u + d, u + 2 * d + w):
@@ -450,9 +481,11 @@ def paint_model_v2(cubes, palette, uvs, size, seed, wear=0.6, rust=None, damage=
 
 # ---------------------------------------------------------------------------- what each mob gets
 
-# id: (generator function, CUBES table, BONES table, PALETTE table) in generate_assets.py. The Molde Roto is
-# not here: its model and clips were reworked by hand on 2026-09-28 and its generator no longer makes them.
+# id: (generator function, CUBES table, BONES table, PALETTE table) in generate_assets.py. The Molde Roto's model
+# and clips were reworked by hand on 2026-09-28 (the two-handed grip); its generator was brought back in line
+# with them on 2026-10-01, so it is painted here like the rest.
 MOBS = {
+    "molde_roto": ("generate_broken_mould_assets", "MOULD_CUBES", "MOULD_BONES", "MOULD_PALETTE"),
     "herrero_caido": ("generate_boss_assets", "BOSS_CUBES", "BOSS_BONES", "BOSS_PALETTE"),
     "automata_de_forja": ("generate_automaton_assets", "AUTOMATON_CUBES", "AUTOMATON_BONES", "AUTOMATON_PALETTE"),
     "coraza_vacia": ("generate_hollow_assets", "HOLLOW_CUBES", "HOLLOW_BONES", "HOLLOW_PALETTE"),
@@ -474,6 +507,13 @@ MOBS = {
 # a material of its own: the automaton is a walking furnace of firebrick, the die guardian is blackstone and
 # gold, the anvil is blued anvil steel, the striker is cast iron and brass, the hauler soot-black iron.
 PALETTES = {
+    # A casting mould is fired sand and clay, not furnace stone: warm and sooty, bound in blackened iron, so it
+    # no longer reads as the automaton's grey twin.
+    "molde_roto": {
+        "stone": ((112, 100, 88), (146, 132, 114), (64, 56, 50)),
+        "iron": ((78, 80, 86), (118, 120, 128), (40, 40, 46)),
+        "dark": ((62, 60, 62), (90, 86, 86), (32, 30, 32)),
+    },
     "automata_de_forja": {
         "stone": ((126, 66, 50), (162, 92, 68), (70, 34, 26)),
         "iron": ((88, 90, 98), (128, 130, 140), (48, 48, 54)),
@@ -515,6 +555,7 @@ PALETTES = {
 
 # Materials painted as something else than their name says, by mob.
 MOB_STYLES = {
+    "molde_roto": {"stone": "cast"},
     "percutor": {"stone": "gold"},
     "ascua_mayor": {"molten": "lava"},
 }
@@ -528,6 +569,8 @@ CUBE_STYLES = {
                "wing_right_mid": "flame", "wing_left_mid": "flame"},
     "ascua_mayor": {"crown": "flame", "wing_right": "flame", "wing_left": "flame", "tail": "flame"},
     "cargador_de_carbon": {"smoke_right": "flame", "smoke_left": "flame"},
+    # The mould's blank is metal still running, not a fire; its furnace door stays the coals.
+    "molde_roto": {"blade_guard": "molten", "blade_body": "molten", "blade_tip": "molten"},
 }
 
 
@@ -553,7 +596,8 @@ def _apply(ga, mob):
                 break
         else:
             raise ValueError(f"{mob}: no bone {bone} for {name}")
-    _settle_coplanar(cubes, bones)
+    turned = set(getattr(ga, TURNED[mob], {})) if mob in TURNED else set()
+    _settle_coplanar(cubes, bones, skip=turned, together=TOGETHER.get(mob, {}))
     setattr(ga, cubes_name, cubes)
     setattr(ga, bones_name, bones)
     return saved
@@ -561,16 +605,34 @@ def _apply(ga, mob):
 
 SETTLE = 0.04
 
+# Cubes a mob turns about pivots of their own (generate_assets' *_CUBE_TURNS): their faces are not in the planes
+# their numbers say, so they are left out of the settling.
+TURNED = {"molde_roto": "MOULD_CUBE_TURNS"}
 
-def _settle_coplanar(cubes, bones):
+# Bones settled as one, because one never moves away from the other: the Molde Roto's dull furnace door has a
+# bone of its own ("fire") that nothing animates, and its top and bottom edges lie in the planes of the bars
+# across it on the body.
+TOGETHER = {"molde_roto": {"fire": "body"}}
+
+
+def _settle_coplanar(cubes, bones, skip=(), together=None):
     """Two cubes of one bone with a face in the same plane fight over it pixel by pixel (the die guardian's lid
     was striped gold and stone, the hauler's back flickered between plate and coal). The cube with the bigger
     face there gives way by a twenty-fifth of a pixel, so the trim laid over a body is the one seen."""
+    together = together or {}
     owner = {}
     for entry in bones:
         for member in entry[3]:
-            owner[member] = entry[0]
-    names = [name for name in cubes if name in owner]
+            owner[member] = together.get(entry[0], entry[0])
+    names = [name for name in cubes if name in owner and name not in skip]
+    # Again until nothing is left: where three cubes share a plane (the mould's belly, its top bar and the posts
+    # under it) the two that give way the first time land in one plane again, a twenty-fifth further in.
+    for _ in range(4):
+        if not _settle_pass(cubes, names, owner):
+            break
+
+
+def _settle_pass(cubes, names, owner):
     shrink = {}
     for i, a in enumerate(names):
         for b in names[i + 1:]:
@@ -608,6 +670,7 @@ def _settle_coplanar(cubes, bones):
                 origin[axis] = round(origin[axis] + SETTLE, 4)
             size[axis] = round(size[axis] - SETTLE, 4)
         cubes[name] = (origin, size, material)
+    return bool(shrink)
 
 
 def shade_armor(ga):
